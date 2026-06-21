@@ -14,7 +14,7 @@
       }
     },
     "address": "https://yunfie-twitter.github.io/Illustia-dev/repo",
-    "timestamp": 1782051652000,
+    "timestamp": 1782052390000,
     "categories": {
       "Graphics": {
         "name": {
@@ -37,7 +37,7 @@
           "Graphics"
         ],
         "issueTracker": "https://github.com/yunfie-twitter/Illustia-dev/issues",
-        "lastUpdated": 1782051652000,
+        "lastUpdated": 1782052390000,
         "license": "GPL-3.0-only",
         "sourceCode": "https://github.com/yunfie-twitter/Illustia-dev",
         "webSite": "https://github.com/yunfie-twitter/Illustia-dev",
@@ -54,6 +54,61 @@
         "preferredSigner": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
       },
       "versions": {
+        "b6b1145cb24bb3b10f588bc077ec0b7e901c55486028e363d2640721c8504545": {
+          "added": 1782052390000,
+          "file": {
+            "name": "/Illustia-v1.0.1-release.apk",
+            "sha256": "b6b1145cb24bb3b10f588bc077ec0b7e901c55486028e363d2640721c8504545",
+            "size": 5473199
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi-v7a",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "1.0.1",
+            "versionCode": 2,
+            "usesSdk": {
+              "minSdkVersion": 33,
+              "targetSdkVersion": 36
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {}
+          }
+        },
         "c1bb3d6dfa4d07d68c8f072ee5023706b879ed3d02d8a8b6edf633acc0af0904": {
           "added": 1782051652000,
           "file": {
