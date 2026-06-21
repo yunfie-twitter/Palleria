@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,10 +79,16 @@ private fun IllustCardImpl(
     onLongClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    val haptic = LocalHapticFeedback.current
     Card(
         modifier = modifier.combinedClickable(
             onClick = onClick,
-            onLongClick = onLongClick
+            onLongClick = if (onLongClick != null) {
+                {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
+            } else null
         ),
         cornerRadius = 14.dp,
         insideMargin = PaddingValues(0.dp),
@@ -187,6 +195,7 @@ fun IllustListRow(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null
 ) {
+    val haptic = LocalHapticFeedback.current
     val pageBadgeText = remember(illust.id) {
         if (illust.pageCount > 1) "${illust.pageCount}P" else null
     }
@@ -196,7 +205,12 @@ fun IllustListRow(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = if (onLongClick != null) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLongClick()
+                    }
+                } else null
             ),
         cornerRadius = 18.dp,
         insideMargin = PaddingValues(12.dp),

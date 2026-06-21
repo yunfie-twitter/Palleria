@@ -251,6 +251,7 @@ private fun UserProfileInfo(
             Box(
                 modifier = Modifier.miuixClickable(
                     pressedScale = 0.94f,
+                    haptic = true,
                     onClick = if (isMuted) onUnmuteUser else onToggleFollow,
                 ),
             ) {

@@ -24,6 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -99,14 +101,17 @@ fun BookmarkScreen(
     }
 
     val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
-        containerColor = MiuixTheme.colorScheme.surface,
-        topBar = {
-            TopAppBar(
-                title = stringResource(R.string.nav_bookmarks_full),
-                largeTitle = stringResource(R.string.nav_bookmarks_full),
-                scrollBehavior = scrollBehavior,
-                actions = {
+    val haptic = LocalHapticFeedback.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.surface),
+    ) {
+        TopAppBar(
+            title = stringResource(R.string.nav_bookmarks_full),
+            largeTitle = stringResource(R.string.nav_bookmarks_full),
+            scrollBehavior = scrollBehavior,
+            actions = {
                 if (selectedTopTab == 1) {
                     RestrictPill(
                         restrict = settings.bookmarkRestrict,
@@ -147,6 +152,7 @@ fun BookmarkScreen(
                         }
                     }
                     IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         when (selectedTopTab) {
                             0 -> viewModel.refreshTimeline()
                             2 -> viewModel.refreshFollowingUsers()
@@ -167,10 +173,8 @@ fun BookmarkScreen(
                     )
                 },
             )
-        },
-    ) { scaffoldPadding ->
         Surface(
-            modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             color = MiuixTheme.colorScheme.surface,
         ) {
             HorizontalPager(
@@ -343,7 +347,7 @@ private fun BookmarkFollowingTab(
                 }
             }
             gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
-                UserResultCard(user = user, onClick = { viewModel.openUser(user) })
+                UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
             if (chrome.followingUsersNextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -388,7 +392,7 @@ private fun RestrictPill(
         modifier = Modifier
             .height(32.dp)
             .squircleSurface(MiuixTheme.colorScheme.surfaceContainer, 16.dp)
-            .miuixClickable(onClick = onClick)
+            .miuixClickable(haptic = true, onClick = onClick)
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {

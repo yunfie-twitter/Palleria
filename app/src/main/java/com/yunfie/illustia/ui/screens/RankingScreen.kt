@@ -96,33 +96,33 @@ fun RankingScreen(
 
     val scheme = MiuixTheme.colorScheme
     val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
-        containerColor = scheme.surface,
-        topBar = {
-            TopAppBar(
-                title = stringResource(R.string.nav_ranking),
-                largeTitle = stringResource(R.string.nav_ranking),
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(onClick = viewModel::refreshRanking) {
-                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
-                    }
-                },
-                bottomContent = {
-                    RankingModeTabs(
-                        currentMode = modes[pagerState.targetPage],
-                        onSelectMode = { newMode ->
-                            val index = modes.indexOf(newMode).coerceAtLeast(0)
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        modes = modes,
-                    )
-                },
-            )
-        },
-    ) { scaffoldPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(scheme.surface),
+    ) {
+        TopAppBar(
+            title = stringResource(R.string.nav_ranking),
+            largeTitle = stringResource(R.string.nav_ranking),
+            scrollBehavior = scrollBehavior,
+            actions = {
+                IconButton(onClick = viewModel::refreshRanking) {
+                    Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                }
+            },
+            bottomContent = {
+                RankingModeTabs(
+                    currentMode = modes[pagerState.targetPage],
+                    onSelectMode = { newMode ->
+                        val index = modes.indexOf(newMode).coerceAtLeast(0)
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                    modes = modes,
+                )
+            },
+        )
         Surface(
-            modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,
         ) {
             HorizontalPager(

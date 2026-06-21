@@ -48,6 +48,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
@@ -376,7 +377,11 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             repository.logout()
             val nextSettings = repository.readSettings()
             _uiState.update {
-                IllustiaUiState(settings = nextSettings, message = str(R.string.msg_logged_out))
+                IllustiaUiState(
+                    settings = nextSettings,
+                    settingsLoaded = true,
+                    message = str(R.string.msg_logged_out),
+                )
             }
         }
     }
@@ -452,7 +457,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             }
             is NativeIntentEvent.User -> {
                 _uiState.update { it.copy(searchDraft = "") }
-                openUser(event.id)
+                openUserPage(event.id)
                 return
             }
             else -> Unit
@@ -526,9 +531,17 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun handleIncomingIntent(intent: Intent?) {
+        intent?.data?.let { uri ->
+            if (uri.scheme == "pixiv" && uri.host == "account" && uri.path == "/login") {
+                uri.getQueryParameter("code")
+                    ?.takeIf(String::isNotBlank)
+                    ?.let(::completeWebLogin)
+                return
+            }
+        }
         when (val event = NativeIntentRouter.parse(intent)) {
             is NativeIntentEvent.Artwork -> openIllust(event.id)
-            is NativeIntentEvent.User -> openUser(event.id)
+            is NativeIntentEvent.User -> openUserPage(event.id)
             is NativeIntentEvent.Text -> submitSearch(event.value)
             is NativeIntentEvent.Image -> _uiState.update {
                 it.copy(message = str(R.string.msg_shared_image_received))
@@ -540,7 +553,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     fun handleClipboardText(value: String) {
         when (val event = NativeIntentRouter.parseText(value)) {
             is NativeIntentEvent.Artwork -> openIllust(event.id)
-            is NativeIntentEvent.User -> openUser(event.id)
+            is NativeIntentEvent.User -> openUserPage(event.id)
             else -> Unit
         }
     }
@@ -853,6 +866,8 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                     selectedUserNextUrl = page.nextUrl,
                     selectedUserBookmarks = emptyList(),
                     selectedUserBookmarksNextUrl = null,
+                    showUserPage = false,
+                    userPageFromSheet = false,
                 )
             }
         }
@@ -866,8 +881,62 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 selectedUserNextUrl = null,
                 selectedUserBookmarks = emptyList(),
                 selectedUserBookmarksNextUrl = null,
+                showUserPage = false,
+                userPageFromSheet = false,
             )
         }
+    }
+
+    fun openUserPage(user: UserPreview) {
+        openUserPage(user.id)
+    }
+
+    fun openUserPage(userId: Long) {
+        if (userId <= 0L) {
+            _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
+            return
+        }
+        runLoading {
+            val profile = repository.userDetail(userId)
+            val page = repository.userIllusts(userId)
+            _uiState.update {
+                it.copy(
+                    selectedUser = profile,
+                    selectedUserIllusts = page.items.visibleWithSettings(it.settings),
+                    selectedUserNextUrl = page.nextUrl,
+                    selectedUserBookmarks = emptyList(),
+                    selectedUserBookmarksNextUrl = null,
+                    showUserPage = true,
+                    userPageFromSheet = false,
+                )
+            }
+        }
+    }
+
+    fun closeUserPage() {
+        _uiState.update {
+            it.copy(
+                showUserPage = false,
+                userPageFromSheet = false,
+                selectedUser = null,
+                selectedUserIllusts = emptyList(),
+                selectedUserNextUrl = null,
+                selectedUserBookmarks = emptyList(),
+                selectedUserBookmarksNextUrl = null,
+            )
+        }
+    }
+
+    fun collapseUserPageToSheet() {
+        if (_uiState.value.userPageFromSheet) {
+            _uiState.update { it.copy(showUserPage = false) }
+        } else {
+            closeUserPage()
+        }
+    }
+
+    fun expandUserSheetToPage() {
+        _uiState.update { it.copy(showUserPage = true, userPageFromSheet = true) }
     }
 
     fun toggleFollow(user: UserProfile) {
@@ -1103,13 +1172,44 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         val current = _uiState.value.settings
         val mutable = current.accounts.toMutableList()
         if (index < 0 || index >= mutable.size) return
-        mutable.removeAt(index)
+        val removedAccount = mutable.removeAt(index)
+        val removedActiveAccount = current.activeAccountIndex == index ||
+                current.refreshToken == removedAccount.refreshToken
         val newIndex = when {
-            current.activeAccountIndex == index -> -1
+            removedActiveAccount && mutable.isNotEmpty() -> index.coerceAtMost(mutable.lastIndex)
+            removedActiveAccount -> -1
             current.activeAccountIndex > index -> current.activeAccountIndex - 1
             else -> current.activeAccountIndex
         }
-        updateSettings { it.copy(accounts = mutable, activeAccountIndex = newIndex) }
+        val nextAccount = mutable.getOrNull(newIndex)
+        val nextSettings = current.copy(
+            accounts = mutable,
+            activeAccountIndex = newIndex,
+            refreshToken = if (removedActiveAccount) nextAccount?.refreshToken.orEmpty() else current.refreshToken,
+            bookmarkUserId = if (removedActiveAccount) nextAccount?.userId else current.bookmarkUserId,
+        )
+
+        _uiState.update {
+            it.withSettings(nextSettings).copy(
+                currentAccount = if (removedActiveAccount) null else it.currentAccount,
+                sessionReady = if (removedActiveAccount) false else it.sessionReady,
+                showAccountSwitcher = !removedActiveAccount,
+                loadState = if (removedActiveAccount) LoadState.Idle else it.loadState,
+            )
+        }
+
+        if (nextAccount == null && removedActiveAccount) {
+            viewModelScope.launch(Dispatchers.IO) {
+                repository.logout()
+            }
+        } else {
+            viewModelScope.launch(Dispatchers.IO) {
+                repository.saveSettings(nextSettings)
+                if (removedActiveAccount) {
+                    login()
+                }
+            }
+        }
     }
 
     fun saveCurrentAccount() {
@@ -1326,6 +1426,10 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
         runCatching { repository.userDetail(userId) }
             .onSuccess { profile ->
+                val activeSettings = _uiState.value.settings
+                if (activeSettings.refreshToken != settings.refreshToken || activeSettings.bookmarkUserId != userId) {
+                    return@onSuccess
+                }
                 _uiState.update { it.copy(currentAccount = profile) }
                 saveCurrentAccount()
             }
@@ -1529,7 +1633,15 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         val verifier = randomUrlSafeString(32)
         val challenge = verifier.sha256Base64Url()
         return PixivWebLoginRequest(
-            authorizationUrl = "https://app-api.pixiv.net/web/v1/login?code_challenge=$challenge&code_challenge_method=S256&client=pixiv-android",
+            authorizationUrl = HttpUrl.Builder()
+                .scheme("https")
+                .host("app-api.pixiv.net")
+                .addPathSegments("web/v1/login")
+                .addQueryParameter("code_challenge", challenge)
+                .addQueryParameter("code_challenge_method", "S256")
+                .addQueryParameter("client", "pixiv-android")
+                .build()
+                .toString(),
             codeVerifier = verifier,
         )
     }

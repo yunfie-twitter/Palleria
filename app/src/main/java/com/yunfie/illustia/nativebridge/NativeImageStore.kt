@@ -75,6 +75,28 @@ class NativeImageStore(private val context: Context) {
         context.contentResolver.persistedUriPermissions
             .filter { it.uri != uri && it.isReadPermission && it.isWritePermission }
             .forEach { context.contentResolver.releasePersistableUriPermission(it.uri, flags) }
+        preferences.edit()
+            .putInt(KEY_SAVE_MODE, SAVE_MODE_SAF)
+            .apply()
+    }
+
+    fun currentPathLabel(): String {
+        if (saveMode() != SAVE_MODE_SAF) return currentPath().orEmpty()
+        val uri = context.contentResolver.persistedUriPermissions
+            .firstOrNull { it.isReadPermission && it.isWritePermission }
+            ?.uri
+            ?: return currentPath().orEmpty()
+        val documentId = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull()
+            ?: return uri.toString()
+        val (volume, path) = documentId.split(':', limit = 2).let {
+            it.first() to it.getOrElse(1) { "" }
+        }
+        val root = if (volume.equals("primary", ignoreCase = true)) {
+            Environment.getExternalStorageDirectory().absolutePath
+        } else {
+            volume
+        }
+        return listOf(root, path).filter { it.isNotBlank() }.joinToString(File.separator)
     }
 
     private fun saveMode(): Int {

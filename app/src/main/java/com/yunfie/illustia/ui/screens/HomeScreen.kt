@@ -82,43 +82,43 @@ fun HomeScreen(
 
     val scheme = MiuixTheme.colorScheme
     val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
-        containerColor = scheme.surface,
-        topBar = {
-            TopAppBar(
-                title = stringResource(R.string.nav_home),
-                largeTitle = stringResource(R.string.nav_home),
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(
-                        onClick = {
-                            when (selectedTab) {
-                                HomeTab.Feed -> viewModel.refreshHome()
-                                HomeTab.Following -> viewModel.refreshTimeline()
-                            }
-                        },
-                    ) {
-                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
-                    }
-                },
-                bottomContent = {
-                    TabRow(
-                        tabs = HomeTab.entries.map { stringResource(it.labelResId) },
-                        selectedTabIndex = HomeTab.entries.indexOf(selectedTab),
-                        onTabSelected = { index ->
-                            selectedTab = HomeTab.entries[index]
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                    )
-                },
-            )
-        },
-    ) { scaffoldPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(scheme.surface),
+    ) {
+        TopAppBar(
+            title = stringResource(R.string.nav_home),
+            largeTitle = stringResource(R.string.nav_home),
+            scrollBehavior = scrollBehavior,
+            actions = {
+                IconButton(
+                    onClick = {
+                        when (selectedTab) {
+                            HomeTab.Feed -> viewModel.refreshHome()
+                            HomeTab.Following -> viewModel.refreshTimeline()
+                        }
+                    },
+                ) {
+                    Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                }
+            },
+            bottomContent = {
+                TabRow(
+                    tabs = HomeTab.entries.map { stringResource(it.labelResId) },
+                    selectedTabIndex = HomeTab.entries.indexOf(selectedTab),
+                    onTabSelected = { index ->
+                        selectedTab = HomeTab.entries[index]
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                )
+            },
+        )
         Surface(
-            modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,
         ) {
             HorizontalPager(

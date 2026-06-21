@@ -30,6 +30,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -228,6 +230,7 @@ private fun IllustDetailHeader(
     onRevealMutedArtwork: () -> Unit,
 ) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val clipboard = remember(context) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
     val openInBrowserLabel = stringResource(R.string.detail_open_in_browser)
     val shareLabel = stringResource(R.string.detail_share)
@@ -280,6 +283,7 @@ private fun IllustDetailHeader(
                                 enabled = !maskMutedArtwork,
                                 onClick = { onOpenImage(page) },
                                 onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onSaveImage(imageUrls[page], "illustia_${illust.id}_p$page", confirmOnLongPressSave)
                                 },
                             ),
@@ -508,6 +512,7 @@ private fun IllustDetailInfo(
                     .clip(RoundedCornerShape(20.dp))
                     .miuixClickable(
                         pressedScale = 0.94f,
+                        haptic = true,
                         onClick = if (isArtistMuted) onUnmuteUser else onToggleFollow,
                     ),
             ) {

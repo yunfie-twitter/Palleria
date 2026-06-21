@@ -274,11 +274,13 @@ fun adaptiveIllustColumns(settings: AppSettings): Int {
 fun Modifier.miuixClickable(
     enabled: Boolean = true,
     pressedScale: Float = 0.965f,
+    haptic: Boolean = false,
     onClick: () -> Unit,
 ): Modifier {
     if (!enabled) return this
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val hapticFeedback = LocalHapticFeedback.current
     val scale by animateFloatAsState(
         targetValue = if (pressed) pressedScale else 1f,
         animationSpec = spring(dampingRatio = 0.74f, stiffness = 520f),
@@ -290,7 +292,10 @@ fun Modifier.miuixClickable(
     }.clickable(
         interactionSource = interactionSource,
         indication = null,
-        onClick = onClick,
+        onClick = {
+            if (haptic) hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
     )
 }
 
@@ -342,14 +347,22 @@ fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
         mutableStateOf(initial)
     }
 
+    val haptic = LocalHapticFeedback.current
+
     // チェックマーク → フォロー中 の自動遷移
     LaunchedEffect(stage) {
-        if (stage == FollowPillStage.CHECK) {
-            delay(600)
-            stage = FollowPillStage.FOLLOWED
-        } else if (stage == FollowPillStage.UNFOLLOWING) {
-            delay(300)
-            stage = FollowPillStage.UNFOLLOWED
+        when (stage) {
+            FollowPillStage.CHECK -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                delay(600)
+                stage = FollowPillStage.FOLLOWED
+            }
+            FollowPillStage.UNFOLLOWING -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                delay(300)
+                stage = FollowPillStage.UNFOLLOWED
+            }
+            else -> Unit
         }
     }
 
@@ -451,6 +464,7 @@ fun BookmarkHeartButton(
                 stage = BookmarkButtonStage.BOOKMARKED
             }
             BookmarkButtonStage.REMOVING -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 delay(220)
                 stage = BookmarkButtonStage.UNBOOKMARKED
             }
@@ -641,349 +655,3 @@ fun CenteredLoadingIndicator(modifier: Modifier = Modifier) {
         LoadingIndicator()
     }
 }
-
-@Composable
-fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        SmallTitle(text = title)
-        content()
-    }
-}
-
-@Composable
-fun SettingRow(title: String, summary: String? = null, action: @Composable () -> Unit) {
-    BasicComponent(
-        title = title,
-        summary = summary,
-        modifier = Modifier.fillMaxWidth(),
-        endActions = {
-            action()
-        },
-    )
-}
-
-@Composable
-fun SettingLinkRow(title: String, onClick: () -> Unit) {
-    ArrowPreference(
-        title = title,
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-    )
-}
-
-@Composable
-fun ElevatedPanel(
-    modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(16.dp),
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        cornerRadius = 18.dp,
-        insideMargin = PaddingValues(0.dp),
-        colors = CardDefaults.defaultColors(
-            color = MiuixTheme.colorScheme.surfaceContainer,
-            contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content,
-        )
-    }
-}
-
-@Composable
-fun HeroPanel(title: String, body: String) {
-    Card(
-        modifier = Modifier
-            .padding(horizontal = 18.dp, vertical = 10.dp)
-            .fillMaxWidth(),
-        cornerRadius = 24.dp,
-        insideMargin = PaddingValues(20.dp),
-        colors = CardDefaults.defaultColors(
-            color = MiuixTheme.colorScheme.primaryContainer,
-            contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
-        ),
-    ) {
-        Text(text = title, fontWeight = FontWeight.Black, color = MiuixTheme.colorScheme.onPrimaryContainer)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = body, color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.84f))
-    }
-}
-
-@Composable
-fun MiuixConfirmDialog(
-    show: Boolean,
-    title: String,
-    summary: String,
-    confirmText: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    destructive: Boolean = false,
-) {
-    OverlayDialog(
-        show = show,
-        title = title,
-        summary = summary,
-        backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-        onDismissRequest = onDismiss,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f),
-                insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-            ) {
-                Text(stringResource(R.string.action_cancel))
-            }
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f),
-                insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-            ) {
-                Text(confirmText, color = if (destructive) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun <T> SettingDropdownRow(
-    title: String,
-    selected: T,
-    values: List<T>,
-    label: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
-    summary: String? = null,
-) {
-    val selectedIndex = values.indexOf(selected).coerceAtLeast(0)
-    OverlayDropdownPreference(
-        title = title,
-        summary = summary,
-        items = values.map { label(it) },
-        selectedIndex = selectedIndex,
-        modifier = Modifier.fillMaxWidth(),
-        onSelectedIndexChange = { index ->
-            values.getOrNull(index)?.let(onSelect)
-        },
-    )
-}
-
-@Composable
-fun SettingSwitchRow(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    summary: String? = null,
-) {
-    SwitchPreference(
-        title = title,
-        summary = summary,
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-fun <T> ChoiceRow(
-    values: List<T>,
-    selected: T,
-    label: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        values.chunked(3).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                row.forEach { value ->
-                    val isSelected = value == selected
-                    Button(
-                        onClick = { onSelect(value) },
-                        modifier = Modifier.weight(1f),
-                        colors = if (isSelected) {
-                            ButtonDefaults.buttonColorsPrimary()
-                        } else {
-                            ButtonDefaults.buttonColors(
-                                color = MiuixTheme.colorScheme.surfaceContainer,
-                            )
-                        },
-                        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                    ) {
-                        Text(
-                            label(value),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-                repeat(3 - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun <T> FlowButtons(values: List<T>, label: (T) -> String, onClick: (T) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        values.chunked(3).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                row.forEach { value ->
-                    Button(
-                        onClick = { onClick(value) },
-                        modifier = Modifier.weight(1f),
-                        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
-                    ) {
-                        Text(label(value), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-                repeat(3 - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SectionHeader(title: String, action: String? = null, onAction: (() -> Unit)? = null) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        SmallTitle(
-            text = title,
-            modifier = Modifier.weight(1f),
-            insideMargin = PaddingValues(0.dp),
-        )
-        if (action != null && onAction != null) {
-            TextButton(
-                text = action,
-                onClick = onAction,
-                minHeight = 32.dp,
-                insideMargin = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────
-//  CollapsingHeader
-//  スクロール量に応じて「大ヘッダー → ミニヘッダー」を
-//  スムーズにアニメーション切り替えするコンポーネント。
-// ─────────────────────────────────────────────
-
-/**
- * スクロールに連動してヘッダーを折り畳む / 展開するコンポーネント。
- *
- * @param scrollOffset  LazyGridState / LazyListState の firstVisibleItemScrollOffset (px)
- * @param firstIndex    LazyGridState / LazyListState の firstVisibleItemIndex
- * @param collapseThresholdPx  このピクセルを超えると折り畳みが始まる（デフォルト 90px）
- * @param title         大ヘッダー時のタイトル文字列
- * @param subtitle      大ヘッダー時のサブタイトル（省略可）
- * @param actions       右端に並ぶアクションボタン群
- * @param onTitleClick  折り畳みヘッダーのタイトルをタップしたときのコールバック（主にトップへスクロール）
- * @param miniContent   折り畳みヘッダー内中央に追加で表示するコンテンツ（省略可）
- */
-@Composable
-fun CollapsingHeader(
-    scrollOffset: Int,
-    firstIndex: Int,
-    title: String,
-    subtitle: String? = null,
-    collapseThresholdPx: Int = 90,
-    actions: @Composable RowScope.() -> Unit = {},
-    onTitleClick: (() -> Unit)? = null,
-    miniContent: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    // 折り畳み判定: index > 0 か、index == 0 でも閾値超えたら折り畳み
-    val isCollapsed = remember(firstIndex, scrollOffset) {
-        firstIndex > 0 || scrollOffset > collapseThresholdPx
-    }
-
-    // 大ヘッダーの透明度 (スクロールに応じて 1f → 0f)
-    val expandAlpha by animateFloatAsState(
-        targetValue = if (isCollapsed) 0f
-        else (1f - scrollOffset.toFloat() / collapseThresholdPx.toFloat()).coerceIn(0f, 1f),
-        animationSpec = tween(durationMillis = 160),
-        label = "collapsingHeader-expandAlpha",
-    )
-
-    // ミニヘッダーの透明度 (逆方向)
-    val miniAlpha by animateFloatAsState(
-        targetValue = if (isCollapsed) 1f else 0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "collapsingHeader-miniAlpha",
-    )
-
-    val scheme = MiuixTheme.colorScheme
-    Box(modifier = modifier.fillMaxWidth()) {
-        // ── 大ヘッダー ──────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { alpha = expandAlpha }
-                .padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = title,
-                    color = scheme.onBackground,
-                    style = MiuixTheme.textStyles.title2,
-                    fontWeight = FontWeight.Bold,
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        color = scheme.onSurfaceVariantSummary,
-                        style = MiuixTheme.textStyles.footnote1,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-            Row(content = actions)
-        }
-
-        // ── ミニヘッダー (sticky) ──────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { alpha = miniAlpha }
-                .background(scheme.background.copy(alpha = 0.9f))
-                .then(
-                    if (onTitleClick != null) Modifier.miuixClickable(onClick = onTitleClick) else Modifier,
-                )
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = title,
-                color = scheme.onBackground,
-                style = MiuixTheme.textStyles.headline1,
-                fontWeight = FontWeight.Bold,
-            )
-            if (miniContent != null) {
-                Box(modifier = Modifier.align(Alignment.Center)) {
-                    miniContent()
-                }
-            }
-            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-                Row(content = actions)
-            }
-        }
-    }
-}
-
-// RowScope の型エイリアスで @Composable RowScope.() -> Unit をシンプルに使えるようにする
-private typealias RowContent = @Composable RowScope.() -> Unit

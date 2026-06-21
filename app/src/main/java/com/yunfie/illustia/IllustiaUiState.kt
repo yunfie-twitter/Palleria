@@ -46,6 +46,8 @@ data class IllustiaUiState(
     val selectedUserNextUrl: String? = null,
     val selectedUserBookmarks: List<Illust> = emptyList(),
     val selectedUserBookmarksNextUrl: String? = null,
+    val showUserPage: Boolean = false,
+    val userPageFromSheet: Boolean = false,
     val imageViewerIllust: Illust? = null,
     val imageViewerStartPage: Int = 0,
     val longPressedIllust: Illust? = null,

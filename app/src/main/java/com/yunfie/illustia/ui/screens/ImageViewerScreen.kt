@@ -46,6 +46,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntSize
@@ -321,6 +323,7 @@ private fun ZoomablePixivImage(
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     val animationScope = rememberCoroutineScope()
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
+    val haptic = LocalHapticFeedback.current
 
     fun notifyZoomChanged(previous: Float, current: Float) {
         val wasZoomed = previous > 1.02f
@@ -372,6 +375,7 @@ private fun ZoomablePixivImage(
                 detectTapGestures(
                     onTap = { onTap() },
                     onDoubleTap = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (scale > 1.02f) {
                             animateTo(1f, Offset.Zero)
                         } else {

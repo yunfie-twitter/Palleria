@@ -363,7 +363,7 @@ private fun SearchResultGrid(
             }
         } else {
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
-                UserResultCard(user = user, onClick = { viewModel.openUser(user) })
+                UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
             if (state.userSearchItems.isEmpty() && state.loadState != LoadState.Loading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {

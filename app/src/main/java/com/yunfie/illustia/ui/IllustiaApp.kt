@@ -1,7 +1,8 @@
 package com.yunfie.illustia.ui
 
 import android.app.Activity
-import android.webkit.WebView
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -108,6 +109,7 @@ private sealed interface AppRoute : NavKey {
     data object AppData : AppRoute
     data object About : AppRoute
     data object FavoriteTags : AppRoute
+    data object UserProfile : AppRoute
 }
 
 @Composable
@@ -128,7 +130,6 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
     val initialTab = remember(startupScreen) { startupTabFor(startupScreen) }
     val initialPage = remember(initialTab) { SwipeTabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
-    var pixivLoginWebView by remember { mutableStateOf<WebView?>(null) }
     var showTokenLogin by remember { mutableStateOf(false) }
     val backStack = remember { mutableStateListOf<NavKey>(AppRoute.Main) }
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { SwipeTabs.size })
@@ -136,6 +137,19 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
+
+    LaunchedEffect(state.webLoginRequest) {
+        val request = state.webLoginRequest ?: return@LaunchedEffect
+        runCatching {
+            CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .setUrlBarHidingEnabled(true)
+                .build()
+                .launchUrl(context, Uri.parse(request.authorizationUrl))
+        }.onFailure {
+            viewModel.failWebLogin(context.getString(R.string.error_browser_failed))
+        }
+    }
 
     fun navigate(route: AppRoute) {
         if (backStack.lastOrNull() != route) {
@@ -145,9 +159,11 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
 
     fun popRoute() {
         if (backStack.size <= 1) return
-        when (backStack.removeAt(backStack.lastIndex)) {
+        when (val route = backStack.removeAt(backStack.lastIndex)) {
             AppRoute.Detail -> viewModel.closeIllust()
             AppRoute.ImageViewer -> viewModel.closeImageViewer()
+            AppRoute.UserProfile -> viewModel.closeUserPage()
+            else -> Unit
         }
     }
 
@@ -220,6 +236,14 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
         if (state.imageViewerIllust != null) {
             navigate(AppRoute.ImageViewer)
         } else if (backStack.lastOrNull() == AppRoute.ImageViewer) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+    }
+
+    LaunchedEffect(state.showUserPage, state.selectedUser?.id) {
+        if (state.showUserPage && state.selectedUser != null) {
+            navigate(AppRoute.UserProfile)
+        } else if (!state.showUserPage && backStack.lastOrNull() == AppRoute.UserProfile) {
             backStack.removeAt(backStack.lastIndex)
         }
     }
@@ -410,6 +434,41 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onBack = ::popRoute,
                 )
             }
+            entry(AppRoute.UserProfile) {
+                state.selectedUser?.let { user ->
+                    val userBackAction = if (state.userPageFromSheet) {
+                        viewModel::collapseUserPageToSheet
+                    } else {
+                        viewModel::closeUserPage
+                    }
+                    UserProfileScreen(
+                        user = user,
+                        settings = state.settings,
+                        illusts = state.selectedUserIllusts,
+                        bookmarks = state.selectedUserBookmarks,
+                        hasMore = state.selectedUserNextUrl != null,
+                        bookmarkHasMore = state.selectedUserBookmarksNextUrl != null,
+                        onBack = userBackAction,
+                        onOpenIllust = { illust ->
+                            if (state.userPageFromSheet) {
+                                viewModel.collapseUserPageToSheet()
+                            } else {
+                                viewModel.closeUserPage()
+                            }
+                            viewModel.openIllust(illust)
+                        },
+                        onBookmark = viewModel::toggleBookmark,
+                        onLoadMore = viewModel::loadMoreUserIllusts,
+                        onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
+                        onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
+                        onToggleFollow = { viewModel.toggleFollow(user) },
+                        onMuteUser = { viewModel.muteUser(user.id) },
+                        isMuted = state.settings.mutedUsers.contains(user.id),
+                        onUnmuteUser = { viewModel.unmuteUser(user.id) },
+                        showHeaderControls = true,
+                    )
+                }
+            }
         }
         val entries = rememberDecoratedNavEntries(
             backStack = backStack,
@@ -508,91 +567,69 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
             }
         }
 
-        state.webLoginRequest?.let { request ->
-            WindowBottomSheet(
-                show = true,
-                title = stringResource(R.string.dialog_pixiv_login),
-                backgroundColor = LocalBottomSheetBackgroundColor.current,
-                startAction = {
-                    IconButton(onClick = viewModel::closeWebLogin) {
-                        Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
-                    }
-                },
-                endAction = {
-                    IconButton(onClick = { pixivLoginWebView?.reload() }) {
-                        Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
-                    }
-                },
-                onDismissRequest = viewModel::closeWebLogin,
-            ) {
-                NonAmoledDarkTheme {
-                    PixivWebLoginScreen(
-                        request = request,
-                        onCodeReceived = viewModel::completeWebLogin,
-                        onCancel = viewModel::closeWebLogin,
-                        onError = viewModel::failWebLogin,
-                        onWebViewChanged = { pixivLoginWebView = it },
-                    )
-                }
-            }
-        }
-
         state.selectedUser?.let { user ->
-            val userSheetBackground = LocalBottomSheetBackgroundColor.current
-            val userSheetHeight = minOf(configuration.screenHeightDp.dp * 0.68f, 560.dp)
-            WindowBottomSheet(
-                show = true,
-                title = user.name.ifBlank { "@${user.account}" },
-                backgroundColor = userSheetBackground,
-                startAction = {
-                    IconButton(onClick = viewModel::closeUser) {
-                        Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
-                    }
-                },
-                endAction = {
-                    WindowIconDropdownMenu(
-                        entry = DropdownEntry(
-                            items = listOf(
-                                DropdownItem(
-                                    text = stringResource(R.string.dialog_mute),
-                                    onClick = {
-                                        viewModel.muteUser(user.id)
-                                        viewModel.closeUser()
-                                    },
+            if (!state.showUserPage) {
+                val userSheetBackground = LocalBottomSheetBackgroundColor.current
+                val userSheetHeight = minOf(configuration.screenHeightDp.dp * 0.68f, 560.dp)
+                WindowBottomSheet(
+                    show = true,
+                    title = user.name.ifBlank { "@${user.account}" },
+                    backgroundColor = userSheetBackground,
+                    startAction = {
+                        IconButton(onClick = viewModel::closeUser) {
+                            Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                        }
+                    },
+                    endAction = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = viewModel::expandUserSheetToPage) {
+                                Icon(imageVector = MiuixIcons.TopDownloads, contentDescription = stringResource(R.string.user_open_full_page))
+                            }
+                            WindowIconDropdownMenu(
+                                entry = DropdownEntry(
+                                    items = listOf(
+                                        DropdownItem(
+                                            text = stringResource(R.string.dialog_mute),
+                                            onClick = {
+                                                viewModel.muteUser(user.id)
+                                                viewModel.closeUser()
+                                            },
+                                        ),
+                                    ),
                                 ),
-                            ),
-                        ),
-                    ) {
-                        Icon(imageVector = MiuixIcons.More, contentDescription = stringResource(R.string.detail_more))
+                            ) {
+                                Icon(imageVector = MiuixIcons.More, contentDescription = stringResource(R.string.detail_more))
+                            }
+                        }
+                    },
+                    onDismissRequest = viewModel::closeUser,
+                ) {
+                    NonAmoledDarkTheme {
+                        UserProfileScreen(
+                            user = user,
+                            settings = state.settings,
+                            illusts = state.selectedUserIllusts,
+                            bookmarks = state.selectedUserBookmarks,
+                            hasMore = state.selectedUserNextUrl != null,
+                            bookmarkHasMore = state.selectedUserBookmarksNextUrl != null,
+                            onBack = viewModel::closeUser,
+                            onOpenIllust = { illust ->
+                                viewModel.closeUser()
+                                viewModel.openIllust(illust)
+                            },
+                            onBookmark = viewModel::toggleBookmark,
+                            onLoadMore = viewModel::loadMoreUserIllusts,
+                            onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
+                            onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
+                            onToggleFollow = { viewModel.toggleFollow(user) },
+                            onMuteUser = { viewModel.muteUser(user.id) },
+                            isMuted = state.settings.mutedUsers.contains(user.id),
+                            onUnmuteUser = { viewModel.unmuteUser(user.id) },
+                            showHeaderControls = false,
+                            backgroundColor = userSheetBackground,
+                            contentHeight = userSheetHeight,
+                        )
                     }
-                },
-                onDismissRequest = viewModel::closeUser,
-            ) {
-                NonAmoledDarkTheme {
-                    UserProfileScreen(
-                        user = user,
-                        settings = state.settings,
-                        illusts = state.selectedUserIllusts,
-                        bookmarks = state.selectedUserBookmarks,
-                        hasMore = state.selectedUserNextUrl != null,
-                        bookmarkHasMore = state.selectedUserBookmarksNextUrl != null,
-                        onBack = viewModel::closeUser,
-                        onOpenIllust = { illust ->
-                            viewModel.closeUser()
-                            viewModel.openIllust(illust)
-                        },
-                        onBookmark = viewModel::toggleBookmark,
-                        onLoadMore = viewModel::loadMoreUserIllusts,
-                        onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
-                        onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
-                        onToggleFollow = { viewModel.toggleFollow(user) },
-                        onMuteUser = { viewModel.muteUser(user.id) },
-                        isMuted = state.settings.mutedUsers.contains(user.id),
-                        onUnmuteUser = { viewModel.unmuteUser(user.id) },
-                        showHeaderControls = false,
-                        backgroundColor = userSheetBackground,
-                        contentHeight = userSheetHeight,
-                    )
                 }
             }
         }
@@ -692,6 +729,7 @@ private fun MainSurface(
                 }
                 HorizontalPager(
                     state = pagerState,
+                    beyondViewportPageCount = 1,
                     userScrollEnabled = settings.swipeToSwitchWorks,
                     modifier = Modifier
                         .weight(1f)

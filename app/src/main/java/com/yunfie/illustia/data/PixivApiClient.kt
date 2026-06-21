@@ -1,6 +1,5 @@
 package com.yunfie.illustia.data
 
-import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -9,6 +8,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -81,19 +82,28 @@ class PixivApiClient(
     }
 
     suspend fun recommended(session: PixivSession): PageResult<Illust> {
-        return getIllustPage(session, "https://app-api.pixiv.net/v1/illust/recommended?filter=for_android")
+        return getIllustPage(session, pixivApiUrl("v1/illust/recommended", "filter" to "for_android"))
     }
 
     suspend fun ranking(session: PixivSession, mode: String = "day"): PageResult<Illust> {
-        return getIllustPage(session, "https://app-api.pixiv.net/v1/illust/ranking?filter=for_android&mode=$mode")
+        return getIllustPage(
+            session,
+            pixivApiUrl("v1/illust/ranking", "filter" to "for_android", "mode" to mode),
+        )
     }
 
     suspend fun newest(session: PixivSession): PageResult<Illust> {
-        return getIllustPage(session, "https://app-api.pixiv.net/v1/illust/new?content_type=illust&filter=for_android")
+        return getIllustPage(
+            session,
+            pixivApiUrl("v1/illust/new", "content_type" to "illust", "filter" to "for_android"),
+        )
     }
 
     suspend fun following(session: PixivSession, restrict: Restrict): PageResult<Illust> {
-        return getIllustPage(session, "https://app-api.pixiv.net/v2/illust/follow?restrict=${restrict.apiValue}&filter=for_android")
+        return getIllustPage(
+            session,
+            pixivApiUrl("v2/illust/follow", "restrict" to restrict.apiValue, "filter" to "for_android"),
+        )
     }
 
     suspend fun search(
@@ -106,28 +116,46 @@ class PixivApiClient(
         includeR18: Boolean,
     ): PageResult<Illust> {
         val effectiveWord = listOfNotNull(word, bookmarkFilter.keyword).joinToString(" ")
-        val encodedWord = effectiveWord.encodeUrl()
-        val durationQuery = duration.apiValue?.let { "&duration=$it" }.orEmpty()
         return getIllustPage(
             session,
-            "https://app-api.pixiv.net/v1/search/illust?word=$encodedWord&search_target=${target.apiValue}&sort=${sort.apiValue}$durationQuery&filter=for_android&merge_plain_keyword_results=true&include_translated_tag_results=true${if (includeR18) "&r18=true" else ""}",
+            pixivApiUrl(
+                "v1/search/illust",
+                "word" to effectiveWord,
+                "search_target" to target.apiValue,
+                "sort" to sort.apiValue,
+                "duration" to duration.apiValue,
+                "filter" to "for_android",
+                "merge_plain_keyword_results" to "true",
+                "include_translated_tag_results" to "true",
+                "r18" to if (includeR18) "true" else null,
+            ),
         )
     }
 
     suspend fun searchUsers(session: PixivSession, word: String): PageResult<UserPreview> {
-        val encodedWord = word.encodeUrl()
-        return getUserPreviewPage(session, "https://app-api.pixiv.net/v1/search/user?word=$encodedWord&filter=for_android")
+        return getUserPreviewPage(
+            session,
+            pixivApiUrl("v1/search/user", "word" to word, "filter" to "for_android"),
+        )
     }
 
     suspend fun followingUsers(session: PixivSession, userId: Long, restrict: Restrict): PageResult<UserPreview> {
-        return getUserPreviewPage(session, "https://app-api.pixiv.net/v1/user/following?user_id=$userId&restrict=${restrict.apiValue}&filter=for_android")
+        return getUserPreviewPage(
+            session,
+            pixivApiUrl(
+                "v1/user/following",
+                "user_id" to userId.toString(),
+                "restrict" to restrict.apiValue,
+                "filter" to "for_android",
+            ),
+        )
     }
 
     suspend fun nextUserPreviewPage(session: PixivSession, nextUrl: String): PageResult<UserPreview> {
-        return getUserPreviewPage(session, nextUrl)
+        return getUserPreviewPage(session, nextUrl.toHttpUrl())
     }
 
-    private suspend fun getUserPreviewPage(session: PixivSession, url: String): PageResult<UserPreview> {
+    private suspend fun getUserPreviewPage(session: PixivSession, url: HttpUrl): PageResult<UserPreview> {
         val body = Request.Builder()
             .url(url)
             .pixivApiHeaders(session)
@@ -146,7 +174,7 @@ class PixivApiClient(
 
     suspend fun userDetail(session: PixivSession, userId: Long): UserProfile {
         val body = Request.Builder()
-            .url("https://app-api.pixiv.net/v1/user/detail?user_id=$userId&filter=for_android")
+            .url(pixivApiUrl("v1/user/detail", "user_id" to userId.toString(), "filter" to "for_android"))
             .pixivApiHeaders(session)
             .get()
             .build()
@@ -171,7 +199,7 @@ class PixivApiClient(
 
     suspend fun illustDetail(session: PixivSession, illustId: Long): Illust {
         val body = Request.Builder()
-            .url("https://app-api.pixiv.net/v1/illust/detail?illust_id=$illustId&filter=for_android")
+            .url(pixivApiUrl("v1/illust/detail", "illust_id" to illustId.toString(), "filter" to "for_android"))
             .pixivApiHeaders(session)
             .get()
             .build()
@@ -185,7 +213,10 @@ class PixivApiClient(
     }
 
     suspend fun relatedIllusts(session: PixivSession, illustId: Long): PageResult<Illust> {
-        return getIllustPage(session, "https://app-api.pixiv.net/v2/illust/related?illust_id=$illustId&filter=for_android")
+        return getIllustPage(
+            session,
+            pixivApiUrl("v2/illust/related", "illust_id" to illustId.toString(), "filter" to "for_android"),
+        )
     }
 
     suspend fun followUser(session: PixivSession, userId: Long, restrict: Restrict) {
@@ -210,7 +241,15 @@ class PixivApiClient(
     }
 
     suspend fun userIllusts(session: PixivSession, userId: Long): PageResult<Illust> {
-        return getIllustPage(session, "https://app-api.pixiv.net/v1/user/illusts?user_id=$userId&type=illust&filter=for_android")
+        return getIllustPage(
+            session,
+            pixivApiUrl(
+                "v1/user/illusts",
+                "user_id" to userId.toString(),
+                "type" to "illust",
+                "filter" to "for_android",
+            ),
+        )
     }
 
     suspend fun bookmarks(
@@ -220,12 +259,17 @@ class PixivApiClient(
     ): PageResult<Illust> {
         return getIllustPage(
             session,
-            "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=$userId&restrict=${restrict.apiValue}&filter=for_android",
+            pixivApiUrl(
+                "v1/user/bookmarks/illust",
+                "user_id" to userId.toString(),
+                "restrict" to restrict.apiValue,
+                "filter" to "for_android",
+            ),
         )
     }
 
     suspend fun nextIllustPage(session: PixivSession, nextUrl: String): PageResult<Illust> {
-        return getIllustPage(session, nextUrl)
+        return getIllustPage(session, nextUrl.toHttpUrl())
     }
 
     suspend fun addBookmark(session: PixivSession, illustId: Long, restrict: Restrict) {
@@ -249,7 +293,7 @@ class PixivApiClient(
         )
     }
 
-    private suspend fun getIllustPage(session: PixivSession, url: String): PageResult<Illust> {
+    private suspend fun getIllustPage(session: PixivSession, url: HttpUrl): PageResult<Illust> {
         val body = Request.Builder()
             .url(url)
             .pixivApiHeaders(session)
@@ -276,5 +320,16 @@ class PixivApiClient(
             .let { httpClient.newCall(it).awaitBody() }
     }
 
-    private fun String.encodeUrl(): String = URLEncoder.encode(this, Charsets.UTF_8.name())
+    private fun pixivApiUrl(path: String, vararg queryParameters: Pair<String, String?>): HttpUrl {
+        return HttpUrl.Builder()
+            .scheme("https")
+            .host("app-api.pixiv.net")
+            .addPathSegments(path)
+            .apply {
+                queryParameters.forEach { (name, value) ->
+                    value?.let { addQueryParameter(name, it) }
+                }
+            }
+            .build()
+    }
 }
