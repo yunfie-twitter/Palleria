@@ -190,8 +190,10 @@ private fun FeedTabContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                StateBanner(loadState)
+            if (items.isEmpty() && loadState == LoadState.Loading) {
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
 
             if (items.isEmpty() && loadState == LoadState.Idle) {
@@ -274,8 +276,10 @@ private fun FollowingTabContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                StateBanner(loadState)
+            if (items.isEmpty() && loadState == LoadState.Loading) {
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
 
             if (items.isEmpty() && loadState != LoadState.Loading) {

@@ -4,10 +4,21 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
@@ -15,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +43,75 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.squircle.squircleSurface
+
+@Composable
+fun IllustCardSkeleton(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "illustSkeleton")
+    val shimmer by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "illustSkeletonShimmer",
+    )
+    val base = MiuixTheme.colorScheme.surfaceContainer
+    val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(base, highlight, base),
+        start = Offset(shimmer * 500f, 0f),
+        end = Offset(shimmer * 500f + 260f, 500f),
+    )
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.75f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(shimmerBrush),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Box(Modifier.fillMaxWidth(0.82f).height(14.dp).clip(CircleShape).background(shimmerBrush))
+                Box(Modifier.fillMaxWidth(0.56f).height(10.dp).clip(CircleShape).background(shimmerBrush))
+            }
+            Box(Modifier.size(28.dp).clip(CircleShape).background(shimmerBrush))
+        }
+    }
+}
+
+@Composable
+fun IllustGridSkeleton(
+    columns: Int,
+    modifier: Modifier = Modifier,
+    itemCount: Int = 6,
+    contentPadding: PaddingValues = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns.coerceAtLeast(1)),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = contentPadding,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        userScrollEnabled = false,
+    ) {
+        items(itemCount, contentType = { "illust_skeleton" }) {
+            IllustCardSkeleton()
+        }
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

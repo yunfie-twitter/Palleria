@@ -241,8 +241,12 @@ private fun BookmarkMainTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
-            if (bookmarkItems.isEmpty()) {
+            if (bookmarkItems.isEmpty() && loadState == LoadState.Loading) {
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+            }
+            if (bookmarkItems.isEmpty() && loadState != LoadState.Loading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_empty))
                 }
@@ -288,7 +292,11 @@ private fun BookmarkTimelineTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+            if (timelineItems.isEmpty() && loadState == LoadState.Loading) {
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+            }
             if (timelineItems.isEmpty() && loadState != LoadState.Loading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_following_empty))

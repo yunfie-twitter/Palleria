@@ -35,6 +35,7 @@ import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -160,8 +161,10 @@ fun FavoriteTagsScreen(
 
                 // ── 検索結果 ──────────────────────────────────
                 if (selectedTag != null) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        StateBanner(state.loadState)
+                    if (state.watchlistItems.isEmpty() && state.loadState == LoadState.Loading) {
+                        items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+                    } else {
+                        item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(state.loadState) }
                     }
 
                     val currentSelectedTag = selectedTag

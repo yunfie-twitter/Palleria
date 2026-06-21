@@ -216,7 +216,7 @@ private fun SearchResultsArea(
             modifier = Modifier.fillMaxSize()
         ) {
             if (state.loadState == LoadState.Loading && state.searchItems.isEmpty() && state.userSearchItems.isEmpty()) {
-                CenteredLoadingIndicator()
+                IllustGridSkeleton(columns = adaptiveIllustColumns(state.settings))
             } else {
                 HorizontalPager(state = resultPagerState, modifier = Modifier.fillMaxSize()) { page ->
                     SearchResultGrid(page = page, state = state, viewModel = viewModel)
