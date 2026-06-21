@@ -42,11 +42,19 @@ jobs:
       - name: Get Version Info
         id: version
         run: |
-          VERSION_NAME=$(./gradlew :app:properties -q | grep "^versionName:" | awk '{print $2}')
-          VERSION_CODE=$(./gradlew :app:properties -q | grep "^versionCode:" | awk '{print $2}')
+          # Use grep and sed to extract versions directly from build.gradle for robustness
+          VERSION_NAME=$(grep "versionName" app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
+          VERSION_CODE=$(grep "versionCode" app/build.gradle | head -n 1 | awk '{print $NF}')
+          
+          if [ -z "$VERSION_NAME" ]; then
+            # Fallback for different quoting styles
+            VERSION_NAME=$(grep "versionName" app/build.gradle | head -n 1 | awk -F"'" '{print $2}')
+          fi
+          
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION_NAME ($VERSION_CODE)"
 
       - name: Create and Push Tag
         if: github.ref == 'refs/heads/main'
