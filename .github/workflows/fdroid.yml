@@ -56,7 +56,7 @@ jobs:
           cd fdroid
           # 最小限のconfig.ymlを作成
           cat <<EOF > config.yml
-          repo_url: https://yunfie-twitter.github.io/Illustia-dev/
+          repo_url: https://yunfie-twitter.github.io/Illustia-dev/repo
           repo_name: Illustia Dev Repository
           repo_description: Development builds for Illustia
           
@@ -66,15 +66,17 @@ jobs:
           keypass: ${{ secrets.RELEASE_KEY_PASSWORD }}
           keyalias: ${{ secrets.RELEASE_KEY_ALIAS }}
           EOF
+          chmod 600 config.yml
           
           # インデックス(index-v1.jar等)を生成
           fdroid update --create-metadata
+          rm config.yml
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./fdroid/repo
+          publish_dir: ./fdroid
           publish_branch: gh-pages
           force_orphan: true
 
