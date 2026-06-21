@@ -1,0 +1,115 @@
+{
+  "repo": {
+    "name": {
+      "en-US": "Illustia Dev Repository"
+    },
+    "description": {
+      "en-US": "Development builds for Illustia"
+    },
+    "icon": {
+      "en-US": {
+        "name": "/icons/icon.png",
+        "sha256": "c27a256803e2d5db792fbc3562fbd321566e48c208bc3f7a8ceb08c800985a8e",
+        "size": 837
+      }
+    },
+    "address": "https://yunfie-twitter.github.io/Illustia-dev/repo",
+    "timestamp": 1782051652000,
+    "categories": {
+      "Graphics": {
+        "name": {
+          "en-US": "Graphics"
+        }
+      },
+      "Multimedia": {
+        "name": {
+          "en-US": "Multimedia"
+        }
+      }
+    }
+  },
+  "packages": {
+    "com.yunfie.illustia": {
+      "metadata": {
+        "added": 1782051652000,
+        "categories": [
+          "Multimedia",
+          "Graphics"
+        ],
+        "issueTracker": "https://github.com/yunfie-twitter/Illustia-dev/issues",
+        "lastUpdated": 1782051652000,
+        "license": "GPL-3.0-only",
+        "sourceCode": "https://github.com/yunfie-twitter/Illustia-dev",
+        "webSite": "https://github.com/yunfie-twitter/Illustia-dev",
+        "authorName": "ゆんふぃ",
+        "name": {
+          "en-US": "Palleria"
+        },
+        "summary": {
+          "en-US": "Pixivのイラスト・漫画・作品を快適に閲覧できる、シンプルで使いやすい非公式クライアントです。"
+        },
+        "description": {
+          "en-US": "Pixivのイラスト・漫画・作品を快適に閲覧できる、シンプルで使いやすい非公式クライアントです。\n\n主な機能:\n- イラスト・漫画の閲覧\n- おすすめ・ランキング・新着フィード\n- 強力な検索機能（タグ・ユーザー）\n- ブックマーク管理\n- 画像保存機能\n\nPixiv Anti-Feature: Non-Free Network Services"
+        },
+        "preferredSigner": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+      },
+      "versions": {
+        "c1bb3d6dfa4d07d68c8f072ee5023706b879ed3d02d8a8b6edf633acc0af0904": {
+          "added": 1782051652000,
+          "file": {
+            "name": "/Illustia-v1.0.0-release.apk",
+            "sha256": "c1bb3d6dfa4d07d68c8f072ee5023706b879ed3d02d8a8b6edf633acc0af0904",
+            "size": 5391279
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi-v7a",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "1.0.0",
+            "versionCode": 1,
+            "usesSdk": {
+              "minSdkVersion": 33,
+              "targetSdkVersion": 36
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {}
+          }
+        }
+      }
+    }
+  }
+}
