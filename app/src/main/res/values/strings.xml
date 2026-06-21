@@ -1,0 +1,381 @@
+<resources>
+    <string name="app_name">Palleria</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">ホーム</string>
+    <string name="nav_ranking">ランキング</string>
+    <string name="nav_bookmarks">ブクマ</string>
+    <string name="nav_bookmarks_full">ブックマーク</string>
+    <string name="nav_search">検索</string>
+    <string name="nav_more">もっと見る</string>
+
+    <!-- Common actions -->
+    <string name="action_save">保存</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_delete">削除</string>
+    <string name="action_close">閉じる</string>
+    <string name="action_follow">フォロー</string>
+    <string name="action_following">フォロー中</string>
+    <string name="action_unfollow">フォロー解除</string>
+    <string name="action_bookmark">ブックマークに追加</string>
+    <string name="action_remove_bookmark">ブックマーク解除</string>
+    <string name="action_share">共有</string>
+    <string name="action_download">ダウンロード</string>
+    <string name="action_load_more">さらに読み込む</string>
+    <string name="action_view_all">すべて見る</string>
+    <string name="action_show">表示する</string>
+    <string name="action_add">追加</string>
+    <string name="active">アクティブ</string>
+
+    <!-- Home screen -->
+    <string name="home_tab_feed">フィード</string>
+    <string name="home_tab_following">フォロー中</string>
+    <string name="home_feed_loading">ホームフィードを読み込んでいます</string>
+    <string name="home_following_empty">フォロー中ユーザーの最新作が表示されます</string>
+
+    <!-- Enum labels -->
+    <string name="feed_recommended">おすすめ</string>
+    <string name="feed_ranking">ランキング</string>
+    <string name="feed_new">新着</string>
+    <string name="restrict_public">公開</string>
+    <string name="restrict_private">非公開</string>
+    <string name="sort_date_desc">新着順</string>
+    <string name="sort_date_asc">古い順</string>
+    <string name="sort_popular_desc">人気順</string>
+    <string name="sort_name_asc">名前順</string>
+    <string name="search_target_tags">タグ</string>
+    <string name="search_target_exact">完全一致</string>
+    <string name="search_target_title">本文</string>
+    <string name="duration_all">全期間</string>
+    <string name="duration_24h">24時間</string>
+    <string name="duration_1week">1週間</string>
+    <string name="duration_1month">1か月</string>
+    <string name="bookmark_filter_none">指定なし</string>
+    <string name="bookmark_filter_100">100+</string>
+    <string name="bookmark_filter_500">500+</string>
+    <string name="bookmark_filter_1000">1000+</string>
+    <string name="bookmark_filter_5000">5000+</string>
+
+    <!-- Search screen -->
+    <string name="search_tab_illust">イラスト</string>
+    <string name="search_tab_user">ユーザー</string>
+    <string name="search_options">検索オプション</string>
+    <string name="search_sort_order">並び順</string>
+    <string name="search_target">検索対象</string>
+    <string name="search_duration">期間</string>
+    <string name="search_bookmark_count">ブックマーク数</string>
+    <string name="search_users">ユーザー検索</string>
+    <string name="search_placeholder">作品名またはユーザ名で検索</string>
+    <string name="search_history">検索履歴</string>
+    <string name="search_suggest">サジェスト</string>
+    <string name="search_empty_illust">イラストが見つかりません</string>
+    <string name="search_empty_user">ユーザーが見つかりません</string>
+    <string name="search_recent_viewed">最近見た作品</string>
+    <string name="search_recommended_tags">おすすめのタグ</string>
+
+    <!-- Bookmark screen -->
+    <string name="bookmark_tab_timeline">タイムライン</string>
+    <string name="bookmark_tab_bookmarks">ブックマーク</string>
+    <string name="bookmark_tab_watchlist">Watchlist</string>
+    <string name="bookmark_tab_following">フォロー中</string>
+    <string name="bookmark_empty">ブックマークはまだありません</string>
+    <string name="bookmark_following_empty">フォロー中ユーザーの作品はまだありません</string>
+    <string name="watchlist_empty">検索結果の保存ボタンからタグを追加できます</string>
+    <string name="following_users_empty">フォロー中のユーザーはいません</string>
+
+    <!-- Favorite tags screen -->
+    <string name="favorite_tags_title">お気に入りタグ</string>
+    <string name="favorite_tags_empty">検索画面で ☆ ボタンを押してタグを追加できます</string>
+    <string name="favorite_tags_no_selection">タグ未選択</string>
+    <string name="favorite_tags_delete_title">タグを削除</string>
+    <string name="favorite_tags_delete_confirm">「#%1$s」をお気に入りから削除しますか？</string>
+    <string name="favorite_tags_works_not_found">「#%1$s」の作品が見つかりません</string>
+
+    <!-- Illust detail screen -->
+    <string name="detail_save_image_title">画像を保存</string>
+    <string name="detail_save_image_confirm">この画像をPalleriaフォルダへ保存します。</string>
+    <string name="detail_unfollow_title">フォローを解除</string>
+    <string name="detail_unfollow_confirm">%1$s さんのフォローを解除しますか？</string>
+    <string name="detail_open_in_browser">ブラウザで開く</string>
+    <string name="detail_share">シェア</string>
+    <string name="detail_save_image">画像を保存</string>
+    <string name="detail_save_all_pages">全ページを保存</string>
+    <string name="detail_copy_url">URLをコピー</string>
+    <string name="detail_mute_work">この作品をミュート</string>
+    <string name="detail_mute_artist">作者をミュート</string>
+    <string name="detail_more">その他</string>
+    <string name="detail_muted_artist">ミュート中の作者です</string>
+    <string name="detail_muted_artist_blur">%1$s さんの作品をぼかしています。</string>
+    <string name="detail_muted_artist_blur_default">この作者</string>
+    <string name="detail_unmute">ミュート解除</string>
+    <string name="detail_no_caption">キャプションはありません</string>
+    <string name="detail_related">関連イラスト</string>
+    <string name="detail_illust_id">イラスト ID</string>
+    <string name="detail_resolution">解像度</string>
+
+    <!-- Image viewer screen -->
+    <string name="viewer_share_failed">共有を開始できませんでした。</string>
+
+    <!-- More screen -->
+    <string name="more_settings">設定</string>
+    <string name="more_settings_summary">表示と保存の調整</string>
+    <string name="more_view_history">閲覧履歴</string>
+    <string name="more_favorite_tags">お気に入りタグ</string>
+    <string name="more_mute_settings">ミュート設定</string>
+    <string name="more_save_progress">保存処理</string>
+    <string name="more_save_progress_saving">保存中 %1$d件</string>
+    <string name="more_save_progress_idle">待機中</string>
+    <string name="more_app_data">アプリのデータ</string>
+    <string name="more_app_data_summary">履歴と保存データ</string>
+    <string name="more_about">Palleria について</string>
+    <string name="more_not_logged_in">未ログイン</string>
+    <string name="more_logged_in_account">ログイン中アカウント</string>
+    <string name="more_login_prompt">設定からログインしてください</string>
+    <string name="more_connected_pixiv">Pixiv に接続済み</string>
+    <string name="more_saving_message">画像を保存中です。%1$d/%2$d</string>
+    <string name="more_no_background_task">現在進行中のバックグラウンド処理はありません。</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">設定</string>
+    <string name="settings_general">一般設定</string>
+    <string name="settings_general_summary">表示・操作・起動</string>
+    <string name="settings_image">画像設定</string>
+    <string name="settings_image_summary">画質・レイアウト・プロキシ</string>
+    <string name="settings_bookmark">ブックマーク設定</string>
+    <string name="settings_bookmark_summary">保存・確認</string>
+    <string name="settings_account">アカウント</string>
+    <string name="settings_data">データ管理</string>
+    <string name="settings_logged_in">ログイン中</string>
+    <string name="settings_not_logged_in">未ログイン</string>
+
+    <!-- General settings screen -->
+    <string name="general_settings_title">一般設定</string>
+    <string name="general_section_display">表示</string>
+    <string name="general_section_interaction">操作</string>
+    <string name="general_section_startup">起動</string>
+    <string name="general_language">アプリの言語</string>
+    <string name="general_language_desc">Palleria の表示言語と Pixiv API の言語を切り替えます</string>
+    <string name="general_r18">R-18コンテンツを表示</string>
+    <string name="general_r18_desc">不適切な表現を含む作品を表示します</string>
+    <string name="general_ai_badge">AIバッジ</string>
+    <string name="general_ai_badge_desc">AI関連タグを含む作品に小さなバッジを表示します</string>
+    <string name="general_smooth">スムーズなアニメーション</string>
+    <string name="general_smooth_desc">画面遷移やリスト表示を滑らかにします</string>
+    <string name="general_notch">ノッチ最適化</string>
+    <string name="general_notch_desc">ステータスバー領域の表示を調整します</string>
+    <string name="general_swipe">タブのスワイプ切替</string>
+    <string name="general_swipe_desc">左右スワイプで主要画面を移動します</string>
+    <string name="general_double_back">ダブルバックで終了</string>
+    <string name="general_double_back_desc">ホーム画面で戻るを2回押すとアプリを終了します</string>
+    <string name="general_secure">セキュアウィンドウ</string>
+    <string name="general_secure_desc">スクリーンショットと画面録画を制限します</string>
+    <string name="general_startup_screen">最初に開く画面</string>
+    <string name="general_startup_screen_desc">アプリ起動時のタブを選びます</string>
+
+    <!-- Image settings screen -->
+    <string name="image_settings_title">画像設定</string>
+    <string name="image_section_quality">画質</string>
+    <string name="image_section_layout">レイアウト</string>
+    <string name="image_viewer_thumbnails_in_toolbar">ツールバー内にサムネイルを表示</string>
+    <string name="image_viewer_thumbnails_in_toolbar_desc">オフにすると拡大画面のツールバー上部へ分けて表示します</string>
+    <string name="image_section_proxy">プロキシ</string>
+    <string name="image_high_quality">高品質な画像を使用</string>
+    <string name="image_high_quality_desc">モバイルデータ通信量が増加する可能性があります</string>
+    <string name="image_prefetch">画像の先読み</string>
+    <string name="image_prefetch_desc">一覧やページ移動時の表示待ちを減らします</string>
+    <string name="image_preview_quality">一覧プレビュー</string>
+    <string name="image_detail_quality">詳細画像</string>
+    <string name="image_fullscreen_quality">全画面画像</string>
+    <string name="image_simultaneous_downloads">同時保存数</string>
+    <string name="image_columns">一覧の列数</string>
+    <string name="image_columns_landscape">横画面の列数</string>
+    <string name="image_proxy_title">Pixiv画像プロキシ</string>
+    <string name="image_proxy_desc">画像ドメインを選択した公開インスタンスに置き換えます</string>
+    <string name="image_quality_high">高画質</string>
+    <string name="image_quality_medium">標準</string>
+    <string name="image_quality_low">軽量</string>
+    <string name="image_proxy_none">使用しない</string>
+    <string name="language_system">システム</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_english">English</string>
+
+    <!-- Account settings screen -->
+    <string name="account_login_status">ログイン状態</string>
+    <string name="account_status">状態</string>
+    <string name="account_logged_in">ログイン中</string>
+    <string name="account_not_logged_in">未ログイン</string>
+    <string name="account_web_login">Web ログイン</string>
+    <string name="account_token_login">Refresh Token ログイン</string>
+    <string name="account_add_title">アカウントを追加</string>
+    <string name="account_add_description">追加方法を選択してください</string>
+    <string name="account_add_web_description">Pixivのログインページを開いて、安全に認証します</string>
+    <string name="account_add_token_description">取得済みのRefresh Tokenを直接入力します</string>
+    <string name="account_add_recommended">おすすめ</string>
+    <string name="account_logout">ログアウト</string>
+    <string name="account_logout_confirm_title">ログアウトしますか？</string>
+    <string name="account_logout_confirm_summary">再度ログインする必要があります。</string>
+
+    <!-- Mute settings screen -->
+    <string name="mute_settings_title">ミュート設定</string>
+    <string name="mute_section_users">ユーザー</string>
+    <string name="mute_section_works">作品</string>
+    <string name="mute_section_tags">タグ</string>
+    <string name="mute_users_empty">ミュート中のユーザーはいません</string>
+    <string name="mute_works_empty">ミュート中の作品はいません</string>
+    <string name="mute_tags_empty">ミュート中のタグはいません</string>
+
+    <!-- Data settings screen -->
+    <string name="data_settings_title">データ管理</string>
+    <string name="data_section_overview">データ概要</string>
+    <string name="data_section_transfer">バックアップと復元</string>
+    <string name="data_export">データをエクスポート</string>
+    <string name="data_import">データをインポート</string>
+    <string name="data_import_confirm_title">バックアップを復元しますか？</string>
+    <string name="data_import_confirm_desc">現在の閲覧履歴、検索履歴、Watchlistタグ、ミュート情報は、選択したファイルの内容に置き換わります。</string>
+    <string name="data_section_cleanup">整理</string>
+    <string name="data_view_history">閲覧履歴</string>
+    <string name="data_view_history_badge">端末内</string>
+    <string name="data_search_history">検索履歴</string>
+    <string name="data_search_history_badge">検索</string>
+    <string name="data_watchlist_tags">Watchlistタグ</string>
+    <string name="data_watchlist_tags_badge">タグ</string>
+    <string name="data_mute_data">ミュートデータ</string>
+    <string name="data_mute_data_badge">非表示</string>
+    <string name="data_cache">キャッシュ</string>
+    <string name="data_cache_badge">画像/一時</string>
+    <string name="data_delete_cache">キャッシュを削除</string>
+    <string name="data_delete_view_history">閲覧履歴を削除</string>
+    <string name="data_delete_search_history">検索履歴を削除</string>
+    <string name="data_delete_watchlist_tags">Watchlistタグを削除</string>
+    <string name="data_delete_mute_data">ミュートデータを削除</string>
+    <string name="data_delete_cache_desc">画像や一時ファイルのキャッシュを削除します。</string>
+    <string name="data_delete_view_history_desc">保存されている閲覧履歴をすべて削除します。</string>
+    <string name="data_delete_search_history_desc">保存されている検索履歴をすべて削除します。</string>
+    <string name="data_delete_watchlist_tags_desc">Watchlistに保存したタグをすべて削除します。</string>
+    <string name="data_delete_mute_data_desc">作品、ユーザー、タグのミュート設定をすべて削除します。</string>
+    <string name="data_import_export_note">閲覧履歴、検索履歴、Watchlistタグ、ミュート情報をJSONファイルで移行できます。アカウント情報は含まれません。</string>
+    <string name="data_items_count">%1$d件</string>
+    <string name="data_columns_count">%1$d列</string>
+
+    <!-- App data screen -->
+    <string name="app_data_title">アプリのデータ</string>
+    <string name="app_data_section_overview">概要</string>
+
+    <!-- About screen -->
+    <string name="about_title">Palleria について</string>
+    <string name="about_version">バージョン %1$s</string>
+    <string name="about_tagline">Pixivイラスト専用ビューアー</string>
+    <string name="about_section_info">情報</string>
+    <string name="about_section_links">リンク</string>
+    <string name="about_section_libraries">使用ライブラリ</string>
+    <string name="about_version_label">バージョン</string>
+    <string name="about_latest">最新</string>
+    <string name="about_supported_os">対応OS</string>
+    <string name="about_license">ライセンス</string>
+    <string name="about_open_source">オープンソース</string>
+    <string name="about_github">GitHub リポジトリ</string>
+    <string name="about_pixiv">Pixiv 公式サイト</string>
+    <string name="about_disclaimer">本アプリはPixiv公式とは無関係です。</string>
+
+    <!-- Login / Onboarding -->
+    <string name="login_button">ログイン</string>
+    <string name="login_no_account">アカウントをお持ちではありませんか？</string>
+    <string name="login_title">ログイン</string>
+    <string name="login_web_button">Pixiv Webログイン</string>
+    <string name="login_terms">利用規約</string>
+    <string name="login_token_title">Refresh Tokenログイン</string>
+    <string name="login_token_button">Refresh Tokenでログイン</string>
+
+    <!-- Account switch sheet -->
+    <string name="account_switch_title">アカウント切り替え</string>
+    <string name="account_switch_add">アカウントを追加</string>
+
+    <!-- IllustiaApp.kt dialogs -->
+    <string name="dialog_relogin_title">再ログインが必要です</string>
+    <string name="dialog_relogin_summary">Pixiv の認証が切れました。もう一度ログインしてください。</string>
+    <string name="dialog_relogin_button">再ログイン</string>
+    <string name="dialog_unbookmark_title">ブックマークを解除</string>
+    <string name="dialog_unbookmark_confirm">「%1$s」をブックマークから外しますか？</string>
+    <string name="dialog_work_options">作品オプション</string>
+    <string name="dialog_artist_label">作者: %1$s</string>
+    <string name="dialog_show_detail">詳細を表示</string>
+    <string name="dialog_pixiv_login">Pixivログイン</string>
+    <string name="dialog_mute">ミュートする</string>
+    <string name="dialog_reload">再読み込み</string>
+
+    <!-- IllustComponents -->
+    <string name="illust_load_more">続きを読み込む</string>
+
+    <!-- Toast / Snackbar messages -->
+    <string name="msg_pixiv_connected">Pixiv に接続しました。</string>
+    <string name="msg_web_login_complete">Pixiv Webログインが完了しました。</string>
+    <string name="msg_logged_out">ログアウトしました。</string>
+    <string name="msg_shared_image_received">共有画像を受け取りました。画像からの検索はまだ未対応です。</string>
+    <string name="msg_watchlist_tags_deleted">Watchlistタグを削除しました。</string>
+    <string name="msg_mute_data_deleted">ミュートデータを削除しました。</string>
+    <string name="msg_watchlist_tag_added">#%1$s をWatchlistに追加しました。</string>
+    <string name="msg_watchlist_tag_removed">#%1$s をWatchlistから外しました。</string>
+    <string name="msg_image_saving">画像を保存中… (%1$d/%2$d)</string>
+    <string name="msg_image_saved">画像を保存しました。</string>
+    <string name="msg_no_saveable_images">保存できる画像がありません。</string>
+    <string name="msg_save_started">%1$dページの保存を開始しました。</string>
+    <string name="msg_cache_deleted">キャッシュを削除しました。</string>
+    <string name="msg_bookmark_added">ブックマークに追加しました</string>
+    <string name="msg_bookmark_removed">ブックマークを解除しました</string>
+    <string name="msg_url_copied">URLをコピーしました。</string>
+    <string name="msg_double_back_exit">もう一度戻ると終了します</string>
+    <string name="msg_data_exported">データをエクスポートしました。</string>
+    <string name="msg_data_imported">データをインポートしました。</string>
+
+    <!-- Error messages (user-facing) -->
+    <string name="error_save_failed">保存に失敗しました。</string>
+    <string name="error_pixiv_user_id_not_set">自分の Pixiv User ID を設定してください。</string>
+    <string name="error_generic">処理に失敗しました。</string>
+    <string name="error_cache_delete_failed">キャッシュ削除に失敗しました。</string>
+    <string name="error_bookmark_failed">ブックマーク操作に失敗しました。</string>
+    <string name="error_browser_failed">ブラウザを開けませんでした。</string>
+    <string name="error_share_failed">シェアできませんでした。</string>
+    <string name="error_load_detail_failed">詳細の追加情報を読み込めませんでした。</string>
+    <string name="error_load_artist_failed">作者情報を読み込めませんでした。</string>
+    <string name="error_data_export_failed">データをエクスポートできませんでした。</string>
+    <string name="error_data_import_failed">ファイルを読み込めませんでした。Illustiaのバックアップファイルを選択してください。</string>
+
+    <!-- Ranking modes -->
+    <string name="ranking_day">デイリー</string>
+    <string name="ranking_day_male">男性</string>
+    <string name="ranking_day_female">女性</string>
+    <string name="ranking_week">週間</string>
+    <string name="ranking_month">月間</string>
+    <string name="ranking_week_rookie">新人</string>
+    <string name="ranking_day_ai">AI</string>
+
+    <!-- Bookmark settings screen labels -->
+    <string name="bookmark_section_behavior">基本動作</string>
+    <string name="bookmark_private_default">非公開を標準にする</string>
+    <string name="bookmark_private_default_desc">ブックマーク追加時に非公開で保存します</string>
+    <string name="bookmark_follow_on_like">ブックマーク時にフォロー</string>
+    <string name="bookmark_follow_on_like_desc">作品を保存した作者を自動でフォローします</string>
+    <string name="bookmark_auto_tag">ブックマーク時にタグ保存</string>
+    <string name="bookmark_auto_tag_desc">作品タグをWatchlist候補へ追加します</string>
+    <string name="bookmark_section_sync">保存連動</string>
+    <string name="bookmark_download_on_bookmark">ブックマーク時に保存</string>
+    <string name="bookmark_download_on_bookmark_desc">ブックマーク追加と同時に画像を端末へ保存します</string>
+    <string name="bookmark_bookmark_on_download">保存時にブックマーク</string>
+    <string name="bookmark_bookmark_on_download_desc">詳細画面から保存した作品を自動でブックマークします</string>
+    <string name="bookmark_section_confirm">確認</string>
+
+    <string name="bookmark_settings_title">ブックマーク設定</string>
+    <string name="bookmark_confirm_on_long_press">長押しで確認</string>
+    <string name="bookmark_confirm_on_long_press_desc">イラストカードの長押し保存時に確認ダイアログを表示します</string>
+    <string name="bookmark_skip_confirm_on_detail">詳細画面で確認をスキップ</string>
+    <string name="bookmark_skip_confirm_on_detail_desc">詳細画面からの保存時に確認ダイアログをスキップします</string>
+
+    <string name="user_tab_works">作品</string>
+    <string name="user_tab_bookmarks">ブックマーク</string>
+    <string name="user_tab_info">情報</string>
+    <string name="user_id_label">ユーザーID</string>
+    <string name="action_not_followed">未フォロー</string>
+    <string name="action_sort">並べ替え</string>
+    <string name="account_remove_title">アカウントを削除</string>
+    <string name="account_remove_summary">「%1$s」をこの端末から削除しますか？</string>
+</resources>

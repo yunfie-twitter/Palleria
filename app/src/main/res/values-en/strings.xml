@@ -1,0 +1,381 @@
+<resources>
+    <string name="app_name">Palleria</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_ranking">Ranking</string>
+    <string name="nav_bookmarks">Bookmarks</string>
+    <string name="nav_bookmarks_full">Bookmarks</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_more">More</string>
+
+    <!-- Common actions -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_close">Close</string>
+    <string name="action_follow">Follow</string>
+    <string name="action_following">Following</string>
+    <string name="action_unfollow">Unfollow</string>
+    <string name="action_bookmark">Add Bookmark</string>
+    <string name="action_remove_bookmark">Remove Bookmark</string>
+    <string name="action_share">Share</string>
+    <string name="action_download">Download</string>
+    <string name="action_load_more">Load More</string>
+    <string name="action_view_all">View All</string>
+    <string name="action_show">Show</string>
+    <string name="action_add">Add</string>
+    <string name="active">Active</string>
+
+    <!-- Home screen -->
+    <string name="home_tab_feed">Feed</string>
+    <string name="home_tab_following">Following</string>
+    <string name="home_feed_loading">Loading home feed</string>
+    <string name="home_following_empty">Latest works from followed users will appear here</string>
+
+    <!-- Enum labels -->
+    <string name="feed_recommended">Recommended</string>
+    <string name="feed_ranking">Ranking</string>
+    <string name="feed_new">New</string>
+    <string name="restrict_public">Public</string>
+    <string name="restrict_private">Private</string>
+    <string name="sort_date_desc">Newest</string>
+    <string name="sort_date_asc">Oldest</string>
+    <string name="sort_popular_desc">Popular</string>
+    <string name="sort_name_asc">Name</string>
+    <string name="search_target_tags">Tags</string>
+    <string name="search_target_exact">Exact Match</string>
+    <string name="search_target_title">Title &amp; Caption</string>
+    <string name="duration_all">All Time</string>
+    <string name="duration_24h">24 Hours</string>
+    <string name="duration_1week">1 Week</string>
+    <string name="duration_1month">1 Month</string>
+    <string name="bookmark_filter_none">None</string>
+    <string name="bookmark_filter_100">100+</string>
+    <string name="bookmark_filter_500">500+</string>
+    <string name="bookmark_filter_1000">1000+</string>
+    <string name="bookmark_filter_5000">5000+</string>
+
+    <!-- Search screen -->
+    <string name="search_tab_illust">Illustrations</string>
+    <string name="search_tab_user">Users</string>
+    <string name="search_options">Search Options</string>
+    <string name="search_sort_order">Sort Order</string>
+    <string name="search_target">Search Target</string>
+    <string name="search_duration">Duration</string>
+    <string name="search_bookmark_count">Bookmark Count</string>
+    <string name="search_users">User Search</string>
+    <string name="search_placeholder">Search by title or username</string>
+    <string name="search_history">Search History</string>
+    <string name="search_suggest">Suggestions</string>
+    <string name="search_empty_illust">No illustrations found</string>
+    <string name="search_empty_user">No users found</string>
+    <string name="search_recent_viewed">Recently Viewed</string>
+    <string name="search_recommended_tags">Recommended Tags</string>
+
+    <!-- Bookmark screen -->
+    <string name="bookmark_tab_timeline">Timeline</string>
+    <string name="bookmark_tab_bookmarks">Bookmarks</string>
+    <string name="bookmark_tab_watchlist">Watchlist</string>
+    <string name="bookmark_tab_following">Following</string>
+    <string name="bookmark_empty">No bookmarks</string>
+    <string name="bookmark_following_empty">No works from followed users</string>
+    <string name="watchlist_empty">Add tags from the save button in search results</string>
+    <string name="following_users_empty">No followed users</string>
+
+    <!-- Favorite tags screen -->
+    <string name="favorite_tags_title">Favorite Tags</string>
+    <string name="favorite_tags_empty">Tap the ☆ button on the search screen to add tags</string>
+    <string name="favorite_tags_no_selection">No tag selected</string>
+    <string name="favorite_tags_delete_title">Delete Tag</string>
+    <string name="favorite_tags_delete_confirm">Remove \"#%1$s\" from favorites?</string>
+    <string name="favorite_tags_works_not_found">No works found for \"#%1$s\"</string>
+
+    <!-- Illust detail screen -->
+    <string name="detail_save_image_title">Save Image</string>
+    <string name="detail_save_image_confirm">Save this image to the Palleria folder.</string>
+    <string name="detail_unfollow_title">Unfollow</string>
+    <string name="detail_unfollow_confirm">Unfollow %1$s?</string>
+    <string name="detail_open_in_browser">Open in Browser</string>
+    <string name="detail_share">Share</string>
+    <string name="detail_save_image">Save Image</string>
+    <string name="detail_save_all_pages">Save All Pages</string>
+    <string name="detail_copy_url">Copy URL</string>
+    <string name="detail_mute_work">Mute This Work</string>
+    <string name="detail_mute_artist">Mute This Artist</string>
+    <string name="detail_more">More</string>
+    <string name="detail_muted_artist">Muted Artist</string>
+    <string name="detail_muted_artist_blur">Works by %1$s are blurred.</string>
+    <string name="detail_muted_artist_blur_default">this artist</string>
+    <string name="detail_unmute">Unmute</string>
+    <string name="detail_no_caption">No caption</string>
+    <string name="detail_related">Related Works</string>
+    <string name="detail_illust_id">Illust ID</string>
+    <string name="detail_resolution">Resolution</string>
+
+    <!-- Image viewer screen -->
+    <string name="viewer_share_failed">Could not start sharing.</string>
+
+    <!-- More screen -->
+    <string name="more_settings">Settings</string>
+    <string name="more_settings_summary">Display &amp; Save Options</string>
+    <string name="more_view_history">View History</string>
+    <string name="more_favorite_tags">Favorite Tags</string>
+    <string name="more_mute_settings">Mute Settings</string>
+    <string name="more_save_progress">Save Progress</string>
+    <string name="more_save_progress_saving">Saving %1$d</string>
+    <string name="more_save_progress_idle">Idle</string>
+    <string name="more_app_data">App Data</string>
+    <string name="more_app_data_summary">History &amp; Saved Data</string>
+    <string name="more_about">About Palleria</string>
+    <string name="more_not_logged_in">Not Logged In</string>
+    <string name="more_logged_in_account">Logged In Account</string>
+    <string name="more_login_prompt">Log in from settings</string>
+    <string name="more_connected_pixiv">Connected to Pixiv</string>
+    <string name="more_saving_message">Saving images… %1$d/%2$d</string>
+    <string name="more_no_background_task">No background tasks in progress.</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_general">General</string>
+    <string name="settings_general_summary">Display, Interaction &amp; Startup</string>
+    <string name="settings_image">Image</string>
+    <string name="settings_image_summary">Quality, Layout &amp; Proxy</string>
+    <string name="settings_bookmark">Bookmark</string>
+    <string name="settings_bookmark_summary">Save &amp; Confirmation</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_data">Data Management</string>
+    <string name="settings_logged_in">Logged In</string>
+    <string name="settings_not_logged_in">Not Logged In</string>
+
+    <!-- General settings screen -->
+    <string name="general_settings_title">General Settings</string>
+    <string name="general_section_display">Display</string>
+    <string name="general_section_interaction">Interaction</string>
+    <string name="general_section_startup">Startup</string>
+    <string name="general_language">App Language</string>
+    <string name="general_language_desc">Changes both the Palleria UI language and the Pixiv API language</string>
+    <string name="general_r18">Show R-18 Content</string>
+    <string name="general_r18_desc">Display works containing mature content</string>
+    <string name="general_ai_badge">AI Badge</string>
+    <string name="general_ai_badge_desc">Show a small badge on works with AI-related tags</string>
+    <string name="general_smooth">Smooth Animations</string>
+    <string name="general_smooth_desc">Make screen transitions and list rendering smoother</string>
+    <string name="general_notch">Notch Optimization</string>
+    <string name="general_notch_desc">Adjust display in the status bar area</string>
+    <string name="general_swipe">Swipe to Switch Tabs</string>
+    <string name="general_swipe_desc">Swipe left/right to navigate between main screens</string>
+    <string name="general_double_back">Double Back to Exit</string>
+    <string name="general_double_back_desc">Press back twice on the home screen to exit the app</string>
+    <string name="general_secure">Secure Window</string>
+    <string name="general_secure_desc">Restrict screenshots and screen recording</string>
+    <string name="general_startup_screen">Startup Screen</string>
+    <string name="general_startup_screen_desc">Choose the tab to open on app launch</string>
+
+    <!-- Image settings screen -->
+    <string name="image_settings_title">Image Settings</string>
+    <string name="image_section_quality">Quality</string>
+    <string name="image_section_layout">Layout</string>
+    <string name="image_viewer_thumbnails_in_toolbar">Show thumbnails in toolbar</string>
+    <string name="image_viewer_thumbnails_in_toolbar_desc">Turn off to show them separately above the fullscreen toolbar</string>
+    <string name="image_section_proxy">Proxy</string>
+    <string name="image_high_quality">Use High Quality Images</string>
+    <string name="image_high_quality_desc">May increase mobile data usage</string>
+    <string name="image_prefetch">Prefetch Images</string>
+    <string name="image_prefetch_desc">Reduce loading time when browsing lists and pages</string>
+    <string name="image_preview_quality">List Preview</string>
+    <string name="image_detail_quality">Detail Image</string>
+    <string name="image_fullscreen_quality">Fullscreen Image</string>
+    <string name="image_simultaneous_downloads">Simultaneous Downloads</string>
+    <string name="image_columns">Grid Columns</string>
+    <string name="image_columns_landscape">Landscape Columns</string>
+    <string name="image_proxy_title">Pixiv Image Proxy</string>
+    <string name="image_proxy_desc">Replace image domain with a selected public instance</string>
+    <string name="image_quality_high">High</string>
+    <string name="image_quality_medium">Medium</string>
+    <string name="image_quality_low">Low</string>
+    <string name="image_proxy_none">None</string>
+    <string name="language_system">System</string>
+    <string name="language_japanese">Japanese</string>
+    <string name="language_english">English</string>
+
+    <!-- Account settings screen -->
+    <string name="account_login_status">Login Status</string>
+    <string name="account_status">Status</string>
+    <string name="account_logged_in">Logged In</string>
+    <string name="account_not_logged_in">Not Logged In</string>
+    <string name="account_web_login">Web Login</string>
+    <string name="account_token_login">Refresh Token Login</string>
+    <string name="account_add_title">Add Account</string>
+    <string name="account_add_description">Choose how you want to add an account</string>
+    <string name="account_add_web_description">Sign in securely through the Pixiv login page</string>
+    <string name="account_add_token_description">Enter a Refresh Token you already obtained</string>
+    <string name="account_add_recommended">Recommended</string>
+    <string name="account_logout">Log Out</string>
+    <string name="account_logout_confirm_title">Log out?</string>
+    <string name="account_logout_confirm_summary">You will need to log in again.</string>
+
+    <!-- Mute settings screen -->
+    <string name="mute_settings_title">Mute Settings</string>
+    <string name="mute_section_users">Users</string>
+    <string name="mute_section_works">Works</string>
+    <string name="mute_section_tags">Tags</string>
+    <string name="mute_users_empty">No muted users</string>
+    <string name="mute_works_empty">No muted works</string>
+    <string name="mute_tags_empty">No muted tags</string>
+
+    <!-- Data settings screen -->
+    <string name="data_settings_title">Data Management</string>
+    <string name="data_section_overview">Overview</string>
+    <string name="data_section_transfer">Backup &amp; Restore</string>
+    <string name="data_export">Export Data</string>
+    <string name="data_import">Import Data</string>
+    <string name="data_import_confirm_title">Restore this backup?</string>
+    <string name="data_import_confirm_desc">Your current view history, search history, Watchlist tags, and mute data will be replaced by the selected file.</string>
+    <string name="data_section_cleanup">Cleanup</string>
+    <string name="data_view_history">View History</string>
+    <string name="data_view_history_badge">Local</string>
+    <string name="data_search_history">Search History</string>
+    <string name="data_search_history_badge">Search</string>
+    <string name="data_watchlist_tags">Watchlist Tags</string>
+    <string name="data_watchlist_tags_badge">Tags</string>
+    <string name="data_mute_data">Mute Data</string>
+    <string name="data_mute_data_badge">Hidden</string>
+    <string name="data_cache">Cache</string>
+    <string name="data_cache_badge">Image/Temp</string>
+    <string name="data_delete_cache">Delete Cache</string>
+    <string name="data_delete_view_history">Delete View History</string>
+    <string name="data_delete_search_history">Delete Search History</string>
+    <string name="data_delete_watchlist_tags">Delete Watchlist Tags</string>
+    <string name="data_delete_mute_data">Delete Mute Data</string>
+    <string name="data_delete_cache_desc">Delete cached images and temporary files.</string>
+    <string name="data_delete_view_history_desc">Delete all saved view history.</string>
+    <string name="data_delete_search_history_desc">Delete all saved search history.</string>
+    <string name="data_delete_watchlist_tags_desc">Delete all tags saved to Watchlist.</string>
+    <string name="data_delete_mute_data_desc">Delete all mute settings for works, users, and tags.</string>
+    <string name="data_import_export_note">Move view history, search history, Watchlist tags, and mute data with a JSON file. Account information is never included.</string>
+    <string name="data_items_count">%1$d items</string>
+    <string name="data_columns_count">%1$d columns</string>
+
+    <!-- App data screen -->
+    <string name="app_data_title">App Data</string>
+    <string name="app_data_section_overview">Overview</string>
+
+    <!-- About screen -->
+    <string name="about_title">About Palleria</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_tagline">Dedicated Pixiv Illustration Viewer</string>
+    <string name="about_section_info">Info</string>
+    <string name="about_section_links">Links</string>
+    <string name="about_section_libraries">Libraries</string>
+    <string name="about_version_label">Version</string>
+    <string name="about_latest">Latest</string>
+    <string name="about_supported_os">Supported OS</string>
+    <string name="about_license">License</string>
+    <string name="about_open_source">Open Source</string>
+    <string name="about_github">GitHub Repository</string>
+    <string name="about_pixiv">Pixiv Official Site</string>
+    <string name="about_disclaimer">This app is not affiliated with Pixiv.</string>
+
+    <!-- Login / Onboarding -->
+    <string name="login_button">Log In</string>
+    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_title">Log In</string>
+    <string name="login_web_button">Pixiv Web Login</string>
+    <string name="login_terms">Terms of Service</string>
+    <string name="login_token_title">Refresh Token Login</string>
+    <string name="login_token_button">Log In with Refresh Token</string>
+
+    <!-- Account switch sheet -->
+    <string name="account_switch_title">Switch Account</string>
+    <string name="account_switch_add">Add Account</string>
+
+    <!-- IllustiaApp.kt dialogs -->
+    <string name="dialog_relogin_title">Re-login Required</string>
+    <string name="dialog_relogin_summary">Pixiv authentication has expired. Please log in again.</string>
+    <string name="dialog_relogin_button">Re-login</string>
+    <string name="dialog_unbookmark_title">Remove Bookmark</string>
+    <string name="dialog_unbookmark_confirm">Remove \"%1$s\" from bookmarks?</string>
+    <string name="dialog_work_options">Work Options</string>
+    <string name="dialog_artist_label">Artist: %1$s</string>
+    <string name="dialog_show_detail">Show Details</string>
+    <string name="dialog_pixiv_login">Pixiv Login</string>
+    <string name="dialog_mute">Mute</string>
+    <string name="dialog_reload">Reload</string>
+
+    <!-- IllustComponents -->
+    <string name="illust_load_more">Load More</string>
+
+    <!-- Toast / Snackbar messages -->
+    <string name="msg_pixiv_connected">Connected to Pixiv.</string>
+    <string name="msg_web_login_complete">Pixiv web login completed.</string>
+    <string name="msg_logged_out">Logged out.</string>
+    <string name="msg_shared_image_received">Received shared image. Image-based search is not yet supported.</string>
+    <string name="msg_watchlist_tags_deleted">Watchlist tags deleted.</string>
+    <string name="msg_mute_data_deleted">Mute data deleted.</string>
+    <string name="msg_watchlist_tag_added">Added #%1$s to Watchlist.</string>
+    <string name="msg_watchlist_tag_removed">Removed #%1$s from Watchlist.</string>
+    <string name="msg_image_saving">Saving images… (%1$d/%2$d)</string>
+    <string name="msg_image_saved">Image saved.</string>
+    <string name="msg_no_saveable_images">No saveable images.</string>
+    <string name="msg_save_started">Started saving %1$d pages.</string>
+    <string name="msg_cache_deleted">Cache deleted.</string>
+    <string name="msg_bookmark_added">Added to bookmarks</string>
+    <string name="msg_bookmark_removed">Removed from bookmarks</string>
+    <string name="msg_url_copied">URL copied.</string>
+    <string name="msg_double_back_exit">Press back again to exit</string>
+    <string name="msg_data_exported">Data exported.</string>
+    <string name="msg_data_imported">Data imported.</string>
+
+    <!-- Error messages (user-facing) -->
+    <string name="error_save_failed">Failed to save.</string>
+    <string name="error_pixiv_user_id_not_set">Please set your Pixiv User ID.</string>
+    <string name="error_generic">Operation failed.</string>
+    <string name="error_cache_delete_failed">Failed to delete cache.</string>
+    <string name="error_bookmark_failed">Bookmark operation failed.</string>
+    <string name="error_browser_failed">Could not open browser.</string>
+    <string name="error_share_failed">Could not share.</string>
+    <string name="error_load_detail_failed">Failed to load additional details.</string>
+    <string name="error_load_artist_failed">Failed to load artist info.</string>
+    <string name="error_data_export_failed">Could not export data.</string>
+    <string name="error_data_import_failed">Could not read this file. Select an Illustia backup file.</string>
+
+    <!-- Ranking modes -->
+    <string name="ranking_day">Daily</string>
+    <string name="ranking_day_male">Male</string>
+    <string name="ranking_day_female">Female</string>
+    <string name="ranking_week">Weekly</string>
+    <string name="ranking_month">Monthly</string>
+    <string name="ranking_week_rookie">Rookie</string>
+    <string name="ranking_day_ai">AI</string>
+
+    <!-- Bookmark settings screen labels -->
+    <string name="bookmark_section_behavior">Behavior</string>
+    <string name="bookmark_private_default">Default to Private</string>
+    <string name="bookmark_private_default_desc">Add bookmarks as private by default</string>
+    <string name="bookmark_follow_on_like">Follow on Bookmark</string>
+    <string name="bookmark_follow_on_like_desc">Automatically follow the artist when bookmarking a work</string>
+    <string name="bookmark_auto_tag">Save Tags on Bookmark</string>
+    <string name="bookmark_auto_tag_desc">Add work tags to Watchlist candidates</string>
+    <string name="bookmark_section_sync">Download Sync</string>
+    <string name="bookmark_download_on_bookmark">Download on Bookmark</string>
+    <string name="bookmark_download_on_bookmark_desc">Automatically download the image when adding a bookmark</string>
+    <string name="bookmark_bookmark_on_download">Bookmark on Download</string>
+    <string name="bookmark_bookmark_on_download_desc">Automatically bookmark a work when downloading it from the detail screen</string>
+    <string name="bookmark_section_confirm">Confirmation</string>
+
+    <string name="bookmark_settings_title">Bookmark Settings</string>
+    <string name="bookmark_confirm_on_long_press">Confirm on Long Press</string>
+    <string name="bookmark_confirm_on_long_press_desc">Show confirmation dialog when saving from long press on illust cards</string>
+    <string name="bookmark_skip_confirm_on_detail">Skip Confirmation on Detail Screen</string>
+    <string name="bookmark_skip_confirm_on_detail_desc">Skip confirmation dialog when saving from the detail screen</string>
+
+    <string name="user_tab_works">Works</string>
+    <string name="user_tab_bookmarks">Bookmarks</string>
+    <string name="user_tab_info">Info</string>
+    <string name="user_id_label">User ID</string>
+    <string name="action_not_followed">Not Followed</string>
+    <string name="action_sort">Sort</string>
+    <string name="account_remove_title">Remove account</string>
+    <string name="account_remove_summary">Remove “%1$s” from this device?</string>
+</resources>
