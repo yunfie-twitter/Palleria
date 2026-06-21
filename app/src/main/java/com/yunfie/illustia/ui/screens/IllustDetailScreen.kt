@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -32,12 +34,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BookmarkHeartButton
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -62,7 +70,7 @@ fun IllustDetailScreen(
     relatedIllusts: List<Illust>,
     onBack: () -> Unit,
     onBookmark: () -> Unit,
-    onOpenUser: () -> Unit,
+    onOpenUser: (Long) -> Unit,
     onOpenImage: (Int) -> Unit,
     onSearchTag: (String) -> Unit,
     isArtistFollowed: Boolean,
@@ -73,6 +81,7 @@ fun IllustDetailScreen(
     onMuteUser: () -> Unit,
     onMuteTag: (String) -> Unit,
     onOpenIllust: (Illust) -> Unit,
+    onOpenIllustById: (Long) -> Unit,
     onSaveImage: (String, String) -> Unit,
     onSaveAllImages: (List<String>, String) -> Unit,
     onMessage: (String) -> Unit,
@@ -190,12 +199,14 @@ fun IllustDetailScreen(
                     illust = illust,
                     isArtistFollowed = isArtistFollowed,
                     isArtistMuted = isArtistMuted,
-                    onOpenUser = onOpenUser,
+                    onOpenUser = { onOpenUser(illust.artistId) },
+                    onOpenUserById = onOpenUser,
+                    onOpenIllustById = onOpenIllustById,
                     onToggleFollow = {
                         if (isArtistFollowed) showUnfollowConfirm = true else onToggleFollow()
                     },
                     onUnmuteUser = onUnmuteUser,
-                    onSearchTag = onSearchTag
+                    onSearchTag = onSearchTag,
                 )
             }
             
@@ -463,10 +474,29 @@ private fun IllustDetailInfo(
     isArtistFollowed: Boolean,
     isArtistMuted: Boolean,
     onOpenUser: () -> Unit,
+    onOpenUserById: (Long) -> Unit,
+    onOpenIllustById: (Long) -> Unit,
     onToggleFollow: () -> Unit,
     onUnmuteUser: () -> Unit,
     onSearchTag: (String) -> Unit,
 ) {
+    val uriHandler = LocalUriHandler.current
+    val customUriHandler = remember(uriHandler) {
+        object : UriHandler {
+            override fun openUri(uri: String) {
+                val event = NativeIntentRouter.parseText(uri)
+                when (event) {
+                    is NativeIntentEvent.Artwork -> onOpenIllustById(event.id)
+                    is NativeIntentEvent.User -> onOpenUserById(event.id)
+                    else -> try {
+                        uriHandler.openUri(uri)
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -536,16 +566,30 @@ private fun IllustDetailInfo(
             )
         }
 
-        ElevatedPanel(
-            modifier = Modifier.padding(horizontal = 12.dp),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            Text(
-                text = illust.caption.ifBlank { stringResource(R.string.detail_no_caption) },
-                color = MiuixTheme.colorScheme.onBackground,
-                style = MiuixTheme.textStyles.body1,
-                lineHeight = 23.sp,
-            )
+        CompositionLocalProvider(LocalUriHandler provides customUriHandler) {
+            ElevatedPanel(
+                modifier = Modifier.padding(horizontal = 12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                val annotatedCaption = remember(illust.caption) {
+                    if (illust.caption.isBlank()) null
+                    else {
+                        try {
+                            AnnotatedString.fromHtml(illust.caption)
+                        } catch (e: Exception) {
+                            AnnotatedString(illust.caption)
+                        }
+                    }
+                }
+                SelectionContainer {
+                    Text(
+                        text = annotatedCaption ?: AnnotatedString(stringResource(R.string.detail_no_caption)),
+                        color = MiuixTheme.colorScheme.onBackground,
+                        style = MiuixTheme.textStyles.body1,
+                        lineHeight = 23.sp,
+                    )
+                }
+            }
         }
         
         Spacer(Modifier.height(8.dp))

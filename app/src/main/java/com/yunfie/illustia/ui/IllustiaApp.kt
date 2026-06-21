@@ -338,7 +338,7 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                         relatedIllusts = state.relatedIllusts,
                         onBack = ::popRoute,
                         onBookmark = { viewModel.toggleBookmark(illust) },
-                        onOpenUser = { viewModel.openUser(illust.artistId) },
+                        onOpenUser = viewModel::openUser,
                         onOpenImage = { page -> viewModel.openImageViewer(illust, page) },
                         onSearchTag = { tag ->
                             popRoute()
@@ -352,6 +352,7 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                         onMuteUser = { viewModel.muteUser(illust.artistId) },
                         onMuteTag = { tag -> viewModel.muteTag(tag) },
                         onOpenIllust = viewModel::openIllust,
+                        onOpenIllustById = viewModel::openIllust,
                         onSaveImage = viewModel::saveImage,
                         onSaveAllImages = viewModel::saveImages,
                         onMessage = viewModel::showMessage,
