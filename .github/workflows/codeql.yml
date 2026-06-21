@@ -43,7 +43,7 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build for CodeQL
-      run: ./gradlew clean assembleDebug --no-configuration-cache
+      run: ./gradlew clean assembleDebug --no-build-cache --no-configuration-cache --no-daemon
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
