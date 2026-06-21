@@ -68,7 +68,7 @@ jobs:
           EOF
           
           # インデックス(index-v1.jar等)を生成
-          fdroid update --create-metadata --noverify
+          fdroid update --create-metadata
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
