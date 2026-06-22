@@ -63,6 +63,8 @@ data class AppSettings(
     val appLockEnabled: Boolean = false,
     val appLockTiming: String = "launch",
     val biometricEnabled: Boolean = false,
+    val appLockFailCount: Int = 0,
+    val appLockCooldownUntil: Long = 0L,
     val viewHistory: List<Illust> = emptyList(),
     val smoothTransitions: Boolean = true,
     val prefetchImages: Boolean = false,
@@ -223,6 +225,8 @@ class SettingsStore(context: Context) {
             appLockEnabled = preferences[APP_LOCK_ENABLED] ?: false,
             appLockTiming = preferences[APP_LOCK_TIMING] ?: "launch",
             biometricEnabled = preferences[BIOMETRIC_ENABLED] ?: false,
+            appLockFailCount = preferences[APP_LOCK_FAIL_COUNT] ?: 0,
+            appLockCooldownUntil = preferences[APP_LOCK_COOLDOWN_UNTIL] ?: 0L,
             viewHistory = roomData.viewHistory.map(::illustFromEntity).ifEmpty {
                 decodeHistoryIllusts(preferences[VIEW_HISTORY_JSON])
             }.take(MAX_VIEW_HISTORY),
@@ -277,6 +281,8 @@ class SettingsStore(context: Context) {
         preferences[APP_LOCK_ENABLED] = settings.appLockEnabled
         preferences[APP_LOCK_TIMING] = settings.appLockTiming
         preferences[BIOMETRIC_ENABLED] = settings.biometricEnabled
+        preferences[APP_LOCK_FAIL_COUNT] = settings.appLockFailCount
+        preferences[APP_LOCK_COOLDOWN_UNTIL] = settings.appLockCooldownUntil
         preferences.remove(SEARCH_HISTORY_JSON)
         preferences.remove(FAVORITE_TAGS_JSON)
         preferences.remove(VIEW_HISTORY_JSON)
@@ -438,6 +444,8 @@ class SettingsStore(context: Context) {
             appLockEnabled = preferences.getBoolean("appLockEnabled", false),
             appLockTiming = preferences.getString("appLockTiming", "launch") ?: "launch",
             biometricEnabled = preferences.getBoolean("biometricEnabled", false),
+            appLockFailCount = 0,
+            appLockCooldownUntil = 0L,
             viewHistory = decodeHistoryIllusts(preferences.getString(KEY_VIEW_HISTORY, "")).take(MAX_VIEW_HISTORY),
             smoothTransitions = preferences.getBoolean(KEY_SMOOTH_TRANSITIONS, true),
             prefetchImages = preferences.getBoolean(KEY_PREFETCH_IMAGES, false),
@@ -725,6 +733,8 @@ class SettingsStore(context: Context) {
         private val APP_LOCK_ENABLED = booleanPreferencesKey("appLockEnabled")
         private val APP_LOCK_TIMING = stringPreferencesKey("appLockTiming")
         private val BIOMETRIC_ENABLED = booleanPreferencesKey("biometricEnabled")
+        private val APP_LOCK_FAIL_COUNT = intPreferencesKey("appLockFailCount")
+        private val APP_LOCK_COOLDOWN_UNTIL = longPreferencesKey("appLockCooldownUntil")
         private val SMOOTH_TRANSITIONS = booleanPreferencesKey(KEY_SMOOTH_TRANSITIONS)
         private val PREFETCH_IMAGES = booleanPreferencesKey(KEY_PREFETCH_IMAGES)
         private val NOTCH_OPTIMIZATION = booleanPreferencesKey("notchOptimization")

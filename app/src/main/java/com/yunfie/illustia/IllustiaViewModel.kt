@@ -155,7 +155,13 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             val settings = repository.readSettings()
             val shouldLock = settings.appLockEnabled && settingsStore.hasPinSet()
-            _uiState.update { it.withSettings(settings).copy(settingsLoaded = true, appLocked = shouldLock) }
+            _uiState.update {
+                it.withSettings(settings).copy(
+                    settingsLoaded = true,
+                    appLocked = shouldLock,
+                    showLockRecoveryDialog = settings.appLockFailCount >= 12,
+                )
+            }
             if (settings.refreshToken.isNotBlank() && !shouldLock) {
                 refreshCurrentAccountProfile(settings)
                 if (settings.startupScreen == "home") {
@@ -340,26 +346,21 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     )
 
     fun recordLockFailure() {
-        val count = _uiState.value.appLockFailCount + 1
+        val count = _uiState.value.settings.appLockFailCount + 1
         val cooldownSec = cooldownTable.firstOrNull { count >= it.first }?.second ?: 0L
         val cooldownUntil = if (cooldownSec > 0L) {
             System.currentTimeMillis() + cooldownSec * 1000L
         } else {
             0L
         }
-        _uiState.update {
-            it.copy(
-                appLockFailCount = count,
-                appLockCooldownUntil = cooldownUntil,
-                showLockRecoveryDialog = count >= 12,
-            )
+        updateSettings {
+            it.copy(appLockFailCount = count, appLockCooldownUntil = cooldownUntil)
         }
+        _uiState.update { it.copy(showLockRecoveryDialog = count >= 12) }
     }
 
     fun resetLockFailCount() {
-        _uiState.update {
-            it.copy(appLockFailCount = 0, appLockCooldownUntil = 0L)
-        }
+        updateSettings { it.copy(appLockFailCount = 0, appLockCooldownUntil = 0L) }
     }
 
     fun dismissLockRecovery() {
@@ -377,12 +378,11 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun resetAppLockData() {
         settingsStore.clearPinHash()
-        updateSettings { it.copy(appLockEnabled = false, biometricEnabled = false) }
-        resetLockFailCount()
+        updateSettings { it.copy(appLockEnabled = false, biometricEnabled = false, appLockFailCount = 0, appLockCooldownUntil = 0L) }
     }
 
     fun cooldownRemainingSeconds(): Long {
-        val until = _uiState.value.appLockCooldownUntil
+        val until = _uiState.value.settings.appLockCooldownUntil
         if (until == 0L) return 0L
         return ((until - System.currentTimeMillis()) / 1000L).coerceAtLeast(0L)
     }
@@ -529,7 +529,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun completeWebLogin(code: String) {
         val request = _uiState.value.webLoginRequest ?: return
-        val wasRecovery = _uiState.value.appLocked && _uiState.value.appLockFailCount >= 12
+        val wasRecovery = _uiState.value.appLocked && _uiState.value.settings.appLockFailCount >= 12
         runLoading {
             val session = repository.loginWithAuthorizationCode(code, request.codeVerifier)
             applyLoggedInSession(session.accessToken.isNotBlank(), str(R.string.msg_web_login_complete))

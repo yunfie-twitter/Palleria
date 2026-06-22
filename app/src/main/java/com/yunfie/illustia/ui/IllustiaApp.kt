@@ -835,8 +835,8 @@ private fun MainSurface(
         if (state.appLocked && state.settings.appLockEnabled) {
             AppLockScreen(
                 biometricEnabled = state.settings.biometricEnabled,
-                failCount = state.appLockFailCount,
-                cooldownUntil = state.appLockCooldownUntil,
+                failCount = state.settings.appLockFailCount,
+                cooldownUntil = state.settings.appLockCooldownUntil,
                 viewModel = viewModel,
             )
         }

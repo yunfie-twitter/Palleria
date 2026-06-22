@@ -90,8 +90,8 @@ fun AppLockSetupScreen(
     val isCooldownActive = cooldownRemaining > 0L
 
     // Cooldown countdown timer — reads from shared ViewModel state
-    LaunchedEffect(state.appLockCooldownUntil) {
-        val until = state.appLockCooldownUntil
+    LaunchedEffect(state.settings.appLockCooldownUntil) {
+        val until = state.settings.appLockCooldownUntil
         while (true) {
             val remaining = ((until - System.currentTimeMillis()) / 1000L).coerceAtLeast(0L)
             cooldownRemaining = remaining
@@ -363,14 +363,14 @@ fun AppLockSetupScreen(
                                 fontWeight = FontWeight.SemiBold,
                             )
                         } else if (verifyError) {
-                            val attemptsRemaining = (12 - state.appLockFailCount).coerceAtLeast(0)
+                            val attemptsRemaining = (12 - state.settings.appLockFailCount).coerceAtLeast(0)
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = stringResource(R.string.app_lock_incorrect),
                                     color = MiuixTheme.colorScheme.error,
                                     style = MiuixTheme.textStyles.footnote1,
                                 )
-                                if (state.appLockFailCount in 3..11) {
+                                if (state.settings.appLockFailCount in 3..11) {
                                     Text(
                                         text = stringResource(R.string.app_lock_attempts_remaining, attemptsRemaining),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

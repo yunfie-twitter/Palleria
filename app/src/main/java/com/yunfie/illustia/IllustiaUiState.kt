@@ -59,8 +59,6 @@ data class IllustiaUiState(
     val activeDownloads: Int = 0,
     val showAccountSwitcher: Boolean = false,
     val appLocked: Boolean = false,
-    val appLockFailCount: Int = 0,
-    val appLockCooldownUntil: Long = 0L,
     val showLockRecoveryDialog: Boolean = false,
     val loadState: LoadState = LoadState.Idle,
     val message: String? = null,
