@@ -14,7 +14,7 @@
       }
     },
     "address": "https://yunfie-twitter.github.io/Illustia-dev/repo",
-    "timestamp": 1782205352000,
+    "timestamp": 1782215860000,
     "categories": {
       "Graphics": {
         "name": {
@@ -37,7 +37,7 @@
           "Graphics"
         ],
         "issueTracker": "https://github.com/yunfie-twitter/Illustia-dev/issues",
-        "lastUpdated": 1782205352000,
+        "lastUpdated": 1782215860000,
         "license": "GPL-3.0-only",
         "sourceCode": "https://github.com/yunfie-twitter/Illustia-dev",
         "webSite": "https://github.com/yunfie-twitter/Illustia-dev",
@@ -54,6 +54,70 @@
         "preferredSigner": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
       },
       "versions": {
+        "1997da16ece8bbe20ff8604537fc1876d916846036aa13f3e855653cc2f0b7d2": {
+          "added": 1782215860000,
+          "file": {
+            "name": "/Illustia-v1.2-release.apk",
+            "sha256": "1997da16ece8bbe20ff8604537fc1876d916846036aa13f3e855653cc2f0b7d2",
+            "size": 5723020
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi-v7a",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "1.2",
+            "versionCode": 7,
+            "usesSdk": {
+              "minSdkVersion": 33,
+              "targetSdkVersion": 36
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {}
+          }
+        },
         "e8167d666d50eeb6ea206dc903972f20f4b3f5c6a64feb23967c6cbc8090143d": {
           "added": 1782205352000,
           "file": {
