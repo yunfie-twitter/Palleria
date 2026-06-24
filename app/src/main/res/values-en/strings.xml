@@ -240,6 +240,9 @@
     <string name="image_quality_medium">Medium</string>
     <string name="image_quality_low">Low</string>
     <string name="image_proxy_none">None</string>
+    <string name="image_proxy_custom">Custom Server</string>
+    <string name="image_proxy_custom_dialog_title">Enter Custom Server</string>
+    <string name="image_proxy_custom_dialog_summary">Enter the proxy server base URL (e.g., https://example.com/)</string>
     <string name="language_system">System</string>
     <string name="language_japanese">Japanese</string>
     <string name="language_english">English</string>

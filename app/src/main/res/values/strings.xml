@@ -245,6 +245,9 @@
     <string name="image_quality_medium">標準</string>
     <string name="image_quality_low">軽量</string>
     <string name="image_proxy_none">使用しない</string>
+    <string name="image_proxy_custom">カスタムサーバー</string>
+    <string name="image_proxy_custom_dialog_title">カスタムサーバーの入力</string>
+    <string name="image_proxy_custom_dialog_summary">プロキシサーバーのベースURLを入力してください (例: https://example.com/)</string>
     <string name="language_system">システム</string>
     <string name="language_japanese">日本語</string>
     <string name="language_english">English</string>

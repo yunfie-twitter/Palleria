@@ -1,16 +1,17 @@
 package com.yunfie.illustia.data
 
+import android.os.Build
 import com.yunfie.illustia.settings.currentAcceptLanguage
 import java.security.MessageDigest
-import java.time.OffsetDateTime
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import okhttp3.Request
 
 internal fun Request.Builder.pixivOAuthHeaders(): Request.Builder {
     val clientTime = pixivClientTime()
-    return addHeader("User-Agent", PixivApiConfig.USER_AGENT)
-        .addHeader("App-OS", "android")
-        .addHeader("App-OS-Version", PixivApiConfig.APP_OS_VERSION)
+    return addHeader("User-Agent", pixivUserAgent())
+        .addHeader("App-OS", "Android")
+        .addHeader("App-OS-Version", pixivAppOsVersion())
         .addHeader("App-Version", PixivApiConfig.APP_VERSION)
         .addHeader("Accept-Language", currentAcceptLanguage())
         .addHeader("X-Client-Time", clientTime)
@@ -20,9 +21,9 @@ internal fun Request.Builder.pixivOAuthHeaders(): Request.Builder {
 internal fun Request.Builder.pixivApiHeaders(session: PixivSession): Request.Builder {
     val clientTime = pixivClientTime()
     return addHeader("Authorization", "Bearer ${session.accessToken}")
-        .addHeader("User-Agent", PixivApiConfig.USER_AGENT)
-        .addHeader("App-OS", "android")
-        .addHeader("App-OS-Version", PixivApiConfig.APP_OS_VERSION)
+        .addHeader("User-Agent", pixivUserAgent())
+        .addHeader("App-OS", "Android")
+        .addHeader("App-OS-Version", pixivAppOsVersion())
         .addHeader("App-Version", PixivApiConfig.APP_VERSION)
         .addHeader("Accept", "application/json")
         .addHeader("Accept-Language", currentAcceptLanguage())
@@ -31,8 +32,14 @@ internal fun Request.Builder.pixivApiHeaders(session: PixivSession): Request.Bui
         .addHeader("Referer", "https://www.pixiv.net/")
 }
 
+private fun pixivUserAgent(): String =
+    "PixivAndroidApp/${PixivApiConfig.APP_VERSION} (Android ${Build.VERSION.RELEASE ?: PixivApiConfig.APP_OS_VERSION}; ${Build.MODEL ?: ""})"
+
+private fun pixivAppOsVersion(): String =
+    "Android ${Build.VERSION.RELEASE ?: PixivApiConfig.APP_OS_VERSION}"
+
 private fun pixivClientTime(): String =
-    OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'+00:00'"))
 
 private fun md5(value: String): String = MessageDigest.getInstance("MD5")
     .digest(value.toByteArray())

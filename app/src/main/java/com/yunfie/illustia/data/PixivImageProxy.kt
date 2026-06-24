@@ -10,15 +10,9 @@ data class PixivImageProxy(
 )
 
 val PixivImageProxyOptions = listOf(
-    PixivImageProxy("ducks.party", "https://pixiv.ducks.party"),
-    PixivImageProxy("cocomi.eu.org", "https://pximg.cocomi.eu.org"),
-    PixivImageProxy("suimoe.com", "https://i.suimoe.com"),
-    PixivImageProxy("yuki.sh", "https://i.yuki.sh"),
-    PixivImageProxy("obfs.dev", "https://pximg.obfs.dev"),
-    PixivImageProxy("darkness.services", "https://pixiv.darkness.services"),
-    PixivImageProxy("tatakai.top", "https://pixiv.tatakai.top"),
-    PixivImageProxy("169889.xyz", "https://pi.169889.xyz"),
-    PixivImageProxy("pixiv.re", "https://i.pixiv.re"),
+    PixivImageProxy("yuki.sh", "https://i.yuki.sh/"),
+    PixivImageProxy("suimoe.com", "https://i.suimoe.com/"),
+    PixivImageProxy("pixiv.re", "https://i.pixiv.re/"),
 )
 
 fun proxyPixivImageUrl(url: String, proxyBaseUrl: String): String {

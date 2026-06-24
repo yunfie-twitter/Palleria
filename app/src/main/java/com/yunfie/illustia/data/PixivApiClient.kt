@@ -1,5 +1,7 @@
 package com.yunfie.illustia.data
 
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -82,13 +84,29 @@ class PixivApiClient(
     }
 
     suspend fun recommended(session: PixivSession): PageResult<Illust> {
-        return getIllustPage(session, pixivApiUrl("v1/illust/recommended", "filter" to "for_android"))
-    }
-
-    suspend fun ranking(session: PixivSession, mode: String = "day"): PageResult<Illust> {
         return getIllustPage(
             session,
-            pixivApiUrl("v1/illust/ranking", "filter" to "for_android", "mode" to mode),
+            pixivApiUrl(
+                "v1/illust/recommended",
+                "filter" to "for_ios",
+                "include_ranking_label" to "true",
+            ),
+        )
+    }
+
+    suspend fun ranking(
+        session: PixivSession,
+        mode: String = "day",
+        date: LocalDate? = null,
+    ): PageResult<Illust> {
+        return getIllustPage(
+            session,
+            pixivApiUrl(
+                "v1/illust/ranking",
+                "filter" to "for_android",
+                "mode" to mode,
+                "date" to date?.let { pixivDate(it) },
+            ),
         )
     }
 
@@ -102,7 +120,7 @@ class PixivApiClient(
     suspend fun following(session: PixivSession, restrict: Restrict): PageResult<Illust> {
         return getIllustPage(
             session,
-            pixivApiUrl("v2/illust/follow", "restrict" to restrict.apiValue, "filter" to "for_android"),
+            pixivApiUrl("v2/illust/follow", "restrict" to restrict.apiValue),
         )
     }
 
@@ -114,6 +132,10 @@ class PixivApiClient(
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        searchAiType: Int? = null,
+        bookmarkNum: Pair<Int, Int>? = null,
+        startDate: LocalDate? = null,
+        endDate: LocalDate? = null,
     ): PageResult<Illust> {
         val effectiveWord = listOfNotNull(word, bookmarkFilter.keyword).joinToString(" ")
         return getIllustPage(
@@ -127,9 +149,35 @@ class PixivApiClient(
                 "filter" to "for_android",
                 "merge_plain_keyword_results" to "true",
                 "include_translated_tag_results" to "true",
+                "search_ai_type" to searchAiType?.toString(),
+                "bookmark_num_min" to bookmarkNum?.first?.toString(),
+                "bookmark_num_max" to bookmarkNum?.second?.toString(),
+                "start_date" to startDate?.let { pixivDate(it) },
+                "end_date" to endDate?.let { pixivDate(it) },
                 "r18" to if (includeR18) "true" else null,
             ),
         )
+    }
+
+    suspend fun searchAutocomplete(session: PixivSession, word: String): List<String> {
+        val body = Request.Builder()
+            .url(
+                pixivApiUrl(
+                    "v2/search/autocomplete",
+                    "word" to word,
+                    "merge_plain_keyword_results" to "true",
+                ),
+            )
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            val root = json.parseToJsonElement(body).jsonObject
+            root["tags"].asArrayOrEmpty()
+                .mapNotNull { it.asObjectOrNull()?.string("name") }
+        }
     }
 
     suspend fun searchUsers(session: PixivSession, word: String): PageResult<UserPreview> {
@@ -240,14 +288,20 @@ class PixivApiClient(
         )
     }
 
-    suspend fun userIllusts(session: PixivSession, userId: Long): PageResult<Illust> {
+    suspend fun userIllusts(
+        session: PixivSession,
+        userId: Long,
+        type: String = "illust",
+        offset: Int? = null,
+    ): PageResult<Illust> {
         return getIllustPage(
             session,
             pixivApiUrl(
                 "v1/user/illusts",
                 "user_id" to userId.toString(),
-                "type" to "illust",
+                "type" to type,
                 "filter" to "for_android",
+                "offset" to offset?.toString(),
             ),
         )
     }
@@ -256,6 +310,8 @@ class PixivApiClient(
         session: PixivSession,
         userId: Long,
         restrict: Restrict,
+        tag: String? = null,
+        offset: Int? = null,
     ): PageResult<Illust> {
         return getIllustPage(
             session,
@@ -263,6 +319,8 @@ class PixivApiClient(
                 "v1/user/bookmarks/illust",
                 "user_id" to userId.toString(),
                 "restrict" to restrict.apiValue,
+                "tag" to tag,
+                "offset" to offset?.toString(),
                 "filter" to "for_android",
             ),
         )
@@ -272,14 +330,22 @@ class PixivApiClient(
         return getIllustPage(session, nextUrl.toHttpUrl())
     }
 
-    suspend fun addBookmark(session: PixivSession, illustId: Long, restrict: Restrict) {
+    suspend fun addBookmark(
+        session: PixivSession,
+        illustId: Long,
+        restrict: Restrict,
+        tags: List<String>? = null,
+    ) {
+        val form = FormBody.Builder()
+            .add("illust_id", illustId.toString())
+            .add("restrict", restrict.apiValue)
+        if (!tags.isNullOrEmpty()) {
+            form.add("tags[]", tags.joinToString(" ") { it.trim() })
+        }
         postAuthedForm(
             session = session,
             url = "https://app-api.pixiv.net/v2/illust/bookmark/add",
-            body = FormBody.Builder()
-                .add("illust_id", illustId.toString())
-                .add("restrict", restrict.apiValue)
-                .build(),
+            body = form.build(),
         )
     }
 
@@ -290,6 +356,35 @@ class PixivApiClient(
             body = FormBody.Builder()
                 .add("illust_id", illustId.toString())
                 .build(),
+        )
+    }
+
+    suspend fun trendingTags(session: PixivSession): List<String> {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v1/trending-tags/illust", "filter" to "for_android"))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            val root = json.parseToJsonElement(body).jsonObject
+            root["trend_tags"].asArrayOrEmpty()
+                .mapNotNull { it.asObjectOrNull()?.string("tag") }
+        }
+    }
+
+    suspend fun popularPreview(session: PixivSession, word: String): PageResult<Illust> {
+        return getIllustPage(
+            session,
+            pixivApiUrl(
+                "v1/search/popular-preview/illust",
+                "filter" to "for_android",
+                "include_translated_tag_results" to "true",
+                "merge_plain_keyword_results" to "true",
+                "word" to word,
+                "search_target" to "partial_match_for_tags",
+            ),
         )
     }
 
@@ -332,4 +427,7 @@ class PixivApiClient(
             }
             .build()
     }
+
+    private fun pixivDate(date: LocalDate): String =
+        date.format(DateTimeFormatter.ofPattern("yyyy-M-d"))
 }

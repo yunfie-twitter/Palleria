@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
@@ -30,8 +31,12 @@ import com.yunfie.illustia.ui.components.SettingSwitchRow
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -173,14 +178,74 @@ fun ImageSettingsScreen(
 
             item { Section(stringResource(R.string.image_section_proxy)) {
                 ElevatedPanel {
+                    val currentProxy = state.settings.pixivImageProxyBaseUrl
+                    val isCustomActive = currentProxy.isNotBlank() && PixivImageProxyOptions.none { it.baseUrl == currentProxy }
+                    val proxyOptions = remember(currentProxy) {
+                        val list = mutableListOf("", "custom")
+                        list.addAll(PixivImageProxyOptions.map { it.baseUrl })
+                        if (isCustomActive) {
+                            list.add(currentProxy)
+                        }
+                        list
+                    }
+
+                    var showCustomDialog by remember { mutableStateOf(false) }
+                    var customUrlInput by remember { mutableStateOf(currentProxy) }
+
                     SettingDropdownRow(
                         title = stringResource(R.string.image_proxy_title),
                         summary = stringResource(R.string.image_proxy_desc),
-                        values = listOf("") + PixivImageProxyOptions.map { it.baseUrl },
-                        selected = state.settings.pixivImageProxyBaseUrl,
+                        values = proxyOptions,
+                        selected = if (isCustomActive) currentProxy else currentProxy, // just to trigger recomposition if needed
                         label = { pixivImageProxyLabel(it) },
-                        onSelect = viewModel::updatePixivImageProxyBaseUrl,
+                        onSelect = { selectedValue ->
+                            if (selectedValue == "custom") {
+                                customUrlInput = if (isCustomActive) currentProxy else ""
+                                showCustomDialog = true
+                            } else {
+                                viewModel.updatePixivImageProxyBaseUrl(selectedValue)
+                            }
+                        },
                     )
+
+                    if (showCustomDialog) {
+                        OverlayDialog(
+                            show = showCustomDialog,
+                            title = stringResource(R.string.image_proxy_custom_dialog_title),
+                            summary = stringResource(R.string.image_proxy_custom_dialog_summary),
+                            onDismissRequest = { showCustomDialog = false }
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                TextField(
+                                    value = customUrlInput,
+                                    onValueChange = { customUrlInput = it },
+                                    label = "URL",
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Button(
+                                        onClick = { showCustomDialog = false },
+                                        modifier = Modifier.weight(1f),
+                                    ) {
+                                        Text(stringResource(R.string.action_cancel))
+                                    }
+                                    Button(
+                                        onClick = {
+                                            viewModel.updatePixivImageProxyBaseUrl(customUrlInput)
+                                            showCustomDialog = false
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    ) {
+                                        Text(stringResource(R.string.action_add), fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }}
         }
@@ -199,6 +264,7 @@ private fun qualityLabel(value: String): String {
 @Composable
 private fun pixivImageProxyLabel(value: String): String {
     if (value.isBlank()) return stringResource(R.string.image_proxy_none)
+    if (value == "custom") return stringResource(R.string.image_proxy_custom)
     return PixivImageProxyOptions.firstOrNull { it.baseUrl == value }?.name ?: value
 }
 
