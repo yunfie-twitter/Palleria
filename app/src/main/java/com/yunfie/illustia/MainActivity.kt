@@ -1,10 +1,12 @@
 package com.yunfie.illustia
 
+import android.app.ActivityManager
 import android.app.LocaleManager
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -38,6 +40,10 @@ class MainActivity : FragmentActivity() {
     private var lastHandledClipboardText: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
+        if (SettingsStore.isPrivacyModeEnabledSync(applicationContext)) {
+            setTheme(R.style.AppTheme_Splash_Calculator)
+        }
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition {
             !viewModel.uiState.value.settingsLoaded
@@ -85,8 +91,16 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-            LaunchedEffect(state.settings.appLanguage) {
+                LaunchedEffect(state.settings.appLanguage) {
                 applyAppLanguage(state.settings.appLanguage)
+            }
+
+            LaunchedEffect(state.settings.privacyModeEnabled, state.settings.hideRecents, state.settings.dummyAppName, state.settings.dummyIconVariant) {
+                updateRecentsTaskDescription(state)
+            }
+
+            LaunchedEffect(state.settings.privacyModeEnabled, state.settings.dummyAppName, state.settings.dummyIconVariant) {
+                viewModel.applyDummyIconSettings(this@MainActivity)
             }
 
             MiuixTheme(controller = controller) {
@@ -137,6 +151,31 @@ class MainActivity : FragmentActivity() {
                 setRecentsScreenshotEnabled(true)
             }
         }
+    }
+
+    private fun updateRecentsTaskDescription(state: com.yunfie.illustia.IllustiaUiState) {
+        if (!state.settings.privacyModeEnabled) return
+
+        val title = if (state.settings.hideRecents) {
+            state.settings.dummyAppName.ifBlank { getString(R.string.app_name) }
+        } else {
+            getString(R.string.app_name)
+        }
+
+        val iconRes = if (state.settings.hideRecents) {
+            resources.getIdentifier(state.settings.dummyIconVariant, "mipmap", packageName)
+        } else {
+            R.mipmap.ic_launcher
+        }
+
+        val iconBitmap = if (iconRes != 0) {
+            BitmapFactory.decodeResource(resources, iconRes)
+        } else {
+            BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+        }
+
+        val taskDesc = ActivityManager.TaskDescription(title, iconBitmap)
+        setTaskDescription(taskDesc)
     }
 
     private fun applyAppLanguage(language: String) {

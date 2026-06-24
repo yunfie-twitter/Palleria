@@ -5,6 +5,12 @@
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 
+    <style name="AppTheme.Splash.Calculator" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_dummy_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_dummy</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
     <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>

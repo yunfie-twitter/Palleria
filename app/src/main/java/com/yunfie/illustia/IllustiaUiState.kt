@@ -65,6 +65,15 @@ data class IllustiaUiState(
     val showLockRecoveryDialog: Boolean = false,
     val loadState: LoadState = LoadState.Idle,
     val message: String? = null,
+    val privacyLocked: Boolean = false,
+    val calculatorBuffer: String = "",
+    val calculatorHistory: List<CalculatorHistoryEntry> = emptyList(),
+    val isTransitioningToIllustia: Boolean = false,
+)
+
+data class CalculatorHistoryEntry(
+    val expression: String,
+    val result: String,
 )
 
 internal data class MuteFilter(

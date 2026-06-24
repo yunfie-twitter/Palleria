@@ -117,6 +117,7 @@ private sealed interface AppRoute : NavKey {
     data object AppLockSetup : AppRoute
     data object AppLockPinEntry : AppRoute
     data object SavedIllustViewer : AppRoute
+    data object PrivacyModeSettings : AppRoute
 }
 
 @Composable
@@ -243,6 +244,7 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.AppLockSetup -> AppRoute.AppLockSetup
                     IllustiaNavigationRequest.AppLockPinEntry -> AppRoute.AppLockPinEntry
                     IllustiaNavigationRequest.SavedIllustViewer -> AppRoute.SavedIllustViewer
+                    IllustiaNavigationRequest.PrivacyModeSettings -> AppRoute.PrivacyModeSettings
                 },
             )
         }
@@ -296,6 +298,7 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
         LocalPreferLowDataImages provides preferLowDataImages,
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
     ) {
+        if (!state.privacyLocked || state.isTransitioningToIllustia) {
         Scaffold(
             containerColor = MiuixTheme.colorScheme.surface,
             contentWindowInsets = WindowInsets(0),
@@ -548,6 +551,13 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onBack = ::popRoute,
                 )
             }
+            entry(AppRoute.PrivacyModeSettings) {
+                PrivacyModeSettingsScreen(
+                    state = state,
+                    viewModel = viewModel,
+                    onBack = ::popRoute,
+                )
+            }
         }
         val entries = rememberDecoratedNavEntries(
             backStack = backStack,
@@ -723,6 +733,16 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                 }
             }
         }
+        } else {
+            // Privacy locked & not transitioning: show calculator without composing the main UI.
+            CalculatorScreen(
+                buffer = state.calculatorBuffer,
+                history = state.calculatorHistory,
+                isTransitioning = false,
+                viewModel = viewModel,
+            )
+        }
+
     }
 }
 
@@ -850,8 +870,16 @@ private fun MainSurface(
             }
         }
 
-        // App lock overlay — covers everything when locked
-        if (state.appLocked && state.settings.appLockEnabled) {
+        // Privacy mode overlay — full-screen calculator shown when privacyLocked
+        if (state.privacyLocked) {
+            CalculatorScreen(
+                buffer = state.calculatorBuffer,
+                history = state.calculatorHistory,
+                isTransitioning = state.isTransitioningToIllustia,
+                viewModel = viewModel,
+            )
+        } else if (state.appLocked && state.settings.appLockEnabled) {
+            // App lock overlay covers everything only when privacy mode is not active.
             AppLockScreen(
                 biometricEnabled = state.settings.biometricEnabled,
                 failCount = state.settings.appLockFailCount,

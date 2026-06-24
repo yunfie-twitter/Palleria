@@ -20,4 +20,5 @@ enum class IllustiaNavigationRequest {
     AppLockSetup,
     AppLockPinEntry,
     SavedIllustViewer,
+    PrivacyModeSettings,
 }

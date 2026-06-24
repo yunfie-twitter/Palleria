@@ -32,6 +32,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Contacts
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Timer
@@ -61,13 +62,14 @@ fun SettingsScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val mutedTotal = state.settings.mutedIllusts.size + state.settings.mutedUsers.size + state.settings.mutedTags.size
 
-    val categories = remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal) {
+    val categories = remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal, state.settings.privacyModeEnabled) {
         listOf(
             SettingsCategory(context.getString(R.string.settings_general), context.getString(R.string.settings_general_summary), MiuixIcons.More) { viewModel.openGeneralSettings() },
             SettingsCategory(context.getString(R.string.settings_image), context.getString(R.string.settings_image_summary), MiuixIcons.Photos) { viewModel.openImageSettings() },
             SettingsCategory(context.getString(R.string.settings_bookmark), context.getString(R.string.settings_bookmark_summary), MiuixIcons.FavoritesFill) { viewModel.openBookmarkSettings() },
             SettingsCategory(context.getString(R.string.settings_account), if (state.settings.refreshToken.isNotBlank()) context.getString(R.string.settings_logged_in) else context.getString(R.string.settings_not_logged_in), MiuixIcons.Contacts) { viewModel.openAccountSettings() },
             SettingsCategory(context.getString(R.string.settings_data), "${context.getString(R.string.more_view_history)} ${context.getString(R.string.data_items_count, state.settings.viewHistory.size)} / ${context.getString(R.string.more_mute_settings)} ${context.getString(R.string.data_items_count, mutedTotal)}", MiuixIcons.Timer) { viewModel.openDataSettings() },
+            SettingsCategory("プライバシーモード", if (state.settings.privacyModeEnabled) "有効 — 電卓でカモフラージュ中" else "無効", MiuixIcons.Lock) { viewModel.openPrivacyModeSettings() },
         )
     }
 

@@ -313,5 +313,19 @@
             </intent-filter>
 
         </activity>
+
+        <activity-alias
+            android:name=".MainActivityDummy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_dummy"
+            android:roundIcon="@mipmap/ic_launcher_dummy_round"
+            android:label="@string/app_name_dummy"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
     </application>
 </manifest>

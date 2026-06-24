@@ -59,6 +59,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
+import com.yunfie.illustia.ui.screens.CalculatorEngine
+import com.yunfie.illustia.DummyAppIconSwitcher
 
 @Keep
 class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
@@ -76,6 +78,8 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     private var loadingJob: Job? = null
     private var closeUserPageJob: Job? = null
     private var savedLibraryJob: Job? = null
+    private var privacyUnlockJob: Job? = null
+    private var autoLockJob: Job? = null
 
     val bookmarkTimelineGridState = LazyGridState()
     val bookmarkMainGridState = LazyGridState()
@@ -165,10 +169,11 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 it.withSettings(settings).copy(
                     settingsLoaded = true,
                     appLocked = shouldLock,
+                    privacyLocked = settings.privacyModeEnabled,
                     showLockRecoveryDialog = settings.appLockFailCount >= 12,
                 )
             }
-            if (settings.refreshToken.isNotBlank() && !shouldLock) {
+            if (settings.refreshToken.isNotBlank() && !shouldLock && !settings.privacyModeEnabled) {
                 refreshCurrentAccountProfile(settings)
                 if (settings.startupScreen == "home") {
                     refreshHome()
@@ -239,6 +244,50 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateSecureWindow(value: Boolean) {
         updateSettings { it.copy(secureWindow = value) }
+    }
+
+    // ─── Privacy Mode 設定値更新 ────────────────────────────────────────────────
+
+    fun updatePrivacyModeAutoLockTiming(value: String) {
+        updateSettings { it.copy(privacyModeAutoLockTiming = value) }
+    }
+
+    fun updateHideRecents(value: Boolean) {
+        updateSettings { it.copy(hideRecents = value) }
+    }
+
+    fun updateHideNotifications(value: Boolean) {
+        updateSettings { it.copy(hideNotifications = value) }
+    }
+
+    fun updateDummyAppName(value: String) {
+        if (value.isNotBlank() && value.length <= 30) {
+            updateSettings { it.copy(dummyAppName = value) }
+        }
+    }
+
+    fun updateDummyIconVariant(value: String) {
+        updateSettings { it.copy(dummyIconVariant = value) }
+    }
+
+    fun verifyCurrentUnlockCode(code: String): Boolean = settingsStore.verifyUnlockCode(code)
+
+    fun applyDummyIconSettings(context: android.content.Context) {
+        val settings = _uiState.value.settings
+        applyDummyAppIcon(context, settings.privacyModeEnabled)
+    }
+
+    fun changeUnlockCode(currentCode: String, newCode: String): Boolean {
+        if (!settingsStore.isValidUnlockCode(newCode)) return false
+        if (!settingsStore.verifyUnlockCode(currentCode)) return false
+        settingsStore.saveUnlockCodeHash(newCode)
+        return true
+    }
+
+    fun applyDummyAppIcon(context: android.content.Context, enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            DummyAppIconSwitcher.apply(context, enabled)
+        }
     }
 
     fun updateAmoledMode(value: Boolean) {
@@ -341,6 +390,151 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     fun disableAppLock() {
         settingsStore.clearPinHash()
         updateSettings { it.copy(appLockEnabled = false, biometricEnabled = false) }
+    }
+
+    // ─── Privacy Mode 制御 ─────────────────────────────────────────────────────
+
+    /**
+     * プライバシーモードを有効化する。
+     * 解除コードが未設定なら初期コード "168" を保存する。
+     */
+    fun enablePrivacyMode() {
+        if (!settingsStore.hasUnlockCodeSet()) {
+            settingsStore.saveUnlockCodeHash("168")
+        }
+        updateSettings { it.copy(privacyModeEnabled = true) }
+        _uiState.update { it.copy(privacyLocked = true) }
+    }
+
+    /**
+     * プライバシーモードを無効化する。ロック状態をリセットし、電卓画面を非表示にする。
+     */
+    fun disablePrivacyMode() {
+        updateSettings { it.copy(privacyModeEnabled = false) }
+        _uiState.update { it.copy(privacyLocked = false, calculatorBuffer = "", isTransitioningToIllustia = false) }
+    }
+
+    /**
+     * 解除コードを検証し、成功なら遷移アニメーションを開始する。
+     * @return 照合成功なら true
+     */
+    fun verifyAndUnlockPrivacy(code: String): Boolean {
+        return if (settingsStore.verifyUnlockCode(code)) {
+            _uiState.update { it.copy(isTransitioningToIllustia = true) }
+            true
+        } else {
+            false
+        }
+    }
+
+    /**
+     * 遷移アニメーション完了を通知する（CalculatorScreen から呼ぶ）。
+     * privacyLocked を false にして Illustia 本体を表示する。
+     */
+    fun confirmPrivacyUnlock() {
+        privacyUnlockJob?.cancel()
+        privacyUnlockJob = viewModelScope.launch {
+            _uiState.update { it.copy(privacyLocked = false, isTransitioningToIllustia = false, calculatorBuffer = "") }
+            val settings = _uiState.value.settings
+            if (settings.refreshToken.isNotBlank() && _uiState.value.homeItems.isEmpty()) {
+                withContext(Dispatchers.IO) {
+                    refreshCurrentAccountProfile(settings)
+                    if (settings.startupScreen == "home") {
+                        refreshHome()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 即時ロックを実行する（画面 OFF・端末ロック・バックグラウンド移行時）。
+     */
+    fun lockPrivacyMode() {
+        if (_uiState.value.settings.privacyModeEnabled) {
+            privacyUnlockJob?.cancel()
+            _uiState.update { it.copy(privacyLocked = true, calculatorBuffer = "", isTransitioningToIllustia = false) }
+        }
+    }
+
+    // ─── 電卓バッファ操作 ───────────────────────────────────────────────────────
+
+    fun appendToCalculatorBuffer(char: Char) {
+        _uiState.update { state ->
+            if (state.calculatorBuffer.length < 50) {
+                state.copy(calculatorBuffer = state.calculatorBuffer + char)
+            } else {
+                state
+            }
+        }
+    }
+
+    fun clearCalculatorBuffer() {
+        _uiState.update { it.copy(calculatorBuffer = "") }
+    }
+
+    fun deleteLastCalculatorBuffer() {
+        _uiState.update { state ->
+            if (state.calculatorBuffer.isNotEmpty()) {
+                state.copy(calculatorBuffer = state.calculatorBuffer.dropLast(1))
+            } else {
+                state
+            }
+        }
+    }
+
+    fun evaluateCalculatorExpression() {
+        val buffer = _uiState.value.calculatorBuffer
+        if (buffer.isBlank()) return
+
+        // パターンB: 解除コード照合
+        if (verifyAndUnlockPrivacy(buffer)) {
+            // 解除成功: 履歴に記録しない、バッファは confirmPrivacyUnlock でクリア
+            return
+        }
+
+        // 通常の計算
+        val result = CalculatorEngine.evaluate(buffer)
+        val resultStr = if (result != null) CalculatorEngine.formatResult(result) else null
+
+        _uiState.update { state ->
+            val newHistory = if (resultStr != null) {
+                val entry = CalculatorHistoryEntry(expression = buffer, result = resultStr)
+                (listOf(entry) + state.calculatorHistory).take(20)
+            } else {
+                state.calculatorHistory
+            }
+            state.copy(
+                calculatorBuffer = resultStr ?: "エラー",
+                calculatorHistory = newHistory,
+            )
+        }
+    }
+
+    // ─── AutoLock タイマー ──────────────────────────────────────────────────────
+
+    fun startAutoLockTimer() {
+        if (!_uiState.value.settings.privacyModeEnabled) return
+        if (_uiState.value.privacyLocked) return
+        val delayMs: Long = when (_uiState.value.settings.privacyModeAutoLockTiming) {
+            "immediate" -> 0L
+            "30s"       -> 30_000L
+            "1m"        -> 60_000L
+            "5m"        -> 5 * 60_000L
+            "10m"       -> 10 * 60_000L
+            "disabled"  -> return
+            else        -> 0L
+        }
+        autoLockJob?.cancel()
+        autoLockJob = viewModelScope.launch {
+            if (delayMs > 0L) delay(delayMs)
+            lockPrivacyMode()
+        }
+    }
+
+    fun cancelAutoLockTimer() {
+        autoLockJob?.cancel()
+        autoLockJob = null
     }
 
     fun updateBiometricEnabled(value: Boolean) {
@@ -1505,6 +1699,10 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openAppLockPinEntry() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.AppLockPinEntry)
+    }
+
+    fun openPrivacyModeSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.PrivacyModeSettings)
     }
 
     fun closeFavoriteTags() {

@@ -100,6 +100,12 @@ data class AppSettings(
     val mutedTags: List<String> = emptyList(),
     val accounts: List<StoredAccount> = emptyList(),
     val activeAccountIndex: Int = -1,
+    val privacyModeEnabled: Boolean = false,
+    val privacyModeAutoLockTiming: String = "immediate",  // immediate|30s|1m|5m|10m|disabled
+    val hideRecents: Boolean = true,
+    val hideNotifications: Boolean = false,
+    val dummyAppName: String = "電卓",
+    val dummyIconVariant: String = "ic_launcher_dummy",
 )
 
 class SettingsStore(context: Context) {
@@ -195,6 +201,67 @@ class SettingsStore(context: Context) {
             .remove(KEY_PIN_HASH)
             .remove(KEY_PIN_SALT)
             .apply()
+    }
+
+    // --- Unlock Code (Privacy Mode) ---
+
+    /**
+     * 解除コードを PBKDF2WithHmacSHA256 + 32byte ランダムソルト + 100,000 iterations で
+     * ハッシュ化し、EncryptedSharedPreferences に保存する。
+     */
+    fun saveUnlockCodeHash(code: String) {
+        val salt = generateSalt()
+        val hash = pbkdf2(code, salt)
+        sensitivePreferences.edit()
+            .putString(KEY_UNLOCK_CODE_HASH, hash)
+            .putString(KEY_UNLOCK_CODE_SALT, salt)
+            .apply()
+    }
+
+    /**
+     * 指定した解除コードが保存済みハッシュと一致するか定数時間比較で検証する。
+     * 暗号エラーが発生した場合は false を返す（フェイルセーフ）。
+     * @return 一致すれば true
+     */
+    fun verifyUnlockCode(code: String): Boolean {
+        return try {
+            val storedHash = sensitivePreferences.getString(KEY_UNLOCK_CODE_HASH, null) ?: return false
+            val salt = sensitivePreferences.getString(KEY_UNLOCK_CODE_SALT, null) ?: return false
+            val computed = pbkdf2(code, salt)
+            constantTimeEquals(computed.toByteArray(), storedHash.toByteArray())
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsStore", "verifyUnlockCode error", e)
+            false
+        }
+    }
+
+    /**
+     * 解除コードが設定済みかどうかを返す。
+     */
+    fun hasUnlockCodeSet(): Boolean {
+        return sensitivePreferences.getString(KEY_UNLOCK_CODE_HASH, null) != null
+    }
+
+    /**
+     * 解除コードハッシュを削除する（プライバシーモード無効化時に呼ぶ）。
+     */
+    fun clearUnlockCodeHash() {
+        sensitivePreferences.edit()
+            .remove(KEY_UNLOCK_CODE_HASH)
+            .remove(KEY_UNLOCK_CODE_SALT)
+            .apply()
+    }
+
+    /**
+     * 解除コードのバリデーション。
+     * 4〜20 文字で、数字（0-9）および電卓記号（+, -, *, ×, /, ÷, ., =）のみ許容。
+     * @return 有効なら true
+     */
+    fun isValidUnlockCode(code: String): Boolean {
+        if (code.length !in 4..20) return false
+        val allowedChars = setOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '+', '-', '*', '×', '/', '÷', '.', '=')
+        return code.all { it in allowedChars }
     }
 
     suspend fun getSavedIllusts(): List<SavedIllustEntity> = withContext(Dispatchers.IO) {
@@ -342,6 +409,12 @@ class SettingsStore(context: Context) {
             mutedTags = decodeStringList(preferences[MUTED_TAGS_JSON]),
             accounts = accounts,
             activeAccountIndex = preferences[ACTIVE_ACCOUNT_INDEX] ?: -1,
+            privacyModeEnabled = preferences[PRIVACY_MODE_ENABLED] ?: false,
+            privacyModeAutoLockTiming = preferences[PRIVACY_MODE_AUTO_LOCK_TIMING] ?: "immediate",
+            hideRecents = preferences[HIDE_RECENTS] ?: true,
+            hideNotifications = preferences[HIDE_NOTIFICATIONS] ?: false,
+            dummyAppName = preferences[DUMMY_APP_NAME] ?: "電卓",
+            dummyIconVariant = preferences[DUMMY_ICON_VARIANT] ?: "ic_launcher_dummy",
         )
     }
 
@@ -399,6 +472,12 @@ class SettingsStore(context: Context) {
         preferences[MUTED_USERS_JSON] = encodeLongList(settings.mutedUsers)
         preferences[MUTED_TAGS_JSON] = encodeStringList(settings.mutedTags)
         preferences[ACTIVE_ACCOUNT_INDEX] = settings.activeAccountIndex
+        preferences[PRIVACY_MODE_ENABLED] = settings.privacyModeEnabled
+        preferences[PRIVACY_MODE_AUTO_LOCK_TIMING] = settings.privacyModeAutoLockTiming
+        preferences[HIDE_RECENTS] = settings.hideRecents
+        preferences[HIDE_NOTIFICATIONS] = settings.hideNotifications
+        preferences[DUMMY_APP_NAME] = settings.dummyAppName
+        preferences[DUMMY_ICON_VARIANT] = settings.dummyIconVariant
     }
 
     private fun writeSensitive(settings: AppSettings) {
@@ -561,6 +640,12 @@ class SettingsStore(context: Context) {
             mutedTags = preferences.getString("mutedTags", "").orEmpty().split(",").filter { it.isNotBlank() },
             accounts = decodeAccounts(preferences.getString(KEY_ACCOUNTS, "").orEmpty()),
             activeAccountIndex = preferences.getInt(KEY_ACTIVE_ACCOUNT_INDEX, -1),
+            privacyModeEnabled = false,
+            privacyModeAutoLockTiming = "immediate",
+            hideRecents = true,
+            hideNotifications = false,
+            dummyAppName = "電卓",
+            dummyIconVariant = "ic_launcher_dummy",
         )
     }
 
@@ -775,6 +860,8 @@ class SettingsStore(context: Context) {
         private const val KEY_ACTIVE_ACCOUNT_INDEX = "activeAccountIndex"
         private const val KEY_PIN_HASH = "pinHash"
         private const val KEY_PIN_SALT = "pinSalt"
+        private const val KEY_UNLOCK_CODE_HASH = "unlockCodeHash"
+        private const val KEY_UNLOCK_CODE_SALT = "unlockCodeSalt"
         private const val PBKDF2_ITERATIONS = 100_000
         private const val PBKDF2_KEY_LENGTH = 256
         private const val KEY_BOOKMARK_USER_ID = "bookmarkUserId"
@@ -856,6 +943,12 @@ class SettingsStore(context: Context) {
         private val MUTED_USERS_JSON = stringPreferencesKey("mutedUsers")
         private val MUTED_TAGS_JSON = stringPreferencesKey("mutedTags")
         private val ACTIVE_ACCOUNT_INDEX = intPreferencesKey(KEY_ACTIVE_ACCOUNT_INDEX)
+        private val PRIVACY_MODE_ENABLED = booleanPreferencesKey("privacyModeEnabled")
+        private val PRIVACY_MODE_AUTO_LOCK_TIMING = stringPreferencesKey("privacyModeAutoLockTiming")
+        private val HIDE_RECENTS = booleanPreferencesKey("hideRecents")
+        private val HIDE_NOTIFICATIONS = booleanPreferencesKey("hideNotifications")
+        private val DUMMY_APP_NAME = stringPreferencesKey("dummyAppName")
+        private val DUMMY_ICON_VARIANT = stringPreferencesKey("dummyIconVariant")
 
         @Volatile
         private var sharedDataStore: DataStore<Preferences>? = null
@@ -895,6 +988,23 @@ class SettingsStore(context: Context) {
             } ?: appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
                 .getString(KEY_APP_LANGUAGE, "system")
             ?: "system"
+        }
+
+        /**
+         * プライバシーモードの ON/OFF を同期的に読み取る。
+         * スプラッシュ画面を表示する前にテーマを切り替える用途。
+         */
+        fun isPrivacyModeEnabledSync(context: Context): Boolean {
+            val appContext = context.applicationContext
+            return runCatching {
+                runBlocking(Dispatchers.IO) {
+                    dataStoreFor(appContext).data
+                        .catch { error ->
+                            if (error is IOException) emit(emptyPreferences()) else throw error
+                        }
+                        .first()[PRIVACY_MODE_ENABLED]
+                }
+            }.getOrNull() ?: false
         }
     }
 }

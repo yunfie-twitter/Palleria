@@ -7,4 +7,10 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
+
+    <style name="AppTheme.Splash.Calculator" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_dummy_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_dummy</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
 </resources>
