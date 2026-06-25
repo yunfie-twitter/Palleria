@@ -14,7 +14,7 @@
       }
     },
     "address": "https://yunfie-twitter.github.io/Illustia-dev/repo",
-    "timestamp": 1782310583000,
+    "timestamp": 1782425513000,
     "categories": {
       "Graphics": {
         "name": {
@@ -54,12 +54,12 @@
         "preferredSigner": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
       },
       "versions": {
-        "eb4dea99e1f97125e63b27ac71142744f661a267d7bef5255b1216086928c486": {
+        "2ac396d1870800314e8ea31a20aa256fc613153361c6cc68c310955b1f27d7b1": {
           "added": 1782310583000,
           "file": {
             "name": "/Illustia-v1.4-release.apk",
-            "sha256": "eb4dea99e1f97125e63b27ac71142744f661a267d7bef5255b1216086928c486",
-            "size": 5860126
+            "sha256": "2ac396d1870800314e8ea31a20aa256fc613153361c6cc68c310955b1f27d7b1",
+            "size": 49529111
           },
           "manifest": {
             "nativecode": [
