@@ -22,6 +22,10 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.vector.ImageVector
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -40,11 +44,21 @@ fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun SettingRow(title: String, summary: String? = null, action: @Composable () -> Unit) {
+fun SettingRow(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    action: @Composable () -> Unit
+) {
     BasicComponent(
         title = title,
         summary = summary,
         modifier = Modifier.fillMaxWidth(),
+        startAction = icon?.let {
+            {
+                PreferenceIcon(it)
+            }
+        },
         endActions = {
             action()
         },
@@ -52,12 +66,34 @@ fun SettingRow(title: String, summary: String? = null, action: @Composable () ->
 }
 
 @Composable
-fun SettingLinkRow(title: String, summary: String? = null, onClick: () -> Unit) {
+fun SettingLinkRow(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    onClick: () -> Unit
+) {
     ArrowPreference(
         title = title,
         summary = summary ?: "",
         modifier = Modifier.fillMaxWidth(),
+        startAction = icon?.let {
+            {
+                PreferenceIcon(it)
+            }
+        },
         onClick = onClick,
+    )
+}
+
+@Composable
+private fun PreferenceIcon(icon: ImageVector) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MiuixTheme.colorScheme.onSurface,
+        modifier = Modifier
+            .size(28.dp)
+            .padding(end = 12.dp)
     )
 }
 
@@ -150,6 +186,7 @@ fun <T> SettingDropdownRow(
     label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
     summary: String? = null,
+    icon: ImageVector? = null,
 ) {
     val selectedIndex = values.indexOf(selected).coerceAtLeast(0)
     OverlayDropdownPreference(
@@ -158,6 +195,11 @@ fun <T> SettingDropdownRow(
         items = values.map { label(it) },
         selectedIndex = selectedIndex,
         modifier = Modifier.fillMaxWidth(),
+        startAction = icon?.let {
+            {
+                PreferenceIcon(it)
+            }
+        },
         onSelectedIndexChange = { index ->
             values.getOrNull(index)?.let(onSelect)
         },
@@ -170,6 +212,7 @@ fun SettingSwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     summary: String? = null,
+    icon: ImageVector? = null,
 ) {
     SwitchPreference(
         title = title,
@@ -177,6 +220,11 @@ fun SettingSwitchRow(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = Modifier.fillMaxWidth(),
+        startAction = icon?.let {
+            {
+                PreferenceIcon(it)
+            }
+        },
     )
 }
 

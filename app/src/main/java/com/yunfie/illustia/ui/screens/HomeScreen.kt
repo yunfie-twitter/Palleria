@@ -12,21 +12,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.HomeFeedKind
 import com.yunfie.illustia.data.Illust
 import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.settings.AppSettings
@@ -36,6 +30,7 @@ import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 
 // ホーム画面のタブ定義
@@ -54,8 +49,9 @@ fun HomeScreen(
     settings: AppSettings,
     viewModel: IllustiaViewModel,
     onSearch: () -> Unit,
+    onOpenNovels: () -> Unit,
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(HomeTab.Feed) }
+    var selectedTab by remember { androidx.compose.runtime.mutableStateOf(HomeTab.Feed) }
     val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
         initialPage = HomeTab.entries.indexOf(selectedTab),
@@ -92,6 +88,9 @@ fun HomeScreen(
             largeTitle = stringResource(R.string.nav_home),
             scrollBehavior = scrollBehavior,
             actions = {
+                IconButton(onClick = onOpenNovels) {
+                    Icon(MiuixIcons.Photos, contentDescription = stringResource(R.string.nav_novel))
+                }
                 IconButton(
                     onClick = {
                         when (selectedTab) {
@@ -113,7 +112,7 @@ fun HomeScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
                 )
             },
         )

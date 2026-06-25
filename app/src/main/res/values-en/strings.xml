@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">Palleria</string>
+    <string name="app_name_dummy">Calculator</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
+    <string name="nav_novel">Novels</string>
     <string name="nav_ranking">Ranking</string>
     <string name="nav_bookmarks">Bookmarks</string>
     <string name="nav_bookmarks_full">Bookmarks</string>
@@ -32,6 +34,20 @@
     <string name="home_tab_following">Following</string>
     <string name="home_feed_loading">Loading home feed</string>
     <string name="home_following_empty">Latest works from followed users will appear here</string>
+
+    <!-- Novel screen -->
+    <string name="novel_header_summary">A text-first reading page for recommended novels.</string>
+    <string name="novel_header_count">%1$d items</string>
+    <string name="novel_header_search_hint">Search novels</string>
+    <string name="novel_empty">No novels found</string>
+    <string name="novel_length_label">Body %1$d chars</string>
+    <string name="novel_page_count">%1$d pages</string>
+    <string name="novel_bookmark_count">%1$d bookmarks</string>
+    <string name="novel_view_count">%1$d views</string>
+    <string name="novel_reader_title">Text</string>
+    <string name="novel_reader_loading">Loading the text…</string>
+    <string name="novel_series_prev">Previous: %1$s</string>
+    <string name="novel_series_next">Next: %1$s</string>
 
     <!-- Enum labels -->
     <string name="feed_recommended">Recommended</string>
@@ -246,6 +262,11 @@
     <string name="language_system">System</string>
     <string name="language_japanese">Japanese</string>
     <string name="language_english">English</string>
+    <string name="general_section_font">Font</string>
+    <string name="general_font">Font</string>
+    <string name="general_font_desc">Choose between the system font and MiSans</string>
+    <string name="font_system">System Font</string>
+    <string name="font_misans">MiSans</string>
 
     <!-- Account settings screen -->
     <string name="account_login_status">Login Status</string>

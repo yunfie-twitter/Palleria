@@ -1,16 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="AppTheme.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splashscreen_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splashscreen_background</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
+    <style name="AppTheme.Splash.Calculator" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_dummy_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_dummy_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_dummy_background</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
     <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-    </style>
-
-    <style name="AppTheme.Splash.Calculator" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/ic_launcher_dummy_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_dummy</item>
-        <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 </resources>

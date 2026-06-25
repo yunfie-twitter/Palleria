@@ -53,10 +53,6 @@ import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import kotlinx.coroutines.launch
 
-private val SuggestedTags = listOf(
-    "#オリジナル", "#ウマ娘プリティーダービー", "#女の子", "#100日チャレンジ", "#裸足", "#橘ハコミ",
-    "#ZenlessZoneZero", "#鳴潮", "#WutheringWaves", "#少女", "#百合", "#イラスト",
-)
 private val SearchSortOptions = SearchSort.entries.toList()
 private val SearchTargetOptions = SearchTarget.entries.toList()
 private val SearchDurationOptions = SearchDuration.entries.toList()
@@ -75,8 +71,14 @@ fun SearchScreen(
         }
     }
 
-    val suggestions = remember(state.settings.searchHistory) {
-        (state.settings.searchHistory.take(6) + SuggestedTags.map { it.removePrefix("#") }).distinct().take(12)
+    val suggestions = remember(state.settings.searchHistory, state.recommendedTags) {
+        (state.settings.searchHistory.take(6) + state.recommendedTags).distinct().take(12)
+    }
+
+    LaunchedEffect(state.sessionReady, state.settings.refreshToken, state.recommendedTags.isEmpty()) {
+        if (state.sessionReady) {
+            viewModel.refreshRecommendedTags()
+        }
     }
 
     val onClearResults = { viewModel.clearSearchResults() }
@@ -450,10 +452,11 @@ private fun BrowseArea(
             val tagImages = remember(state.homeItems, state.searchItems) {
                 (state.homeItems + state.searchItems).distinctBy { it.id }
             }
+            val recommendedTags = state.recommendedTags
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SuggestedTags.chunked(3).forEachIndexed { rowIndex, row ->
+                recommendedTags.chunked(3).forEachIndexed { rowIndex, row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        row.forEachIndexed { index, tag ->
+                        row.forEachIndexed { index, tag -> 
                             val illust = tagImages.getOrNull(rowIndex * 3 + index)
                             TagTile(
                                 tag = tag,

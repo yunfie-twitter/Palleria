@@ -126,10 +126,9 @@
                     android:host="account" />
             </intent-filter>
 
-            <!-- ランチャー起動 -->
+            <!-- ランチャー起動（直接は出さない） -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -315,17 +314,34 @@
         </activity>
 
         <activity-alias
-            android:name=".MainActivityDummy"
-            android:enabled="false"
+            android:name=".MainActivityAlias"
+            android:enabled="true"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_dummy"
-            android:roundIcon="@mipmap/ic_launcher_dummy_round"
-            android:label="@string/app_name_dummy"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.Splash"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityDummy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_dummy"
+            android:roundIcon="@mipmap/ic_launcher_dummy_round"
+            android:label="@string/app_name_dummy"
+            android:theme="@style/AppTheme.Splash.Calculator"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
     </application>
 </manifest>

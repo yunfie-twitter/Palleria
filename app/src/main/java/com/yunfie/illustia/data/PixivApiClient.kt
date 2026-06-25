@@ -2,11 +2,14 @@ package com.yunfie.illustia.data
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
@@ -81,6 +84,23 @@ class PixivApiClient(
                 userId = response["user"].asObjectOrNull()?.long("id"),
             )
         }
+    }
+
+    fun createWebLoginUrl(createProvisionalAccount: Boolean = false, codeChallenge: String): String {
+        val path = if (createProvisionalAccount) {
+            "web/v1/provisional-accounts/create"
+        } else {
+            "web/v1/login"
+        }
+        return HttpUrl.Builder()
+            .scheme("https")
+            .host("app-api.pixiv.net")
+            .addPathSegments(path)
+            .addQueryParameter("code_challenge", codeChallenge)
+            .addQueryParameter("code_challenge_method", "S256")
+            .addQueryParameter("client", "pixiv-android")
+            .build()
+            .toString()
     }
 
     suspend fun recommended(session: PixivSession): PageResult<Illust> {
@@ -388,6 +408,47 @@ class PixivApiClient(
         )
     }
 
+    suspend fun recommendedNovels(session: PixivSession): PageResult<NovelPreview> {
+        return getNovelPage(
+            session = session,
+            url = pixivApiUrl("v1/novel/recommended", "filter" to "for_android", "include_ranking_novels" to "true"),
+        )
+    }
+
+    suspend fun nextNovelPage(session: PixivSession, nextUrl: String): PageResult<NovelPreview> {
+        return getNovelPage(session, nextUrl.toHttpUrl())
+    }
+
+    suspend fun novelText(session: PixivSession, novelId: Long): NovelTextContent {
+        val body = Request.Builder()
+            .url(
+                pixivApiUrl(
+                    "webview/v2/novel",
+                    "id" to novelId.toString(),
+                    "viewer_version" to "20221031_ai",
+                ),
+            )
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            val root = parseNovelWebviewBody(body)
+            val prev = root["seriesNavigation"].asObjectOrNull()?.get("prevNovel")?.asObjectOrNull()
+            val next = root["seriesNavigation"].asObjectOrNull()?.get("nextNovel")?.asObjectOrNull()
+            NovelTextContent(
+                novelId = novelId,
+                title = root.string("title").orEmpty(),
+                text = root.string("text")?.ifBlank { root.string("novel_text").orEmpty() } ?: root.string("novel_text").orEmpty(),
+                seriesPrevId = prev?.long("id"),
+                seriesPrevTitle = prev?.string("title"),
+                seriesNextId = next?.long("id"),
+                seriesNextTitle = next?.string("title"),
+            )
+        }
+    }
+
     private suspend fun getIllustPage(session: PixivSession, url: HttpUrl): PageResult<Illust> {
         val body = Request.Builder()
             .url(url)
@@ -403,6 +464,39 @@ class PixivApiClient(
                 items = illusts.mapNotNull { it.asObjectOrNull()?.toIllustOrNull() },
                 nextUrl = root.string("next_url"),
             )
+        }
+    }
+
+    private suspend fun getNovelPage(session: PixivSession, url: HttpUrl): PageResult<NovelPreview> {
+        val body = Request.Builder()
+            .url(url)
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            val root = json.parseToJsonElement(body).jsonObject
+            val novels = root["novels"].asArrayOrEmpty().mapNotNull { element ->
+                val item = element.asObjectOrNull() ?: return@mapNotNull null
+                val user = item["user"].asObjectOrNull()
+                val images = item["image_urls"].asObjectOrNull()
+                NovelPreview(
+                    id = item.long("id") ?: return@mapNotNull null,
+                    title = item.string("title").orEmpty(),
+                    caption = item.string("caption").orEmpty(),
+                    userId = user?.long("id") ?: 0L,
+                    userName = user?.string("name").orEmpty(),
+                    userAccount = user?.string("account").orEmpty(),
+                    coverUrl = images?.string("medium").orEmpty(),
+                    pageCount = item.int("page_count") ?: 0,
+                    textLength = item.int("text_length") ?: 0,
+                    isBookmarked = item.boolean("is_bookmarked") ?: false,
+                    totalBookmarks = item.int("total_bookmarks") ?: 0,
+                    totalView = item.int("total_view") ?: 0,
+                )
+            }
+            PageResult(items = novels, nextUrl = root.string("next_url"))
         }
     }
 
@@ -430,4 +524,27 @@ class PixivApiClient(
 
     private fun pixivDate(date: LocalDate): String =
         date.format(DateTimeFormatter.ofPattern("yyyy-M-d"))
+
+    private fun JsonObject.int(name: String): Int? = this[name]?.jsonPrimitive?.intOrNull
+
+    private fun JsonObject.boolean(name: String): Boolean? = this[name]?.jsonPrimitive?.booleanOrNull
+
+    private fun parseNovelWebviewBody(body: String): JsonObject {
+        val trimmed = body.trim()
+        if (trimmed.startsWith("{")) {
+            return json.parseToJsonElement(trimmed).jsonObject
+        }
+
+        val match = NOVEL_WEBVIEW_PATTERN.matcher(body)
+        if (!match.find() || match.groupCount() < 1) {
+            val preview = body.lineSequence().take(8).joinToString(" ").take(320)
+            throw PixivApiException(200, "小説レスポンスを解析できませんでした: $preview")
+        }
+        return json.parseToJsonElement(match.group(1)).jsonObject
+    }
+
+    private companion object {
+        val NOVEL_WEBVIEW_PATTERN: Pattern =
+            Pattern.compile("novel:\\s*(\\{.+?\\}),\\s*isOwnWork", Pattern.DOTALL)
+    }
 }

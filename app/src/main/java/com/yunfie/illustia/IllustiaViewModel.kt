@@ -18,6 +18,8 @@ import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.data.PixivApiClient
 import com.yunfie.illustia.data.PixivApiException
+import com.yunfie.illustia.data.NovelPreview
+import com.yunfie.illustia.data.NovelTextContent
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.data.Restrict
 import com.yunfie.illustia.data.SearchBookmarkFilter
@@ -80,6 +82,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     private var savedLibraryJob: Job? = null
     private var privacyUnlockJob: Job? = null
     private var autoLockJob: Job? = null
+    private var recommendedTagsJob: Job? = null
 
     val bookmarkTimelineGridState = LazyGridState()
     val bookmarkMainGridState = LazyGridState()
@@ -115,6 +118,14 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         .map { it.homeItems }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.homeItems)
+    val novelItemsState: StateFlow<List<NovelPreview>> = _uiState
+        .map { it.novelItems }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.novelItems)
+    val recommendedTagsState: StateFlow<List<String>> = _uiState
+        .map { it.recommendedTags }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.recommendedTags)
     val searchItemsState: StateFlow<List<Illust>> = _uiState
         .map { it.searchItems }
         .distinctUntilChanged()
@@ -143,6 +154,10 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         .map { HomeChromeState(it.homeKind, it.homeNextUrl, it.timelineNextUrl) }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeChromeState())
+    val novelChromeState: StateFlow<NovelChromeState> = _uiState
+        .map { NovelChromeState(it.novelNextUrl) }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NovelChromeState())
     val rankingChromeState: StateFlow<RankingChromeState> = _uiState
         .map { RankingChromeState(it.rankingMode, it.rankingNextUrl) }
         .distinctUntilChanged()
@@ -178,6 +193,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 if (settings.startupScreen == "home") {
                     refreshHome()
                 }
+                refreshRecommendedTags()
             }
         }
     }
@@ -208,6 +224,14 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateAppLanguage(value: String) {
         updateSettings { it.copy(appLanguage = value) }
+    }
+
+    fun updateAppFont(value: String) {
+        updateSettings { it.copy(appFont = value) }
+    }
+
+    fun updateThemeMode(value: String) {
+        updateSettings { it.copy(themeMode = value) }
     }
 
     fun updateAllowR18(value: Boolean) {
@@ -777,6 +801,55 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         runLoading {
             loadHomeInternal(_uiState.value.homeKind)
         }
+    }
+
+    fun refreshNovels() {
+        runLoading {
+            val page = repository.loadNovels()
+            _uiState.update {
+                it.copy(
+                    novelItems = page.items,
+                    novelNextUrl = page.nextUrl,
+                )
+            }
+        }
+    }
+
+    fun loadMoreNovels() {
+        val nextUrl = _uiState.value.novelNextUrl ?: return
+        runLoading {
+            val page = repository.nextNovelPage(nextUrl)
+            _uiState.update {
+                it.copy(
+                    novelItems = it.novelItems + page.items,
+                    novelNextUrl = page.nextUrl,
+                )
+            }
+        }
+    }
+
+    fun openNovel(novel: NovelPreview) {
+        _uiState.update { it.copy(selectedNovel = novel, selectedNovelText = null) }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val text = repository.loadNovelText(novel.id)
+                _uiState.update {
+                    if (it.selectedNovel?.id != novel.id) it else it.copy(selectedNovelText = text)
+                }
+            } catch (error: Throwable) {
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    if (it.selectedNovel?.id == novel.id) {
+                        it.copy(message = cleanErrorMessage(error, "小説を読み込めませんでした。"))
+                    } else it
+                }
+            }
+        }
+    }
+
+    fun closeNovel() {
+        _uiState.update { it.copy(selectedNovel = null, selectedNovelText = null) }
     }
 
     fun refreshRanking() {
@@ -1877,6 +1950,25 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun refreshRecommendedTags(force: Boolean = false) {
+        val state = _uiState.value
+        if (state.settings.refreshToken.isBlank()) return
+        if (!force && state.recommendedTags.isNotEmpty()) return
+        recommendedTagsJob?.cancel()
+        recommendedTagsJob = viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                repository.trendingTags()
+            }.onSuccess { tags ->
+                if (tags.isEmpty()) return@onSuccess
+                _uiState.update { current ->
+                    current.copy(recommendedTags = tags.distinct().take(12))
+                }
+            }.onFailure {
+                if (isCancellation(it)) throw it
+            }
+        }
+    }
+
     fun loadMoreBookmarks() {
         val nextUrl = _uiState.value.bookmarkNextUrl ?: return
         runLoading {
@@ -2043,6 +2135,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         searchJob?.cancel()
         detailExtrasJob?.cancel()
         loadingJob?.cancel()
+        recommendedTagsJob?.cancel()
         super.onCleared()
     }
 

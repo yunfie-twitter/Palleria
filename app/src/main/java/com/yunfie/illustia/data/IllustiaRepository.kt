@@ -66,6 +66,18 @@ class IllustiaRepository(
         }
     }
 
+    suspend fun loadNovels(): PageResult<NovelPreview> {
+        return apiClient.recommendedNovels(requireSession())
+    }
+
+    suspend fun nextNovelPage(nextUrl: String): PageResult<NovelPreview> {
+        return apiClient.nextNovelPage(requireSession(), nextUrl)
+    }
+
+    suspend fun loadNovelText(novelId: Long): NovelTextContent {
+        return apiClient.novelText(requireSession(), novelId)
+    }
+
     suspend fun search(
         word: String,
         sort: SearchSort,
@@ -79,6 +91,10 @@ class IllustiaRepository(
 
     suspend fun searchUsers(word: String): PageResult<UserPreview> {
         return apiClient.searchUsers(requireSession(), word)
+    }
+
+    suspend fun trendingTags(): List<String> {
+        return apiClient.trendingTags(requireSession())
     }
 
     suspend fun followingUsers(restrict: Restrict): PageResult<UserPreview> {

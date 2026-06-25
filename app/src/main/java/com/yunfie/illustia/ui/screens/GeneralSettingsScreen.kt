@@ -11,8 +11,12 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.appFontLabelRes
+import com.yunfie.illustia.settings.appFontOptions
 import com.yunfie.illustia.settings.appLanguageLabelRes
 import com.yunfie.illustia.settings.appLanguageOptions
+import com.yunfie.illustia.settings.appThemeLabel
+import com.yunfie.illustia.settings.appThemeOptions
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -25,7 +29,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -65,31 +69,84 @@ fun GeneralSettingsScreen(
             item { Section(stringResource(R.string.general_section_display)) {
                 ElevatedPanel {
                     SettingDropdownRow(
+                        title = stringResource(R.string.general_theme),
+                        summary = stringResource(R.string.general_theme_desc),
+                        values = appThemeOptions(),
+                        selected = state.settings.themeMode,
+                        label = { appThemeLabel(it) },
+                        onSelect = viewModel::updateThemeMode,
+                        icon = MiuixIcons.Theme,
+                    )
+                    DividerLine()
+                    SettingDropdownRow(
                         title = stringResource(R.string.general_language),
                         summary = stringResource(R.string.general_language_desc),
                         values = appLanguageOptions(),
                         selected = state.settings.appLanguage,
                         label = { stringResource(appLanguageLabelRes(it)) },
                         onSelect = viewModel::updateAppLanguage,
+                        icon = MiuixIcons.Community,
                     )
                     DividerLine()
-                    SettingSwitchRow(stringResource(R.string.general_r18), state.settings.allowR18, viewModel::updateAllowR18, stringResource(R.string.general_r18_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_r18),
+                        checked = state.settings.allowR18,
+                        onCheckedChange = viewModel::updateAllowR18,
+                        summary = stringResource(R.string.general_r18_desc),
+                        icon = MiuixIcons.MoreCircle,
+                    )
                     DividerLine()
-                    SettingSwitchRow(stringResource(R.string.general_ai_badge), state.settings.showAiBadge, viewModel::updateShowAiBadge, stringResource(R.string.general_ai_badge_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_ai_badge),
+                        checked = state.settings.showAiBadge,
+                        onCheckedChange = viewModel::updateShowAiBadge,
+                        summary = stringResource(R.string.general_ai_badge_desc),
+                        icon = MiuixIcons.Ok,
+                    )
                 }
             }}
 
             item { Section(stringResource(R.string.general_section_interaction)) {
                 ElevatedPanel {
-                    SettingSwitchRow(stringResource(R.string.general_smooth), state.settings.smoothTransitions, viewModel::updateSmoothTransitions, stringResource(R.string.general_smooth_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_smooth),
+                        checked = state.settings.smoothTransitions,
+                        onCheckedChange = viewModel::updateSmoothTransitions,
+                        summary = stringResource(R.string.general_smooth_desc),
+                        icon = MiuixIcons.Timer,
+                    )
                     DividerLine()
-                    SettingSwitchRow(stringResource(R.string.general_notch), state.settings.notchOptimization, viewModel::updateNotchOptimization, stringResource(R.string.general_notch_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_notch),
+                        checked = state.settings.notchOptimization,
+                        onCheckedChange = viewModel::updateNotchOptimization,
+                        summary = stringResource(R.string.general_notch_desc),
+                        icon = MiuixIcons.SelectAll,
+                    )
                     DividerLine()
-                    SettingSwitchRow(stringResource(R.string.general_swipe), state.settings.swipeToSwitchWorks, viewModel::updateSwipeToSwitchWorks, stringResource(R.string.general_swipe_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_swipe),
+                        checked = state.settings.swipeToSwitchWorks,
+                        onCheckedChange = viewModel::updateSwipeToSwitchWorks,
+                        summary = stringResource(R.string.general_swipe_desc),
+                        icon = MiuixIcons.Sort,
+                    )
                     DividerLine()
-                    SettingSwitchRow(stringResource(R.string.general_double_back), state.settings.doubleBackToExit, viewModel::updateDoubleBackToExit, stringResource(R.string.general_double_back_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_double_back),
+                        checked = state.settings.doubleBackToExit,
+                        onCheckedChange = viewModel::updateDoubleBackToExit,
+                        summary = stringResource(R.string.general_double_back_desc),
+                        icon = MiuixIcons.ChevronForward,
+                    )
                     DividerLine()
-                    SettingSwitchRow(stringResource(R.string.general_secure), state.settings.secureWindow, viewModel::updateSecureWindow, stringResource(R.string.general_secure_desc))
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_secure),
+                        checked = state.settings.secureWindow,
+                        onCheckedChange = viewModel::updateSecureWindow,
+                        summary = stringResource(R.string.general_secure_desc),
+                        icon = MiuixIcons.Lock,
+                    )
                 }
             }}
 
@@ -102,6 +159,7 @@ fun GeneralSettingsScreen(
                             stringResource(R.string.app_lock_enabled)
                         else
                             stringResource(R.string.app_lock_disabled),
+                        icon = MiuixIcons.Lock,
                     )
                 }
             }}
@@ -115,6 +173,21 @@ fun GeneralSettingsScreen(
                         selected = state.settings.startupScreen,
                         label = { startupLabel(it) },
                         onSelect = viewModel::updateStartupScreen,
+                        icon = MiuixIcons.VerticalSplit,
+                    )
+                }
+            }}
+
+            item { Section(stringResource(R.string.general_section_font)) {
+                ElevatedPanel {
+                    SettingDropdownRow(
+                        title = stringResource(R.string.general_font),
+                        summary = stringResource(R.string.general_font_desc),
+                        values = appFontOptions(),
+                        selected = state.settings.appFont,
+                        label = { stringResource(appFontLabelRes(it)) },
+                        onSelect = viewModel::updateAppFont,
+                        icon = MiuixIcons.More,
                     )
                 }
             }}

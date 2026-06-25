@@ -46,6 +46,7 @@ import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.HomeChromeState
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
+import com.yunfie.illustia.NovelChromeState
 import com.yunfie.illustia.RankingChromeState
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.Illust
@@ -63,6 +64,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Search as MiuixSearch
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
@@ -77,6 +79,7 @@ enum class AppTab(
     val icon: ImageVector,
 ) {
     Home(R.string.nav_home, R.string.nav_home, MiuixIcons.VerticalSplit),
+    Novel(R.string.nav_novel, R.string.nav_novel, MiuixIcons.Photos),
     Ranking(R.string.nav_ranking, R.string.nav_ranking, MiuixIcons.TopDownloads),
     Bookmarks(R.string.nav_bookmarks, R.string.nav_bookmarks_full, MiuixIcons.FavoritesFill),
     Search(R.string.nav_search, R.string.nav_search, MiuixIcons.MiuixSearch),
@@ -84,6 +87,7 @@ enum class AppTab(
 }
 
 private val SwipeTabs = listOf(AppTab.Home, AppTab.Search, AppTab.Bookmarks, AppTab.Ranking, AppTab.More)
+private val VisibleTabs = SwipeTabs
 
 private fun startupTabFor(value: String): AppTab {
     return when (value) {
@@ -100,6 +104,8 @@ private sealed interface AppRoute : NavKey {
     data object Onboarding : AppRoute
     data object Detail : AppRoute
     data object ImageViewer : AppRoute
+    data object NovelList : AppRoute
+    data object NovelReader : AppRoute
     data object Settings : AppRoute
     data object GeneralSettings : AppRoute
     data object ImageSettings : AppRoute
@@ -126,12 +132,14 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val loadState by viewModel.loadStateState.collectAsStateWithLifecycle()
     val homeItems by viewModel.homeItemsState.collectAsStateWithLifecycle()
+    val novelItems by viewModel.novelItemsState.collectAsStateWithLifecycle()
     val timelineItems by viewModel.timelineItemsState.collectAsStateWithLifecycle()
     val rankingItems by viewModel.rankingItemsState.collectAsStateWithLifecycle()
     val bookmarkItems by viewModel.bookmarkItemsState.collectAsStateWithLifecycle()
     val watchlistItems by viewModel.watchlistItemsState.collectAsStateWithLifecycle()
     val followingUsers by viewModel.followingUsersState.collectAsStateWithLifecycle()
     val homeChrome by viewModel.homeChromeState.collectAsStateWithLifecycle()
+    val novelChrome by viewModel.novelChromeState.collectAsStateWithLifecycle()
     val rankingChrome by viewModel.rankingChromeState.collectAsStateWithLifecycle()
     val bookmarkChrome by viewModel.bookmarkChromeState.collectAsStateWithLifecycle()
     val startupScreen = state.settings.startupScreen
@@ -170,6 +178,8 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
         when (val route = backStack.removeAt(backStack.lastIndex)) {
             AppRoute.Detail -> viewModel.closeIllust()
             AppRoute.ImageViewer -> viewModel.closeImageViewer()
+            AppRoute.NovelList -> Unit
+            AppRoute.NovelReader -> viewModel.closeNovel()
             AppRoute.UserProfile -> {
                 // ここでは単に非表示フラグを立てるだけにし、
                 // 実際のデータクリアはバックスタックの監視(LaunchedEffect)で行われるようにする
@@ -266,6 +276,14 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
         }
     }
 
+    LaunchedEffect(state.selectedNovel?.id) {
+        if (state.selectedNovel != null) {
+            navigate(AppRoute.NovelReader)
+        } else if (backStack.lastOrNull() == AppRoute.NovelReader) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+    }
+
     LaunchedEffect(state.showUserPage) {
         if (state.showUserPage) {
             if (backStack.lastOrNull() != AppRoute.UserProfile) {
@@ -320,12 +338,14 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     activeSearchWord = state.activeSearchWord,
                     loadState = loadState,
                     homeItems = homeItems,
+                    novelItems = novelItems,
                     timelineItems = timelineItems,
                     rankingItems = rankingItems,
                     bookmarkItems = bookmarkItems,
                     watchlistItems = watchlistItems,
                     followingUsers = followingUsers,
                     homeChrome = homeChrome,
+                    novelChrome = novelChrome,
                     rankingChrome = rankingChrome,
                     bookmarkChrome = bookmarkChrome,
                     state = state,
@@ -340,6 +360,9 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onSearch = {
                         selectedTab = AppTab.Search
                         coroutineScope.launch { pagerState.animateScrollToPage(SwipeTabs.indexOf(AppTab.Search)) }
+                    },
+                    onOpenNovels = {
+                        navigate(AppRoute.NovelList)
                     },
                 )
             }
@@ -400,6 +423,28 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                         thumbnailsInToolbar = state.settings.viewerThumbnailsInToolbar,
                     )
                 }
+            }
+            entry(AppRoute.NovelList) {
+                NovelScreen(
+                    items = novelItems,
+                    loadState = loadState,
+                    nextUrl = novelChrome.novelNextUrl,
+                    settings = settings,
+                    viewModel = viewModel,
+                    onBack = ::popRoute,
+                )
+            }
+            entry(AppRoute.NovelReader) {
+                NovelReaderScreen(
+                    novel = state.selectedNovel,
+                    text = state.selectedNovelText,
+                    loadState = loadState,
+                    viewModel = viewModel,
+                    onBack = ::popRoute,
+                    onRetry = {
+                        state.selectedNovel?.let(viewModel::openNovel)
+                    },
+                )
             }
             entry(AppRoute.Settings) {
                 SettingsScreen(
@@ -752,12 +797,14 @@ private fun MainSurface(
     activeSearchWord: String,
     loadState: LoadState,
     homeItems: List<Illust>,
+    novelItems: List<com.yunfie.illustia.data.NovelPreview>,
     timelineItems: List<Illust>,
     rankingItems: List<Illust>,
     bookmarkItems: List<Illust>,
     watchlistItems: List<Illust>,
     followingUsers: List<UserPreview>,
     homeChrome: HomeChromeState,
+    novelChrome: NovelChromeState,
     rankingChrome: RankingChromeState,
     bookmarkChrome: BookmarkChromeState,
     state: IllustiaUiState,
@@ -766,6 +813,7 @@ private fun MainSurface(
     pagerState: androidx.compose.foundation.pager.PagerState,
     onTabSelected: (Int, AppTab) -> Unit,
     onSearch: () -> Unit,
+    onOpenNovels: () -> Unit,
 ) {
     val context = LocalContext.current
     var lastBackAt by remember { mutableStateOf(0L) }
@@ -794,10 +842,11 @@ private fun MainSurface(
                         color = MiuixTheme.colorScheme.surfaceContainer,
                         showDivider = true,
                     ) {
-                        SwipeTabs.forEachIndexed { index, tab ->
+                        VisibleTabs.forEach { tab ->
+                            val pageIndex = SwipeTabs.indexOf(tab)
                             NavigationBarItem(
                                 selected = selectedTab == tab,
-                                onClick = { onTabSelected(index, tab) },
+                                onClick = { onTabSelected(pageIndex, tab) },
                                 icon = tab.icon,
                                 label = stringResource(tab.labelResId),
                             )
@@ -816,10 +865,11 @@ private fun MainSurface(
                         color = MiuixTheme.colorScheme.surfaceContainer,
                         showDivider = true,
                     ) {
-                        SwipeTabs.forEachIndexed { index, tab ->
+                        VisibleTabs.forEach { tab ->
+                            val pageIndex = SwipeTabs.indexOf(tab)
                             NavigationRailItem(
                                 selected = selectedTab == tab,
-                                onClick = { onTabSelected(index, tab) },
+                                onClick = { onTabSelected(pageIndex, tab) },
                                 icon = tab.icon,
                                 label = stringResource(tab.labelResId),
                             )
@@ -845,7 +895,9 @@ private fun MainSurface(
                     settings = settings,
                     viewModel = viewModel,
                     onSearch = onSearch,
+                    onOpenNovels = onOpenNovels,
                 )
+                AppTab.Novel -> Unit
                 AppTab.Ranking -> RankingScreen(
                     items = rankingItems,
                     loadState = loadState,

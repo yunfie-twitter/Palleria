@@ -8,6 +8,10 @@ data class HomeChromeState(
     val timelineNextUrl: String? = null,
 )
 
+data class NovelChromeState(
+    val novelNextUrl: String? = null,
+)
+
 data class RankingChromeState(
     val rankingMode: String = "day",
     val rankingNextUrl: String? = null,

@@ -49,6 +49,8 @@ data class AppSettings(
     val refreshToken: String = "",
     val bookmarkUserId: Long? = null,
     val appLanguage: String = "system",
+    val appFont: String = "system",
+    val themeMode: String = "system",
     val onboardingSetupCompleted: Boolean = false,
     val allowR18: Boolean = false,
     val highQualityImages: Boolean = true,
@@ -352,6 +354,8 @@ class SettingsStore(context: Context) {
             refreshToken = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
             bookmarkUserId = preferences[BOOKMARK_USER_ID].takeIf { it != null && it > 0L },
             appLanguage = preferences[APP_LANGUAGE] ?: "system",
+            appFont = preferences[APP_FONT] ?: "system",
+            themeMode = preferences[THEME_MODE] ?: "system",
             onboardingSetupCompleted = preferences[ONBOARDING_SETUP_COMPLETED] ?: false,
             allowR18 = preferences[ALLOW_R18] ?: false,
             highQualityImages = preferences[HIGH_QUALITY_IMAGES] ?: true,
@@ -422,6 +426,8 @@ class SettingsStore(context: Context) {
         preferences[SETTINGS_VERSION] = CURRENT_SETTINGS_VERSION
         settings.bookmarkUserId?.let { preferences[BOOKMARK_USER_ID] = it } ?: preferences.remove(BOOKMARK_USER_ID)
         preferences[APP_LANGUAGE] = settings.appLanguage
+        preferences[APP_FONT] = settings.appFont
+        preferences[THEME_MODE] = settings.themeMode
         preferences[ONBOARDING_SETUP_COMPLETED] = settings.onboardingSetupCompleted
         preferences[ALLOW_R18] = settings.allowR18
         preferences[HIGH_QUALITY_IMAGES] = settings.highQualityImages
@@ -591,6 +597,8 @@ class SettingsStore(context: Context) {
             refreshToken = preferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
             bookmarkUserId = preferences.getLong(KEY_BOOKMARK_USER_ID, 0L).takeIf { it > 0L },
             appLanguage = preferences.getString(KEY_APP_LANGUAGE, "system") ?: "system",
+            appFont = preferences.getString(KEY_APP_FONT, "system") ?: "system",
+            themeMode = preferences.getString(KEY_THEME_MODE, "system") ?: "system",
             onboardingSetupCompleted = preferences.getBoolean(KEY_ONBOARDING_SETUP_COMPLETED, false),
             allowR18 = preferences.getBoolean(KEY_ALLOW_R18, false),
             highQualityImages = preferences.getBoolean(KEY_HIGH_QUALITY, true),
@@ -877,13 +885,15 @@ class SettingsStore(context: Context) {
         private const val KEY_FAVORITE_TAGS = "favoriteTags"
         private const val KEY_VIEW_HISTORY = "viewHistory"
         private const val KEY_APP_LANGUAGE = "appLanguage"
+        private const val KEY_APP_FONT = "appFont"
+        private const val KEY_THEME_MODE = "themeMode"
         private const val KEY_ONBOARDING_SETUP_COMPLETED = "onboardingSetupCompleted"
         private const val KEY_SMOOTH_TRANSITIONS = "smoothTransitions"
         private const val KEY_PREFETCH_IMAGES = "prefetchImages"
         private const val KEY_PIXIV_IMAGE_PROXY_BASE_URL = "pixivImageProxyBaseUrl"
         private const val KEY_OFFLINE_WIFI_ONLY = "offlineWifiOnly"
         private const val KEY_OFFLINE_STORAGE_LIMIT_BYTES = "offlineStorageLimitBytes"
-        private const val CURRENT_SETTINGS_VERSION = 4
+        private const val CURRENT_SETTINGS_VERSION = 5
         private const val HISTORY_SEPARATOR = '\u001F'
         private const val FIELD_SEPARATOR = '\u001E'
         private const val MAX_SEARCH_HISTORY = 6
@@ -893,6 +903,8 @@ class SettingsStore(context: Context) {
         private val SETTINGS_VERSION = intPreferencesKey("settings_version")
         private val BOOKMARK_USER_ID = longPreferencesKey(KEY_BOOKMARK_USER_ID)
         private val APP_LANGUAGE = stringPreferencesKey(KEY_APP_LANGUAGE)
+        private val APP_FONT = stringPreferencesKey(KEY_APP_FONT)
+        private val THEME_MODE = stringPreferencesKey(KEY_THEME_MODE)
         private val ONBOARDING_SETUP_COMPLETED = booleanPreferencesKey(KEY_ONBOARDING_SETUP_COMPLETED)
         private val ALLOW_R18 = booleanPreferencesKey(KEY_ALLOW_R18)
         private val HIGH_QUALITY_IMAGES = booleanPreferencesKey(KEY_HIGH_QUALITY)

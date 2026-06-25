@@ -139,8 +139,8 @@ private fun SettingsCategoryRow(category: SettingsCategory) {
                 contentDescription = null,
                 tint = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier
-                    .size(26.dp)
-                    .padding(end = 14.dp),
+                    .size(28.dp)
+                    .padding(end = 12.dp),
             )
         },
     ) {

@@ -11,6 +11,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -19,15 +20,23 @@ import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.material.LocalTextStyle
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.AppFont
 import com.yunfie.illustia.settings.appLanguageLocaleList
+import com.yunfie.illustia.settings.appThemeColorSchemeMode
 import com.yunfie.illustia.ui.IllustiaApp
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -47,6 +56,51 @@ class MainActivity : FragmentActivity() {
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition {
             !viewModel.uiState.value.settingsLoaded
+        }
+
+        // スプラッシュ終了時のアニメーション (フル対応)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { splashScreenView ->
+                // 全体のフェードアウト
+                val alpha = android.animation.ObjectAnimator.ofFloat(
+                    splashScreenView.view,
+                    android.view.View.ALPHA,
+                    1f,
+                    0f
+                )
+                // アイコンは少しだけ縮小しながら抜けるほうが自然に見える
+                val scaleX = android.animation.ObjectAnimator.ofFloat(
+                    splashScreenView.iconView,
+                    android.view.View.SCALE_X,
+                    1f,
+                    0.92f
+                )
+                val scaleY = android.animation.ObjectAnimator.ofFloat(
+                    splashScreenView.iconView,
+                    android.view.View.SCALE_Y,
+                    1f,
+                    0.92f
+                )
+                val translateY = android.animation.ObjectAnimator.ofFloat(
+                    splashScreenView.iconView,
+                    android.view.View.TRANSLATION_Y,
+                    0f,
+                    -12f
+                )
+
+                android.animation.AnimatorSet().apply {
+                    duration = 360L
+                    interpolator = AccelerateDecelerateInterpolator()
+                    playTogether(alpha, scaleX, scaleY, translateY)
+                    addListener(object : android.animation.AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: android.animation.Animator) {
+                            splashScreenView.view.alpha = 0f
+                            splashScreenView.remove()
+                        }
+                    })
+                    start()
+                }
+            }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         enableEdgeToEdge(
@@ -68,9 +122,9 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
-            val controller = remember {
+            val controller = remember(state.settings.themeMode) {
                 ThemeController(
-                    colorSchemeMode = ColorSchemeMode.System,
+                    colorSchemeMode = appThemeColorSchemeMode(state.settings.themeMode),
                 )
             }
 
@@ -91,8 +145,20 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-                LaunchedEffect(state.settings.appLanguage) {
+            LaunchedEffect(state.settings.appLanguage) {
                 applyAppLanguage(state.settings.appLanguage)
+            }
+
+            LaunchedEffect(state.settings.themeMode) {
+                val isDarkTheme = when (state.settings.themeMode) {
+                    "light" -> false
+                    "dark" -> true
+                    else -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                }
+                enableEdgeToEdge(
+                    statusBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+                    navigationBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+                )
             }
 
             LaunchedEffect(state.settings.privacyModeEnabled, state.settings.hideRecents, state.settings.dummyAppName, state.settings.dummyIconVariant) {
@@ -104,7 +170,14 @@ class MainActivity : FragmentActivity() {
             }
 
             MiuixTheme(controller = controller) {
-                IllustiaApp(viewModel)
+                val fontFamily = remember(state.settings.appFont) {
+                    resolveAppFontFamily(state.settings.appFont)
+                }
+                CompositionLocalProvider(
+                    LocalTextStyle provides LocalTextStyle.current.merge(TextStyle(fontFamily = fontFamily)),
+                ) {
+                    IllustiaApp(viewModel)
+                }
             }
         }
         viewModel.handleIncomingIntent(intent)
@@ -181,5 +254,21 @@ class MainActivity : FragmentActivity() {
     private fun applyAppLanguage(language: String) {
         val localeManager = getSystemService(LocaleManager::class.java) ?: return
         localeManager.applicationLocales = appLanguageLocaleList(language)
+    }
+
+    private fun resolveAppFontFamily(value: String): FontFamily {
+        return when (AppFont.fromValue(value)) {
+            AppFont.System -> FontFamily.Default
+            AppFont.MiSans -> FontFamily(
+                Font(R.font.mi_sans_light, FontWeight.Light),
+                Font(R.font.mi_sans_regular, FontWeight.Normal),
+                Font(R.font.mi_sans_medium, FontWeight.Medium),
+                Font(R.font.mi_sans_demibold, FontWeight.SemiBold),
+                Font(R.font.mi_sans_bold, FontWeight.Bold),
+                Font(R.font.mi_sans_heavy, FontWeight.Black),
+                Font(R.font.mi_sans_extra_light, FontWeight.ExtraLight),
+                Font(R.font.mi_sans_thin, FontWeight.Thin),
+            )
+        }
     }
 }

@@ -4,6 +4,7 @@
 
     <!-- Navigation -->
     <string name="nav_home">ホーム</string>
+    <string name="nav_novel">小説</string>
     <string name="nav_ranking">ランキング</string>
     <string name="nav_bookmarks">ブクマ</string>
     <string name="nav_bookmarks_full">ブックマーク</string>
@@ -34,6 +35,20 @@
     <string name="home_tab_following">フォロー中</string>
     <string name="home_feed_loading">ホームフィードを読み込んでいます</string>
     <string name="home_following_empty">フォロー中ユーザーの最新作が表示されます</string>
+
+    <!-- Novel screen -->
+    <string name="novel_header_summary">おすすめの小説をひとつずつ選べる、文字中心の閲覧ページです。</string>
+    <string name="novel_header_count">%1$d件</string>
+    <string name="novel_header_search_hint">検索で探す</string>
+    <string name="novel_empty">小説が見つかりません</string>
+    <string name="novel_length_label">本文 %1$d 文字</string>
+    <string name="novel_page_count">%1$dページ</string>
+    <string name="novel_bookmark_count">%1$d ブクマ</string>
+    <string name="novel_view_count">%1$d PV</string>
+    <string name="novel_reader_title">本文</string>
+    <string name="novel_reader_loading">本文を読み込んでいます…</string>
+    <string name="novel_series_prev">前の話: %1$s</string>
+    <string name="novel_series_next">次の話: %1$s</string>
 
     <!-- Enum labels -->
     <string name="feed_recommended">おすすめ</string>
@@ -163,6 +178,8 @@
     <string name="general_section_display">表示</string>
     <string name="general_section_interaction">操作</string>
     <string name="general_section_startup">起動</string>
+    <string name="general_theme">テーマ</string>
+    <string name="general_theme_desc">アプリ全体の明るさを切り替えます</string>
     <string name="general_language">アプリの言語</string>
     <string name="general_language_desc">Palleria の表示言語と Pixiv API の言語を切り替えます</string>
     <string name="general_r18">R-18コンテンツを表示</string>
@@ -252,6 +269,14 @@
     <string name="language_system">システム</string>
     <string name="language_japanese">日本語</string>
     <string name="language_english">English</string>
+    <string name="general_section_font">フォント</string>
+    <string name="general_font">フォント設定</string>
+    <string name="general_font_desc">システム標準フォントか MiSans を選択します</string>
+    <string name="font_system">システムフォント</string>
+    <string name="font_misans">MiSans</string>
+    <string name="theme_system">システム</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
 
     <!-- Account settings screen -->
     <string name="account_login_status">ログイン状態</string>

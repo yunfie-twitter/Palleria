@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import com.yunfie.illustia.data.HomeFeedKind
 import com.yunfie.illustia.data.Illust
 import com.yunfie.illustia.data.LoadState
+import com.yunfie.illustia.data.NovelPreview
+import com.yunfie.illustia.data.NovelTextContent
 import com.yunfie.illustia.data.UserPreview
 import com.yunfie.illustia.data.UserProfile
 import com.yunfie.illustia.settings.AppSettings
@@ -21,6 +23,11 @@ data class IllustiaUiState(
     val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
     val homeItems: List<Illust> = emptyList(),
     val homeNextUrl: String? = null,
+    val novelItems: List<NovelPreview> = emptyList(),
+    val novelNextUrl: String? = null,
+    val selectedNovel: NovelPreview? = null,
+    val selectedNovelText: NovelTextContent? = null,
+    val recommendedTags: List<String> = emptyList(),
     val searchDraft: String = "",
     val activeSearchWord: String = "",
     val searchItems: List<Illust> = emptyList(),

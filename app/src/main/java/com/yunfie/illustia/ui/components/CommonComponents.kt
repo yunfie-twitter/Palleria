@@ -617,7 +617,12 @@ fun HeaderIcon(icon: ImageVector, onClick: (() -> Unit)? = null) {
         minWidth = 44.dp,
         minHeight = 44.dp,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = MiuixTheme.colorScheme.onBackground)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MiuixTheme.colorScheme.onBackground,
+            modifier = Modifier.size(28.dp)
+        )
     }
 }
 
