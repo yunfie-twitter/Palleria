@@ -51,16 +51,12 @@ fun HomeScreen(
     onSearch: () -> Unit,
     onOpenNovels: () -> Unit,
 ) {
-    var selectedTab by remember { androidx.compose.runtime.mutableStateOf(HomeTab.Feed) }
-    val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
-        initialPage = HomeTab.entries.indexOf(selectedTab),
+        initialPage = HomeTab.Feed.ordinal,
         pageCount = { HomeTab.entries.size },
     )
-
-    LaunchedEffect(pagerState.currentPage) {
-        selectedTab = HomeTab.entries[pagerState.currentPage]
-    }
+    val coroutineScope = rememberCoroutineScope()
+    val selectedTab = HomeTab.entries[pagerState.currentPage]
 
     // タブ切り替え時にデータを自動取得
     LaunchedEffect(selectedTab) {
@@ -106,9 +102,8 @@ fun HomeScreen(
                 if (settings.amoledMode) {
                     TabRow(
                         tabs = HomeTab.entries.map { stringResource(it.labelResId) },
-                        selectedTabIndex = HomeTab.entries.indexOf(selectedTab),
+                        selectedTabIndex = selectedTab.ordinal,
                         onTabSelected = { index ->
-                            selectedTab = HomeTab.entries[index]
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
                         colors = TabRowDefaults.tabRowColors(
@@ -124,9 +119,8 @@ fun HomeScreen(
                 } else {
                     TabRow(
                         tabs = HomeTab.entries.map { stringResource(it.labelResId) },
-                        selectedTabIndex = HomeTab.entries.indexOf(selectedTab),
-                        onTabSelected = { index ->
-                            selectedTab = HomeTab.entries[index]
+                        selectedTabIndex = selectedTab.ordinal,
+                        onTabSelected = { index -> 
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
                         modifier = Modifier

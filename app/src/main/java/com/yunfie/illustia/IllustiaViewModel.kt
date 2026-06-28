@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.widget.RankingWidgetProvider
 import com.yunfie.illustia.data.HomeFeedKind
 import com.yunfie.illustia.data.Illust
 import com.yunfie.illustia.data.IllustiaRepository
@@ -31,6 +32,7 @@ import com.yunfie.illustia.data.UserPreview
 import com.yunfie.illustia.data.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import java.util.concurrent.TimeUnit
@@ -38,7 +40,10 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 import android.net.ConnectivityManager
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -179,18 +184,26 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch(Dispatchers.IO) {
             val settings = repository.readSettings()
-            val shouldLock = settings.appLockEnabled && settingsStore.hasPinSet()
+            val normalizedSettings = if (settings.useDynamicColor && !isDynamicColorAvailable()) {
+                settings.copy(useDynamicColor = false)
+            } else {
+                settings
+            }
+            if (normalizedSettings != settings) {
+                repository.saveSettings(normalizedSettings)
+            }
+            val shouldLock = normalizedSettings.appLockEnabled && settingsStore.hasPinSet()
             _uiState.update {
-                it.withSettings(settings).copy(
+                it.withSettings(normalizedSettings).copy(
                     settingsLoaded = true,
                     appLocked = shouldLock,
-                    privacyLocked = settings.privacyModeEnabled,
-                    showLockRecoveryDialog = settings.appLockFailCount >= 12,
+                    privacyLocked = normalizedSettings.privacyModeEnabled,
+                    showLockRecoveryDialog = normalizedSettings.appLockFailCount >= 12,
                 )
             }
-            if (settings.refreshToken.isNotBlank() && !shouldLock && !settings.privacyModeEnabled) {
-                refreshCurrentAccountProfile(settings)
-                if (settings.startupScreen == "home") {
+            if (normalizedSettings.refreshToken.isNotBlank() && !shouldLock && !normalizedSettings.privacyModeEnabled) {
+                refreshCurrentAccountProfile(normalizedSettings)
+                if (normalizedSettings.startupScreen == "home") {
                     refreshHome()
                 }
                 refreshRecommendedTags()
@@ -235,7 +248,9 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun updateUseDynamicColor(value: Boolean) {
-        updateSettings { it.copy(useDynamicColor = value) }
+        updateSettings {
+            it.copy(useDynamicColor = value && isDynamicColorAvailable())
+        }
     }
 
     fun updateSeedColor(value: Long) {
@@ -804,6 +819,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                     message = str(R.string.msg_logged_out),
                 )
             }
+            refreshRankingWidget()
         }
     }
 
@@ -1617,7 +1633,8 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 downloadClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) throw Exception(str(R.string.error_save_failed) + " (${response.code})")
                     val body = response.body ?: throw Exception(str(R.string.error_save_failed))
-                    val file = saveOfflineFile(filename, requestUrl, body.byteStream())
+                    val contentType = body.contentType()?.toString()
+                    val file = saveOfflineFile(filename, requestUrl, contentType, body.byteStream())
                     val current = _uiState.value.selectedIllust ?: return@use
                     val pages = listOf(
                         SavedIllustPageEntity().apply {
@@ -1651,19 +1668,29 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun saveOfflineFile(filename: String, sourceUrl: String, input: java.io.InputStream): File {
+    private fun saveOfflineFile(
+        filename: String,
+        sourceUrl: String,
+        responseMimeType: String?,
+        input: java.io.InputStream,
+    ): File {
         val dir = settingsStore.savedIllustDir()
         dir.mkdirs()
-        val target = File(dir, filename.withOfflineExtension(sourceUrl))
+        val target = File(dir, filename.withOfflineExtension(sourceUrl, responseMimeType))
         input.use { stream ->
             FileOutputStream(target).use { output -> stream.copyTo(output) }
         }
         return target
     }
 
-    private fun String.withOfflineExtension(sourceUrl: String): String {
+    private fun String.withOfflineExtension(sourceUrl: String, responseMimeType: String?): String {
         if (contains('.')) return this
-        val ext = sourceUrl.substringAfterLast('.', "jpg").substringBefore('?')
+        val ext = when (responseMimeType?.substringBefore(";")?.lowercase(Locale.ROOT)) {
+            "image/png" -> "png"
+            "image/webp" -> "webp"
+            "image/gif" -> "gif"
+            else -> sourceUrl.substringAfterLast('.', "jpg").substringBefore('?')
+        }
         return "$this.${ext.ifBlank { "jpg" }}"
     }
 
@@ -2130,6 +2157,20 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch(Dispatchers.IO) {
             refreshCurrentAccountProfile(nextSettings)
+        }
+        refreshRankingWidget()
+    }
+
+    private suspend fun refreshRankingWidget() {
+        runCatching {
+            val context = getApplication<Application>().applicationContext
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, RankingWidgetProvider::class.java))
+            if (ids.isEmpty()) return
+            val intent = android.content.Intent(context, RankingWidgetProvider::class.java).apply {
+                action = RankingWidgetProvider.ACTION_REFRESH_RANKING_WIDGET
+            }
+            context.sendBroadcast(intent)
         }
     }
 

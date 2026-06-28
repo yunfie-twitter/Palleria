@@ -11,10 +11,10 @@ android {
 
     defaultConfig {
         applicationId "com.yunfie.illustia"
-        minSdk 33
+        minSdk 29
         targetSdk 36
         versionCode 11
-        versionName "1.6"
+        versionName "2.0"
     }
 
     signingConfigs {
@@ -80,6 +80,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0"
     implementation "androidx.lifecycle:lifecycle-runtime-compose:2.10.0"
+    implementation "androidx.appcompat:appcompat:1.7.1"
     implementation "androidx.core:core-splashscreen:1.2.0"
     implementation "androidx.security:security-crypto:1.1.0-alpha06"
     implementation "androidx.datastore:datastore-preferences:1.2.0"
@@ -101,7 +102,6 @@ dependencies {
     implementation "top.yukonga.miuix.kmp:miuix-ui-android:0.9.2"
     implementation "top.yukonga.miuix.kmp:miuix-preference-android:0.9.2"
     implementation "top.yukonga.miuix.kmp:miuix-icons-android:0.9.2"
-    implementation "top.yukonga.miuix.kmp:miuix-blur-android:0.9.2"
     implementation "top.yukonga.miuix.kmp:miuix-squircle-android:0.9.2"
     implementation "top.yukonga.miuix.kmp:miuix-navigation3-ui-android:0.9.2"
 

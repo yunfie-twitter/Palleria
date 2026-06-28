@@ -5,6 +5,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import okhttp3.Dispatcher
@@ -40,6 +41,7 @@ class IllustiaApplication : Application() {
                 .components {
                     add(OkHttpNetworkFetcherFactory(callFactory = { httpClient }))
                     add(AnimatedImageDecoder.Factory())
+                    add(GifDecoder.Factory())
                 }
                 .memoryCache {
                     MemoryCache.Builder()

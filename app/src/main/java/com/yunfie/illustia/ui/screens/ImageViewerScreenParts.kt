@@ -3,12 +3,8 @@ package com.yunfie.illustia.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.calculateCentroid
-import androidx.compose.foundation.gestures.calculateCentroidSize
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,16 +39,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.util.fastAll
-import androidx.compose.ui.util.fastAny
-import androidx.compose.ui.util.fastForEach
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.PixivImage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -110,6 +101,8 @@ internal fun ZoomablePixivImage(
 ) {
     var scale by remember(url) { mutableFloatStateOf(1f) }
     var offset by remember(url) { mutableStateOf(Offset.Zero) }
+    var localScale by remember(url) { mutableFloatStateOf(1f) }
+    var localOffset by remember(url) { mutableStateOf(Offset.Zero) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     val animationScope = rememberCoroutineScope()
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
@@ -143,6 +136,8 @@ internal fun ZoomablePixivImage(
                     startOffset.x + (targetOffset.x - startOffset.x) * progress,
                     startOffset.y + (targetOffset.y - startOffset.y) * progress,
                 )
+                localScale = scale
+                localOffset = offset
                 notifyZoomChanged(previous, scale)
             }
         }
@@ -153,6 +148,8 @@ internal fun ZoomablePixivImage(
             zoomAnimation[0]?.cancel()
             scale = 1f
             offset = Offset.Zero
+            localScale = 1f
+            localOffset = Offset.Zero
             onZoomChanged(false)
         }
     }
@@ -176,76 +173,25 @@ internal fun ZoomablePixivImage(
                 )
             }
             .pointerInput(url) {
-                awaitEachGesture {
+                detectTransformGestures { centroid, pan, zoom, _ ->
                     zoomAnimation[0]?.cancel()
-                    var localScale = scale
-                    var localOffset = offset
-                    var pastTouchSlop = false
-                    val touchSlop = viewConfiguration.touchSlop
-                    var accumulatedZoom = 1f
+                    val previousScale = localScale
+                    val nextScale = (localScale * zoom).coerceIn(1f, 6f)
+                    val appliedZoom = nextScale / localScale
+                    val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+                    val focalPoint = centroid - viewportCenter
+                    val transformedOffset = localOffset + pan +
+                        (focalPoint - localOffset) * (1f - appliedZoom)
 
-                    var event = awaitPointerEvent()
-                    while (event.changes.fastAll { !it.pressed }) {
-                        event = awaitPointerEvent()
+                    localScale = nextScale
+                    localOffset = if (localScale > 1.02f) {
+                        clampedOffset(transformedOffset, localScale)
+                    } else {
+                        Offset.Zero
                     }
-
-                    do {
-                        val event = awaitPointerEvent()
-                        val canceled = event.changes.fastAny { it.isConsumed }
-
-                        if (!canceled) {
-                            val zoomChange = event.calculateZoom()
-                            val panChange = event.calculatePan()
-                            val centroid = event.calculateCentroid(useCurrent = false)
-
-                            if (!pastTouchSlop) {
-                                accumulatedZoom *= zoomChange
-                                val centroidSize = event.calculateCentroidSize(useCurrent = false)
-                                val zoomMotion = abs(1 - accumulatedZoom) * centroidSize
-                                val panMotion = panChange.getDistance()
-
-                                if (zoomMotion > touchSlop || panMotion > touchSlop) {
-                                    pastTouchSlop = true
-                                }
-                            }
-
-                            if (pastTouchSlop) {
-                                val nextScale = (localScale * zoomChange).coerceIn(1f, 6f)
-                                val isPinching = zoomChange != 1f
-                                val isZoomed = localScale > 1.02f
-
-                                if (isPinching || isZoomed) {
-                                    event.changes.fastForEach {
-                                        if (it.positionChanged()) {
-                                            it.consume()
-                                        }
-                                    }
-
-                                    val appliedZoom = nextScale / localScale
-                                    val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
-                                    val focalPoint = centroid - viewportCenter
-                                    val transformedOffset = localOffset + panChange +
-                                        (focalPoint - localOffset) * (1f - appliedZoom)
-                                    val previousScale = localScale
-                                    localScale = nextScale
-                                    localOffset = if (localScale > 1.02f) {
-                                        clampedOffset(transformedOffset, localScale)
-                                    } else {
-                                        Offset.Zero
-                                    }
-
-                                    scale = localScale
-                                    offset = localOffset
-                                    notifyZoomChanged(previousScale, localScale)
-                                }
-                            }
-                        }
-                    } while (!canceled && event.changes.fastAny { it.pressed })
-
-                    if (localScale <= 1.02f) {
-                        scale = 1f
-                        offset = Offset.Zero
-                    }
+                    scale = localScale
+                    offset = localOffset
+                    notifyZoomChanged(previousScale, localScale)
                 }
             }
     ) {

@@ -343,5 +343,37 @@
             </intent-filter>
         </activity-alias>
 
+        <receiver
+            android:name=".widget.RankingWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.yunfie.illustia.widget.ACTION_REFRESH_RANKING_WIDGET" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/ranking_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.IllustWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.yunfie.illustia.widget.ACTION_REFRESH_ILLUST_WIDGET" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/illust_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.IllustWidgetConfigureActivity"
+            android:exported="true"
+            android:theme="@style/AppTheme">
+        </activity>
+
     </application>
 </manifest>

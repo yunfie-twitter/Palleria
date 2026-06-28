@@ -2,8 +2,9 @@ package com.yunfie.illustia.ui.components
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -12,13 +13,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.activity.ExperimentalActivityApi
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -79,7 +77,6 @@ import coil3.size.Scale
 import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.settings.AppSettings
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -95,7 +92,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Ok
@@ -163,13 +159,14 @@ fun PredictiveBackGestureHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 ) {
-    PredictiveBackHandler(enabled = enabled) { progress ->
-        try {
-            progress.collect()
-            onBack()
-        } catch (e: CancellationException) {
-            throw e
-        }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Miuix NavDisplay already owns predictive back on supported Android versions.
+        // Let the scene stack handle the gesture so the system animation stays intact.
+        return
+    }
+
+    BackHandler(enabled = enabled) {
+        onBack()
     }
 }
 
@@ -216,7 +213,7 @@ fun PixivImage(
 fun PrefetchPixivImages(
     urls: List<String>,
     enabled: Boolean,
-    limit: Int = 16,
+    limit: Int = 12,
 ) {
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
@@ -347,11 +344,13 @@ private enum class FollowPillStage { UNFOLLOWED, CHECK, FOLLOWED, UNFOLLOWING }
 private enum class BookmarkButtonStage { UNBOOKMARKED, CHECK, BOOKMARKED, REMOVING }
 
 /**
- * 状態が分かりやすいフォローピル。
- * フォロー時は濃色、未フォロー時は輪郭を強めたコントラストで表示する。
+ * アニメーション付きフォローボタン。
+ * フォロー時: 「フォロー」→ チェックマーク → 「フォロー中」
+ * フォロー解除時: 「フォロー中」→ フェードアウト → 「フォロー」
  */
 @Composable
 fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
+    // isFollowed の前の値を追跡してアニメーション方向を決定する
     var prevFollowed by remember { mutableStateOf(isFollowed) }
     var stage by remember(isFollowed) {
         val initial = when {
@@ -366,6 +365,7 @@ fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
 
     val haptic = LocalHapticFeedback.current
 
+    // チェックマーク → フォロー中 の自動遷移
     LaunchedEffect(stage) {
         when (stage) {
             FollowPillStage.CHECK -> {
@@ -384,137 +384,63 @@ fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
 
     val isActiveFollow = remember(stage) { stage == FollowPillStage.FOLLOWED || stage == FollowPillStage.CHECK }
     val scheme = MiuixTheme.colorScheme
-    val containerColor = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh
-    val outlineColor = if (isActiveFollow) Color.Transparent else scheme.onSurface.copy(alpha = 0.14f)
-    val contentColor = if (isActiveFollow) scheme.onPrimary else scheme.onSurface
-    val accentColor = if (isActiveFollow) scheme.onPrimary.copy(alpha = 0.16f) else scheme.primary.copy(alpha = 0.10f)
-
     Box(
         modifier = modifier
             .squircleSurface(
-                color = containerColor,
-                cornerRadius = 28.dp,
+                color = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
+                cornerRadius = 24.dp,
             )
             .then(
                 if (!isActiveFollow) {
                     Modifier.squircleBorder(
                         width = 1.dp,
-                        color = outlineColor,
-                        cornerRadius = 28.dp,
+                        color = scheme.onSurface.copy(alpha = 0.15f),
+                        cornerRadius = 24.dp,
                     )
                 } else Modifier
             )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 22.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            val iconOffset by animateFloatAsState(
-                targetValue = when (stage) {
-                    FollowPillStage.CHECK -> 58f
-                    FollowPillStage.UNFOLLOWING -> 26f
-                    else -> 0f
-                },
-                animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
-                label = "follow-pill-icon-offset",
-            )
-            val iconScale by animateFloatAsState(
-                targetValue = when (stage) {
-                    FollowPillStage.CHECK -> 1.18f
-                    FollowPillStage.UNFOLLOWING -> 1.05f
-                    else -> 1f
-                },
-                animationSpec = spring(dampingRatio = 0.68f, stiffness = 540f),
-                label = "follow-pill-icon-scale",
-            )
-            val iconRotation by animateFloatAsState(
-                targetValue = when (stage) {
-                    FollowPillStage.CHECK -> 0f
-                    FollowPillStage.UNFOLLOWING -> -8f
-                    else -> 0f
-                },
-                animationSpec = tween(220),
-                label = "follow-pill-icon-rotation",
-            )
-            val iconTint = if (isActiveFollow) contentColor else contentColor
-
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .graphicsLayer {
-                        translationX = iconOffset
-                        scaleX = iconScale
-                        scaleY = iconScale
-                        rotationZ = iconRotation
-                    }
-                    .clip(CircleShape)
-                    .background(accentColor),
-                contentAlignment = Alignment.Center,
-            ) {
-                AnimatedContent(
-                    targetState = stage,
-                    transitionSpec = {
-                        when (targetState) {
-                            FollowPillStage.CHECK ->
-                                (scaleIn(spring(dampingRatio = 0.42f, stiffness = 380f), initialScale = 0.25f) + fadeIn(tween(140))) togetherWith
-                                    (scaleOut(tween(120), targetScale = 0.55f) + fadeOut(tween(120)))
-                            FollowPillStage.FOLLOWED ->
-                                (fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.85f)) togetherWith
-                                    (fadeOut(tween(120)) + scaleOut(tween(120), targetScale = 1.06f))
-                            FollowPillStage.UNFOLLOWING ->
-                                (scaleIn(tween(140), initialScale = 0.9f) + fadeIn(tween(140))) togetherWith
-                                    (scaleOut(tween(120), targetScale = 0.8f) + fadeOut(tween(120)))
-                            FollowPillStage.UNFOLLOWED ->
-                                (fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.84f)) togetherWith
-                                    (fadeOut(tween(120)) + scaleOut(tween(120), targetScale = 1.05f))
-                        }
-                    },
-                    label = "follow-pill-icon",
-                ) { s ->
-                    when (s) {
-                        FollowPillStage.CHECK,
-                        FollowPillStage.FOLLOWED -> Icon(
-                            imageVector = MiuixIcons.Ok,
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(15.dp),
-                        )
-                        FollowPillStage.UNFOLLOWING,
-                        FollowPillStage.UNFOLLOWED -> Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(15.dp),
-                        )
-                    }
+        AnimatedContent(
+            targetState = stage,
+            transitionSpec = {
+                when (targetState) {
+                    FollowPillStage.CHECK ->
+                        (scaleIn(spring(dampingRatio = 0.45f, stiffness = 380f), initialScale = 0.3f) + fadeIn(tween(160))) togetherWith
+                                (scaleOut(tween(120), targetScale = 0.5f) + fadeOut(tween(120)))
+                    FollowPillStage.FOLLOWED ->
+                        (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.85f)) togetherWith
+                                (fadeOut(tween(140)) + scaleOut(tween(140), targetScale = 1.1f))
+                    FollowPillStage.UNFOLLOWING, FollowPillStage.UNFOLLOWED ->
+                        (fadeIn(tween(200))) togetherWith (fadeOut(tween(200)))
                 }
-            }
-
-            AnimatedVisibility(
-                visible = stage != FollowPillStage.CHECK,
-                enter = slideInHorizontally(
-                    initialOffsetX = { it / 6 },
-                    animationSpec = spring(dampingRatio = 0.8f, stiffness = 520f),
-                ) + fadeIn(tween(180)),
-                exit = slideOutHorizontally(
-                    targetOffsetX = { it / 8 },
-                    animationSpec = tween(120),
-                ) + fadeOut(tween(120)),
-            ) {
-                Text(
-                    text = when (stage) {
-                        FollowPillStage.FOLLOWED, FollowPillStage.UNFOLLOWING -> stringResource(R.string.action_following)
-                        FollowPillStage.UNFOLLOWED -> stringResource(R.string.action_follow)
-                        FollowPillStage.CHECK -> ""
-                    },
-                    color = when (stage) {
-                        FollowPillStage.UNFOLLOWING -> contentColor.copy(alpha = 0.42f)
-                        else -> contentColor
-                    },
-                    fontWeight = FontWeight.ExtraBold,
+            },
+            label = "follow-pill-stage",
+        ) { s ->
+            when (s) {
+                FollowPillStage.CHECK -> Icon(
+                    imageVector = MiuixIcons.Ok,
+                    contentDescription = null,
+                    tint = scheme.onPrimary,
+                    modifier = Modifier.size(20.dp),
+                )
+                FollowPillStage.FOLLOWED -> Text(
+                    text = stringResource(R.string.action_following),
+                    color = scheme.onPrimary,
+                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.subtitle,
+                )
+                FollowPillStage.UNFOLLOWING -> Text(
+                    text = stringResource(R.string.action_following),
+                    color = scheme.onPrimary.copy(alpha = 0.4f),
+                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.subtitle,
+                )
+                FollowPillStage.UNFOLLOWED -> Text(
+                    text = stringResource(R.string.action_follow),
+                    color = scheme.onSurface,
+                    fontWeight = FontWeight.Bold,
                     style = MiuixTheme.textStyles.subtitle,
                 )
             }

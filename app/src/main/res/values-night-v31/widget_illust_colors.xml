@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_illust_background_start">@android:color/system_neutral1_900</color>
+    <color name="widget_illust_background_end">@android:color/system_neutral1_800</color>
+    <color name="widget_illust_background_stroke">@android:color/system_neutral1_700</color>
+    <color name="widget_illust_frame">@android:color/system_neutral1_800</color>
+    <color name="widget_illust_overlay_start">#CC000000</color>
+    <color name="widget_illust_overlay_end">#00000000</color>
+    <color name="widget_illust_chip_bg">@android:color/system_neutral1_800</color>
+    <color name="widget_illust_chip_stroke">@android:color/system_neutral1_700</color>
+    <color name="widget_illust_title_bg">#CC12161D</color>
+    <color name="widget_illust_on_surface">@android:color/system_neutral1_100</color>
+    <color name="widget_illust_on_surface_muted">@android:color/system_neutral1_300</color>
+    <color name="widget_illust_primary">@android:color/system_accent1_200</color>
+</resources>

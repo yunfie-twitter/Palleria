@@ -182,6 +182,7 @@
     <string name="general_amoled_warning_desc">AMOLED is an experimental feature. It changes dark-theme backgrounds and surfaces to black, which can significantly change the appearance. Continue?</string>
     <string name="general_dynamic_color">Dynamic Color</string>
     <string name="general_dynamic_color_desc">Apply the device system color palette to the app</string>
+    <string name="general_dynamic_color_unsupported_desc">Dynamic Color is not available on this device</string>
     <string name="general_seed_color">Seed Color</string>
     <string name="general_seed_color_dialog_title">Seed Color</string>
     <string name="general_seed_color_dialog_desc">Choose the base color used when Dynamic Color is off</string>
@@ -440,6 +441,22 @@
     <string name="ranking_month">Monthly</string>
     <string name="ranking_week_rookie">Rookie</string>
     <string name="ranking_day_ai">AI</string>
+    <string name="widget_ranking_title">Ranking</string>
+    <string name="widget_ranking_loading">Loading ranking</string>
+    <string name="widget_ranking_error">Could not update ranking</string>
+    <string name="widget_ranking_login_title">Log in to view ranking</string>
+    <string name="widget_ranking_login_subtitle">Sign in to Pixiv to see the latest ranking on your home screen.</string>
+    <string name="widget_ranking_login_button">Log In</string>
+    <string name="widget_ranking_refresh">Refresh</string>
+    <string name="widget_illust_title">Illustration</string>
+    <string name="widget_illust_pick_prompt">Pick an illustration</string>
+    <string name="widget_illust_configure">Configure</string>
+    <string name="widget_illust_change">Change</string>
+    <string name="widget_illust_refresh">Refresh</string>
+    <string name="widget_illust_pick_page">Choose display page</string>
+    <string name="widget_illust_apply">Place Widget</string>
+    <string name="widget_illust_cancel">Cancel</string>
+    <string name="widget_illust_image_missing">The selected image is missing</string>
 
     <!-- Bookmark settings screen labels -->
     <string name="bookmark_section_behavior">Behavior</string>

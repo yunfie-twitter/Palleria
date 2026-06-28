@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.Illust
 import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.data.SearchBookmarkFilter
 import com.yunfie.illustia.data.SearchDuration
@@ -153,6 +154,7 @@ internal fun SearchResultGrid(
     page: Int,
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     val feedHighQuality = remember(state.settings.highQualityImages, state.settings.feedPreviewQuality) {
         state.settings.highQualityImages && state.settings.feedPreviewQuality != "low"
@@ -160,7 +162,10 @@ internal fun SearchResultGrid(
     val showAiBadge = remember(state.settings.showAiBadge) { state.settings.showAiBadge }
     val prefetchUrls = remember(page, state.searchItems, feedHighQuality) {
         if (page == 0) {
-            state.searchItems.map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+            state.searchItems.asSequence()
+                .take(16)
+                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                .toList()
         } else {
             emptyList()
         }
@@ -181,7 +186,7 @@ internal fun SearchResultGrid(
                 IllustCard(
                     illust = illust,
                     onBookmark = { viewModel.toggleBookmark(illust) },
-                    onClick = { viewModel.openIllust(illust) },
+                    onClick = { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) },
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
                 )
@@ -231,6 +236,7 @@ internal fun BrowseArea(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     showHeader: Boolean = false,
+    onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     val feedHighQuality = remember(state.settings.highQualityImages, state.settings.feedPreviewQuality) {
         state.settings.highQualityImages && state.settings.feedPreviewQuality != "low"
@@ -240,10 +246,12 @@ internal fun BrowseArea(
         val historyUrls = state.settings.viewHistory.take(8).map {
             if (feedHighQuality) it.previewUrl else it.thumbnailUrl
         }
-        val tagUrls = (state.homeItems + state.searchItems)
+        val tagUrls = sequenceOf(state.homeItems.asSequence(), state.searchItems.asSequence())
+            .flatten()
             .distinctBy { it.id }
             .take(12)
             .map { it.squareImageUrl.ifBlank { it.imageUrl } }
+            .toList()
         historyUrls + tagUrls
     }
     PrefetchPixivImages(browsePrefetchUrls, enabled = state.settings.prefetchImages)
@@ -281,7 +289,7 @@ internal fun BrowseArea(
                             IllustCard(
                                 illust = illust,
                                 onBookmark = { viewModel.toggleBookmark(illust) },
-                                onClick = { viewModel.openIllust(illust) },
+                                onClick = { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) },
                                 highQualityImages = feedHighQuality,
                                 showAiBadge = showAiBadge,
                             )
@@ -295,7 +303,10 @@ internal fun BrowseArea(
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
             val tagImages = remember(state.homeItems, state.searchItems) {
-                (state.homeItems + state.searchItems).distinctBy { it.id }
+                sequenceOf(state.homeItems.asSequence(), state.searchItems.asSequence())
+                    .flatten()
+                    .distinctBy { it.id }
+                    .toList()
             }
             val recommendedTags = state.recommendedTags
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

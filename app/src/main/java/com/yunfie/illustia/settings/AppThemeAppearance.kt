@@ -3,6 +3,7 @@ package com.yunfie.illustia.settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.Colors
@@ -16,10 +17,11 @@ fun rememberAppThemeColors(settings: AppSettings): Colors {
         "dark" -> true
         else -> isSystemInDarkTheme()
     }
-    val controller = remember(settings.themeMode, settings.useDynamicColor, settings.seedColor) {
+    val useDynamicColor = settings.useDynamicColor && isDynamicColorAvailable()
+    val controller = remember(settings.themeMode, useDynamicColor, settings.seedColor) {
         ThemeController(
             colorSchemeMode = settings.toColorSchemeMode(),
-            keyColor = if (settings.useDynamicColor) Color.Unspecified else Color(settings.seedColor.toInt()),
+            keyColor = if (useDynamicColor) null else Color(settings.seedColor.toInt()),
         )
     }
     val colors = controller.currentColors()
@@ -28,6 +30,10 @@ fun rememberAppThemeColors(settings: AppSettings): Colors {
     } else {
         colors
     }
+}
+
+fun isDynamicColorAvailable(): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 }
 
 private fun AppSettings.toColorSchemeMode(): ColorSchemeMode {

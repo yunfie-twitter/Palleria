@@ -17,6 +17,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -24,6 +25,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.material.LocalTextStyle
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelProvider
@@ -251,8 +253,21 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun applyAppLanguage(language: String) {
-        val localeManager = getSystemService(LocaleManager::class.java) ?: return
-        localeManager.applicationLocales = appLanguageLocaleList(language)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val localeManager = getSystemService(LocaleManager::class.java) ?: return
+            localeManager.applicationLocales = appLanguageLocaleList(language)
+            return
+        }
+
+        AppCompatDelegate.setApplicationLocales(
+            LocaleListCompat.forLanguageTags(
+                when (language) {
+                    "ja" -> "ja-JP"
+                    "en" -> "en-US"
+                    else -> ""
+                },
+            ),
+        )
     }
 
     private fun resolveAppFontFamily(value: String): FontFamily {

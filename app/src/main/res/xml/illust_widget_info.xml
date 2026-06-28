@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.yunfie.illustia.widget.IllustWidgetConfigureActivity"
+    android:initialLayout="@layout/illust_widget"
+    android:maxResizeHeight="420dp"
+    android:maxResizeWidth="520dp"
+    android:minHeight="220dp"
+    android:minWidth="250dp"
+    android:minResizeHeight="180dp"
+    android:minResizeWidth="180dp"
+    android:previewImage="@mipmap/ic_launcher"
+    android:previewLayout="@layout/illust_widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="3"
+    android:targetCellWidth="3"
+    android:updatePeriodMillis="1800000"
+    android:widgetFeatures="reconfigurable"
+    android:widgetCategory="home_screen" />

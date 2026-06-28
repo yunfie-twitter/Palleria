@@ -23,6 +23,7 @@ import com.yunfie.illustia.settings.appLanguageLabelRes
 import com.yunfie.illustia.settings.appLanguageOptions
 import com.yunfie.illustia.settings.appThemeLabel
 import com.yunfie.illustia.settings.appThemeOptions
+import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -54,6 +55,7 @@ fun GeneralSettingsScreen(
     var showSeedColorDialog by remember { mutableStateOf(false) }
     var showAmoledWarningDialog by remember { mutableStateOf(false) }
     val seedColor = remember(state.settings.seedColor) { Color(state.settings.seedColor.toInt()) }
+    val dynamicColorAvailable = isDynamicColorAvailable()
 
     if (showSeedColorDialog) {
         SeedColorPickerDialog(
@@ -117,7 +119,6 @@ fun GeneralSettingsScreen(
                         selected = state.settings.themeMode,
                         label = { appThemeLabel(it) },
                         onSelect = viewModel::updateThemeMode,
-                        icon = MiuixIcons.Theme,
                     )
                     DividerLine()
                     ThemeSwitchSettingRow(
@@ -137,7 +138,12 @@ fun GeneralSettingsScreen(
                         title = stringResource(R.string.general_dynamic_color),
                         checked = state.settings.useDynamicColor,
                         onCheckedChange = viewModel::updateUseDynamicColor,
-                        summary = stringResource(R.string.general_dynamic_color_desc),
+                        summary = if (dynamicColorAvailable) {
+                            stringResource(R.string.general_dynamic_color_desc)
+                        } else {
+                            stringResource(R.string.general_dynamic_color_unsupported_desc)
+                        },
+                        enabled = dynamicColorAvailable,
                     )
                     if (!state.settings.useDynamicColor) {
                         DividerLine()
@@ -156,7 +162,6 @@ fun GeneralSettingsScreen(
                         selected = state.settings.appLanguage,
                         label = { stringResource(appLanguageLabelRes(it)) },
                         onSelect = viewModel::updateAppLanguage,
-                        icon = MiuixIcons.Community,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -164,7 +169,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.allowR18,
                         onCheckedChange = viewModel::updateAllowR18,
                         summary = stringResource(R.string.general_r18_desc),
-                        icon = MiuixIcons.MoreCircle,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -172,7 +176,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.showAiBadge,
                         onCheckedChange = viewModel::updateShowAiBadge,
                         summary = stringResource(R.string.general_ai_badge_desc),
-                        icon = MiuixIcons.Ok,
                     )
                 }
             }}
@@ -184,7 +187,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.smoothTransitions,
                         onCheckedChange = viewModel::updateSmoothTransitions,
                         summary = stringResource(R.string.general_smooth_desc),
-                        icon = MiuixIcons.Timer,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -192,7 +194,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.notchOptimization,
                         onCheckedChange = viewModel::updateNotchOptimization,
                         summary = stringResource(R.string.general_notch_desc),
-                        icon = MiuixIcons.SelectAll,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -200,7 +201,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.swipeToSwitchWorks,
                         onCheckedChange = viewModel::updateSwipeToSwitchWorks,
                         summary = stringResource(R.string.general_swipe_desc),
-                        icon = MiuixIcons.Sort,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -208,7 +208,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.doubleBackToExit,
                         onCheckedChange = viewModel::updateDoubleBackToExit,
                         summary = stringResource(R.string.general_double_back_desc),
-                        icon = MiuixIcons.ChevronForward,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -216,7 +215,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.secureWindow,
                         onCheckedChange = viewModel::updateSecureWindow,
                         summary = stringResource(R.string.general_secure_desc),
-                        icon = MiuixIcons.Lock,
                     )
                     DividerLine()
                     SettingSwitchRow(
@@ -224,7 +222,6 @@ fun GeneralSettingsScreen(
                         checked = state.settings.userProfileBottomSheetEnabled,
                         onCheckedChange = viewModel::updateUserProfileBottomSheetEnabled,
                         summary = stringResource(R.string.general_user_profile_bottom_sheet_desc),
-                        icon = MiuixIcons.Contacts,
                     )
                 }
             }}
@@ -238,7 +235,6 @@ fun GeneralSettingsScreen(
                             stringResource(R.string.app_lock_enabled)
                         else
                             stringResource(R.string.app_lock_disabled),
-                        icon = MiuixIcons.Lock,
                     )
                 }
             }}
@@ -252,7 +248,6 @@ fun GeneralSettingsScreen(
                         selected = state.settings.startupScreen,
                         label = { startupLabel(it) },
                         onSelect = viewModel::updateStartupScreen,
-                        icon = MiuixIcons.VerticalSplit,
                     )
                 }
             }}
@@ -266,7 +261,6 @@ fun GeneralSettingsScreen(
                         selected = state.settings.appFont,
                         label = { stringResource(appFontLabelRes(it)) },
                         onSelect = viewModel::updateAppFont,
-                        icon = MiuixIcons.More,
                     )
                 }
             }}

@@ -66,17 +66,16 @@ fun BookmarkScreen(
     chrome: BookmarkChromeState,
     viewModel: IllustiaViewModel,
 ) {
-    var selectedTopTab by remember(chrome.selectedTab) { mutableStateOf(chrome.selectedTab) }
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
-    val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
         initialPage = chrome.selectedTab,
         pageCount = { 3 },
     )
+    val coroutineScope = rememberCoroutineScope()
+    val selectedTopTab = pagerState.currentPage
 
-    LaunchedEffect(pagerState.currentPage) {
-        selectedTopTab = pagerState.currentPage
-        viewModel.updateBookmarkSelectedTab(pagerState.currentPage)
+    LaunchedEffect(selectedTopTab) {
+        viewModel.updateBookmarkSelectedTab(selectedTopTab)
     }
 
     val feedHighQuality = remember(settings.highQualityImages, settings.feedPreviewQuality) {
@@ -89,7 +88,10 @@ fun BookmarkScreen(
         else -> emptyList()
     }
     val prefetchUrls = remember(activeItems, feedHighQuality) {
-        activeItems.map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+        activeItems.asSequence()
+            .take(16)
+            .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+            .toList()
     }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
 
@@ -166,10 +168,7 @@ fun BookmarkScreen(
             bottomContent = {
                 CompactBookmarkTabs(
                     selectedTab = selectedTopTab,
-                    onSelect = { index ->
-                        selectedTopTab = index
-                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                    },
+                    onSelect = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
                 )
             },

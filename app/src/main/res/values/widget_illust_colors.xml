@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_illust_background_start">#10141C</color>
+    <color name="widget_illust_background_end">#090C11</color>
+    <color name="widget_illust_background_stroke">#263042</color>
+    <color name="widget_illust_frame">#18202C</color>
+    <color name="widget_illust_overlay_start">#CC000000</color>
+    <color name="widget_illust_overlay_end">#00000000</color>
+    <color name="widget_illust_chip_bg">#2B3441</color>
+    <color name="widget_illust_chip_stroke">#415063</color>
+    <color name="widget_illust_title_bg">#CC12161D</color>
+    <color name="widget_illust_on_surface">#F6F8FB</color>
+    <color name="widget_illust_on_surface_muted">#C5CCD8</color>
+    <color name="widget_illust_primary">#74A9FF</color>
+</resources>

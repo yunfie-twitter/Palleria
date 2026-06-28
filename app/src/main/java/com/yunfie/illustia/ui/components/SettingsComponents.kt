@@ -215,12 +215,14 @@ fun SettingSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     summary: String? = null,
     icon: ImageVector? = null,
+    enabled: Boolean = true,
 ) {
     SwitchPreference(
         title = title,
         summary = summary,
         checked = checked,
         onCheckedChange = onCheckedChange,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         startAction = icon?.let {
             {

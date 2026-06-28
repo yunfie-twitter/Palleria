@@ -187,6 +187,7 @@
     <string name="general_amoled_warning_desc">AMOLED は実験的機能です。ダークテーマ時の背景と surface が黒に変わり、見た目が大きく変わる場合があります。続けますか？</string>
     <string name="general_dynamic_color">Dynamic Color</string>
     <string name="general_dynamic_color_desc">端末のシステム配色をアプリに反映します</string>
+    <string name="general_dynamic_color_unsupported_desc">この端末では Dynamic Color を利用できません</string>
     <string name="general_seed_color">Seed Color</string>
     <string name="general_seed_color_dialog_title">Seed Color</string>
     <string name="general_seed_color_dialog_desc">Dynamic Color をオフにしたときの基準色を選択します</string>
@@ -457,6 +458,22 @@
     <string name="ranking_month">月間</string>
     <string name="ranking_week_rookie">新人</string>
     <string name="ranking_day_ai">AI</string>
+    <string name="widget_ranking_title">ランキング</string>
+    <string name="widget_ranking_loading">ランキングを読み込み中</string>
+    <string name="widget_ranking_error">ランキングを更新できませんでした</string>
+    <string name="widget_ranking_login_title">ログインしてランキングを見る</string>
+    <string name="widget_ranking_login_subtitle">Pixiv にログインすると、最新のランキングを表示します。</string>
+    <string name="widget_ranking_login_button">ログイン</string>
+    <string name="widget_ranking_refresh">更新</string>
+    <string name="widget_illust_title">イラスト</string>
+    <string name="widget_illust_pick_prompt">イラストを選択してください</string>
+    <string name="widget_illust_configure">設定</string>
+    <string name="widget_illust_change">変更</string>
+    <string name="widget_illust_refresh">更新</string>
+    <string name="widget_illust_pick_page">表示ページを選択</string>
+    <string name="widget_illust_apply">ウィジェットに配置</string>
+    <string name="widget_illust_cancel">キャンセル</string>
+    <string name="widget_illust_image_missing">選択した画像が見つかりません</string>
 
     <!-- Bookmark settings screen labels -->
     <string name="bookmark_section_behavior">基本動作</string>

@@ -40,12 +40,14 @@ fun ThemeSwitchSettingRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     summary: String,
+    enabled: Boolean = true,
 ) {
     SwitchPreference(
         title = title,
         summary = summary,
         checked = checked,
         onCheckedChange = onCheckedChange,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
     )
 }

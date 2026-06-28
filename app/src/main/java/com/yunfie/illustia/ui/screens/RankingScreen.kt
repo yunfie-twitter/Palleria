@@ -224,7 +224,10 @@ private fun RankingGridContent(
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.rankingGridState
     val prefetchUrls = remember(items, feedHighQuality) {
-        items.map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+        items.asSequence()
+            .take(16)
+            .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+            .toList()
     }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
 

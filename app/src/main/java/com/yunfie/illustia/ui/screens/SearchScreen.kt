@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.Illust
 import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.data.SearchBookmarkFilter
 import com.yunfie.illustia.data.SearchDuration
@@ -62,6 +63,8 @@ private val SearchBookmarkFilterOptions = SearchBookmarkFilter.entries.toList()
 fun SearchScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    widgetSelectionMode: Boolean = false,
+    onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
 
@@ -160,8 +163,18 @@ fun SearchScreen(
             ) { mode ->
                 when (mode) {
                     "suggestions" -> Spacer(Modifier.fillMaxSize())
-                    "results" -> SearchResultsArea(state = state, viewModel = viewModel)
-                    else -> BrowseArea(state = state, viewModel = viewModel, showHeader = true)
+                    "results" -> SearchResultsArea(
+                        state = state,
+                        viewModel = viewModel,
+                        widgetSelectionMode = widgetSelectionMode,
+                        onIllustSelected = onIllustSelected,
+                    )
+                    else -> BrowseArea(
+                        state = state,
+                        viewModel = viewModel,
+                        showHeader = true,
+                        onIllustSelected = onIllustSelected,
+                    )
                 }
             }
         }
@@ -172,25 +185,23 @@ fun SearchScreen(
 private fun SearchResultsArea(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    widgetSelectionMode: Boolean = false,
+    onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     val scheme = MiuixTheme.colorScheme
-    var selectedResultTab by remember { mutableStateOf(0) }
     var showOptionsSheet by remember { mutableStateOf(false) }
     val tabIllust = stringResource(R.string.search_tab_illust)
     val tabUser = stringResource(R.string.search_tab_user)
-    val tabs = remember(state.settings.searchUsersEnabled, tabIllust, tabUser) {
-        if (state.settings.searchUsersEnabled) listOf(tabIllust, tabUser) else listOf(tabIllust)
+    val tabs = remember(state.settings.searchUsersEnabled, widgetSelectionMode, tabIllust, tabUser) {
+        if (widgetSelectionMode) listOf(tabIllust)
+        else if (state.settings.searchUsersEnabled) listOf(tabIllust, tabUser) else listOf(tabIllust)
     }
     val resultPagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(resultPagerState.currentPage) {
-        selectedResultTab = resultPagerState.currentPage
-    }
+    val selectedResultTab = resultPagerState.currentPage
 
     LaunchedEffect(tabs.size) {
         if (selectedResultTab >= tabs.size) {
-            selectedResultTab = 0
             resultPagerState.scrollToPage(0)
         }
     }
@@ -206,7 +217,6 @@ private fun SearchResultsArea(
                     tabs = tabs,
                     selectedTabIndex = selectedResultTab,
                     onTabSelected = { index ->
-                        selectedResultTab = index
                         coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
                     },
                     colors = TabRowDefaults.tabRowColors(
@@ -222,7 +232,6 @@ private fun SearchResultsArea(
                     tabs = tabs,
                     selectedTabIndex = selectedResultTab,
                     onTabSelected = { index ->
-                        selectedResultTab = index
                         coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
                     },
                     modifier = Modifier.weight(1f),
@@ -246,7 +255,12 @@ private fun SearchResultsArea(
                 IllustGridSkeleton(columns = adaptiveIllustColumns(state.settings))
             } else {
                 HorizontalPager(state = resultPagerState, modifier = Modifier.fillMaxSize()) { page ->
-                    SearchResultGrid(page = page, state = state, viewModel = viewModel)
+                    SearchResultGrid(
+                        page = page,
+                        state = state,
+                        viewModel = viewModel,
+                        onIllustSelected = onIllustSelected,
+                    )
                 }
             }
         }
