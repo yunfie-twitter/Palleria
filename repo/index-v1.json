@@ -1,6 +1,6 @@
 {
   "repo": {
-    "timestamp": 1782425513000,
+    "timestamp": 1782616933000,
     "version": 20002,
     "name": "Illustia Dev Repository",
     "icon": "icon.png",
@@ -43,7 +43,7 @@
       {
         "added": 1782310583000,
         "apkName": "Illustia-v1.4-release.apk",
-        "hash": "2ac396d1870800314e8ea31a20aa256fc613153361c6cc68c310955b1f27d7b1",
+        "hash": "5f76711c8e6b038fa1d65d88e6c6370536a7f2850366ed5af868245fc062b100",
         "hashType": "sha256",
         "minSdkVersion": 33,
         "nativecode": [
