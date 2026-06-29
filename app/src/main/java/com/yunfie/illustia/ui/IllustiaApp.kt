@@ -53,6 +53,7 @@ import com.yunfie.illustia.data.Illust
 import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.data.UserPreview
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.ui.components.*
 import com.yunfie.illustia.ui.screens.*
 import kotlinx.coroutines.delay
@@ -315,6 +316,7 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
+        LocalAppHapticMode provides AppHapticMode.fromValue(state.settings.hapticMode),
     ) {
         if (!state.privacyLocked || state.isTransitioningToIllustia) {
         Scaffold(

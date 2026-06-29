@@ -8,6 +8,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
@@ -77,7 +82,6 @@ class IllustWidgetProvider : AppWidgetProvider() {
 
         private fun bindEmpty(context: Context, views: RemoteViews, appWidgetId: Int) {
             views.setViewVisibility(R.id.widget_empty_state, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_content, View.GONE)
             views.setTextViewText(R.id.widget_empty_title, context.getString(R.string.widget_illust_pick_prompt))
             views.setImageViewResource(R.id.widget_empty_button, android.R.drawable.ic_menu_add)
             views.setOnClickPendingIntent(R.id.widget_empty_button, configurePendingIntent(context, appWidgetId))
@@ -86,12 +90,6 @@ class IllustWidgetProvider : AppWidgetProvider() {
 
         private fun bindSelection(context: Context, views: RemoteViews, appWidgetId: Int, selection: IllustWidgetSelection) {
             views.setViewVisibility(R.id.widget_empty_state, View.GONE)
-            views.setViewVisibility(R.id.widget_content, View.VISIBLE)
-            views.setTextViewText(R.id.widget_title, selection.title.ifBlank { context.getString(R.string.widget_illust_title) })
-            views.setOnClickPendingIntent(R.id.widget_change, configurePendingIntent(context, appWidgetId))
-            views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent(context))
-            views.setImageViewResource(R.id.widget_change, android.R.drawable.ic_menu_edit)
-            views.setImageViewResource(R.id.widget_refresh, android.R.drawable.ic_popup_sync)
 
             val imageFile = File(selection.imagePath)
             if (imageFile.exists()) {
@@ -110,7 +108,6 @@ class IllustWidgetProvider : AppWidgetProvider() {
             } else {
                 views.setImageViewResource(R.id.widget_image, R.mipmap.ic_launcher)
                 views.setViewVisibility(R.id.widget_empty_state, View.VISIBLE)
-                views.setViewVisibility(R.id.widget_content, View.GONE)
                 views.setTextViewText(R.id.widget_empty_title, context.getString(R.string.widget_illust_image_missing))
                 views.setImageViewResource(R.id.widget_empty_button, android.R.drawable.ic_menu_add)
                 views.setOnClickPendingIntent(R.id.widget_empty_button, configurePendingIntent(context, appWidgetId))
@@ -126,18 +123,6 @@ class IllustWidgetProvider : AppWidgetProvider() {
             return PendingIntent.getActivity(
                 context,
                 appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-        }
-
-        private fun refreshPendingIntent(context: Context): PendingIntent {
-            val intent = Intent(context, IllustWidgetProvider::class.java).apply {
-                action = ACTION_REFRESH_ILLUST_WIDGET
-            }
-            return PendingIntent.getBroadcast(
-                context,
-                2201,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
@@ -187,7 +172,7 @@ class IllustWidgetProvider : AppWidgetProvider() {
             if (scaled != decoded) {
                 decoded.recycle()
             }
-            return scaled
+            return roundCorners(scaled)
         }
 
         private fun calculateInSampleSize(srcWidth: Int, srcHeight: Int, reqWidth: Int, reqHeight: Int): Int {
@@ -198,6 +183,23 @@ class IllustWidgetProvider : AppWidgetProvider() {
                 inSampleSize *= 2
             }
             return inSampleSize.coerceAtLeast(1)
+        }
+
+        private fun roundCorners(source: Bitmap): Bitmap {
+            val radius = (minOf(source.width, source.height) * 0.08f).coerceIn(24f, 72f)
+            val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(output)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            val rect = RectF(0f, 0f, source.width.toFloat(), source.height.toFloat())
+
+            canvas.drawRoundRect(rect, radius, radius, paint)
+            paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+            canvas.drawBitmap(source, 0f, 0f, paint)
+
+            if (source != output) {
+                source.recycle()
+            }
+            return output
         }
     }
 }

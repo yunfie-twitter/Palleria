@@ -269,6 +269,10 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         updateSettings { it.copy(smoothTransitions = value) }
     }
 
+    fun updateHapticMode(value: String) {
+        updateSettings { it.copy(hapticMode = value) }
+    }
+
     fun updatePrefetchImages(value: Boolean) {
         updateSettings { it.copy(prefetchImages = value) }
     }

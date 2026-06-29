@@ -19,6 +19,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.appFontLabelRes
 import com.yunfie.illustia.settings.appFontOptions
+import com.yunfie.illustia.settings.appHapticLabel
+import com.yunfie.illustia.settings.appHapticOptions
 import com.yunfie.illustia.settings.appLanguageLabelRes
 import com.yunfie.illustia.settings.appLanguageOptions
 import com.yunfie.illustia.settings.appThemeLabel
@@ -187,6 +189,15 @@ fun GeneralSettingsScreen(
                         checked = state.settings.smoothTransitions,
                         onCheckedChange = viewModel::updateSmoothTransitions,
                         summary = stringResource(R.string.general_smooth_desc),
+                    )
+                    DividerLine()
+                    SettingDropdownRow(
+                        title = stringResource(R.string.general_haptics),
+                        summary = stringResource(R.string.general_haptics_desc),
+                        values = appHapticOptions(),
+                        selected = state.settings.hapticMode,
+                        label = { appHapticLabel(it) },
+                        onSelect = viewModel::updateHapticMode,
                     )
                     DividerLine()
                     SettingSwitchRow(

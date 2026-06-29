@@ -75,6 +75,7 @@ data class AppSettings(
     val appLockCooldownUntil: Long = 0L,
     val viewHistory: List<Illust> = emptyList(),
     val smoothTransitions: Boolean = true,
+    val hapticMode: String = "rich",
     val prefetchImages: Boolean = false,
     val notchOptimization: Boolean = true,
     val confirmOnLongPressSave: Boolean = true,
@@ -391,6 +392,7 @@ class SettingsStore(context: Context) {
                 decodeHistoryIllusts(preferences[VIEW_HISTORY_JSON])
             }.take(MAX_VIEW_HISTORY),
             smoothTransitions = preferences[SMOOTH_TRANSITIONS] ?: true,
+            hapticMode = preferences[HAPTIC_MODE] ?: "rich",
             prefetchImages = preferences[PREFETCH_IMAGES] ?: false,
             notchOptimization = preferences[NOTCH_OPTIMIZATION] ?: true,
             confirmOnLongPressSave = preferences[CONFIRM_ON_LONG_PRESS_SAVE] ?: true,
@@ -462,6 +464,7 @@ class SettingsStore(context: Context) {
         preferences.remove(FAVORITE_TAGS_JSON)
         preferences.remove(VIEW_HISTORY_JSON)
         preferences[SMOOTH_TRANSITIONS] = settings.smoothTransitions
+        preferences[HAPTIC_MODE] = settings.hapticMode
         preferences[PREFETCH_IMAGES] = settings.prefetchImages
         preferences[NOTCH_OPTIMIZATION] = settings.notchOptimization
         preferences[CONFIRM_ON_LONG_PRESS_SAVE] = settings.confirmOnLongPressSave
@@ -638,6 +641,7 @@ class SettingsStore(context: Context) {
             appLockCooldownUntil = 0L,
             viewHistory = decodeHistoryIllusts(preferences.getString(KEY_VIEW_HISTORY, "")).take(MAX_VIEW_HISTORY),
             smoothTransitions = preferences.getBoolean(KEY_SMOOTH_TRANSITIONS, true),
+            hapticMode = preferences.getString(KEY_HAPTIC_MODE, "rich") ?: "rich",
             prefetchImages = preferences.getBoolean(KEY_PREFETCH_IMAGES, false),
             notchOptimization = preferences.getBoolean("notchOptimization", true),
             confirmOnLongPressSave = preferences.getBoolean("confirmOnLongPressSave", true),
@@ -913,6 +917,7 @@ class SettingsStore(context: Context) {
         private const val KEY_SEED_COLOR = "seedColor"
         private const val KEY_ONBOARDING_SETUP_COMPLETED = "onboardingSetupCompleted"
         private const val KEY_SMOOTH_TRANSITIONS = "smoothTransitions"
+        private const val KEY_HAPTIC_MODE = "hapticMode"
         private const val KEY_PREFETCH_IMAGES = "prefetchImages"
         private const val KEY_PIXIV_IMAGE_PROXY_BASE_URL = "pixivImageProxyBaseUrl"
         private const val KEY_OFFLINE_WIFI_ONLY = "offlineWifiOnly"
@@ -951,6 +956,7 @@ class SettingsStore(context: Context) {
         private val APP_LOCK_FAIL_COUNT = intPreferencesKey("appLockFailCount")
         private val APP_LOCK_COOLDOWN_UNTIL = longPreferencesKey("appLockCooldownUntil")
         private val SMOOTH_TRANSITIONS = booleanPreferencesKey(KEY_SMOOTH_TRANSITIONS)
+        private val HAPTIC_MODE = stringPreferencesKey(KEY_HAPTIC_MODE)
         private val PREFETCH_IMAGES = booleanPreferencesKey(KEY_PREFETCH_IMAGES)
         private val NOTCH_OPTIMIZATION = booleanPreferencesKey("notchOptimization")
         private val CONFIRM_ON_LONG_PRESS_SAVE = booleanPreferencesKey("confirmOnLongPressSave")

@@ -24,7 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -40,7 +40,9 @@ import com.yunfie.illustia.data.LoadState
 import com.yunfie.illustia.data.Restrict
 import com.yunfie.illustia.data.UserPreview
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.*
+import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -104,7 +106,9 @@ fun BookmarkScreen(
     }
 
     val scrollBehavior = MiuixScrollBehavior()
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -155,7 +159,7 @@ fun BookmarkScreen(
                     }
                 }
                 IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    performAppHapticFeedback(context, haptic, hapticMode)
                     when (selectedTopTab) {
                         0 -> viewModel.refreshTimeline()
                         2 -> viewModel.refreshFollowingUsers()

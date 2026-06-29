@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -45,10 +44,12 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
+import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,6 +80,7 @@ fun AppLockSetupScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var pendingAction by remember { mutableStateOf<PinVerifyAction?>(null) }
@@ -127,7 +129,7 @@ fun AppLockSetupScreen(
                 val prompt = BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
                     override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                         viewModel.updateBiometricEnabled(true)
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        performAppHapticFeedback(context, haptic, hapticMode)
                     }
                     override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                         requestBiometric = false
@@ -158,7 +160,7 @@ fun AppLockSetupScreen(
     }
 
     fun onVerifyDigit(digit: Char) {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        performAppHapticFeedback(context, haptic, hapticMode)
         if (isCooldownActive) return
         if (verifyError) {
             verifyPin = digit.toString()
@@ -187,7 +189,7 @@ fun AppLockSetupScreen(
     }
 
     fun onVerifyDelete() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        performAppHapticFeedback(context, haptic, hapticMode)
         if (verifyError) {
             verifyError = false
             verifyPin = ""

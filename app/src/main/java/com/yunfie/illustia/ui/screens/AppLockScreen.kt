@@ -37,7 +37,6 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -50,6 +49,8 @@ import androidx.fragment.app.FragmentActivity
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import kotlinx.coroutines.delay
+import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -67,6 +68,7 @@ fun AppLockScreen(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
     var shake by remember { mutableStateOf(false) }
@@ -97,29 +99,11 @@ fun AppLockScreen(
     }
 
     fun vibrateUnlock() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(VibratorManager::class.java)
-            val vibrator = vibratorManager?.defaultVibrator
-            vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
-        } else {
-            @Suppress("DEPRECATION")
-            val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
-            vibrator?.vibrate(longArrayOf(0, 30, 60, 30), -1)
-        }
+        performAppHapticFeedback(context, haptic, hapticMode)
     }
 
     fun vibrateError() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(VibratorManager::class.java)
-            val vibrator = vibratorManager?.defaultVibrator
-            vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK))
-        } else {
-            @Suppress("DEPRECATION")
-            val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
-            vibrator?.vibrate(longArrayOf(0, 40, 60, 40), -1)
-        }
+        performAppHapticFeedback(context, haptic, hapticMode)
     }
 
     fun triggerUnlockAnimation() {
@@ -176,7 +160,7 @@ fun AppLockScreen(
     }
 
     fun onDigitPressed(digit: Char) {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        performAppHapticFeedback(context, haptic, hapticMode)
         if (unlocking || isCooldownActive) return
         if (error) {
             pin = digit.toString()
@@ -202,7 +186,7 @@ fun AppLockScreen(
     }
 
     fun onDeletePressed() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        performAppHapticFeedback(context, haptic, hapticMode)
         if (unlocking || isCooldownActive) return
         if (error) {
             error = false

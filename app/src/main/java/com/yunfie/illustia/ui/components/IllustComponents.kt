@@ -19,7 +19,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -163,12 +163,14 @@ private fun IllustCardImpl(
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val hapticMode = LocalAppHapticMode.current
     Card(
         modifier = modifier.combinedClickable(
             onClick = onClick,
             onLongClick = if (onLongClick != null) {
                 {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    performAppHapticFeedback(context, haptic, hapticMode)
                     onLongClick()
                 }
             } else null
@@ -279,6 +281,8 @@ fun IllustListRow(
     onLongClick: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val hapticMode = LocalAppHapticMode.current
     val pageBadgeText = remember(illust.id) {
         if (illust.pageCount > 1) "${illust.pageCount}P" else null
     }
@@ -290,7 +294,7 @@ fun IllustListRow(
                 onClick = onClick,
                 onLongClick = if (onLongClick != null) {
                     {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        performAppHapticFeedback(context, haptic, hapticMode)
                         onLongClick()
                     }
                 } else null

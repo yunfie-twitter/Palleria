@@ -200,6 +200,10 @@
     <string name="general_ai_badge_desc">AI関連タグを含む作品に小さなバッジを表示します</string>
     <string name="general_smooth">スムーズなアニメーション</string>
     <string name="general_smooth_desc">画面遷移やリスト表示を滑らかにします</string>
+    <string name="general_haptics">ハプティクス</string>
+    <string name="general_haptics_desc">操作時の触覚フィードバックの質を切り替えます</string>
+    <string name="general_haptics_rich">リッチ ハプティクス</string>
+    <string name="general_haptics_clear">クリア ハプティクス</string>
     <string name="general_notch">ノッチ最適化</string>
     <string name="general_notch_desc">ステータスバー領域の表示を調整します</string>
     <string name="general_swipe">タブのスワイプ切替</string>

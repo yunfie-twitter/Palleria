@@ -57,9 +57,11 @@ import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -97,6 +99,7 @@ internal fun IllustDetailHeader(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
     val clipboard = remember(context) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
     val openInBrowserLabel = stringResource(R.string.detail_open_in_browser)
     val shareLabel = stringResource(R.string.detail_share)
@@ -150,7 +153,7 @@ internal fun IllustDetailHeader(
                                 enabled = !maskMutedArtwork,
                                 onClick = { onOpenImage(page) },
                                 onLongClick = {
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                    performAppHapticFeedback(context, haptic, hapticMode)
                                     onSaveImage(imageUrls[page], "illustia_${illust.id}_p$page", confirmOnLongPressSave)
                                 },
                             ),

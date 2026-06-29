@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -53,10 +52,12 @@ import com.yunfie.illustia.ui.components.FlowButtons
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
@@ -92,7 +93,9 @@ fun IllustDetailScreen(
     confirmOnLongPressSave: Boolean,
     skipConfirmOnDetailSave: Boolean,
 ) {
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
     PredictiveBackGestureHandler(onBack = onBack)
     var pendingSave by remember { mutableStateOf<Pair<String, String>?>(null) }
     var showUnfollowConfirm by remember { mutableStateOf(false) }
@@ -146,9 +149,9 @@ fun IllustDetailScreen(
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                FloatingActionButton(
+                    onClick = {
+                    performAppHapticFeedback(context, haptic, hapticMode)
                     onBookmark()
                 },
                 shape = RoundedCornerShape(18.dp),

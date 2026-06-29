@@ -1,0 +1,12 @@
+# Startup profile hints for launcher -> app shell
+Lcom/yunfie/illustia/MainActivity;
+Lcom/yunfie/illustia/IllustiaApplication;
+Lcom/yunfie/illustia/IllustiaViewModel;
+Lcom/yunfie/illustia/settings/SettingsStore;
+Lcom/yunfie/illustia/ui/IllustiaAppKt;
+Lcom/yunfie/illustia/ui/components/CommonComponentsKt;
+Lcom/yunfie/illustia/ui/components/IllustComponentsKt;
+Lcom/yunfie/illustia/ui/screens/HomeScreenKt;
+Lcom/yunfie/illustia/ui/screens/OnboardingScreenKt;
+Lcom/yunfie/illustia/ui/screens/SettingsScreenKt;
+Lcom/yunfie/illustia/ui/screens/MoreScreenKt;

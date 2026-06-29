@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.activity.ExperimentalActivityApi
@@ -296,7 +297,9 @@ fun Modifier.miuixClickable(
     if (!enabled) return this
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
     val scale by animateFloatAsState(
         targetValue = if (pressed) pressedScale else 1f,
         animationSpec = spring(dampingRatio = 0.74f, stiffness = 520f),
@@ -309,7 +312,7 @@ fun Modifier.miuixClickable(
         interactionSource = interactionSource,
         indication = null,
         onClick = {
-            if (haptic) hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (haptic) performAppHapticFeedback(context, hapticFeedback, hapticMode)
             onClick()
         },
     )
@@ -364,17 +367,19 @@ fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
     }
 
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val hapticMode = LocalAppHapticMode.current
 
     // チェックマーク → フォロー中 の自動遷移
     LaunchedEffect(stage) {
         when (stage) {
             FollowPillStage.CHECK -> {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                performAppHapticFeedback(context, haptic, hapticMode)
                 delay(600)
                 stage = FollowPillStage.FOLLOWED
             }
             FollowPillStage.UNFOLLOWING -> {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                performAppHapticFeedback(context, haptic, hapticMode)
                 delay(300)
                 stage = FollowPillStage.UNFOLLOWED
             }
@@ -460,6 +465,8 @@ fun BookmarkHeartButton(
     inactiveBackground: Color = Color.Transparent,
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val hapticMode = LocalAppHapticMode.current
     var previousBookmarked by remember { mutableStateOf(isBookmarked) }
     var stage by remember(isBookmarked) {
         val initial = when {
@@ -475,12 +482,12 @@ fun BookmarkHeartButton(
     LaunchedEffect(stage) {
         when (stage) {
             BookmarkButtonStage.CHECK -> {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                performAppHapticFeedback(context, haptic, hapticMode)
                 delay(420)
                 stage = BookmarkButtonStage.BOOKMARKED
             }
             BookmarkButtonStage.REMOVING -> {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                performAppHapticFeedback(context, haptic, hapticMode)
                 delay(220)
                 stage = BookmarkButtonStage.UNBOOKMARKED
             }

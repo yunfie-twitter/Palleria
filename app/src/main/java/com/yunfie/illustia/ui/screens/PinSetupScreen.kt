@@ -23,14 +23,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -44,7 +46,9 @@ fun PinSetupScreen(
     onBack: () -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
 
     var step by remember { mutableIntStateOf(0) }
     var newPin by remember { mutableStateOf("") }
@@ -83,7 +87,7 @@ fun PinSetupScreen(
     val incorrectError = stringResource(R.string.app_lock_incorrect)
 
     fun onDigitPressed(digit: Char) {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        performAppHapticFeedback(context, haptic, hapticMode)
         if (error.isNotBlank()) {
             error = ""
             when (step) {
@@ -138,7 +142,7 @@ fun PinSetupScreen(
     }
 
     fun onDeletePressed() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        performAppHapticFeedback(context, haptic, hapticMode)
         if (error.isNotBlank()) {
             error = ""
             return
