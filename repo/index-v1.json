@@ -1,6 +1,6 @@
 {
   "repo": {
-    "timestamp": 1782731790000,
+    "timestamp": 1782906610000,
     "version": 20002,
     "name": "Illustia Dev Repository",
     "icon": "icon.png",
@@ -21,7 +21,7 @@
         "Multimedia",
         "Graphics"
       ],
-      "suggestedVersionCode": "12",
+      "suggestedVersionCode": "13",
       "description": "Pixiv\u306e\u30a4\u30e9\u30b9\u30c8\u30fb\u6f2b\u753b\u30fb\u4f5c\u54c1\u3092\u5feb\u9069\u306b\u95b2\u89a7\u3067\u304d\u308b\u3001\u30b7\u30f3\u30d7\u30eb\u3067\u4f7f\u3044\u3084\u3059\u3044\u975e\u516c\u5f0f\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u3067\u3059\u3002\n\n\u4e3b\u306a\u6a5f\u80fd:\n- \u30a4\u30e9\u30b9\u30c8\u30fb\u6f2b\u753b\u306e\u95b2\u89a7\n- \u304a\u3059\u3059\u3081\u30fb\u30e9\u30f3\u30ad\u30f3\u30b0\u30fb\u65b0\u7740\u30d5\u30a3\u30fc\u30c9\n- \u5f37\u529b\u306a\u691c\u7d22\u6a5f\u80fd\uff08\u30bf\u30b0\u30fb\u30e6\u30fc\u30b6\u30fc\uff09\n- \u30d6\u30c3\u30af\u30de\u30fc\u30af\u7ba1\u7406\n- \u753b\u50cf\u4fdd\u5b58\u6a5f\u80fd\n\nPixiv Anti-Feature: Non-Free Network Services",
       "issueTracker": "https://github.com/yunfie-twitter/Illustia-dev/issues",
       "license": "GPL-3.0-only",
@@ -30,7 +30,7 @@
       "webSite": "https://github.com/yunfie-twitter/Illustia-dev",
       "added": 1782051652000,
       "packageName": "com.yunfie.illustia",
-      "lastUpdated": 1782731790000,
+      "lastUpdated": 1782906610000,
       "localized": {
         "en-US": {
           "name": "Palleria"
@@ -40,6 +40,68 @@
   ],
   "packages": {
     "com.yunfie.illustia": [
+      {
+        "added": 1782906610000,
+        "apkName": "Illustia-v2.2-release.apk",
+        "hash": "a5e315c40ae06616da3f52c65c96ca9292626916917ec3919fb3165175faf562",
+        "hashType": "sha256",
+        "minSdkVersion": 29,
+        "nativecode": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "packageName": "com.yunfie.illustia",
+        "sig": "f647964cdccdcc133cade2961a136053",
+        "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+        "size": 49413497,
+        "targetSdkVersion": 36,
+        "uses-permission": [
+          [
+            "android.permission.VIBRATE",
+            null
+          ],
+          [
+            "android.permission.INTERNET",
+            null
+          ],
+          [
+            "android.permission.ACCESS_NETWORK_STATE",
+            null
+          ],
+          [
+            "android.permission.POST_NOTIFICATIONS",
+            null
+          ],
+          [
+            "android.permission.READ_MEDIA_IMAGES",
+            null
+          ],
+          [
+            "android.permission.READ_EXTERNAL_STORAGE",
+            32
+          ],
+          [
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            28
+          ],
+          [
+            "android.permission.USE_BIOMETRIC",
+            null
+          ],
+          [
+            "android.permission.USE_FINGERPRINT",
+            null
+          ],
+          [
+            "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+            null
+          ]
+        ],
+        "versionCode": 13,
+        "versionName": "2.2"
+      },
       {
         "added": 1782731790000,
         "apkName": "Illustia-v2.1-release.apk",
