@@ -1,0 +1,190 @@
+name: F-Droid Repository & Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.1
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Get Version Info
+        id: version
+        run: |
+          # Use grep and sed to extract versions directly from build.gradle for robustness
+          VERSION_NAME=$(grep "versionName" app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
+          VERSION_CODE=$(grep "versionCode" app/build.gradle | head -n 1 | awk '{print $NF}')
+
+          if [ -z "$VERSION_NAME" ]; then
+            # Fallback for different quoting styles
+            VERSION_NAME=$(grep "versionName" app/build.gradle | head -n 1 | awk -F"'" '{print $2}')
+          fi
+
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION_NAME ($VERSION_CODE)"
+
+      - name: Cancel if duplicate tag already exists
+        if: github.ref == 'refs/heads/main'
+        run: |
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+          if git ls-remote --tags origin "refs/tags/$TAG_NAME" | grep -q "refs/tags/$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists on origin. Stopping this run."
+            exit 78
+          fi
+
+      - name: Cancel if release already exists
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists. Stopping this run."
+            exit 78
+          fi
+
+      - name: Create and Push Tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Creating new tag: $TAG_NAME"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          else
+            echo "Tag $TAG_NAME already exists, skipping."
+          fi
+
+      - name: Build APKs
+        run: ./gradlew assemble
+        env:
+          KEYSTORE_PATH: ../release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+
+      - name: Install fdroidserver
+        run: |
+          sudo apt-get update
+          sudo apt-get remove -y fdroidserver || true
+          sudo apt-get install -y python3-pip python3-setuptools libjpeg-dev zlib1g-dev
+          pipx install fdroidserver
+          echo "/home/runner/.local/bin" >> $GITHUB_PATH
+
+      - name: Update F-Droid Repository
+        run: |
+          # Create a clean directory for the repository
+          mkdir -p public/repo
+          mkdir -p public/metadata
+
+          # 1. Fetch existing repository from gh-pages to keep multiple versions
+          git clone --branch gh-pages --single-branch https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git old-repo || true
+          if [ -d old-repo/repo ]; then
+            echo "Copying existing APKs and icons..."
+            cp -r old-repo/repo/. public/repo/
+          fi
+          if [ -d old-repo/metadata ]; then
+            echo "Copying existing metadata from gh-pages..."
+            cp -r old-repo/metadata/. public/metadata/
+          fi
+
+          # 2. Copy current metadata from source (may overwrite old ones)
+          if [ -d fdroid/metadata ]; then
+            echo "Merging metadata from source..."
+            cp -r fdroid/metadata/. public/metadata/
+          fi
+
+          # 3. Copy new APKs built in this run
+          # They have unique names (Illustia-version-code.apk) so they won't overwrite
+          cp app/build/outputs/apk/release/*.apk public/repo/
+
+          cd public
+          # Create config.yml for fdroidserver
+          cat <<EOF > config.yml
+          repo_url: https://yunfi.f5.si/${{ github.event.repository.name }}/repo
+          repo_name: Illustia Dev Repository
+          repo_description: Development builds for Illustia
+
+          # Keep all versions in the main repo instead of moving to archive
+          archive_older: 0
+
+          # KeyStore configuration for signing the repository index
+          keystore: ../release.keystore
+          keystorepass: "${{ secrets.RELEASE_KEYSTORE_PASSWORD }}"
+          keypass: "${{ secrets.RELEASE_KEY_PASSWORD }}"
+          keyalias: "${{ secrets.RELEASE_KEY_ALIAS }}"
+          repo_keyalias: "${{ secrets.RELEASE_KEY_ALIAS }}"
+          repo_keystorepass: "${{ secrets.RELEASE_KEYSTORE_PASSWORD }}"
+          repo_keypass: "${{ secrets.RELEASE_KEY_PASSWORD }}"
+          EOF
+          chmod 600 config.yml
+
+          # Generate/Update the repository index
+          # --create-metadata will ensure we have basic metadata for new APKs
+          # index-v1.json will be automatically generated/updated
+          fdroid update --create-metadata --pretty
+
+          # Optional: Also generate the old index.xml just in case, though index-v1.json is modern
+          # fdroid update --create-metadata --create-key
+
+          rm config.yml
+          cd ..
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages
+          force_orphan: false
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/*.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
