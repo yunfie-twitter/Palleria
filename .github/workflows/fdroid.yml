@@ -142,8 +142,8 @@ jobs:
           # Create config.yml for fdroidserver
           cat <<EOF > config.yml
           repo_url: https://yunfi.f5.si/${{ github.event.repository.name }}/repo
-          repo_name: Illustia Dev Repository
-          repo_description: Development builds for Illustia
+          repo_name: Palleria Dev Repository
+          repo_description: Development builds for Palleria
           
           # Keep all versions in the main repo instead of moving to archive
           archive_older: 0
