@@ -1,20 +1,20 @@
 {
   "repo": {
     "name": {
-      "en-US": "Illustia Dev Repository"
+      "en-US": "Palleria Dev Repository"
     },
     "description": {
-      "en-US": "Development builds for Illustia"
+      "en-US": "Development builds for Palleria"
     },
     "icon": {
       "en-US": {
         "name": "/icons/icon.png",
-        "sha256": "c27a256803e2d5db792fbc3562fbd321566e48c208bc3f7a8ceb08c800985a8e",
-        "size": 837
+        "sha256": "d90fa024e72b57e6d7fc0ee0a09e11f1df5e9725359ec858bb9be9d1450a2e02",
+        "size": 706
       }
     },
     "address": "https://yunfi.f5.si/Illustia-dev/repo",
-    "timestamp": 1783059709000,
+    "timestamp": 1783067513000,
     "categories": {
       "Graphics": {
         "name": {
@@ -44,7 +44,7 @@
         ],
         "changelog": "https://github.com/yunfie-twitter/Illustia-dev/releases",
         "issueTracker": "https://github.com/yunfie-twitter/Illustia-dev/issues",
-        "lastUpdated": 1783059703000,
+        "lastUpdated": 1783067509000,
         "license": "GPL-3.0-only",
         "sourceCode": "https://github.com/yunfie-twitter/Illustia-dev",
         "webSite": "https://github.com/yunfie-twitter/Illustia-dev",
@@ -101,6 +101,73 @@
         "preferredSigner": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
       },
       "versions": {
+        "e00a221ec9293e5a163803319211518ea9a7a2f3026e861c33f99525e249cfcf": {
+          "added": 1783067509000,
+          "file": {
+            "name": "/Illustia-v2.3.1-release.apk",
+            "sha256": "e00a221ec9293e5a163803319211518ea9a7a2f3026e861c33f99525e249cfcf",
+            "size": 49292351
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi-v7a",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "2.3.1",
+            "versionCode": 15,
+            "usesSdk": {
+              "minSdkVersion": 29,
+              "targetSdkVersion": 36
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          }
+        },
         "2f7b2b50a58b8a7c211e86cdcb68a18522a4d7075f44e2da31303dea0c6b7640": {
           "added": 1783059703000,
           "file": {
