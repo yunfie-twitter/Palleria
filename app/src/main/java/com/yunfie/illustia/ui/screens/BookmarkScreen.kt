@@ -2,6 +2,7 @@ package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -35,10 +36,12 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.LoadState
-import com.yunfie.illustia.data.Restrict
-import com.yunfie.illustia.data.UserPreview
+import com.yunfie.illustia.data.pixiv.WatchlistStore
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.*
@@ -67,17 +70,27 @@ fun BookmarkScreen(
     followingUsers: List<UserPreview>,
     chrome: BookmarkChromeState,
     viewModel: IllustiaViewModel,
+    onOpenWatchlistSeries: (Long) -> Unit,
 ) {
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
+    val repository = remember(viewModel) { viewModel.uiRepository() }
+    val watchlistStore = remember(repository) { WatchlistStore(repository) }
+    val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(
         initialPage = chrome.selectedTab,
-        pageCount = { 3 },
+        pageCount = { 4 },
     )
     val coroutineScope = rememberCoroutineScope()
     val selectedTopTab = pagerState.currentPage
 
     LaunchedEffect(selectedTopTab) {
         viewModel.updateBookmarkSelectedTab(selectedTopTab)
+    }
+
+    LaunchedEffect(selectedTopTab) {
+        if (selectedTopTab == 2 && watchlistState.model == null && !watchlistState.isLoading) {
+            watchlistStore.fetch()
+        }
     }
 
     val feedHighQuality = remember(settings.highQualityImages, settings.feedPreviewQuality) {
@@ -134,6 +147,22 @@ fun BookmarkScreen(
                     )
                 }
                 if (selectedTopTab == 2) {
+                    val isLoaded = watchlistState.model != null
+                    if (isLoaded) {
+                        IconButton(onClick = {
+                            scope.launch { watchlistStore.fetch() }
+                        }) {
+                            Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                        }
+                    } else {
+                        IconButton(onClick = {
+                            scope.launch { watchlistStore.fetch() }
+                        }) {
+                            Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                        }
+                    }
+                }
+                if (selectedTopTab == 3) {
                     val newestLabel = stringResource(R.string.sort_date_desc)
                     val oldestLabel = stringResource(R.string.sort_date_asc)
                     val nameLabel = stringResource(R.string.sort_name_asc)
@@ -162,7 +191,8 @@ fun BookmarkScreen(
                     performAppHapticFeedback(context, haptic, hapticMode)
                     when (selectedTopTab) {
                         0 -> viewModel.refreshTimeline()
-                        2 -> viewModel.refreshFollowingUsers()
+                        2 -> coroutineScope.launch { watchlistStore.fetch() }
+                        3 -> viewModel.refreshFollowingUsers()
                         else -> viewModel.refreshBookmarks()
                     }
                 }) {
@@ -207,6 +237,12 @@ fun BookmarkScreen(
                         scrollBehavior = scrollBehavior,
                     )
                     else -> BookmarkFollowingTab(
+                        watchlistState = watchlistState,
+                        settings = settings,
+                        viewModel = viewModel,
+                        onOpenWatchlistSeries = onOpenWatchlistSeries,
+                    )
+                    3 -> BookmarkFollowingTab(
                         followingUsers = followingUsers,
                         sort = followingUserSort,
                         loadState = loadState,
@@ -215,6 +251,132 @@ fun BookmarkScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BookmarkWatchlistTab(
+    watchlistState: com.yunfie.illustia.data.pixiv.WatchlistState,
+    settings: AppSettings,
+    viewModel: IllustiaViewModel,
+    onOpenWatchlistSeries: (Long) -> Unit,
+) {
+    val repository = remember(viewModel) { viewModel.uiRepository() }
+    val store = remember(repository) { WatchlistStore(repository) }
+    val scope = rememberCoroutineScope()
+    val feedHighQuality = remember(settings.highQualityImages, settings.feedPreviewQuality) {
+        settings.highQualityImages && settings.feedPreviewQuality != "low"
+    }
+    val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
+    val gridState = remember { androidx.compose.foundation.lazy.grid.rememberLazyGridState() }
+
+    PullToRefresh(
+        isRefreshing = watchlistState.isLoading && watchlistState.mangaSeries.isNotEmpty(),
+        onRefresh = { scope.launch { store.fetch() } },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        LazyColumn(
+            state = androidx.compose.foundation.lazy.rememberLazyListState(),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (watchlistState.errorMessage != null) {
+                item {
+                    Text(
+                        text = watchlistState.errorMessage ?: "",
+                        color = MiuixTheme.colorScheme.error,
+                    )
+                }
+            }
+            if (watchlistState.mangaSeries.isEmpty() && !watchlistState.isLoading) {
+                item { EmptyState(stringResource(R.string.watchlist_series_empty)) }
+            }
+            items(watchlistState.mangaSeries, key = { it.id }) { series ->
+                WatchlistSeriesRow(
+                    series = series,
+                    onClick = { onOpenWatchlistSeries(series.id) },
+                )
+            }
+            if (watchlistState.model?.nextUrl != null) {
+                item {
+                    Button(
+                        onClick = { scope.launch { store.loadMore() } },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(stringResource(R.string.watchlist_series_load_more))
+                    }
+                }
+            }
+            if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        LoadingIndicator()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchlistSeriesRow(
+    series: MangaSeriesModel,
+    onClick: () -> Unit,
+) {
+    ElevatedPanel(
+        modifier = Modifier
+            .fillMaxWidth()
+            .miuixClickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.FavoritesFill,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                )
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = series.title,
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = series.user?.name?.takeIf { it.isNotBlank() } ?: "@${series.user?.account.orEmpty()}",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "ID ${series.id} ・ ${series.publishedContentCount}P",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.footnote2,
+                )
+            }
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
         }
     }
 }
@@ -378,7 +540,12 @@ private fun CompactBookmarkTabs(
 ) {
     val scheme = MiuixTheme.colorScheme
     TabRowWithContour(
-        tabs = listOf(stringResource(R.string.bookmark_tab_timeline), stringResource(R.string.bookmark_tab_bookmarks), stringResource(R.string.bookmark_tab_following)),
+        tabs = listOf(
+            stringResource(R.string.bookmark_tab_timeline),
+            stringResource(R.string.bookmark_tab_bookmarks),
+            stringResource(R.string.bookmark_tab_watchlist),
+            stringResource(R.string.bookmark_tab_following),
+        ),
         selectedTabIndex = selectedTab,
         onTabSelected = onSelect,
         modifier = modifier,
@@ -428,3 +595,4 @@ private fun RestrictPill(
         }
     }
 }
+

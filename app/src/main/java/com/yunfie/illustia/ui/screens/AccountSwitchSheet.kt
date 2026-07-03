@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.StoredAccount
+import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
@@ -220,3 +220,4 @@ private fun AddAccountRow(onClick: () -> Unit) {
         )
     }
 }
+

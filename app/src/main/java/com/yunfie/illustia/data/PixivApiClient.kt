@@ -1,5 +1,20 @@
 package com.yunfie.illustia.data
 
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.NovelTextContent
+import com.yunfie.illustia.models.PageResult
+import com.yunfie.illustia.models.PixivSession
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchBookmarkFilter
+import com.yunfie.illustia.models.SearchDuration
+import com.yunfie.illustia.models.SearchSort
+import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.pixiv.CommentResponse
+import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
+import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
@@ -200,6 +215,32 @@ class PixivApiClient(
         }
     }
 
+    suspend fun watchlistManga(session: PixivSession): WatchlistMangaModel {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v1/watchlist/manga"))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toWatchlistMangaModelOrNull()
+        }
+    }
+
+    suspend fun nextWatchlistMangaPage(session: PixivSession, nextUrl: String): WatchlistMangaModel {
+        val body = Request.Builder()
+            .url(nextUrl.toHttpUrl())
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toWatchlistMangaModelOrNull()
+        }
+    }
+
     suspend fun searchUsers(session: PixivSession, word: String): PageResult<UserPreview> {
         return getUserPreviewPage(
             session,
@@ -285,6 +326,32 @@ class PixivApiClient(
             session,
             pixivApiUrl("v2/illust/related", "illust_id" to illustId.toString(), "filter" to "for_android"),
         )
+    }
+
+    suspend fun illustSeries(session: PixivSession, illustSeriesId: Long): IllustSeriesWithIdModel {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v1/illust/series", "filter" to "for_ios", "illust_series_id" to illustSeriesId.toString()))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toIllustSeriesWithIdModelOrNull()
+        }
+    }
+
+    suspend fun nextIllustSeriesPage(session: PixivSession, nextUrl: String): IllustSeriesWithIdModel {
+        val body = Request.Builder()
+            .url(nextUrl.toHttpUrl())
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toIllustSeriesWithIdModelOrNull()
+        }
     }
 
     suspend fun followUser(session: PixivSession, userId: Long, restrict: Restrict) {
@@ -392,6 +459,103 @@ class PixivApiClient(
             root["trend_tags"].asArrayOrEmpty()
                 .mapNotNull { it.asObjectOrNull()?.string("tag") }
         }
+    }
+
+    suspend fun illustComments(session: PixivSession, illustId: Long): CommentResponse {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v3/illust/comments", "illust_id" to illustId.toString()))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toCommentResponseOrNull()
+        }
+    }
+
+    suspend fun illustCommentReplies(session: PixivSession, commentId: Long): CommentResponse {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v2/illust/comment/replies", "comment_id" to commentId.toString()))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toCommentResponseOrNull()
+        }
+    }
+
+    suspend fun novelComments(session: PixivSession, novelId: Long): CommentResponse {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v3/novel/comments", "novel_id" to novelId.toString()))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toCommentResponseOrNull()
+        }
+    }
+
+    suspend fun novelCommentReplies(session: PixivSession, commentId: Long): CommentResponse {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v2/novel/comment/replies", "comment_id" to commentId.toString()))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toCommentResponseOrNull()
+        }
+    }
+
+    suspend fun nextCommentPage(session: PixivSession, nextUrl: String): CommentResponse {
+        val body = Request.Builder()
+            .url(nextUrl.toHttpUrl())
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toCommentResponseOrNull()
+        }
+    }
+
+    suspend fun addIllustComment(session: PixivSession, illustId: Long, comment: String, parentCommentId: Long? = null) {
+        val form = FormBody.Builder()
+            .add("illust_id", illustId.toString())
+            .add("comment", comment)
+        parentCommentId?.let { form.add("parent_comment_id", it.toString()) }
+        postAuthedForm(session, "https://app-api.pixiv.net/v1/illust/comment/add", form.build())
+    }
+
+    suspend fun addNovelComment(session: PixivSession, novelId: Long, comment: String, parentCommentId: Long? = null) {
+        val form = FormBody.Builder()
+            .add("novel_id", novelId.toString())
+            .add("comment", comment)
+        parentCommentId?.let { form.add("parent_comment_id", it.toString()) }
+        postAuthedForm(session, "https://app-api.pixiv.net/v1/novel/comment/add", form.build())
+    }
+
+    suspend fun addWatchlistManga(session: PixivSession, seriesId: Long) {
+        postAuthedForm(
+            session = session,
+            url = "https://app-api.pixiv.net/v1/watchlist/manga/add",
+            body = FormBody.Builder().add("series_id", seriesId.toString()).build(),
+        )
+    }
+
+    suspend fun removeWatchlistManga(session: PixivSession, seriesId: Long) {
+        postAuthedForm(
+            session = session,
+            url = "https://app-api.pixiv.net/v1/watchlist/manga/delete",
+            body = FormBody.Builder().add("series_id", seriesId.toString()).build(),
+        )
     }
 
     suspend fun popularPreview(session: PixivSession, word: String): PageResult<Illust> {
@@ -540,7 +704,7 @@ class PixivApiClient(
             val preview = body.lineSequence().take(8).joinToString(" ").take(320)
             throw PixivApiException(200, "小説レスポンスを解析できませんでした: $preview")
         }
-        return json.parseToJsonElement(match.group(1)).jsonObject
+        return json.parseToJsonElement(match.group(1)!!).jsonObject
     }
 
     private companion object {

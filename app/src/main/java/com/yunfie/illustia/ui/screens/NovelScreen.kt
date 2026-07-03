@@ -51,9 +51,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.LoadState
-import com.yunfie.illustia.data.NovelPreview
-import com.yunfie.illustia.data.NovelTextContent
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
@@ -586,3 +586,4 @@ private fun AnnotatedString.Builder.appendNovelToken(token: String) {
         }
     }
 }
+

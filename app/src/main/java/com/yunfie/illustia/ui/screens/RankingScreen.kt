@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.LoadState
+import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.*
 import kotlinx.coroutines.launch
@@ -50,8 +50,8 @@ import top.yukonga.miuix.kmp.icon.extended.*
 
 @Composable
 fun RankingScreen(
-    items: List<com.yunfie.illustia.data.Illust>,
-    loadState: com.yunfie.illustia.data.LoadState,
+    items: List<com.yunfie.illustia.models.Illust>,
+    loadState: com.yunfie.illustia.models.LoadState,
     nextUrl: String?,
     mode: String,
     settings: com.yunfie.illustia.settings.AppSettings,
@@ -209,8 +209,8 @@ private fun RankingModeTabs(
 
 @Composable
 private fun RankingGridContent(
-    items: List<com.yunfie.illustia.data.Illust>,
-    loadState: com.yunfie.illustia.data.LoadState,
+    items: List<com.yunfie.illustia.models.Illust>,
+    loadState: com.yunfie.illustia.models.LoadState,
     nextUrl: String?,
     mode: String,
     settings: com.yunfie.illustia.settings.AppSettings,
@@ -232,7 +232,7 @@ private fun RankingGridContent(
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
 
     PullToRefresh(
-        isRefreshing = loadState == com.yunfie.illustia.data.LoadState.Loading && items.isNotEmpty(),
+        isRefreshing = loadState == com.yunfie.illustia.models.LoadState.Loading && items.isNotEmpty(),
         onRefresh = { viewModel.refreshRanking() },
         modifier = modifier.fillMaxSize(),
     ) {
@@ -249,7 +249,7 @@ private fun RankingGridContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (items.isEmpty() && loadState == com.yunfie.illustia.data.LoadState.Loading) {
+                if (items.isEmpty() && loadState == com.yunfie.illustia.models.LoadState.Loading) {
                     items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
                 } else {
                     item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
@@ -286,3 +286,4 @@ private fun RankingGridContent(
         }
     }
 }
+

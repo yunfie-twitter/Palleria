@@ -1,5 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -35,17 +37,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.LoadState
-import com.yunfie.illustia.data.SearchBookmarkFilter
-import com.yunfie.illustia.data.SearchDuration
-import com.yunfie.illustia.data.SearchSort
-import com.yunfie.illustia.data.SearchTarget
-import com.yunfie.illustia.data.UserPreview
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.SearchBookmarkFilter
+import com.yunfie.illustia.models.SearchDuration
+import com.yunfie.illustia.models.SearchSort
+import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.data.pixiv.SuggestionStore
 import com.yunfie.illustia.ui.components.*
+import kotlinx.coroutines.flow.collect
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
@@ -67,6 +72,9 @@ fun SearchScreen(
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
+    val repository = remember(viewModel) { viewModel.uiRepository() }
+    val suggestionStore = remember(repository) { SuggestionStore(repository) }
+    val autocompleteSuggestions by suggestionStore.autoWords.collectAsStateWithLifecycle()
 
     val isResultMode by remember(state.activeSearchWord) {
         derivedStateOf {
@@ -74,11 +82,16 @@ fun SearchScreen(
         }
     }
 
-    val suggestions = remember(state.settings.searchHistory, state.recommendedTags) {
-        (state.settings.searchHistory.take(6) + state.recommendedTags).distinct().take(12)
+    val liveQuery = if (searchExpanded) state.searchDraft else state.activeSearchWord
+    LaunchedEffect(liveQuery) {
+        suggestionStore.fetch(liveQuery)
     }
 
-    LaunchedEffect(state.sessionReady, state.settings.refreshToken, state.recommendedTags.isEmpty()) {
+    val suggestions = remember(state.settings.searchHistory, state.recommendedTags, autocompleteSuggestions) {
+        (state.settings.searchHistory.take(6) + state.recommendedTags + autocompleteSuggestions).distinct().take(18)
+    }
+
+    LaunchedEffect(state.sessionReady, state.settings.refreshToken, state.recommendedTagsFetchedAtMillis) {
         if (state.sessionReady) {
             viewModel.refreshRecommendedTags()
         }
@@ -96,12 +109,17 @@ fun SearchScreen(
     }
 
     if (isResultMode || searchExpanded) {
-        PredictiveBackGestureHandler {
+        val closeSearch = {
             if (searchExpanded) {
                 searchExpanded = false
             } else {
                 viewModel.clearSearchResults()
             }
+        }
+        BackHandler(enabled = true, onBack = closeSearch)
+        PredictiveBackHandler(enabled = true) { progress ->
+            progress.collect { }
+            closeSearch()
         }
     }
 
@@ -273,3 +291,4 @@ private fun SearchResultsArea(
         onDismiss = { showOptionsSheet = false },
     )
 }
+

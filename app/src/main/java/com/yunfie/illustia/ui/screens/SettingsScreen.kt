@@ -18,12 +18,11 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.components.HeroPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
-import com.yunfie.illustia.ui.components.miuixClickable
-import top.yukonga.miuix.kmp.basic.BasicComponent
+import com.yunfie.illustia.ui.components.SettingLinkRow
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -100,6 +99,13 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
+                HeroPanel(
+                    title = stringResource(R.string.app_name),
+                    body = stringResource(R.string.more_settings_summary),
+                )
+            }
+
+            item {
                 ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                     categories.forEachIndexed { index, cat ->
                         if (index > 0) {
@@ -108,7 +114,12 @@ fun SettingsScreen(
                                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                             )
                         }
-                        SettingsCategoryRow(category = cat)
+                        SettingLinkRow(
+                            title = cat.title,
+                            summary = cat.summary,
+                            icon = cat.icon,
+                            onClick = cat.route,
+                        )
                     }
                 }
             }
@@ -122,39 +133,6 @@ fun SettingsScreen(
                     Text("Developed with Love for Art", color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f), style = MiuixTheme.textStyles.footnote1, textAlign = TextAlign.Center)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SettingsCategoryRow(category: SettingsCategory) {
-    BasicComponent(
-        modifier = Modifier
-            .fillMaxWidth()
-            .miuixClickable(onClick = category.route),
-        insideMargin = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        startAction = {
-            Icon(
-                imageVector = category.icon,
-                contentDescription = null,
-                tint = MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .size(28.dp)
-                    .padding(end = 12.dp),
-            )
-        },
-    ) {
-        Column {
-            Text(
-                text = category.title,
-                color = MiuixTheme.colorScheme.onBackground,
-                style = MiuixTheme.textStyles.body1,
-            )
-            Text(
-                text = category.summary,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                style = MiuixTheme.textStyles.footnote1,
-            )
         }
     }
 }

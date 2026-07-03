@@ -49,9 +49,10 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.NovelChromeState
 import com.yunfie.illustia.RankingChromeState
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.LoadState
-import com.yunfie.illustia.data.UserPreview
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.ui.components.*
@@ -117,15 +118,18 @@ private sealed interface AppRoute : NavKey {
     data object ViewHistory : AppRoute
     data object MuteSettings : AppRoute
     data object AppData : AppRoute
-    data object OfflineLibrary : AppRoute
     data object DownloadQueue : AppRoute
+    data object OfflineLibrary : AppRoute
+    data object SavedIllustViewer : AppRoute
     data object About : AppRoute
     data object FavoriteTags : AppRoute
+    data object WatchlistSeries : AppRoute
     data object UserProfile : AppRoute
     data object AppLockSetup : AppRoute
     data object AppLockPinEntry : AppRoute
-    data object SavedIllustViewer : AppRoute
     data object PrivacyModeSettings : AppRoute
+    data object IllustSeries : AppRoute
+    data object Comments : AppRoute
 }
 
 @Composable
@@ -149,6 +153,8 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
     val initialPage = remember(initialTab) { SwipeTabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
     var showTokenLogin by remember { mutableStateOf(false) }
+    var selectedWatchlistSeriesId by remember { mutableStateOf<Long?>(null) }
+    var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
     val backStack = remember { mutableStateListOf<NavKey>(AppRoute.Main) }
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { SwipeTabs.size })
     val coroutineScope = rememberCoroutineScope()
@@ -177,11 +183,16 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
 
     fun popRoute() {
         if (backStack.size <= 1) return
+        if (selectedCommentTarget != null) {
+            selectedCommentTarget = null
+            return
+        }
         when (val route = backStack.removeAt(backStack.lastIndex)) {
             AppRoute.Detail -> viewModel.closeIllust()
             AppRoute.ImageViewer -> viewModel.closeImageViewer()
             AppRoute.NovelList -> Unit
             AppRoute.NovelReader -> viewModel.closeNovel()
+            AppRoute.IllustSeries -> selectedWatchlistSeriesId = null
             AppRoute.UserProfile -> {
                 // ここでは単に非表示フラグを立てるだけにし、
                 // 実際のデータクリアはバックスタックの監視(LaunchedEffect)で行われるようにする
@@ -250,13 +261,13 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.ViewHistory -> AppRoute.ViewHistory
                     IllustiaNavigationRequest.MuteSettings -> AppRoute.MuteSettings
                     IllustiaNavigationRequest.AppData -> AppRoute.AppData
-                    IllustiaNavigationRequest.OfflineLibrary -> AppRoute.OfflineLibrary
                     IllustiaNavigationRequest.DownloadQueue -> AppRoute.DownloadQueue
+                    IllustiaNavigationRequest.OfflineLibrary -> AppRoute.OfflineLibrary
+                    IllustiaNavigationRequest.SavedIllustViewer -> AppRoute.SavedIllustViewer
                     IllustiaNavigationRequest.About -> AppRoute.About
                     IllustiaNavigationRequest.FavoriteTags -> AppRoute.FavoriteTags
                     IllustiaNavigationRequest.AppLockSetup -> AppRoute.AppLockSetup
                     IllustiaNavigationRequest.AppLockPinEntry -> AppRoute.AppLockPinEntry
-                    IllustiaNavigationRequest.SavedIllustViewer -> AppRoute.SavedIllustViewer
                     IllustiaNavigationRequest.PrivacyModeSettings -> AppRoute.PrivacyModeSettings
                 },
             )
@@ -368,6 +379,9 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onOpenNovels = {
                         navigate(AppRoute.NovelList)
                     },
+                    onOpenWatchlistSeries = {
+                        navigate(AppRoute.WatchlistSeries)
+                    },
                 )
             }
             entry(AppRoute.Onboarding) {
@@ -385,9 +399,16 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     IllustDetailScreen(
                         illust = illust,
                         relatedIllusts = state.relatedIllusts,
+                        firstComment = state.selectedIllustFirstComment,
                         onBack = ::popRoute,
                         onBookmark = { viewModel.toggleBookmark(illust) },
                         onOpenUser = viewModel::openUser,
+                        onOpenComments = {
+                            selectedCommentTarget = illust.id to CommentArtworkType.ILLUST
+                        },
+                        onOpenSeries = illust.series?.id?.let { seriesId ->
+                            { selectedWatchlistSeriesId = seriesId; navigate(AppRoute.IllustSeries) }
+                        },
                         onOpenImage = { page -> viewModel.openImageViewer(illust, page) },
                         onSearchTag = { tag ->
                             popRoute()
@@ -403,7 +424,6 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                         onOpenIllust = viewModel::openIllust,
                         onOpenIllustById = viewModel::openIllust,
                         onSaveImage = viewModel::saveImage,
-                        onSaveOfflineImage = viewModel::saveOfflineImage,
                         onSaveAllImages = viewModel::saveImages,
                         onMessage = viewModel::showMessage,
                         highQualityImages = state.settings.highQualityImages,
@@ -520,6 +540,13 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onBack = ::popRoute,
                 )
             }
+            entry(AppRoute.DownloadQueue) {
+                DownloadQueueScreen(
+                    state = state,
+                    viewModel = viewModel,
+                    onBack = ::popRoute,
+                )
+            }
             entry(AppRoute.OfflineLibrary) {
                 OfflineLibraryScreen(
                     state = state,
@@ -527,8 +554,8 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onBack = ::popRoute,
                 )
             }
-            entry(AppRoute.DownloadQueue) {
-                DownloadQueueScreen(
+            entry(AppRoute.SavedIllustViewer) {
+                SavedIllustViewerScreen(
                     state = state,
                     viewModel = viewModel,
                     onBack = ::popRoute,
@@ -543,6 +570,36 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     viewModel = viewModel,
                     onBack = ::popRoute,
                 )
+            }
+            entry(AppRoute.WatchlistSeries) {
+                WatchlistSeriesScreen(
+                    viewModel = viewModel,
+                    onBack = ::popRoute,
+                    onOpenSeries = { seriesId ->
+                        selectedWatchlistSeriesId = seriesId
+                        navigate(AppRoute.IllustSeries)
+                    },
+                )
+            }
+            entry(AppRoute.IllustSeries) {
+                val seriesId = selectedWatchlistSeriesId
+                if (seriesId != null) {
+                    IllustSeriesScreen(
+                        seriesId = seriesId,
+                        viewModel = viewModel,
+                        onBack = ::popRoute,
+                        onOpenIllust = { illustId -> viewModel.openIllust(illustId) },
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MiuixTheme.colorScheme.surface),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator()
+                    }
+                }
             }
             entry(AppRoute.UserProfile) {
                 if (state.selectedUser != null) {
@@ -600,13 +657,6 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                     onBack = ::popRoute,
                 )
             }
-            entry(AppRoute.SavedIllustViewer) {
-                SavedIllustViewerScreen(
-                    state = state,
-                    viewModel = viewModel,
-                    onBack = ::popRoute,
-                )
-            }
             entry(AppRoute.PrivacyModeSettings) {
                 PrivacyModeSettingsScreen(
                     state = state,
@@ -626,6 +676,25 @@ fun IllustiaApp(viewModel: IllustiaViewModel) {
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.surface),
         )
+
+        selectedCommentTarget?.let { target ->
+            CommentScreen(
+                show = true,
+                id = target.first,
+                type = target.second,
+                viewModel = viewModel,
+                onDismiss = {
+                    selectedCommentTarget = null
+                },
+                onBack = {
+                    selectedCommentTarget = null
+                },
+                onOpenUser = { userId ->
+                    selectedCommentTarget = null
+                    viewModel.openUser(userId)
+                },
+            )
+        }
 
         state.longPressedIllust?.let { illust ->
             OverlayBottomSheet(
@@ -813,7 +882,7 @@ private fun MainSurface(
     activeSearchWord: String,
     loadState: LoadState,
     homeItems: List<Illust>,
-    novelItems: List<com.yunfie.illustia.data.NovelPreview>,
+    novelItems: List<com.yunfie.illustia.models.NovelPreview>,
     timelineItems: List<Illust>,
     rankingItems: List<Illust>,
     bookmarkItems: List<Illust>,
@@ -830,6 +899,7 @@ private fun MainSurface(
     onTabSelected: (Int, AppTab) -> Unit,
     onSearch: () -> Unit,
     onOpenNovels: () -> Unit,
+    onOpenWatchlistSeries: () -> Unit,
 ) {
     val context = LocalContext.current
     var lastBackAt by remember { mutableStateOf(0L) }
@@ -932,7 +1002,7 @@ private fun MainSurface(
                     viewModel = viewModel,
                 )
                 AppTab.Search -> SearchScreen(state = state, viewModel = viewModel)
-                AppTab.More -> MoreScreen(state = state, viewModel = viewModel)
+                AppTab.More -> MoreScreen(state = state, viewModel = viewModel, onOpenWatchlistSeries = onOpenWatchlistSeries)
             }
                 }
             }
@@ -998,3 +1068,4 @@ private fun MainSurface(
         }
     }
 }
+

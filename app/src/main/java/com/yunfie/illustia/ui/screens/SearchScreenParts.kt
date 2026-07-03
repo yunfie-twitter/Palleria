@@ -29,14 +29,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
+import com.yunfie.illustia.RecommendedTagTile
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.LoadState
-import com.yunfie.illustia.data.SearchBookmarkFilter
-import com.yunfie.illustia.data.SearchDuration
-import com.yunfie.illustia.data.SearchSort
-import com.yunfie.illustia.data.SearchTarget
-import com.yunfie.illustia.data.UserPreview
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.SearchBookmarkFilter
+import com.yunfie.illustia.models.SearchDuration
+import com.yunfie.illustia.models.SearchSort
+import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -47,7 +48,6 @@ import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.SectionHeader
-import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.TagTile
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
@@ -140,11 +140,6 @@ internal fun SearchOptionsContent(
             selected = state.settings.searchBookmarkFilter,
             label = { stringResource(it.labelResId) },
             onSelect = viewModel::updateSearchBookmarkFilter,
-        )
-        SettingSwitchRow(
-            title = stringResource(R.string.search_users),
-            checked = state.settings.searchUsersEnabled,
-            onCheckedChange = viewModel::updateSearchUsersEnabled,
         )
     }
 }
@@ -302,22 +297,18 @@ internal fun BrowseArea(
             Text(stringResource(R.string.search_recommended_tags), color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.title4, fontWeight = FontWeight.Bold)
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
-            val tagImages = remember(state.homeItems, state.searchItems) {
-                sequenceOf(state.homeItems.asSequence(), state.searchItems.asSequence())
-                    .flatten()
-                    .distinctBy { it.id }
-                    .toList()
+            val recommendedTags = remember(state.recommendedTagTiles, state.recommendedTags) {
+                if (state.recommendedTagTiles.isNotEmpty()) state.recommendedTagTiles
+                else state.recommendedTags.map { RecommendedTagTile(tag = it) }
             }
-            val recommendedTags = state.recommendedTags
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 recommendedTags.chunked(3).forEachIndexed { rowIndex, row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         row.forEachIndexed { index, tag ->
-                            val illust = tagImages.getOrNull(rowIndex * 3 + index)
                             TagTile(
-                                tag = tag,
-                                imageUrl = illust?.squareImageUrl?.ifBlank { illust.imageUrl },
-                                onClick = { viewModel.submitSearch(tag.removePrefix("#")) },
+                                tag = tag.tag,
+                                imageUrl = tag.imageUrl,
+                                onClick = { viewModel.submitSearch(tag.tag.removePrefix("#")) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -456,3 +447,4 @@ internal fun UserResultCard(user: UserPreview, onClick: () -> Unit) {
         }
     }
 }
+

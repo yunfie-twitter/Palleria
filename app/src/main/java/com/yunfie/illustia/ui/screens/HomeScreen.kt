@@ -21,8 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.LoadState
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.*
 import kotlinx.coroutines.launch
@@ -332,3 +332,4 @@ private fun FollowingTabContent(
         }
     }
 }
+

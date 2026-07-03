@@ -28,8 +28,10 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -47,7 +49,8 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -70,6 +73,8 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Messages
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
@@ -88,7 +93,6 @@ internal fun IllustDetailHeader(
     onBack: () -> Unit,
     onOpenImage: (Int) -> Unit,
     onSaveImage: (String, String, Boolean) -> Unit,
-    onSaveOfflineImage: (String, String) -> Unit,
     onSaveAllImages: (List<String>, String) -> Unit,
     onMuteIllust: () -> Unit,
     onMuteUser: () -> Unit,
@@ -104,7 +108,6 @@ internal fun IllustDetailHeader(
     val openInBrowserLabel = stringResource(R.string.detail_open_in_browser)
     val shareLabel = stringResource(R.string.detail_share)
     val saveImageLabel = stringResource(R.string.detail_save_image)
-    val saveOfflineLabel = stringResource(R.string.detail_save_offline)
     val saveAllPagesLabel = stringResource(R.string.detail_save_all_pages)
     val copyUrlLabel = stringResource(R.string.detail_copy_url)
     val muteWorkLabel = stringResource(R.string.detail_mute_work)
@@ -236,12 +239,6 @@ internal fun IllustDetailHeader(
                                     onSaveImage(illust.originalImageUrl ?: illust.imageUrl, "illustia_${illust.id}", !skipConfirmOnDetailSave)
                                 },
                             ),
-                            DropdownItem(
-                                text = saveOfflineLabel,
-                                onClick = {
-                                    onSaveOfflineImage(illust.originalImageUrl ?: illust.imageUrl, "offline_${illust.id}")
-                                },
-                            ),
                             if (imageUrls.size > 1) {
                                 DropdownItem(
                                     text = saveAllPagesLabel,
@@ -288,7 +285,6 @@ internal fun IllustDetailHeader(
         }
     }
 }
-
 @Composable
 internal fun MutedArtworkOverlay(
     artistName: String,
@@ -333,14 +329,18 @@ internal fun IllustDetailInfo(
     illust: Illust,
     isArtistFollowed: Boolean,
     isArtistMuted: Boolean,
+    firstComment: Comment?,
     onOpenUser: () -> Unit,
     onOpenUserById: (Long) -> Unit,
     onOpenIllustById: (Long) -> Unit,
+    onOpenComments: () -> Unit,
+    onOpenSeries: (() -> Unit)? = null,
     onToggleFollow: () -> Unit,
     onUnmuteUser: () -> Unit,
     onSearchTag: (String) -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    var followAnimationTrigger by remember(illust.artistId) { mutableIntStateOf(0) }
     val customUriHandler = remember(uriHandler) {
         object : UriHandler {
             override fun openUri(uri: String) {
@@ -407,13 +407,22 @@ internal fun IllustDetailInfo(
                     .miuixClickable(
                         pressedScale = 0.94f,
                         haptic = true,
-                        onClick = if (isArtistMuted) onUnmuteUser else onToggleFollow,
+                        onClick = if (isArtistMuted) {
+                            onUnmuteUser
+                        } else {
+                            {
+                                if (!isArtistFollowed) {
+                                    followAnimationTrigger += 1
+                                }
+                                onToggleFollow()
+                            }
+                        },
                     ),
             ) {
                 if (isArtistMuted) {
                     DetailMutedUserPill()
                 } else {
-                    FollowPill(isFollowed = isArtistFollowed)
+                    FollowPill(isFollowed = isArtistFollowed, followAnimationTrigger = followAnimationTrigger)
                 }
             }
         }
@@ -424,6 +433,28 @@ internal fun IllustDetailInfo(
                 label = { "#$it" },
                 onClick = onSearchTag,
             )
+        }
+
+        CommentPreviewCard(
+            comment = firstComment,
+            onClick = onOpenComments,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
+
+        if (illust.series != null && onOpenSeries != null) {
+            Button(
+                onClick = onOpenSeries,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = ButtonDefaults.buttonColors(color = MiuixTheme.colorScheme.surfaceContainerHigh),
+            ) {
+                Text(
+                    text = stringResource(R.string.detail_series),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
         CompositionLocalProvider(LocalUriHandler provides customUriHandler) {
@@ -458,11 +489,89 @@ internal fun IllustDetailInfo(
             color = MiuixTheme.colorScheme.onBackground,
             style = MiuixTheme.textStyles.title4,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
 }
-
+@Composable
+private fun CommentPreviewCard(
+    comment: Comment?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val user = comment?.user
+    val avatarUrl = user?.profileImageUrls?.medium.orEmpty()
+    val userName = user?.name.orEmpty()
+    val commentText = remember(comment?.comment) {
+        comment?.comment?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
+    }.lineSequence().firstOrNull().orEmpty().take(80)
+    val fallbackLabel = stringResource(R.string.detail_comments)
+    val emptySummary = stringResource(R.string.detail_comments_empty)
+    ElevatedPanel(
+        modifier = modifier
+            .fillMaxWidth()
+            .miuixClickable(onClick = onClick),
+        contentPadding = PaddingValues(14.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (avatarUrl.isNotBlank()) {
+                    AvatarImage(url = avatarUrl, name = userName.ifBlank { fallbackLabel }, size = 42.dp)
+                } else {
+                    Icon(
+                        imageVector = MiuixIcons.Messages,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = userName.ifBlank { fallbackLabel },
+                    color = MiuixTheme.colorScheme.onBackground,
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+                if (commentText.isNotBlank()) {
+                    Text(
+                        text = commentText,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                } else if (comment == null) {
+                    Text(
+                        text = emptySummary,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
 @Composable
 internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
     Box(

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -22,6 +23,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Switch
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.vector.ImageVector
 import top.yukonga.miuix.kmp.basic.Icon
@@ -29,10 +31,10 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -72,16 +74,25 @@ fun SettingLinkRow(
     icon: ImageVector? = null,
     onClick: () -> Unit
 ) {
-    ArrowPreference(
+    BasicComponent(
         title = title,
-        summary = summary ?: "",
+        summary = summary,
         modifier = Modifier.fillMaxWidth(),
         startAction = icon?.let {
             {
                 PreferenceIcon(it)
             }
         },
+        endActions = {
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                modifier = Modifier.size(18.dp),
+            )
+        },
         onClick = onClick,
+        role = Role.Button,
     )
 }
 
@@ -217,18 +228,29 @@ fun SettingSwitchRow(
     icon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
-    SwitchPreference(
+    BasicComponent(
         title = title,
         summary = summary,
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         startAction = icon?.let {
             {
                 PreferenceIcon(it)
             }
         },
+        endActions = {
+            Switch(
+                checked = checked,
+                onCheckedChange = if (enabled) onCheckedChange else null,
+                enabled = enabled,
+            )
+        },
+        onClick = if (enabled) {
+            { onCheckedChange(!checked) }
+        } else {
+            null
+        },
+        role = Role.Switch,
+        enabled = enabled,
     )
 }
 

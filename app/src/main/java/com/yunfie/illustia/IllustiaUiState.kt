@@ -1,13 +1,14 @@
 package com.yunfie.illustia
 
 import androidx.compose.runtime.Immutable
-import com.yunfie.illustia.data.HomeFeedKind
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.LoadState
-import com.yunfie.illustia.data.NovelPreview
-import com.yunfie.illustia.data.NovelTextContent
-import com.yunfie.illustia.data.UserPreview
-import com.yunfie.illustia.data.UserProfile
+import com.yunfie.illustia.models.HomeFeedKind
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.NovelTextContent
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.db.SavedIllustEntity
 
@@ -28,6 +29,8 @@ data class IllustiaUiState(
     val selectedNovel: NovelPreview? = null,
     val selectedNovelText: NovelTextContent? = null,
     val recommendedTags: List<String> = emptyList(),
+    val recommendedTagTiles: List<RecommendedTagTile> = emptyList(),
+    val recommendedTagsFetchedAtMillis: Long = 0L,
     val searchDraft: String = "",
     val activeSearchWord: String = "",
     val searchItems: List<Illust> = emptyList(),
@@ -49,7 +52,10 @@ data class IllustiaUiState(
     val bookmarkNextUrl: String? = null,
     val selectedIllust: Illust? = null,
     val selectedIllustUser: UserProfile? = null,
+    val selectedIllustFirstComment: Comment? = null,
     val relatedIllusts: List<Illust> = emptyList(),
+    val savedIllusts: List<SavedIllustEntity> = emptyList(),
+    val selectedSavedIllustId: Long? = null,
     val selectedUser: UserProfile? = null,
     val selectedUserIllusts: List<Illust> = emptyList(),
     val selectedUserNextUrl: String? = null,
@@ -58,8 +64,6 @@ data class IllustiaUiState(
     val showUserPage: Boolean = false,
     val userPageFromSheet: Boolean = false,
     val userPageDismissed: Boolean = false,
-    val savedIllusts: List<SavedIllustEntity> = emptyList(),
-    val selectedSavedIllustId: Long? = null,
     val imageViewerIllust: Illust? = null,
     val imageViewerStartPage: Int = 0,
     val longPressedIllust: Illust? = null,
@@ -82,6 +86,12 @@ data class IllustiaUiState(
 data class CalculatorHistoryEntry(
     val expression: String,
     val result: String,
+)
+
+@Immutable
+data class RecommendedTagTile(
+    val tag: String,
+    val imageUrl: String? = null,
 )
 
 internal data class MuteFilter(
@@ -117,3 +127,4 @@ internal fun AppSettings.toMuteFilter(): MuteFilter {
         tags = mutedTags.toSet(),
     )
 }
+

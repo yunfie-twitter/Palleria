@@ -2,12 +2,14 @@ package com.yunfie.illustia.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,7 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.Illust
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -121,8 +123,10 @@ fun IllustCard(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
     highQualityImages: Boolean = true,
     showAiBadge: Boolean = true,
+    showBookmarkButton: Boolean = true,
 ) {
     val preferLowDataImages = LocalPreferLowDataImages.current
     val previewUrl = remember(illust.id, highQualityImages, preferLowDataImages) {
@@ -145,7 +149,9 @@ fun IllustCard(
         onBookmark = onBookmark,
         onClick = onClick,
         onLongClick = onLongClick,
+        showBookmarkButton = showBookmarkButton,
         modifier = modifier,
+        isSelected = isSelected,
     )
 }
 
@@ -160,13 +166,20 @@ private fun IllustCardImpl(
     onBookmark: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
+    showBookmarkButton: Boolean,
     modifier: Modifier = Modifier,
+    isSelected: Boolean,
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val hapticMode = LocalAppHapticMode.current
+    val cardModifier = if (isSelected) {
+        modifier.border(2.dp, MiuixTheme.colorScheme.primary, RoundedCornerShape(14.dp))
+    } else {
+        modifier
+    }
     Card(
-        modifier = modifier.combinedClickable(
+        modifier = cardModifier.combinedClickable(
             onClick = onClick,
             onLongClick = if (onLongClick != null) {
                 {
@@ -180,20 +193,47 @@ private fun IllustCardImpl(
         colors = CardDefaults.defaultColors(color = Color.Transparent, contentColor = MiuixTheme.colorScheme.onBackground),
         pressFeedbackType = PressFeedbackType.Sink,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
-            IllustCardThumbnail(
-                previewUrl = previewUrl,
-                title = title,
-                badgeText = cardBadgeText,
-            )
+                IllustCardThumbnail(
+                    previewUrl = previewUrl,
+                    title = title,
+                    badgeText = cardBadgeText,
+                )
 
-            IllustCardInfo(
-                title = title,
-                artistName = artistName,
-                isBookmarked = isBookmarked,
-                onBookmark = onBookmark
-            )
+                IllustCardInfo(
+                    title = title,
+                    artistName = artistName,
+                    isBookmarked = isBookmarked,
+                    onBookmark = onBookmark,
+                    showBookmarkButton = showBookmarkButton,
+                )
+            }
+
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f)),
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(MiuixTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "✓",
+                        color = Color.White,
+                        style = MiuixTheme.textStyles.footnote2,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+            }
         }
     }
 }
@@ -239,6 +279,7 @@ private fun IllustCardInfo(
     artistName: String,
     isBookmarked: Boolean,
     onBookmark: () -> Unit,
+    showBookmarkButton: Boolean,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -263,12 +304,14 @@ private fun IllustCardInfo(
                 style = MiuixTheme.textStyles.footnote1,
             )
         }
-        BookmarkHeartButton(
-            isBookmarked = isBookmarked,
-            onClick = onBookmark,
-            size = 32.dp,
-            iconSize = 22.dp,
-        )
+        if (showBookmarkButton) {
+            BookmarkHeartButton(
+                isBookmarked = isBookmarked,
+                onClick = onBookmark,
+                size = 32.dp,
+                iconSize = 22.dp,
+            )
+        }
     }
 }
 
@@ -403,25 +446,37 @@ fun HighlightCard(illust: Illust, onClick: () -> Unit) {
 
 @Composable
 fun IllustGrid(
-    items: List<Illust>,
-    hasMore: Boolean,
+    illusts: List<Illust>,
     emptyMessage: String,
-    onBookmark: (Illust) -> Unit,
     onOpenIllust: (Illust) -> Unit,
-    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier,
+    columns: Int = 2,
+    onBookmark: (Illust) -> Unit = {},
+    hasMore: Boolean = false,
+    onLoadMore: (() -> Unit)? = null,
+    showBookmarkButton: Boolean = true,
+    contentPadding: PaddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = MainNavigationContentPadding),
 ) {
-    if (items.isEmpty()) {
+    if (illusts.isEmpty()) {
         EmptyState(emptyMessage)
     } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 28.dp, end = 28.dp, top = 12.dp, bottom = MainNavigationContentPadding),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+        LazyVerticalGrid(
+            state = rememberLazyGridState(),
+            columns = GridCells.Fixed(columns.coerceAtLeast(1)),
+            modifier = modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            items(items, key = { it.id }) { illust ->
-                IllustListRow(illust = illust, onBookmark = { onBookmark(illust) }, onClick = { onOpenIllust(illust) })
+            items(illusts, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                IllustCard(
+                    illust = illust,
+                    onBookmark = { onBookmark(illust) },
+                    onClick = { onOpenIllust(illust) },
+                    showBookmarkButton = showBookmarkButton,
+                )
             }
-            if (hasMore) {
+            if (hasMore && onLoadMore != null) {
                 item {
                     Button(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                         Text(stringResource(R.string.illust_load_more))
@@ -465,3 +520,4 @@ fun TagTile(tag: String, imageUrl: String?, onClick: () -> Unit, modifier: Modif
         }
     }
 }
+

@@ -1,6 +1,7 @@
-package com.yunfie.illustia.data
+package com.yunfie.illustia.models
 
 import androidx.compose.runtime.Immutable
+import com.yunfie.illustia.models.pixiv.IllustSeries
 
 @Immutable
 data class Illust(
@@ -21,6 +22,8 @@ data class Illust(
     val tags: List<String>,
     val pageCount: Int,
     val isBookmarked: Boolean,
+    val totalComments: Int? = null,
+    val series: IllustSeries? = null,
 ) {
     /** サムネイル用URL (square → medium → original のフォールバック) */
     val thumbnailUrl: String = squareImageUrl.ifBlank { mediumImageUrl.ifBlank { imageUrl } }

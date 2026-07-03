@@ -28,6 +28,7 @@
     <string name="action_show">Show</string>
     <string name="action_add">Add</string>
     <string name="action_enable">Enable</string>
+    <string name="action_open">Open</string>
     <string name="active">Active</string>
 
     <!-- Home screen -->
@@ -102,6 +103,9 @@
     <string name="bookmark_empty">No bookmarks</string>
     <string name="bookmark_following_empty">No works from followed users</string>
     <string name="watchlist_empty">Add tags from the save button in search results</string>
+    <string name="watchlist_series_title">Watchlist</string>
+    <string name="watchlist_series_empty">No series have been saved to Watchlist yet</string>
+    <string name="watchlist_series_load_more">Load more series</string>
     <string name="following_users_empty">No followed users</string>
 
     <!-- Favorite tags screen -->
@@ -130,6 +134,9 @@
     <string name="detail_muted_artist_blur_default">this artist</string>
     <string name="detail_unmute">Unmute</string>
     <string name="detail_no_caption">No caption</string>
+    <string name="detail_comments">Comments</string>
+    <string name="detail_comments_empty">No comments yet</string>
+    <string name="detail_series">Series</string>
     <string name="detail_related">Related Works</string>
     <string name="detail_illust_id">Illust ID</string>
     <string name="detail_resolution">Resolution</string>
@@ -148,6 +155,8 @@
     <string name="more_save_progress_idle">Idle</string>
     <string name="more_download_list">Download List</string>
     <string name="more_download_list_summary">Check active and finished downloads</string>
+    <string name="more_watchlist_series">Watchlist</string>
+    <string name="more_watchlist_series_summary">Check saved manga series</string>
     <string name="download_queue_title">Download List</string>
     <string name="download_queue_subtitle">Shows image save status in order</string>
     <string name="download_queue_tab_all">All</string>
@@ -189,6 +198,9 @@
     <string name="general_section_startup">Startup</string>
     <string name="general_theme">Theme</string>
     <string name="general_theme_desc">Switch the app-wide brightness mode</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="general_amoled">AMOLED</string>
     <string name="general_amoled_desc">Use black backgrounds and surfaces in dark theme</string>
     <string name="general_experimental_feature">Experimental Feature</string>
@@ -202,6 +214,10 @@
     <string name="general_seed_color_presets">Presets</string>
     <string name="general_language">App Language</string>
     <string name="general_language_desc">Changes both the Palleria UI language and the Pixiv API language</string>
+    <string name="general_haptics">Haptics</string>
+    <string name="general_haptics_desc">Choose the quality of tactile feedback during interactions</string>
+    <string name="general_haptics_rich">Rich Haptics</string>
+    <string name="general_haptics_clear">Clear Haptics</string>
     <string name="general_r18">Show R-18 Content</string>
     <string name="general_r18_desc">Display works containing mature content</string>
     <string name="general_ai_badge">AI Badge</string>
@@ -216,6 +232,8 @@
     <string name="general_double_back_desc">Press back twice on the home screen to exit the app</string>
     <string name="general_secure">Secure Window</string>
     <string name="general_secure_desc">Restrict screenshots and screen recording</string>
+    <string name="general_user_profile_bottom_sheet">User Profile Bottom Sheet</string>
+    <string name="general_user_profile_bottom_sheet_desc">Show user profiles in a bottom sheet instead of a full page</string>
     <string name="general_startup_screen">Startup Screen</string>
     <string name="general_startup_screen_desc">Choose the tab to open on app launch</string>
 
@@ -266,6 +284,13 @@
     <string name="image_download_folder_by_work_desc">Automatically create a work folder when saving</string>
     <string name="image_default_save_location">Default save location</string>
     <string name="image_default_save_location_fallback">Pictures/Palleria</string>
+    <string name="offline_wifi_only">Save only on Wi-Fi</string>
+    <string name="offline_wifi_only_desc">Do not save while on mobile data.</string>
+    <string name="offline_capacity_limit">Storage limit</string>
+    <string name="offline_capacity_limit_desc">Stop when saved works reach the limit.</string>
+    <string name="offline_library_title">Download list</string>
+    <string name="offline_library_empty">No saved works yet.</string>
+    <string name="detail_save_offline">Added to saved list.</string>
     <string name="image_section_quality">Quality</string>
     <string name="image_section_layout">Layout</string>
     <string name="image_viewer_thumbnails_in_toolbar">Show thumbnails in toolbar</string>
@@ -323,6 +348,8 @@
     <string name="mute_users_empty">No muted users</string>
     <string name="mute_works_empty">No muted works</string>
     <string name="mute_tags_empty">No muted tags</string>
+    <string name="mute_add_tag_title">Add Tag</string>
+    <string name="mute_add_tag_label">Tag name</string>
 
     <!-- Data settings screen -->
     <string name="data_settings_title">Data Management</string>
@@ -350,6 +377,9 @@
     <string name="data_cache_badge">Image/Temp</string>
     <string name="data_delete_cache">Delete Cache</string>
     <string name="data_delete_view_history">Delete View History</string>
+    <string name="view_history_delete_selected">Delete Selected View History</string>
+    <string name="view_history_delete_selected_desc">Delete the selected %1$s.</string>
+    <string name="view_history_selected_count">Selected %1$d</string>
     <string name="data_delete_search_history">Delete Search History</string>
     <string name="data_delete_watchlist_tags">Delete Watchlist Tags</string>
     <string name="data_delete_mute_data">Delete Mute Data</string>

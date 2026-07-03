@@ -13,23 +13,24 @@ import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.widget.RankingWidgetProvider
-import com.yunfie.illustia.data.HomeFeedKind
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.HomeFeedKind
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.data.IllustiaRepository
-import com.yunfie.illustia.data.LoadState
+import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.data.PixivApiClient
 import com.yunfie.illustia.data.PixivApiException
-import com.yunfie.illustia.data.NovelPreview
-import com.yunfie.illustia.data.NovelTextContent
+import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.data.proxyPixivImageUrl
-import com.yunfie.illustia.data.Restrict
-import com.yunfie.illustia.data.SearchBookmarkFilter
-import com.yunfie.illustia.data.SearchDuration
-import com.yunfie.illustia.data.SearchSort
-import com.yunfie.illustia.data.SearchTarget
-import com.yunfie.illustia.data.StoredAccount
-import com.yunfie.illustia.data.UserPreview
-import com.yunfie.illustia.data.UserProfile
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchBookmarkFilter
+import com.yunfie.illustia.models.SearchDuration
+import com.yunfie.illustia.models.SearchSort
+import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
@@ -38,14 +39,12 @@ import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import java.util.concurrent.TimeUnit
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Locale
 import android.net.ConnectivityManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -68,6 +67,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.DummyAppIconSwitcher
+import java.io.File
+import java.io.FileOutputStream
 
 @Keep
 class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
@@ -77,6 +78,8 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             PixivApiClient((getApplication<Application>() as IllustiaApplication).sharedHttpClient),
         )
     }
+
+    fun uiRepository(): IllustiaRepository = repository
     private val imageStore by lazy { NativeImageStore(getApplication<Application>().applicationContext) }
     private val settingsStore by lazy { SettingsStore(getApplication<Application>().applicationContext) }
     private val downloadMutex = Mutex()
@@ -84,10 +87,15 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     private var detailExtrasJob: Job? = null
     private var loadingJob: Job? = null
     private var closeUserPageJob: Job? = null
-    private var savedLibraryJob: Job? = null
     private var privacyUnlockJob: Job? = null
     private var autoLockJob: Job? = null
     private var recommendedTagsJob: Job? = null
+    private var recommendedTagsExpiryJob: Job? = null
+    private var savedLibraryJob: Job? = null
+
+    private companion object {
+        val RECOMMENDED_TAG_CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(30)
+    }
 
     val bookmarkTimelineGridState = LazyGridState()
     val bookmarkMainGridState = LazyGridState()
@@ -347,14 +355,6 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateSkipConfirmOnDetailSave(value: Boolean) {
         updateSettings { it.copy(skipConfirmOnDetailSave = value) }
-    }
-
-    fun updateOfflineWifiOnly(value: Boolean) {
-        updateSettings { it.copy(offlineWifiOnly = value) }
-    }
-
-    fun updateOfflineStorageLimitBytes(value: Long) {
-        updateSettings { it.copy(offlineStorageLimitBytes = value.coerceAtLeast(50L * 1024 * 1024)) }
     }
 
     fun updateUserProfileBottomSheetEnabled(value: Boolean) {
@@ -1176,6 +1176,16 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         updateSettings { it.copy(viewHistory = emptyList()) }
     }
 
+    fun removeViewHistory(ids: Collection<Long>) {
+        val targetIds = ids.toSet()
+        if (targetIds.isEmpty()) return
+        updateSettings { settings ->
+            settings.copy(
+                viewHistory = settings.viewHistory.filterNot { illust -> illust.id in targetIds },
+            )
+        }
+    }
+
     fun exportManagedData(uri: Uri) {
         val settings = _uiState.value.settings
         viewModelScope.launch(Dispatchers.IO) {
@@ -1272,16 +1282,22 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 .take(48)
             updateSettings { it.copy(viewHistory = history) }
         }
-        _uiState.update { it.copy(selectedIllust = illust, selectedIllustUser = null, relatedIllusts = emptyList()) }
+        _uiState.update { it.copy(selectedIllust = illust, selectedIllustUser = null, selectedIllustFirstComment = null, relatedIllusts = emptyList()) }
         detailExtrasJob?.cancel()
         detailExtrasJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 kotlinx.coroutines.coroutineScope {
                     val relatedDeferred = async { repository.relatedIllusts(illust.id) }
+                    val firstCommentDeferred = async {
+                        runCatching {
+                            repository.illustComments(illust.id).comments.firstOrNull()
+                        }.getOrNull()
+                    }
                     val userDeferred = illust.artistId.takeIf { it > 0L }?.let { artistId ->
                         async { repository.userDetail(artistId) }
                     }
                     val related = relatedDeferred.await()
+                    val firstComment = firstCommentDeferred.await()
                     val user = userDeferred?.await()
                     _uiState.update {
                         if (it.selectedIllust?.id != illust.id) {
@@ -1290,6 +1306,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                             it.copy(
                                 relatedIllusts = related.items.visibleWithSettings(it.settings),
                                 selectedIllustUser = user,
+                                selectedIllustFirstComment = firstComment,
                             )
                         }
                     }
@@ -1321,7 +1338,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun closeIllust() {
         detailExtrasJob?.cancel()
-        _uiState.update { it.copy(selectedIllust = null, selectedIllustUser = null) }
+        _uiState.update { it.copy(selectedIllust = null, selectedIllustUser = null, selectedIllustFirstComment = null) }
     }
 
     fun openImageViewer(illust: Illust, startPage: Int = 0) {
@@ -1596,41 +1613,6 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { it.copy(message = str(R.string.msg_save_started, targets.size)) }
     }
 
-    fun openOfflineLibrary() {
-        _navigationRequests.tryEmit(IllustiaNavigationRequest.OfflineLibrary)
-    }
-
-    fun openDownloadQueue() {
-        _navigationRequests.tryEmit(IllustiaNavigationRequest.DownloadQueue)
-    }
-
-    fun loadSavedLibrary() {
-        if (savedLibraryJob?.isActive == true) return
-        savedLibraryJob = viewModelScope.launch(Dispatchers.IO) {
-            val saved = settingsStore.getSavedIllusts()
-            _uiState.update { it.copy(savedIllusts = saved) }
-        }
-    }
-
-    fun openSavedIllustViewer(illustId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val saved = settingsStore.getSavedIllust(illustId) ?: return@launch
-            _uiState.update { it.copy(selectedSavedIllustId = illustId) }
-            _navigationRequests.tryEmit(IllustiaNavigationRequest.SavedIllustViewer)
-        }
-    }
-
-    fun closeSavedIllustViewer() {
-        _uiState.update { it.copy(selectedSavedIllustId = null) }
-    }
-
-    fun deleteSavedIllust(illustId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            settingsStore.deleteSavedIllust(illustId)
-            _uiState.update { it.copy(savedIllusts = it.savedIllusts.filterNot { item -> item.illustId == illustId }) }
-        }
-    }
-
     fun saveOfflineImage(url: String, filename: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -1687,30 +1669,47 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun saveOfflineFile(
-        filename: String,
-        sourceUrl: String,
-        responseMimeType: String?,
-        input: java.io.InputStream,
-    ): File {
-        val dir = settingsStore.savedIllustDir()
-        dir.mkdirs()
-        val target = File(dir, filename.withOfflineExtension(sourceUrl, responseMimeType))
-        input.use { stream ->
-            FileOutputStream(target).use { output -> stream.copyTo(output) }
-        }
-        return target
+    fun openOfflineLibrary() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.OfflineLibrary)
     }
 
-    private fun String.withOfflineExtension(sourceUrl: String, responseMimeType: String?): String {
-        if (contains('.')) return this
-        val ext = when (responseMimeType?.substringBefore(";")?.lowercase(Locale.ROOT)) {
-            "image/png" -> "png"
-            "image/webp" -> "webp"
-            "image/gif" -> "gif"
-            else -> sourceUrl.substringAfterLast('.', "jpg").substringBefore('?')
+    fun openDownloadQueue() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DownloadQueue)
+    }
+
+    fun loadSavedLibrary() {
+        if (savedLibraryJob?.isActive == true) return
+        savedLibraryJob = viewModelScope.launch(Dispatchers.IO) {
+            val saved = settingsStore.getSavedIllusts()
+            _uiState.update { it.copy(savedIllusts = saved) }
         }
-        return "$this.${ext.ifBlank { "jpg" }}"
+    }
+
+    fun openSavedIllustViewer(illustId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val saved = settingsStore.getSavedIllust(illustId) ?: return@launch
+            _uiState.update { it.copy(selectedSavedIllustId = saved.illust.illustId) }
+            _navigationRequests.tryEmit(IllustiaNavigationRequest.SavedIllustViewer)
+        }
+    }
+
+    fun closeSavedIllustViewer() {
+        _uiState.update { it.copy(selectedSavedIllustId = null) }
+    }
+
+    fun deleteSavedIllust(illustId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.deleteSavedIllust(illustId)
+            _uiState.update { it.copy(savedIllusts = it.savedIllusts.filterNot { item -> item.illustId == illustId }) }
+        }
+    }
+
+    fun updateOfflineWifiOnly(value: Boolean) {
+        updateSettings { it.copy(offlineWifiOnly = value) }
+    }
+
+    fun updateOfflineStorageLimitBytes(value: Long) {
+        updateSettings { it.copy(offlineStorageLimitBytes = value) }
     }
 
     private fun android.content.Context.isNetworkMetered(): Boolean {
@@ -1797,6 +1796,33 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         return (segments + filename.sanitizeDownloadSegment()).joinToString("/")
+    }
+
+    private fun saveOfflineFile(
+        filename: String,
+        sourceUrl: String,
+        responseMimeType: String?,
+        input: java.io.InputStream,
+    ): File {
+        val dir = settingsStore.savedIllustDir()
+        dir.mkdirs()
+        val target = File(dir, filename.withOfflineExtension(sourceUrl, responseMimeType))
+        input.use { stream ->
+            FileOutputStream(target).use { output -> stream.copyTo(output) }
+        }
+        return target
+    }
+
+    private fun String.withOfflineExtension(sourceUrl: String, responseMimeType: String?): String {
+        if (contains('.')) return this
+        val ext = when (responseMimeType?.substringBefore(";")?.lowercase(java.util.Locale.ROOT)) {
+            "image/png" -> "png"
+            "image/jpeg", "image/jpg" -> "jpg"
+            "image/webp" -> "webp"
+            "image/gif" -> "gif"
+            else -> sourceUrl.substringAfterLast('.', "").takeIf { it.length in 2..5 }
+        }
+        return if (ext.isNullOrBlank()) this else "$this.$ext"
     }
 
     private fun resolveDownloadIllust(filename: String): Illust? {
@@ -1944,9 +1970,23 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         val accounts = _uiState.value.settings.accounts
         if (index < 0 || index >= accounts.size) return
         val account = accounts[index]
-        updateSettings { it.copy(refreshToken = account.refreshToken, activeAccountIndex = index, bookmarkUserId = account.userId) }
-        closeAccountSwitcher()
-        login()
+        val nextSettings = _uiState.value.settings.copy(
+            refreshToken = account.refreshToken,
+            activeAccountIndex = index,
+            bookmarkUserId = account.userId,
+        )
+        _uiState.update {
+            it.withSettings(nextSettings).copy(
+                currentAccount = null,
+                sessionReady = false,
+                showAccountSwitcher = false,
+                loadState = LoadState.Idle,
+            )
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.saveSettings(nextSettings)
+            login()
+        }
     }
 
     fun removeAccount(index: Int) {
@@ -2104,15 +2144,44 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshRecommendedTags(force: Boolean = false) {
         val state = _uiState.value
         if (state.settings.refreshToken.isBlank()) return
-        if (!force && state.recommendedTags.isNotEmpty()) return
+        val now = System.currentTimeMillis()
+        val cacheAge = now - state.recommendedTagsFetchedAtMillis
+        if (!force && state.recommendedTags.isNotEmpty() && cacheAge in 0 until RECOMMENDED_TAG_CACHE_TTL_MILLIS) {
+            return
+        }
         recommendedTagsJob?.cancel()
+        recommendedTagsExpiryJob?.cancel()
         recommendedTagsJob = viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                repository.trendingTags()
+                val tags = repository.trendingTags()
+                    .distinct()
+                    .take(12)
+                if (tags.isEmpty()) return@runCatching emptyList<RecommendedTagTile>()
+
+                kotlinx.coroutines.coroutineScope {
+                    tags.map { tag ->
+                        async {
+                            val imageUrl = loadRecommendedTagImage(tag)
+                            RecommendedTagTile(tag = tag, imageUrl = imageUrl)
+                        }
+                    }.awaitAll()
+                }
             }.onSuccess { tags ->
                 if (tags.isEmpty()) return@onSuccess
+                val fetchedAt = System.currentTimeMillis()
                 _uiState.update { current ->
-                    current.copy(recommendedTags = tags.distinct().take(12))
+                    current.copy(
+                        recommendedTags = tags.map { it.tag },
+                        recommendedTagTiles = tags,
+                        recommendedTagsFetchedAtMillis = fetchedAt,
+                    )
+                }
+                recommendedTagsExpiryJob = viewModelScope.launch {
+                    delay(RECOMMENDED_TAG_CACHE_TTL_MILLIS)
+                    _uiState.update { current ->
+                        if (current.recommendedTagsFetchedAtMillis != fetchedAt) current
+                        else current.copy(recommendedTagsFetchedAtMillis = 0L)
+                    }
                 }
             }.onFailure {
                 if (isCancellation(it)) throw it
@@ -2301,6 +2370,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         detailExtrasJob?.cancel()
         loadingJob?.cancel()
         recommendedTagsJob?.cancel()
+        recommendedTagsExpiryJob?.cancel()
         super.onCleared()
     }
 
@@ -2322,6 +2392,29 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             return fallback
         }
         return message
+    }
+
+    private suspend fun loadRecommendedTagImage(tag: String): String? {
+        val settings = _uiState.value.settings
+        return runCatching {
+            repository.popularPreview(tag)
+                .items
+                .visibleWithSettings(settings)
+                .randomOrNull()
+                ?.squareImageUrl
+                ?.takeIf { it.isNotBlank() }
+                ?: repository.search(
+                    word = tag,
+                    sort = SearchSort.PopularDesc,
+                    target = SearchTarget.PartialTags,
+                    duration = SearchDuration.All,
+                    bookmarkFilter = SearchBookmarkFilter.None,
+                    includeR18 = settings.allowR18,
+                ).items.visibleWithSettings(settings)
+                    .randomOrNull()
+                    ?.squareImageUrl
+                    ?.takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
     private suspend fun handleAuthExpired(error: Throwable): Boolean {
@@ -2492,3 +2585,4 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 }
+

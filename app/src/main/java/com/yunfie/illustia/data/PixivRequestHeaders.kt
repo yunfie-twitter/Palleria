@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data
 
+import com.yunfie.illustia.models.PixivSession
 import android.os.Build
 import com.yunfie.illustia.settings.currentAcceptLanguage
 import java.security.MessageDigest

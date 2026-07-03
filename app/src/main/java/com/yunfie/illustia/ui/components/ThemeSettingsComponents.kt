@@ -22,16 +22,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.basic.ColorSpace
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -42,13 +45,12 @@ fun ThemeSwitchSettingRow(
     summary: String,
     enabled: Boolean = true,
 ) {
-    SwitchPreference(
+    SettingSwitchRow(
         title = title,
-        summary = summary,
         checked = checked,
         onCheckedChange = onCheckedChange,
+        summary = summary,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
     )
 }
 
@@ -59,14 +61,23 @@ fun ColorSettingRow(
     color: Color,
     onClick: () -> Unit,
 ) {
-    ArrowPreference(
+    BasicComponent(
         title = title,
         summary = summary,
         modifier = Modifier.fillMaxWidth(),
         startAction = {
             ColorSwatch(color = color)
         },
+        endActions = {
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                modifier = Modifier.size(18.dp),
+            )
+        },
         onClick = onClick,
+        role = Role.Button,
     )
 }
 

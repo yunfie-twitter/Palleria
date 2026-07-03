@@ -16,20 +16,21 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.Restrict
-import com.yunfie.illustia.data.SearchBookmarkFilter
-import com.yunfie.illustia.data.SearchDuration
-import com.yunfie.illustia.data.SearchSort
-import com.yunfie.illustia.data.SearchTarget
-import com.yunfie.illustia.data.StoredAccount
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchBookmarkFilter
+import com.yunfie.illustia.models.SearchDuration
+import com.yunfie.illustia.models.SearchSort
+import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.settings.db.AccountEntity
 import com.yunfie.illustia.settings.db.FavoriteTagEntity
 import com.yunfie.illustia.settings.db.IllustiaDatabase
-import com.yunfie.illustia.settings.db.SearchHistoryEntity
-import com.yunfie.illustia.settings.db.SettingsDao
 import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
+import com.yunfie.illustia.settings.db.SavedIllustWithPages
+import com.yunfie.illustia.settings.db.SearchHistoryEntity
+import com.yunfie.illustia.settings.db.SettingsDao
 import com.yunfie.illustia.settings.db.ViewHistoryEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.io.File
 
 private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
 
@@ -93,14 +95,14 @@ data class AppSettings(
     val downloadFolderByWork: Boolean = true,
     val autoTagOnBookmark: Boolean = false,
     val simultaneousDownloads: Int = 2,
+    val offlineWifiOnly: Boolean = true,
+    val offlineStorageLimitBytes: Long = 5L * 1024 * 1024 * 1024,
     val feedPreviewQuality: String = "low",
     val illustDetailQuality: String = "low",
     val mangaDetailQuality: String = "low",
     val fullscreenQuality: String = "high",
     val viewerThumbnailsInToolbar: Boolean = false,
     val startupScreen: String = "home",
-    val offlineWifiOnly: Boolean = true,
-    val offlineStorageLimitBytes: Long = 5L * 1024 * 1024 * 1024,
     val userProfileBottomSheetEnabled: Boolean = false,
     val verticalColumnCount: Int = 2,
     val horizontalColumnCount: Int = 4,
@@ -278,7 +280,7 @@ class SettingsStore(context: Context) {
         dao.getSavedIllusts()
     }
 
-    suspend fun getSavedIllust(illustId: Long): com.yunfie.illustia.settings.db.SavedIllustWithPages? = withContext(Dispatchers.IO) {
+    suspend fun getSavedIllust(illustId: Long): SavedIllustWithPages? = withContext(Dispatchers.IO) {
         dao.getSavedIllust(illustId)
     }
 
@@ -307,8 +309,8 @@ class SettingsStore(context: Context) {
         directory.walkTopDown().filter { it.isFile }.sumOf { it.length() }
     }
 
-    fun savedIllustDir(): java.io.File {
-        return java.io.File(appContext.filesDir, "saved_illusts")
+    fun savedIllustDir(): File {
+        return File(appContext.filesDir, "saved_illusts")
     }
 
     private fun generateSalt(): String {
@@ -410,14 +412,14 @@ class SettingsStore(context: Context) {
             downloadFolderByWork = preferences[DOWNLOAD_FOLDER_BY_WORK] ?: true,
             autoTagOnBookmark = preferences[AUTO_TAG_ON_BOOKMARK] ?: false,
             simultaneousDownloads = preferences[SIMULTANEOUS_DOWNLOADS] ?: 2,
+            offlineWifiOnly = preferences[OFFLINE_WIFI_ONLY] ?: true,
+            offlineStorageLimitBytes = preferences[OFFLINE_STORAGE_LIMIT_BYTES] ?: DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES,
             feedPreviewQuality = preferences[FEED_PREVIEW_QUALITY] ?: "low",
             illustDetailQuality = preferences[ILLUST_DETAIL_QUALITY] ?: "low",
             mangaDetailQuality = preferences[MANGA_DETAIL_QUALITY] ?: "low",
             fullscreenQuality = preferences[FULLSCREEN_QUALITY] ?: "high",
             viewerThumbnailsInToolbar = preferences[VIEWER_THUMBNAILS_IN_TOOLBAR] ?: false,
             startupScreen = preferences[STARTUP_SCREEN] ?: "home",
-            offlineWifiOnly = preferences[OFFLINE_WIFI_ONLY] ?: true,
-            offlineStorageLimitBytes = preferences[OFFLINE_STORAGE_LIMIT_BYTES] ?: DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES,
             userProfileBottomSheetEnabled = preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] ?: false,
             verticalColumnCount = preferences[VERTICAL_COLUMN_COUNT] ?: 2,
             horizontalColumnCount = preferences[HORIZONTAL_COLUMN_COUNT] ?: 4,
@@ -482,14 +484,14 @@ class SettingsStore(context: Context) {
         preferences[DOWNLOAD_FOLDER_BY_WORK] = settings.downloadFolderByWork
         preferences[AUTO_TAG_ON_BOOKMARK] = settings.autoTagOnBookmark
         preferences[SIMULTANEOUS_DOWNLOADS] = settings.simultaneousDownloads
+        preferences[OFFLINE_WIFI_ONLY] = settings.offlineWifiOnly
+        preferences[OFFLINE_STORAGE_LIMIT_BYTES] = settings.offlineStorageLimitBytes
         preferences[FEED_PREVIEW_QUALITY] = settings.feedPreviewQuality
         preferences[ILLUST_DETAIL_QUALITY] = settings.illustDetailQuality
         preferences[MANGA_DETAIL_QUALITY] = settings.mangaDetailQuality
         preferences[FULLSCREEN_QUALITY] = settings.fullscreenQuality
         preferences[VIEWER_THUMBNAILS_IN_TOOLBAR] = settings.viewerThumbnailsInToolbar
         preferences[STARTUP_SCREEN] = settings.startupScreen
-        preferences[OFFLINE_WIFI_ONLY] = settings.offlineWifiOnly
-        preferences[OFFLINE_STORAGE_LIMIT_BYTES] = settings.offlineStorageLimitBytes
         preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] = settings.userProfileBottomSheetEnabled
         preferences[VERTICAL_COLUMN_COUNT] = settings.verticalColumnCount
         preferences[HORIZONTAL_COLUMN_COUNT] = settings.horizontalColumnCount
@@ -659,6 +661,8 @@ class SettingsStore(context: Context) {
             downloadFolderByWork = preferences.getBoolean("downloadFolderByWork", true),
             autoTagOnBookmark = preferences.getBoolean("autoTagOnBookmark", false),
             simultaneousDownloads = preferences.getInt("simultaneousDownloads", 2),
+            offlineWifiOnly = preferences.getBoolean("offlineWifiOnly", true),
+            offlineStorageLimitBytes = preferences.getLong("offlineStorageLimitBytes", DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES),
             feedPreviewQuality = preferences.getString("feedPreviewQuality", "low") ?: "low",
             illustDetailQuality = preferences.getString("illustDetailQuality", "low") ?: "low",
             mangaDetailQuality = preferences.getString("mangaDetailQuality", "low") ?: "low",
@@ -892,6 +896,7 @@ class SettingsStore(context: Context) {
         private const val KEY_ACCOUNTS = "accounts"
         private const val KEY_ACCOUNT_TOKENS = "accountTokens"
         private const val KEY_ACTIVE_ACCOUNT_INDEX = "activeAccountIndex"
+        private const val DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES = 5L * 1024 * 1024 * 1024
         private const val KEY_PIN_HASH = "pinHash"
         private const val KEY_PIN_SALT = "pinSalt"
         private const val KEY_UNLOCK_CODE_HASH = "unlockCodeHash"
@@ -920,15 +925,11 @@ class SettingsStore(context: Context) {
         private const val KEY_HAPTIC_MODE = "hapticMode"
         private const val KEY_PREFETCH_IMAGES = "prefetchImages"
         private const val KEY_PIXIV_IMAGE_PROXY_BASE_URL = "pixivImageProxyBaseUrl"
-        private const val KEY_OFFLINE_WIFI_ONLY = "offlineWifiOnly"
-        private const val KEY_OFFLINE_STORAGE_LIMIT_BYTES = "offlineStorageLimitBytes"
         private const val CURRENT_SETTINGS_VERSION = 7
         private const val HISTORY_SEPARATOR = '\u001F'
         private const val FIELD_SEPARATOR = '\u001E'
         private const val MAX_SEARCH_HISTORY = 6
         private const val MAX_VIEW_HISTORY = 48
-        private const val DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES = 5L * 1024 * 1024 * 1024
-
         private val SETTINGS_VERSION = intPreferencesKey("settings_version")
         private val BOOKMARK_USER_ID = longPreferencesKey(KEY_BOOKMARK_USER_ID)
         private val APP_LANGUAGE = stringPreferencesKey(KEY_APP_LANGUAGE)
@@ -974,14 +975,14 @@ class SettingsStore(context: Context) {
         private val DOWNLOAD_FOLDER_BY_WORK = booleanPreferencesKey("downloadFolderByWork")
         private val AUTO_TAG_ON_BOOKMARK = booleanPreferencesKey("autoTagOnBookmark")
         private val SIMULTANEOUS_DOWNLOADS = intPreferencesKey("simultaneousDownloads")
+        private val OFFLINE_WIFI_ONLY = booleanPreferencesKey("offlineWifiOnly")
+        private val OFFLINE_STORAGE_LIMIT_BYTES = longPreferencesKey("offlineStorageLimitBytes")
         private val FEED_PREVIEW_QUALITY = stringPreferencesKey("feedPreviewQuality")
         private val ILLUST_DETAIL_QUALITY = stringPreferencesKey("illustDetailQuality")
         private val MANGA_DETAIL_QUALITY = stringPreferencesKey("mangaDetailQuality")
         private val FULLSCREEN_QUALITY = stringPreferencesKey("fullscreenQuality")
         private val VIEWER_THUMBNAILS_IN_TOOLBAR = booleanPreferencesKey("viewerThumbnailsInToolbar")
         private val STARTUP_SCREEN = stringPreferencesKey("startupScreen")
-        private val OFFLINE_WIFI_ONLY = booleanPreferencesKey(KEY_OFFLINE_WIFI_ONLY)
-        private val OFFLINE_STORAGE_LIMIT_BYTES = longPreferencesKey(KEY_OFFLINE_STORAGE_LIMIT_BYTES)
         private val USER_PROFILE_BOTTOM_SHEET_ENABLED = booleanPreferencesKey("userProfileBottomSheetEnabled")
         private val VERTICAL_COLUMN_COUNT = intPreferencesKey("verticalColumnCount")
         private val HORIZONTAL_COLUMN_COUNT = intPreferencesKey("horizontalColumnCount")
@@ -1055,3 +1056,4 @@ class SettingsStore(context: Context) {
         }
     }
 }
+

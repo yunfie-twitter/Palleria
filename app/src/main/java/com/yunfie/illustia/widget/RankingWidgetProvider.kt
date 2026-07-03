@@ -13,7 +13,7 @@ import android.widget.RemoteViews
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.MainActivity
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.PixivApiClient
 import com.yunfie.illustia.data.proxyPixivImageUrl
@@ -299,3 +299,4 @@ private fun artworkPendingIntent(context: Context, illustId: Long): PendingInten
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 }
+

@@ -24,6 +24,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,7 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.screens.OnboardingScreen
@@ -62,9 +63,10 @@ import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -100,6 +102,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
             var pendingIllustId by rememberSaveable { mutableStateOf<Long?>(null) }
             var selectedPageIndex by rememberSaveable { mutableIntStateOf(0) }
             val scope = rememberCoroutineScope()
+            val scrollBehavior = MiuixScrollBehavior()
 
             MiuixTheme {
                 BackHandler {
@@ -118,9 +121,10 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                     Scaffold(
                         containerColor = MiuixTheme.colorScheme.surface,
                         topBar = {
-                            SmallTopAppBar(
+                            TopAppBar(
                                 title = stringResource(R.string.widget_illust_title),
-                                color = MiuixTheme.colorScheme.surface,
+                                largeTitle = stringResource(R.string.widget_illust_title),
+                                scrollBehavior = scrollBehavior,
                                 navigationIcon = {
                                     IconButton(onClick = { finish() }) {
                                         Icon(MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
@@ -132,6 +136,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection)
                                 .padding(paddingValues),
                         ) {
                             SearchScreen(
@@ -384,3 +389,4 @@ private fun WidgetPagePickerSheet(
         }
     }
 }
+

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,11 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private enum class ViewHistoryDeleteTarget {
+    All,
+    Selected,
+}
+
 @Composable
 fun ViewHistoryScreen(
     state: IllustiaUiState,
@@ -41,22 +47,42 @@ fun ViewHistoryScreen(
     onBack: () -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<ViewHistoryDeleteTarget?>(null) }
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
     val feedHighQuality = state.settings.highQualityImages && state.settings.feedPreviewQuality != "low"
     val showAiBadge = state.settings.showAiBadge
+    val hasSelection = selectedIds.isNotEmpty()
+    val selectedCountText = stringResource(R.string.data_items_count, selectedIds.size)
 
-    if (showDeleteConfirm) {
+    LaunchedEffect(state.settings.viewHistory) {
+        val availableIds = state.settings.viewHistory.asSequence().map { it.id }.toSet()
+        selectedIds = selectedIds.filterTo(mutableSetOf()) { it in availableIds }
+    }
+
+    deleteTarget?.let { target ->
+        val title = when (target) {
+            ViewHistoryDeleteTarget.All -> stringResource(R.string.data_delete_view_history)
+            ViewHistoryDeleteTarget.Selected -> stringResource(R.string.view_history_delete_selected)
+        }
+        val summary = when (target) {
+            ViewHistoryDeleteTarget.All -> stringResource(R.string.data_delete_view_history_desc)
+            ViewHistoryDeleteTarget.Selected -> stringResource(R.string.view_history_delete_selected_desc, selectedCountText)
+        }
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.data_delete_view_history),
-            summary = stringResource(R.string.data_delete_view_history_desc),
+            title = title,
+            summary = summary,
             confirmText = stringResource(R.string.action_delete),
             destructive = true,
             onConfirm = {
-                viewModel.clearViewHistory()
-                showDeleteConfirm = false
+                when (target) {
+                    ViewHistoryDeleteTarget.All -> viewModel.clearViewHistory()
+                    ViewHistoryDeleteTarget.Selected -> viewModel.removeViewHistory(selectedIds)
+                }
+                selectedIds = emptySet()
+                deleteTarget = null
             },
-            onDismiss = { showDeleteConfirm = false },
+            onDismiss = { deleteTarget = null },
         )
     }
 
@@ -67,12 +93,18 @@ fun ViewHistoryScreen(
             TopAppBar(
                 title = stringResource(R.string.more_view_history),
                 largeTitle = stringResource(R.string.more_view_history),
+                subtitle = if (hasSelection) stringResource(R.string.view_history_selected_count, selectedIds.size) else "",
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
                 },
                 actions = {
-                    HeaderIcon(MiuixIcons.Delete, onClick = { showDeleteConfirm = true })
+                    if (hasSelection) {
+                        HeaderIcon(MiuixIcons.Close, onClick = { selectedIds = emptySet() })
+                        HeaderIcon(MiuixIcons.Delete, onClick = { deleteTarget = ViewHistoryDeleteTarget.Selected })
+                    } else {
+                        HeaderIcon(MiuixIcons.Delete, onClick = { deleteTarget = ViewHistoryDeleteTarget.All })
+                    }
                 },
             )
         },
@@ -101,10 +133,21 @@ fun ViewHistoryScreen(
         }
 
         gridItems(state.settings.viewHistory, key = { it.id }, contentType = { "illust_card" }) { illust ->
+            val isSelected = illust.id in selectedIds
             IllustCard(
                 illust = illust,
+                isSelected = isSelected,
                 onBookmark = { viewModel.toggleBookmark(illust) },
-                onClick = { viewModel.openIllust(illust) },
+                onClick = {
+                    if (hasSelection) {
+                        selectedIds = if (isSelected) selectedIds - illust.id else selectedIds + illust.id
+                    } else {
+                        viewModel.openIllust(illust)
+                    }
+                },
+                onLongClick = {
+                    selectedIds = if (isSelected) selectedIds - illust.id else selectedIds + illust.id
+                },
                 highQualityImages = feedHighQuality,
                 showAiBadge = showAiBadge,
             )

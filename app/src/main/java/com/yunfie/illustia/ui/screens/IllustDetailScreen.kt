@@ -42,7 +42,8 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -69,9 +70,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun IllustDetailScreen(
     illust: Illust,
     relatedIllusts: List<Illust>,
+    firstComment: Comment?,
     onBack: () -> Unit,
     onBookmark: () -> Unit,
     onOpenUser: (Long) -> Unit,
+    onOpenComments: () -> Unit,
+    onOpenSeries: (() -> Unit)? = null,
     onOpenImage: (Int) -> Unit,
     onSearchTag: (String) -> Unit,
     isArtistFollowed: Boolean,
@@ -84,7 +88,6 @@ fun IllustDetailScreen(
     onOpenIllust: (Illust) -> Unit,
     onOpenIllustById: (Long) -> Unit,
     onSaveImage: (String, String) -> Unit,
-    onSaveOfflineImage: (String, String) -> Unit,
     onSaveAllImages: (List<String>, String) -> Unit,
     onMessage: (String) -> Unit,
     highQualityImages: Boolean,
@@ -189,7 +192,6 @@ fun IllustDetailScreen(
                     onBack = onBack,
                     onOpenImage = onOpenImage,
                     onSaveImage = { url, name, confirm -> requestSave(url, name, confirm) },
-                    onSaveOfflineImage = onSaveOfflineImage,
                     onSaveAllImages = onSaveAllImages,
                     onMuteIllust = onMuteIllust,
                     onMuteUser = onMuteUser,
@@ -204,9 +206,12 @@ fun IllustDetailScreen(
                     illust = illust,
                     isArtistFollowed = isArtistFollowed,
                     isArtistMuted = isArtistMuted,
+                    firstComment = firstComment,
                     onOpenUser = { onOpenUser(illust.artistId) },
                     onOpenUserById = onOpenUser,
                     onOpenIllustById = onOpenIllustById,
+                    onOpenComments = onOpenComments,
+                    onOpenSeries = onOpenSeries,
                     onToggleFollow = {
                         if (isArtistFollowed) showUnfollowConfirm = true else onToggleFollow()
                     },
@@ -224,6 +229,7 @@ fun IllustDetailScreen(
                 }
             }
         }
-        }
     }
 }
+}
+

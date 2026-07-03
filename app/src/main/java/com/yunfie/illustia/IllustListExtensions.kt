@@ -1,6 +1,6 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.Illust
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.settings.AppSettings
 
 internal fun List<Illust>.replaceIllustIfPresent(updated: Illust): List<Illust> {
@@ -61,3 +61,4 @@ internal fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> {
 internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> {
     return visibleWith(settings.toMuteFilter())
 }
+

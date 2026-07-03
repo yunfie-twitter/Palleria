@@ -133,21 +133,6 @@ fun ImageSettingsScreen(
                         onSelect = viewModel::updateSimultaneousDownloads,
                     )
                     DividerLine()
-                    SettingSwitchRow(
-                        title = stringResource(R.string.offline_wifi_only),
-                        checked = state.settings.offlineWifiOnly,
-                        onCheckedChange = viewModel::updateOfflineWifiOnly,
-                        summary = stringResource(R.string.offline_wifi_only_desc),
-                    )
-                    DividerLine()
-                    SettingDropdownRow(
-                        title = stringResource(R.string.offline_capacity_limit),
-                        values = listOf(1024L * 1024 * 1024, 3L * 1024 * 1024 * 1024, 5L * 1024 * 1024 * 1024, 10L * 1024 * 1024 * 1024),
-                        selected = state.settings.offlineStorageLimitBytes,
-                        label = { limitLabel(it) },
-                        onSelect = viewModel::updateOfflineStorageLimitBytes,
-                    )
-                    DividerLine()
                     SettingDropdownRow(
                         title = stringResource(R.string.image_columns),
                         values = listOf(2, 3, 4),
@@ -283,10 +268,4 @@ private fun pixivImageProxyLabel(value: String): String {
     if (value.isBlank()) return stringResource(R.string.image_proxy_none)
     if (value == "custom") return stringResource(R.string.image_proxy_custom)
     return PixivImageProxyOptions.firstOrNull { it.baseUrl == value }?.name ?: value
-}
-
-@Composable
-private fun limitLabel(bytes: Long): String {
-    val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-    return String.format(java.util.Locale.US, "%.0f GB", gb)
 }

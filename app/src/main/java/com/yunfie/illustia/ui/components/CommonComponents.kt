@@ -75,7 +75,7 @@ import coil3.request.allowRgb565
 import coil3.request.crossfade
 import coil3.size.Precision
 import coil3.size.Scale
-import com.yunfie.illustia.data.LoadState
+import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.settings.AppSettings
 import kotlinx.coroutines.delay
@@ -140,7 +140,6 @@ fun Context.isActiveNetworkMetered(): Boolean {
         connectivityManager?.isActiveNetworkMetered ?: false
     }.getOrDefault(false)
 }
-
 @Composable
 fun NonAmoledDarkTheme(content: @Composable () -> Unit) {
     val controller = remember {
@@ -343,51 +342,44 @@ fun AvatarImage(url: String?, name: String, size: Dp, modifier: Modifier = Modif
 }
 
 // フォローボタンの内部状態
-private enum class FollowPillStage { UNFOLLOWED, CHECK, FOLLOWED, UNFOLLOWING }
+private enum class FollowPillStage { UNFOLLOWED, CHECK, FOLLOWED }
 private enum class BookmarkButtonStage { UNBOOKMARKED, CHECK, BOOKMARKED, REMOVING }
 
 /**
- * アニメーション付きフォローボタン。
- * フォロー時: 「フォロー」→ チェックマーク → 「フォロー中」
- * フォロー解除時: 「フォロー中」→ フェードアウト → 「フォロー」
+ * フォロー時だけアニメーションするフォローボタン。
+ * 表示中の `isFollowed` は通常の状態表示に使い、実際のフォロー操作は
+ * `followAnimationTrigger` の変化で明示的に伝える。
  */
 @Composable
-fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
-    // isFollowed の前の値を追跡してアニメーション方向を決定する
-    var prevFollowed by remember { mutableStateOf(isFollowed) }
-    var stage by remember(isFollowed) {
-        val initial = when {
-            isFollowed && !prevFollowed -> FollowPillStage.CHECK
-            !isFollowed && prevFollowed -> FollowPillStage.UNFOLLOWING
-            isFollowed -> FollowPillStage.FOLLOWED
-            else -> FollowPillStage.UNFOLLOWED
-        }
-        prevFollowed = isFollowed
-        mutableStateOf(initial)
-    }
+fun FollowPill(
+    isFollowed: Boolean,
+    followAnimationTrigger: Int = 0,
+    modifier: Modifier = Modifier,
+) {
+    var animationStage by remember { mutableStateOf<FollowPillStage?>(null) }
+    var lastHandledTrigger by remember { mutableStateOf(followAnimationTrigger) }
 
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val hapticMode = LocalAppHapticMode.current
 
-    // チェックマーク → フォロー中 の自動遷移
-    LaunchedEffect(stage) {
-        when (stage) {
-            FollowPillStage.CHECK -> {
-                performAppHapticFeedback(context, haptic, hapticMode)
-                delay(600)
-                stage = FollowPillStage.FOLLOWED
-            }
-            FollowPillStage.UNFOLLOWING -> {
-                performAppHapticFeedback(context, haptic, hapticMode)
-                delay(300)
-                stage = FollowPillStage.UNFOLLOWED
-            }
-            else -> Unit
-        }
+    // 実際のフォロー操作が起きた時だけ、チェックマーク表示とハプティクスを発火する。
+    LaunchedEffect(followAnimationTrigger) {
+        if (followAnimationTrigger == lastHandledTrigger) return@LaunchedEffect
+        lastHandledTrigger = followAnimationTrigger
+        animationStage = FollowPillStage.CHECK
+        performAppHapticFeedback(context, haptic, hapticMode)
+        delay(600)
+        animationStage = FollowPillStage.FOLLOWED
     }
 
-    val isActiveFollow = remember(stage) { stage == FollowPillStage.FOLLOWED || stage == FollowPillStage.CHECK }
+    val stage = animationStage ?: if (isFollowed) {
+        FollowPillStage.FOLLOWED
+    } else {
+        FollowPillStage.UNFOLLOWED
+    }
+
+    val isActiveFollow = stage == FollowPillStage.FOLLOWED || stage == FollowPillStage.CHECK
     val scheme = MiuixTheme.colorScheme
     Box(
         modifier = modifier
@@ -417,7 +409,7 @@ fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
                     FollowPillStage.FOLLOWED ->
                         (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.85f)) togetherWith
                                 (fadeOut(tween(140)) + scaleOut(tween(140), targetScale = 1.1f))
-                    FollowPillStage.UNFOLLOWING, FollowPillStage.UNFOLLOWED ->
+                    FollowPillStage.UNFOLLOWED ->
                         (fadeIn(tween(200))) togetherWith (fadeOut(tween(200)))
                 }
             },
@@ -433,12 +425,6 @@ fun FollowPill(isFollowed: Boolean, modifier: Modifier = Modifier) {
                 FollowPillStage.FOLLOWED -> Text(
                     text = stringResource(R.string.action_following),
                     color = scheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MiuixTheme.textStyles.subtitle,
-                )
-                FollowPillStage.UNFOLLOWING -> Text(
-                    text = stringResource(R.string.action_following),
-                    color = scheme.onPrimary.copy(alpha = 0.4f),
                     fontWeight = FontWeight.Bold,
                     style = MiuixTheme.textStyles.subtitle,
                 )

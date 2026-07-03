@@ -1,4 +1,4 @@
-package com.yunfie.illustia.data
+package com.yunfie.illustia.models
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable

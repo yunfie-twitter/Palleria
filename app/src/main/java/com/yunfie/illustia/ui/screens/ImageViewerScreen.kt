@@ -39,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
@@ -52,8 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntSize
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.ui.components.HeaderOverlayIcon
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import top.yukonga.miuix.kmp.basic.*
@@ -141,72 +139,37 @@ fun ImageViewerScreen(
                     title = illust.title,
                     color = Color.Transparent,
                     titleColor = Color.White,
-                    navigationIcon = { HeaderOverlayIcon(MiuixIcons.Close, onBack) },
+                    navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.action_close),
+                                    tint = Color.White,
+                                )
+                            }
+                        },
                 )
             }
         },
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-        Box(modifier = Modifier.fillMaxSize()) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = if (prefetchImages) 1 else 0,
-            userScrollEnabled = !isZoomed,
-            key = { it },
-        ) { page ->
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                ZoomablePixivImage(
-                    url = imageUrls[page],
-                    contentDescription = illust.title,
-                    isActive = pagerState.currentPage == page,
-                    onZoomChanged = { zoomed ->
-                        if (pagerState.currentPage == page) isZoomed = zoomed
-                    },
-                    onTap = { showControls = !showControls }
-                )
-            }
-        }
-        
-        AnimatedVisibility(
-            visible = showControls,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            0.42f to Color.Black.copy(alpha = 0.56f),
-                            1f to Color.Black.copy(alpha = 0.94f),
-                        )
-                    )
-                    .padding(top = 56.dp)
-                    .navigationBarsPadding()
-            ) {
-                if (imageUrls.size > 1 && !thumbnailsInToolbar) {
-                    ViewerThumbnailStrip(
-                        imageUrls = imageUrls,
-                        thumbnailUrls = thumbnailUrls,
-                        currentPage = pagerState.currentPage,
-                        onPageSelected = { index ->
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
-                }
+        floatingToolbar = {
+            AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
                 FloatingToolbar(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MiuixTheme.colorScheme.surfaceContainer,
-                    cornerRadius = 28.dp,
-                    outSidePadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    shadowElevation = 8.dp,
-                    showDivider = true,
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (imageUrls.size > 1 && !thumbnailsInToolbar) {
+                            ViewerThumbnailStrip(
+                                imageUrls = imageUrls,
+                                thumbnailUrls = thumbnailUrls,
+                                currentPage = pagerState.currentPage,
+                                onPageSelected = { index ->
+                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                },
+                                modifier = Modifier.padding(bottom = 6.dp),
+                            )
+                        }
                         if (imageUrls.size > 1 && thumbnailsInToolbar) {
                             ViewerThumbnailStrip(
                                 imageUrls = imageUrls,
@@ -215,12 +178,12 @@ fun ImageViewerScreen(
                                 onPageSelected = { index ->
                                     coroutineScope.launch { pagerState.animateScrollToPage(index) }
                                 },
-                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                             )
                         }
-
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                            modifier = Modifier
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
@@ -257,12 +220,35 @@ fun ImageViewerScreen(
                                 )
                             }
                         }
-
                     }
                 }
+            }
+        },
+        floatingToolbarPosition = ToolbarPosition.BottomCenter,
+    ) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+        Box(modifier = Modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            beyondViewportPageCount = if (prefetchImages) 1 else 0,
+            userScrollEnabled = !isZoomed,
+            key = { it },
+        ) { page ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                ZoomablePixivImage(
+                    url = imageUrls[page],
+                    contentDescription = illust.title,
+                    isActive = pagerState.currentPage == page,
+                    onZoomChanged = { zoomed ->
+                        if (pagerState.currentPage == page) isZoomed = zoomed
+                    },
+                    onTap = { showControls = !showControls }
+                )
             }
         }
         }
         }
     }
 }
+

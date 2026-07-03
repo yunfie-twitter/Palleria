@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.UserProfile
+import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -57,8 +57,9 @@ private val IconTileShape = RoundedCornerShape(12.dp)
 fun MoreScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    onOpenWatchlistSeries: () -> Unit,
 ) {
-    val quickActions = rememberQuickActions(state, viewModel)
+    val quickActions = rememberQuickActions(state, viewModel, onOpenWatchlistSeries)
     val utilityActions = rememberUtilityActions(viewModel)
 
     AccountSwitchSheet(
@@ -109,6 +110,7 @@ fun MoreScreen(
 private fun rememberQuickActions(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    onOpenWatchlistSeries: () -> Unit,
 ): List<MoreAction> {
     val context = LocalContext.current
     return remember(
@@ -117,7 +119,6 @@ private fun rememberQuickActions(
         state.settings.mutedIllusts.size,
         state.settings.mutedUsers.size,
         state.settings.mutedTags.size,
-        state.settings.viewHistory.size,
     ) {
         val mutedTotal = state.settings.mutedIllusts.size +
                 state.settings.mutedUsers.size +
@@ -126,42 +127,35 @@ private fun rememberQuickActions(
         listOf(
             MoreAction(
                 title = context.getString(R.string.more_settings),
-                summary = context.getString(R.string.more_settings_summary),
                 icon = MiuixIcons.Settings,
                 onClick = viewModel::openSettings,
             ),
             MoreAction(
                 title = context.getString(R.string.more_view_history),
-                summary = context.getString(R.string.data_items_count, state.settings.viewHistory.size),
                 icon = MiuixIcons.Timer,
-                badge = state.settings.viewHistory.size.badgeText(),
                 onClick = viewModel::openViewHistory,
             ),
             MoreAction(
                 title = context.getString(R.string.more_favorite_tags),
-                summary = context.getString(R.string.data_items_count, state.settings.favoriteTags.size),
                 icon = MiuixIcons.FavoritesFill,
                 badge = state.settings.favoriteTags.size.badgeText(),
                 onClick = viewModel::openFavoriteTags,
             ),
             MoreAction(
                 title = context.getString(R.string.more_mute_settings),
-                summary = context.getString(R.string.data_items_count, mutedTotal),
                 icon = MiuixIcons.Filter,
                 badge = mutedTotal.badgeText(),
                 onClick = viewModel::openMuteSettings,
             ),
             MoreAction(
-                title = context.getString(R.string.more_offline_library),
-                summary = context.getString(R.string.more_offline_library_summary),
-                icon = MiuixIcons.Photos,
-                onClick = viewModel::openOfflineLibrary,
-            ),
-            MoreAction(
                 title = context.getString(R.string.more_download_list),
-                summary = context.getString(R.string.more_download_list_summary),
                 icon = MiuixIcons.Download,
                 onClick = viewModel::openDownloadQueue,
+            ),
+            MoreAction(
+                title = context.getString(R.string.more_watchlist_series),
+                icon = MiuixIcons.Photos,
+                onClick = onOpenWatchlistSeries,
             ),
         )
     }
@@ -181,7 +175,6 @@ private fun rememberUtilityActions(viewModel: IllustiaViewModel): List<MoreActio
         listOf(
             MoreAction(
                 title = context.getString(R.string.more_about),
-                summary = "v$appVersion",
                 icon = MiuixIcons.More,
                 onClick = viewModel::openAbout,
             ),
@@ -352,7 +345,7 @@ private fun Badge(text: String) {
 
 private data class MoreAction(
     val title: String,
-    val summary: String,
+    val summary: String? = null,
     val icon: ImageVector,
     val badge: String? = null,
     val onClick: () -> Unit,
@@ -383,3 +376,4 @@ private fun accountSubtitle(
         else -> stringResource(R.string.more_connected_pixiv)
     }
 }
+

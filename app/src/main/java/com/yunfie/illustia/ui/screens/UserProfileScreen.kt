@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,8 +30,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.Illust
-import com.yunfie.illustia.data.UserProfile
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.DividerLine
@@ -87,6 +88,7 @@ fun UserProfileScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     var showUnfollowConfirm by remember(user.id) { mutableStateOf(false) }
     var selectedTab by remember(user.id) { mutableStateOf(0) }
+    var followAnimationTrigger by remember(user.id) { mutableIntStateOf(0) }
 
     LaunchedEffect(selectedTab, user.id) {
         if (!isMuted && selectedTab == 1) onLoadBookmarks()
@@ -131,10 +133,18 @@ fun UserProfileScreen(
                 illustCount = illusts.size,
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
-                onToggleFollow = { if (user.isFollowed) showUnfollowConfirm = true else onToggleFollow() },
+                onToggleFollow = {
+                    if (user.isFollowed) {
+                        showUnfollowConfirm = true
+                    } else {
+                        followAnimationTrigger += 1
+                        onToggleFollow()
+                    }
+                },
                 isMuted = isMuted,
                 onUnmuteUser = onUnmuteUser,
-                backgroundColor = backgroundColor
+                backgroundColor = backgroundColor,
+                followAnimationTrigger = followAnimationTrigger,
             )
         }
         
@@ -165,7 +175,6 @@ fun UserProfileScreen(
         }
     }
 }
-
 @Composable
 private fun UserProfileHeader(
     user: UserProfile,
@@ -235,7 +244,6 @@ private fun UserProfileHeader(
         }
     }
 }
-
 @Composable
 private fun UserProfileInfo(
     user: UserProfile,
@@ -245,6 +253,7 @@ private fun UserProfileInfo(
     onToggleFollow: () -> Unit,
     isMuted: Boolean,
     onUnmuteUser: () -> Unit,
+    followAnimationTrigger: Int,
     backgroundColor: Color
 ) {
     Column(
@@ -271,7 +280,7 @@ private fun UserProfileInfo(
                 if (isMuted) {
                     MutedUserPill()
                 } else {
-                    FollowPill(user.isFollowed)
+                    FollowPill(user.isFollowed, followAnimationTrigger)
                 }
             }
         }
@@ -304,7 +313,6 @@ private fun UserProfileInfo(
         )
     }
 }
-
 @Composable
 private fun MutedUserPill(modifier: Modifier = Modifier) {
     Box(

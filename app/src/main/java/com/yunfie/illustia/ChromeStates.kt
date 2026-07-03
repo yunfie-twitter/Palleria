@@ -1,6 +1,6 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.HomeFeedKind
+import com.yunfie.illustia.models.HomeFeedKind
 
 data class HomeChromeState(
     val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
@@ -30,3 +30,4 @@ data class PixivWebLoginRequest(
     val authorizationUrl: String,
     val codeVerifier: String,
 )
+

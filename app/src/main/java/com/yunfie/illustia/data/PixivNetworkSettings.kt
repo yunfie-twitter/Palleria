@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data
 
+import com.yunfie.illustia.models.NetworkMode
 import java.net.InetAddress
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
