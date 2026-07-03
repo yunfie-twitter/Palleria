@@ -141,7 +141,7 @@ jobs:
           cd public
           # Create config.yml for fdroidserver
           cat <<EOF > config.yml
-          repo_url: https://yunfie-twitter.github.io/${{ github.event.repository.name }}/repo
+          repo_url: https://yunfi.f5.si/${{ github.event.repository.name }}/repo
           repo_name: Illustia Dev Repository
           repo_description: Development builds for Illustia
           
