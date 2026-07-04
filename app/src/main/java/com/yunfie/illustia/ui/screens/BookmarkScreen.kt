@@ -220,6 +220,7 @@ fun BookmarkScreen(
                         onOpenWatchlistSeries = onOpenWatchlistSeries,
                     )
                     3 -> BookmarkFollowingTab(
+                        settings = settings,
                         followingUsers = followingUsers,
                         sort = followingUserSort,
                         loadState = loadState,

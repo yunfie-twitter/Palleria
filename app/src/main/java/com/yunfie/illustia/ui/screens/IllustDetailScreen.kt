@@ -59,6 +59,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
@@ -91,6 +92,7 @@ fun IllustDetailScreen(
     onSaveImage: (String, String) -> Unit,
     onSaveAllImages: (List<String>, String) -> Unit,
     onMessage: (String) -> Unit,
+    loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
     highQualityImages: Boolean,
     detailQuality: String,
     prefetchImages: Boolean,
@@ -107,7 +109,7 @@ fun IllustDetailScreen(
     var revealMutedArtwork by remember(illust.id, isArtistMuted, isTagMuted) { mutableStateOf(!isArtworkMuted) }
     val pixivUrl = remember(illust.id) { "https://www.pixiv.net/artworks/${illust.id}" }
     
-    // 詳細画面を開く際の重さを軽減するために重いコンテンツを遅延レンダリングする
+    // 詳細画面を開く際の重さを軽減するために、関連作品だけを遅延レンダリングする
     var showHeavyContent by remember { mutableStateOf(false) }
     LaunchedEffect(illust.id) {
         delay(240) // 遷移アニメーションの完了を待つ
@@ -198,7 +200,8 @@ fun IllustDetailScreen(
                     onMuteIllust = onMuteIllust,
                     onMuteUser = onMuteUser,
                     onMessage = onMessage,
-                    showImage = showHeavyContent,
+                    loadUgoiraPlayback = loadUgoiraPlayback,
+                    showImage = true,
                     maskMutedArtwork = isArtworkMuted && !revealMutedArtwork,
                     onRevealMutedArtwork = { revealMutedArtwork = true },
                     mutedArtworkTitle = if (isArtistMuted) {

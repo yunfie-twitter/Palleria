@@ -42,6 +42,18 @@ class IllustWidgetStore(context: Context) {
         ).takeIf { it.illustId > 0 && it.imagePath.isNotBlank() }
     }
 
+    fun loadAny(): IllustWidgetSelection? {
+        return prefs.all.keys
+            .asSequence()
+            .mapNotNull { key ->
+                if (!key.startsWith("${KEY_ILLUST_ID}_")) return@mapNotNull null
+                key.substringAfterLast('_').toIntOrNull()
+            }
+            .sorted()
+            .mapNotNull { load(it) }
+            .firstOrNull()
+    }
+
     fun remove(appWidgetId: Int) {
         prefs.edit()
             .remove(key(appWidgetId, KEY_ILLUST_ID))

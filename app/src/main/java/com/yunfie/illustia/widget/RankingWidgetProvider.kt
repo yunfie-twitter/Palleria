@@ -3,6 +3,7 @@ package com.yunfie.illustia.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -62,7 +63,76 @@ class RankingWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_REFRESH_RANKING_WIDGET = "com.yunfie.illustia.widget.ACTION_REFRESH_RANKING_WIDGET"
+
+        suspend fun publishPreview(context: Context) {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+
+            val manager = AppWidgetManager.getInstance(context)
+            runCatching {
+                manager.setWidgetPreview(
+                    ComponentName(context, RankingWidgetProvider::class.java),
+                    AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
+                    buildPreview(context),
+                )
+            }
+        }
     }
+}
+
+private suspend fun buildPreview(context: Context): RemoteViews {
+    val views = RemoteViews(context.packageName, R.layout.ranking_widget)
+    val loggedIn = SettingsStore(context.applicationContext).read().refreshToken.isNotBlank()
+    if (loggedIn) {
+        views.setViewVisibility(R.id.widget_status, android.view.View.GONE)
+        views.setViewVisibility(R.id.widget_logged_out_container, android.view.View.GONE)
+        views.setViewVisibility(R.id.widget_logged_in_container, android.view.View.VISIBLE)
+        listOf(
+            R.id.widget_item_1,
+            R.id.widget_item_2,
+            R.id.widget_item_3,
+        ).forEachIndexed { index, rootId ->
+            val rank = index + 1
+            val thumbId = when (index) {
+                0 -> R.id.widget_item_1_thumb
+                1 -> R.id.widget_item_2_thumb
+                else -> R.id.widget_item_3_thumb
+            }
+            val titleId = when (index) {
+                0 -> R.id.widget_item_1_title
+                1 -> R.id.widget_item_2_title
+                else -> R.id.widget_item_3_title
+            }
+            val artistId = when (index) {
+                0 -> R.id.widget_item_1_artist
+                1 -> R.id.widget_item_2_artist
+                else -> R.id.widget_item_3_artist
+            }
+            val rankId = when (index) {
+                0 -> R.id.widget_item_1_rank
+                1 -> R.id.widget_item_2_rank
+                else -> R.id.widget_item_3_rank
+            }
+            views.setViewVisibility(rootId, android.view.View.VISIBLE)
+            views.setTextViewText(rankId, rank.toString())
+            views.setTextViewText(titleId, context.getString(R.string.widget_ranking_title))
+            views.setTextViewText(artistId, "Pixiv")
+            views.setImageViewResource(thumbId, R.mipmap.ic_launcher)
+        }
+        views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent(context))
+        views.setOnClickPendingIntent(R.id.widget_item_1, artworkPendingIntent(context, 1L))
+        views.setOnClickPendingIntent(R.id.widget_item_2, artworkPendingIntent(context, 2L))
+        views.setOnClickPendingIntent(R.id.widget_item_3, artworkPendingIntent(context, 3L))
+    } else {
+        views.setViewVisibility(R.id.widget_status, android.view.View.GONE)
+        views.setViewVisibility(R.id.widget_logged_out_container, android.view.View.VISIBLE)
+        views.setViewVisibility(R.id.widget_logged_in_container, android.view.View.GONE)
+        views.setTextViewText(R.id.widget_login_title, context.getString(R.string.widget_ranking_login_title))
+        views.setTextViewText(R.id.widget_login_subtitle, context.getString(R.string.widget_ranking_login_subtitle))
+        views.setTextViewText(R.id.widget_login_button, context.getString(R.string.widget_ranking_login_button))
+        views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent(context))
+        views.setOnClickPendingIntent(R.id.widget_login_button, launchAppIntent(context))
+    }
+    return views
 }
 
 private class RankingWidgetUpdater(

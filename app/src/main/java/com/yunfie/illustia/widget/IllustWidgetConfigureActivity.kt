@@ -179,6 +179,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                                     AppWidgetManager.getInstance(this@IllustWidgetConfigureActivity),
                                                     widgetId,
                                                 )
+                                                IllustWidgetProvider.publishPreview(this@IllustWidgetConfigureActivity)
                                                 setResult(
                                                     Activity.RESULT_OK,
                                                     Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId),

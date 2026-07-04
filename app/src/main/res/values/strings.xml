@@ -227,6 +227,8 @@
     <string name="general_notch_desc">ステータスバー領域の表示を調整します</string>
     <string name="general_swipe">タブのスワイプ切替</string>
     <string name="general_swipe_desc">左右スワイプで主要画面を移動します</string>
+    <string name="general_auto_load_more">さらに読み込むを自動化</string>
+    <string name="general_auto_load_more_desc">末尾に着いたら次ページを自動で取得します</string>
     <string name="general_double_back">ダブルバックで終了</string>
     <string name="general_double_back_desc">ホーム画面で戻るを2回押すとアプリを終了します</string>
     <string name="general_secure">セキュアウィンドウ</string>
@@ -490,6 +492,8 @@
     <string name="error_share_failed">シェアできませんでした。</string>
     <string name="error_load_detail_failed">詳細の追加情報を読み込めませんでした。</string>
     <string name="error_load_artist_failed">作者情報を読み込めませんでした。</string>
+    <string name="offline_cache_displayed">通信に失敗しました。キャッシュを表示しています。</string>
+    <string name="offline_no_cache">オフラインです。キャッシュはありません。</string>
     <string name="error_data_export_failed">データをエクスポートできませんでした。</string>
     <string name="error_data_import_failed">ファイルを読み込めませんでした。Illustiaのバックアップファイルを選択してください。</string>
 

@@ -39,6 +39,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.IllustSeriesStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Illusts
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
@@ -85,6 +86,12 @@ fun IllustSeriesScreen(
     }
 
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    AutoLoadMoreEffect(
+        enabled = settings.autoLoadMore,
+        nextUrl = state.model?.nextUrl,
+        isLoading = state.isLoading,
+        onLoadMore = { scope.launch { store.loadMore() } },
+    )
 
     LaunchedEffect(store) {
         store.fetch()
@@ -159,7 +166,7 @@ fun IllustSeriesScreen(
                     showAiBadge = showAiBadge,
                 )
             }
-            if (state.model?.nextUrl != null) {
+            if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = { scope.launch { store.loadMore() } },

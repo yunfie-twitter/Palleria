@@ -22,6 +22,7 @@ import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -57,6 +58,7 @@ fun CommentScreen(
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val store = remember(repository, id, type) { CommentStore(repository, id, type = type) }
     val state by store.state.collectAsStateWithLifecycle()
+    val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var commentText by remember { mutableStateOf("") }
     val hideCommentInput = remember(state.comments) {
@@ -66,6 +68,12 @@ fun CommentScreen(
     LaunchedEffect(store) {
         store.fetch()
     }
+    AutoLoadMoreEffect(
+        enabled = settings.autoLoadMore,
+        nextUrl = state.nextUrl,
+        isLoading = state.isLoading,
+        onLoadMore = { scope.launch { store.next() } },
+    )
 
     OverlayBottomSheet(
         show = true,
@@ -87,7 +95,7 @@ fun CommentScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 560.dp)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 4.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             PullToRefresh(
@@ -112,7 +120,7 @@ fun CommentScreen(
                             onOpenUser = comment.user?.id?.let { userId -> { onOpenUser(userId) } },
                         )
                     }
-                    if (state.nextUrl != null) {
+                    if (!settings.autoLoadMore && state.nextUrl != null) {
                         item {
                             Button(
                                 onClick = { scope.launch { store.next() } },
@@ -137,7 +145,7 @@ fun CommentScreen(
                 ElevatedPanel(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 6.dp),
+                        .padding(horizontal = 0.dp),
                     contentPadding = PaddingValues(12.dp),
                 ) {
                     Row(

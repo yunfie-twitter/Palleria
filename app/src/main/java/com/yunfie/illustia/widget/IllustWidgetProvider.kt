@@ -3,6 +3,7 @@ package com.yunfie.illustia.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -52,10 +53,35 @@ class IllustWidgetProvider : AppWidgetProvider() {
         const val ACTION_REFRESH_ILLUST_WIDGET = "com.yunfie.illustia.widget.ACTION_REFRESH_ILLUST_WIDGET"
         private const val WIDGET_IMAGE_MAX_DIMENSION = 960
 
+        fun publishPreview(context: Context) {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+
+            val manager = AppWidgetManager.getInstance(context)
+            val views = buildPreview(context)
+            runCatching {
+                manager.setWidgetPreview(
+                    ComponentName(context, IllustWidgetProvider::class.java),
+                    AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
+                    views,
+                )
+            }
+        }
+
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, IllustWidgetProvider::class.java))
             ids.forEach { updateWidget(context, manager, it) }
+        }
+
+        private fun buildPreview(context: Context): RemoteViews {
+            val views = RemoteViews(context.packageName, R.layout.illust_widget)
+            val selection = IllustWidgetStore(context).loadAny()
+            if (selection == null) {
+                bindEmpty(context, views, 0)
+            } else {
+                bindSelection(context, views, 0, selection)
+            }
+            return views
         }
 
         fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int) {

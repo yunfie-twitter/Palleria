@@ -37,6 +37,7 @@ data class Illust(
     /** カードバッジテキスト (AI / manga / ページ数) */
     val cardBadgeText: String? = when {
         isAi -> "AI"
+        type == "ugoira" -> "ugoira"
         type == "manga" -> "manga"
         pageCount > 1 -> "$pageCount"
         else -> null

@@ -30,6 +30,9 @@ import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.Comment
+import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
+import com.yunfie.illustia.models.pixiv.UgoiraMetadataResponse
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
@@ -41,6 +44,7 @@ import java.security.SecureRandom
 import android.net.ConnectivityManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -67,7 +71,10 @@ import org.json.JSONObject
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.DummyAppIconSwitcher
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 
 @Keep
 class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
@@ -76,6 +83,26 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         val user: UserProfile?,
         val firstComment: Comment?,
         val relatedIllusts: List<Illust>,
+    )
+
+    private data class SearchSnapshot(
+        val searchDraft: String,
+        val activeSearchWord: String,
+        val searchItems: List<Illust>,
+        val searchNextUrl: String?,
+        val userSearchItems: List<UserPreview>,
+        val userSearchNextUrl: String?,
+    )
+
+    private data class UserPageSnapshot(
+        val selectedUser: UserProfile?,
+        val selectedUserIllusts: List<Illust>,
+        val selectedUserNextUrl: String?,
+        val selectedUserBookmarks: List<Illust>,
+        val selectedUserBookmarksNextUrl: String?,
+        val showUserPage: Boolean,
+        val userPageFromSheet: Boolean,
+        val userPageDismissed: Boolean,
     )
 
         private val repository by lazy {
@@ -98,6 +125,8 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     private var recommendedTagsExpiryJob: Job? = null
     private var savedLibraryJob: Job? = null
     private var profileReturnDetail: DetailSnapshot? = null
+    private var searchSnapshot: SearchSnapshot? = null
+    private var userPageSnapshot: UserPageSnapshot? = null
 
     private companion object {
         val RECOMMENDED_TAG_CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(30)
@@ -290,6 +319,10 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updatePrefetchImages(value: Boolean) {
         updateSettings { it.copy(prefetchImages = value) }
+    }
+
+    fun updateAutoLoadMore(value: Boolean) {
+        updateSettings { it.copy(autoLoadMore = value) }
     }
 
     fun updateNotchOptimization(value: Boolean) {
@@ -970,6 +1003,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 .take(6)
             updateSettings { it.copy(searchHistory = history) }
         }
+        searchSnapshot = snapshotSearchState()
         _uiState.update {
             it.copy(
                 searchDraft = normalized,
@@ -981,42 +1015,77 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         searchJob?.cancel()
-        searchJob = runLoading {
-            kotlinx.coroutines.coroutineScope {
-                val pageDeferred = async {
-                    val currentSettings = _uiState.value.settings
-                    repository.search(
-                        word = normalized,
-                        sort = currentSettings.searchSort,
-                        target = currentSettings.searchTarget,
-                        duration = currentSettings.searchDuration,
-                        bookmarkFilter = currentSettings.searchBookmarkFilter,
-                        includeR18 = currentSettings.allowR18,
-                    )
+        val job = viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+            try {
+                kotlinx.coroutines.coroutineScope {
+                    val pageDeferred = async {
+                        val currentSettings = _uiState.value.settings
+                        repository.search(
+                            word = normalized,
+                            sort = currentSettings.searchSort,
+                            target = currentSettings.searchTarget,
+                            duration = currentSettings.searchDuration,
+                            bookmarkFilter = currentSettings.searchBookmarkFilter,
+                            includeR18 = currentSettings.allowR18,
+                        )
+                    }
+                    val usersDeferred = if (_uiState.value.settings.searchUsersEnabled) {
+                        async { repository.searchUsers(normalized) }
+                    } else {
+                        null
+                    }
+
+                    val page = pageDeferred.await()
+                    val users = usersDeferred?.await()
+
+                    _uiState.update {
+                        it.copy(
+                            searchItems = page.items.visibleWithMutedTagsVisible(it.settings),
+                            searchNextUrl = page.nextUrl,
+                            userSearchItems = users?.items.orEmpty(),
+                            userSearchNextUrl = users?.nextUrl,
+                            loadState = LoadState.Loaded,
+                        )
+                    }
                 }
-                val usersDeferred = if (_uiState.value.settings.searchUsersEnabled) {
-                    async { repository.searchUsers(normalized) }
+                searchSnapshot = null
+            } catch (error: Throwable) {
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                val snapshot = searchSnapshot
+                if (snapshot != null) {
+                    _uiState.update {
+                        it.copy(
+                            searchDraft = snapshot.searchDraft,
+                            activeSearchWord = snapshot.activeSearchWord,
+                            searchItems = snapshot.searchItems,
+                            searchNextUrl = snapshot.searchNextUrl,
+                            userSearchItems = snapshot.userSearchItems,
+                            userSearchNextUrl = snapshot.userSearchNextUrl,
+                            loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        )
+                    }
                 } else {
-                    null
+                    _uiState.update {
+                        it.copy(
+                            loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        )
+                    }
                 }
-
-                val page = pageDeferred.await()
-                val users = usersDeferred?.await()
-
-                _uiState.update {
-                    it.copy(
-                        searchItems = page.items.visibleWithMutedTagsVisible(it.settings),
-                        searchNextUrl = page.nextUrl,
-                        userSearchItems = users?.items.orEmpty(),
-                        userSearchNextUrl = users?.nextUrl,
-                    )
-                }
+            }
+        }
+        searchJob = job
+        job.invokeOnCompletion {
+            if (searchJob === job) {
+                searchJob = null
             }
         }
     }
 
     fun clearSearchResults() {
         searchJob?.cancel()
+        searchSnapshot = null
         _uiState.update {
             it.copy(
                 searchDraft = "",
@@ -1045,6 +1114,20 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
         // Block all other intent processing while locked to prevent deep-link bypass
         if (_uiState.value.appLocked) return
+        intent?.getStringExtra(com.yunfie.illustia.nativebridge.NativeIntentRouter.EXTRA_HANDOFF_URI)
+            ?.takeIf(String::isNotBlank)
+            ?.let(NativeIntentRouter::parseText)
+            ?.let { event ->
+                when (event) {
+                    is NativeIntentEvent.Artwork -> openIllust(event.id)
+                    is NativeIntentEvent.User -> openUserPage(event.id)
+                    is NativeIntentEvent.Text -> submitSearch(event.value)
+                    is NativeIntentEvent.Image -> _uiState.update {
+                        it.copy(message = str(R.string.msg_shared_image_received))
+                    }
+                }
+                return
+            }
         when (val event = NativeIntentRouter.parse(intent)) {
             is NativeIntentEvent.Artwork -> openIllust(event.id)
             is NativeIntentEvent.User -> openUserPage(event.id)
@@ -1357,6 +1440,55 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { it.copy(imageViewerIllust = illust, imageViewerStartPage = startPage.coerceAtLeast(0)) }
     }
 
+    suspend fun loadUgoiraPlayback(illustId: Long): UgoiraPlayback {
+        return withContext(Dispatchers.IO) {
+            val metadata = repository.ugoiraMetadata(illustId)
+            val zipUrl = metadata.ugoiraMetadata.zipUrls.medium.ifBlank {
+                throw IllegalStateException("Ugoira zip URL is missing.")
+            }
+            val requestUrl = proxyPixivImageUrl(zipUrl, _uiState.value.settings.pixivImageProxyBaseUrl)
+            val cacheRoot = File(getApplication<Application>().cacheDir, "ugoira/$illustId")
+            val zipFile = File(cacheRoot.parentFile, "$illustId.zip")
+            val extractedDir = cacheRoot
+
+            if (!extractedDir.exists() || extractedDir.listFiles().isNullOrEmpty()) {
+                extractedDir.deleteRecursively()
+                extractedDir.mkdirs()
+                zipFile.parentFile?.mkdirs()
+                val request = Request.Builder()
+                    .url(requestUrl)
+                    .header("Referer", "https://www.pixiv.net/")
+                    .header("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Palleria)")
+                    .build()
+                downloadClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw Exception(str(R.string.error_save_failed) + " (${response.code})")
+                    }
+                    val body = response.body ?: throw Exception(str(R.string.error_save_failed))
+                    body.byteStream().use { input ->
+                        FileOutputStream(zipFile).use { output -> input.copyTo(output) }
+                    }
+                }
+                unzipSafely(zipFile, extractedDir)
+            }
+
+            val frames = metadata.ugoiraMetadata.frames.mapNotNull { frame ->
+                val file = File(extractedDir, frame.file)
+                if (!file.exists()) return@mapNotNull null
+                UgoiraPlaybackFrame(
+                    filePath = file.absolutePath,
+                    delayMillis = frame.delay.coerceAtLeast(20),
+                )
+            }
+
+            if (frames.isEmpty()) {
+                throw IllegalStateException("Ugoira frames could not be prepared.")
+            }
+
+            UgoiraPlayback(frames = frames)
+        }
+    }
+
     fun closeImageViewer() {
         _uiState.update { it.copy(imageViewerIllust = null, imageViewerStartPage = 0) }
     }
@@ -1385,6 +1517,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
             return
         }
+        userPageSnapshot = snapshotUserPageState()
         if (!_uiState.value.settings.userProfileBottomSheetEnabled) {
             openUserPage(userId)
             return
@@ -1402,20 +1535,36 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
-        runLoading {
-            val profile = repository.userDetail(userId)
-            val page = repository.userIllusts(userId)
-            _uiState.update {
-                it.copy(
-                    selectedUser = profile,
-                    selectedUserIllusts = page.items.visibleWithSettings(it.settings),
-                    selectedUserNextUrl = page.nextUrl,
-                    selectedUserBookmarks = emptyList(),
-                    selectedUserBookmarksNextUrl = null,
-                    showUserPage = false,
-                    userPageFromSheet = false,
-                    userPageDismissed = false,
-                )
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+            try {
+                val profile = repository.userDetail(userId)
+                val page = repository.userIllusts(userId)
+                _uiState.update {
+                    it.copy(
+                        selectedUser = profile,
+                        selectedUserIllusts = page.items.visibleWithSettings(it.settings),
+                        selectedUserNextUrl = page.nextUrl,
+                        selectedUserBookmarks = emptyList(),
+                        selectedUserBookmarksNextUrl = null,
+                        showUserPage = false,
+                        userPageFromSheet = false,
+                        userPageDismissed = false,
+                        loadState = LoadState.Loaded,
+                    )
+                }
+                userPageSnapshot = null
+            } catch (error: Throwable) {
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                restoreUserPageSnapshot()
+                val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
+                _uiState.update {
+                    it.copy(
+                        message = message,
+                        loadState = LoadState.Error(message),
+                    )
+                }
             }
         }
     }
@@ -1443,6 +1592,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
             return
         }
+        userPageSnapshot = snapshotUserPageState()
         captureProfileReturnDetail()
         _uiState.update {
             it.copy(
@@ -1467,12 +1617,21 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                         selectedUserNextUrl = page.nextUrl,
                         selectedUserBookmarks = emptyList(),
                         selectedUserBookmarksNextUrl = null,
+                        loadState = LoadState.Loaded,
                     )
                 }
+                userPageSnapshot = null
             } catch (error: Throwable) {
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
-                _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
+                restoreUserPageSnapshot()
+                val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
+                _uiState.update {
+                    it.copy(
+                        message = message,
+                        loadState = LoadState.Error(message),
+                    )
+                }
             }
         }
     }
@@ -1842,6 +2001,30 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         return target
     }
 
+    private fun unzipSafely(zipFile: File, targetDir: File) {
+        targetDir.mkdirs()
+        ZipInputStream(FileInputStream(zipFile)).use { zipInput ->
+            generateSequence { zipInput.nextEntry }.forEach { entry ->
+                if (!entry.isFileEntry()) {
+                    zipInput.closeEntry()
+                    return@forEach
+                }
+                val targetFile = File(targetDir, entry.name)
+                val targetPath = targetFile.canonicalPath
+                val basePath = targetDir.canonicalPath + File.separator
+                if (!targetPath.startsWith(basePath)) {
+                    zipInput.closeEntry()
+                    return@forEach
+                }
+                targetFile.parentFile?.mkdirs()
+                FileOutputStream(targetFile).use { output ->
+                    zipInput.copyTo(output)
+                }
+                zipInput.closeEntry()
+            }
+        }
+    }
+
     private fun String.withOfflineExtension(sourceUrl: String, responseMimeType: String?): String {
         if (contains('.')) return this
         val ext = when (responseMimeType?.substringBefore(";")?.lowercase(java.util.Locale.ROOT)) {
@@ -1875,6 +2058,8 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             .trim(' ', '.')
         return sanitized.take(maxLength).ifBlank { "untitled" }
     }
+
+    private fun ZipEntry.isFileEntry(): Boolean = !isDirectory
 
     private fun downloadImageToGallery(url: String, filename: String) {
         val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
@@ -2006,7 +2191,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         )
         _uiState.update {
             it.withSettings(nextSettings).copy(
-                currentAccount = null,
+                currentAccount = nextSettings.resolveLoggedInAccount(),
                 sessionReady = false,
                 showAccountSwitcher = false,
                 loadState = LoadState.Idle,
@@ -2041,7 +2226,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
         _uiState.update {
             it.withSettings(nextSettings).copy(
-                currentAccount = if (removedActiveAccount) null else it.currentAccount,
+                currentAccount = if (removedActiveAccount) nextSettings.resolveLoggedInAccount() else it.currentAccount,
                 sessionReady = if (removedActiveAccount) false else it.sessionReady,
                 showAccountSwitcher = !removedActiveAccount,
                 loadState = if (removedActiveAccount) LoadState.Idle else it.loadState,
@@ -2298,6 +2483,25 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun AppSettings.resolveLoggedInAccount(): UserProfile? {
+        val stored = accounts.getOrNull(activeAccountIndex)
+            ?.takeIf { it.refreshToken == refreshToken }
+            ?: accounts.firstOrNull { it.refreshToken == refreshToken }
+        return stored?.toUserProfile()
+    }
+
+    private fun StoredAccount.toUserProfile(): UserProfile {
+        return UserProfile(
+            id = userId,
+            name = name,
+            account = account,
+            profileImageUrl = profileImageUrl,
+            backgroundImageUrl = null,
+            comment = "",
+            isFollowed = false,
+        )
+    }
+
     private suspend fun applyLoggedInSession(sessionReady: Boolean, message: String? = null) {
         val nextSettings = repository.readSettings()
         _uiState.update {
@@ -2305,6 +2509,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 settings = nextSettings,
                 sessionReady = sessionReady,
                 webLoginRequest = null,
+                currentAccount = it.currentAccount ?: nextSettings.resolveLoggedInAccount(),
                 message = message,
             )
         }
@@ -2330,7 +2535,9 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun refreshCurrentAccountProfile(settings: AppSettings) {
         val userId = settings.bookmarkUserId
         if (settings.refreshToken.isBlank() || userId == null) {
-            _uiState.update { it.copy(currentAccount = null) }
+            _uiState.update { current ->
+                current.copy(currentAccount = current.currentAccount ?: settings.resolveLoggedInAccount())
+            }
             return
         }
         runCatching { repository.userDetail(userId) }
@@ -2343,7 +2550,9 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 saveCurrentAccount()
             }
             .onFailure {
-                _uiState.update { it.copy(currentAccount = null) }
+                _uiState.update { current ->
+                    current.copy(currentAccount = current.currentAccount ?: settings.resolveLoggedInAccount())
+                }
             }
     }
 
@@ -2368,7 +2577,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 if (handleAuthExpired(error)) return@launch
                 _uiState.update {
-                    it.copy(loadState = LoadState.Error(cleanErrorMessage(error)))
+                    it.copy(loadState = LoadState.Error(loadFailureMessage(it, error)))
                 }
             }
         }
@@ -2421,6 +2630,91 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
             return fallback
         }
         return message
+    }
+
+    private fun loadFailureMessage(
+        state: IllustiaUiState,
+        error: Throwable,
+        fallback: String = str(R.string.error_generic),
+    ): String {
+        if (!error.isNetworkFailure()) {
+            return cleanErrorMessage(error, fallback)
+        }
+        return if (state.hasCachedContent()) {
+            str(R.string.offline_cache_displayed)
+        } else {
+            str(R.string.offline_no_cache)
+        }
+    }
+
+    private fun Throwable.isNetworkFailure(): Boolean {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is IOException) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    private fun IllustiaUiState.hasCachedContent(): Boolean {
+        return homeItems.isNotEmpty() ||
+            novelItems.isNotEmpty() ||
+            searchItems.isNotEmpty() ||
+            userSearchItems.isNotEmpty() ||
+            timelineItems.isNotEmpty() ||
+            watchlistItems.isNotEmpty() ||
+            rankingItems.isNotEmpty() ||
+            bookmarkItems.isNotEmpty() ||
+            selectedIllust != null ||
+            selectedNovel != null ||
+            selectedNovelText != null ||
+            selectedUser != null ||
+            selectedUserIllusts.isNotEmpty() ||
+            selectedUserBookmarks.isNotEmpty() ||
+            relatedIllusts.isNotEmpty() ||
+            followingUsers.isNotEmpty()
+    }
+
+    private fun snapshotSearchState(): SearchSnapshot {
+        val state = _uiState.value
+        return SearchSnapshot(
+            searchDraft = state.searchDraft,
+            activeSearchWord = state.activeSearchWord,
+            searchItems = state.searchItems,
+            searchNextUrl = state.searchNextUrl,
+            userSearchItems = state.userSearchItems,
+            userSearchNextUrl = state.userSearchNextUrl,
+        )
+    }
+
+    private fun snapshotUserPageState(): UserPageSnapshot {
+        val state = _uiState.value
+        return UserPageSnapshot(
+            selectedUser = state.selectedUser,
+            selectedUserIllusts = state.selectedUserIllusts,
+            selectedUserNextUrl = state.selectedUserNextUrl,
+            selectedUserBookmarks = state.selectedUserBookmarks,
+            selectedUserBookmarksNextUrl = state.selectedUserBookmarksNextUrl,
+            showUserPage = state.showUserPage,
+            userPageFromSheet = state.userPageFromSheet,
+            userPageDismissed = state.userPageDismissed,
+        )
+    }
+
+    private fun restoreUserPageSnapshot() {
+        val snapshot = userPageSnapshot ?: return
+        _uiState.update {
+            it.copy(
+                selectedUser = snapshot.selectedUser,
+                selectedUserIllusts = snapshot.selectedUserIllusts,
+                selectedUserNextUrl = snapshot.selectedUserNextUrl,
+                selectedUserBookmarks = snapshot.selectedUserBookmarks,
+                selectedUserBookmarksNextUrl = snapshot.selectedUserBookmarksNextUrl,
+                showUserPage = snapshot.showUserPage,
+                userPageFromSheet = snapshot.userPageFromSheet,
+                userPageDismissed = snapshot.userPageDismissed,
+            )
+        }
     }
 
     private suspend fun loadRecommendedTagImage(tag: String): String? {

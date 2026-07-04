@@ -36,6 +36,7 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
@@ -79,6 +80,12 @@ internal fun BookmarkWatchlistTab(
         onRefresh = { scope.launch { watchlistStore.fetch() } },
         modifier = Modifier.fillMaxSize(),
     ) {
+        AutoLoadMoreEffect(
+            enabled = settings.autoLoadMore,
+            nextUrl = watchlistState.model?.nextUrl,
+            isLoading = watchlistState.isLoading,
+            onLoadMore = { scope.launch { watchlistStore.loadMore() } },
+        )
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
@@ -109,7 +116,7 @@ internal fun BookmarkWatchlistTab(
                     onClick = { onOpenWatchlistSeries(series.id) },
                 )
             }
-            if (watchlistState.model?.nextUrl != null) {
+            if (!settings.autoLoadMore && watchlistState.model?.nextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = { scope.launch { watchlistStore.loadMore() } },
@@ -292,6 +299,12 @@ internal fun BookmarkMainTab(
         onRefresh = { viewModel.refreshBookmarks() },
         modifier = Modifier.fillMaxSize(),
     ) {
+        AutoLoadMoreEffect(
+            enabled = settings.autoLoadMore,
+            nextUrl = chrome.bookmarkNextUrl,
+            isLoading = loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreBookmarks,
+        )
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
@@ -305,7 +318,7 @@ internal fun BookmarkMainTab(
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
-            if (bookmarkItems.isEmpty() && loadState != LoadState.Loading) {
+            if (bookmarkItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_empty))
                 }
@@ -317,7 +330,7 @@ internal fun BookmarkMainTab(
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
                 IllustCard(illust = illust, onBookmark = onBookmark, onClick = onClick, onLongClick = onLongClick, highQualityImages = feedHighQuality, showAiBadge = showAiBadge)
             }
-            if (chrome.bookmarkNextUrl != null) {
+            if (!settings.autoLoadMore && chrome.bookmarkNextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(onClick = viewModel::loadMoreBookmarks, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_load_more)) }
                 }
@@ -343,6 +356,12 @@ internal fun BookmarkTimelineTab(
         onRefresh = { viewModel.refreshTimeline() },
         modifier = Modifier.fillMaxSize(),
     ) {
+        AutoLoadMoreEffect(
+            enabled = settings.autoLoadMore,
+            nextUrl = chrome.timelineNextUrl,
+            isLoading = loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreTimeline,
+        )
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
@@ -356,7 +375,7 @@ internal fun BookmarkTimelineTab(
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
-            if (timelineItems.isEmpty() && loadState != LoadState.Loading) {
+            if (timelineItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_following_empty))
                 }
@@ -368,7 +387,7 @@ internal fun BookmarkTimelineTab(
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
                 IllustCard(illust = illust, onBookmark = onBookmark, onClick = onClick, onLongClick = onLongClick, highQualityImages = feedHighQuality, showAiBadge = showAiBadge)
             }
-            if (chrome.timelineNextUrl != null) {
+            if (!settings.autoLoadMore && chrome.timelineNextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(onClick = viewModel::loadMoreTimeline, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_load_more)) }
                 }
@@ -379,6 +398,7 @@ internal fun BookmarkTimelineTab(
 
 @Composable
 internal fun BookmarkFollowingTab(
+    settings: AppSettings,
     followingUsers: List<UserPreview>,
     sort: FollowingUserSort,
     loadState: LoadState,
@@ -400,6 +420,12 @@ internal fun BookmarkFollowingTab(
         onRefresh = { viewModel.refreshFollowingUsers() },
         modifier = Modifier.fillMaxSize(),
     ) {
+        AutoLoadMoreEffect(
+            enabled = settings.autoLoadMore,
+            nextUrl = chrome.followingUsersNextUrl,
+            isLoading = loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreFollowingUsers,
+        )
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(1),
@@ -409,7 +435,7 @@ internal fun BookmarkFollowingTab(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
-            if (followingUsers.isEmpty() && loadState != LoadState.Loading) {
+            if (followingUsers.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.following_users_empty))
                 }
@@ -417,7 +443,7 @@ internal fun BookmarkFollowingTab(
             gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
                 UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
-            if (chrome.followingUsersNextUrl != null) {
+            if (!settings.autoLoadMore && chrome.followingUsersNextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(onClick = viewModel::loadMoreFollowingUsers, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_load_more)) }
                 }

@@ -187,6 +187,13 @@ fun GeneralSettingsScreen(
                     )
                     DividerLine()
                     SettingSwitchRow(
+                        title = stringResource(R.string.general_auto_load_more),
+                        checked = state.settings.autoLoadMore,
+                        onCheckedChange = viewModel::updateAutoLoadMore,
+                        summary = stringResource(R.string.general_auto_load_more_desc),
+                    )
+                    DividerLine()
+                    SettingSwitchRow(
                         title = stringResource(R.string.general_double_back),
                         checked = state.settings.doubleBackToExit,
                         onCheckedChange = viewModel::updateDoubleBackToExit,

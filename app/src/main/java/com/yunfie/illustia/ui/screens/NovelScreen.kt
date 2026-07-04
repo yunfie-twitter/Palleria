@@ -27,6 +27,7 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.EmptyState
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
@@ -59,6 +60,12 @@ fun NovelScreen(
         items.asSequence().take(12).map { it.coverUrl }.toList()
     }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    AutoLoadMoreEffect(
+        enabled = settings.autoLoadMore,
+        nextUrl = nextUrl,
+        isLoading = loadState == LoadState.Loading,
+        onLoadMore = viewModel::loadMoreNovels,
+    )
 
     LaunchedEffect(Unit) {
         if (items.isEmpty()) {
@@ -109,7 +116,7 @@ fun NovelScreen(
                 if (items.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
                 }
-                if (items.isEmpty() && loadState != LoadState.Loading) {
+                if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.novel_empty))
                     }
@@ -119,7 +126,7 @@ fun NovelScreen(
                     NovelCard(novel = novel, onClick = { viewModel.openNovel(novel) })
                 }
 
-                if (nextUrl != null) {
+                if (!settings.autoLoadMore && nextUrl != null) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreNovels,

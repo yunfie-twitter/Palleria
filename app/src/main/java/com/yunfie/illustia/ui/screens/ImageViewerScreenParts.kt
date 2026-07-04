@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.screens
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,11 +33,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
 import com.yunfie.illustia.ui.components.PixivImage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.foundation.gestures.detectTransformGestures
 import kotlin.math.abs
 
@@ -70,17 +69,6 @@ internal fun ZoomablePixivImage(
         val maxX = viewportSize.width * (atScale - 1f) / 2f
         val maxY = viewportSize.height * (atScale - 1f) / 2f
         return Offset(candidate.x.coerceIn(-maxX, maxX), candidate.y.coerceIn(-maxY, maxY))
-    }
-
-    fun isAtHorizontalEdge(offset: Offset, atScale: Float, panX: Float): Boolean {
-        if (viewportSize.width == 0) return false
-        val maxX = viewportSize.width * (atScale - 1f) / 2f
-        val edgeEpsilon = 1f
-        return when {
-            panX < 0 -> offset.x <= -maxX + edgeEpsilon
-            panX > 0 -> offset.x >= maxX - edgeEpsilon
-            else -> false
-        }
     }
 
     fun animateTo(targetScale: Float, targetOffset: Offset) {
@@ -146,19 +134,6 @@ internal fun ZoomablePixivImage(
                     val transformedOffset = localOffset + pan +
                         (focalPoint - localOffset) * (1f - appliedZoom)
 
-                    if (nextScale > 1.02f && abs(pan.x) > abs(pan.y) && abs(pan.x) >= swipeThresholdPx) {
-                        val clampedCurrent = clampedOffset(localOffset, localScale)
-                        if (isAtHorizontalEdge(clampedCurrent, localScale, pan.x)) {
-                            if (pan.x < 0) {
-                                onSwipeNext()
-                            } else {
-                                onSwipePrevious()
-                            }
-                            animateTo(1f, Offset.Zero)
-                            return@detectTransformGestures
-                        }
-                    }
-
                     localScale = nextScale
                     localOffset = if (localScale > 1.02f) {
                         clampedOffset(transformedOffset, localScale)
@@ -169,6 +144,40 @@ internal fun ZoomablePixivImage(
                     offset = localOffset
                     notifyZoomChanged(previousScale, localScale)
                 }
+            }
+            .pointerInput(url, swipeThresholdPx) {
+                var accumulatedX = 0f
+                var triggered = false
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        accumulatedX = 0f
+                        triggered = false
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        if (scale <= 1.02f || triggered) return@detectHorizontalDragGestures
+
+                        accumulatedX += dragAmount
+
+                        if (abs(accumulatedX) >= swipeThresholdPx) {
+                            triggered = true
+                            if (accumulatedX < 0) {
+                                onSwipeNext()
+                            } else {
+                                onSwipePrevious()
+                            }
+                            animateTo(1f, Offset.Zero)
+                            change.consume()
+                        }
+                    },
+                    onDragEnd = {
+                        accumulatedX = 0f
+                        triggered = false
+                    },
+                    onDragCancel = {
+                        accumulatedX = 0f
+                        triggered = false
+                    },
+                )
             }
     ) {
         PixivImage(

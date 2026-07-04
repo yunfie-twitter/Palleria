@@ -97,6 +97,12 @@ fun RankingScreen(
 
     val scheme = MiuixTheme.colorScheme
     val scrollBehavior = MiuixScrollBehavior()
+    AutoLoadMoreEffect(
+        enabled = settings.autoLoadMore,
+        nextUrl = nextUrl,
+        isLoading = loadState == LoadState.Loading,
+        onLoadMore = viewModel::loadMoreRanking,
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -273,7 +279,7 @@ private fun RankingGridContent(
                     )
                 }
 
-                if (nextUrl != null) {
+                if (!settings.autoLoadMore && nextUrl != null) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreRanking,

@@ -16,6 +16,7 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
 import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
+import com.yunfie.illustia.models.pixiv.UgoiraMetadataResponse
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
@@ -321,6 +322,19 @@ class PixivApiClient(
             val root = json.parseToJsonElement(body).jsonObject
             root["illust"].asObjectOrNull()?.toIllustOrNull()
                 ?: throw PixivApiException(200, "作品情報を読み込めませんでした。")
+        }
+    }
+
+    suspend fun ugoiraMetadata(session: PixivSession, illustId: Long): UgoiraMetadataResponse {
+        val body = Request.Builder()
+            .url(pixivApiUrl("v1/ugoira/metadata", "illust_id" to illustId.toString()))
+            .pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { httpClient.newCall(it).awaitBody() }
+
+        return withContext(Dispatchers.Default) {
+            json.parseToJsonElement(body).jsonObject.toUgoiraMetadataResponseOrNull()
         }
     }
 

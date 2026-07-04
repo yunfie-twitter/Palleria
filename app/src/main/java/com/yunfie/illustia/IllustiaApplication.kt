@@ -8,12 +8,20 @@ import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import com.yunfie.illustia.widget.IllustWidgetProvider
+import com.yunfie.illustia.widget.RankingWidgetProvider
+import kotlinx.coroutines.CoroutineScope
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class IllustiaApplication : Application() {
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     val sharedHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .dispatcher(
@@ -36,6 +44,10 @@ class IllustiaApplication : Application() {
         val appContext = applicationContext
         val httpClient = sharedHttpClient
         val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
+        appScope.launch {
+            RankingWidgetProvider.publishPreview(appContext)
+            IllustWidgetProvider.publishPreview(appContext)
+        }
         SingletonImageLoader.setSafe {
             ImageLoader.Builder(appContext)
                 .components {

@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
@@ -85,7 +86,25 @@ internal fun IllustDetailInfo(
             Text(illust.title, color = MiuixTheme.colorScheme.onBackground, style = MiuixTheme.textStyles.title2, fontWeight = FontWeight.Black)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("ID ${illust.id}", color = MiuixTheme.colorScheme.onSurfaceVariantSummary, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.footnote1)
-                Text(illust.type, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.footnote1)
+                if (illust.series != null && onOpenSeries != null) {
+                    Text(
+                        text = illust.series.title?.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_series),
+                        color = MiuixTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        style = MiuixTheme.textStyles.footnote1,
+                        modifier = Modifier
+                            .weight(1f)
+                            .miuixClickable(
+                                pressedScale = 0.96f,
+                                haptic = true,
+                                onClick = onOpenSeries,
+                            ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Text(illust.type, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.footnote1)
+                }
                 if (illust.pageCount > 1) {
                     Text("${illust.pageCount}P", color = MiuixTheme.colorScheme.onSurfaceVariantSummary, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.footnote1)
                 }
@@ -148,27 +167,6 @@ internal fun IllustDetailInfo(
             )
         }
 
-        CommentEntryButton(
-            onClick = onOpenComments,
-            modifier = Modifier.padding(horizontal = 12.dp),
-        )
-
-        if (illust.series != null && onOpenSeries != null) {
-            Button(
-                onClick = onOpenSeries,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors(color = MiuixTheme.colorScheme.surfaceContainerHigh),
-            ) {
-                Text(
-                    text = stringResource(R.string.detail_series),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
-
         CompositionLocalProvider(LocalUriHandler provides customUriHandler) {
             ElevatedPanel(
                 modifier = Modifier.padding(horizontal = 12.dp),
@@ -194,6 +192,11 @@ internal fun IllustDetailInfo(
                 }
             }
         }
+
+        CommentEntryButton(
+            onClick = onOpenComments,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
 
         Spacer(Modifier.height(8.dp))
         Text(

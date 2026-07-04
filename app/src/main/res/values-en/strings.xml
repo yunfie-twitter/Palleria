@@ -113,8 +113,8 @@
     <string name="favorite_tags_empty">Tap the ☆ button on the search screen to add tags</string>
     <string name="favorite_tags_no_selection">No tag selected</string>
     <string name="favorite_tags_delete_title">Delete Tag</string>
-    <string name="favorite_tags_delete_confirm">Remove \"#%1$s\" from favorites?</string>
-    <string name="favorite_tags_works_not_found">No works found for \"#%1$s\"</string>
+    <string name="favorite_tags_delete_confirm">Remove &quot;#%1$s&quot; from favorites?</string>
+    <string name="favorite_tags_works_not_found">No works found for &quot;#%1$s&quot;</string>
 
     <!-- Illust detail screen -->
     <string name="detail_save_image_title">Save Image</string>
@@ -230,6 +230,8 @@
     <string name="general_notch_desc">Adjust display in the status bar area</string>
     <string name="general_swipe">Swipe to Switch Tabs</string>
     <string name="general_swipe_desc">Swipe left/right to navigate between main screens</string>
+    <string name="general_auto_load_more">Auto Load More</string>
+    <string name="general_auto_load_more_desc">Automatically fetch the next page when you reach the end</string>
     <string name="general_double_back">Double Back to Exit</string>
     <string name="general_double_back_desc">Press back twice on the home screen to exit the app</string>
     <string name="general_secure">Secure Window</string>
@@ -419,7 +421,7 @@
 
     <!-- Login / Onboarding -->
     <string name="login_button">Log In</string>
-    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_no_account">No account</string>
     <string name="login_title">Log In</string>
     <string name="login_disclaimer">This application is not affiliated with Pixiv in any way.</string>
     <string name="login_web_button">Pixiv Web Login</string>
@@ -450,7 +452,7 @@
     <string name="dialog_relogin_summary">Pixiv authentication has expired. Please log in again.</string>
     <string name="dialog_relogin_button">Re-login</string>
     <string name="dialog_unbookmark_title">Remove Bookmark</string>
-    <string name="dialog_unbookmark_confirm">Remove \"%1$s\" from bookmarks?</string>
+    <string name="dialog_unbookmark_confirm">Remove &quot;%1$s&quot; from bookmarks?</string>
     <string name="dialog_work_options">Work Options</string>
     <string name="dialog_artist_label">Artist: %1$s</string>
     <string name="dialog_show_detail">Show Details</string>
@@ -490,6 +492,8 @@
     <string name="error_share_failed">Could not share.</string>
     <string name="error_load_detail_failed">Failed to load additional details.</string>
     <string name="error_load_artist_failed">Failed to load artist info.</string>
+    <string name="offline_cache_displayed">Connection failed. Showing cached content.</string>
+    <string name="offline_no_cache">Offline. No cache available.</string>
     <string name="error_data_export_failed">Could not export data.</string>
     <string name="error_data_import_failed">Could not read this file. Select an Illustia backup file.</string>
 

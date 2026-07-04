@@ -3,6 +3,10 @@ package com.yunfie.illustia.ui.app
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +19,9 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.ui.NavDisplay
+import androidx.navigation3.ui.NavDisplay.popTransitionSpec
+import androidx.navigation3.ui.NavDisplay.predictivePopTransitionSpec
+import androidx.navigation3.ui.NavDisplay.transitionSpec
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
@@ -95,7 +102,10 @@ internal fun AppNavHost(
                 onTokenLoginDismiss = { showTokenLoginSheet = false },
             )
         }
-        entry(AppRoute.Detail) {
+        entry(
+            AppRoute.Detail,
+            metadata = artworkPageTransitionMetadata(),
+        ) {
             appState.state.selectedIllust?.let { illust ->
                 IllustDetailScreen(
                     illust = illust,
@@ -108,7 +118,10 @@ internal fun AppNavHost(
                         onSelectedCommentTargetChange(illust.id to CommentArtworkType.ILLUST)
                     },
                     onOpenSeries = illust.series?.id?.let { seriesId ->
-                        { onSelectedWatchlistSeriesIdChange(seriesId); onNavigate(AppRoute.IllustSeries) }
+                        {
+                            onSelectedWatchlistSeriesIdChange(seriesId)
+                            onNavigate(AppRoute.IllustSeries)
+                        }
                     },
                     onOpenImage = { page -> viewModel.openImageViewer(illust, page) },
                     onSearchTag = { tag ->
@@ -131,6 +144,7 @@ internal fun AppNavHost(
                     onSaveImage = viewModel::saveImage,
                     onSaveAllImages = viewModel::saveImages,
                     onMessage = viewModel::showMessage,
+                    loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
                     highQualityImages = appState.state.settings.highQualityImages,
                     detailQuality = if (illust.type == "manga") {
                         appState.state.settings.mangaDetailQuality
@@ -143,7 +157,10 @@ internal fun AppNavHost(
                 )
             }
         }
-        entry(AppRoute.ImageViewer) {
+        entry(
+            AppRoute.ImageViewer,
+            metadata = artworkPageTransitionMetadata(),
+        ) {
             appState.state.imageViewerIllust?.let { illust ->
                 ImageViewerScreen(
                     illust = illust,
@@ -239,9 +256,10 @@ internal fun AppNavHost(
             )
         }
         entry(AppRoute.IllustSeries) {
-            if (selectedWatchlistSeriesId != null) {
+            val currentSeriesId = selectedWatchlistSeriesId
+            if (currentSeriesId != null) {
                 IllustSeriesScreen(
-                    seriesId = selectedWatchlistSeriesId,
+                    seriesId = currentSeriesId,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenIllust = { illustId -> viewModel.openIllust(illustId) },
@@ -336,3 +354,41 @@ internal fun AppNavHost(
         onDismissComments = { onSelectedCommentTargetChange(null) },
     )
 }
+
+private fun artworkPageTransitionMetadata(): Map<String, Any> =
+    transitionSpec {
+        ContentTransform(
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth },
+                animationSpec = tween(320),
+            ),
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> -fullWidth / 4 },
+                animationSpec = tween(320),
+            ),
+        )
+    } +
+        popTransitionSpec {
+            ContentTransform(
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 4 },
+                    animationSpec = tween(280),
+                ),
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(280),
+                ),
+            )
+        } +
+        predictivePopTransitionSpec {
+            ContentTransform(
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 4 },
+                    animationSpec = tween(280),
+                ),
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(280),
+                ),
+            )
+        }

@@ -30,6 +30,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
@@ -97,6 +98,12 @@ internal fun FeedTabContent(
             .toList()
     }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    AutoLoadMoreEffect(
+        enabled = settings.autoLoadMore,
+        nextUrl = nextUrl,
+        isLoading = loadState == LoadState.Loading,
+        onLoadMore = viewModel::loadMoreHome,
+    )
 
     PullToRefresh(
         isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
@@ -146,7 +153,7 @@ internal fun FeedTabContent(
                 )
             }
 
-            if (nextUrl != null) {
+            if (!settings.autoLoadMore && nextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreHome,
@@ -183,6 +190,12 @@ internal fun FollowingTabContent(
             .toList()
     }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    AutoLoadMoreEffect(
+        enabled = settings.autoLoadMore,
+        nextUrl = nextUrl,
+        isLoading = loadState == LoadState.Loading,
+        onLoadMore = viewModel::loadMoreTimeline,
+    )
 
     PullToRefresh(
         isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
@@ -210,7 +223,7 @@ internal fun FollowingTabContent(
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
 
-            if (items.isEmpty() && loadState != LoadState.Loading) {
+            if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.home_following_empty))
                 }
@@ -232,7 +245,7 @@ internal fun FollowingTabContent(
                 )
             }
 
-            if (nextUrl != null) {
+            if (!settings.autoLoadMore && nextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreTimeline,

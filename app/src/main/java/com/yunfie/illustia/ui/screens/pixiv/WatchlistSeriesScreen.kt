@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -30,6 +31,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
@@ -40,6 +42,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -61,6 +64,7 @@ fun WatchlistSeriesScreen(
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val scrollBehavior = MiuixScrollBehavior()
 
     LaunchedEffect(store) {
         store.fetch()
@@ -72,6 +76,7 @@ fun WatchlistSeriesScreen(
             TopAppBar(
                 title = stringResource(R.string.watchlist_series_title),
                 largeTitle = stringResource(R.string.watchlist_series_title),
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))
@@ -90,12 +95,19 @@ fun WatchlistSeriesScreen(
             onRefresh = { scope.launch { store.fetch() } },
             modifier = Modifier.fillMaxSize(),
         ) {
+            AutoLoadMoreEffect(
+                enabled = settings.autoLoadMore,
+                nextUrl = state.model?.nextUrl,
+                isLoading = state.isLoading,
+                onLoadMore = { scope.launch { store.loadMore() } },
+            )
             val gridState = rememberLazyGridState()
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .background(MiuixTheme.colorScheme.surface),
                 contentPadding = PaddingValues(
                     start = 14.dp,
@@ -119,7 +131,7 @@ fun WatchlistSeriesScreen(
                         )
                     }
                 }
-                if (state.mangaSeries.isEmpty() && !state.isLoading) {
+                if (state.mangaSeries.isEmpty() && !state.isLoading && state.errorMessage == null) {
                     item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(R.string.watchlist_series_empty)) }
                 }
                 gridItems(state.mangaSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->
@@ -128,7 +140,7 @@ fun WatchlistSeriesScreen(
                         onClick = { onOpenSeries(series.id) },
                     )
                 }
-                if (state.model?.nextUrl != null) {
+                if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = { scope.launch { store.loadMore() } },

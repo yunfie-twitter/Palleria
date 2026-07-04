@@ -1,15 +1,22 @@
 package com.yunfie.illustia
 
 import android.app.ActivityManager
+import android.app.HandoffActivityData
+import android.app.HandoffActivityDataRequestInfo
+import android.app.HandoffActivityParams
 import android.app.LocaleManager
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PersistableBundle
+import android.view.Display
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.fragment.app.FragmentActivity
@@ -47,10 +54,15 @@ import top.yukonga.miuix.kmp.theme.defaultTextStyles
 import top.yukonga.miuix.kmp.theme.TextStyles
 
 class MainActivity : FragmentActivity() {
+    private companion object {
+        const val MIN_HANOFF_API = 37
+    }
+
     private val viewModel by viewModels<IllustiaViewModel> {
         androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(application)
     }
     private var lastHandledClipboardText: String? = null
+    private var appliedRefreshRateHint: Float? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
@@ -181,17 +193,62 @@ class MainActivity : FragmentActivity() {
             }
         }
         viewModel.handleIncomingIntent(intent)
+        enableHandoffIfSupported()
     }
 
     override fun onResume() {
         super.onResume()
+        applyAdaptiveRefreshRateHint()
         openPixivUrlFromClipboardIfNeeded()
+    }
+
+    override fun onPause() {
+        clearAdaptiveRefreshRateHint()
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         viewModel.handleIncomingIntent(intent)
+    }
+
+    override fun onHandoffActivityDataRequested(handoffRequestInfo: HandoffActivityDataRequestInfo): HandoffActivityData {
+        val state = viewModel.uiState.value
+        val activityComponent = ComponentName(this, MainActivity::class.java)
+        val handoffUri = currentHandoffUri(state)
+        val fallbackUri = when {
+            state.appLocked || state.privacyLocked -> Uri.parse("https://www.pixiv.net/")
+            handoffUri?.host == "users" -> Uri.parse("https://www.pixiv.net/users/${handoffUri.lastPathSegment}")
+            handoffUri?.host == "illusts" -> Uri.parse("https://www.pixiv.net/artworks/${handoffUri.lastPathSegment}")
+            else -> Uri.parse("https://www.pixiv.net/")
+        }
+        val extras = PersistableBundle().apply {
+            handoffUri?.let { putString(NativeIntentRouter.EXTRA_HANDOFF_URI, it.toString()) }
+        }
+        return HandoffActivityData.Builder(activityComponent)
+            .setExtras(extras)
+            .setFallbackUri(fallbackUri)
+            .build()
+    }
+
+    private fun enableHandoffIfSupported() {
+        if (Build.VERSION.SDK_INT < MIN_HANOFF_API) return
+
+        val params = HandoffActivityParams.Builder()
+            .setAllowHandoffWithoutPackageInstalled(true)
+            .build()
+        setHandoffEnabled(true, params)
+    }
+
+    private fun currentHandoffUri(state: IllustiaUiState): Uri? {
+        if (state.appLocked || state.privacyLocked) return null
+        return when {
+            state.showUserPage && state.selectedUser != null -> Uri.parse("pixiv://users/${state.selectedUser.id}")
+            state.imageViewerIllust != null -> Uri.parse("pixiv://illusts/${state.imageViewerIllust.id}")
+            state.selectedIllust != null -> Uri.parse("pixiv://illusts/${state.selectedIllust.id}")
+            else -> null
+        }
     }
 
     private fun openPixivUrlFromClipboardIfNeeded() {
@@ -224,6 +281,33 @@ class MainActivity : FragmentActivity() {
                 setRecentsScreenshotEnabled(true)
             }
         }
+    }
+
+    private fun applyAdaptiveRefreshRateHint() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+
+        val display = window.decorView.display ?: return
+        val preferredRefreshRate = when {
+            Build.VERSION.SDK_INT >= 36 && display.hasArrSupport() ->
+                display.getSuggestedFrameRate(Display.FRAME_RATE_CATEGORY_NORMAL)
+            else -> 60f
+        }
+
+        if (preferredRefreshRate <= 0f || appliedRefreshRateHint == preferredRefreshRate) return
+
+        window.attributes = window.attributes.apply {
+            this.preferredRefreshRate = preferredRefreshRate
+        }
+        appliedRefreshRateHint = preferredRefreshRate
+    }
+
+    private fun clearAdaptiveRefreshRateHint() {
+        if (appliedRefreshRateHint == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+
+        window.attributes = window.attributes.apply {
+            preferredRefreshRate = 0f
+        }
+        appliedRefreshRateHint = null
     }
 
     private fun updateRecentsTaskDescription(state: com.yunfie.illustia.IllustiaUiState) {

@@ -33,6 +33,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
@@ -69,6 +70,12 @@ internal fun SearchResultGrid(
         }
     }
     PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages)
+    AutoLoadMoreEffect(
+        enabled = state.settings.autoLoadMore,
+        nextUrl = if (page == 0) state.searchNextUrl else state.userSearchNextUrl,
+        isLoading = state.loadState == LoadState.Loading,
+        onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
+    )
 
     val gridState = viewModel.searchResultGridState
     LazyVerticalGrid(
@@ -90,7 +97,7 @@ internal fun SearchResultGrid(
                     isMutedByTag = illust.isMutedByTags(state.settings),
                 )
             }
-            if (state.searchNextUrl != null) {
+            if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreSearch,
@@ -101,7 +108,7 @@ internal fun SearchResultGrid(
                     }
                 }
             }
-            if (state.searchItems.isEmpty() && state.loadState != LoadState.Loading) {
+            if (state.searchItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.search_empty_illust))
                 }
@@ -110,12 +117,12 @@ internal fun SearchResultGrid(
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
                 UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
-            if (state.userSearchItems.isEmpty() && state.loadState != LoadState.Loading) {
+            if (state.userSearchItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.search_empty_user))
                 }
             }
-            if (state.userSearchNextUrl != null) {
+            if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreUserSearch,

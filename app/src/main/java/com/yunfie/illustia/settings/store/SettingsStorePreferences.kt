@@ -73,6 +73,7 @@ internal fun readFromDataStore(
         smoothTransitions = preferences[SMOOTH_TRANSITIONS] ?: true,
         hapticMode = preferences[HAPTIC_MODE] ?: "rich",
         prefetchImages = preferences[PREFETCH_IMAGES] ?: false,
+        autoLoadMore = preferences[AUTO_LOAD_MORE] ?: false,
         notchOptimization = preferences[NOTCH_OPTIMIZATION] ?: true,
         confirmOnLongPressSave = preferences[CONFIRM_ON_LONG_PRESS_SAVE] ?: true,
         doubleBackToExit = preferences[DOUBLE_BACK_TO_EXIT] ?: false,
@@ -163,6 +164,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         smoothTransitions = preferences.getBoolean(KEY_SMOOTH_TRANSITIONS, true),
         hapticMode = preferences.getString(KEY_HAPTIC_MODE, "rich") ?: "rich",
         prefetchImages = preferences.getBoolean(KEY_PREFETCH_IMAGES, false),
+        autoLoadMore = preferences.getBoolean("autoLoadMore", false),
         notchOptimization = preferences.getBoolean("notchOptimization", true),
         confirmOnLongPressSave = preferences.getBoolean("confirmOnLongPressSave", true),
         doubleBackToExit = preferences.getBoolean("doubleBackToExit", false),
@@ -248,6 +250,7 @@ internal fun writeToDataStore(preferences: MutablePreferences, settings: AppSett
     preferences[SMOOTH_TRANSITIONS] = settings.smoothTransitions
     preferences[HAPTIC_MODE] = settings.hapticMode
     preferences[PREFETCH_IMAGES] = settings.prefetchImages
+    preferences[AUTO_LOAD_MORE] = settings.autoLoadMore
     preferences[NOTCH_OPTIMIZATION] = settings.notchOptimization
     preferences[CONFIRM_ON_LONG_PRESS_SAVE] = settings.confirmOnLongPressSave
     preferences[DOUBLE_BACK_TO_EXIT] = settings.doubleBackToExit

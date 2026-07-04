@@ -55,7 +55,9 @@ fun PixivImage(
             .crossfade(!thumbnail && crossfade)
             .listener(
                 onSuccess = { _, result ->
-                    onSuccess?.invoke(result.image.toBitmap())
+                    runCatching {
+                        onSuccess?.invoke(result.image.toBitmap())
+                    }
                 },
             )
             .apply {

@@ -42,6 +42,7 @@ data class AppSettings(
     val smoothTransitions: Boolean = true,
     val hapticMode: String = "rich",
     val prefetchImages: Boolean = false,
+    val autoLoadMore: Boolean = false,
     val notchOptimization: Boolean = true,
     val confirmOnLongPressSave: Boolean = true,
     val doubleBackToExit: Boolean = false,

@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
@@ -74,6 +75,7 @@ internal fun IllustDetailHeader(
     onMuteIllust: () -> Unit,
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
+    loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
     showImage: Boolean,
     maskMutedArtwork: Boolean,
     onRevealMutedArtwork: () -> Unit,
@@ -96,14 +98,43 @@ internal fun IllustDetailHeader(
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val urlCopiedMessage = stringResource(R.string.msg_url_copied)
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
+    val previewUrl: String = remember(illust.id, highQualityImages, detailQuality) {
+        when {
+            !highQualityImages || detailQuality == "low" -> illust.mediumImagePages.firstOrNull()
+                ?: detailFallbackImageUrl(illust.mediumImageUrl, illust.squareImageUrl, illust.imageUrl)
+            detailQuality == "medium" -> illust.imagePages.firstOrNull()
+                ?: detailFallbackImageUrl(illust.imageUrl, illust.mediumImageUrl, illust.squareImageUrl)
+            else -> illust.originalImagePages.firstOrNull()
+                ?: illust.imagePages.firstOrNull()
+                ?: detailFallbackImageUrl(
+                    illust.imageUrl,
+                    illust.mediumImageUrl,
+                    illust.squareImageUrl,
+                    illust.originalImageUrl,
+                )
+        }
+    } ?: ""
     val imageUrls = remember(illust.id, highQualityImages, detailQuality) {
         when {
             !highQualityImages || detailQuality == "low" -> illust.mediumImagePages.ifEmpty {
-                listOf(illust.mediumImageUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.imageUrl } })
+                listOfNotNull(
+                    detailFallbackImageUrl(illust.mediumImageUrl, illust.squareImageUrl, illust.imageUrl),
+                )
             }
-            detailQuality == "medium" -> illust.imagePages.ifEmpty { listOf(illust.imageUrl) }
+            detailQuality == "medium" -> illust.imagePages.ifEmpty {
+                listOfNotNull(detailFallbackImageUrl(illust.imageUrl, illust.mediumImageUrl, illust.squareImageUrl))
+            }
             else -> illust.originalImagePages.ifEmpty {
-                illust.imagePages.ifEmpty { listOfNotNull(illust.originalImageUrl ?: illust.imageUrl) }
+                illust.imagePages.ifEmpty {
+                    listOfNotNull(
+                        detailFallbackImageUrl(
+                            illust.imageUrl,
+                            illust.mediumImageUrl,
+                            illust.squareImageUrl,
+                            illust.originalImageUrl,
+                        ),
+                    )
+                }
             }
         }
     }
@@ -116,36 +147,19 @@ internal fun IllustDetailHeader(
             .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
         if (showImage) {
-            val pagerState = rememberPagerState(pageCount = { imageUrls.size })
-
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth(),
-                beyondViewportPageCount = if (prefetchImages) 1 else 0,
-                key = { it },
-            ) { page ->
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    PixivImage(
-                        url = imageUrls[page],
+            if (illust.type == "ugoira") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 320.dp),
+                ) {
+                    UgoiraArtwork(
+                        previewUrl = previewUrl,
                         contentDescription = illust.title,
-                        contentScale = ContentScale.FillWidth,
+                        loadPlayback = { loadUgoiraPlayback(illust.id) },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier)
-                            .combinedClickable(
-                                enabled = !maskMutedArtwork,
-                                onClick = { onOpenImage(page) },
-                                onLongClick = {
-                                    performAppHapticFeedback(context, haptic, hapticMode)
-                                    onSaveImage(imageUrls[page], "illustia_${illust.id}_p$page", confirmOnLongPressSave)
-                                },
-                            ),
-                        crossfade = true,
-                        onSuccess = { bitmap ->
-                            if (page == pagerState.currentPage) {
-                                useDarkHeaderIcons = shouldUseDarkHeaderIcons(bitmap)
-                            }
-                        },
+                            .fillMaxSize()
+                            .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier),
                     )
                     if (maskMutedArtwork) {
                         Box(
@@ -155,27 +169,70 @@ internal fun IllustDetailHeader(
                         )
                     }
                 }
-            }
+            } else {
+                val pagerState = rememberPagerState(pageCount = { imageUrls.size })
 
-            if (maskMutedArtwork) {
-                MutedArtworkOverlay(
-                    title = mutedArtworkTitle,
-                    summary = mutedArtworkSummary,
-                    onReveal = onRevealMutedArtwork,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-
-            if (imageUrls.size > 1) {
-                Box(
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(14.dp)
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Text("${pagerState.currentPage + 1} / ${imageUrls.size}", color = MiuixTheme.colorScheme.onSurface, style = MiuixTheme.textStyles.footnote1, fontWeight = FontWeight.Bold)
+                        .fillMaxWidth()
+                        .heightIn(min = 320.dp),
+                    beyondViewportPageCount = if (prefetchImages) 1 else 0,
+                    key = { it },
+                ) { page ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        PixivImage(
+                            url = imageUrls[page],
+                            contentDescription = illust.title,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier)
+                                .combinedClickable(
+                                    enabled = !maskMutedArtwork,
+                                    onClick = { onOpenImage(page) },
+                                    onLongClick = {
+                                        performAppHapticFeedback(context, haptic, hapticMode)
+                                        onSaveImage(imageUrls[page], "illustia_${illust.id}_p$page", confirmOnLongPressSave)
+                                    },
+                                ),
+                            crossfade = true,
+                            onSuccess = { bitmap ->
+                                if (page == pagerState.currentPage) {
+                                    useDarkHeaderIcons = shouldUseDarkHeaderIcons(bitmap)
+                                }
+                            },
+                        )
+                        if (maskMutedArtwork) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.38f)),
+                            )
+                        }
+                    }
+                }
+
+                if (maskMutedArtwork) {
+                    MutedArtworkOverlay(
+                        title = mutedArtworkTitle,
+                        summary = mutedArtworkSummary,
+                        onReveal = onRevealMutedArtwork,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+
+                if (imageUrls.size > 1) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(14.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.4f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text("${pagerState.currentPage + 1} / ${imageUrls.size}", color = MiuixTheme.colorScheme.onSurface, style = MiuixTheme.textStyles.footnote1, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         } else {
@@ -276,6 +333,7 @@ internal fun IllustDetailHeader(
                         ),
                     ),
                 ),
+                collapseOnSelection = true,
                 backgroundColor = headerIconBackground,
                 cornerRadius = 19.dp,
                 minWidth = 38.dp,
@@ -285,6 +343,10 @@ internal fun IllustDetailHeader(
             }
         }
     }
+}
+
+private fun detailFallbackImageUrl(vararg candidates: String?): String? {
+    return candidates.firstOrNull { !it.isNullOrBlank() }
 }
 
 @Composable

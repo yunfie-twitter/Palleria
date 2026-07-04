@@ -61,7 +61,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val initialPage = remember(initialTab) { SwipeTabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
     var showTokenLogin by remember { mutableStateOf(false) }
-    var selectedWatchlistSeriesId by remember { mutableStateOf<Long?>(null) }
+    val selectedWatchlistSeriesIds = remember { mutableStateListOf<Long>() }
     var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
     val backStack = remember { mutableStateListOf<NavKey>(AppRoute.Main) }
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(
@@ -108,6 +108,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
+    fun openWatchlistSeries(seriesId: Long) {
+        selectedWatchlistSeriesIds.add(seriesId)
+        navigate(AppRoute.IllustSeries)
+    }
+
     fun popRoute() {
         if (backStack.size <= 1) return
         if (selectedCommentTarget != null) {
@@ -119,7 +124,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             AppRoute.ImageViewer -> viewModel.closeImageViewer()
             AppRoute.NovelList -> Unit
             AppRoute.NovelReader -> viewModel.closeNovel()
-            AppRoute.IllustSeries -> selectedWatchlistSeriesId = null
+            AppRoute.IllustSeries -> {
+                if (selectedWatchlistSeriesIds.isNotEmpty()) {
+                    selectedWatchlistSeriesIds.removeAt(selectedWatchlistSeriesIds.lastIndex)
+                }
+            }
             AppRoute.UserProfile -> {
                 viewModel.hideUserPage()
                 viewModel.restoreProfileReturnDetail()
@@ -136,10 +145,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             if (backStack.lastOrNull() == AppRoute.Onboarding) {
                 backStack.clear()
                 backStack.add(AppRoute.Main)
+                selectedWatchlistSeriesIds.clear()
             }
         } else {
             backStack.clear()
             backStack.add(AppRoute.Onboarding)
+            selectedWatchlistSeriesIds.clear()
         }
     }
 
@@ -147,6 +158,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         if (state.appLocked && state.settings.appLockEnabled) {
             backStack.clear()
             backStack.add(AppRoute.Main)
+            selectedWatchlistSeriesIds.clear()
         }
     }
 
@@ -276,8 +288,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                 pagerState = pagerState,
                                 showTokenLogin = showTokenLogin,
                                 onShowTokenLoginChange = { showTokenLogin = it },
-                                selectedWatchlistSeriesId = selectedWatchlistSeriesId,
-                                onSelectedWatchlistSeriesIdChange = { selectedWatchlistSeriesId = it },
+                                selectedWatchlistSeriesId = selectedWatchlistSeriesIds.lastOrNull(),
+                                onSelectedWatchlistSeriesIdChange = { seriesId ->
+                                    if (seriesId == null) {
+                                        if (selectedWatchlistSeriesIds.isNotEmpty()) {
+                                            selectedWatchlistSeriesIds.removeAt(selectedWatchlistSeriesIds.lastIndex)
+                                        }
+                                    } else {
+                                        selectedWatchlistSeriesIds.add(seriesId)
+                                    }
+                                },
                                 selectedCommentTarget = selectedCommentTarget,
                                 onSelectedCommentTargetChange = { selectedCommentTarget = it },
                                 onNavigate = ::navigate,

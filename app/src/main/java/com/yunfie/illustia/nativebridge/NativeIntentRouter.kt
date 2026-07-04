@@ -11,6 +11,8 @@ sealed interface NativeIntentEvent {
 }
 
 object NativeIntentRouter {
+    const val EXTRA_HANDOFF_URI = "com.yunfie.illustia.extra.HANDOFF_URI"
+
     fun parse(intent: Intent?): NativeIntentEvent? {
         if (intent == null) return null
         if (intent.action == Intent.ACTION_SEND) {
@@ -24,6 +26,10 @@ object NativeIntentRouter {
         }
         if (intent.action == Intent.ACTION_VIEW) {
             parseText(intent.dataString)?.let { return it }
+            intent.getStringExtra(EXTRA_HANDOFF_URI)
+                ?.takeIf(String::isNotBlank)
+                ?.let(::parseText)
+                ?.let { return it }
             intent.getLongExtra("iid", 0L).takeIf { it > 0L }?.let {
                 return NativeIntentEvent.Artwork(it)
             }

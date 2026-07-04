@@ -33,6 +33,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.ui.components.EmptyState
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
@@ -122,12 +123,18 @@ fun FavoriteTagsScreen(
             )
         },
     ) { scaffoldPadding ->
-        PullToRefresh(
-            isRefreshing = state.loadState == LoadState.Loading && state.watchlistItems.isNotEmpty(),
-            onRefresh = { selectedTag?.let(viewModel::loadWatchlistTag) },
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            LazyVerticalGrid(
+    PullToRefresh(
+        isRefreshing = state.loadState == LoadState.Loading && state.watchlistItems.isNotEmpty(),
+        onRefresh = { selectedTag?.let(viewModel::loadWatchlistTag) },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        AutoLoadMoreEffect(
+            enabled = state.settings.autoLoadMore,
+            nextUrl = state.watchlistNextUrl,
+            isLoading = state.loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreWatchlist,
+        )
+        LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(adaptiveIllustColumns(state.settings)),
                 modifier = Modifier
@@ -168,7 +175,7 @@ fun FavoriteTagsScreen(
                     }
 
                     val currentSelectedTag = selectedTag
-                    if (state.watchlistItems.isEmpty() && state.loadState != LoadState.Loading && currentSelectedTag != null) {
+                    if (state.watchlistItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error && currentSelectedTag != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             EmptyState(stringResource(R.string.favorite_tags_works_not_found, currentSelectedTag))
                         }
@@ -189,9 +196,9 @@ fun FavoriteTagsScreen(
                         )
                     }
 
-                    if (state.watchlistNextUrl != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Button(
+                            if (!state.settings.autoLoadMore && state.watchlistNextUrl != null) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Button(
                                 onClick = viewModel::loadMoreWatchlist,
                                 modifier = Modifier
                                     .fillMaxWidth()
