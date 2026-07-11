@@ -68,6 +68,7 @@ data class AppSettings(
     val startupScreen: String = "home",
     val userProfileBottomSheetEnabled: Boolean = false,
     val shortsFeedEnabled: Boolean = false,
+    val disableHorizontalSwipeInShortsFeed: Boolean = false,
     val verticalColumnCount: Int = 2,
     val horizontalColumnCount: Int = 4,
     val pixivNetworkMode: String = "standard",

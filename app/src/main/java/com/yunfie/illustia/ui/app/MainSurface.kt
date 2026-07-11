@@ -130,7 +130,8 @@ internal fun MainSurface(
                 HorizontalPager(
                     state = pagerState,
                     beyondViewportPageCount = 1,
-                    userScrollEnabled = appState.settings.swipeToSwitchWorks,
+                    userScrollEnabled = appState.settings.swipeToSwitchWorks &&
+                        !(selectedTab == AppTab.ShortsFeed && appState.settings.disableHorizontalSwipeInShortsFeed),
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()

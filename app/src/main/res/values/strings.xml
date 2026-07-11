@@ -12,6 +12,8 @@
     <string name="nav_shorts_feed">フィード</string>
     <string name="general_shorts_feed">縦型フィード</string>
     <string name="general_shorts_feed_desc">ホームとフォロー中のイラストを、縦スワイプで全画面表示します</string>
+    <string name="general_shorts_feed_disable_horizontal_swipe">フィード内の左右スワイプを無効化</string>
+    <string name="general_shorts_feed_disable_horizontal_swipe_desc">フィード表示中に左右スワイプでタブが切り替わらないようにします</string>
     <string name="nav_more">もっと見る</string>
 
     <!-- Common actions -->

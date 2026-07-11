@@ -405,6 +405,10 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         updateSettings { it.copy(shortsFeedEnabled = value) }
     }
 
+    fun updateDisableHorizontalSwipeInShortsFeed(value: Boolean) {
+        updateSettings { it.copy(disableHorizontalSwipeInShortsFeed = value) }
+    }
+
     fun updateShowAiBadge(value: Boolean) {
         updateSettings { it.copy(showAiBadge = value) }
     }
