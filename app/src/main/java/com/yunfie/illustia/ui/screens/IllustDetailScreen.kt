@@ -88,6 +88,7 @@ fun IllustDetailScreen(
     onMuteUser: () -> Unit,
     onMuteTag: (String) -> Unit,
     onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
     onOpenIllustById: (Long) -> Unit,
     onSaveImage: (String, String) -> Unit,
     onSaveAllImages: (List<String>, String) -> Unit,
@@ -241,7 +242,8 @@ fun IllustDetailScreen(
                 item {
                     RelatedIllustsList(
                         relatedIllusts = relatedIllusts,
-                        onOpenIllust = onOpenIllust
+                        onOpenIllust = onOpenIllust,
+                        onLongPressIllust = onLongPressIllust,
                     )
                 }
             }

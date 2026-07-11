@@ -36,7 +36,9 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -83,53 +85,56 @@ fun DownloadQueueScreen(
             )
         },
     ) { padding ->
-        Column(
+        Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .background(MiuixTheme.colorScheme.surface),
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            color = MiuixTheme.colorScheme.surface,
         ) {
-            TabRow(
-                tabs = listOf(
-                    stringResource(R.string.download_queue_tab_all),
-                    stringResource(R.string.download_queue_tab_downloading),
-                    stringResource(R.string.download_queue_tab_completed),
-                ),
-                selectedTabIndex = selectedTab,
-                onTabSelected = { selectedTab = it },
-                colors = TabRowDefaults.tabRowColors(
-                    backgroundColor = MiuixTheme.colorScheme.surface,
-                    contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
-                    selectedContentColor = MiuixTheme.colorScheme.onBackground,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = 10.dp),
-                minWidth = 84.dp,
-                maxWidth = 164.dp,
-            )
-
-            LazyColumn(
+            Column(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                if (visibleItems.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.download_queue_empty),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                        )
-                    }
-                } else {
-                    items(visibleItems, key = { it.id }) { item ->
-                        DownloadQueueRow(item = item)
-                        DividerLine()
+                TabRow(
+                    tabs = listOf(
+                        stringResource(R.string.download_queue_tab_all),
+                        stringResource(R.string.download_queue_tab_downloading),
+                        stringResource(R.string.download_queue_tab_completed),
+                    ),
+                    selectedTabIndex = selectedTab,
+                    onTabSelected = { selectedTab = it },
+                    colors = TabRowDefaults.tabRowColors(
+                        backgroundColor = MiuixTheme.colorScheme.surface,
+                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+                        selectedContentColor = MiuixTheme.colorScheme.onBackground,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = 10.dp),
+                    minWidth = 84.dp,
+                    maxWidth = 164.dp,
+                )
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    if (visibleItems.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.download_queue_empty),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                            )
+                        }
+                    } else {
+                        items(visibleItems, key = { it.id }) { item ->
+                            DownloadQueueRow(item = item)
+                            DividerLine()
+                        }
                     }
                 }
-
             }
         }
     }
@@ -137,31 +142,17 @@ fun DownloadQueueScreen(
 
 @Composable
 private fun DownloadQueueRow(item: DownloadQueueEntry) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FileGlyph()
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = item.title,
-                color = MiuixTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Normal,
-            )
-            Text(
-                text = queueStatusLabel(item.status),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontWeight = FontWeight.Medium,
-            )
-        }
-        DownloadStateIcon(item.status)
-    }
+    BasicComponent(
+        title = item.title,
+        summary = queueStatusLabel(item.status),
+        modifier = Modifier.fillMaxWidth(),
+        startAction = {
+            FileGlyph()
+        },
+        endActions = {
+            DownloadStateIcon(item.status)
+        },
+    )
 }
 
 @Composable

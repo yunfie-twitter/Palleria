@@ -48,6 +48,8 @@ import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.data.pixiv.SuggestionStore
 import com.yunfie.illustia.ui.components.*
 import kotlinx.coroutines.flow.collect
@@ -101,6 +103,19 @@ fun SearchScreen(
     val onExpandedChange: (Boolean) -> Unit = { searchExpanded = it }
     val onUpdateDraft: (String) -> Unit = { viewModel.updateSearchDraft(it) }
     val onSubmit: (String) -> Unit = { viewModel.submitSearch(it) }
+    var lastAutoOpenedArtworkUrl by rememberSaveable { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(state.searchDraft) {
+        val normalized = state.searchDraft.trim()
+        val artworkEvent = NativeIntentRouter.parseText(normalized) as? NativeIntentEvent.Artwork
+        if (artworkEvent != null && lastAutoOpenedArtworkUrl != normalized) {
+            lastAutoOpenedArtworkUrl = normalized
+            onSubmit(normalized)
+            onExpandedChange(false)
+        } else if (artworkEvent == null) {
+            lastAutoOpenedArtworkUrl = null
+        }
+    }
 
     val contentMode = when {
         searchExpanded -> "suggestions"

@@ -1,6 +1,8 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
@@ -276,10 +278,12 @@ internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun RelatedIllustsList(
     relatedIllusts: List<Illust>,
     onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val relatedRows = remember(relatedIllusts) { relatedIllusts.chunked(3) }
@@ -298,7 +302,10 @@ internal fun RelatedIllustsList(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .aspectRatio(1f)
-                                    .miuixClickable { onOpenIllust(related) },
+                                    .combinedClickable(
+                                        onClick = { onOpenIllust(related) },
+                                        onLongClick = { onLongPressIllust(related) },
+                                    ),
                                 thumbnail = true,
                             )
                         }
