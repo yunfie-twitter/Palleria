@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.visibleWith
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.screens.AccountSwitchSheet
 import com.yunfie.illustia.ui.screens.AppLockScreen
@@ -26,6 +27,7 @@ import com.yunfie.illustia.ui.screens.HomeScreen
 import com.yunfie.illustia.ui.screens.MoreScreen
 import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
+import com.yunfie.illustia.ui.screens.ShortsFeedScreen
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -38,8 +40,11 @@ internal fun MainSurface(
     onTabSelected: (Int, AppTab) -> Unit,
     onSearch: () -> Unit,
     onOpenNovels: () -> Unit,
+    onOpenComments: (Long) -> Unit,
     onOpenWatchlistSeries: (Long) -> Unit,
 ) {
+    val tabs = mainTabs(appState.settings.shortsFeedEnabled)
+    val navigationTabs = visibleTabs(appState.settings.shortsFeedEnabled)
     val context = LocalContext.current
     var lastBackAt by remember { mutableStateOf(0L) }
     val isSearchResultMode = selectedTab == AppTab.Search &&
@@ -82,8 +87,8 @@ internal fun MainSurface(
                         color = MiuixTheme.colorScheme.surfaceContainer,
                         showDivider = true,
                     ) {
-                        VisibleTabs.forEach { tab ->
-                            val pageIndex = SwipeTabs.indexOf(tab)
+                        navigationTabs.forEach { tab ->
+                            val pageIndex = tabs.indexOf(tab)
                             NavigationBarItem(
                                 selected = selectedTab == tab,
                                 onClick = {
@@ -108,8 +113,8 @@ internal fun MainSurface(
                         color = MiuixTheme.colorScheme.surfaceContainer,
                         showDivider = true,
                     ) {
-                        VisibleTabs.forEach { tab ->
-                            val pageIndex = SwipeTabs.indexOf(tab)
+                        navigationTabs.forEach { tab ->
+                            val pageIndex = tabs.indexOf(tab)
                             NavigationRailItem(
                                 selected = selectedTab == tab,
                                 onClick = {
@@ -131,7 +136,7 @@ internal fun MainSurface(
                         .fillMaxHeight()
                         .background(MiuixTheme.colorScheme.surface),
                 ) { page ->
-                    when (SwipeTabs[page]) {
+                    when (tabs[page]) {
                         AppTab.Home -> HomeScreen(
                             items = appState.homeItems,
                             timelineItems = appState.timelineItems,
@@ -168,6 +173,13 @@ internal fun MainSurface(
                         )
 
                         AppTab.Search -> SearchScreen(state = appState.state, viewModel = viewModel)
+
+                        AppTab.ShortsFeed -> ShortsFeedScreen(
+                            items = appState.state.shortsFeedItems.visibleWith(appState.state),
+                            currentIllustId = appState.state.shortsFeedCurrentIllustId,
+                            viewModel = viewModel,
+                            onOpenComments = onOpenComments,
+                        )
 
                         AppTab.More -> MoreScreen(
                             state = appState.state,

@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -79,6 +80,11 @@ fun HomeScreen(
                 }
             },
             actions = {
+                if (settings.shortsFeedEnabled) {
+                    IconButton(onClick = onSearch) {
+                        Icon(MiuixIcons.Search, contentDescription = stringResource(R.string.nav_search))
+                    }
+                }
                 IconButton(onClick = onOpenNovels) {
                     Icon(
                         MiuixIcons.Photos,
@@ -105,7 +111,6 @@ fun HomeScreen(
                     onTabSelected = { index ->
                         coroutineScope.launch { pagerState.animateScrollToPage(index) }
                     },
-                    settings = settings,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),

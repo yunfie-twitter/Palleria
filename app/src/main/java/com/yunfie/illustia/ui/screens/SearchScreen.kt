@@ -221,7 +221,6 @@ private fun SearchResultsArea(
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
-    val scheme = MiuixTheme.colorScheme
     var showOptionsSheet by remember { mutableStateOf(false) }
     val tabIllust = stringResource(R.string.search_tab_illust)
     val tabUser = stringResource(R.string.search_tab_user)
@@ -245,31 +244,14 @@ private fun SearchResultsArea(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-            if (state.settings.amoledMode) {
-                TabRow(
-                    tabs = tabs,
-                    selectedTabIndex = selectedResultTab,
-                    onTabSelected = { index ->
-                        coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
-                    },
-                    colors = TabRowDefaults.tabRowColors(
-                        backgroundColor = scheme.surfaceContainer.copy(alpha = 0.88f),
-                        contentColor = scheme.onSurfaceVariantSummary,
-                        selectedBackgroundColor = scheme.surfaceContainerHigh,
-                        selectedContentColor = scheme.onBackground,
-                    ),
-                    modifier = Modifier.weight(1f),
-                )
-            } else {
-                TabRow(
-                    tabs = tabs,
-                    selectedTabIndex = selectedResultTab,
-                    onTabSelected = { index ->
-                        coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            TabRowWithContour(
+                tabs = tabs,
+                selectedTabIndex = selectedResultTab,
+                onTabSelected = { index ->
+                    coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
+                },
+                modifier = Modifier.weight(1f),
+            )
             IconButton(onClick = { showOptionsSheet = true }) {
                 Icon(
                     imageVector = MiuixIcons.Filter,

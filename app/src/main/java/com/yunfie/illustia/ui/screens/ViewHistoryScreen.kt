@@ -28,10 +28,9 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.visibleWithSettings
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.*
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -50,13 +49,21 @@ fun ViewHistoryScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     var deleteTarget by remember { mutableStateOf<ViewHistoryDeleteTarget?>(null) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    var showSearch by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     val feedHighQuality = state.settings.highQualityImages && state.settings.feedPreviewQuality != "low"
     val showAiBadge = state.settings.showAiBadge
     val hasSelection = selectedIds.isNotEmpty()
     val selectedCountText = stringResource(R.string.data_items_count, selectedIds.size)
 
-    val visibleHistory = remember(state.settings.viewHistory, state.settings) {
-        state.settings.viewHistory.visibleWithSettings(state.settings)
+    val visibleHistory = remember(state.settings.viewHistory, state.settings, searchQuery) {
+        val history = state.settings.viewHistory.visibleWithSettings(state.settings)
+        val query = searchQuery.trim()
+        if (query.isEmpty()) history else history.filter { illust ->
+            illust.title.contains(query, ignoreCase = true) ||
+                illust.artistName.contains(query, ignoreCase = true) ||
+                illust.tags.any { it.contains(query, ignoreCase = true) }
+        }
     }
 
     LaunchedEffect(visibleHistory) {
@@ -108,6 +115,7 @@ fun ViewHistoryScreen(
                         HeaderIcon(MiuixIcons.Close, onClick = { selectedIds = emptySet() })
                         HeaderIcon(MiuixIcons.Delete, onClick = { deleteTarget = ViewHistoryDeleteTarget.Selected })
                     } else {
+                        HeaderIcon(MiuixIcons.Search, onClick = { showSearch = !showSearch })
                         HeaderIcon(MiuixIcons.Delete, onClick = { deleteTarget = ViewHistoryDeleteTarget.All })
                     }
                 },
@@ -130,6 +138,35 @@ fun ViewHistoryScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+
+        if (showSearch) {
+            item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_search") {
+                SearchBar(
+                    inputField = {
+                        InputField(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            onSearch = { showSearch = false },
+                            expanded = showSearch,
+                            onExpandedChange = { showSearch = it },
+                            label = stringResource(R.string.view_history_search_hint),
+                        )
+                    },
+                    expanded = showSearch,
+                    onExpandedChange = { showSearch = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    outsideEndAction = {
+                        HeaderIcon(
+                            icon = MiuixIcons.Close,
+                            onClick = {
+                                searchQuery = ""
+                                showSearch = false
+                            },
+                        )
+                    },
+                ) {}
+            }
+        }
 
         if (visibleHistory.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {

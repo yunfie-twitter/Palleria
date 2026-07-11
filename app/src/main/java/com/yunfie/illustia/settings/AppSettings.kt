@@ -67,6 +67,7 @@ data class AppSettings(
     val fullscreenQuality: String = "high",
     val startupScreen: String = "home",
     val userProfileBottomSheetEnabled: Boolean = false,
+    val shortsFeedEnabled: Boolean = false,
     val verticalColumnCount: Int = 2,
     val horizontalColumnCount: Int = 4,
     val pixivNetworkMode: String = "standard",

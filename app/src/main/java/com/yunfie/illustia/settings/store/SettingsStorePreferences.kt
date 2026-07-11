@@ -98,6 +98,7 @@ internal fun readFromDataStore(
         fullscreenQuality = preferences[FULLSCREEN_QUALITY] ?: "high",
         startupScreen = preferences[STARTUP_SCREEN] ?: "home",
         userProfileBottomSheetEnabled = preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] ?: false,
+        shortsFeedEnabled = preferences[SHORTS_FEED_ENABLED] ?: false,
         verticalColumnCount = preferences[VERTICAL_COLUMN_COUNT] ?: 2,
         horizontalColumnCount = preferences[HORIZONTAL_COLUMN_COUNT] ?: 4,
         pixivNetworkMode = preferences[PIXIV_NETWORK_MODE] ?: "standard",
@@ -189,6 +190,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         fullscreenQuality = preferences.getString("fullscreenQuality", "high") ?: "high",
         startupScreen = preferences.getString("startupScreen", "home") ?: "home",
         userProfileBottomSheetEnabled = preferences.getBoolean("userProfileBottomSheetEnabled", false),
+        shortsFeedEnabled = preferences.getBoolean("shortsFeedEnabled", false),
         verticalColumnCount = preferences.getInt("verticalColumnCount", 2),
         horizontalColumnCount = preferences.getInt("horizontalColumnCount", 4),
         pixivNetworkMode = preferences.getString(KEY_PIXIV_NETWORK_MODE, "standard") ?: "standard",
@@ -275,6 +277,7 @@ internal fun writeToDataStore(preferences: MutablePreferences, settings: AppSett
     preferences[FULLSCREEN_QUALITY] = settings.fullscreenQuality
     preferences[STARTUP_SCREEN] = settings.startupScreen
     preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] = settings.userProfileBottomSheetEnabled
+    preferences[SHORTS_FEED_ENABLED] = settings.shortsFeedEnabled
     preferences[VERTICAL_COLUMN_COUNT] = settings.verticalColumnCount
     preferences[HORIZONTAL_COLUMN_COUNT] = settings.horizontalColumnCount
     preferences[PIXIV_NETWORK_MODE] = settings.pixivNetworkMode

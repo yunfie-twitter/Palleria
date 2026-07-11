@@ -49,6 +49,7 @@ import com.yunfie.illustia.ui.screens.OnboardingScreen
 import com.yunfie.illustia.ui.screens.PinSetupScreen
 import com.yunfie.illustia.ui.screens.PrivacyModeSettingsScreen
 import com.yunfie.illustia.ui.screens.SavedIllustViewerScreen
+import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.SettingsScreen
 import com.yunfie.illustia.ui.screens.UserProfileScreen
 import com.yunfie.illustia.ui.screens.ViewHistoryScreen
@@ -81,16 +82,26 @@ internal fun AppNavHost(
                 pagerState = pagerState,
                 onTabSelected = onTabSelected,
                 onSearch = {
-                    onTabSelected(SwipeTabs.indexOf(AppTab.Search), AppTab.Search)
+                    if (appState.settings.shortsFeedEnabled) {
+                        onNavigate(AppRoute.Search)
+                    } else {
+                        onTabSelected(mainTabs(false).indexOf(AppTab.Search), AppTab.Search)
+                    }
                 },
                 onOpenNovels = {
                     onNavigate(AppRoute.NovelList)
+                },
+                onOpenComments = { illustId ->
+                    onSelectedCommentTargetChange(illustId to CommentArtworkType.ILLUST)
                 },
                 onOpenWatchlistSeries = { seriesId ->
                     onSelectedWatchlistSeriesIdChange(seriesId)
                     onNavigate(AppRoute.IllustSeries)
                 },
             )
+        }
+        entry(AppRoute.Search) {
+            SearchScreen(state = appState.state, viewModel = viewModel)
         }
         entry(AppRoute.Onboarding) {
             var showTokenLoginSheet by remember { mutableStateOf(false) }

@@ -213,6 +213,13 @@ fun GeneralSettingsScreen(
                         onCheckedChange = viewModel::updateUserProfileBottomSheetEnabled,
                         summary = stringResource(R.string.general_user_profile_bottom_sheet_desc),
                     )
+                    DividerLine()
+                    SettingSwitchRow(
+                        title = stringResource(R.string.general_shorts_feed),
+                        checked = state.settings.shortsFeedEnabled,
+                        onCheckedChange = viewModel::updateShortsFeedEnabled,
+                        summary = stringResource(R.string.general_shorts_feed_desc),
+                    )
                 }
             }}
 

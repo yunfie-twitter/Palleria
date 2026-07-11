@@ -21,11 +21,22 @@ internal enum class AppTab(
     Ranking(R.string.nav_ranking, R.string.nav_ranking, MiuixIcons.TopDownloads),
     Bookmarks(R.string.nav_bookmarks, R.string.nav_bookmarks_full, MiuixIcons.FavoritesFill),
     Search(R.string.nav_search, R.string.nav_search, MiuixIcons.MiuixSearch),
+    ShortsFeed(R.string.nav_shorts_feed, R.string.nav_shorts_feed, MiuixIcons.Photos),
     More(R.string.nav_more, R.string.nav_more, MiuixIcons.More),
 }
 
 internal val SwipeTabs = listOf(AppTab.Home, AppTab.Search, AppTab.Bookmarks, AppTab.Ranking, AppTab.More)
 internal val VisibleTabs = SwipeTabs
+
+internal fun mainTabs(shortsFeedEnabled: Boolean): List<AppTab> = buildList {
+    add(AppTab.Home)
+    add(if (shortsFeedEnabled) AppTab.ShortsFeed else AppTab.Search)
+    add(AppTab.Bookmarks)
+    add(AppTab.Ranking)
+    add(AppTab.More)
+}
+
+internal fun visibleTabs(shortsFeedEnabled: Boolean): List<AppTab> = mainTabs(shortsFeedEnabled)
 
 internal fun startupTabFor(value: String): AppTab {
     return when (value) {
@@ -39,6 +50,7 @@ internal fun startupTabFor(value: String): AppTab {
 
 internal sealed interface AppRoute : NavKey {
     data object Main : AppRoute
+    data object Search : AppRoute
     data object Onboarding : AppRoute
     data object Detail : AppRoute
     data object ImageViewer : AppRoute

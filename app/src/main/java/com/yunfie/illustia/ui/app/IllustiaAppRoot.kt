@@ -57,16 +57,18 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val rankingChrome by viewModel.rankingChromeState.collectAsStateWithLifecycle()
     val bookmarkChrome by viewModel.bookmarkChromeState.collectAsStateWithLifecycle()
     val startupScreen = state.settings.startupScreen
+    val tabs = mainTabs(settings.shortsFeedEnabled)
     val initialTab = remember(startupScreen) { startupTabFor(startupScreen) }
-    val initialPage = remember(initialTab) { SwipeTabs.indexOf(initialTab).coerceAtLeast(0) }
+    val initialPage = remember(initialTab, tabs) { tabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
+    var previousTab by remember { mutableStateOf<AppTab?>(null) }
     var showTokenLogin by remember { mutableStateOf(false) }
     val selectedWatchlistSeriesIds = remember { mutableStateListOf<Long>() }
     var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
     val backStack = remember { mutableStateListOf<NavKey>(AppRoute.Main) }
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(
         initialPage = initialPage,
-        pageCount = { SwipeTabs.size },
+        pageCount = { tabs.size },
     )
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -163,13 +165,21 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     }
 
     LaunchedEffect(pagerState.currentPage) {
-        selectedTab = SwipeTabs[pagerState.currentPage]
+        selectedTab = tabs[pagerState.currentPage]
+    }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == AppTab.ShortsFeed && previousTab != AppTab.ShortsFeed) {
+            viewModel.refreshShortsFeed()
+        }
+        previousTab = selectedTab
     }
 
     LaunchedEffect(state.activeSearchWord) {
-        if (state.activeSearchWord.isNotBlank() && selectedTab != AppTab.Search) {
+        if (!settings.shortsFeedEnabled && state.activeSearchWord.isNotBlank() && selectedTab != AppTab.Search) {
             selectedTab = AppTab.Search
-            pagerState.scrollToPage(SwipeTabs.indexOf(AppTab.Search))
+            val searchIndex = tabs.indexOf(AppTab.Search)
+            if (searchIndex >= 0) pagerState.scrollToPage(searchIndex)
         }
     }
 
@@ -303,9 +313,13 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                 onNavigate = ::navigate,
                                 onPopRoute = ::popRoute,
                                 onTabSelected = { index, tab ->
-                                    selectedTab = tab
-                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                                    if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
+                                    if (tab == AppTab.ShortsFeed && selectedTab == AppTab.ShortsFeed) {
+                                        viewModel.refreshShortsFeed()
+                                    } else {
+                                        selectedTab = tab
+                                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                        if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
+                                    }
                                 },
                             )
                         }

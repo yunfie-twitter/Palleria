@@ -9,6 +9,9 @@
     <string name="nav_bookmarks">ブクマ</string>
     <string name="nav_bookmarks_full">ブックマーク</string>
     <string name="nav_search">検索</string>
+    <string name="nav_shorts_feed">フィード</string>
+    <string name="general_shorts_feed">縦型フィード</string>
+    <string name="general_shorts_feed_desc">ホームとフォロー中のイラストを、縦スワイプで全画面表示します</string>
     <string name="nav_more">もっと見る</string>
 
     <!-- Common actions -->
@@ -387,6 +390,7 @@
     <string name="view_history_delete_selected">選択した閲覧履歴を削除</string>
     <string name="view_history_delete_selected_desc">選択中の%1$sを削除します。</string>
     <string name="view_history_selected_count">選択中 %1$d 件</string>
+    <string name="view_history_search_hint">作品名・作者名・タグで検索</string>
     <string name="data_delete_search_history">検索履歴を削除</string>
     <string name="data_delete_watchlist_tags">Watchlistタグを削除</string>
     <string name="data_delete_mute_data">ミュートデータを削除</string>

@@ -387,6 +387,7 @@
     <string name="view_history_delete_selected">Delete Selected View History</string>
     <string name="view_history_delete_selected_desc">Delete the selected %1$s.</string>
     <string name="view_history_selected_count">Selected %1$d</string>
+    <string name="view_history_search_hint">Search titles, artists, or tags</string>
     <string name="data_delete_search_history">Delete Search History</string>
     <string name="data_delete_watchlist_tags">Delete Watchlist Tags</string>
     <string name="data_delete_mute_data">Delete Mute Data</string>
