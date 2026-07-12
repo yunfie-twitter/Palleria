@@ -557,4 +557,8 @@
     <string name="artist_folder_name">Folder Name</string>
     <string name="artist_folder_manage">Manage Folders</string>
     <string name="artist_folder_add_to">Add to Folder</string>
+    <string name="viewer_comic_mode">Vertical</string>
+    <string name="viewer_page_mode">Paged</string>
+    <string name="wallpaper_playlist">Wallpaper playlist</string>
+    <string name="wallpaper_playlist_desc">Rotate wallpaper using offline-saved images</string>
 </resources>

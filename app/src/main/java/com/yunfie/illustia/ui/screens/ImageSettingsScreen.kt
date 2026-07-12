@@ -171,6 +171,17 @@ fun ImageSettingsScreen(
                 }
             }}
 
+            item { Section(stringResource(R.string.wallpaper_playlist)) {
+                ElevatedPanel {
+                    SettingSwitchRow(
+                        title = stringResource(R.string.wallpaper_playlist),
+                        checked = state.settings.wallpaperPlaylistEnabled,
+                        onCheckedChange = viewModel::updateWallpaperPlaylistEnabled,
+                        summary = stringResource(R.string.wallpaper_playlist_desc),
+                    )
+                }
+            }}
+
             item { Section(stringResource(R.string.image_section_proxy)) {
                 ElevatedPanel {
                     SettingDropdownRow(

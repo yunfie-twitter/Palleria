@@ -70,6 +70,7 @@ data class IllustiaUiState(
     val userPageDismissed: Boolean = false,
     val imageViewerIllust: Illust? = null,
     val imageViewerStartPage: Int = 0,
+    val imageViewerCurrentPage: Int = 0,
     val longPressedIllust: Illust? = null,
     val webLoginRequest: PixivWebLoginRequest? = null,
     val showReloginRequiredDialog: Boolean = false,

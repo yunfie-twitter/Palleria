@@ -6,6 +6,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -106,6 +112,7 @@ fun IllustDetailScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     var pendingSave by remember { mutableStateOf<Pair<String, String>?>(null) }
     var showUnfollowConfirm by remember { mutableStateOf(false) }
+    var showLikeAnimation by remember(illust.id) { mutableStateOf(false) }
     val isArtworkMuted = isArtistMuted || isTagMuted
     var revealMutedArtwork by remember(illust.id, isArtistMuted, isTagMuted) { mutableStateOf(!isArtworkMuted) }
     val pixivUrl = remember(illust.id) { "https://www.pixiv.net/artworks/${illust.id}" }
@@ -154,13 +161,31 @@ fun IllustDetailScreen(
         }
     }
 
+    fun likeWithAnimation() {
+        showLikeAnimation = false
+        showLikeAnimation = true
+        performAppHapticFeedback(context, haptic, hapticMode)
+        if (!illust.isBookmarked) onBookmark()
+    }
+
+    LaunchedEffect(showLikeAnimation) {
+        if (showLikeAnimation) {
+            delay(720)
+            showLikeAnimation = false
+        }
+    }
+
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
-                    performAppHapticFeedback(context, haptic, hapticMode)
-                    onBookmark()
+                    if (illust.isBookmarked) {
+                        performAppHapticFeedback(context, haptic, hapticMode)
+                        onBookmark()
+                    } else {
+                        likeWithAnimation()
+                    }
                 },
                 shape = RoundedCornerShape(18.dp),
                 containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
@@ -175,6 +200,7 @@ fun IllustDetailScreen(
             }
         },
     ) { scaffoldPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
         Surface(
             modifier = Modifier.fillMaxSize().padding(bottom = scaffoldPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
             color = MiuixTheme.colorScheme.surface,
@@ -196,6 +222,7 @@ fun IllustDetailScreen(
                     pixivUrl = pixivUrl,
                     onBack = onBack,
                     onOpenImage = onOpenImage,
+                    onDoubleTapImage = ::likeWithAnimation,
                     onSaveImage = { url, name, confirm -> requestSave(url, name, confirm) },
                     onSaveAllImages = onSaveAllImages,
                     onMuteIllust = onMuteIllust,
@@ -247,6 +274,23 @@ fun IllustDetailScreen(
                     )
                 }
             }
+        }
+        AnimatedVisibility(
+            visible = showLikeAnimation,
+            modifier = Modifier.align(Alignment.Center),
+            enter = fadeIn() + scaleIn(
+                initialScale = 0.25f,
+                animationSpec = spring(dampingRatio = 0.42f, stiffness = 420f),
+            ),
+            exit = fadeOut() + scaleOut(targetScale = 1.35f),
+        ) {
+            Icon(
+                imageVector = MiuixIcons.FavoritesFill,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.error,
+                modifier = Modifier.size(112.dp),
+            )
+        }
         }
     }
 }

@@ -245,7 +245,7 @@ class MainActivity : FragmentActivity() {
         if (state.appLocked || state.privacyLocked) return null
         return when {
             state.showUserPage && state.selectedUser != null -> Uri.parse("pixiv://users/${state.selectedUser.id}")
-            state.imageViewerIllust != null -> Uri.parse("pixiv://illusts/${state.imageViewerIllust.id}")
+            state.imageViewerIllust != null -> Uri.parse("pixiv://illusts/${state.imageViewerIllust.id}?page=${state.imageViewerCurrentPage}")
             state.selectedIllust != null -> Uri.parse("pixiv://illusts/${state.selectedIllust.id}")
             else -> null
         }

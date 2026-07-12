@@ -562,4 +562,8 @@
     <string name="artist_folder_name">フォルダ名</string>
     <string name="artist_folder_manage">フォルダ管理</string>
     <string name="artist_folder_add_to">フォルダに追加</string>
+    <string name="viewer_comic_mode">縦読み</string>
+    <string name="viewer_page_mode">ページ送り</string>
+    <string name="wallpaper_playlist">壁紙プレイリスト</string>
+    <string name="wallpaper_playlist_desc">オフライン保存した画像から壁紙を自動で切り替えます</string>
 </resources>

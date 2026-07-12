@@ -70,6 +70,7 @@ internal fun IllustDetailHeader(
     pixivUrl: String,
     onBack: () -> Unit,
     onOpenImage: (Int) -> Unit,
+    onDoubleTapImage: () -> Unit,
     onSaveImage: (String, String, Boolean) -> Unit,
     onSaveAllImages: (List<String>, String) -> Unit,
     onMuteIllust: () -> Unit,
@@ -191,6 +192,7 @@ internal fun IllustDetailHeader(
                                 .combinedClickable(
                                     enabled = !maskMutedArtwork,
                                     onClick = { onOpenImage(page) },
+                                    onDoubleClick = onDoubleTapImage,
                                     onLongClick = {
                                         performAppHapticFeedback(context, haptic, hapticMode)
                                         onSaveImage(imageUrls[page], "illustia_${illust.id}_p$page", confirmOnLongPressSave)

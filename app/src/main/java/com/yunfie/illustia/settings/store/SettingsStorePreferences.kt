@@ -107,6 +107,8 @@ internal fun readFromDataStore(
         mutedIllusts = decodeLongList(preferences[MUTED_ILLUSTS_JSON]),
         mutedUsers = decodeLongList(preferences[MUTED_USERS_JSON]),
         mutedTags = decodeStringList(preferences[MUTED_TAGS_JSON]),
+        seenFeedIllusts = decodeLongList(preferences[SEEN_FEED_ILLUSTS_JSON]),
+        wallpaperPlaylistEnabled = preferences[WALLPAPER_PLAYLIST_ENABLED] ?: false,
         accounts = accounts,
         activeAccountIndex = preferences[ACTIVE_ACCOUNT_INDEX] ?: -1,
         privacyModeEnabled = preferences[PRIVACY_MODE_ENABLED] ?: false,
@@ -200,6 +202,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         mutedIllusts = preferences.getString("mutedIllusts", "").orEmpty().split(",").mapNotNull { it.toLongOrNull() },
         mutedUsers = preferences.getString("mutedUsers", "").orEmpty().split(",").mapNotNull { it.toLongOrNull() },
         mutedTags = preferences.getString("mutedTags", "").orEmpty().split(",").filter { it.isNotBlank() },
+        seenFeedIllusts = preferences.getString("seenFeedIllusts", "").orEmpty().split(",").mapNotNull { it.toLongOrNull() },
         accounts = decodeAccounts(preferences.getString(KEY_ACCOUNTS, "").orEmpty()),
         activeAccountIndex = preferences.getInt(KEY_ACTIVE_ACCOUNT_INDEX, -1),
         privacyModeEnabled = false,
@@ -288,6 +291,8 @@ internal fun writeToDataStore(preferences: MutablePreferences, settings: AppSett
     preferences[MUTED_ILLUSTS_JSON] = encodeLongList(settings.mutedIllusts)
     preferences[MUTED_USERS_JSON] = encodeLongList(settings.mutedUsers)
     preferences[MUTED_TAGS_JSON] = encodeStringList(settings.mutedTags)
+    preferences[SEEN_FEED_ILLUSTS_JSON] = encodeLongList(settings.seenFeedIllusts)
+    preferences[WALLPAPER_PLAYLIST_ENABLED] = settings.wallpaperPlaylistEnabled
     preferences[ACTIVE_ACCOUNT_INDEX] = settings.activeAccountIndex
     preferences[PRIVACY_MODE_ENABLED] = settings.privacyModeEnabled
     preferences[PRIVACY_MODE_AUTO_LOCK_TIMING] = settings.privacyModeAutoLockTiming

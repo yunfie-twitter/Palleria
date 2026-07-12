@@ -76,6 +76,8 @@ data class AppSettings(
     val mutedIllusts: List<Long> = emptyList(),
     val mutedUsers: List<Long> = emptyList(),
     val mutedTags: List<String> = emptyList(),
+    val seenFeedIllusts: List<Long> = emptyList(),
+    val wallpaperPlaylistEnabled: Boolean = false,
     val accounts: List<StoredAccount> = emptyList(),
     val activeAccountIndex: Int = -1,
     val privacyModeEnabled: Boolean = false,

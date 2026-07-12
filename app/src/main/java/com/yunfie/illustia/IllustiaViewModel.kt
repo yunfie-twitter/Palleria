@@ -130,6 +130,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         val RECOMMENDED_TAG_CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(30)
+        const val MAX_SEEN_FEED_ILLUSTS = 2_000
     }
 
     val bookmarkTimelineGridState = LazyGridState()
@@ -750,6 +751,11 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         updateSettings { it.copy(fullscreenQuality = value) }
     }
 
+    fun updateWallpaperPlaylistEnabled(value: Boolean) {
+        updateSettings { it.copy(wallpaperPlaylistEnabled = value) }
+        com.yunfie.illustia.wallpaper.WallpaperPlaylistScheduler.setEnabled(getApplication(), value)
+    }
+
     fun updateStartupScreen(value: String) {
         updateSettings { it.copy(startupScreen = value) }
     }
@@ -979,12 +985,14 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         runLoading {
             val page = repository.nextPage(nextUrl)
             val settings = _uiState.value.settings
+            val additions = page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
             _uiState.update {
                 it.copy(
-                    homeItems = it.homeItems.appendIllusts(page.items.visibleWithSettings(settings)),
+                    homeItems = it.homeItems.appendIllusts(additions),
                     homeNextUrl = page.nextUrl,
                 )
             }
+            rememberFeedItems(additions)
         }
     }
 
@@ -1487,7 +1495,12 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun openImageViewer(illust: Illust, startPage: Int = 0) {
-        _uiState.update { it.copy(imageViewerIllust = illust, imageViewerStartPage = startPage.coerceAtLeast(0)) }
+        val page = startPage.coerceAtLeast(0)
+        _uiState.update { it.copy(imageViewerIllust = illust, imageViewerStartPage = page, imageViewerCurrentPage = page) }
+    }
+
+    fun updateImageViewerPage(page: Int) {
+        _uiState.update { it.copy(imageViewerCurrentPage = page.coerceAtLeast(0)) }
     }
 
     suspend fun loadUgoiraPlayback(illustId: Long): UgoiraPlayback {
@@ -1540,7 +1553,7 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun closeImageViewer() {
-        _uiState.update { it.copy(imageViewerIllust = null, imageViewerStartPage = 0) }
+        _uiState.update { it.copy(imageViewerIllust = null, imageViewerStartPage = 0, imageViewerCurrentPage = 0) }
     }
 
     fun onIllustLongPress(illust: Illust) {
@@ -2522,13 +2535,32 @@ class IllustiaViewModel(app: Application) : AndroidViewModel(app) {
         val page = repository.loadHome(kind)
         val settings = _uiState.value.settings
         val items = withContext(Dispatchers.Default) {
-            page.items.visibleWithSettings(settings)
+            page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
         }
         _uiState.update {
             it.copy(
                 sessionReady = true,
                 homeItems = items,
                 homeNextUrl = page.nextUrl,
+            )
+        }
+        rememberFeedItems(items)
+    }
+
+    private fun List<Illust>.preferUnseenFeedItems(settings: AppSettings): List<Illust> {
+        if (settings.seenFeedIllusts.isEmpty()) return this
+        val seen = settings.seenFeedIllusts.toHashSet()
+        return sortedBy { it.id in seen }
+    }
+
+    private fun rememberFeedItems(items: List<Illust>) {
+        if (items.isEmpty()) return
+        val shownIds = items.map { it.id }
+        updateSettings { settings ->
+            settings.copy(
+                seenFeedIllusts = (shownIds + settings.seenFeedIllusts)
+                    .distinct()
+                    .take(MAX_SEEN_FEED_ILLUSTS),
             )
         }
     }
