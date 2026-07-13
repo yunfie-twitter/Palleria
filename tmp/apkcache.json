@@ -1266,7 +1266,7 @@
     "added": 1783915135.0
   },
   "Illustia-v4-release.apk": {
-    "hash": "93e26083f24d5261db2a1d1de70f397f2abd195df1dc352e0281efdd5641596b",
+    "hash": "282bdc17a7988ea3ae9305486cc77b38eb0c99f518c382b928691ff0e67892d0",
     "hashType": "sha256",
     "uses-permission": [
       [
@@ -1336,8 +1336,8 @@
     ],
     "sig": "f647964cdccdcc133cade2961a136053",
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
-    "size": 61131831,
+    "size": 61213811,
     "apkName": "Illustia-v4-release.apk",
-    "added": 1783943866.076754
+    "added": 1783943866.0
   }
 }

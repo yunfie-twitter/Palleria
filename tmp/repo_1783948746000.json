@@ -14,7 +14,7 @@
       }
     },
     "address": "https://yunfi.f5.si/Palleria/repo",
-    "timestamp": 1783943871000,
+    "timestamp": 1783948746000,
     "categories": {
       "Graphics": {
         "name": {
@@ -101,12 +101,12 @@
         "preferredSigner": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
       },
       "versions": {
-        "93e26083f24d5261db2a1d1de70f397f2abd195df1dc352e0281efdd5641596b": {
+        "282bdc17a7988ea3ae9305486cc77b38eb0c99f518c382b928691ff0e67892d0": {
           "added": 1783943866000,
           "file": {
             "name": "/Illustia-v4-release.apk",
-            "sha256": "93e26083f24d5261db2a1d1de70f397f2abd195df1dc352e0281efdd5641596b",
-            "size": 61131831
+            "sha256": "282bdc17a7988ea3ae9305486cc77b38eb0c99f518c382b928691ff0e67892d0",
+            "size": 61213811
           },
           "manifest": {
             "nativecode": [
