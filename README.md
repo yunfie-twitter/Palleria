@@ -104,8 +104,8 @@
 
 バグ報告や機能提案は、GitHubのIssueトラッカーからお願いします。
 
-- GitHubリポジトリ: [https://github.com/yunfie-twitter/Illustia-dev](https://github.com/yunfie-twitter/Illustia-dev)
-- 問題報告: [https://github.com/yunfie-twitter/Illustia-dev/issues](https://github.com/yunfie-twitter/Illustia-dev/issues)
+- GitHubリポジトリ: [https://github.com/yunfie-twitter/Palleria](https://github.com/yunfie-twitter/Palleria)
+- 問題報告: [https://github.com/yunfie-twitter/Palleria/issues](https://github.com/yunfie-twitter/Palleria/issues)
 
 コードのプルリクエストも歓迎します。
 
