@@ -22,3 +22,4 @@ debug.keystore
 release.keystore
 mcp/
 .kotlin
+app/release/
