@@ -21,4 +21,6 @@
 # JNA is used by the generated UniFFI Rust bindings. Its native dispatcher
 # resolves Java classes and fields by their original JNI names at runtime.
 -keep class com.sun.jna.** { *; }
+-keep class * extends com.sun.jna.Structure { *; }
+-keep interface * extends com.sun.jna.Callback { *; }
 -dontwarn com.sun.jna.**
