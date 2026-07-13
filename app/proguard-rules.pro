@@ -17,3 +17,8 @@
 # Tink / Security-Crypto
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn com.google.j2objc.annotations.**
+
+# JNA is used by the generated UniFFI Rust bindings. Its native dispatcher
+# resolves Java classes and fields by their original JNI names at runtime.
+-keep class com.sun.jna.** { *; }
+-dontwarn com.sun.jna.**
