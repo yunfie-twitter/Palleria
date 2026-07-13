@@ -48,14 +48,13 @@ import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class PixivApiClient(
-    mode: NetworkMode = NetworkMode.Standard,
+    private val mode: NetworkMode = NetworkMode.Standard,
 ) {
-    private val httpClient: OkHttpClient = createPixivHttpClient(mode)
+    private val httpClient = RustPixivHttpClient(mode)
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -503,7 +502,7 @@ class PixivApiClient(
         session: PixivSession,
         url: String,
         headers: Map<String, String> = emptyMap(),
-    ): PixivWebSocketClient = PixivWebSocketClient(httpClient, url, { session.accessToken }, headers)
+    ): PixivWebSocketClient = PixivWebSocketClient(createPixivHttpClient(mode), url, { session.accessToken }, headers)
 
     suspend fun reportIllust(session: PixivSession, illustId: Long, problemType: String?, message: String?) {
         val form = FormBody.Builder().add("illust_id", illustId.toString())

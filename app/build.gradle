@@ -43,6 +43,11 @@ android {
         compose true
     }
 
+    sourceSets {
+        main.kotlin.srcDir "$buildDir/generated/uniffi/kotlin"
+        main.jniLibs.srcDir "$buildDir/generated/uniffi/jniLibs"
+    }
+
     packaging {
         jniLibs {
             keepDebugSymbols += ["**/libandroidx.graphics.path.so"]
@@ -54,6 +59,40 @@ android {
             useJUnitPlatform()
         }
     }
+}
+
+def rustCrateDir = rootProject.file("rust/pixiv-api")
+def rustTargetDir = rootProject.file("rust/target")
+def cargoExecutable = org.gradle.internal.os.OperatingSystem.current().isWindows()
+    ? new File(System.getProperty("user.home"), ".cargo/bin/cargo.exe").absolutePath
+    : "cargo"
+def uniffiKotlinDir = layout.buildDirectory.dir("generated/uniffi/kotlin")
+def uniffiJniDir = layout.buildDirectory.dir("generated/uniffi/jniLibs")
+
+tasks.register("buildUniFfiHost", Exec) {
+    workingDir rustCrateDir
+    environment "CARGO_TARGET_DIR", rustTargetDir
+    commandLine cargoExecutable, "build", "--lib"
+}
+
+tasks.register("generateUniFfiBindings", Exec) {
+    workingDir rustCrateDir
+    environment "CARGO_TARGET_DIR", rustTargetDir
+    commandLine cargoExecutable, "run", "--bin", "uniffi-bindgen", "--", "generate",
+        "--library", new File(rustTargetDir, "debug/palleria_pixiv_api.dll"),
+        "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
+    dependsOn "buildUniFfiHost"
+}
+
+tasks.register("buildRustAndroid", Exec) {
+    workingDir rustCrateDir
+    environment "CARGO_TARGET_DIR", rustTargetDir
+    commandLine cargoExecutable, "ndk", "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
+        "-o", uniffiJniDir.get().asFile, "build", "--release"
+}
+
+tasks.named("preBuild").configure {
+    dependsOn "generateUniFfiBindings", "buildRustAndroid"
 }
 
 androidComponents {
@@ -93,6 +132,7 @@ dependencies {
     implementation "io.coil-kt.coil3:coil-gif:3.5.0"
     implementation "io.coil-kt.coil3:coil-network-okhttp:3.5.0"
     implementation "com.squareup.okhttp3:okhttp:5.4.0"
+    implementation "net.java.dev.jna:jna:5.17.0@aar"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0"
     implementation "androidx.navigation3:navigation3-runtime:1.1.4"

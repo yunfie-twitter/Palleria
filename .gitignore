@@ -22,5 +22,29 @@ debug.keystore
 release.keystore
 mcp/
 .kotlin/
+rust/**/target/
 app/release/
 docs/
+# Rust build output
+/target/
+rust/pixiv-api/target/
+# rustfmt backup files
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Local files
+*.log
+*.tmp

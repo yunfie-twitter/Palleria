@@ -1,0 +1,18 @@
+[package]
+name = "palleria_pixiv_api"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "gzip", "brotli", "deflate"] }
+thiserror = "2"
+uniffi = { version = "0.29", features = ["cli"] }
+
+[dev-dependencies]
+tiny_http = "0.12"
+
+[build-dependencies]
+uniffi = { version = "0.29", features = ["build"] }
