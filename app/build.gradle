@@ -74,11 +74,18 @@ def cargoExecutable = org.gradle.internal.os.OperatingSystem.current().isWindows
     : "cargo"
 def uniffiKotlinDir = layout.buildDirectory.dir("generated/uniffi/kotlin")
 def uniffiJniDir = layout.buildDirectory.dir("generated/uniffi/jniLibs")
+def rustInputs = files(
+    fileTree(new File(rustCrateDir, "src")) { include "**/*.rs" },
+    new File(rustCrateDir, "Cargo.toml"),
+    new File(rustCrateDir, "Cargo.lock"),
+)
 
 tasks.register("buildUniFfiHost", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "build", "--release", "--lib"
+    inputs.files(rustInputs)
+    outputs.file(new File(rustTargetDir, "release/palleria_pixiv_api.dll"))
 }
 
 tasks.register("generateUniFfiBindings", Exec) {
@@ -88,6 +95,8 @@ tasks.register("generateUniFfiBindings", Exec) {
         "--library", new File(rustTargetDir, "release/palleria_pixiv_api.dll"),
         "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
     dependsOn "buildUniFfiHost"
+    inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
+    outputs.file(uniffiKotlinDir.map { it.file("com/yunfie/illustia/rust/palleria_pixiv_api.kt") })
 }
 
 tasks.register("buildRustAndroid", Exec) {
@@ -95,6 +104,13 @@ tasks.register("buildRustAndroid", Exec) {
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "ndk", "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
         "-o", uniffiJniDir.get().asFile, "build", "--release"
+    dependsOn "generateUniFfiBindings"
+    inputs.files(rustInputs)
+    outputs.files(
+        uniffiJniDir.map { it.file("arm64-v8a/libpalleria_pixiv_api.so") },
+        uniffiJniDir.map { it.file("armeabi-v7a/libpalleria_pixiv_api.so") },
+        uniffiJniDir.map { it.file("x86_64/libpalleria_pixiv_api.so") },
+    )
 }
 
 tasks.named("preBuild").configure {

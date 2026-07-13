@@ -65,7 +65,7 @@ internal class RustPixivCall(
                 headers = headers,
                 body = sink.toByteArray(),
                 contentType = request.body?.contentType()?.toString(),
-            ).body.toString(Charsets.UTF_8)
+            ).body
         }
     }
 }
