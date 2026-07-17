@@ -72,6 +72,7 @@ internal fun AppNavHost(
     onSelectedCommentTargetChange: (Pair<Long, CommentArtworkType>?) -> Unit,
     onNavigate: (AppRoute) -> Unit,
     onPopRoute: () -> Unit,
+    onSearchTag: (String) -> Unit,
     onTabSelected: (Int, AppTab) -> Unit,
 ) {
     val entryProvider = entryProvider<NavKey> {
@@ -135,10 +136,7 @@ internal fun AppNavHost(
                         }
                     },
                     onOpenImage = { page -> viewModel.openImageViewer(illust, page) },
-                    onSearchTag = { tag ->
-                        onPopRoute()
-                        viewModel.submitSearch(tag)
-                    },
+                    onSearchTag = onSearchTag,
                     isArtistFollowed = appState.state.selectedIllustUser?.isFollowed == true,
                     isArtistMuted = appState.state.settings.mutedUsers.contains(illust.artistId),
                     isTagMuted = illust.isMutedByTags(appState.state.settings),

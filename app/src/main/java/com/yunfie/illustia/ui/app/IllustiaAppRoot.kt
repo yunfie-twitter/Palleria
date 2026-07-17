@@ -143,6 +143,23 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
+    fun searchFromDetail(tag: String) {
+        while (backStack.lastOrNull() is AppRoute.Detail) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+        viewModel.closeIllust()
+        viewModel.submitSearch(tag)
+        if (settings.shortsFeedEnabled) {
+            navigate(AppRoute.Search)
+        } else {
+            selectedTab = AppTab.Search
+            val searchIndex = tabs.indexOf(AppTab.Search)
+            if (searchIndex >= 0) {
+                coroutineScope.launch { pagerState.animateScrollToPage(searchIndex) }
+            }
+        }
+    }
+
     LaunchedEffect(state.settingsLoaded, state.settings.refreshToken) {
         if (!state.settingsLoaded) return@LaunchedEffect
         if (state.settings.refreshToken.isNotBlank()) {
@@ -318,6 +335,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                 onSelectedCommentTargetChange = { selectedCommentTarget = it },
                                 onNavigate = ::navigate,
                                 onPopRoute = ::popRoute,
+                                onSearchTag = ::searchFromDetail,
                                 onTabSelected = { index, tab ->
                                     if (tab == AppTab.ShortsFeed && selectedTab == AppTab.ShortsFeed) {
                                         viewModel.refreshShortsFeed()
