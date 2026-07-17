@@ -72,6 +72,7 @@ fun SearchScreen(
     viewModel: IllustiaViewModel,
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
+    onBackFromResults: (() -> Unit)? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
@@ -128,7 +129,7 @@ fun SearchScreen(
             if (searchExpanded) {
                 searchExpanded = false
             } else {
-                viewModel.clearSearchResults()
+                onBackFromResults?.invoke() ?: viewModel.clearSearchResults()
             }
         }
         BackHandler(enabled = true, onBack = closeSearch)
@@ -156,7 +157,7 @@ fun SearchScreen(
                 ) {
                     HeaderIcon(
                         MiuixIcons.Back,
-                        onClick = onClearResults,
+                        onClick = onBackFromResults ?: onClearResults,
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(

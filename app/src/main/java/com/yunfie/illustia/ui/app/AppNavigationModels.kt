@@ -51,6 +51,7 @@ internal fun startupTabFor(value: String): AppTab {
 internal sealed interface AppRoute : NavKey {
     data object Main : AppRoute
     data object Search : AppRoute
+    data class TagSearch(val word: String) : AppRoute
     data object Onboarding : AppRoute
     data class Detail(val illustId: Long) : AppRoute
     data object ImageViewer : AppRoute

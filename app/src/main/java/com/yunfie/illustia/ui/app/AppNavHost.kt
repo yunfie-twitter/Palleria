@@ -105,6 +105,13 @@ internal fun AppNavHost(
         entry(AppRoute.Search) {
             SearchScreen(state = appState.state, viewModel = viewModel)
         }
+        entry<AppRoute.TagSearch> {
+            SearchScreen(
+                state = appState.state,
+                viewModel = viewModel,
+                onBackFromResults = onPopRoute,
+            )
+        }
         entry(AppRoute.Onboarding) {
             var showTokenLoginSheet by remember { mutableStateOf(false) }
             OnboardingScreen(

@@ -124,6 +124,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         when (backStack.removeAt(backStack.lastIndex)) {
             is AppRoute.Detail -> viewModel.closeIllust()
             AppRoute.ImageViewer -> viewModel.closeImageViewer()
+            is AppRoute.TagSearch -> viewModel.clearSearchResults()
             AppRoute.NovelList -> Unit
             AppRoute.NovelReader -> viewModel.closeNovel()
             AppRoute.IllustSeries -> {
@@ -144,20 +145,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     }
 
     fun searchFromDetail(tag: String) {
-        while (backStack.lastOrNull() is AppRoute.Detail) {
-            backStack.removeAt(backStack.lastIndex)
-        }
-        viewModel.closeIllust()
         viewModel.submitSearch(tag)
-        if (settings.shortsFeedEnabled) {
-            navigate(AppRoute.Search)
-        } else {
-            selectedTab = AppTab.Search
-            val searchIndex = tabs.indexOf(AppTab.Search)
-            if (searchIndex >= 0) {
-                coroutineScope.launch { pagerState.animateScrollToPage(searchIndex) }
-            }
-        }
+        navigate(AppRoute.TagSearch(tag))
     }
 
     LaunchedEffect(state.settingsLoaded, state.settings.refreshToken) {
@@ -197,7 +186,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     }
 
     LaunchedEffect(state.activeSearchWord) {
-        if (!settings.shortsFeedEnabled && state.activeSearchWord.isNotBlank() && selectedTab != AppTab.Search) {
+        if (
+            backStack.lastOrNull() !is AppRoute.TagSearch &&
+            !settings.shortsFeedEnabled &&
+            state.activeSearchWord.isNotBlank() &&
+            selectedTab != AppTab.Search
+        ) {
             selectedTab = AppTab.Search
             val searchIndex = tabs.indexOf(AppTab.Search)
             if (searchIndex >= 0) pagerState.scrollToPage(searchIndex)
