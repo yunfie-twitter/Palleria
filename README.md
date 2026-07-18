@@ -1,126 +1,339 @@
 # Palleria
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
-[![Android](https://img.shields.io/badge/Platform-Android%2013%2B-green.svg)](https://developer.android.com/)
+<p align="center">
+  <img
+    src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/icon.png"
+    alt="Palleria icon"
+    width="160"
+  />
+</p>
 
-> シンプルで使いやすい、Pixivの非公式クライアントアプリです。
+<h3 align="center">
+  A modern, fast and open-source Pixiv client for Android
+</h3>
 
-**Palleria**（パレリア）は、Pixivのイラスト・漫画・作品を快適に閲覧するためのオープンソースAndroidアプリです。おすすめやランキング、新着フィードの閲覧から、ブックマーク管理・画像保存・高度な検索まで、Pixivを楽しむために必要な機能をまとめています。
+<p align="center">
+  Browse illustrations, manga and novels through a clean and comfortable interface.
+</p>
 
-本アプリはPixiv公式とは無関係の非公式クライアントです。
+<p align="center">
 
----
 
-## ✨ 主な機能
 
-### 閲覧
-- **おすすめ / ランキング / 新着フィード** の切り替え表示
-- **フォロー中ユーザーのタイムライン** を確認
-- イラスト・漫画の詳細表示と全画面ビューアー
-- 関連イラストの表示
-
-### 検索・発見
-- タグ検索、完全一致検索、タイトル・キャプション検索
-- 並び順（新着順 / 古い順 / 人気順）、期間指定、ブックマーク数フィルタ
-- ユーザー検索
-- **お気に入りタグ（Watchlist）** で気になるタグを登録
-
-### ブックマーク・フォロー
-- 作品のブックマーク追加 / 解除（公開・非公開選択可）
-- ユーザーのフォロー / フォロー解除
-- ブックマーク時の自動ダウンロード、保存時の自動ブックマーク
-
-### 保存・管理
-- 画像の単体保存、全ページ保存
-- 同時保存数の設定
-- 閲覧履歴、検索履歴の保存
-- **ミュート機能**（作品・ユーザー・タグ）
-- データのエクスポート / インポート（JSON形式）
-
-### カスタマイズ・セキュリティ
-- 多言語対応（日本語 / 英語 / システム設定に追随）
-- ダークテーマ / AMOLEDモード
-- 画像画質の詳細設定（一覧・詳細・全画面ごと）
-- Pixiv画像プロキシの設定
-- **アプリロック**（PINコード / 生体認証）
-- **セキュアウィンドウ**（スクリーンショット・画面録画の制限）
+</p>
 
 ---
 
-## 📥 インストール方法
+## About
 
-### F-Droid リポジトリからインストール
+Palleria is a free and open-source Android application that provides a modern, fast and comfortable Pixiv browsing experience.
 
-1. 以下のページを開きます。  
-   👉 [https://yunfi.f5.si/Palleria/repo/](https://yunfi.f5.si/Palleria/repo/)
+Browse illustrations, manga and novels, search for works and users, manage bookmarks, follow artists, download images and customize the application to suit your preferences.
 
-2. ページ内の手順に従い、F-Droidクライアントで「Palleria」を検索・インストールしてください。
+> [!IMPORTANT]
+> Palleria is an unofficial Pixiv client and is not affiliated with, endorsed by or associated with Pixiv Inc.
 
-### 動作環境
-- Android 13 以降（API 33+）
-- Pixivアカウントが必要です（初回起動時にログイン）
+## Highlights
 
----
-
-## 🔑 ログイン方法
-
-初回起動時、もしくは設定から以下のいずれかの方法でPixivにログインできます。
-
-1. **Webログイン（推奨）**  
-   Pixivの公式ログインページをアプリ内ブラウザで開き、安全に認証します。
-
-2. **Refresh Tokenログイン**  
-   取得済みのRefresh Tokenを直接入力してログインします。
+* Modern Android interface built with Jetpack Compose
+* Illustration, manga and novel support
+* Powerful work, tag and user search
+* Bookmark and following management
+* Built-in download manager
+* Browsing and search history
+* Dark and AMOLED themes
+* Privacy and security controls
+* Japanese and English language support
+* Open-source under the GPL-3.0-only license
 
 ---
 
-## 🛠️ 技術情報
+## Screenshots
 
-開発者向けの参考情報です。
+<table align="center">
+  <tr>
+    <td align="center">
+      <img
+        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png"
+        alt="Palleria home screen"
+        width="150"
+      />
+      <br />
+      <strong>Home</strong>
+    </td>
+    <td align="center">
+      <img
+        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png"
+        alt="Palleria search screen"
+        width="150"
+      />
+      <br />
+      <strong>Search</strong>
+    </td>
+    <td align="center">
+      <img
+        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png"
+        alt="Palleria ranking screen"
+        width="150"
+      />
+      <br />
+      <strong>Ranking</strong>
+    </td>
+    <td align="center">
+      <img
+        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png"
+        alt="Palleria user profile screen"
+        width="150"
+      />
+      <br />
+      <strong>User Profile</strong>
+    </td>
+  </tr>
+</table>
 
-| 項目 | 詳細 |
-|------|------|
-| プラットフォーム | Android |
-| 言語 | Kotlin |
-| UI | Jetpack Compose |
-| デザインライブラリ | [Miuix KMP](https://github.com/yukonga/Miuix) |
-| 画像読み込み | Coil 3 |
-| 通信 | OkHttp |
-| ローカルDB | Room |
-| 設定保存 | DataStore |
-| ライセンス | GPL-3.0-only |
+---
 
-### ビルド方法
+## Installation
+
+### F-Droid Repository
+
+Add the following repository to F-Droid:
+
+```text
+https://yunfi.f5.si/Palleria/repo/
+```
+
+You can also open the repository directly:
+
+[Add the Palleria F-Droid repository](https://yunfi.f5.si/Palleria/repo/)
+
+After adding the repository, search for **Palleria** and install the application.
+
+### GitHub Release
+
+You can also download the latest APK directly from GitHub Releases:
+
+[Download from GitHub Releases](https://github.com/yunfie-twitter/Palleria/releases)
+
+### Requirements
+
+* Android 13 or later
+* Pixiv account
+* Internet connection
+
+---
+
+## Login
+
+Palleria supports two authentication methods.
+
+### Web Login
+
+Authenticate using Pixiv's official login page displayed inside the application.
+
+This is the recommended login method for most users.
+
+### Refresh Token
+
+Sign in directly using an existing Pixiv refresh token.
+
+> [!WARNING]
+> Keep your refresh token private. Anyone with access to it may be able to access your Pixiv account.
+
+---
+
+## Features
+
+### Browse
+
+* Recommended illustrations
+* Daily, weekly and monthly rankings
+* Latest works from followed users
+* Illustration viewing
+* Manga viewing
+* Novel viewing
+* Full-screen image viewer
+* Related works
+* Artist profiles
+
+### Search
+
+* Tag search
+* Exact tag matching
+* Title search
+* Caption search
+* User search
+* Multiple sorting options
+* Bookmark count filters
+* Watchlist for favorite tags
+
+### Bookmarks and Following
+
+* Public bookmarks
+* Private bookmarks
+* Follow users
+* Unfollow users
+* Automatically bookmark downloaded works
+* Automatic downloads
+
+### Downloads
+
+* Save individual images
+* Download all pages of a work
+* Configurable concurrent downloads
+* Download queue management
+* Automatic download support
+
+### History
+
+* Browsing history
+* Search history
+* Recently viewed works
+
+### Personalization
+
+* Dark theme
+* AMOLED theme
+* Japanese language support
+* English language support
+* Configurable image quality
+* Pixiv image proxy support
+* Mute users
+* Mute tags
+* Mute works
+* JSON backup and restore
+
+### Privacy and Security
+
+* PIN lock
+* Biometric authentication
+* Secure window mode
+* Screenshot protection
+
+---
+
+## Tech Stack
+
+| Component               | Technology      |
+| ----------------------- | --------------- |
+| Language                | Kotlin          |
+| UI Framework            | Jetpack Compose |
+| Design System           | Miuix KMP       |
+| Networking              | OkHttp          |
+| Image Loading           | Coil 3          |
+| Database                | Room            |
+| Preferences             | DataStore       |
+| Minimum Android Version | Android 13      |
+| Minimum API Level       | API 33          |
+| License                 | GPL-3.0-only    |
+
+---
+
+## Build
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yunfie-twitter/Palleria.git
+cd Palleria
+```
+
+Build the release APK:
 
 ```bash
 ./gradlew :app:assembleRelease
 ```
 
-署名には `KEYSTORE_PATH` などの環境変数を設定するか、`debug.keystore` を配置してください。
+On Windows PowerShell:
+
+```powershell
+.\gradlew.bat :app:assembleRelease
+```
+
+The generated APK will normally be available under:
+
+```text
+app/build/outputs/apk/release/
+```
+
+### Release Signing
+
+Release builds require the following environment variables:
+
+```text
+KEYSTORE_PATH
+KEYSTORE_PASSWORD
+KEY_ALIAS
+KEY_PASSWORD
+```
+
+Example for PowerShell:
+
+```powershell
+$env:KEYSTORE_PATH = "C:\path\to\keystore.jks"
+$env:KEYSTORE_PASSWORD = "your-keystore-password"
+$env:KEY_ALIAS = "your-key-alias"
+$env:KEY_PASSWORD = "your-key-password"
+
+.\gradlew.bat :app:assembleRelease
+```
+
+Do not commit signing credentials, keystores or local configuration files to the repository.
 
 ---
 
-## 🤝 貢献・フィードバック
+## Contributing
 
-バグ報告や機能提案は、GitHubのIssueトラッカーからお願いします。
+Bug reports, feature requests, documentation improvements and pull requests are welcome.
 
-- GitHubリポジトリ: [https://github.com/yunfie-twitter/Palleria](https://github.com/yunfie-twitter/Palleria)
-- 問題報告: [https://github.com/yunfie-twitter/Palleria/issues](https://github.com/yunfie-twitter/Palleria/issues)
+Before submitting a pull request:
 
-コードのプルリクエストも歓迎します。
+1. Check existing issues and pull requests.
+2. Keep changes focused on a single purpose.
+3. Test the application before submitting.
+4. Describe the changes clearly.
+5. Include screenshots for user interface changes when appropriate.
+
+### Links
+
+* [Repository](https://github.com/yunfie-twitter/Palleria)
+* [Issues](https://github.com/yunfie-twitter/Palleria/issues)
+* [Pull requests](https://github.com/yunfie-twitter/Palleria/pulls)
+* [F-Droid repository](https://yunfi.f5.si/Palleria/repo/)
+* [GitHub Releases](https://github.com/yunfie-twitter/Palleria/releases)
 
 ---
 
-## ⚠️ 免責事項
+## Disclaimer
 
-本アプリは **Pixivの非公式クライアント** です。Pixiv公式とは無関係であり、本アプリの利用により生じたいかなる損害についても開発者は責任を負いません。Pixivの利用規約を遵守した上でご利用ください。
+Palleria is an unofficial Pixiv client.
+
+This project is not affiliated with, endorsed by or associated with Pixiv Inc.
+
+Pixiv and related names, logos and trademarks belong to their respective owners.
+
+Users are responsible for using the application in accordance with the Pixiv Terms of Service and all applicable laws and regulations.
 
 ---
 
-## 📄 ライセンス
+## License
 
-本プロジェクトは [GNU General Public License v3.0](LICENSE) の下で公開されています。
+Palleria is licensed under the GNU General Public License version 3.
+
+See the LICENSE file for details.
 
 ---
 
-© 2024-2025 ゆんふぃ / Illustia Project
+<p align="center">
+  Made by <strong>ゆんふぃ</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/yunfie-twitter/Palleria">GitHub</a>
+  ·
+  <a href="https://github.com/yunfie-twitter/Palleria/issues">Issues</a>
+  ·
+  <a href="https://yunfi.f5.si/Palleria/repo/">F-Droid</a>
+  ·
+  <a href="https://github.com/yunfie-twitter/Palleria/releases">Releases</a>
+</p>
