@@ -114,7 +114,7 @@ https://yunfi.f5.si/Palleria/repo/
 
 <p align="left">
 
-[![Add to F-Droid](https://img.shields.io/badge/F--Droid-Add%20Repository-1976D2.svg?style=for-the-badge\&logo=fdroid\&logoColor=white)](https://yunfi.f5.si/Palleria/repo/)
+[![Add to F-Droid](https://img.shields.io/badge/F--Droid-Add%20Repository-1976D2.svg?style=for-the-badge\&logo=fdroid\&logoColor=white)](fdroidrepos://yunfi.f5.si/Palleria/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
 
 </p>
 
