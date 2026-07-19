@@ -110,7 +110,7 @@ fun DataSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item { Section(stringResource(R.string.data_section_history)) {
-                ElevatedPanel {
+                ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                     SettingSwitchRow(stringResource(R.string.data_save_view_history), state.settings.saveViewHistory, viewModel::updateSaveViewHistory, stringResource(R.string.data_save_view_history_desc))
                     DividerLine()
                     SettingSwitchRow(stringResource(R.string.data_save_search_history), state.settings.saveSearchHistory, viewModel::updateSaveSearchHistory, stringResource(R.string.data_save_search_history_desc))
