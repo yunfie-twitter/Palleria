@@ -77,12 +77,21 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             )
         }
 
+        override fun onSurfaceCreated(holder: SurfaceHolder) {
+            super.onSurfaceCreated(holder)
+            updateSurface(holder)
+            renderSurface()
+        }
+
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
-            surfaceWidth = width.coerceAtLeast(1)
-            surfaceHeight = height.coerceAtLeast(1)
-            surfaceReady = true
-            current?.let { drawFrame(it, 1f, currentSettings) } ?: loadNext(forceDifferent = false)
+            updateSurface(holder, width, height)
+            renderSurface()
+        }
+
+        override fun onSurfaceRedrawNeeded(holder: SurfaceHolder) {
+            updateSurface(holder)
+            renderSurface()
         }
 
         override fun onVisibilityChanged(isVisible: Boolean) {
@@ -177,7 +186,7 @@ class PalleriaLiveWallpaperService : WallpaperService() {
                     WallpaperLoadResult(settings, selected?.uri, bitmap)
                 }
 
-                if (!visible) {
+                if (!visible || !surfaceReady) {
                     result.bitmap?.recycle()
                     return@launch
                 }
@@ -193,6 +202,25 @@ class PalleriaLiveWallpaperService : WallpaperService() {
                 }
                 scheduleNext(result.settings)
             }
+        }
+
+        private fun updateSurface(holder: SurfaceHolder, width: Int = 0, height: Int = 0) {
+            val frame = holder.surfaceFrame
+            surfaceWidth = width.takeIf { it > 0 }
+                ?: frame.width().takeIf { it > 0 }
+                ?: surfaceWidth.coerceAtLeast(1)
+            surfaceHeight = height.takeIf { it > 0 }
+                ?: frame.height().takeIf { it > 0 }
+                ?: surfaceHeight.coerceAtLeast(1)
+            surfaceReady = holder.surface.isValid
+        }
+
+        private fun renderSurface() {
+            if (!visible || !surfaceReady) return
+            current?.let { bitmap ->
+                currentSettings?.let { settings -> drawFrame(bitmap, 1f, settings) }
+                    ?: loadNext(forceDifferent = false)
+            } ?: loadNext(forceDifferent = false)
         }
 
         private fun showBitmap(bitmap: Bitmap, settings: AppSettings) {
