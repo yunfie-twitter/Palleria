@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -48,6 +49,7 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun MuteSettingsScreen(
@@ -184,6 +186,7 @@ private fun AddMuteTagSheet(
 
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.mute_add_tag_title),
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         startAction = {
@@ -192,6 +195,7 @@ private fun AddMuteTagSheet(
             }
         },
         onDismissRequest = onDismiss,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         Column(
             modifier = Modifier

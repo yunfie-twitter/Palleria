@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
@@ -38,6 +39,7 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun AccountSwitchSheet(
@@ -52,6 +54,7 @@ fun AccountSwitchSheet(
     if (!show) return
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.account_switch_title),
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         startAction = {
@@ -65,6 +68,7 @@ fun AccountSwitchSheet(
             }
         },
         onDismissRequest = onDismiss,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         LazyColumn(
                 modifier = Modifier.fillMaxWidth(),

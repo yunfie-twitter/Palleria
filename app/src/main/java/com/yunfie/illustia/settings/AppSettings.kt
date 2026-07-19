@@ -62,7 +62,7 @@ data class AppSettings(
     val offlineWifiOnly: Boolean = true,
     val offlineStorageLimitBytes: Long = 5L * 1024 * 1024 * 1024,
     val feedPreviewQuality: String = "low",
-    val illustDetailQuality: String = "low",
+    val illustDetailQuality: String = "high",
     val mangaDetailQuality: String = "low",
     val fullscreenQuality: String = "high",
     val mangaReaderMode: String = "paged",

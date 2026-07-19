@@ -72,6 +72,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.DummyAppIconSwitcher
+import com.yunfie.illustia.account.PalleriaAccount
 import java.io.File
 import java.io.FileOutputStream
 
@@ -2708,6 +2709,7 @@ open class IllustiaViewModelCore(
         for (request in settingsPersistenceRequests) {
             try {
                 repository.saveSettings(request.settings)
+                PalleriaAccount.reconcile(getApplication(), request.settings.accounts)
                 if (request.notifyLiveWallpaper) {
                     getApplication<Application>().sendBroadcast(
                         Intent(com.yunfie.illustia.wallpaper.PalleriaLiveWallpaperService.ACTION_SETTINGS_CHANGED),

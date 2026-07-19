@@ -5,12 +5,8 @@ import android.net.ConnectivityManager
 import android.os.Build
 import androidx.activity.ExperimentalActivityApi
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -24,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.settings.AppSettings
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -40,12 +36,15 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.darkColorScheme
+import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.pressable
 
 const val MotionFast = 180
 const val MotionMedium = 260
 const val MotionSlow = 340
 
 val MainNavigationContentPadding = 152.dp
+val BottomSheetInsideMargin = DpSize(width = 24.dp, height = 12.dp)
 
 val LocalPixivImageProxyBaseUrl = compositionLocalOf { "" }
 val LocalPreferLowDataImages = compositionLocalOf { false }
@@ -129,21 +128,14 @@ fun Modifier.miuixClickable(
     onClick: () -> Unit,
 ): Modifier {
     if (!enabled) return this
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) pressedScale else 1f,
-        animationSpec = spring(dampingRatio = 0.74f, stiffness = 520f),
-        label = "miuix-click-scale",
-    )
-    return graphicsLayer {
-        scaleX = scale
-        scaleY = scale
-    }.clickable(
-        interactionSource = interactionSource,
+    return pressable(
+        interactionSource = null,
+        indication = SinkFeedback(sinkAmount = pressedScale),
+    ).clickable(
+        interactionSource = null,
         indication = null,
         onClick = {
             if (haptic) performAppHapticFeedback(context, hapticFeedback, hapticMode)

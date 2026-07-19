@@ -2,12 +2,11 @@ package com.yunfie.illustia.ui.components
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil3.SingletonImageLoader
@@ -97,20 +96,23 @@ fun PrefetchPixivImages(
             .toList()
     }
 
-    var previousUrls by remember { mutableStateOf(emptySet<String>()) }
+    val activeRequests = remember { mutableMapOf<String, () -> Unit>() }
 
     LaunchedEffect(enabled, prefetchUrls) {
         if (!enabled || prefetchUrls.isEmpty()) {
-            previousUrls = emptySet()
+            activeRequests.values.forEach { cancel -> cancel() }
+            activeRequests.clear()
             return@LaunchedEffect
         }
 
         val newUrls = prefetchUrls.toSet()
-        val urlsToPrefetch = newUrls - previousUrls
+        activeRequests.keys
+            .filterNotTo(mutableListOf()) { it in newUrls }
+            .forEach { url -> activeRequests.remove(url)?.invoke() }
 
-        if (urlsToPrefetch.isNotEmpty()) {
-            val imageLoader = SingletonImageLoader.get(context)
-            urlsToPrefetch.forEach { url ->
+        val imageLoader = SingletonImageLoader.get(context)
+        newUrls.forEach { url ->
+            if (url !in activeRequests) {
                 val request = ImageRequest.Builder(context)
                     .data(url)
                     .httpHeaders(PixivImageHeaders)
@@ -121,9 +123,16 @@ fun PrefetchPixivImages(
                     .precision(Precision.INEXACT)
                     .allowRgb565(true)
                     .build()
-                imageLoader.enqueue(request)
+                val disposable = imageLoader.enqueue(request)
+                activeRequests[url] = disposable::dispose
             }
-            previousUrls = newUrls
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            activeRequests.values.forEach { cancel -> cancel() }
+            activeRequests.clear()
         }
     }
 }

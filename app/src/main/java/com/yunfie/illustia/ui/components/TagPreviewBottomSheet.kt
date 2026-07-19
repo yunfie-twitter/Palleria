@@ -27,6 +27,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun TagPreviewBottomSheet(
@@ -40,9 +41,11 @@ fun TagPreviewBottomSheet(
 ) {
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.tag_sheet_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TagPreviewHero(preview)
@@ -145,12 +148,6 @@ private fun TagPreviewHero(preview: TagPreview) {
                     style = MiuixTheme.textStyles.title1,
                     fontWeight = FontWeight.Black,
                     maxLines = 2,
-                )
-                Text(
-                    text = stringResource(R.string.tag_sheet_caption),
-                    color = Color.White.copy(alpha = 0.82f),
-                    style = MiuixTheme.textStyles.footnote1,
-                    fontWeight = FontWeight.Bold,
                 )
             }
         }

@@ -28,6 +28,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PixivWebLoginRequest
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
@@ -44,6 +45,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun RefreshTokenLoginBottomSheet(
@@ -53,9 +55,11 @@ fun RefreshTokenLoginBottomSheet(
 ) {
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.login_token_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
+        insideMargin = BottomSheetInsideMargin,
         startAction = {
             IconButton(onClick = onDismiss) {
                 Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))

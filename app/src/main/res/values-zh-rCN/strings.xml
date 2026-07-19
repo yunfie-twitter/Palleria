@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="palleria_account_label">Palleria</string>
     <string name="app_name">Palleria</string>
     <string name="app_name_dummy">计算器</string>
     <string name="process_text_search">使用 Palleria 搜索</string>
@@ -628,7 +629,6 @@
     <string name="error_notifications_load_failed">无法加载通知。</string>
     <string name="error_notification_open_failed">无法打开通知。</string>
     <string name="tag_sheet_title">标签菜单</string>
-    <string name="tag_sheet_caption">标签快捷操作</string>
     <string name="tag_sheet_search">查找此标签的作品</string>
     <string name="tag_sheet_add_favorite">添加到收藏标签</string>
     <string name="tag_sheet_remove_favorite">从收藏标签中移除</string>

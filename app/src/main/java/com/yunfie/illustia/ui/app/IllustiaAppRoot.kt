@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
@@ -366,7 +367,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalAppHapticMode provides AppHapticMode.fromValue(state.settings.hapticMode),
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().scrollEndHaptic()) {
             if (!state.privacyLocked || state.isTransitioningToIllustia) {
                 Scaffold(
                     containerColor = MiuixTheme.colorScheme.surface,

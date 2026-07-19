@@ -308,8 +308,7 @@ private class RankingWidgetUpdater(
             val response = (context.applicationContext as IllustiaApplication).sharedHttpClient.newCall(request).execute()
             response.use {
                 if (!it.isSuccessful) return@runCatching null
-                val bytes = it.body.bytes()
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                it.body.byteStream().use { stream -> BitmapFactory.decodeStream(stream) }
             }
         }.getOrNull()
     }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accountType="com.yunfie.illustia.account"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/palleria_account_label"
+    android:smallIcon="@mipmap/ic_launcher" />

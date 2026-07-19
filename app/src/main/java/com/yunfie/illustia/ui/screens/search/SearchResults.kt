@@ -86,10 +86,14 @@ internal fun SearchResultGrid(
     ) {
         if (page == 0) {
             gridItems(state.searchItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                val illustId = illust.id
+                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+
                 IllustCard(
                     illust = illust,
                     onBookmark = { viewModel.toggleBookmark(illust) },
                     onClick = { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) },
+                    onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
                     isMutedByTag = illust.isMutedByTags(state.settings),

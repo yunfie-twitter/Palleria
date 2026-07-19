@@ -47,6 +47,7 @@ import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.screens.OnboardingScreen
@@ -71,6 +72,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 class IllustWidgetConfigureActivity : FragmentActivity() {
     private val widgetImageMaxDimension = 960
@@ -340,9 +342,11 @@ private fun WidgetPagePickerSheet(
 
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.widget_illust_pick_page),
         onDismissRequest = onCancel,
         backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             PixivImage(

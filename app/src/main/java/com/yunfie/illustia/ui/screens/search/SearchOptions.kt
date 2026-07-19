@@ -18,6 +18,7 @@ import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import top.yukonga.miuix.kmp.basic.Icon
@@ -27,6 +28,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 private val SearchSortOptions = SearchSort.entries.toList()
 private val SearchTargetOptions = SearchTarget.entries.toList()
@@ -43,6 +45,7 @@ internal fun SearchOptionsSheet(
     if (!show) return
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.search_options),
         startAction = {
             IconButton(onClick = onDismiss) {
@@ -51,6 +54,7 @@ internal fun SearchOptionsSheet(
         },
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         SearchOptionsContent(
             state = state,

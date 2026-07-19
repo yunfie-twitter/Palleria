@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Palleria</string>
+    <string name="palleria_account_label">Palleria</string>
     <string name="app_name_dummy">電卓</string>
     <string name="process_text_search">Palleriaで検索</string>
     <string name="shortcut_search">検索</string>
@@ -686,7 +687,6 @@
     <string name="error_notifications_load_failed">通知を取得できませんでした</string>
     <string name="error_notification_open_failed">通知を展開できませんでした</string>
     <string name="tag_sheet_title">タグメニュー</string>
-    <string name="tag_sheet_caption">TAG QUICK ACTIONS</string>
     <string name="tag_sheet_search">このタグで作品を探す</string>
     <string name="tag_sheet_add_favorite">お気に入りに追加</string>
     <string name="tag_sheet_remove_favorite">お気に入りから削除</string>

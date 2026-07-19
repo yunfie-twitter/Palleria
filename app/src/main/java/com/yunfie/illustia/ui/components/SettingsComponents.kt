@@ -27,6 +27,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Switch
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -39,6 +40,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
@@ -205,23 +207,40 @@ fun <T> SettingDropdownRow(
     onSelect: (T) -> Unit,
     summary: String? = null,
     icon: ImageVector? = null,
+    dialogButtonString: String? = null,
 ) {
     val selectedIndex = values.indexOf(selected).coerceAtLeast(0)
-    OverlayDropdownPreference(
-        title = title,
-        summary = summary,
-        items = values.map { label(it) },
-        selectedIndex = selectedIndex,
-        modifier = Modifier.fillMaxWidth(),
-        startAction = icon?.let {
-            {
-                PreferenceIcon(it)
-            }
-        },
-        onSelectedIndexChange = { index ->
-            values.getOrNull(index)?.let(onSelect)
-        },
-    )
+    val onSelectedIndexChange: (Int) -> Unit = { index ->
+        values.getOrNull(index)?.let(onSelect)
+    }
+    val startAction: (@Composable () -> Unit)? = icon?.let { preferenceIcon ->
+        {
+            PreferenceIcon(preferenceIcon)
+        }
+    }
+
+    if (dialogButtonString != null) {
+        OverlaySpinnerPreference(
+            title = title,
+            summary = summary,
+            dialogButtonString = dialogButtonString,
+            items = values.map { DropdownItem(text = label(it)) },
+            selectedIndex = selectedIndex,
+            modifier = Modifier.fillMaxWidth(),
+            startAction = startAction,
+            onSelectedIndexChange = onSelectedIndexChange,
+        )
+    } else {
+        OverlayDropdownPreference(
+            title = title,
+            summary = summary,
+            items = values.map { label(it) },
+            selectedIndex = selectedIndex,
+            modifier = Modifier.fillMaxWidth(),
+            startAction = startAction,
+            onSelectedIndexChange = onSelectedIndexChange,
+        )
+    }
 }
 
 @Composable

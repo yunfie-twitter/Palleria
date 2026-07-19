@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 object WallpaperPlaylistScheduler {
     private const val ACTION = "com.yunfie.illustia.wallpaper.ROTATE"
@@ -45,11 +46,7 @@ class WallpaperPlaylistReceiver : BroadcastReceiver() {
             try {
                 val store = SettingsStore(context.applicationContext)
                 if (!store.read().wallpaperPlaylistEnabled) return@launch
-                val candidates = store.savedIllustDir()
-                    .walkTopDown()
-                    .filter { it.isFile && it.extension.lowercase() in setOf("jpg", "jpeg", "png", "webp") }
-                    .toList()
-                val image = candidates.randomOrNull() ?: return@launch
+                val image = store.savedIllustDir().randomWallpaperFile() ?: return@launch
                 BitmapFactory.decodeFile(image.absolutePath)?.let { bitmap ->
                     try {
                         WallpaperManager.getInstance(context).setBitmap(bitmap)
@@ -62,4 +59,17 @@ class WallpaperPlaylistReceiver : BroadcastReceiver() {
             }
         }
     }
+}
+
+private val WallpaperImageExtensions = setOf("jpg", "jpeg", "png", "webp")
+
+private fun File.randomWallpaperFile(random: Random = Random.Default): File? {
+    var selected: File? = null
+    var candidateCount = 0
+    walkTopDown().forEach { file ->
+        if (!file.isFile || file.extension.lowercase() !in WallpaperImageExtensions) return@forEach
+        candidateCount += 1
+        if (random.nextInt(candidateCount) == 0) selected = file
+    }
+    return selected
 }

@@ -23,6 +23,7 @@ import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -43,6 +44,7 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun CommentScreen(
@@ -77,6 +79,7 @@ fun CommentScreen(
 
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.detail_comments),
         startAction = {
             IconButton(onClick = onDismiss) {
@@ -90,6 +93,7 @@ fun CommentScreen(
         },
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         Column(
             modifier = Modifier

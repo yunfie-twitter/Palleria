@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
@@ -54,6 +55,7 @@ import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Unlock
@@ -335,9 +337,11 @@ fun AppLockScreen(
     if (showRecoverySheet) {
         OverlayBottomSheet(
             show = true,
+            modifier = Modifier.scrollEndHaptic(),
             onDismissRequest = { showRecoverySheet = false },
             title = stringResource(R.string.app_lock_recovery_title),
             backgroundColor = LocalBottomSheetBackgroundColor.current,
+            insideMargin = BottomSheetInsideMargin,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),

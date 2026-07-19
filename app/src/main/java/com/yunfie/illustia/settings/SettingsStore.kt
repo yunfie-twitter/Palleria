@@ -144,14 +144,27 @@ class SettingsStore(context: Context) {
     }
 
     private fun migrateIfNeeded() {
-        runBlocking(Dispatchers.IO) {
-            migrateSettingsIfNeededImpl(dataStore, encryptedPreferences, legacyPreferences, database, dao)
+        if (migrationCompleted) return
+        synchronized(migrationLock) {
+            if (migrationCompleted) return
+            runBlocking(Dispatchers.IO) {
+                migrateSettingsIfNeededImpl(dataStore, encryptedPreferences, legacyPreferences, database, dao)
+            }
+            migrationCompleted = true
         }
     }
 
     companion object {
         @Volatile
         private var sharedDataStore: DataStore<Preferences>? = null
+        @Volatile
+        private var sharedEncryptedPreferences: SharedPreferences? = null
+        @Volatile
+        private var encryptedPreferencesInitialized = false
+        @Volatile
+        private var migrationCompleted = false
+        private val encryptedPreferencesLock = Any()
+        private val migrationLock = Any()
 
         fun dataStoreFor(context: Context): DataStore<Preferences> {
             return sharedDataStore ?: synchronized(this) {
@@ -163,18 +176,26 @@ class SettingsStore(context: Context) {
         }
 
         fun createEncryptedPreferences(context: Context): SharedPreferences? {
-            return runCatching {
-                val masterKey = MasterKey.Builder(context)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build()
-                EncryptedSharedPreferences.create(
-                    context,
-                    com.yunfie.illustia.settings.store.SECURE_PREFS_NAME,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-                )
-            }.getOrNull()
+            if (encryptedPreferencesInitialized) return sharedEncryptedPreferences
+            return synchronized(encryptedPreferencesLock) {
+                if (!encryptedPreferencesInitialized) {
+                    sharedEncryptedPreferences = runCatching {
+                        val appContext = context.applicationContext
+                        val masterKey = MasterKey.Builder(appContext)
+                            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                            .build()
+                        EncryptedSharedPreferences.create(
+                            appContext,
+                            com.yunfie.illustia.settings.store.SECURE_PREFS_NAME,
+                            masterKey,
+                            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                        )
+                    }.getOrNull()
+                    encryptedPreferencesInitialized = sharedEncryptedPreferences != null
+                }
+                sharedEncryptedPreferences
+            }
         }
 
         fun readStoredAppLanguage(context: Context): String {

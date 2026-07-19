@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.account.PalleriaAccount
 import java.util.concurrent.TimeUnit
 
 class IllustiaApplication : Application() {
@@ -47,6 +48,7 @@ class IllustiaApplication : Application() {
         val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
         val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
         appScope.launch {
+            PalleriaAccount.reconcile(appContext, SettingsStore(appContext).read().accounts)
             RankingWidgetProvider.publishPreview(appContext)
             IllustWidgetProvider.publishPreview(appContext)
         }

@@ -1,4 +1,5 @@
 <resources>
+    <string name="palleria_account_label">Palleria</string>
     <string name="app_name">Palleria</string>
     <string name="app_name_dummy">Calculator</string>
     <string name="process_text_search">Search with Palleria</string>
@@ -686,7 +687,6 @@
     <string name="error_notifications_load_failed">Could not load notifications.</string>
     <string name="error_notification_open_failed">Could not open the notification.</string>
     <string name="tag_sheet_title">Tag menu</string>
-    <string name="tag_sheet_caption">TAG QUICK ACTIONS</string>
     <string name="tag_sheet_search">Find works with this tag</string>
     <string name="tag_sheet_add_favorite">Add to favorites</string>
     <string name="tag_sheet_remove_favorite">Remove favorite</string>

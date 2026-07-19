@@ -53,9 +53,16 @@ class PalleriaLiveWallpaperService : WallpaperService() {
         private var currentSettings: AppSettings? = null
         private var lastTapAt = 0L
         private var lastOffset = Float.NaN
+        private var pendingScreenChange = false
         private val settingsChangedReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (visible) loadNext(forceDifferent = false)
+            }
+        }
+        private val screenOnReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                pendingScreenChange = true
+                renderSurface()
             }
         }
 
@@ -73,6 +80,12 @@ class PalleriaLiveWallpaperService : WallpaperService() {
                 applicationContext,
                 settingsChangedReceiver,
                 android.content.IntentFilter(ACTION_SETTINGS_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            ContextCompat.registerReceiver(
+                applicationContext,
+                screenOnReceiver,
+                android.content.IntentFilter(Intent.ACTION_SCREEN_ON),
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
         }
@@ -99,10 +112,11 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             handler.removeCallbacks(intervalRunnable)
             if (isVisible) {
                 if (surfaceReady) {
-                    loadNext(forceDifferent = current != null)
+                    renderSurface()
                 }
             } else {
                 loadJob?.cancel()
+                lastOffset = Float.NaN
             }
         }
 
@@ -122,16 +136,17 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             yPixelOffset: Int,
         ) {
             if (!visible) return
+            val previousOffset = lastOffset
+            lastOffset = xOffset
+            if (previousOffset.isNaN()) return
             scope.launch {
                 val settings = withContext(Dispatchers.IO) { SettingsStore(applicationContext).read() }
                 if (
                     settings.liveWallpaperChangeMode == "home" &&
-                    !lastOffset.isNaN() &&
-                    kotlin.math.abs(xOffset - lastOffset) >= max(xOffsetStep, 0.1f)
+                    kotlin.math.abs(xOffset - previousOffset) >= max(xOffsetStep, 0.1f)
                 ) {
                     loadNext(forceDifferent = true)
                 }
-                lastOffset = xOffset
             }
         }
 
@@ -153,6 +168,7 @@ class PalleriaLiveWallpaperService : WallpaperService() {
 
         override fun onDestroy() {
             runCatching { applicationContext.unregisterReceiver(settingsChangedReceiver) }
+            runCatching { applicationContext.unregisterReceiver(screenOnReceiver) }
             handler.removeCallbacksAndMessages(null)
             loadJob?.cancel()
             current?.recycle()
@@ -217,10 +233,21 @@ class PalleriaLiveWallpaperService : WallpaperService() {
 
         private fun renderSurface() {
             if (!visible || !surfaceReady) return
-            current?.let { bitmap ->
-                currentSettings?.let { settings -> drawFrame(bitmap, 1f, settings) }
-                    ?: loadNext(forceDifferent = false)
-            } ?: loadNext(forceDifferent = false)
+            val bitmap = current
+            val settings = currentSettings
+            if (bitmap == null || settings == null) {
+                loadNext(forceDifferent = false)
+                return
+            }
+            if (pendingScreenChange) {
+                pendingScreenChange = false
+                if (settings.liveWallpaperChangeMode == "screen") {
+                    loadNext(forceDifferent = true)
+                    return
+                }
+            }
+            drawFrame(bitmap, 1f, settings)
+            scheduleNext(settings)
         }
 
         private fun showBitmap(bitmap: Bitmap, settings: AppSettings) {

@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
@@ -34,6 +35,7 @@ import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
@@ -66,9 +68,11 @@ internal fun AppOverlayHost(
     appState.state.longPressedIllust?.let { illust ->
         OverlayBottomSheet(
             show = true,
+            modifier = Modifier.scrollEndHaptic(),
             title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
             onDismissRequest = viewModel::closeIllustOptions,
             backgroundColor = LocalBottomSheetBackgroundColor.current,
+            insideMargin = BottomSheetInsideMargin,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -172,6 +176,7 @@ internal fun AppOverlayHost(
             val userSheetHeight = minOf(configuration.screenHeightDp.dp * 0.68f, 560.dp)
             WindowBottomSheet(
                 show = true,
+                modifier = Modifier.scrollEndHaptic(),
                 title = user.name.ifBlank { "@${user.account}" },
                 backgroundColor = userSheetBackground,
                 startAction = {
@@ -208,6 +213,7 @@ internal fun AppOverlayHost(
                     }
                 },
                 onDismissRequest = viewModel::closeUser,
+                insideMargin = BottomSheetInsideMargin,
             ) {
                 NonAmoledDarkTheme {
                     UserProfileScreen(

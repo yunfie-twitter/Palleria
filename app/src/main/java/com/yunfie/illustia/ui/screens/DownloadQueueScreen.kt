@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -75,8 +76,8 @@ private data class QueueGroups(
     val completed: List<DownloadQueueEntry>,
     val failed: List<DownloadQueueEntry>,
 ) {
-    val all: List<DownloadQueueEntry>
-        get() = active + failed + completed
+    val totalCount: Int
+        get() = active.size + completed.size + failed.size
 }
 
 @Composable
@@ -175,7 +176,7 @@ fun DownloadQueueScreen(
                             titleRes = R.string.download_queue_section_completed,
                             items = groups.completed,
                         )
-                        if (groups.all.isEmpty()) {
+                        if (groups.totalCount == 0) {
                             item { QueueEmptyState(QueueTab.All) }
                         }
                     }
@@ -192,7 +193,7 @@ fun DownloadQueueScreen(
 @Composable
 private fun ActiveTransferTrack() {
     val transition = rememberInfiniteTransition(label = "download-track")
-    val offset by transition.animateFloat(
+    val offset = transition.animateFloat(
         initialValue = -300f,
         targetValue = 900f,
         animationSpec = infiniteRepeatable(
@@ -201,6 +202,10 @@ private fun ActiveTransferTrack() {
         ),
         label = "download-track-offset",
     )
+    val primary = MiuixTheme.colorScheme.primary
+    val trackColors = remember(primary) {
+        listOf(Color.Transparent, primary, Color.Transparent)
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -211,17 +216,18 @@ private fun ActiveTransferTrack() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MiuixTheme.colorScheme.primary,
-                            Color.Transparent,
-                        ),
-                        start = Offset(offset, 0f),
-                        end = Offset(offset + 360f, 0f),
-                    ),
-                ),
+                .drawWithCache {
+                    onDrawBehind {
+                        val startX = offset.value
+                        drawRect(
+                            Brush.linearGradient(
+                                colors = trackColors,
+                                start = Offset(startX, 0f),
+                                end = Offset(startX + 360f, 0f),
+                            ),
+                        )
+                    }
+                },
         )
     }
 }
@@ -234,7 +240,7 @@ private fun QueueTabs(
 ) {
     TabRow(
         tabs = listOf(
-            "${stringResource(R.string.download_queue_tab_all)} ${groups.all.size}",
+            "${stringResource(R.string.download_queue_tab_all)} ${groups.totalCount}",
             "${stringResource(R.string.download_queue_tab_downloading)} ${groups.active.size}",
             "${stringResource(R.string.download_queue_tab_completed)} ${groups.completed.size}",
             "${stringResource(R.string.download_queue_section_failed)} ${groups.failed.size}",

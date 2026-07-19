@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
@@ -51,7 +52,7 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 @Composable
 fun IllustCardSkeleton(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "illustSkeleton")
-    val shimmer by transition.animateFloat(
+    val shimmer = transition.animateFloat(
         initialValue = -1f,
         targetValue = 2f,
         animationSpec = infiniteRepeatable(
@@ -62,11 +63,19 @@ fun IllustCardSkeleton(modifier: Modifier = Modifier) {
     )
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
-    val shimmerBrush = Brush.linearGradient(
-        colors = listOf(base, highlight, base),
-        start = Offset(shimmer * 500f, 0f),
-        end = Offset(shimmer * 500f + 260f, 500f),
-    )
+    val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }
+    val shimmerModifier = Modifier.drawWithCache {
+        onDrawBehind {
+            val startX = shimmer.value * size.width
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = shimmerColors,
+                    start = Offset(startX, 0f),
+                    end = Offset(startX + size.width * 0.52f, size.height),
+                ),
+            )
+        }
+    }
 
     Column(
         modifier = modifier,
@@ -77,7 +86,7 @@ fun IllustCardSkeleton(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .aspectRatio(0.75f)
                 .clip(RoundedCornerShape(14.dp))
-                .background(shimmerBrush),
+                .then(shimmerModifier),
         )
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -88,10 +97,10 @@ fun IllustCardSkeleton(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Box(Modifier.fillMaxWidth(0.82f).height(14.dp).clip(CircleShape).background(shimmerBrush))
-                Box(Modifier.fillMaxWidth(0.56f).height(10.dp).clip(CircleShape).background(shimmerBrush))
+                Box(Modifier.fillMaxWidth(0.82f).height(14.dp).clip(CircleShape).then(shimmerModifier))
+                Box(Modifier.fillMaxWidth(0.56f).height(10.dp).clip(CircleShape).then(shimmerModifier))
             }
-            Box(Modifier.size(28.dp).clip(CircleShape).background(shimmerBrush))
+            Box(Modifier.size(28.dp).clip(CircleShape).then(shimmerModifier))
         }
     }
 }

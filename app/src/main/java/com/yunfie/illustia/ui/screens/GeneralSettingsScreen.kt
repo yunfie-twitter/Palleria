@@ -136,6 +136,7 @@ fun GeneralSettingsScreen(
                         selected = state.settings.appLanguage,
                         label = { stringResource(appLanguageLabelRes(it)) },
                         onSelect = viewModel::updateAppLanguage,
+                        dialogButtonString = stringResource(R.string.action_cancel),
                     )
                     DividerLine()
                     SettingSwitchRow(
