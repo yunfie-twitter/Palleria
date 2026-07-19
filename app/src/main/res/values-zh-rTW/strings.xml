@@ -148,7 +148,6 @@
     <string name="more_watchlist_series">監視列表</string>
     <string name="more_watchlist_series_summary">檢查已儲存的漫畫系列</string>
     <string name="download_queue_title">下載列表</string>
-    <string name="download_queue_subtitle">依序顯示影像儲存狀態</string>
     <string name="download_queue_tab_all">全部</string>
     <string name="download_queue_tab_downloading">正在下載</string>
     <string name="download_queue_tab_completed">已完成</string>
@@ -160,9 +159,6 @@
     <string name="download_queue_section_completed">已完成</string>
     <string name="download_queue_section_failed">失敗</string>
     <string name="download_queue_empty">目前沒有正在下載圖像。</string>
-    <string name="download_queue_overview_label">傳輸狀態</string>
-    <string name="download_queue_active_now">項正在處理</string>
-    <string name="download_queue_slots">%1$d / %2$d 個任務槽</string>
     <string name="download_queue_clear">清除記錄</string>
     <string name="download_queue_clear_title">清除已結束的記錄？</string>
     <string name="download_queue_clear_summary">從列表移除已完成和失敗的項目，不會影響進行中的下載。</string>

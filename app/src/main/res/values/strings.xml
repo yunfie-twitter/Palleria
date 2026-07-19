@@ -174,7 +174,6 @@
     <string name="more_watchlist_series">Watchlist</string>
     <string name="more_watchlist_series_summary">保存した漫画シリーズを確認</string>
     <string name="download_queue_title">ダウンロード一覧</string>
-    <string name="download_queue_subtitle">画像を保存した順に状態を表示します</string>
     <string name="download_queue_tab_all">すべて</string>
     <string name="download_queue_tab_downloading">ダウンロード中</string>
     <string name="download_queue_tab_completed">完了</string>
@@ -186,9 +185,6 @@
     <string name="download_queue_section_completed">ダウンロード完了</string>
     <string name="download_queue_section_failed">失敗</string>
     <string name="download_queue_empty">現在ダウンロード中の画像はありません。</string>
-    <string name="download_queue_overview_label">TRANSFER STATUS</string>
-    <string name="download_queue_active_now">件を処理中</string>
-    <string name="download_queue_slots">%1$d / %2$d スロット</string>
     <string name="download_queue_clear">履歴を消去</string>
     <string name="download_queue_clear_title">完了した履歴を消去しますか？</string>
     <string name="download_queue_clear_summary">完了または失敗した項目を一覧から削除します。進行中のダウンロードには影響しません。</string>

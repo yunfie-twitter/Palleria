@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -125,7 +124,6 @@ fun DownloadQueueScreen(
             TopAppBar(
                 title = stringResource(R.string.download_queue_title),
                 largeTitle = stringResource(R.string.download_queue_title),
-                subtitle = stringResource(R.string.download_queue_subtitle),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
                 actions = {
@@ -155,15 +153,6 @@ fun DownloadQueueScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item {
-                    DownloadOverviewCard(
-                        activeCount = groups.active.size,
-                        completedCount = groups.completed.size,
-                        failedCount = groups.failed.size,
-                        activeSlots = state.activeDownloads,
-                        slotLimit = state.settings.simultaneousDownloads.coerceIn(1, 4),
-                    )
-                }
                 item {
                     QueueTabs(
                         selectedTab = selectedTab,
@@ -195,114 +184,6 @@ fun DownloadQueueScreen(
                     QueueTab.Completed -> queueTabContent(groups.completed, QueueTab.Completed)
                     QueueTab.Failed -> queueTabContent(groups.failed, QueueTab.Failed)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DownloadOverviewCard(
-    activeCount: Int,
-    completedCount: Int,
-    failedCount: Int,
-    activeSlots: Int,
-    slotLimit: Int,
-) {
-    val scheme = MiuixTheme.colorScheme
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 28.dp,
-        insideMargin = PaddingValues(0.dp),
-        colors = CardDefaults.defaultColors(
-            color = scheme.surfaceContainer,
-            contentColor = scheme.onSurface,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.download_queue_overview_label),
-                        color = scheme.primary,
-                        style = MiuixTheme.textStyles.footnote1,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = activeCount.toString().padStart(2, '0'),
-                            color = scheme.onBackground,
-                            style = MiuixTheme.textStyles.title1,
-                            fontWeight = FontWeight.Black,
-                        )
-                        Text(
-                            text = "  ${stringResource(R.string.download_queue_active_now)}",
-                            color = scheme.onSurfaceVariantSummary,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 3.dp),
-                        )
-                    }
-                }
-                SlotIndicator(active = activeSlots, limit = slotLimit)
-            }
-
-            if (activeCount > 0) {
-                ActiveTransferTrack()
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(CircleShape)
-                        .background(scheme.surfaceContainerHigh),
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                QueueMetric(
-                    value = completedCount,
-                    label = stringResource(R.string.download_queue_completed),
-                    accent = Color(0xFF2AA876),
-                    modifier = Modifier.weight(1f),
-                )
-                QueueMetric(
-                    value = failedCount,
-                    label = stringResource(R.string.download_queue_failed),
-                    accent = scheme.error,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SlotIndicator(active: Int, limit: Int) {
-    Column(
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.download_queue_slots, active.coerceAtMost(limit), limit),
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.Bold,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            repeat(limit) { index ->
-                Box(
-                    modifier = Modifier
-                        .width(16.dp)
-                        .height(6.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (index < active) MiuixTheme.colorScheme.primary
-                            else MiuixTheme.colorScheme.surfaceContainerHigh,
-                        ),
-                )
             }
         }
     }
@@ -342,45 +223,6 @@ private fun ActiveTransferTrack() {
                     ),
                 ),
         )
-    }
-}
-
-@Composable
-private fun QueueMetric(
-    value: Int,
-    label: String,
-    accent: Color,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(9.dp)
-                .clip(CircleShape)
-                .background(accent),
-        )
-        Column {
-            Text(
-                text = value.toString().padStart(2, '0'),
-                color = MiuixTheme.colorScheme.onBackground,
-                style = MiuixTheme.textStyles.title4,
-                fontWeight = FontWeight.Black,
-            )
-            Text(
-                text = label,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                style = MiuixTheme.textStyles.footnote2,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
     }
 }
 

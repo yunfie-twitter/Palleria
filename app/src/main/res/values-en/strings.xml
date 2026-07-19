@@ -169,7 +169,6 @@
     <string name="more_watchlist_series">Watchlist</string>
     <string name="more_watchlist_series_summary">Check saved manga series</string>
     <string name="download_queue_title">Download List</string>
-    <string name="download_queue_subtitle">Shows image save status in order</string>
     <string name="download_queue_tab_all">All</string>
     <string name="download_queue_tab_downloading">Downloading</string>
     <string name="download_queue_tab_completed">Completed</string>
@@ -181,9 +180,6 @@
     <string name="download_queue_section_completed">Completed</string>
     <string name="download_queue_section_failed">Failed</string>
     <string name="download_queue_empty">No images are downloading right now.</string>
-    <string name="download_queue_overview_label">TRANSFER STATUS</string>
-    <string name="download_queue_active_now">active now</string>
-    <string name="download_queue_slots">%1$d / %2$d slots</string>
     <string name="download_queue_clear">Clear history</string>
     <string name="download_queue_clear_title">Clear finished history?</string>
     <string name="download_queue_clear_summary">Removes completed and failed items from this list. Active downloads will not be affected.</string>
