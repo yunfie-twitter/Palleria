@@ -14,13 +14,8 @@ android {
         applicationId "com.yunfie.illustia"
         minSdk 29
         targetSdk 36
-<<<<<<< HEAD
         versionCode 30
         versionName "4.4.0"
-=======
-        versionCode 29
-        versionName "4.3.1"
->>>>>>> db86d5a8e66a95819d4e99b03c498a2df7e1fa81
     }
 
     signingConfigs {
