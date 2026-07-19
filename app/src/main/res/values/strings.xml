@@ -612,6 +612,8 @@
     <string name="live_wallpaper_exclude_sensitive">センシティブ作品を除外</string>
     <string name="live_wallpaper_exclude_sensitive_desc">R-18作品をライブ壁紙に表示しません</string>
     <string name="live_wallpaper_power_note">ライブ壁紙は通常壁紙より電力を使用します。非表示中とアニメーション停止中は描画を休止します。</string>
+    <string name="live_wallpaper_unsupported_hyperos">Xiaomi HyperOSでは壁紙機能を利用できません。</string>
+    <string name="live_wallpaper_folder_permission_failed">選択したフォルダの読み取り権限を保持できませんでした。</string>
     <string name="image_manga_reader_mode">複数ページ作品の表示</string>
     <string name="image_manga_reader_mode_desc">作品ページを横送りまたは縦読みで表示します</string>
     <string name="image_section_cache">キャッシュ</string>

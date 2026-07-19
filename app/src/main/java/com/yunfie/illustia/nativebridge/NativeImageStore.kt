@@ -80,6 +80,18 @@ class NativeImageStore(private val context: Context) {
             .apply()
     }
 
+    fun persistReadOnlyTreeUri(uri: Uri): Boolean {
+        return runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+            val tree = DocumentFile.fromTreeUri(context, uri)
+            require(tree != null && tree.exists() && tree.isDirectory && tree.canRead())
+            true
+        }.getOrDefault(false)
+    }
+
     fun currentPathLabel(): String {
         if (saveMode() != SAVE_MODE_SAF) return currentPath().orEmpty()
         val uri = context.contentResolver.persistedUriPermissions
@@ -115,9 +127,11 @@ class NativeImageStore(private val context: Context) {
     }
 
     fun folderLabel(uriValue: String): String {
-        val uri = runCatching { Uri.parse(uriValue) }.getOrNull() ?: return ""
-        return DocumentFile.fromTreeUri(context, uri)?.name
-            ?: runCatching { DocumentsContract.getTreeDocumentId(uri).substringAfterLast(':') }.getOrDefault("")
+        return runCatching {
+            val uri = Uri.parse(uriValue)
+            DocumentFile.fromTreeUri(context, uri)?.name
+                ?: DocumentsContract.getTreeDocumentId(uri).substringAfterLast(':')
+        }.getOrDefault("")
     }
 
     private fun listMediaStoreImages(): List<NativeSavedImage> {

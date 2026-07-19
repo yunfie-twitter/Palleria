@@ -64,6 +64,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     )
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val homeScrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val pendingShortcut by AppShortcutRouter.pending.collectAsStateWithLifecycle()
 
@@ -99,12 +100,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             selectedCommentTarget = null
             return
         }
-        when (val removed = backStack.removeAt(backStack.lastIndex)) {
+        val removed = backStack.removeAt(backStack.lastIndex)
+        when (removed) {
             is AppRoute.Detail -> {
                 if (backStack.none { it == removed }) {
                     detailSnapshots.remove(removed.illustId)
                 }
-                viewModel.closeIllust()
             }
             AppRoute.ImageViewer -> viewModel.closeImageViewer()
             is AppRoute.TagSearch -> viewModel.clearSearchResults()
@@ -121,9 +122,21 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             else -> Unit
         }
         when (val revealed = backStack.lastOrNull()) {
-            is AppRoute.Detail -> viewModel.openIllust(revealed.illustId)
+            is AppRoute.Detail -> {
+                val snapshot = detailSnapshots[revealed.illustId]
+                if (snapshot != null) {
+                    viewModel.restoreIllustDetail(
+                        illust = snapshot.illust,
+                        user = snapshot.user,
+                        firstComment = snapshot.firstComment,
+                        relatedIllusts = snapshot.relatedIllusts,
+                    )
+                } else {
+                    viewModel.openIllust(revealed.illustId)
+                }
+            }
             is AppRoute.UserProfile -> viewModel.openUserPage(revealed.userId)
-            else -> Unit
+            else -> if (removed is AppRoute.Detail) viewModel.closeIllust()
         }
     }
 
@@ -300,6 +313,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.detailNavigationRequests.collect { illustId ->
+            navigate(AppRoute.Detail(illustId))
+        }
+    }
+
     LaunchedEffect(state.imageViewerIllust?.id, state.imageViewerStartPage) {
         if (state.imageViewerIllust != null) {
             navigate(AppRoute.ImageViewer)
@@ -370,6 +389,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                 detailSnapshots = detailSnapshots,
                                 selectedTab = selectedTab,
                                 pagerState = pagerState,
+                                homeScrollBehavior = homeScrollBehavior,
                                 showTokenLogin = showTokenLogin,
                                 onShowTokenLoginChange = { showTokenLogin = it },
                                 selectedWatchlistSeriesId = selectedWatchlistSeriesIds.lastOrNull(),

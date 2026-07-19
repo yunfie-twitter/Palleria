@@ -26,7 +26,7 @@ object WallpaperPlaylistScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         alarm.cancel(operation)
-        if (enabled) {
+        if (enabled && LiveWallpaperSupport.isSupported()) {
             context.sendBroadcast(Intent(context, WallpaperPlaylistReceiver::class.java).setAction(ACTION))
             alarm.setInexactRepeating(
                 AlarmManager.RTC,

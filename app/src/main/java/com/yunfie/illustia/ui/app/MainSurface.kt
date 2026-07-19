@@ -37,6 +37,7 @@ internal fun MainSurface(
     viewModel: IllustiaViewModel,
     selectedTab: AppTab,
     pagerState: PagerState,
+    homeScrollBehavior: ScrollBehavior,
     onTabSelected: (Int, AppTab) -> Unit,
     onSearch: () -> Unit,
     onOpenNovels: () -> Unit,
@@ -147,6 +148,7 @@ internal fun MainSurface(
                             settings = appState.settings,
                             currentAccount = appState.state.currentAccount,
                             viewModel = viewModel,
+                            scrollBehavior = homeScrollBehavior,
                             onSearch = onSearch,
                             onOpenNovels = onOpenNovels,
                         )

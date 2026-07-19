@@ -23,7 +23,7 @@ import com.yunfie.illustia.settings.AppSettings
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -42,6 +42,7 @@ fun HomeScreen(
     settings: AppSettings,
     currentAccount: UserProfile?,
     viewModel: IllustiaViewModel,
+    scrollBehavior: ScrollBehavior,
     onSearch: () -> Unit,
     onOpenNovels: () -> Unit,
 ) {
@@ -64,7 +65,6 @@ fun HomeScreen(
     }
 
     val scheme = MiuixTheme.colorScheme
-    val scrollBehavior = MiuixScrollBehavior()
     Column(
         modifier = Modifier
             .fillMaxSize()

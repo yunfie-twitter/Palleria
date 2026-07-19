@@ -150,6 +150,8 @@ open class IllustiaViewModelCore(
     private fun str(resId: Int, vararg args: Any): String = getApplication<Application>().getString(resId, *args)
     private val _navigationRequests = MutableSharedFlow<IllustiaNavigationRequest>(extraBufferCapacity = 16)
     val navigationRequests: SharedFlow<IllustiaNavigationRequest> = _navigationRequests
+    private val _detailNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
+    val detailNavigationRequests: SharedFlow<Long> = _detailNavigationRequests
     val settingsState: StateFlow<AppSettings> = _uiState
         .map { it.settings }
         .distinctUntilChanged()
@@ -1375,6 +1377,7 @@ open class IllustiaViewModelCore(
             updateSettings { it.copy(viewHistory = history) }
         }
         _uiState.update { it.copy(selectedIllust = illust, selectedIllustUser = null, selectedIllustFirstComment = null, relatedIllusts = emptyList()) }
+        _detailNavigationRequests.tryEmit(illust.id)
         detailExtrasJob?.cancel()
         detailExtrasJob = viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -1431,6 +1434,23 @@ open class IllustiaViewModelCore(
     fun closeIllust() {
         detailExtrasJob?.cancel()
         _uiState.update { it.copy(selectedIllust = null, selectedIllustUser = null, selectedIllustFirstComment = null) }
+    }
+
+    fun restoreIllustDetail(
+        illust: Illust,
+        user: UserProfile?,
+        firstComment: Comment?,
+        relatedIllusts: List<Illust>,
+    ) {
+        detailExtrasJob?.cancel()
+        _uiState.update {
+            it.copy(
+                selectedIllust = illust,
+                selectedIllustUser = user,
+                selectedIllustFirstComment = firstComment,
+                relatedIllusts = relatedIllusts,
+            )
+        }
     }
 
     fun openImageViewer(illust: Illust, startPage: Int = 0) {

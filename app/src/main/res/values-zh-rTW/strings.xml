@@ -550,6 +550,8 @@
     <string name="live_wallpaper_exclude_sensitive">排除敏感圖稿</string>
     <string name="live_wallpaper_exclude_sensitive_desc">不要在動態桌布上顯示 R-18 藝術作品</string>
     <string name="live_wallpaper_power_note">動態桌布比靜態桌布更耗電。隱藏和外部過渡時渲染會暫停。</string>
+    <string name="live_wallpaper_unsupported_hyperos">Xiaomi HyperOS 不支援桌布功能。</string>
+    <string name="live_wallpaper_folder_permission_failed">無法保留所選資料夾的讀取權限。</string>
     <string name="image_manga_reader_mode">多頁閱讀器</string>
     <string name="image_manga_reader_mode_desc">以水平頁面或連續垂直閱讀方式顯示藝術品</string>
     <string name="image_section_cache">快取</string>

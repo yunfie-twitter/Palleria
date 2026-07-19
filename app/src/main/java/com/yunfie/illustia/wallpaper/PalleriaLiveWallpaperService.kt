@@ -44,8 +44,9 @@ class PalleriaLiveWallpaperService : WallpaperService() {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         private var loadJob: Job? = null
         private var visible = false
-        private var surfaceWidth = 1
-        private var surfaceHeight = 1
+        private var surfaceReady = false
+        private var surfaceWidth = 0
+        private var surfaceHeight = 0
         private var current: Bitmap? = null
         private var previous: Bitmap? = null
         private var currentPath: String? = null
@@ -80,6 +81,7 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             super.onSurfaceChanged(holder, format, width, height)
             surfaceWidth = width.coerceAtLeast(1)
             surfaceHeight = height.coerceAtLeast(1)
+            surfaceReady = true
             current?.let { drawFrame(it, 1f, currentSettings) } ?: loadNext(forceDifferent = false)
         }
 
@@ -87,10 +89,19 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             visible = isVisible
             handler.removeCallbacks(intervalRunnable)
             if (isVisible) {
-                loadNext(forceDifferent = current != null)
+                if (surfaceReady) {
+                    loadNext(forceDifferent = current != null)
+                }
             } else {
                 loadJob?.cancel()
             }
+        }
+
+        override fun onSurfaceDestroyed(holder: SurfaceHolder) {
+            surfaceReady = false
+            handler.removeCallbacks(intervalRunnable)
+            loadJob?.cancel()
+            super.onSurfaceDestroyed(holder)
         }
 
         override fun onOffsetsChanged(
@@ -144,7 +155,7 @@ class PalleriaLiveWallpaperService : WallpaperService() {
         }
 
         private fun loadNext(forceDifferent: Boolean) {
-            if (!visible) return
+            if (!visible || !surfaceReady) return
             loadJob?.cancel()
             loadJob = scope.launch {
                 val result = withContext(Dispatchers.IO) {

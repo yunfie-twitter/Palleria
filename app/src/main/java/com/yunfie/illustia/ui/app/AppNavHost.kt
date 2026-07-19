@@ -55,6 +55,7 @@ import com.yunfie.illustia.ui.screens.SettingsScreen
 import com.yunfie.illustia.ui.screens.UserProfileScreen
 import com.yunfie.illustia.ui.screens.ViewHistoryScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -65,6 +66,7 @@ internal fun AppNavHost(
     detailSnapshots: Map<Long, DetailEntrySnapshot>,
     selectedTab: AppTab,
     pagerState: androidx.compose.foundation.pager.PagerState,
+    homeScrollBehavior: ScrollBehavior,
     showTokenLogin: Boolean,
     onShowTokenLoginChange: (Boolean) -> Unit,
     selectedWatchlistSeriesId: Long?,
@@ -83,6 +85,7 @@ internal fun AppNavHost(
                 viewModel = viewModel,
                 selectedTab = selectedTab,
                 pagerState = pagerState,
+                homeScrollBehavior = homeScrollBehavior,
                 onTabSelected = onTabSelected,
                 onSearch = {
                     if (appState.settings.shortsFeedEnabled) {

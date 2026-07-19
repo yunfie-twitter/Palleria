@@ -607,6 +607,8 @@
     <string name="live_wallpaper_exclude_sensitive">Exclude sensitive artwork</string>
     <string name="live_wallpaper_exclude_sensitive_desc">Do not show R-18 artwork on the live wallpaper</string>
     <string name="live_wallpaper_power_note">Live wallpapers use more power than static wallpapers. Rendering pauses while hidden and outside transitions.</string>
+    <string name="live_wallpaper_unsupported_hyperos">Wallpaper features are unavailable on Xiaomi HyperOS.</string>
+    <string name="live_wallpaper_folder_permission_failed">Palleria could not retain read access to the selected folder.</string>
     <string name="image_manga_reader_mode">Multi-page reader</string>
     <string name="image_manga_reader_mode_desc">Display artwork with horizontal pages or continuous vertical reading</string>
     <string name="image_section_cache">Cache</string>
