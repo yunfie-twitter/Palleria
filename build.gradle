@@ -3,9 +3,9 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.bouncycastle:bcpkix-jdk18on:1.84"
-        classpath "org.bouncycastle:bcprov-jdk18on:1.84"
-        classpath "org.bouncycastle:bcutil-jdk18on:1.84"
+        classpath "org.bouncycastle:bcpkix-jdk18on:1.85"
+        classpath "org.bouncycastle:bcprov-jdk18on:1.85"
+        classpath "org.bouncycastle:bcutil-jdk18on:1.85"
         classpath "io.netty:netty-codec:4.1.135.Final"
         classpath "io.netty:netty-codec-http:4.1.135.Final"
         classpath "io.netty:netty-codec-http2:4.1.135.Final"
