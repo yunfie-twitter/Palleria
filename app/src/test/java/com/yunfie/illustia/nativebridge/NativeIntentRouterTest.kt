@@ -21,6 +21,17 @@ class NativeIntentRouterTest : FunSpec({
         NativeIntentRouter.parseText("evil://illusts/789") shouldBe null
     }
 
+    test("extracts trusted Pixiv routes from shared text") {
+        NativeIntentRouter.parseText("素敵な作品 https://www.pixiv.net/artworks/123。") shouldBe
+            NativeIntentEvent.Artwork(123)
+        NativeIntentRouter.parseText("Profile: https://www.pixiv.net/users/456)") shouldBe
+            NativeIntentEvent.User(456)
+    }
+
+    test("does not extract untrusted routes from shared text") {
+        NativeIntentRouter.parseText("Look https://attacker.example/artworks/123") shouldBe null
+    }
+
     test("process text normalization removes the leading hash") {
         NativeIntentRouter.normalizeProcessText("  #初音ミク  ") shouldBe "初音ミク"
     }

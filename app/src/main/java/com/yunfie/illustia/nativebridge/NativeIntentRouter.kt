@@ -14,6 +14,11 @@ object NativeIntentRouter {
     private val WEB_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net")
     private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "pixez")
     private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts")
+    private val ROUTE_CANDIDATE_PATTERN = Regex("""(?i)\b(?:https?://|pixiv://|pixez://)\S+""")
+    private val ROUTE_TRAILING_PUNCTUATION = charArrayOf(
+        '.', ',', ';', ':', '!', '?', ')', ']', '}',
+        '。', '、', '！', '？', '）', '】', '』', '」',
+    )
 
     const val EXTRA_HANDOFF_URI = "com.yunfie.illustia.extra.HANDOFF_URI"
     const val MAX_PROCESS_TEXT_CODE_POINTS = 256
@@ -47,7 +52,12 @@ object NativeIntentRouter {
     }
 
     fun parseText(value: String?): NativeIntentEvent? {
-        return parseUri(value)
+        val normalized = value?.trim().orEmpty()
+        if (normalized.isEmpty()) return null
+        parseUri(normalized)?.let { return it }
+        return ROUTE_CANDIDATE_PATTERN.findAll(normalized)
+            .mapNotNull { match -> parseUri(match.value.trimEnd(*ROUTE_TRAILING_PUNCTUATION)) }
+            .firstOrNull()
     }
 
     fun normalizeProcessText(value: CharSequence?): String? {
