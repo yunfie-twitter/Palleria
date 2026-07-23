@@ -11,6 +11,10 @@ sealed interface NativeIntentEvent {
 }
 
 object NativeIntentRouter {
+    private val WEB_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net")
+    private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "pixez")
+    private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts")
+
     const val EXTRA_HANDOFF_URI = "com.yunfie.illustia.extra.HANDOFF_URI"
     const val MAX_PROCESS_TEXT_CODE_POINTS = 256
 
@@ -74,6 +78,7 @@ object NativeIntentRouter {
 
     private fun parseUri(value: String?): NativeIntentEvent? {
         val uri = runCatching { Uri.parse(value) }.getOrNull() ?: return null
+        if (!uri.isTrustedPixivRoute()) return null
         val segments = uri.pathSegments
         val artworkIndex = segments.indexOfFirst { it == "artworks" || it == "illusts" }
         if (artworkIndex >= 0) {
@@ -94,5 +99,15 @@ object NativeIntentRouter {
             segments.firstOrNull()?.toLongOrNull()?.let { return NativeIntentEvent.User(it) }
         }
         return null
+    }
+
+    private fun Uri.isTrustedPixivRoute(): Boolean {
+        val normalizedScheme = scheme?.lowercase() ?: return false
+        val normalizedHost = host?.lowercase() ?: return false
+        return when (normalizedScheme) {
+            "http", "https" -> normalizedHost in WEB_PIXIV_HOSTS
+            in CUSTOM_PIXIV_SCHEMES -> normalizedHost in CUSTOM_PIXIV_HOSTS
+            else -> false
+        }
     }
 }
