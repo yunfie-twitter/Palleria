@@ -4,6 +4,34 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
 class NativeIntentRouterTest : FunSpec({
+    test("parses trusted Pixiv artwork and user routes") {
+        NativeIntentRouter.parseText("https://www.pixiv.net/artworks/123") shouldBe
+            NativeIntentEvent.Artwork(123)
+        NativeIntentRouter.parseText("http://pixiv.net/users/456") shouldBe
+            NativeIntentEvent.User(456)
+        NativeIntentRouter.parseText("pixiv://illusts/789") shouldBe
+            NativeIntentEvent.Artwork(789)
+        NativeIntentRouter.parseText("pixez://users/987") shouldBe
+            NativeIntentEvent.User(987)
+    }
+
+    test("rejects Pixiv-looking paths from untrusted origins") {
+        NativeIntentRouter.parseText("https://attacker.example/artworks/123") shouldBe null
+        NativeIntentRouter.parseText("https://pixiv.net.attacker.example/users/456") shouldBe null
+        NativeIntentRouter.parseText("evil://illusts/789") shouldBe null
+    }
+
+    test("extracts trusted Pixiv routes from shared text") {
+        NativeIntentRouter.parseText("素敵な作品 https://www.pixiv.net/artworks/123。") shouldBe
+            NativeIntentEvent.Artwork(123)
+        NativeIntentRouter.parseText("Profile: https://www.pixiv.net/users/456)") shouldBe
+            NativeIntentEvent.User(456)
+    }
+
+    test("does not extract untrusted routes from shared text") {
+        NativeIntentRouter.parseText("Look https://attacker.example/artworks/123") shouldBe null
+    }
+
     test("process text normalization removes the leading hash") {
         NativeIntentRouter.normalizeProcessText("  #初音ミク  ") shouldBe "初音ミク"
     }
