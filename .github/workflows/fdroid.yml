@@ -43,7 +43,7 @@ jobs:
 
       - name: Detect build.gradle changes
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             buildgradle:
