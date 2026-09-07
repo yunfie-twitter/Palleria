@@ -160,41 +160,66 @@ data class RichPresence(
         private var afk: Boolean = false
 
         fun setApplicationId(appId: String?) = apply { this.applicationId = appId }
+
         fun setName(name: String) = apply { this.name = name }
+
         fun setDetails(details: String?) = apply { this.details = details }
+
         fun setState(state: String?) = apply { this.state = state }
+
         fun setType(type: Int) = apply { this.type = type }
+
         fun setTimestamps(timestamps: Timestamps?) = apply { this.timestamps = timestamps }
-        fun setTimestamps(start: Long?, end: Long? = null) = apply { this.timestamps = Timestamps(start, end) }
+
+        fun setTimestamps(
+            start: Long?,
+            end: Long? = null,
+        ) = apply { this.timestamps = Timestamps(start, end) }
+
         fun setAssets(assets: Assets?) = apply { this.assets = assets }
-        fun setAssets(largeImage: String?, largeText: String? = null, smallImage: String? = null, smallText: String? = null) =
-            apply { this.assets = Assets(largeImage, largeText, smallImage, smallText) }
+
+        fun setAssets(
+            largeImage: String?,
+            largeText: String? = null,
+            smallImage: String? = null,
+            smallText: String? = null,
+        ) = apply { this.assets = Assets(largeImage, largeText, smallImage, smallText) }
+
         fun setParty(party: Party?) = apply { this.party = party }
+
         fun setSecrets(secrets: Secrets?) = apply { this.secrets = secrets }
+
         fun setButtons(buttons: List<String>?) = apply { this.buttons = buttons }
+
         fun setMetadata(metadata: Metadata?) = apply { this.metadata = metadata }
+
         fun setFlags(flags: Long?) = apply { this.flags = flags }
+
         fun setUrl(url: String?) = apply { this.url = url }
+
         fun setStatus(status: String) = apply { this.status = status }
+
         fun setSince(since: Long) = apply { this.since = since }
+
         fun setAfk(afk: Boolean) = apply { this.afk = afk }
 
         fun build(): RichPresence {
-            val activity = Activity(
-                applicationId = applicationId,
-                name = name,
-                details = details,
-                state = state,
-                type = type,
-                timestamps = timestamps,
-                assets = assets,
-                party = party,
-                secrets = secrets,
-                buttons = buttons,
-                metadata = metadata,
-                flags = flags,
-                url = url,
-            )
+            val activity =
+                Activity(
+                    applicationId = applicationId,
+                    name = name,
+                    details = details,
+                    state = state,
+                    type = type,
+                    timestamps = timestamps,
+                    assets = assets,
+                    party = party,
+                    secrets = secrets,
+                    buttons = buttons,
+                    metadata = metadata,
+                    flags = flags,
+                    url = url,
+                )
             return RichPresence(
                 activities = listOf(activity),
                 status = status,
@@ -211,13 +236,12 @@ class CustomStatus(
     val emojiId: String? = null,
     val isAnimated: Boolean = false,
 ) {
-    fun toActivity(): Activity {
-        return Activity(
+    fun toActivity(): Activity =
+        Activity(
             name = "Custom Status",
             state = text,
             type = Constants.ActivityType.CUSTOM,
         )
-    }
 }
 
 class SpotifyRPC(
@@ -229,18 +253,18 @@ class SpotifyRPC(
     val trackId: String? = null,
     val albumCoverUrl: String? = null,
 ) {
-    fun toActivity(): Activity {
-        return Activity(
+    fun toActivity(): Activity =
+        Activity(
             name = "Spotify",
             details = songTitle,
             state = artist,
             type = Constants.ActivityType.LISTENING,
             timestamps = Timestamps(start = startTime, end = endTime),
-            assets = Assets(
-                largeImage = if (trackId != null) "spotify:$trackId" else albumCoverUrl,
-                largeText = album ?: songTitle,
-            ),
+            assets =
+                Assets(
+                    largeImage = if (trackId != null) "spotify:$trackId" else albumCoverUrl,
+                    largeText = album ?: songTitle,
+                ),
             flags = 48L, // SYNC | PLAY
         )
-    }
 }

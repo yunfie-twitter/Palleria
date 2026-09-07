@@ -1,6 +1,8 @@
 package com.discord.oauth2rpc.utils
 
-class Intents(bitfield: Long = 0L) : BitField(bitfield) {
+class Intents(
+    bitfield: Long = 0L,
+) : BitField(bitfield) {
     companion object {
         const val GUILDS = 1L shl 0
         const val GUILD_MEMBERS = 1L shl 1

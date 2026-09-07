@@ -1,6 +1,8 @@
 package com.discord.oauth2rpc.utils
 
-class ActivityFlags(bitfield: Long = 0L) : BitField(bitfield) {
+class ActivityFlags(
+    bitfield: Long = 0L,
+) : BitField(bitfield) {
     companion object {
         const val INSTANCE = 1L shl 0
         const val JOIN = 1L shl 1

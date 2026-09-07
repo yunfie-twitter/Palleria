@@ -19,7 +19,6 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class OAuth2RpcTest {
-
     @Test
     fun testBitFieldOperations() {
         val bitField = BitField()
@@ -56,19 +55,21 @@ class OAuth2RpcTest {
 
     @Test
     fun testRichPresencePayload() {
-        val presence = RichPresence.Builder()
-            .setApplicationId("1234567890")
-            .setName("Palleria")
-            .setDetails("Viewing artwork")
-            .setState("by Artist")
-            .setType(Constants.ActivityType.PLAYING)
-            .setTimestamps(1000L, 2000L)
-            .setAssets("palleria_logo", "Palleria Logo", "small_icon", "Small Text")
-            .setButtons(listOf("Pixivで見る", "Palleriaをダウンロード"))
-            .setMetadata(Metadata(listOf("https://pixiv.net/artworks/123", "https://yunfi.f5.si/Palleria/user/installation")))
-            .setStatus(Constants.Status.ONLINE)
-            .setAfk(false)
-            .build()
+        val presence =
+            RichPresence
+                .Builder()
+                .setApplicationId("1234567890")
+                .setName("Palleria")
+                .setDetails("Viewing artwork")
+                .setState("by Artist")
+                .setType(Constants.ActivityType.PLAYING)
+                .setTimestamps(1000L, 2000L)
+                .setAssets("palleria_logo", "Palleria Logo", "small_icon", "Small Text")
+                .setButtons(listOf("Pixivで見る", "Palleriaをダウンロード"))
+                .setMetadata(Metadata(listOf("https://pixiv.net/artworks/123", "https://yunfi.f5.si/Palleria/user/installation")))
+                .setStatus(Constants.Status.ONLINE)
+                .setAfk(false)
+                .build()
 
         val payload = presence.toPayload()
         payload.getInt("op") shouldBe Constants.Opcode.PRESENCE_UPDATE
@@ -114,14 +115,15 @@ class OAuth2RpcTest {
         customActivity.state shouldBe "Exploring Palleria"
         customActivity.type shouldBe Constants.ActivityType.CUSTOM
 
-        val spotify = SpotifyRPC(
-            songTitle = "Track Title",
-            artist = "Artist Name",
-            album = "Album Name",
-            startTime = 5000L,
-            endTime = 8000L,
-            trackId = "abc123",
-        )
+        val spotify =
+            SpotifyRPC(
+                songTitle = "Track Title",
+                artist = "Artist Name",
+                album = "Album Name",
+                startTime = 5000L,
+                endTime = 8000L,
+                trackId = "abc123",
+            )
         val spotifyActivity = spotify.toActivity()
         spotifyActivity.name shouldBe "Spotify"
         spotifyActivity.details shouldBe "Track Title"
@@ -146,21 +148,23 @@ class OAuth2RpcTest {
 
     @Test
     fun testGatewayPacketAndReadyEvent() {
-        val user = User(
-            id = "987654321",
-            username = "TestUser",
-            discriminator = "0001",
-            globalName = "Global Name",
-            avatar = "avatar_hash",
-            bot = false,
-        )
-        val ready = ReadyEvent(
-            version = 10,
-            user = user,
-            sessionType = "normal",
-            sessionId = "sess_123",
-            resumeGatewayUrl = "wss://resume.discord.gg",
-        )
+        val user =
+            User(
+                id = "987654321",
+                username = "TestUser",
+                discriminator = "0001",
+                globalName = "Global Name",
+                avatar = "avatar_hash",
+                bot = false,
+            )
+        val ready =
+            ReadyEvent(
+                version = 10,
+                user = user,
+                sessionType = "normal",
+                sessionId = "sess_123",
+                resumeGatewayUrl = "wss://resume.discord.gg",
+            )
         ready.version shouldBe 10
         ready.user.username shouldBe "TestUser"
         ready.sessionId shouldBe "sess_123"

@@ -5,7 +5,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
@@ -17,6 +19,7 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.coroutines.resume
 
 class AppUpdaterRepository(
     private val context: Context,
@@ -162,12 +165,80 @@ class AppUpdaterRepository(
 
     fun requestShizukuPermission(requestCode: Int = 1001) {
         runCatching {
-            if (!isShizukuAvailable()) return
-            if (Shizuku.getVersion() >= 11 && !isShizukuPermissionGranted()) {
-                Shizuku.requestPermission(requestCode)
+            if (isShizukuAvailable()) {
+                if (!isShizukuPermissionGranted()) {
+                    if (Shizuku.getVersion() >= 11) {
+                        Shizuku.requestPermission(requestCode)
+                    }
+                }
+            } else {
+                val listener =
+                    object : Shizuku.OnBinderReceivedListener {
+                        override fun onBinderReceived() {
+                            runCatching {
+                                Shizuku.removeBinderReceivedListener(this)
+                                if (!isShizukuPermissionGranted() && Shizuku.getVersion() >= 11) {
+                                    Shizuku.requestPermission(requestCode)
+                                }
+                            }
+                        }
+                    }
+                Shizuku.addBinderReceivedListenerSticky(listener)
             }
         }
     }
+
+    suspend fun requestShizukuPermissionSuspending(requestCode: Int = 1001): Boolean =
+        withContext(Dispatchers.Main) {
+            if (!isShizukuAvailable()) {
+                val bound =
+                    withTimeoutOrNull(2000L) {
+                        suspendCancellableCoroutine<Boolean> { continuation ->
+                            val listener =
+                                object : Shizuku.OnBinderReceivedListener {
+                                    override fun onBinderReceived() {
+                                        runCatching { Shizuku.removeBinderReceivedListener(this) }
+                                        if (continuation.isActive) continuation.resume(true)
+                                    }
+                                }
+                            Shizuku.addBinderReceivedListenerSticky(listener)
+                            continuation.invokeOnCancellation {
+                                runCatching { Shizuku.removeBinderReceivedListener(listener) }
+                            }
+                        }
+                    } ?: false
+                if (!bound || !isShizukuAvailable()) return@withContext false
+            }
+
+            if (isShizukuPermissionGranted()) return@withContext true
+            if (Shizuku.getVersion() < 11) return@withContext false
+
+            try {
+                suspendCancellableCoroutine { continuation ->
+                    val listener =
+                        object : Shizuku.OnRequestPermissionResultListener {
+                            override fun onRequestPermissionResult(
+                                reqCode: Int,
+                                grantResult: Int,
+                            ) {
+                                if (reqCode == requestCode) {
+                                    runCatching { Shizuku.removeRequestPermissionResultListener(this) }
+                                    if (continuation.isActive) {
+                                        continuation.resume(grantResult == PackageManager.PERMISSION_GRANTED)
+                                    }
+                                }
+                            }
+                        }
+                    Shizuku.addRequestPermissionResultListener(listener)
+                    continuation.invokeOnCancellation {
+                        runCatching { Shizuku.removeRequestPermissionResultListener(listener) }
+                    }
+                    Shizuku.requestPermission(requestCode)
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
 
     suspend fun installApk(
         apkFile: File,
@@ -181,8 +252,17 @@ class AppUpdaterRepository(
                     }
 
                     UpdateInstallMethod.SHIZUKU -> {
-                        if (isShizukuAvailable() && isShizukuPermissionGranted()) {
+                        val hasPermission =
+                            if (isShizukuPermissionGranted()) {
+                                true
+                            } else {
+                                requestShizukuPermissionSuspending()
+                            }
+
+                        if (hasPermission) {
                             installViaShizuku(apkFile)
+                        } else if (isShizukuAvailable()) {
+                            throw IllegalStateException("Shizuku permission was not granted")
                         } else {
                             installViaStandardIntent(apkFile)
                         }
@@ -210,12 +290,13 @@ class AppUpdaterRepository(
         // Direct file paths cannot be read by shell UID (2000) due to app private sandbox permissions.
         val command = arrayOf("pm", "install", "-r", "-d", "-t", "-S", fileSize.toString())
         val newProcessMethod =
-            Shizuku::class.java.getDeclaredMethod(
-                "newProcess",
-                Array<String>::class.java,
-                Array<String>::class.java,
-                String::class.java,
-            ).apply { isAccessible = true }
+            Shizuku::class.java
+                .getDeclaredMethod(
+                    "newProcess",
+                    Array<String>::class.java,
+                    Array<String>::class.java,
+                    String::class.java,
+                ).apply { isAccessible = true }
 
         val process =
             runCatching {

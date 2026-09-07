@@ -26,10 +26,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class Gateway(
     private val token: String,
-    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build(),
+    private val okHttpClient: OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     private var webSocket: WebSocket? = null
@@ -66,41 +68,60 @@ class Gateway(
         pendingPresence = initialPresence
         updateState(GatewayConnectionState.CONNECTING)
 
-        val request = Request.Builder()
-            .url(Constants.GATEWAY_URL)
-            .build()
+        val request =
+            Request
+                .Builder()
+                .url(Constants.GATEWAY_URL)
+                .build()
 
         webSocket = okHttpClient.newWebSocket(request, createWebSocketListener())
     }
 
-    private fun createWebSocketListener(): WebSocketListener {
-        return object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
+    private fun createWebSocketListener(): WebSocketListener =
+        object : WebSocketListener() {
+            override fun onOpen(
+                webSocket: WebSocket,
+                response: Response,
+            ) {
                 updateState(GatewayConnectionState.CONNECTED)
             }
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
+            override fun onMessage(
+                webSocket: WebSocket,
+                text: String,
+            ) {
                 handleMessage(text)
             }
 
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+            override fun onClosing(
+                webSocket: WebSocket,
+                code: Int,
+                reason: String,
+            ) {
                 updateState(GatewayConnectionState.CLOSING)
                 webSocket.close(code, reason)
             }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            override fun onClosed(
+                webSocket: WebSocket,
+                code: Int,
+                reason: String,
+            ) {
                 heartbeatJob?.cancel()
                 updateState(GatewayConnectionState.CLOSED)
                 onClose?.invoke(code, reason)
             }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            override fun onFailure(
+                webSocket: WebSocket,
+                t: Throwable,
+                response: Response?,
+            ) {
                 heartbeatJob?.cancel()
                 updateState(GatewayConnectionState.ERROR)
                 onError?.invoke(t)
             }
         }
-    }
 
     private fun handleMessage(text: String) {
         try {
@@ -119,21 +140,26 @@ class Gateway(
                     startHeartbeat(heartbeatInterval)
                     identify()
                 }
+
                 Constants.Opcode.HEARTBEAT_ACK -> {
                     heartbeatAckReceived = true
                 }
+
                 Constants.Opcode.HEARTBEAT -> {
                     sendHeartbeat()
                 }
+
                 Constants.Opcode.RECONNECT -> {
                     reconnect()
                 }
+
                 Constants.Opcode.INVALID_SESSION -> {
                     val resumable = (d as? Boolean) ?: false
                     if (!resumable) {
                         identify()
                     }
                 }
+
                 Constants.Opcode.DISPATCH -> {
                     if (t == "READY" && d is JSONObject) {
                         handleReady(d)
@@ -147,64 +173,73 @@ class Gateway(
 
     private fun identify() {
         updateState(GatewayConnectionState.IDENTIFYING)
-        val identifyPayload = JSONObject().apply {
-            put("op", Constants.Opcode.IDENTIFY)
-            val data = JSONObject().apply {
-                put("token", token)
-                put("capabilities", 125)
-                val properties = JSONObject().apply {
-                    put("os", "Android")
-                    put("browser", "Discord Android")
-                    put("device", "Palleria")
-                    put("system_locale", "ja_JP")
-                    put("client_version", "214.15")
-                    put("os_version", "34")
-                }
-                put("properties", properties)
-                put("compress", false)
-                put("client_state", JSONObject().apply {
-                    put("guild_versions", JSONObject())
-                })
-                pendingPresence?.let { presence ->
-                    val presenceObj = JSONObject().apply {
-                        put("since", presence.since)
-                        val activitiesArr = JSONArray()
-                        presence.activities.forEach { activitiesArr.put(it.toJSONObject()) }
-                        put("activities", activitiesArr)
-                        put("status", presence.status)
-                        put("afk", presence.afk)
+        val identifyPayload =
+            JSONObject().apply {
+                put("op", Constants.Opcode.IDENTIFY)
+                val data =
+                    JSONObject().apply {
+                        put("token", token)
+                        put("capabilities", 125)
+                        val properties =
+                            JSONObject().apply {
+                                put("os", "Android")
+                                put("browser", "Discord Android")
+                                put("device", "Palleria")
+                                put("system_locale", "ja_JP")
+                                put("client_version", "214.15")
+                                put("os_version", "34")
+                            }
+                        put("properties", properties)
+                        put("compress", false)
+                        put(
+                            "client_state",
+                            JSONObject().apply {
+                                put("guild_versions", JSONObject())
+                            },
+                        )
+                        pendingPresence?.let { presence ->
+                            val presenceObj =
+                                JSONObject().apply {
+                                    put("since", presence.since)
+                                    val activitiesArr = JSONArray()
+                                    presence.activities.forEach { activitiesArr.put(it.toJSONObject()) }
+                                    put("activities", activitiesArr)
+                                    put("status", presence.status)
+                                    put("afk", presence.afk)
+                                }
+                            put("presence", presenceObj)
+                        }
                     }
-                    put("presence", presenceObj)
-                }
+                put("d", data)
             }
-            put("d", data)
-        }
         send(identifyPayload.toString())
     }
 
     private fun handleReady(d: JSONObject) {
         val userObj = d.optJSONObject("user")
-        val user = if (userObj != null) {
-            User(
-                id = userObj.optString("id", ""),
-                username = userObj.optString("username", ""),
-                discriminator = userObj.optString("discriminator").takeIf { it.isNotBlank() },
-                globalName = userObj.optString("global_name").takeIf { it.isNotBlank() },
-                avatar = userObj.optString("avatar").takeIf { it.isNotBlank() },
-                bot = userObj.optBoolean("bot", false),
-                flags = userObj.optInt("flags", 0),
-            )
-        } else {
-            User(id = "", username = "")
-        }
+        val user =
+            if (userObj != null) {
+                User(
+                    id = userObj.optString("id", ""),
+                    username = userObj.optString("username", ""),
+                    discriminator = userObj.optString("discriminator").takeIf { it.isNotBlank() },
+                    globalName = userObj.optString("global_name").takeIf { it.isNotBlank() },
+                    avatar = userObj.optString("avatar").takeIf { it.isNotBlank() },
+                    bot = userObj.optBoolean("bot", false),
+                    flags = userObj.optInt("flags", 0),
+                )
+            } else {
+                User(id = "", username = "")
+            }
 
-        val event = ReadyEvent(
-            version = d.optInt("v", Constants.GATEWAY_VERSION),
-            user = user,
-            sessionType = d.optString("session_type").takeIf { it.isNotBlank() },
-            sessionId = d.optString("session_id").takeIf { it.isNotBlank() },
-            resumeGatewayUrl = d.optString("resume_gateway_url").takeIf { it.isNotBlank() },
-        )
+        val event =
+            ReadyEvent(
+                version = d.optInt("v", Constants.GATEWAY_VERSION),
+                user = user,
+                sessionType = d.optString("session_type").takeIf { it.isNotBlank() },
+                sessionId = d.optString("session_id").takeIf { it.isNotBlank() },
+                resumeGatewayUrl = d.optString("resume_gateway_url").takeIf { it.isNotBlank() },
+            )
         _readyEvent.value = event
         updateState(GatewayConnectionState.READY)
         onReady?.invoke(event)
@@ -217,31 +252,33 @@ class Gateway(
     private fun startHeartbeat(intervalMs: Long) {
         heartbeatJob?.cancel()
         heartbeatAckReceived = true
-        heartbeatJob = scope.launch {
-            val initialDelay = (intervalMs * Math.random()).toLong()
-            delay(initialDelay)
-            while (isActive) {
-                if (!heartbeatAckReceived) {
-                    Log.w(TAG, "Heartbeat ACK not received, reconnecting...")
-                    reconnect()
-                    break
+        heartbeatJob =
+            scope.launch {
+                val initialDelay = (intervalMs * Math.random()).toLong()
+                delay(initialDelay)
+                while (isActive) {
+                    if (!heartbeatAckReceived) {
+                        Log.w(TAG, "Heartbeat ACK not received, reconnecting...")
+                        reconnect()
+                        break
+                    }
+                    heartbeatAckReceived = false
+                    sendHeartbeat()
+                    delay(intervalMs)
                 }
-                heartbeatAckReceived = false
-                sendHeartbeat()
-                delay(intervalMs)
             }
-        }
     }
 
     private fun sendHeartbeat() {
-        val json = JSONObject().apply {
-            put("op", Constants.Opcode.HEARTBEAT)
-            if (lastSequence != null) {
-                put("d", lastSequence)
-            } else {
-                put("d", JSONObject.NULL)
+        val json =
+            JSONObject().apply {
+                put("op", Constants.Opcode.HEARTBEAT)
+                if (lastSequence != null) {
+                    put("d", lastSequence)
+                } else {
+                    put("d", JSONObject.NULL)
+                }
             }
-        }
         send(json.toString())
     }
 
@@ -257,12 +294,13 @@ class Gateway(
         since: Long = System.currentTimeMillis(),
         afk: Boolean = false,
     ): Boolean {
-        val presence = RichPresence(
-            activities = listOf(activity),
-            status = status,
-            since = since,
-            afk = afk,
-        )
+        val presence =
+            RichPresence(
+                activities = listOf(activity),
+                status = status,
+                since = since,
+                afk = afk,
+            )
         return setPresence(presence)
     }
 
@@ -282,7 +320,8 @@ class Gateway(
         heartbeatJob = null
         try {
             webSocket?.close(1000, "Normal Closure")
-        } catch (ignored: Exception) {}
+        } catch (ignored: Exception) {
+        }
         webSocket = null
         updateState(GatewayConnectionState.DISCONNECTED)
     }

@@ -176,12 +176,13 @@ fun BookmarkHeartButton(
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val hapticMode = LocalAppHapticMode.current
+    var userClicked by remember { mutableStateOf(false) }
     var previousBookmarked by remember { mutableStateOf(isBookmarked) }
     var stage by remember(isBookmarked) {
         val initial =
             when {
-                isBookmarked && !previousBookmarked -> BookmarkButtonStage.CHECK
-                !isBookmarked && previousBookmarked -> BookmarkButtonStage.REMOVING
+                isBookmarked && !previousBookmarked && userClicked -> BookmarkButtonStage.CHECK
+                !isBookmarked && previousBookmarked && userClicked -> BookmarkButtonStage.REMOVING
                 isBookmarked -> BookmarkButtonStage.BOOKMARKED
                 else -> BookmarkButtonStage.UNBOOKMARKED
             }
@@ -192,15 +193,15 @@ fun BookmarkHeartButton(
     LaunchedEffect(stage) {
         when (stage) {
             BookmarkButtonStage.CHECK -> {
-                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
                 delay(420)
                 stage = BookmarkButtonStage.BOOKMARKED
+                userClicked = false
             }
 
             BookmarkButtonStage.REMOVING -> {
-                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
                 delay(220)
                 stage = BookmarkButtonStage.UNBOOKMARKED
+                userClicked = false
             }
 
             else -> {
@@ -212,7 +213,11 @@ fun BookmarkHeartButton(
     val active = remember(stage) { stage == BookmarkButtonStage.BOOKMARKED || stage == BookmarkButtonStage.CHECK }
     val scheme = MiuixTheme.colorScheme
     IconButton(
-        onClick = onClick,
+        onClick = {
+            userClicked = true
+            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+            onClick()
+        },
         modifier = modifier.size(size),
         minWidth = size,
         minHeight = size,

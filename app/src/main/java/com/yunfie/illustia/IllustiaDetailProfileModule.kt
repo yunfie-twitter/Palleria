@@ -42,6 +42,12 @@ abstract class IllustiaDetailProfileModule(
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
+                    val fullIllust =
+                        if (illust.artistId <= 0L) {
+                            runCatching { repository.illustDetail(illust.id) }.getOrNull() ?: illust
+                        } else {
+                            illust
+                        }
                     kotlinx.coroutines.coroutineScope {
                         val relatedDeferred = async { repository.relatedIllusts(illust.id) }
                         val firstCommentDeferred =
@@ -51,7 +57,7 @@ abstract class IllustiaDetailProfileModule(
                                 }.getOrNull()
                             }
                         val userDeferred =
-                            illust.artistId.takeIf { it > 0L }?.let { artistId ->
+                            fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
                                 async { repository.userDetail(artistId) }
                             }
                         val related = relatedDeferred.await()
@@ -62,11 +68,19 @@ abstract class IllustiaDetailProfileModule(
                                 it
                             } else {
                                 it.copy(
+                                    selectedIllust = fullIllust,
                                     relatedIllusts = related.items.visibleWithSettings(it.settings),
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = firstComment,
                                 )
                             }
+                        }
+                        if (fullIllust !== illust && fullIllust.artistId > 0L) {
+                            val updatedHistory =
+                                _uiState.value.settings.viewHistory.map {
+                                    if (it.id == illust.id) fullIllust else it
+                                }
+                            updateSettings { it.copy(viewHistory = updatedHistory) }
                         }
                     }
                 } catch (expectedFailure: Exception) {
@@ -86,8 +100,10 @@ abstract class IllustiaDetailProfileModule(
 
     override fun openIllust(illustId: Long) {
         findIllustById(illustId)?.let { illust ->
-            openIllust(illust)
-            return
+            if (illust.artistId > 0L) {
+                openIllust(illust)
+                return
+            }
         }
         runLoading {
             val illust = repository.illustDetail(illustId)

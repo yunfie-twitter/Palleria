@@ -16,7 +16,11 @@ class Rest(
     private val client: OkHttpClient = OkHttpClient(),
 ) {
     enum class Method {
-        GET, POST, PUT, PATCH, DELETE
+        GET,
+        POST,
+        PUT,
+        PATCH,
+        DELETE,
     }
 
     class Route(
@@ -25,9 +29,13 @@ class Rest(
     ) {
         companion object {
             fun get(path: String) = Route(Method.GET, path)
+
             fun post(path: String) = Route(Method.POST, path)
+
             fun put(path: String) = Route(Method.PUT, path)
+
             fun patch(path: String) = Route(Method.PATCH, path)
+
             fun delete(path: String) = Route(Method.DELETE, path)
 
             val CURRENT_USER = get("/users/@me")
@@ -40,38 +48,39 @@ class Rest(
         route: Route,
         body: JSONObject? = null,
         queryParams: Map<String, String>? = null,
-    ): JSONObject = withContext(Dispatchers.IO) {
-        var url = if (route.path.startsWith("http")) route.path else "${Constants.API_BASE_URL}${route.path}"
-        if (!queryParams.isNullOrEmpty()) {
-            val queryString = queryParams.entries.joinToString("&") { "${it.key}=${it.value}" }
-            url += if (url.contains("?")) "&$queryString" else "?$queryString"
-        }
+    ): JSONObject =
+        withContext(Dispatchers.IO) {
+            var url = if (route.path.startsWith("http")) route.path else "${Constants.API_BASE_URL}${route.path}"
+            if (!queryParams.isNullOrEmpty()) {
+                val queryString = queryParams.entries.joinToString("&") { "${it.key}=${it.value}" }
+                url += if (url.contains("?")) "&$queryString" else "?$queryString"
+            }
 
-        val requestBuilder = Request.Builder().url(url)
-        token?.let {
-            val authHeader = if (it.startsWith("Bot ") || it.startsWith("Bearer ")) it else it
-            requestBuilder.header("Authorization", authHeader)
-        }
-        requestBuilder.header("Content-Type", "application/json")
+            val requestBuilder = Request.Builder().url(url)
+            token?.let {
+                val authHeader = if (it.startsWith("Bot ") || it.startsWith("Bearer ")) it else it
+                requestBuilder.header("Authorization", authHeader)
+            }
+            requestBuilder.header("Content-Type", "application/json")
 
-        val mediaType = "application/json; charset=utf-8".toMediaType()
-        val requestBody = body?.toString()?.toRequestBody(mediaType)
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBody = body?.toString()?.toRequestBody(mediaType)
 
-        when (route.method) {
-            Method.GET -> requestBuilder.get()
-            Method.POST -> requestBuilder.post(requestBody ?: "".toRequestBody(mediaType))
-            Method.PUT -> requestBuilder.put(requestBody ?: "".toRequestBody(mediaType))
-            Method.PATCH -> requestBuilder.patch(requestBody ?: "".toRequestBody(mediaType))
-            Method.DELETE -> if (requestBody != null) requestBuilder.delete(requestBody) else requestBuilder.delete()
-        }
+            when (route.method) {
+                Method.GET -> requestBuilder.get()
+                Method.POST -> requestBuilder.post(requestBody ?: "".toRequestBody(mediaType))
+                Method.PUT -> requestBuilder.put(requestBody ?: "".toRequestBody(mediaType))
+                Method.PATCH -> requestBuilder.patch(requestBody ?: "".toRequestBody(mediaType))
+                Method.DELETE -> if (requestBody != null) requestBuilder.delete(requestBody) else requestBuilder.delete()
+            }
 
-        val response = client.newCall(requestBuilder.build()).execute()
-        val responseBody = response.body.string()
-        if (!response.isSuccessful) {
-            throw IOException("HTTP ${response.code}: $responseBody")
+            val response = client.newCall(requestBuilder.build()).execute()
+            val responseBody = response.body.string()
+            if (!response.isSuccessful) {
+                throw IOException("HTTP ${response.code}: $responseBody")
+            }
+            if (responseBody.isNotBlank()) JSONObject(responseBody) else JSONObject()
         }
-        if (responseBody.isNotBlank()) JSONObject(responseBody) else JSONObject()
-    }
 
     suspend fun getCurrentUser(): User {
         val json = request(Route.CURRENT_USER)
@@ -91,32 +100,37 @@ class Rest(
         clientSecret: String,
         code: String,
         redirectUri: String,
-    ): TokenResponse = withContext(Dispatchers.IO) {
-        val formBody = FormBody.Builder()
-            .add("client_id", clientId)
-            .add("client_secret", clientSecret)
-            .add("grant_type", "authorization_code")
-            .add("code", code)
-            .add("redirect_uri", redirectUri)
-            .build()
+    ): TokenResponse =
+        withContext(Dispatchers.IO) {
+            val formBody =
+                FormBody
+                    .Builder()
+                    .add("client_id", clientId)
+                    .add("client_secret", clientSecret)
+                    .add("grant_type", "authorization_code")
+                    .add("code", code)
+                    .add("redirect_uri", redirectUri)
+                    .build()
 
-        val req = Request.Builder()
-            .url("${Constants.API_BASE_URL}/oauth2/token")
-            .post(formBody)
-            .build()
+            val req =
+                Request
+                    .Builder()
+                    .url("${Constants.API_BASE_URL}/oauth2/token")
+                    .post(formBody)
+                    .build()
 
-        val response = client.newCall(req).execute()
-        val body = response.body.string()
-        if (!response.isSuccessful) {
-            throw IOException("OAuth2 token exchange failed: HTTP ${response.code} $body")
+            val response = client.newCall(req).execute()
+            val body = response.body.string()
+            if (!response.isSuccessful) {
+                throw IOException("OAuth2 token exchange failed: HTTP ${response.code} $body")
+            }
+            val json = JSONObject(body)
+            TokenResponse(
+                accessToken = json.getString("access_token"),
+                tokenType = json.optString("token_type", "Bearer"),
+                expiresIn = json.optLong("expires_in", 0),
+                refreshToken = json.optString("refresh_token").takeIf { it.isNotBlank() },
+                scope = json.optString("scope").takeIf { it.isNotBlank() },
+            )
         }
-        val json = JSONObject(body)
-        TokenResponse(
-            accessToken = json.getString("access_token"),
-            tokenType = json.optString("token_type", "Bearer"),
-            expiresIn = json.optLong("expires_in", 0),
-            refreshToken = json.optString("refresh_token").takeIf { it.isNotBlank() },
-            scope = json.optString("scope").takeIf { it.isNotBlank() },
-        )
-    }
 }

@@ -1,8 +1,10 @@
 package com.yunfie.illustia.ui.screens
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -16,7 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -28,7 +30,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -39,9 +43,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.normalizedUgoiraDelayMillis
@@ -50,8 +51,10 @@ import com.yunfie.illustia.ui.components.PixivImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -65,7 +68,6 @@ internal fun UgoiraArtwork(
     onZoomChanged: (Boolean) -> Unit = {},
     onTap: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val animationScope = rememberCoroutineScope()
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -76,21 +78,14 @@ internal fun UgoiraArtwork(
             }
     }
     val playback = playbackResult?.getOrNull()
-    var currentFrameStep by remember(playback, reloadKey) { mutableLongStateOf(0L) }
-    var loadedFrameStep by remember(playback, reloadKey) { mutableLongStateOf(-1L) }
+    val decodedBitmaps = remember(playback) { mutableStateMapOf<Int, ImageBitmap>() }
+    var currentFrameIndex by remember(playback, reloadKey) { mutableIntStateOf(0) }
     var scale by remember(previewUrl) { mutableFloatStateOf(1f) }
     var offset by remember(previewUrl) { mutableStateOf(Offset.Zero) }
     var localScale by remember(previewUrl) { mutableFloatStateOf(1f) }
     var localOffset by remember(previewUrl) { mutableStateOf(Offset.Zero) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
-
-    val currentFrameIndex =
-        if (playback?.frames?.isNotEmpty() == true) {
-            (currentFrameStep % playback.frames.size).toInt()
-        } else {
-            0
-        }
 
     fun notifyZoomChanged(
         previous: Float,
@@ -153,13 +148,45 @@ internal fun UgoiraArtwork(
         }
     }
 
-    LaunchedEffect(playback, currentFrameStep, loadedFrameStep) {
-        val nextPlayback = playback ?: return@LaunchedEffect
-        if (nextPlayback.frames.isEmpty()) return@LaunchedEffect
-        if (loadedFrameStep != currentFrameStep) return@LaunchedEffect
-        val frame = nextPlayback.frames[currentFrameIndex]
-        delay(normalizedUgoiraDelayMillis(frame.delayMillis))
-        currentFrameStep += 1L
+    LaunchedEffect(playback) {
+        val frames = playback?.frames ?: return@LaunchedEffect
+        withContext(Dispatchers.IO) {
+            frames.forEachIndexed { index, frame ->
+                if (!isActive) return@withContext
+                if (!decodedBitmaps.containsKey(index)) {
+                    val bitmap =
+                        runCatching {
+                            BitmapFactory.decodeFile(frame.filePath)?.asImageBitmap()
+                        }.getOrNull()
+                    if (bitmap != null) {
+                        decodedBitmaps[index] = bitmap
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(playback) {
+        val frames = playback?.frames ?: return@LaunchedEffect
+        if (frames.isEmpty()) return@LaunchedEffect
+        var index = 0
+        var nextTargetTime = System.currentTimeMillis()
+        while (isActive) {
+            val frame = frames[index]
+            currentFrameIndex = index
+            val delayDuration = normalizedUgoiraDelayMillis(frame.delayMillis)
+            nextTargetTime += delayDuration
+            val waitTime = nextTargetTime - System.currentTimeMillis()
+            if (waitTime > 0) {
+                delay(waitTime)
+            } else {
+                if (waitTime < -delayDuration) {
+                    nextTargetTime = System.currentTimeMillis()
+                }
+                yield()
+            }
+            index = (index + 1) % frames.size
+        }
     }
 
     Box(
@@ -239,31 +266,20 @@ internal fun UgoiraArtwork(
                         },
             ) {
                 val contentScale = if (zoomEnabled) ContentScale.Fit else ContentScale.FillWidth
-                PixivImage(
-                    url = previewUrl,
-                    contentDescription = contentDescription,
-                    contentScale = contentScale,
-                    modifier = Modifier.fillMaxSize(),
-                )
-
-                if (playback != null && playback.frames.isNotEmpty()) {
-                    val currentFrame = playback.frames[currentFrameIndex]
-                    val renderedFrameStep = currentFrameStep
-                    val frameRequest =
-                        remember(context, currentFrame.filePath) {
-                            ImageRequest
-                                .Builder(context)
-                                .data(currentFrame.filePath)
-                                .crossfade(false)
-                                .build()
-                        }
-                    AsyncImage(
-                        model = frameRequest,
+                val currentBitmap = decodedBitmaps[currentFrameIndex]
+                if (currentBitmap != null) {
+                    Image(
+                        bitmap = currentBitmap,
                         contentDescription = contentDescription,
                         contentScale = contentScale,
                         modifier = Modifier.fillMaxSize(),
-                        onSuccess = { loadedFrameStep = renderedFrameStep },
-                        onError = { loadedFrameStep = renderedFrameStep },
+                    )
+                } else {
+                    PixivImage(
+                        url = previewUrl,
+                        contentDescription = contentDescription,
+                        contentScale = contentScale,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }

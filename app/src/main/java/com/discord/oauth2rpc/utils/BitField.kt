@@ -1,6 +1,8 @@
 package com.discord.oauth2rpc.utils
 
-open class BitField(var bitfield: Long = 0L) {
+open class BitField(
+    var bitfield: Long = 0L,
+) {
     fun add(vararg bits: Long): BitField {
         for (bit in bits) {
             bitfield = bitfield or bit
@@ -15,13 +17,9 @@ open class BitField(var bitfield: Long = 0L) {
         return this
     }
 
-    fun has(bit: Long): Boolean {
-        return (bitfield and bit) == bit
-    }
+    fun has(bit: Long): Boolean = (bitfield and bit) == bit
 
-    fun missing(vararg bits: Long): List<Long> {
-        return bits.filter { !has(it) }
-    }
+    fun missing(vararg bits: Long): List<Long> = bits.filter { !has(it) }
 
     fun serialize(): Long = bitfield
 

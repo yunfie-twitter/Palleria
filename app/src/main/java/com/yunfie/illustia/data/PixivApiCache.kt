@@ -19,7 +19,10 @@ class PixivApiCache(
 
     private val cache = ConcurrentHashMap<String, CacheEntry<*>>()
 
-    fun <T : Any> get(key: String, now: Long = System.currentTimeMillis()): T? {
+    fun <T : Any> get(
+        key: String,
+        now: Long = System.currentTimeMillis(),
+    ): T? {
         val entry = cache[key] ?: return null
         if (entry.isExpired(now)) {
             return null

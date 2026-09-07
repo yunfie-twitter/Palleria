@@ -42,9 +42,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -143,6 +151,22 @@ fun IllustDetailScreen(
     var revealMutedArtwork by remember(illust.id, isArtistMuted, isTagMuted) { mutableStateOf(!isArtworkMuted) }
     val pixivUrl = remember(illust.id) { "https://www.pixiv.net/artworks/${illust.id}" }
     var isRefreshing by rememberSaveable { mutableStateOf(false) }
+    var lastMouseScrollTime by remember { mutableStateOf(0L) }
+    val mouseScrollConnection =
+        remember {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (System.currentTimeMillis() - lastMouseScrollTime < 400L && available.y > 0f) {
+                        return Offset(0f, available.y)
+                    }
+                    return Offset.Zero
+                }
+            }
+        }
     val pullToRefreshState = rememberPullToRefreshState()
     val detailListState = rememberLazyListState()
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
@@ -397,7 +421,21 @@ fun IllustDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     BoxWithConstraints(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .pointerInput(Unit) {
+                                    awaitPointerEventScope {
+                                        while (true) {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            if (event.type == PointerEventType.Scroll ||
+                                                event.changes.any { it.type == PointerType.Mouse }
+                                            ) {
+                                                lastMouseScrollTime = System.currentTimeMillis()
+                                            }
+                                        }
+                                    }
+                                }.nestedScroll(mouseScrollConnection),
                     ) {
                         val useTwoPaneLayout = maxWidth >= 840.dp && maxWidth > maxHeight
                         if (useTwoPaneLayout) {

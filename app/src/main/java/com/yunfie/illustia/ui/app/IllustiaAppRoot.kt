@@ -77,9 +77,10 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
     val tabs = mainTabs(settings)
-    val initialTab = remember(startupScreen, tabs) {
-        viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
-    }
+    val initialTab =
+        remember(startupScreen, tabs) {
+            viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
+        }
     val initialPage = remember(initialTab, tabs) { tabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
     var previousTab by remember { mutableStateOf<AppTab?>(null) }
@@ -555,6 +556,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     val isDesktop = remember(context) { DesktopEnvironment.isDesktop(context) }
                     val rootRailState = rememberNavigationRailState()
                     val isFullscreenRoute = backStack.lastOrNull() == AppRoute.ImageViewer
+                    val isPreLogin = state.settings.refreshToken.isBlank() || backStack.lastOrNull() == AppRoute.Onboarding
                     BoxWithConstraints(
                         modifier =
                             Modifier
@@ -562,7 +564,10 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                 .padding(rootPadding),
                     ) {
                         val isLandscape = (maxWidth > maxHeight && maxWidth >= 480.dp) || maxWidth >= 600.dp
-                        val showRootNavigationRail = ((isDesktop && maxWidth >= 480.dp) || isLandscape) && !isFullscreenRoute
+                        val showRootNavigationRail =
+                            ((isDesktop && maxWidth >= 480.dp) || isLandscape) &&
+                                !isFullscreenRoute &&
+                                !isPreLogin
                         val navigationTabs = visibleTabs(appState.settings)
 
                         CompositionLocalProvider(LocalUseNavigationRail provides showRootNavigationRail) {

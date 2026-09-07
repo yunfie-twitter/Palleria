@@ -3,14 +3,6 @@
     <locale android:name="ja-JP" />
     <locale android:name="en-US" />
     <locale android:name="ko-KR" />
-    <locale android:name="es-ES" />
-    <locale android:name="pt-BR" />
-    <locale android:name="fr-FR" />
-    <locale android:name="de-DE" />
-    <locale android:name="ru-RU" />
-    <locale android:name="id-ID" />
-    <locale android:name="th-TH" />
-    <locale android:name="vi-VN" />
     <locale android:name="zh-Hans" />
     <locale android:name="zh-Hant" />
 </locale-config>

@@ -1,6 +1,8 @@
 package com.discord.oauth2rpc.utils
 
-class GatewayCapabilities(bitfield: Long = 0L) : BitField(bitfield) {
+class GatewayCapabilities(
+    bitfield: Long = 0L,
+) : BitField(bitfield) {
     companion object {
         const val LAZY_USER_NOTES = 1L shl 0
         const val NO_CALL_CONNECT = 1L shl 1

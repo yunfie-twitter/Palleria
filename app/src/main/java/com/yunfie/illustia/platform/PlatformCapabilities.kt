@@ -17,8 +17,9 @@ internal object PlatformCapabilities {
     const val LOW_RAM_THRESHOLD_BYTES = 3_758_096_384L // 3.5 GB
 
     fun isLowRamDevice(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-            ?: return false
+        val activityManager =
+            context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                ?: return false
         if (activityManager.isLowRamDevice) {
             return true
         }
@@ -34,6 +35,7 @@ internal object PlatformCapabilities {
         val cores = Runtime.getRuntime().availableProcessors()
         return cores <= 2
     }
+
     private val currentSnapshot by lazy(LazyThreadSafetyMode.PUBLICATION) {
         forSdk(Build.VERSION.SDK_INT)
     }
