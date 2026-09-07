@@ -11,12 +11,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavKey
 import coil3.SingletonImageLoader
+import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.FeatureRepositories
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.PixivApiException
+import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -37,6 +39,7 @@ import com.yunfie.illustia.settings.withSyncedCollections
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
+import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
@@ -271,6 +274,7 @@ abstract class IllustiaViewModelFoundation(
             if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) != true) return
         }
         val loader = SingletonImageLoader.get(context)
+        val proxyBaseUrl = settings.pixivImageProxyBaseUrl
         items
             .asSequence()
             .take(settings.smartCacheItemCount.coerceIn(4, 30))
@@ -283,7 +287,13 @@ abstract class IllustiaViewModelFoundation(
             }.filter(String::isNotBlank)
             .distinct()
             .forEach { url ->
-                loader.enqueue(ImageRequest.Builder(context).data(url).build())
+                val request =
+                    ImageRequest
+                        .Builder(context)
+                        .data(proxyPixivImageUrl(url, proxyBaseUrl))
+                        .httpHeaders(PixivImageHeaders)
+                        .build()
+                loader.enqueue(request)
             }
     }
 

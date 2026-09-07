@@ -386,7 +386,7 @@ fun IllustDetailScreen(
                 }
             if (pullProgress > 0.001f) {
                 PixivImage(
-                    url = illust.squareImageUrl.ifBlank { illust.imageUrl },
+                    url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =
@@ -394,6 +394,7 @@ fun IllustDetailScreen(
                             .fillMaxSize()
                             .blur(36.dp)
                             .graphicsLayer { alpha = pullProgress * 0.55f },
+                    thumbnail = true,
                 )
                 Box(
                     modifier =

@@ -41,10 +41,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.isSecondaryPressed
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -229,43 +225,27 @@ private fun IllustCardImpl(
     val context = LocalContext.current
     val hapticMode = LocalAppHapticMode.current
     val cardModifier =
-        (
-            if (isSelected) {
-                modifier.border(2.dp, MiuixTheme.colorScheme.primary, RoundedCornerShape(14.dp))
-            } else {
-                modifier
-            }
-        ).pointerInput(onLongClick) {
-            if (onLongClick != null) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
-                            performAppHapticFeedback(context, haptic, hapticMode)
-                            onLongClick()
-                        }
-                    }
-                }
-            }
+        if (isSelected) {
+            modifier.border(2.dp, MiuixTheme.colorScheme.primary, RoundedCornerShape(14.dp))
+        } else {
+            modifier
         }
     Card(
-        modifier =
-            cardModifier.combinedClickable(
-                onClick = onClick,
-                onLongClick =
-                    if (onLongClick != null) {
-                        {
-                            performAppHapticFeedback(context, haptic, hapticMode)
-                            onLongClick()
-                        }
-                    } else {
-                        null
-                    },
-            ),
+        modifier = cardModifier,
         cornerRadius = 14.dp,
         insideMargin = PaddingValues(0.dp),
         colors = CardDefaults.defaultColors(color = Color.Transparent, contentColor = MiuixTheme.colorScheme.onBackground),
         pressFeedbackType = PressFeedbackType.Sink,
+        onClick = onClick,
+        onLongPress =
+            if (onLongClick != null) {
+                {
+                    performAppHapticFeedback(context, haptic, hapticMode)
+                    onLongClick()
+                }
+            } else {
+                null
+            },
     ) {
         Box {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -463,33 +443,7 @@ fun IllustListRow(
         }
 
     Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .pointerInput(onLongClick) {
-                    if (onLongClick != null) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
-                                    performAppHapticFeedback(context, haptic, hapticMode)
-                                    onLongClick()
-                                }
-                            }
-                        }
-                    }
-                }.combinedClickable(
-                    onClick = onClick,
-                    onLongClick =
-                        if (onLongClick != null) {
-                            {
-                                performAppHapticFeedback(context, haptic, hapticMode)
-                                onLongClick()
-                            }
-                        } else {
-                            null
-                        },
-                ),
+        modifier = Modifier.fillMaxWidth(),
         cornerRadius = 18.dp,
         insideMargin = PaddingValues(12.dp),
         colors =
@@ -498,6 +452,16 @@ fun IllustListRow(
                 contentColor = MiuixTheme.colorScheme.onBackground,
             ),
         pressFeedbackType = PressFeedbackType.Sink,
+        onClick = onClick,
+        onLongPress =
+            if (onLongClick != null) {
+                {
+                    performAppHapticFeedback(context, haptic, hapticMode)
+                    onLongClick()
+                }
+            } else {
+                null
+            },
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

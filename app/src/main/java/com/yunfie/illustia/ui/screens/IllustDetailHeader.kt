@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,9 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -92,6 +96,7 @@ internal fun IllustDetailHeader(
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
@@ -237,9 +242,15 @@ internal fun IllustDetailHeader(
                             crossfade = true,
                             onSuccess = { bitmap ->
                                 if (page == pagerState.currentPage) {
-                                    val isDark = NativeImageAnalysis.shouldUseDarkHeaderIcons(bitmap)
-                                    useDarkHeaderIcons = isDark
-                                    onHeaderIconsThemeChanged(isDark)
+                                    scope.launch(Dispatchers.Default) {
+                                        val isDark = NativeImageAnalysis.shouldUseDarkHeaderIcons(bitmap)
+                                        withContext(Dispatchers.Main) {
+                                            if (page == pagerState.currentPage) {
+                                                useDarkHeaderIcons = isDark
+                                                onHeaderIconsThemeChanged(isDark)
+                                            }
+                                        }
+                                    }
                                 }
                             },
                         )
