@@ -52,6 +52,31 @@ class IllustiaRepository(
     @Volatile
     private var apiClient: PixivApiClient = PixivApiClient()
 
+    val apiCache = PixivApiCache()
+
+    fun clearApiCache() {
+        apiCache.clear()
+    }
+
+    private suspend inline fun <reified T : Any> withApiCache(
+        key: String,
+        ttlMillis: Long = 10 * 60 * 1000L,
+        crossinline block: suspend () -> T,
+    ): T {
+        apiCache.get<T>(key)?.let { return it }
+        return try {
+            val result = block()
+            apiCache.put(key, result, ttlMillis = ttlMillis)
+            result
+        } catch (expectedFailure: Exception) {
+            val error = expectedFailure
+            if (error.isPixivRateLimited() || error.isTransientConnectionIssue()) {
+                apiCache.getStale<T>(key)?.let { return it }
+            }
+            throw error
+        }
+    }
+
     suspend fun readSettings(viewHistoryLimit: Int? = null): AppSettings {
         val settings =
             settingsCacheMutex.withLock {
@@ -164,6 +189,7 @@ class IllustiaRepository(
 
     suspend fun logout() {
         session = null
+        clearApiCache()
         settingsStore.clearSensitive()
         cachedSettings =
             settingsCacheMutex
@@ -171,29 +197,42 @@ class IllustiaRepository(
                 .also { ensureApiClient(NetworkMode.fromCode(it.pixivNetworkMode)) }
     }
 
-    suspend fun loadRanking(mode: String): PageResult<Illust> = withSessionRetry { session -> apiClient.ranking(session, mode) }
+    suspend fun loadRanking(mode: String): PageResult<Illust> =
+        withApiCache("ranking:$mode", 10 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.ranking(session, mode) }
+        }
 
     suspend fun followingIllusts(restrict: Restrict): PageResult<Illust> =
-        withSessionRetry { session -> apiClient.following(session, restrict) }
+        withApiCache("following:$restrict", 5 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.following(session, restrict) }
+        }
 
     suspend fun loadHome(kind: HomeFeedKind): PageResult<Illust> =
-        withSessionRetry { session ->
-            when (kind) {
-                HomeFeedKind.Recommended -> apiClient.recommended(session)
+        withApiCache("home_feed:${kind.name}", 3 * 60 * 1000L) {
+            withSessionRetry { session ->
+                when (kind) {
+                    HomeFeedKind.Recommended -> apiClient.recommended(session)
 
-                HomeFeedKind.Ranking -> apiClient.ranking(session)
+                    HomeFeedKind.Ranking -> apiClient.ranking(session)
 
-                // Default to day
-                HomeFeedKind.New -> apiClient.newest(session)
+                    // Default to day
+                    HomeFeedKind.New -> apiClient.newest(session)
+                }
             }
         }
 
-    suspend fun loadNovels(): PageResult<NovelPreview> = withSessionRetry { session -> apiClient.recommendedNovels(session) }
+    suspend fun loadNovels(): PageResult<NovelPreview> =
+        withApiCache("novels:recommended", 10 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.recommendedNovels(session) }
+        }
 
     suspend fun nextNovelPage(nextUrl: String): PageResult<NovelPreview> =
         withSessionRetry { session -> apiClient.nextNovelPage(session, nextUrl) }
 
-    suspend fun loadNovelText(novelId: Long): NovelTextContent = withSessionRetry { session -> apiClient.novelText(session, novelId) }
+    suspend fun loadNovelText(novelId: Long): NovelTextContent =
+        withApiCache("novel_text:$novelId", 60 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.novelText(session, novelId) }
+        }
 
     suspend fun search(
         word: String,
@@ -203,8 +242,10 @@ class IllustiaRepository(
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
     ): PageResult<Illust> =
-        withSessionRetry { session ->
-            apiClient.search(session, word, sort, target, duration, bookmarkFilter, includeR18)
+        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L) {
+            withSessionRetry { session ->
+                apiClient.search(session, word, sort, target, duration, bookmarkFilter, includeR18)
+            }
         }
 
     suspend fun searchNovels(
@@ -215,25 +256,47 @@ class IllustiaRepository(
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
     ): PageResult<NovelPreview> =
-        withSessionRetry { session ->
-            apiClient.searchNovels(session, word, sort, target, duration, bookmarkFilter, includeR18)
+        withApiCache("search_novels:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L) {
+            withSessionRetry { session ->
+                apiClient.searchNovels(session, word, sort, target, duration, bookmarkFilter, includeR18)
+            }
         }
 
-    suspend fun searchUsers(word: String): PageResult<UserPreview> = withSessionRetry { session -> apiClient.searchUsers(session, word) }
+    suspend fun searchUsers(word: String): PageResult<UserPreview> =
+        withApiCache("search_users:$word", 5 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.searchUsers(session, word) }
+        }
 
-    suspend fun trendingTags(): List<String> = withSessionRetry { session -> apiClient.trendingTags(session) }
+    suspend fun trendingTags(): List<String> =
+        withApiCache("trending_tags", 30 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.trendingTags(session) }
+        }
 
-    suspend fun popularPreview(word: String): PageResult<Illust> = withSessionRetry { session -> apiClient.popularPreview(session, word) }
+    suspend fun popularPreview(word: String): PageResult<Illust> =
+        withApiCache("popular_preview:$word", 10 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.popularPreview(session, word) }
+        }
 
-    suspend fun searchAutocomplete(word: String): List<String> = withSessionRetry { session -> apiClient.searchAutocomplete(session, word) }
+    suspend fun searchAutocomplete(word: String): List<String> {
+        val trimmed = word.trim()
+        if (trimmed.isBlank()) return emptyList()
+        return withApiCache("autocomplete:${trimmed.lowercase()}", 30 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.searchAutocomplete(session, trimmed) }
+        }
+    }
 
-    suspend fun watchlistManga(): WatchlistMangaModel = withSessionRetry { session -> apiClient.watchlistManga(session) }
+    suspend fun watchlistManga(): WatchlistMangaModel =
+        withApiCache("watchlist_manga", 10 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.watchlistManga(session) }
+        }
 
     suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel =
         withSessionRetry { session -> apiClient.nextWatchlistMangaPage(session, nextUrl) }
 
     suspend fun illustSeries(illustSeriesId: Long): IllustSeriesWithIdModel =
-        withSessionRetry { session -> apiClient.illustSeries(session, illustSeriesId) }
+        withApiCache("illust_series:$illustSeriesId", 15 * 60 * 1000L) {
+            withSessionRetry { session -> apiClient.illustSeries(session, illustSeriesId) }
+        }
 
     suspend fun nextIllustSeriesPage(nextUrl: String): IllustSeriesWithIdModel =
         withSessionRetry { session -> apiClient.nextIllustSeriesPage(session, nextUrl) }
@@ -515,6 +578,22 @@ class IllustiaRepository(
         while (current != null) {
             val message = current.message.orEmpty()
             if (message.contains("Connection closed before full header was received")) {
+                return true
+            }
+            current = current.cause
+        }
+        return false
+    }
+
+    private fun Throwable.isPixivRateLimited(): Boolean {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is PixivApiException && current.statusCode == 429) return true
+            val message = current.message.orEmpty()
+            if (message.contains("429") ||
+                message.contains("rate limit", ignoreCase = true) ||
+                message.contains("Too Many Requests", ignoreCase = true)
+            ) {
                 return true
             }
             current = current.cause

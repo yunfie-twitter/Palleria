@@ -23,7 +23,6 @@ import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.HeroPanel
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
@@ -80,13 +79,6 @@ fun ExperimentalSettingsScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item {
-                HeroPanel(
-                    title = stringResource(R.string.experimental_customize_title),
-                    body = stringResource(R.string.experimental_customize_summary),
-                )
-            }
-
             item {
                 Section(stringResource(R.string.general_section_display)) {
                     ElevatedPanel {

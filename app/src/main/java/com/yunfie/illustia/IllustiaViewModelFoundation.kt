@@ -9,6 +9,7 @@ import android.net.NetworkCapabilities
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation3.runtime.NavKey
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
 import com.yunfie.illustia.account.PalleriaAccount
@@ -33,6 +34,9 @@ import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.withSyncedCollections
+import com.yunfie.illustia.ui.app.AppRoute
+import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
@@ -138,6 +142,10 @@ abstract class IllustiaViewModelFoundation(
     val homeTimelineGridState = LazyGridState()
     val searchResultGridState = LazyGridState()
     val searchBrowseGridState = LazyGridState()
+    internal var activeTab: AppTab? = null
+    internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
+    internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
+    internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
     protected val rankingGridStates = mutableMapOf<String, LazyGridState>()
     protected val userProfileGridStates = mutableMapOf<Long, LazyGridState>()
     protected val downloadClient: OkHttpClient by lazy {

@@ -19,5 +19,9 @@ class AppUpdaterRepositoryTest :
             UpdateInstallMethod.fromValue("standard_apk") shouldBe UpdateInstallMethod.STANDARD_APK
             UpdateInstallMethod.fromValue("shizuku") shouldBe UpdateInstallMethod.SHIZUKU
             UpdateInstallMethod.fromValue("unknown") shouldBe UpdateInstallMethod.STANDARD_APK
+            UpdateInstallMethod.fromValue(null) shouldBe UpdateInstallMethod.STANDARD_APK
+            UpdateInstallMethod.fromValue("") shouldBe UpdateInstallMethod.STANDARD_APK
+            UpdateInstallMethod.SHIZUKU.value shouldBe "shizuku"
+            UpdateInstallMethod.STANDARD_APK.value shouldBe "standard_apk"
         }
     })

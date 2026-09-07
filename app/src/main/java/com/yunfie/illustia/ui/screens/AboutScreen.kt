@@ -345,26 +345,6 @@ fun AboutScreen(
                 }
             }
 
-            // 情報
-            item {
-                Section(stringResource(R.string.about_section_info)) {
-                    ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                        SettingRow(stringResource(R.string.about_version_label), appVersion) {}
-                        DividerLine()
-                        SettingRow(stringResource(R.string.about_supported_os), "Android 7.1+") {}
-                        DividerLine()
-                        SettingRow(stringResource(R.string.about_license), stringResource(R.string.about_open_source)) {
-                            Text(
-                                "GPLv3",
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontWeight = FontWeight.Bold,
-                                style = MiuixTheme.textStyles.footnote1,
-                            )
-                        }
-                    }
-                }
-            }
-
             // リンク
             item {
                 Section(stringResource(R.string.about_section_links)) {

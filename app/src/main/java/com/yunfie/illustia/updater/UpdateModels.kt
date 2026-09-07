@@ -12,7 +12,7 @@ enum class UpdateInstallMethod(
     ;
 
     companion object {
-        fun fromValue(value: String): UpdateInstallMethod =
+        fun fromValue(value: String?): UpdateInstallMethod =
             entries.firstOrNull { it.value.equals(value, ignoreCase = true) } ?: STANDARD_APK
     }
 }

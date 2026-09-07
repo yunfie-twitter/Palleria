@@ -19,6 +19,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -54,6 +55,12 @@ fun UpdateSettingsScreen(
     val context = LocalContext.current
     var isShizukuAvailable by remember { mutableStateOf(viewModel.appUpdaterRepository.isShizukuAvailable()) }
     var isShizukuGranted by remember { mutableStateOf(viewModel.appUpdaterRepository.isShizukuPermissionGranted()) }
+
+    LifecycleResumeEffect(Unit) {
+        isShizukuAvailable = viewModel.appUpdaterRepository.isShizukuAvailable()
+        isShizukuGranted = viewModel.appUpdaterRepository.isShizukuPermissionGranted()
+        onPauseOrDispose { }
+    }
 
     DisposableEffect(Unit) {
         val permissionListener =

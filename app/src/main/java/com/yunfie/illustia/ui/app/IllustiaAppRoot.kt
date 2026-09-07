@@ -77,15 +77,17 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
     val tabs = mainTabs(settings)
-    val initialTab = remember(startupScreen, tabs) { startupTabFor(startupScreen, tabs) }
+    val initialTab = remember(startupScreen, tabs) {
+        viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
+    }
     val initialPage = remember(initialTab, tabs) { tabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
     var previousTab by remember { mutableStateOf<AppTab?>(null) }
     var showTokenLogin by remember { mutableStateOf(false) }
-    val selectedWatchlistSeriesIds = remember { mutableStateListOf<Long>() }
+    val selectedWatchlistSeriesIds = viewModel.selectedWatchlistSeriesIds
     var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
-    val backStack = remember { mutableStateListOf<NavKey>(AppRoute.Main) }
-    val detailSnapshots = remember { mutableStateMapOf<Long, DetailEntrySnapshot>() }
+    val backStack = viewModel.navigationBackStack
+    val detailSnapshots = viewModel.detailSnapshots
     val pagerState =
         androidx.compose.foundation.pager.rememberPagerState(
             initialPage = initialPage,
@@ -234,16 +236,19 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
 
     LaunchedEffect(pagerState.settledPage) {
         selectedTab = tabs[pagerState.settledPage]
+        viewModel.activeTab = selectedTab
     }
 
     LaunchedEffect(tabs) {
         val targetTab = selectedTab.takeIf { it in tabs } ?: initialTab
         val targetIndex = tabs.indexOf(targetTab).coerceAtLeast(0)
         selectedTab = targetTab
+        viewModel.activeTab = targetTab
         if (pagerState.currentPage != targetIndex) pagerState.scrollToPage(targetIndex)
     }
 
     LaunchedEffect(selectedTab) {
+        viewModel.activeTab = selectedTab
         if (previousTab == AppTab.Search && selectedTab != AppTab.Search) {
             viewModel.clearSearchResults()
         }

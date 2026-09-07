@@ -14,10 +14,9 @@ import kotlinx.serialization.json.longOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import rikka.shizuku.Shizuku
-import java.io.BufferedReader
+import rikka.shizuku.ShizukuProvider
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStreamReader
 
 class AppUpdaterRepository(
     private val context: Context,
@@ -151,16 +150,20 @@ class AppUpdaterRepository(
             Shizuku.pingBinder()
         }.getOrDefault(false)
 
-    fun isShizukuPermissionGranted(): Boolean {
-        return runCatching {
+    fun isShizukuPermissionGranted(): Boolean =
+        runCatching {
             if (!isShizukuAvailable()) return false
-            Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+            if (Shizuku.getVersion() < 11) {
+                context.checkSelfPermission(ShizukuProvider.PERMISSION) == PackageManager.PERMISSION_GRANTED
+            } else {
+                Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+            }
         }.getOrDefault(false)
-    }
 
     fun requestShizukuPermission(requestCode: Int = 1001) {
         runCatching {
-            if (isShizukuAvailable() && !isShizukuPermissionGranted()) {
+            if (!isShizukuAvailable()) return
+            if (Shizuku.getVersion() >= 11 && !isShizukuPermissionGranted()) {
                 Shizuku.requestPermission(requestCode)
             }
         }
@@ -199,26 +202,72 @@ class AppUpdaterRepository(
     }
 
     private fun installViaShizuku(apkFile: File) {
-        val method =
+        require(apkFile.exists() && apkFile.isFile) { "APK file does not exist: ${apkFile.absolutePath}" }
+        val fileSize = apkFile.length()
+        require(fileSize > 0) { "APK file is empty: ${apkFile.absolutePath}" }
+
+        // Use streaming installation with -S <fileSize> via standard input.
+        // Direct file paths cannot be read by shell UID (2000) due to app private sandbox permissions.
+        val command = arrayOf("pm", "install", "-r", "-d", "-t", "-S", fileSize.toString())
+        val newProcessMethod =
             Shizuku::class.java.getDeclaredMethod(
                 "newProcess",
                 Array<String>::class.java,
                 Array<String>::class.java,
                 String::class.java,
-            )
-        method.isAccessible = true
+            ).apply { isAccessible = true }
+
         val process =
-            method.invoke(
-                null,
-                arrayOf("pm", "install", "-r", "-d", apkFile.absolutePath),
-                null,
-                null,
-            ) as Process
-        val reader = BufferedReader(InputStreamReader(process.inputStream))
-        val output = reader.readText()
+            runCatching {
+                newProcessMethod.invoke(null, command, null, null) as Process
+            }.getOrElse { error ->
+                throw IllegalStateException("Failed to start Shizuku process: ${error.message}", error)
+            }
+
+        var stdout = ""
+        var stderr = ""
+
+        val stdoutThread =
+            Thread {
+                stdout =
+                    runCatching {
+                        process.inputStream.bufferedReader().readText()
+                    }.getOrDefault("")
+            }.apply { start() }
+
+        val stderrThread =
+            Thread {
+                stderr =
+                    runCatching {
+                        process.errorStream.bufferedReader().readText()
+                    }.getOrDefault("")
+            }.apply { start() }
+
+        try {
+            process.outputStream.use { outputStream ->
+                apkFile.inputStream().use { inputStream ->
+                    inputStream.copyTo(outputStream, bufferSize = 65536)
+                }
+                outputStream.flush()
+            }
+        } catch (e: Exception) {
+            runCatching { process.destroy() }
+            throw IllegalStateException("Failed to stream APK to Shizuku installer: ${e.message}", e)
+        }
+
         val exitCode = process.waitFor()
-        if (exitCode != 0 || (!output.contains("Success", ignoreCase = true) && output.contains("Failure", ignoreCase = true))) {
-            throw IllegalStateException("Shizuku install failed (): ")
+        runCatching { stdoutThread.join(5000) }
+        runCatching { stderrThread.join(5000) }
+
+        val combinedOutput = "$stdout\n$stderr".trim()
+        val hasFailure =
+            combinedOutput.contains("Failure", ignoreCase = true) ||
+                combinedOutput.contains("Error:", ignoreCase = true)
+        val hasSuccess = combinedOutput.contains("Success", ignoreCase = true)
+
+        if (exitCode != 0 || hasFailure || !hasSuccess) {
+            val errorDetails = combinedOutput.ifBlank { "Exit code $exitCode" }
+            throw IllegalStateException("Shizuku installation failed ($exitCode): $errorDetails")
         }
     }
 
