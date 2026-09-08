@@ -2,6 +2,7 @@ package com.yunfie.illustia.data
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.os.Build
 import com.yunfie.illustia.rust.analyzeRgba
 import kotlin.math.roundToInt
 
@@ -11,6 +12,7 @@ internal object NativeImageAnalysis {
 
     fun shouldUseDarkHeaderIcons(bitmap: Bitmap): Boolean {
         val sample = sampledPixels(bitmap, HEADER_SAMPLE_SIZE)
+        if (sample.pixels.isEmpty()) return false
         val insetX = (sample.width / 6).coerceAtLeast(1)
         val insetY = (sample.height / 6).coerceAtLeast(1)
         val rgba =
@@ -29,6 +31,7 @@ internal object NativeImageAnalysis {
 
     fun dominantColor(bitmap: Bitmap): Int {
         val sample = sampledPixels(bitmap, COLOR_SAMPLE_SIZE)
+        if (sample.pixels.isEmpty()) return Color.BLACK
         return analyzeRgba(pixelsToRgba(sample.pixels)).dominantArgb
     }
 
@@ -36,28 +39,43 @@ internal object NativeImageAnalysis {
         bitmap: Bitmap,
         maxDimension: Int,
     ): PixelSample {
-        if (bitmap.width <= 0 || bitmap.height <= 0) {
+        if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
             return PixelSample(0, 0, IntArray(0))
         }
-        val scale =
-            minOf(
-                1f,
-                maxDimension.toFloat() / maxOf(bitmap.width, bitmap.height).toFloat(),
-            )
-        val width = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
-        val height = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
-        val sampled =
-            if (width == bitmap.width && height == bitmap.height) {
-                bitmap
+        val softwareBitmap =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
+                runCatching { bitmap.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull()
+                    ?: return PixelSample(0, 0, IntArray(0))
             } else {
-                Bitmap.createScaledBitmap(bitmap, width, height, true)
+                bitmap
             }
+        var sampled: Bitmap? = null
         return try {
+            val scale =
+                minOf(
+                    1f,
+                    maxDimension.toFloat() / maxOf(softwareBitmap.width, softwareBitmap.height).toFloat(),
+                )
+            val width = (softwareBitmap.width * scale).roundToInt().coerceAtLeast(1)
+            val height = (softwareBitmap.height * scale).roundToInt().coerceAtLeast(1)
+            sampled =
+                if (width == softwareBitmap.width && height == softwareBitmap.height) {
+                    softwareBitmap
+                } else {
+                    Bitmap.createScaledBitmap(softwareBitmap, width, height, true)
+                }
             val pixels = IntArray(width * height)
             sampled.getPixels(pixels, 0, width, 0, 0, width, height)
             PixelSample(width, height, pixels)
+        } catch (_: Throwable) {
+            PixelSample(0, 0, IntArray(0))
         } finally {
-            if (sampled !== bitmap) sampled.recycle()
+            if (sampled != null && sampled !== softwareBitmap && sampled !== bitmap) {
+                sampled.recycle()
+            }
+            if (softwareBitmap !== bitmap) {
+                softwareBitmap.recycle()
+            }
         }
     }
 
