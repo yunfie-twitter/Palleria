@@ -54,4 +54,13 @@ class PixivApiCacheTest :
             (cache.size <= 5) shouldBe true
             cache.get<String>("key6", now = 600L) shouldBe "value6"
         }
+
+        "clear should remove all cached items" {
+            val cache = PixivApiCache()
+            cache.put("a", "1")
+            cache.put("b", "2")
+            cache.clear()
+            cache.size shouldBe 0
+            cache.get<String>("a") shouldBe null
+        }
     })

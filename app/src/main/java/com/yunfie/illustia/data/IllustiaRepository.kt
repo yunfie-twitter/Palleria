@@ -58,12 +58,15 @@ class IllustiaRepository(
         apiCache.clear()
     }
 
-    private suspend inline fun <reified T : Any> withApiCache(
+    internal suspend inline fun <reified T : Any> withApiCache(
         key: String,
         ttlMillis: Long = 10 * 60 * 1000L,
+        forceRefresh: Boolean = false,
         crossinline block: suspend () -> T,
     ): T {
-        apiCache.get<T>(key)?.let { return it }
+        if (!forceRefresh) {
+            apiCache.get<T>(key)?.let { return it }
+        }
         return try {
             val result = block()
             apiCache.put(key, result, ttlMillis = ttlMillis)
@@ -197,18 +200,27 @@ class IllustiaRepository(
                 .also { ensureApiClient(NetworkMode.fromCode(it.pixivNetworkMode)) }
     }
 
-    suspend fun loadRanking(mode: String): PageResult<Illust> =
-        withApiCache("ranking:$mode", 10 * 60 * 1000L) {
+    suspend fun loadRanking(
+        mode: String,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust> =
+        withApiCache("ranking:$mode", 10 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.ranking(session, mode) }
         }
 
-    suspend fun followingIllusts(restrict: Restrict): PageResult<Illust> =
-        withApiCache("following:$restrict", 5 * 60 * 1000L) {
+    suspend fun followingIllusts(
+        restrict: Restrict,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust> =
+        withApiCache("following:$restrict", 5 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.following(session, restrict) }
         }
 
-    suspend fun loadHome(kind: HomeFeedKind): PageResult<Illust> =
-        withApiCache("home_feed:${kind.name}", 3 * 60 * 1000L) {
+    suspend fun loadHome(
+        kind: HomeFeedKind,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust> =
+        withApiCache("home_feed:${kind.name}", 3 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session ->
                 when (kind) {
                     HomeFeedKind.Recommended -> apiClient.recommended(session)
@@ -221,16 +233,19 @@ class IllustiaRepository(
             }
         }
 
-    suspend fun loadNovels(): PageResult<NovelPreview> =
-        withApiCache("novels:recommended", 10 * 60 * 1000L) {
+    suspend fun loadNovels(forceRefresh: Boolean = false): PageResult<NovelPreview> =
+        withApiCache("novels:recommended", 10 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.recommendedNovels(session) }
         }
 
     suspend fun nextNovelPage(nextUrl: String): PageResult<NovelPreview> =
         withSessionRetry { session -> apiClient.nextNovelPage(session, nextUrl) }
 
-    suspend fun loadNovelText(novelId: Long): NovelTextContent =
-        withApiCache("novel_text:$novelId", 60 * 60 * 1000L) {
+    suspend fun loadNovelText(
+        novelId: Long,
+        forceRefresh: Boolean = false,
+    ): NovelTextContent =
+        withApiCache("novel_text:$novelId", 60 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.novelText(session, novelId) }
         }
 
@@ -241,8 +256,9 @@ class IllustiaRepository(
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L) {
+        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session ->
                 apiClient.search(session, word, sort, target, duration, bookmarkFilter, includeR18)
             }
@@ -255,46 +271,59 @@ class IllustiaRepository(
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        forceRefresh: Boolean = false,
     ): PageResult<NovelPreview> =
-        withApiCache("search_novels:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L) {
+        withApiCache("search_novels:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session ->
                 apiClient.searchNovels(session, word, sort, target, duration, bookmarkFilter, includeR18)
             }
         }
 
-    suspend fun searchUsers(word: String): PageResult<UserPreview> =
-        withApiCache("search_users:$word", 5 * 60 * 1000L) {
+    suspend fun searchUsers(
+        word: String,
+        forceRefresh: Boolean = false,
+    ): PageResult<UserPreview> =
+        withApiCache("search_users:$word", 5 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.searchUsers(session, word) }
         }
 
-    suspend fun trendingTags(): List<String> =
-        withApiCache("trending_tags", 30 * 60 * 1000L) {
+    suspend fun trendingTags(forceRefresh: Boolean = false): List<String> =
+        withApiCache("trending_tags", 30 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.trendingTags(session) }
         }
 
-    suspend fun popularPreview(word: String): PageResult<Illust> =
-        withApiCache("popular_preview:$word", 10 * 60 * 1000L) {
+    suspend fun popularPreview(
+        word: String,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust> =
+        withApiCache("popular_preview:$word", 10 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.popularPreview(session, word) }
         }
 
-    suspend fun searchAutocomplete(word: String): List<String> {
+    suspend fun searchAutocomplete(
+        word: String,
+        forceRefresh: Boolean = false,
+    ): List<String> {
         val trimmed = word.trim()
         if (trimmed.isBlank()) return emptyList()
-        return withApiCache("autocomplete:${trimmed.lowercase()}", 30 * 60 * 1000L) {
+        return withApiCache("autocomplete:${trimmed.lowercase()}", 30 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.searchAutocomplete(session, trimmed) }
         }
     }
 
-    suspend fun watchlistManga(): WatchlistMangaModel =
-        withApiCache("watchlist_manga", 10 * 60 * 1000L) {
+    suspend fun watchlistManga(forceRefresh: Boolean = false): WatchlistMangaModel =
+        withApiCache("watchlist_manga", 10 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.watchlistManga(session) }
         }
 
     suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel =
         withSessionRetry { session -> apiClient.nextWatchlistMangaPage(session, nextUrl) }
 
-    suspend fun illustSeries(illustSeriesId: Long): IllustSeriesWithIdModel =
-        withApiCache("illust_series:$illustSeriesId", 15 * 60 * 1000L) {
+    suspend fun illustSeries(
+        illustSeriesId: Long,
+        forceRefresh: Boolean = false,
+    ): IllustSeriesWithIdModel =
+        withApiCache("illust_series:$illustSeriesId", 15 * 60 * 1000L, forceRefresh) {
             withSessionRetry { session -> apiClient.illustSeries(session, illustSeriesId) }
         }
 
@@ -357,24 +386,44 @@ class IllustiaRepository(
 
     suspend fun watchlistMangaAdd(seriesId: Long) {
         withSessionRetry { session -> apiClient.addWatchlistManga(session, seriesId) }
+        apiCache.remove("watchlist_manga")
+        apiCache.remove("illust_series:$seriesId")
     }
 
     suspend fun watchlistMangaDelete(seriesId: Long) {
         withSessionRetry { session -> apiClient.removeWatchlistManga(session, seriesId) }
+        apiCache.remove("watchlist_manga")
+        apiCache.remove("illust_series:$seriesId")
     }
 
-    suspend fun followingUsers(restrict: Restrict): PageResult<UserPreview> =
-        withSessionRetry { session ->
-            val userId =
-                session.userId
-                    ?: throw IllegalStateException("Pixiv user ID is not available.")
-            apiClient.followingUsers(session, userId, restrict)
+    suspend fun followingUsers(
+        restrict: Restrict,
+        forceRefresh: Boolean = false,
+    ): PageResult<UserPreview> =
+        withApiCache("following_users:$restrict", 5 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session ->
+                val userId =
+                    session.userId
+                        ?: throw IllegalStateException("Pixiv user ID is not available.")
+                apiClient.followingUsers(session, userId, restrict)
+            }
         }
 
-    suspend fun userDetail(userId: Long): UserProfile = withSessionRetry { session -> apiClient.userDetail(session, userId) }
+    suspend fun userDetail(
+        userId: Long,
+        forceRefresh: Boolean = false,
+    ): UserProfile =
+        withApiCache("user_detail:$userId", 15 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session -> apiClient.userDetail(session, userId) }
+        }
 
-    suspend fun userFollowDetail(userId: Long): UserFollowDetail =
-        withSessionRetry { session -> apiClient.userFollowDetail(session, userId) }
+    suspend fun userFollowDetail(
+        userId: Long,
+        forceRefresh: Boolean = false,
+    ): UserFollowDetail =
+        withApiCache("user_follow_detail:$userId", 10 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session -> apiClient.userFollowDetail(session, userId) }
+        }
 
     suspend fun createWebSocket(
         url: String,
@@ -444,10 +493,21 @@ class IllustiaRepository(
 
     suspend fun userIllusts(userId: Long): PageResult<Illust> = withSessionRetry { session -> apiClient.userIllusts(session, userId) }
 
-    suspend fun illustDetail(illustId: Long): Illust = withSessionRetry { session -> apiClient.illustDetail(session, illustId) }
+    suspend fun illustDetail(
+        illustId: Long,
+        forceRefresh: Boolean = false,
+    ): Illust =
+        withApiCache("illust_detail:$illustId", 15 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session -> apiClient.illustDetail(session, illustId) }
+        }
 
-    suspend fun ugoiraMetadata(illustId: Long): UgoiraMetadataResponse =
-        withSessionRetry { session -> apiClient.ugoiraMetadata(session, illustId) }
+    suspend fun ugoiraMetadata(
+        illustId: Long,
+        forceRefresh: Boolean = false,
+    ): UgoiraMetadataResponse =
+        withApiCache("ugoira_meta:$illustId", 30 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session -> apiClient.ugoiraMetadata(session, illustId) }
+        }
 
     suspend fun prepareUgoira(
         url: String,
@@ -455,8 +515,13 @@ class IllustiaRepository(
         frames: List<UgoiraFrame>,
     ): UgoiraPlayback = apiClient.prepareUgoira(url, cacheDir, frames)
 
-    suspend fun relatedIllusts(illustId: Long): PageResult<Illust> =
-        withSessionRetry { session -> apiClient.relatedIllusts(session, illustId) }
+    suspend fun relatedIllusts(
+        illustId: Long,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust> =
+        withApiCache("related_illusts:$illustId", 10 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session -> apiClient.relatedIllusts(session, illustId) }
+        }
 
     suspend fun followUser(
         userId: Long,
@@ -465,16 +530,28 @@ class IllustiaRepository(
         withSessionRetry { session ->
             apiClient.followUser(session, userId, restrict)
         }
+        apiCache.removeByPrefix("following:")
+        apiCache.removeByPrefix("following_users:")
+        apiCache.remove("user_detail:$userId")
+        apiCache.remove("user_follow_detail:$userId")
     }
 
     suspend fun unfollowUser(userId: Long) {
         withSessionRetry { session -> apiClient.unfollowUser(session, userId) }
+        apiCache.removeByPrefix("following:")
+        apiCache.removeByPrefix("following_users:")
+        apiCache.remove("user_detail:$userId")
+        apiCache.remove("user_follow_detail:$userId")
     }
 
     suspend fun bookmarks(
         userId: Long,
         restrict: Restrict,
-    ): PageResult<Illust> = withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict) }
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust> =
+        withApiCache("bookmarks:$userId:$restrict", 5 * 60 * 1000L, forceRefresh) {
+            withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict) }
+        }
 
     suspend fun nextPage(nextUrl: String): PageResult<Illust> = withSessionRetry { session -> apiClient.nextIllustPage(session, nextUrl) }
 
@@ -488,9 +565,13 @@ class IllustiaRepository(
         withSessionRetry { session ->
             if (illust.isBookmarked) {
                 apiClient.removeBookmark(session, illust.id)
+                apiCache.removeByPrefix("bookmarks:")
+                apiCache.remove("illust_detail:${illust.id}")
                 illust.copy(isBookmarked = false)
             } else {
                 apiClient.addBookmark(session, illust.id, restrict)
+                apiCache.removeByPrefix("bookmarks:")
+                apiCache.remove("illust_detail:${illust.id}")
                 illust.copy(isBookmarked = true)
             }
         }

@@ -186,10 +186,10 @@ fun BookmarkScreen(
                 IconButton(onClick = {
                     performAppHapticFeedback(context, haptic, hapticMode)
                     when (selectedTopTab) {
-                        0 -> viewModel.refreshTimeline()
+                        0 -> viewModel.refreshTimeline(forceRefresh = true)
                         2 -> coroutineScope.launch { watchlistStore.fetch() }
-                        3 -> viewModel.refreshFollowingUsers()
-                        else -> viewModel.refreshBookmarks()
+                        3 -> viewModel.refreshFollowingUsers(forceRefresh = true)
+                        else -> viewModel.refreshBookmarks(forceRefresh = true)
                     }
                 }) {
                     Icon(

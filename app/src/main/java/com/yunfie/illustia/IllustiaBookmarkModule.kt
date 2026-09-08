@@ -188,7 +188,7 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
-    fun refreshBookmarks() {
+    fun refreshBookmarks(forceRefresh: Boolean = false) {
         val userId = _uiState.value.settings.bookmarkUserId
         if (userId == null) {
             _uiState.update {
@@ -197,7 +197,7 @@ abstract class IllustiaBookmarkModule(
             return
         }
         runLoading {
-            val page = repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict)
+            val page = repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
             _uiState.update {
                 it.copy(
                     bookmarkItems = page.items.visibleWithSettings(it.settings),

@@ -28,15 +28,30 @@ internal interface SessionRepository {
 }
 
 internal interface ArtworkRepository {
-    suspend fun loadHome(kind: HomeFeedKind): PageResult<Illust>
+    suspend fun loadHome(
+        kind: HomeFeedKind,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust>
 
-    suspend fun loadRanking(mode: String): PageResult<Illust>
+    suspend fun loadRanking(
+        mode: String,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust>
 
-    suspend fun followingIllusts(restrict: Restrict): PageResult<Illust>
+    suspend fun followingIllusts(
+        restrict: Restrict,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust>
 
-    suspend fun illustDetail(illustId: Long): Illust
+    suspend fun illustDetail(
+        illustId: Long,
+        forceRefresh: Boolean = false,
+    ): Illust
 
-    suspend fun relatedIllusts(illustId: Long): PageResult<Illust>
+    suspend fun relatedIllusts(
+        illustId: Long,
+        forceRefresh: Boolean = false,
+    ): PageResult<Illust>
 
     suspend fun nextPage(nextUrl: String): PageResult<Illust>
 }
@@ -49,19 +64,29 @@ internal interface SearchRepository {
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        forceRefresh: Boolean = false,
     ): PageResult<Illust>
 
-    suspend fun searchUsers(word: String): PageResult<UserPreview>
+    suspend fun searchUsers(
+        word: String,
+        forceRefresh: Boolean = false,
+    ): PageResult<UserPreview>
 
-    suspend fun trendingTags(): List<String>
+    suspend fun trendingTags(forceRefresh: Boolean = false): List<String>
 
-    suspend fun searchAutocomplete(word: String): List<String>
+    suspend fun searchAutocomplete(
+        word: String,
+        forceRefresh: Boolean = false,
+    ): List<String>
 
     suspend fun nextUserSearchPage(nextUrl: String): PageResult<UserPreview>
 }
 
 internal interface ProfileRepository {
-    suspend fun userDetail(userId: Long): UserProfile
+    suspend fun userDetail(
+        userId: Long,
+        forceRefresh: Boolean = false,
+    ): UserProfile
 
     suspend fun userIllusts(userId: Long): PageResult<Illust>
 
@@ -81,6 +106,7 @@ internal interface LibraryRepository {
     suspend fun bookmarks(
         userId: Long,
         restrict: Restrict,
+        forceRefresh: Boolean = false,
     ): PageResult<Illust>
 
     suspend fun toggleBookmark(
@@ -146,15 +172,30 @@ private class SessionRepositoryAdapter(
 private class ArtworkRepositoryAdapter(
     private val facade: IllustiaRepository,
 ) : ArtworkRepository {
-    override suspend fun loadHome(kind: HomeFeedKind) = facade.loadHome(kind)
+    override suspend fun loadHome(
+        kind: HomeFeedKind,
+        forceRefresh: Boolean,
+    ) = facade.loadHome(kind, forceRefresh)
 
-    override suspend fun loadRanking(mode: String) = facade.loadRanking(mode)
+    override suspend fun loadRanking(
+        mode: String,
+        forceRefresh: Boolean,
+    ) = facade.loadRanking(mode, forceRefresh)
 
-    override suspend fun followingIllusts(restrict: Restrict) = facade.followingIllusts(restrict)
+    override suspend fun followingIllusts(
+        restrict: Restrict,
+        forceRefresh: Boolean,
+    ) = facade.followingIllusts(restrict, forceRefresh)
 
-    override suspend fun illustDetail(illustId: Long) = facade.illustDetail(illustId)
+    override suspend fun illustDetail(
+        illustId: Long,
+        forceRefresh: Boolean,
+    ) = facade.illustDetail(illustId, forceRefresh)
 
-    override suspend fun relatedIllusts(illustId: Long) = facade.relatedIllusts(illustId)
+    override suspend fun relatedIllusts(
+        illustId: Long,
+        forceRefresh: Boolean,
+    ) = facade.relatedIllusts(illustId, forceRefresh)
 
     override suspend fun nextPage(nextUrl: String) = facade.nextPage(nextUrl)
 }
@@ -169,13 +210,20 @@ private class SearchRepositoryAdapter(
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
-    ) = facade.search(word, sort, target, duration, bookmarkFilter, includeR18)
+        forceRefresh: Boolean,
+    ) = facade.search(word, sort, target, duration, bookmarkFilter, includeR18, forceRefresh)
 
-    override suspend fun searchUsers(word: String) = facade.searchUsers(word)
+    override suspend fun searchUsers(
+        word: String,
+        forceRefresh: Boolean,
+    ) = facade.searchUsers(word, forceRefresh)
 
-    override suspend fun trendingTags() = facade.trendingTags()
+    override suspend fun trendingTags(forceRefresh: Boolean) = facade.trendingTags(forceRefresh)
 
-    override suspend fun searchAutocomplete(word: String) = facade.searchAutocomplete(word)
+    override suspend fun searchAutocomplete(
+        word: String,
+        forceRefresh: Boolean,
+    ) = facade.searchAutocomplete(word, forceRefresh)
 
     override suspend fun nextUserSearchPage(nextUrl: String) = facade.nextUserSearchPage(nextUrl)
 }
@@ -183,7 +231,10 @@ private class SearchRepositoryAdapter(
 private class ProfileRepositoryAdapter(
     private val facade: IllustiaRepository,
 ) : ProfileRepository {
-    override suspend fun userDetail(userId: Long) = facade.userDetail(userId)
+    override suspend fun userDetail(
+        userId: Long,
+        forceRefresh: Boolean,
+    ) = facade.userDetail(userId, forceRefresh)
 
     override suspend fun userIllusts(userId: Long) = facade.userIllusts(userId)
 
@@ -205,7 +256,8 @@ private class LibraryRepositoryAdapter(
     override suspend fun bookmarks(
         userId: Long,
         restrict: Restrict,
-    ) = facade.bookmarks(userId, restrict)
+        forceRefresh: Boolean,
+    ) = facade.bookmarks(userId, restrict, forceRefresh)
 
     override suspend fun toggleBookmark(
         illust: Illust,

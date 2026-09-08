@@ -97,7 +97,7 @@ fun NovelScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = viewModel::refreshNovels) {
+                    IconButton(onClick = { viewModel.refreshNovels(forceRefresh = true) }) {
                         Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
                     }
                 },
@@ -106,7 +106,7 @@ fun NovelScreen(
     ) { scaffoldPadding ->
         PullToRefresh(
             isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
-            onRefresh = { viewModel.refreshNovels() },
+            onRefresh = { viewModel.refreshNovels(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
             LazyVerticalGrid(

@@ -110,15 +110,15 @@ abstract class IllustiaAuthFeedModule(
         loadRankingModeIfNeeded(mode)
     }
 
-    override fun refreshHome() {
+    override fun refreshHome(forceRefresh: Boolean) {
         runLoading {
-            loadHomeInternal(_uiState.value.homeKind)
+            loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
         }
     }
 
-    fun refreshNovels() {
+    fun refreshNovels(forceRefresh: Boolean = false) {
         runLoading {
-            val page = repository.loadNovels()
+            val page = repository.loadNovels(forceRefresh = forceRefresh)
             _uiState.update {
                 it.copy(
                     novelItems = page.items,
@@ -177,7 +177,10 @@ abstract class IllustiaAuthFeedModule(
         refreshRanking(mode)
     }
 
-    fun refreshRanking(mode: String = _uiState.value.rankingMode) {
+    fun refreshRanking(
+        mode: String = _uiState.value.rankingMode,
+        forceRefresh: Boolean = false,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
@@ -185,7 +188,7 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.loadRanking(mode)
+                val page = repository.loadRanking(mode, forceRefresh = forceRefresh)
                 val settings = _uiState.value.settings
                 val items =
                     withContext(Dispatchers.Default) {
@@ -271,7 +274,10 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    override fun submitSearch(word: String) {
+    override fun submitSearch(
+        word: String,
+        forceRefresh: Boolean,
+    ) {
         val normalized = word.trim()
         if (normalized.isBlank()) {
             clearSearchResults()
@@ -333,6 +339,7 @@ abstract class IllustiaAuthFeedModule(
                                         duration = currentSettings.searchDuration,
                                         bookmarkFilter = currentSettings.searchBookmarkFilter,
                                         includeR18 = currentSettings.allowR18,
+                                        forceRefresh = forceRefresh,
                                     )
                                 }
                             } else {
@@ -348,6 +355,7 @@ abstract class IllustiaAuthFeedModule(
                                         duration = currentSettings.searchDuration,
                                         bookmarkFilter = currentSettings.searchBookmarkFilter,
                                         includeR18 = currentSettings.allowR18,
+                                        forceRefresh = forceRefresh,
                                     )
                                 }
                             } else {
@@ -355,7 +363,7 @@ abstract class IllustiaAuthFeedModule(
                             }
                         val usersDeferred =
                             if (currentSettings.searchUsersEnabled) {
-                                async { repository.searchUsers(normalized) }
+                                async { repository.searchUsers(normalized, forceRefresh = forceRefresh) }
                             } else {
                                 null
                             }
@@ -561,9 +569,9 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun refreshTimeline() {
+    fun refreshTimeline(forceRefresh: Boolean = false) {
         runLoading {
-            val page = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict)
+            val page = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
             _uiState.update {
                 it.copy(
                     timelineItems = page.items.visibleWithSettings(it.settings),
@@ -586,10 +594,10 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun refreshShortsFeed() {
+    fun refreshShortsFeed(forceRefresh: Boolean = false) {
         runLoading {
-            val homePage = repository.loadHome(HomeFeedKind.Recommended)
-            val followingPage = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict)
+            val homePage = repository.loadHome(HomeFeedKind.Recommended, forceRefresh = forceRefresh)
+            val followingPage = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
             _uiState.update { state ->
                 val home = homePage.items.visibleWithSettings(state.settings)
                 val following = followingPage.items.visibleWithSettings(state.settings)
@@ -667,9 +675,9 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun refreshFollowingUsers() {
+    fun refreshFollowingUsers(forceRefresh: Boolean = false) {
         runLoading {
-            val page = repository.followingUsers(_uiState.value.settings.bookmarkRestrict)
+            val page = repository.followingUsers(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
             _uiState.update {
                 it.copy(
                     followingUsers = page.items,

@@ -285,7 +285,7 @@ private fun RankingGridContent(
 
     PullToRefresh(
         isRefreshing = loadState == com.yunfie.illustia.models.LoadState.Loading && items.isNotEmpty(),
-        onRefresh = { viewModel.refreshRanking(mode) },
+        onRefresh = { viewModel.refreshRanking(mode, forceRefresh = true) },
         modifier = modifier.fillMaxSize(),
     ) {
         LazyVerticalGrid(

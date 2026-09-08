@@ -108,7 +108,7 @@ internal fun FeedTabContent(
 
     PullToRefresh(
         isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
-        onRefresh = { viewModel.refreshHome() },
+        onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         LazyVerticalGrid(

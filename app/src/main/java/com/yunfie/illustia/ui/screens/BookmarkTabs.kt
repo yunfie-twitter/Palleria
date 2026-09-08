@@ -352,7 +352,7 @@ internal fun BookmarkMainTab(
     val gridState = viewModel.bookmarkMainGridState
     PullToRefresh(
         isRefreshing = loadState == LoadState.Loading && bookmarkItems.isNotEmpty(),
-        onRefresh = { viewModel.refreshBookmarks() },
+        onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
@@ -419,7 +419,7 @@ internal fun BookmarkTimelineTab(
     val gridState = viewModel.bookmarkTimelineGridState
     PullToRefresh(
         isRefreshing = loadState == LoadState.Loading && timelineItems.isNotEmpty(),
-        onRefresh = { viewModel.refreshTimeline() },
+        onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
@@ -503,7 +503,7 @@ internal fun BookmarkFollowingTab(
         }
     PullToRefresh(
         isRefreshing = loadState == LoadState.Loading && followingUsers.isNotEmpty(),
-        onRefresh = { viewModel.refreshFollowingUsers() },
+        onRefresh = { viewModel.refreshFollowingUsers(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(

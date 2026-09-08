@@ -101,8 +101,8 @@ fun HomeScreen(
                 IconButton(
                     onClick = {
                         when (selectedTab) {
-                            HomeTab.Feed -> viewModel.refreshHome()
-                            HomeTab.Following -> viewModel.refreshTimeline()
+                            HomeTab.Feed -> viewModel.refreshHome(forceRefresh = true)
+                            HomeTab.Following -> viewModel.refreshTimeline(forceRefresh = true)
                         }
                     },
                 ) {

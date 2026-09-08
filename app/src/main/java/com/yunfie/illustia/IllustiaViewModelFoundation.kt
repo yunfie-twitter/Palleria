@@ -227,8 +227,11 @@ abstract class IllustiaViewModelFoundation(
 
     abstract fun saveCurrentAccount()
 
-    protected suspend fun loadHomeInternal(kind: HomeFeedKind) {
-        val page = repository.loadHome(kind)
+    protected suspend fun loadHomeInternal(
+        kind: HomeFeedKind,
+        forceRefresh: Boolean = false,
+    ) {
+        val page = repository.loadHome(kind, forceRefresh = forceRefresh)
         val settings = _uiState.value.settings
         val items =
             withContext(Dispatchers.Default) {

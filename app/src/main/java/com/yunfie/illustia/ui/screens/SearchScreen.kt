@@ -344,7 +344,7 @@ private fun SearchResultsArea(
             isRefreshing =
                 state.loadState == LoadState.Loading &&
                     (state.searchItems.isNotEmpty() || state.searchNovelItems.isNotEmpty() || state.userSearchItems.isNotEmpty()),
-            onRefresh = { viewModel.submitSearch() },
+            onRefresh = { viewModel.submitSearch(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
             if (

@@ -29,9 +29,12 @@ abstract class IllustiaSettingsSecurityModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaViewModelFoundation(app, managedDataRepository) {
-    abstract fun refreshHome()
+    abstract fun refreshHome(forceRefresh: Boolean = false)
 
-    abstract fun submitSearch(word: String = _uiState.value.searchDraft)
+    abstract fun submitSearch(
+        word: String = _uiState.value.searchDraft,
+        forceRefresh: Boolean = false,
+    )
 
     fun loadDeferredStartupData() {
         if (!deferredStartupDataStarted.compareAndSet(false, true)) return
