@@ -25,9 +25,9 @@ sealed interface NativeIntentEvent {
 
 object NativeIntentRouter {
     private val WEB_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net")
-    private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "pixez")
+    private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "palleria")
     private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts")
-    private val ROUTE_CANDIDATE_PATTERN = Regex("""(?i)\b(?:https?://|pixiv://|pixez://)\S+""")
+    private val ROUTE_CANDIDATE_PATTERN = Regex("""(?i)\b(?:https?://|pixiv://|palleria://)\S+""")
     private val ROUTE_TRAILING_PUNCTUATION =
         charArrayOf(
             '.',

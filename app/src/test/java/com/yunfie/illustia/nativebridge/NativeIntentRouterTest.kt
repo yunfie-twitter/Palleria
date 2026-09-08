@@ -12,7 +12,7 @@ class NativeIntentRouterTest :
                 NativeIntentEvent.User(456)
             NativeIntentRouter.parseText("pixiv://illusts/789") shouldBe
                 NativeIntentEvent.Artwork(789)
-            NativeIntentRouter.parseText("pixez://users/987") shouldBe
+            NativeIntentRouter.parseText("palleria://users/987") shouldBe
                 NativeIntentEvent.User(987)
         }
 

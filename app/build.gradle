@@ -22,8 +22,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk androidMinSdk
         targetSdk 36
-        versionCode 87
-        versionName "5.8.2"
+        versionCode 88
+        versionName "5.8.3"
     }
 
     signingConfigs {

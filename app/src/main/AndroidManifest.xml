@@ -154,7 +154,7 @@
 
             <!-- Pixiv系Web URL -->
 
-            <!-- pixiv:// / pixez:// カスタムスキーム -->
+            <!-- pixiv:// / palleria:// カスタムスキーム -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -190,31 +190,31 @@
                     android:host="account" />
 
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="script" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="pixiv.net" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="www.pixiv.net" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="i.pximg.net" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="pixiv.me" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="www.pixiv.me" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="users" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="illusts" />
                 <data
-                    android:scheme="pixez"
+                    android:scheme="palleria"
                     android:host="account" />
             </intent-filter>
 
