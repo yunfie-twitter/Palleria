@@ -1,13 +1,137 @@
 {
   "repo": {
-    "timestamp": 1788887258000
+    "timestamp": 1788969542000
   },
   "packages": {
     "com.yunfie.illustia": {
       "metadata": {
-        "lastUpdated": 1788887253000
+        "lastUpdated": 1788969536000,
+        "screenshots": {
+          "phone": {
+            "en-US": [
+              {
+                "name": "/com.yunfie.illustia/en-US/phoneScreenshots/1.png",
+                "sha256": "78ef3006e9b2d05d068dd6cf331c9f77cf426ff0f99c595f327b5a68325c29ab",
+                "size": 1474525
+              },
+              {
+                "name": "/com.yunfie.illustia/en-US/phoneScreenshots/2.png",
+                "sha256": "14dfc6b3498b7ff0dee5efd0dacddb1e3567034031d7b4d9ef029c95c4f69769",
+                "size": 1464749
+              },
+              {
+                "name": "/com.yunfie.illustia/en-US/phoneScreenshots/3.png",
+                "sha256": "2cfd227e24d42fe80745da3aeddadd2f196cad623f35fc93c3a47b30c06d91b8",
+                "size": 1172872
+              },
+              {
+                "name": "/com.yunfie.illustia/en-US/phoneScreenshots/4.png",
+                "sha256": "bd382e38ddf68a4f40120347b9227b3b2b283ec59ca3304d3bd009129707f40c",
+                "size": 217366
+              },
+              {
+                "name": "/com.yunfie.illustia/en-US/phoneScreenshots/5.png",
+                "sha256": "cd48bd5adf963f24c71bbf00ca043deb237b13bea0ed37ce91309401a6031fae",
+                "size": 1545356
+              },
+              {
+                "name": "/com.yunfie.illustia/en-US/phoneScreenshots/6.png",
+                "sha256": "e284f1887a89f7f13d07e57e8375b5aa4492bfecc5af8a060e20c517974d70ce",
+                "size": 513708
+              }
+            ]
+          }
+        }
       },
       "versions": {
+        "cff16d4bfbbc0be100db129c508f617099ab748d1790bfaa0f9704435ffb4fbb": {
+          "added": 1788969536000,
+          "file": {
+            "name": "/Illustia-v5.9.0-release.apk",
+            "sha256": "cff16d4bfbbc0be100db129c508f617099ab748d1790bfaa0f9704435ffb4fbb",
+            "size": 68620715
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi",
+              "armeabi-v7a",
+              "mips",
+              "mips64",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "5.9.0",
+            "versionCode": 90,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 36
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.CAMERA"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          }
+        },
         "1b1a34ffad13fa9d6526f99580f239ffba17947d00f2cc8c361556ebfd11cfa9": {
           "added": 1788887253000,
           "file": {
@@ -94,10 +218,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         }
       }
     }
