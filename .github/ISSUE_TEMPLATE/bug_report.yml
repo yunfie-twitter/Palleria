@@ -1,0 +1,55 @@
+name: バグ報告
+description: 動作不良や不具合を報告する
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告ありがとうございます。以下の項目を埋めてください。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 概要
+      description: 発生しているバグの簡潔な説明
+      placeholder: 例：アプリが起動時にクラッシュする
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 再現手順
+      description: 手順を箇条書きで記載
+      placeholder: |
+        1. アプリを起動
+        2. 設定画面を開く
+        3. クラッシュする
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 環境
+      description: 端末・OS・アプリバージョン
+      placeholder: 例：Pixel 7 / Android 14 / v1.2.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+      description: 本来どうあるべきか
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ・スクリーンショット
+      description: Logcat ログやエラー画面があれば添付
+    validations:
+      required: false
