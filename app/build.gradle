@@ -22,8 +22,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk androidMinSdk
         targetSdk 36
-        versionCode 90
-        versionName "5.9.0"
+        versionCode 91
+        versionName "5.9.1"
     }
 
     signingConfigs {
@@ -66,6 +66,18 @@ android {
     packaging {
         jniLibs {
             keepDebugSymbols += ["**/libandroidx.graphics.path.so"]
+        }
+    }
+
+    // Publish one installable universal APK and ABI-specific APKs. The universal
+    // output remains the compatibility fallback for F-Droid clients and manual
+    // installation; split outputs reduce download size on supported devices.
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a", "armeabi-v7a", "x86_64"
+            universalApk true
         }
     }
 
@@ -240,7 +252,9 @@ tasks.named("preBuild").configure {
 androidComponents {
     onVariants(selector().all()) { variant ->
         variant.outputs.forEach { output ->
-            def name = "Illustia-v${android.defaultConfig.versionName}-${variant.name}.apk"
+            def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
+            def outputKind = abi ?: "universal"
+            def name = "Palleria-v${android.defaultConfig.versionName}-${variant.name}-${outputKind}.apk"
             output.outputFileName.set(name)
         }
     }

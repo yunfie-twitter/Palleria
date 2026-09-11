@@ -419,7 +419,7 @@ jobs:
       # --------------------------------------------------------
       # APK存在確認
       # --------------------------------------------------------
-      - name: Verify APKs
+      - name: Verify universal and split APKs
         shell: bash
         run: |
           set -euo pipefail
@@ -427,13 +427,24 @@ jobs:
           shopt -s nullglob
 
           APKS=(app/build/outputs/apk/release/*.apk)
+          UNIVERSAL_APKS=(app/build/outputs/apk/release/*-universal.apk)
+          SPLIT_APKS=(
+            app/build/outputs/apk/release/*-arm64-v8a.apk
+            app/build/outputs/apk/release/*-armeabi-v7a.apk
+            app/build/outputs/apk/release/*-x86_64.apk
+          )
 
-          if [ ${#APKS[@]} -eq 0 ]; then
-            echo "No APK files found."
+          if [ ${#UNIVERSAL_APKS[@]} -ne 1 ]; then
+            echo "Expected exactly one universal APK, found ${#UNIVERSAL_APKS[@]}."
             exit 1
           fi
 
-          echo "Found ${#APKS[@]} APK(s):"
+          if [ ${#SPLIT_APKS[@]} -ne 3 ]; then
+            echo "Expected ABI splits for arm64-v8a, armeabi-v7a, and x86_64; found ${#SPLIT_APKS[@]}."
+            exit 1
+          fi
+
+          echo "Found ${#APKS[@]} APK(s), including one universal APK and three ABI splits:"
 
           for APK in "${APKS[@]}"; do
             echo "  $APK"
