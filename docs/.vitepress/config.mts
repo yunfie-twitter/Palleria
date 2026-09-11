@@ -53,6 +53,7 @@ export default defineConfig({
     nav: [
       { text: 'ユーザーガイド', link: '/user/' },
       { text: '開発者ドキュメント', link: '/dev/' },
+      { text: '開発者', link: '/developers' },
       { text: '寄付・支援', link: '/donate' },
       { text: 'GitHub', link: repository }
     ],
@@ -79,7 +80,9 @@ export default defineConfig({
         text: '開発者ガイド (技術仕様)',
         collapsed: false,
         items: [
+          { text: '開発者紹介', link: '/developers' },
           { text: 'アーキテクチャ概要 & レイヤー設計', link: '/dev/' },
+          { text: 'アプリケーション仕様（実装基準）', link: '/dev/application-specification' },
           { text: 'ビルド & 環境構築パイプライン', link: '/dev/build' },
           { text: 'Rust Native コア (pixiv-api)', link: '/dev/rust-core' },
           { text: 'PallaSync 同期エンジン仕様', link: '/dev/pallasync-engine' },

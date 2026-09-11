@@ -5,7 +5,7 @@ description: Palleria の開発者向け技術ドキュメント、モジュー�
 
 # アーキテクチャ概要 & レイヤー設計
 
-本ドキュメントは Palleria のソースコード構造、モジュール設計、データフローに関する開発者・技術者向けリファレンスです。
+本ページは Palleria のソースコード構造と責務分割の概要です。利用者に見える振る舞い、状態、外部連携の正確な仕様は[アプリケーション仕様](/dev/application-specification)を基準にしてください。
 
 ---
 
@@ -38,12 +38,12 @@ description: Palleria の開発者向け技術ドキュメント、モジュー�
 ## 主要パッケージ構成 (`com.yunfie.illustia`)
 
 - `account`: ログイン処理、OAuth2 トークン取得・管理
-- `data`: リポジトリ層 (`IllustiaRepository`, `ManagedDataRepository`), API クライアント (`RustPixivHttpClient`), Room 連携
+- `data`: リポジトリ層 (`IllustiaRepository`)、API クライアント、画像キャッシュ・URL 検証
 - `models`: UI およびデータレイヤーで共有するデータモデル群 (`Illust`, `UserProfile`, `SearchTarget` 等)
 - `nativebridge`: UniFFI により生成された Rust との JNI バインディング層
-- `pallasync`: 設定およびステートの暗号化同期・復元エンジン
-- `settings`: `AppSettings` 定義、DataStore 処理 (`SettingsStore`), Room DB エンティティ定義 (`settings/db/`)
+- `pallasync`: 設定およびステートの暗号化同期・復元エンジンと同期用 Room DB
+- `settings`: `AppSettings` 定義と `SettingsStore` による設定の永続化
 - `ui`: Compose 画面 (`ui/screens/`) および共通 UI コンポーネント (`ui/components/`)
-- `viewmodel`: 各画面の StateFlow / State を保持する ViewModel
+- `updater`: 更新情報の取得と APK ダウンロード
 - `wallpaper`: ライブ壁紙サービス (`PalleriaLiveWallpaperService`)
 - `widget`: アプリウィジェットプロバイダ (`IllustWidgetProvider`, `RankingWidgetProvider`)
