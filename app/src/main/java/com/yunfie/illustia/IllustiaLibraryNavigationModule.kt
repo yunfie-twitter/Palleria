@@ -382,7 +382,10 @@ abstract class IllustiaLibraryNavigationModule(
         }
     }
 
-    private fun shouldAutoBookmark(illust: Illust?, url: String): Boolean {
+    private fun shouldAutoBookmark(
+        illust: Illust?,
+        url: String,
+    ): Boolean {
         if (!_uiState.value.settings.autoBookmarkOnDownload || illust == null) return false
         return !illust.isBookmarked && (illust.type == "ugoira" || illust.hasImageUrl(url))
     }

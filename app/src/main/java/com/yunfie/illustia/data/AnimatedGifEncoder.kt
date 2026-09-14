@@ -36,11 +36,13 @@ object AnimatedGifEncoder {
         var isFirstFrame = true
 
         for (frame in frames) {
-            val decodeOptions = BitmapFactory.Options().apply {
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            }
-            var bitmap = BitmapFactory.decodeFile(frame.filePath, decodeOptions)
-                ?: continue
+            val decodeOptions =
+                BitmapFactory.Options().apply {
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                }
+            var bitmap =
+                BitmapFactory.decodeFile(frame.filePath, decodeOptions)
+                    ?: continue
 
             if (bitmap.width > maxDimension || bitmap.height > maxDimension) {
                 val scale = maxDimension.toFloat() / maxOf(bitmap.width, bitmap.height)
@@ -63,8 +65,8 @@ object AnimatedGifEncoder {
             var byteIndex = 0
             for (pixel in pixels) {
                 rgbBytes[byteIndex++] = ((pixel shr 16) and 0xFF).toByte() // R
-                rgbBytes[byteIndex++] = ((pixel shr 8) and 0xFF).toByte()  // G
-                rgbBytes[byteIndex++] = (pixel and 0xFF).toByte()         // B
+                rgbBytes[byteIndex++] = ((pixel shr 8) and 0xFF).toByte() // G
+                rgbBytes[byteIndex++] = (pixel and 0xFF).toByte() // B
             }
 
             val nq = NeuQuant(rgbBytes, rgbBytes.size, DEFAULT_SAMPLE_FACTOR)
@@ -77,9 +79,10 @@ object AnimatedGifEncoder {
                 indexedPixels[i] = nq.map(b, g, r).toByte()
             }
 
-            val delayHundredths = (normalizedUgoiraDelayMillis(frame.delayMillis) / 10L)
-                .toInt()
-                .coerceAtLeast(2)
+            val delayHundredths =
+                (normalizedUgoiraDelayMillis(frame.delayMillis) / 10L)
+                    .toInt()
+                    .coerceAtLeast(2)
 
             if (isFirstFrame) {
                 writeHeader(output)
@@ -102,7 +105,11 @@ object AnimatedGifEncoder {
         out.write("GIF89a".toByteArray(Charsets.US_ASCII))
     }
 
-    private fun writeLogicalScreenDescriptor(out: OutputStream, width: Int, height: Int) {
+    private fun writeLogicalScreenDescriptor(
+        out: OutputStream,
+        width: Int,
+        height: Int,
+    ) {
         writeShort(out, width)
         writeShort(out, height)
         out.write(0) // No Global Color Table
@@ -113,25 +120,32 @@ object AnimatedGifEncoder {
     private fun writeNetscapeExtension(out: OutputStream) {
         out.write(0x21) // Extension Introducer
         out.write(0xFF) // Application Extension Label
-        out.write(11)   // Block Size
+        out.write(11) // Block Size
         out.write("NETSCAPE2.0".toByteArray(Charsets.US_ASCII))
-        out.write(3)    // Sub-block size
-        out.write(1)    // Loop sub-block ID
+        out.write(3) // Sub-block size
+        out.write(1) // Loop sub-block ID
         writeShort(out, 0) // Loop count = 0 (infinite)
-        out.write(0)    // Block Terminator
+        out.write(0) // Block Terminator
     }
 
-    private fun writeGraphicControlExtension(out: OutputStream, delayHundredths: Int) {
+    private fun writeGraphicControlExtension(
+        out: OutputStream,
+        delayHundredths: Int,
+    ) {
         out.write(0x21) // Extension Introducer
         out.write(0xF9) // Graphic Control Label
-        out.write(4)    // Block Size
+        out.write(4) // Block Size
         out.write(0x08) // Disposal Method: 2 (restore to background)
         writeShort(out, delayHundredths)
-        out.write(0)    // Transparent color index (none)
-        out.write(0)    // Block Terminator
+        out.write(0) // Transparent color index (none)
+        out.write(0) // Block Terminator
     }
 
-    private fun writeImageDescriptor(out: OutputStream, width: Int, height: Int) {
+    private fun writeImageDescriptor(
+        out: OutputStream,
+        width: Int,
+        height: Int,
+    ) {
         out.write(0x2C) // Image Separator
         writeShort(out, 0) // Left
         writeShort(out, 0) // Top
@@ -140,7 +154,10 @@ object AnimatedGifEncoder {
         out.write(0x87) // Local Color Table flag + 256 colors (8 bits - 1 = 7)
     }
 
-    private fun writeShort(out: OutputStream, value: Int) {
+    private fun writeShort(
+        out: OutputStream,
+        value: Int,
+    ) {
         out.write(value and 0xFF)
         out.write((value shr 8) and 0xFF)
     }
@@ -205,7 +222,11 @@ private class NeuQuant(
         return colorMap()
     }
 
-    fun map(b: Int, g: Int, r: Int): Int = inxsearch(b, g, r)
+    fun map(
+        b: Int,
+        g: Int,
+        r: Int,
+    ): Int = inxsearch(b, g, r)
 
     private fun colorMap(): ByteArray {
         val map = ByteArray(3 * netsize)
@@ -265,7 +286,16 @@ private class NeuQuant(
             radpower[i] = alpha * (((rad * rad - i * i) * radbias) / (rad * rad))
         }
 
-        var step = if (length < 3 * 503) 3 else if (length % (3 * 499) != 0) 3 * 499 else if (length % (3 * 491) != 0) 3 * 491 else 3 * 487
+        var step =
+            if (length < 3 * 503) {
+                3
+            } else if (length % (3 * 499) != 0) {
+                3 * 499
+            } else if (length % (3 * 491) != 0) {
+                3 * 491
+            } else {
+                3 * 487
+            }
         var pix = 0
         var i = 0
         while (i < samplepixels) {
@@ -293,14 +323,26 @@ private class NeuQuant(
         }
     }
 
-    private fun altersingle(alpha: Int, i: Int, b: Int, g: Int, r: Int) {
+    private fun altersingle(
+        alpha: Int,
+        i: Int,
+        b: Int,
+        g: Int,
+        r: Int,
+    ) {
         val a = alpha.toDouble() / initalpha
         network[i][0] -= a * (network[i][0] - b)
         network[i][1] -= a * (network[i][1] - g)
         network[i][2] -= a * (network[i][2] - r)
     }
 
-    private fun alterneigh(rad: Int, i: Int, b: Int, g: Int, r: Int) {
+    private fun alterneigh(
+        rad: Int,
+        i: Int,
+        b: Int,
+        g: Int,
+        r: Int,
+    ) {
         var lo = i - rad
         if (lo < -1) lo = -1
         var hi = i + rad
@@ -326,7 +368,11 @@ private class NeuQuant(
         }
     }
 
-    private fun contest(b: Int, g: Int, r: Int): Int {
+    private fun contest(
+        b: Int,
+        g: Int,
+        r: Int,
+    ): Int {
         var bestd = Int.MAX_VALUE
         var bestbiasd = bestd
         var bestpos = -1
@@ -361,7 +407,11 @@ private class NeuQuant(
         }
     }
 
-    private fun inxsearch(b: Int, g: Int, r: Int): Int {
+    private fun inxsearch(
+        b: Int,
+        g: Int,
+        r: Int,
+    ): Int {
         var bestd = 1000
         var best = -1
         var i = netindex[g]
@@ -431,12 +481,26 @@ private class LzwEncoder(
 
     private var curPixel = 0
 
-    private val masks = intArrayOf(
-        0x0000, 0x0001, 0x0003, 0x0007, 0x000F,
-        0x001F, 0x003F, 0x007F, 0x00FF, 0x01FF,
-        0x03FF, 0x07FF, 0x0FFF, 0x1FFF, 0x3FFF,
-        0x7FFF, 0xFFFF,
-    )
+    private val masks =
+        intArrayOf(
+            0x0000,
+            0x0001,
+            0x0003,
+            0x0007,
+            0x000F,
+            0x001F,
+            0x003F,
+            0x007F,
+            0x00FF,
+            0x01FF,
+            0x03FF,
+            0x07FF,
+            0x0FFF,
+            0x1FFF,
+            0x3FFF,
+            0x7FFF,
+            0xFFFF,
+        )
 
     fun encode(outs: OutputStream) {
         outs.write(initCodeSize)
@@ -445,7 +509,10 @@ private class LzwEncoder(
         outs.write(0) // Block terminator
     }
 
-    private fun charOut(c: Byte, outs: OutputStream) {
+    private fun charOut(
+        c: Byte,
+        outs: OutputStream,
+    ) {
         accum[aCount++] = c
         if (aCount >= 254) flushChar(outs)
     }
@@ -458,7 +525,10 @@ private class LzwEncoder(
         }
     }
 
-    private fun output(code: Int, outs: OutputStream) {
+    private fun output(
+        code: Int,
+        outs: OutputStream,
+    ) {
         curAccum = curAccum or (code and masks[nBits] shl curBits)
         curBits += nBits
 
@@ -495,7 +565,10 @@ private class LzwEncoder(
         output(clearCode, outs)
     }
 
-    private fun compress(initBits: Int, outs: OutputStream) {
+    private fun compress(
+        initBits: Int,
+        outs: OutputStream,
+    ) {
         nBits = initBits
         maxcode = (1 shl nBits) - 1
         freeEnt = clearCode + 2

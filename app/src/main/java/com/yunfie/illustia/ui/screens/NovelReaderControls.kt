@@ -247,7 +247,12 @@ internal fun NovelTocBottomSheet(
                                 modifier =
                                     Modifier
                                         .squircleSurface(
-                                            color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainerHighest,
+                                            color =
+                                                if (isSelected) {
+                                                    MiuixTheme.colorScheme.primary
+                                                } else {
+                                                    MiuixTheme.colorScheme.surfaceContainerHighest
+                                                },
                                             cornerRadius = 12.dp,
                                         ).miuixClickable(
                                             pressedScale = 0.94f,
@@ -345,10 +350,18 @@ internal fun NovelSettingsBottomSheet(
                                 Modifier
                                     .weight(1f)
                                     .squircleSurface(
-                                        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainerHighest,
+                                        color =
+                                            if (isSelected) {
+                                                MiuixTheme.colorScheme.primary
+                                            } else {
+                                                MiuixTheme.colorScheme.surfaceContainerHighest
+                                            },
                                         cornerRadius = 14.dp,
-                                    ).miuixClickable(pressedScale = 0.95f, haptic = true, onClick = { onLineSpacingChange(spacing) })
-                                    .padding(vertical = 10.dp),
+                                    ).miuixClickable(
+                                        pressedScale = 0.95f,
+                                        haptic = true,
+                                        onClick = { onLineSpacingChange(spacing) },
+                                    ).padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -436,10 +449,18 @@ internal fun NovelSettingsBottomSheet(
                                 Modifier
                                     .weight(1f)
                                     .squircleSurface(
-                                        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainerHighest,
+                                        color =
+                                            if (isSelected) {
+                                                MiuixTheme.colorScheme.primary
+                                            } else {
+                                                MiuixTheme.colorScheme.surfaceContainerHighest
+                                            },
                                         cornerRadius = 14.dp,
-                                    ).miuixClickable(pressedScale = 0.95f, haptic = true, onClick = { onLayoutModeChange(mode) })
-                                    .padding(vertical = 10.dp),
+                                    ).miuixClickable(
+                                        pressedScale = 0.95f,
+                                        haptic = true,
+                                        onClick = { onLayoutModeChange(mode) },
+                                    ).padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(

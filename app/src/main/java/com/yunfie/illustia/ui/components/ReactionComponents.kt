@@ -167,7 +167,8 @@ fun FollowPill(
                 }
 
                 FollowPillStage.REMOVING,
-                FollowPillStage.UNFOLLOWED -> {
+                FollowPillStage.UNFOLLOWED,
+                -> {
                     Text(
                         text = stringResource(R.string.action_follow),
                         color = scheme.onSurface,
@@ -312,7 +313,8 @@ fun WatchlistPill(
                 }
 
                 WatchlistPillStage.REMOVING,
-                WatchlistPillStage.UNADDED -> {
+                WatchlistPillStage.UNADDED,
+                -> {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,

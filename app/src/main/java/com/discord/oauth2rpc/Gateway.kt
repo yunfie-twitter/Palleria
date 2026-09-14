@@ -143,7 +143,11 @@ class Gateway(
         }
     }
 
-    private fun handleOpcode(op: Int, t: String?, d: Any?) {
+    private fun handleOpcode(
+        op: Int,
+        t: String?,
+        d: Any?,
+    ) {
         when (op) {
             Constants.Opcode.HELLO -> {
                 val helloData = d as? JSONObject

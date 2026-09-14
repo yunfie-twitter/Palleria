@@ -351,7 +351,10 @@ class AppUpdaterRepository(
         }
     }
 
-    private fun streamApkToProcess(process: Process, apkFile: File) {
+    private fun streamApkToProcess(
+        process: Process,
+        apkFile: File,
+    ) {
         try {
             process.outputStream.use { outputStream ->
                 apkFile.inputStream().use { inputStream ->

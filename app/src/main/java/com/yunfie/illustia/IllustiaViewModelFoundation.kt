@@ -180,10 +180,12 @@ abstract class IllustiaViewModelFoundation(
     val navigationRequests: SharedFlow<IllustiaNavigationRequest> = _navigationRequests
     protected val _detailNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val detailNavigationRequests: SharedFlow<Long> = _detailNavigationRequests
+
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val userNavigationRequests: SharedFlow<Long> = _userNavigationRequests
     val appUpdaterRepository: AppUpdaterRepository by lazy { AppUpdaterRepository(getApplication()) }
+
     @Suppress("VariableNaming")
     protected val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
     val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState.asStateFlow()

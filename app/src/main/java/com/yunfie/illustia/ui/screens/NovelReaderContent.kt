@@ -50,44 +50,50 @@ import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-enum class NovelTheme(val displayNameRes: Int) {
+enum class NovelTheme(
+    val displayNameRes: Int,
+) {
     System(R.string.novel_theme_system),
     Sepia(R.string.novel_theme_sepia),
     Dark(R.string.novel_theme_dark),
-    Black(R.string.novel_theme_black);
+    Black(R.string.novel_theme_black),
+    ;
 
     @Composable
-    fun backgroundColor(): Color {
-        return when (this) {
+    fun backgroundColor(): Color =
+        when (this) {
             System -> MiuixTheme.colorScheme.surface
             Sepia -> Color(0xFFF4ECD8)
             Dark -> Color(0xFF1E1E1E)
             Black -> Color(0xFF000000)
         }
-    }
 
     @Composable
-    fun textColor(): Color {
-        return when (this) {
+    fun textColor(): Color =
+        when (this) {
             System -> MiuixTheme.colorScheme.onSurface
             Sepia -> Color(0xFF5F4B32)
             Dark -> Color(0xFFE0E0E0)
             Black -> Color(0xFFCCCCCC)
         }
-    }
 }
 
 private const val LINE_SPACING_COMPACT = 1.35f
 private const val LINE_SPACING_NORMAL = 1.65f
 private const val LINE_SPACING_RELAXED = 2.0f
 
-enum class NovelLineSpacing(val multiplier: Float, val labelRes: Int) {
+enum class NovelLineSpacing(
+    val multiplier: Float,
+    val labelRes: Int,
+) {
     Compact(LINE_SPACING_COMPACT, R.string.novel_line_height_compact),
     Normal(LINE_SPACING_NORMAL, R.string.novel_line_height_normal),
     Relaxed(LINE_SPACING_RELAXED, R.string.novel_line_height_relaxed),
 }
 
-enum class NovelLayoutMode(val labelRes: Int) {
+enum class NovelLayoutMode(
+    val labelRes: Int,
+) {
     Paged(R.string.novel_layout_paged),
     Scroll(R.string.novel_layout_scroll),
 }
@@ -103,13 +109,12 @@ internal data class NovelChapterInfo(
     val pageIndex: Int,
 )
 
-internal fun extractChapters(pages: List<NovelPage>): List<NovelChapterInfo> {
-    return pages.mapIndexedNotNull { index, page ->
+internal fun extractChapters(pages: List<NovelPage>): List<NovelChapterInfo> =
+    pages.mapIndexedNotNull { index, page ->
         page.blocks.filterIsInstance<NovelChapterBlock>().firstOrNull()?.let {
             NovelChapterInfo(title = it.title, pageIndex = index)
         }
     }
-}
 
 private data object NovelSpacerBlock : NovelBlock
 

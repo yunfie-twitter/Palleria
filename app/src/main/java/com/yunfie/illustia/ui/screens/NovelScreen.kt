@@ -37,9 +37,9 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.core.view.WindowCompat
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
@@ -259,7 +259,10 @@ fun NovelReaderScreen(
         if (targetPage in pages.indices) {
             coroutineScope.launch {
                 when (layoutMode) {
-                    NovelLayoutMode.Paged -> pagerState.animateScrollToPage(targetPage)
+                    NovelLayoutMode.Paged -> {
+                        pagerState.animateScrollToPage(targetPage)
+                    }
+
                     NovelLayoutMode.Scroll -> {
                         var targetIndex = 0
                         for (i in 0 until targetPage) {
