@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.luminance
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -76,6 +79,17 @@ internal fun MainSurface(
     val tabs = mainTabs(appState.settings)
     val navigationTabs = visibleTabs(appState.settings)
     val context = LocalContext.current
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    val isDarkTheme = surfaceColor.luminance() < 0.5f
+    DisposableEffect(isDarkTheme) {
+        val window = (context as? Activity)?.window
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.isAppearanceLightStatusBars = !isDarkTheme
+            insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+        }
+        onDispose {}
+    }
     var lastBackAt by remember { mutableStateOf(0L) }
     var navigationVisible by remember(appState.settings.navigationStyle) { mutableStateOf(true) }
     val navigationScrollConnection =

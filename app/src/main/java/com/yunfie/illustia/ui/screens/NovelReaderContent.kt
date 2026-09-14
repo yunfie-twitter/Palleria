@@ -1,16 +1,28 @@
 package com.yunfie.illustia.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
@@ -26,16 +38,78 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.ElevatedPanel
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+enum class NovelTheme(val displayNameRes: Int) {
+    System(R.string.novel_theme_system),
+    Sepia(R.string.novel_theme_sepia),
+    Dark(R.string.novel_theme_dark),
+    Black(R.string.novel_theme_black);
+
+    @Composable
+    fun backgroundColor(): Color {
+        return when (this) {
+            System -> MiuixTheme.colorScheme.surface
+            Sepia -> Color(0xFFF4ECD8)
+            Dark -> Color(0xFF1E1E1E)
+            Black -> Color(0xFF000000)
+        }
+    }
+
+    @Composable
+    fun textColor(): Color {
+        return when (this) {
+            System -> MiuixTheme.colorScheme.onSurface
+            Sepia -> Color(0xFF5F4B32)
+            Dark -> Color(0xFFE0E0E0)
+            Black -> Color(0xFFCCCCCC)
+        }
+    }
+}
+
+private const val LINE_SPACING_COMPACT = 1.35f
+private const val LINE_SPACING_NORMAL = 1.65f
+private const val LINE_SPACING_RELAXED = 2.0f
+
+enum class NovelLineSpacing(val multiplier: Float, val labelRes: Int) {
+    Compact(LINE_SPACING_COMPACT, R.string.novel_line_height_compact),
+    Normal(LINE_SPACING_NORMAL, R.string.novel_line_height_normal),
+    Relaxed(LINE_SPACING_RELAXED, R.string.novel_line_height_relaxed),
+}
+
+enum class NovelLayoutMode(val labelRes: Int) {
+    Paged(R.string.novel_layout_paged),
+    Scroll(R.string.novel_layout_scroll),
+}
 
 internal sealed interface NovelBlock
 
 internal data class NovelPage(
     val blocks: List<NovelBlock>,
 )
+
+internal data class NovelChapterInfo(
+    val title: String,
+    val pageIndex: Int,
+)
+
+internal fun extractChapters(pages: List<NovelPage>): List<NovelChapterInfo> {
+    return pages.mapIndexedNotNull { index, page ->
+        page.blocks.filterIsInstance<NovelChapterBlock>().firstOrNull()?.let {
+            NovelChapterInfo(title = it.title, pageIndex = index)
+        }
+    }
+}
 
 private data object NovelSpacerBlock : NovelBlock
 
@@ -60,72 +134,256 @@ internal fun NovelReaderPage(
     page: NovelPage,
     pageIndex: Int,
     pageCount: Int,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
     viewModel: IllustiaViewModel,
     uriHandler: UriHandler,
     onJumpPage: (Int) -> Unit,
+    onToggleControls: () -> Unit,
     scrollBehavior: ScrollBehavior,
+    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier =
             modifier
                 .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onToggleControls,
+                ),
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             NovelMetaPill(text = "${pageIndex + 1} / $pageCount")
         }
         items(page.blocks) { block ->
-            when (block) {
-                NovelSpacerBlock -> {
-                    Box(modifier = Modifier.padding(vertical = 2.dp))
-                }
+            NovelBlockItem(
+                block = block,
+                fontSize = fontSize,
+                lineHeightMultiplier = lineHeightMultiplier,
+                textColor = textColor,
+                viewModel = viewModel,
+                uriHandler = uriHandler,
+                onJumpPage = onJumpPage,
+                onToggleControls = onToggleControls,
+            )
+        }
+    }
+}
 
-                is NovelChapterBlock -> {
-                    Text(
-                        text = block.title,
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Black,
+@Composable
+internal fun NovelReaderContinuousContent(
+    pages: List<NovelPage>,
+    lazyListState: LazyListState,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    viewModel: IllustiaViewModel,
+    uriHandler: UriHandler,
+    onJumpPage: (Int) -> Unit,
+    onToggleControls: () -> Unit,
+    scrollBehavior: ScrollBehavior,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        state = lazyListState,
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onToggleControls,
+                ),
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        pages.forEachIndexed { pageIndex, page ->
+            item(key = "page_header_$pageIndex") {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NovelMetaPill(text = "${pageIndex + 1} / ${pages.size}")
+                }
+            }
+            items(page.blocks) { block ->
+                NovelBlockItem(
+                    block = block,
+                    fontSize = fontSize,
+                    lineHeightMultiplier = lineHeightMultiplier,
+                    textColor = textColor,
+                    viewModel = viewModel,
+                    uriHandler = uriHandler,
+                    onJumpPage = onJumpPage,
+                    onToggleControls = onToggleControls,
+                )
+            }
+            if (pageIndex < pages.size - 1) {
+                item(key = "page_divider_$pageIndex") {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp)
+                                .height(1.dp)
+                                .background(textColor.copy(alpha = 0.12f)),
                     )
                 }
+            }
+        }
+    }
+}
 
-                is NovelPixivImageBlock -> {
-                    Button(onClick = { viewModel.openIllust(block.illustId) }) {
-                        Text(stringResource(R.string.action_open))
-                    }
-                }
+@Composable
+private fun NovelBlockItem(
+    block: NovelBlock,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    viewModel: IllustiaViewModel,
+    uriHandler: UriHandler,
+    onJumpPage: (Int) -> Unit,
+    onToggleControls: () -> Unit,
+) {
+    when (block) {
+        NovelSpacerBlock -> {
+            Spacer(modifier = Modifier.height(10.dp))
+        }
 
-                is NovelJumpBlock -> {
-                    Button(onClick = { onJumpPage(block.pageNumber - 1) }) {
-                        Text(text = stringResource(R.string.novel_go_to_page, block.pageNumber))
-                    }
-                }
+        is NovelChapterBlock -> {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = block.title,
+                    style = MiuixTheme.textStyles.title2,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor,
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                )
+            }
+        }
 
-                is NovelParagraphBlock -> {
-                    if (block.text.text.isNotBlank()) {
-                        val urlAnnotations = block.text.getStringAnnotations("URL", 0, block.text.length)
-                        if (urlAnnotations.isNotEmpty()) {
-                            ClickableText(
-                                text = block.text,
-                                style = MiuixTheme.textStyles.body1.copy(color = MiuixTheme.colorScheme.onSurface),
-                                onClick = { offset ->
-                                    block.text
-                                        .getStringAnnotations("URL", offset, offset)
-                                        .firstOrNull()
-                                        ?.let { uriHandler.openUri(it.item) }
-                                },
-                            )
-                        } else {
-                            Text(
-                                text = block.text,
-                                style = MiuixTheme.textStyles.body1,
-                                lineHeight = 26.sp,
-                            )
-                        }
-                    }
+        is NovelPixivImageBlock -> {
+            NovelArtworkCard(
+                illustId = block.illustId,
+                textColor = textColor,
+                onOpen = { viewModel.openIllust(block.illustId) },
+            )
+        }
+
+        is NovelJumpBlock -> {
+            Button(
+                onClick = { onJumpPage(block.pageNumber - 1) },
+                colors =
+                    ButtonDefaults.buttonColors(
+                        color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = MiuixTheme.colorScheme.onSurface,
+                    ),
+                modifier = Modifier.padding(vertical = 4.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(MiuixIcons.ChevronForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text(text = stringResource(R.string.novel_go_to_page, block.pageNumber))
                 }
+            }
+        }
+
+        is NovelParagraphBlock -> {
+            if (block.text.text.isNotBlank()) {
+                val urlAnnotations = block.text.getStringAnnotations("URL", 0, block.text.length)
+                val textStyle =
+                    MiuixTheme.textStyles.body1.copy(
+                        fontSize = fontSize.sp,
+                        lineHeight = (fontSize * lineHeightMultiplier).sp,
+                        color = textColor,
+                    )
+                if (urlAnnotations.isNotEmpty()) {
+                    ClickableText(
+                        text = block.text,
+                        style = textStyle,
+                        onClick = { offset ->
+                            val annotation = block.text.getStringAnnotations("URL", offset, offset).firstOrNull()
+                            if (annotation != null) {
+                                uriHandler.openUri(annotation.item)
+                            } else {
+                                onToggleControls()
+                            }
+                        },
+                    )
+                } else {
+                    Text(
+                        text = block.text,
+                        style = textStyle,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NovelArtworkCard(
+    illustId: Long,
+    textColor: Color,
+    onOpen: () -> Unit,
+) {
+    ElevatedPanel(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .squircleSurface(MiuixTheme.colorScheme.primaryContainer, 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Photos,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.novel_open_illust),
+                    style = MiuixTheme.textStyles.subtitle,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor,
+                )
+                Text(
+                    text = "ID: $illustId",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = textColor.copy(alpha = 0.65f),
+                )
+            }
+            Button(onClick = onOpen) {
+                Text(stringResource(R.string.action_open))
             }
         }
     }

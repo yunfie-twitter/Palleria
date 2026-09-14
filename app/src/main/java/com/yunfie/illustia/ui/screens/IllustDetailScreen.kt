@@ -195,7 +195,12 @@ fun IllustDetailScreen(
                     useDarkHeaderIcons
                 }
         }
-        onDispose { }
+        onDispose {
+            val window = activity?.window
+            if (window != null) {
+                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
+            }
+        }
     }
 
     LaunchedEffect(isRefreshing) {

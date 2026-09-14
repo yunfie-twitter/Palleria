@@ -296,6 +296,7 @@ internal fun AppOverlayHost(
                             .contains(user.id),
                     onUnmuteUser = { viewModel.unmuteUser(user.id) },
                     gridState = viewModel.userProfileGridState(user.id),
+                    onIllustLongClick = viewModel::onIllustLongPress,
                     showHeaderControls = false,
                     backgroundColor = userSheetBackground,
                     contentHeight = userSheetHeight,

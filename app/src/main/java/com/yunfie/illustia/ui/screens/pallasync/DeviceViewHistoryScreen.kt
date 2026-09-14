@@ -119,11 +119,6 @@ fun DeviceViewHistoryScreen(
             } else {
                 val historyList = viewHistory ?: emptyList()
                 gridItems(historyList, key = { it.id }, contentType = { "illust_card" }) { illust ->
-                    LaunchedEffect(illust.id) {
-                        if (illust.artistId == 0L) {
-                            viewModel.lazyLoadPartialIllust(illust.id)
-                        }
-                    }
                     IllustCard(
                         illust = illust,
                         isSelected = false,

@@ -1,5 +1,11 @@
 package com.yunfie.illustia.ui.screens
 
+import android.app.Activity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,17 +18,26 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
@@ -154,6 +169,9 @@ fun NovelScreen(
     }
 }
 
+private const val DARK_LUMINANCE_THRESHOLD = 0.5f
+private const val DEFAULT_FONT_SIZE = 17f
+
 @Composable
 fun NovelReaderScreen(
     novel: NovelPreview?,
@@ -173,28 +191,126 @@ fun NovelReaderScreen(
                 .orEmpty()
                 .ifEmpty { listOf(NovelPage(emptyList())) }
         }
+    val chapters = remember(pages) { extractChapters(pages) }
     val pagerState = rememberPagerState(pageCount = { pages.size })
+    val continuousListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+
+    var fontSize by rememberSaveable { mutableFloatStateOf(DEFAULT_FONT_SIZE) }
+    var lineSpacing by rememberSaveable { mutableStateOf(NovelLineSpacing.Normal) }
+    var theme by rememberSaveable { mutableStateOf(NovelTheme.System) }
+    var layoutMode by rememberSaveable { mutableStateOf(NovelLayoutMode.Paged) }
+    var controlsVisible by rememberSaveable { mutableStateOf(true) }
+    var showTocSheet by rememberSaveable { mutableStateOf(false) }
+    var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
+
+    val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
+    DisposableEffect(theme, isDarkTheme) {
+        val window = (context as? Activity)?.window
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            val isLightBars =
+                when (theme) {
+                    NovelTheme.System -> !isDarkTheme
+                    NovelTheme.Sepia -> true
+                    NovelTheme.Dark, NovelTheme.Black -> false
+                }
+            insetsController.isAppearanceLightStatusBars = isLightBars
+            insetsController.isAppearanceLightNavigationBars = isLightBars
+        }
+        onDispose {
+            val window = (context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.isAppearanceLightStatusBars = !isDarkTheme
+                insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+            }
+        }
+    }
+
+    val backgroundColor = theme.backgroundColor()
+    val textColor = theme.textColor()
+
+    val currentScrollPage =
+        remember(continuousListState.firstVisibleItemIndex, pages) {
+            val firstVisible = continuousListState.firstVisibleItemIndex
+            var count = 0
+            var pageIdx = 0
+            for (i in pages.indices) {
+                val pageItems = 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
+                if (firstVisible < count + pageItems) {
+                    pageIdx = i
+                    break
+                }
+                count += pageItems
+            }
+            pageIdx.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+        }
+
+    val currentPage =
+        when (layoutMode) {
+            NovelLayoutMode.Paged -> pagerState.currentPage
+            NovelLayoutMode.Scroll -> currentScrollPage
+        }
+
+    fun jumpToPage(targetPage: Int) {
+        if (targetPage in pages.indices) {
+            coroutineScope.launch {
+                when (layoutMode) {
+                    NovelLayoutMode.Paged -> pagerState.animateScrollToPage(targetPage)
+                    NovelLayoutMode.Scroll -> {
+                        var targetIndex = 0
+                        for (i in 0 until targetPage) {
+                            targetIndex += 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
+                        }
+                        continuousListState.animateScrollToItem(targetIndex)
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
-        containerColor = MiuixTheme.colorScheme.surface,
+        containerColor = backgroundColor,
         topBar = {
-            TopAppBar(
-                title = currentNovel.title,
-                largeTitle = currentNovel.title,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onRetry) {
-                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
-                    }
-                },
-            )
+            AnimatedVisibility(
+                visible = controlsVisible,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                TopAppBar(
+                    title = currentNovel.title,
+                    largeTitle = currentNovel.title,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onRetry) {
+                            Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                        }
+                    },
+                )
+            }
+        },
+        bottomBar = {
+            AnimatedVisibility(
+                visible = controlsVisible && text != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                NovelBottomControlBar(
+                    currentPage = currentPage,
+                    pageCount = pages.size,
+                    onPageChange = ::jumpToPage,
+                    onOpenToc = { showTocSheet = true },
+                    onOpenSettings = { showSettingsSheet = true },
+                )
+            }
         },
     ) { scaffoldPadding ->
         when {
@@ -211,26 +327,45 @@ fun NovelReaderScreen(
             }
 
             text != null -> {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                ) { pageIndex ->
-                    NovelReaderPage(
-                        page = pages[pageIndex],
-                        pageIndex = pageIndex,
-                        pageCount = pages.size,
-                        viewModel = viewModel,
-                        uriHandler = uriHandler,
-                        onJumpPage = { targetPage ->
-                            if (targetPage in pages.indices) {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(targetPage)
-                                }
-                            }
-                        },
-                        scrollBehavior = scrollBehavior,
-                        modifier = Modifier.padding(scaffoldPadding),
-                    )
+                when (layoutMode) {
+                    NovelLayoutMode.Paged -> {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize().background(backgroundColor),
+                        ) { pageIndex ->
+                            NovelReaderPage(
+                                page = pages[pageIndex],
+                                pageIndex = pageIndex,
+                                pageCount = pages.size,
+                                fontSize = fontSize,
+                                lineHeightMultiplier = lineSpacing.multiplier,
+                                textColor = textColor,
+                                viewModel = viewModel,
+                                uriHandler = uriHandler,
+                                onJumpPage = ::jumpToPage,
+                                onToggleControls = { controlsVisible = !controlsVisible },
+                                scrollBehavior = scrollBehavior,
+                                contentPadding = scaffoldPadding,
+                            )
+                        }
+                    }
+
+                    NovelLayoutMode.Scroll -> {
+                        NovelReaderContinuousContent(
+                            pages = pages,
+                            lazyListState = continuousListState,
+                            fontSize = fontSize,
+                            lineHeightMultiplier = lineSpacing.multiplier,
+                            textColor = textColor,
+                            viewModel = viewModel,
+                            uriHandler = uriHandler,
+                            onJumpPage = ::jumpToPage,
+                            onToggleControls = { controlsVisible = !controlsVisible },
+                            scrollBehavior = scrollBehavior,
+                            contentPadding = scaffoldPadding,
+                            modifier = Modifier.fillMaxSize().background(backgroundColor),
+                        )
+                    }
                 }
             }
 
@@ -251,4 +386,30 @@ fun NovelReaderScreen(
             }
         }
     }
+
+    NovelTocBottomSheet(
+        show = showTocSheet,
+        currentPage = currentPage,
+        pageCount = pages.size,
+        chapters = chapters,
+        onJumpPage = ::jumpToPage,
+        onDismiss = { showTocSheet = false },
+    )
+
+    NovelSettingsBottomSheet(
+        show = showSettingsSheet,
+        fontSize = fontSize,
+        onFontSizeChange = { fontSize = it },
+        lineSpacing = lineSpacing,
+        onLineSpacingChange = { lineSpacing = it },
+        theme = theme,
+        onThemeChange = { theme = it },
+        layoutMode = layoutMode,
+        onLayoutModeChange = { newMode ->
+            val current = currentPage
+            layoutMode = newMode
+            jumpToPage(current)
+        },
+        onDismiss = { showSettingsSheet = false },
+    )
 }

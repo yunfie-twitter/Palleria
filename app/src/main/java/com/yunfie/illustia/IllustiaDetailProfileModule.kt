@@ -176,11 +176,13 @@ abstract class IllustiaDetailProfileModule(
         viewModelScope.launch {
             try {
                 val fullIllust = repository.illustDetail(illustId)
-                val updatedHistory =
-                    _uiState.value.settings.viewHistory.map {
-                        if (it.id == illustId) fullIllust else it
-                    }
-                updateSettings { it.copy(viewHistory = updatedHistory) }
+                updateSettings { current ->
+                    val updatedHistory =
+                        current.viewHistory.map {
+                            if (it.id == illustId) fullIllust else it
+                        }
+                    current.copy(viewHistory = updatedHistory)
+                }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
                 Log.w("IllustiaViewModel", "Failed to lazily refresh illustration detail", expectedFailure)

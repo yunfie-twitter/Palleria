@@ -463,6 +463,7 @@ internal fun AppNavHost(
                                 .contains(user.id),
                         onUnmuteUser = { viewModel.unmuteUser(user.id) },
                         gridState = viewModel.userProfileGridState(user.id),
+                        onIllustLongClick = viewModel::onIllustLongPress,
                         showHeaderControls = true,
                     )
                 } else {

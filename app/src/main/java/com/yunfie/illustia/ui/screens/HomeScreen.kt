@@ -27,6 +27,11 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import android.app.Activity
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Search
@@ -71,6 +76,17 @@ fun HomeScreen(
     }
 
     val scheme = MiuixTheme.colorScheme
+    val context = LocalContext.current
+    val isDarkTheme = scheme.surface.luminance() < 0.5f
+    DisposableEffect(isDarkTheme) {
+        val window = (context as? Activity)?.window
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.isAppearanceLightStatusBars = !isDarkTheme
+            insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+        }
+        onDispose {}
+    }
     Column(
         modifier =
             Modifier

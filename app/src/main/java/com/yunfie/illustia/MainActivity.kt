@@ -30,6 +30,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.LocalTextStyle
@@ -135,6 +136,10 @@ class MainActivity : FragmentActivity() {
                     SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 },
         )
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !isDark
+            isAppearanceLightNavigationBars = !isDark
+        }
         super.onCreate(savedInstanceState)
         requestLegacyStoragePermissionIfNeeded()
         applyAppLanguage(SettingsStore.readStoredAppLanguage(applicationContext))
@@ -250,6 +255,10 @@ class MainActivity : FragmentActivity() {
                             SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                         },
                 )
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !isDarkTheme
+                    isAppearanceLightNavigationBars = !isDarkTheme
+                }
             }
 
             LaunchedEffect(

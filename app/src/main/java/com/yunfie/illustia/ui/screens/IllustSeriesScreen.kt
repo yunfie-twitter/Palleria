@@ -40,6 +40,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,6 +81,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.WatchlistPill
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -130,6 +132,7 @@ fun IllustSeriesScreen(
 
     var sortOrder by remember { mutableStateOf(IllustSeriesSortOrder.Default) }
     var isHeaderCollapsed by remember { mutableStateOf(false) }
+    var watchlistAnimationTrigger by remember(seriesId) { mutableIntStateOf(0) }
 
     val processedIllusts =
         remember(state.illusts, sortOrder) {
@@ -183,7 +186,12 @@ fun IllustSeriesScreen(
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             insetsController.isAppearanceLightStatusBars = if (isContentScrolled) !isDarkTheme else false
         }
-        onDispose {}
+        onDispose {
+            val window = activity?.window
+            if (window != null) {
+                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
+            }
+        }
     }
 
     val feedHighQuality = settings.useHighQualityFeedImages
@@ -288,8 +296,12 @@ fun IllustSeriesScreen(
                         caption = caption,
                         workCount = detail?.seriesWorkCount ?: processedIllusts.size,
                         watchlistAdded = state.watchlistAdded,
+                        watchlistAnimationTrigger = watchlistAnimationTrigger,
                         backgroundColor = backgroundColor,
                         onToggleWatchlist = {
+                            if (!state.watchlistAdded) {
+                                watchlistAnimationTrigger += 1
+                            }
                             scope.launch {
                                 if (state.watchlistAdded) store.removeWatchlist() else store.addWatchlist()
                             }
@@ -425,6 +437,7 @@ private fun SeriesProfileHeader(
     caption: String,
     workCount: Int,
     watchlistAdded: Boolean,
+    watchlistAnimationTrigger: Int,
     backgroundColor: Color,
     onToggleWatchlist: () -> Unit,
 ) {
@@ -441,10 +454,7 @@ private fun SeriesProfileHeader(
                     url = coverUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .blur(16.dp),
+                    modifier = Modifier.fillMaxSize(),
                 )
                 Box(
                     modifier =
@@ -486,6 +496,7 @@ private fun SeriesProfileHeader(
             caption = caption,
             workCount = workCount,
             watchlistAdded = watchlistAdded,
+            watchlistAnimationTrigger = watchlistAnimationTrigger,
             backgroundColor = backgroundColor,
             onToggleWatchlist = onToggleWatchlist,
         )
@@ -500,6 +511,7 @@ private fun SeriesProfileInfo(
     caption: String,
     workCount: Int,
     watchlistAdded: Boolean,
+    watchlistAnimationTrigger: Int,
     backgroundColor: Color,
     onToggleWatchlist: () -> Unit,
 ) {
@@ -541,34 +553,11 @@ private fun SeriesProfileInfo(
                 }
             }
             Spacer(Modifier.weight(1f))
-            Box(
-                modifier =
-                    Modifier
-                        .squircleSurface(
-                            if (watchlistAdded) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainerHighest,
-                            24.dp,
-                        ).miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onToggleWatchlist)
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = if (watchlistAdded) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                        contentDescription = null,
-                        tint = if (watchlistAdded) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = if (watchlistAdded) stringResource(R.string.action_remove_bookmark) else stringResource(R.string.action_add),
-                        color = if (watchlistAdded) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        style = MiuixTheme.textStyles.body2,
-                    )
-                }
-            }
+            WatchlistPill(
+                isAdded = watchlistAdded,
+                animationTrigger = watchlistAnimationTrigger,
+                modifier = Modifier.miuixClickable(pressedScale = 0.94f, haptic = false, onClick = onToggleWatchlist),
+            )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

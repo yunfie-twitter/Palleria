@@ -179,6 +179,7 @@ private class NeuQuant(
     private val radbiasshift = 8
     private val radbias = 1 shl radbiasshift
     private val alpharadbshift = alphabiasshift + radbiasshift
+    private val alpharadbias = 1 shl alpharadbshift
 
     private val network = Array(netsize) { DoubleArray(4) }
     private val netindex = IntArray(256)

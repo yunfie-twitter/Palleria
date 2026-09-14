@@ -191,7 +191,12 @@ fun WatchlistSeriesScreen(
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             insetsController.isAppearanceLightStatusBars = if (isContentScrolled) !isDarkTheme else false
         }
-        onDispose {}
+        onDispose {
+            val window = activity?.window
+            if (window != null) {
+                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
+            }
+        }
     }
 
     val bannerCoverUrl = processedSeries.firstOrNull { !it.thumbnailUrl.isNullOrBlank() }?.thumbnailUrl

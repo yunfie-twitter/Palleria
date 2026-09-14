@@ -74,6 +74,7 @@ fun UserProfileScreen(
     isMuted: Boolean,
     onUnmuteUser: () -> Unit,
     gridState: LazyGridState,
+    onIllustLongClick: (Illust) -> Unit = {},
     showHeaderControls: Boolean = true,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
@@ -182,7 +183,12 @@ fun UserProfileScreen(
                     false
                 }
         }
-        onDispose {}
+        onDispose {
+            val window = activity?.window
+            if (window != null) {
+                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
+            }
+        }
     }
 
     LaunchedEffect(selectedTab, user.id, isMuted) {
@@ -253,6 +259,7 @@ fun UserProfileScreen(
             modifier = pageModifier,
             onTabSelected = selectTab,
             showProfileHeader = !isContentScrolled,
+            onIllustLongClick = onIllustLongClick,
         )
     }
 

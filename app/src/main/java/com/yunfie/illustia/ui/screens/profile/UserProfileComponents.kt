@@ -125,6 +125,7 @@ internal fun UserProfilePagerContent(
     modifier: Modifier = Modifier,
     onTabSelected: (Int) -> Unit,
     showProfileHeader: Boolean,
+    onIllustLongClick: ((Illust) -> Unit)? = null,
 ) {
     var showAvatarPreview by remember(user.id) { mutableStateOf(false) }
     val tabListState = rememberLazyListState()
@@ -216,7 +217,17 @@ internal fun UserProfilePagerContent(
         ) { page ->
             when (page) {
                 0 -> {
-                    UserIllustGridPage(illusts, settings, hasMore, onOpenIllust, onBookmark, onLoadMore, worksGridState, backgroundColor)
+                    UserIllustGridPage(
+                        illusts = illusts,
+                        settings = settings,
+                        hasMore = hasMore,
+                        onOpenIllust = onOpenIllust,
+                        onBookmark = onBookmark,
+                        onLoadMore = onLoadMore,
+                        gridState = worksGridState,
+                        backgroundColor = backgroundColor,
+                        onIllustLongClick = onIllustLongClick,
+                    )
                 }
 
                 1 -> {
@@ -224,16 +235,17 @@ internal fun UserProfilePagerContent(
                         UserInfoPage(backgroundColor) { MutedUserContentNotice(onUnmuteUser) }
                     } else {
                         UserIllustGridPage(
-                            bookmarks,
-                            settings,
-                            bookmarkHasMore,
-                            onOpenIllust,
-                            onBookmark,
-                            onLoadMoreBookmarks,
-                            bookmarksGridState,
-                            backgroundColor,
-                            stringResource(R.string.bookmark_empty),
-                            "user_bookmark",
+                            illusts = bookmarks,
+                            settings = settings,
+                            hasMore = bookmarkHasMore,
+                            onOpenIllust = onOpenIllust,
+                            onBookmark = onBookmark,
+                            onLoadMore = onLoadMoreBookmarks,
+                            gridState = bookmarksGridState,
+                            backgroundColor = backgroundColor,
+                            emptyLabel = stringResource(R.string.bookmark_empty),
+                            keyPrefix = "user_bookmark",
+                            onIllustLongClick = onIllustLongClick,
                         )
                     }
                 }
@@ -622,6 +634,7 @@ private fun UserIllustGridPage(
     backgroundColor: Color,
     emptyLabel: String = stringResource(R.string.search_empty_illust),
     keyPrefix: String = "user_illust",
+    onIllustLongClick: ((Illust) -> Unit)? = null,
 ) {
     LazyVerticalGrid(
         state = gridState,
@@ -636,6 +649,7 @@ private fun UserIllustGridPage(
                 illust = illust,
                 onBookmark = { onBookmark(illust) },
                 onClick = { onOpenIllust(illust) },
+                onLongClick = onIllustLongClick?.let { { it(illust) } },
                 modifier = Modifier.animateItem(),
                 highQualityImages = settings.useHighQualityFeedImages,
                 showAiBadge = settings.showAiBadge,
@@ -740,17 +754,9 @@ internal fun RelatedCreatorsSheetContent(
 @Composable
 private fun UserDetailsCard(user: UserProfile) {
     ElevatedPanel {
-        SettingRow(stringResource(R.string.user_id_label), user.id.toString()) {
-            Text("Pixiv", color = MiuixTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-        }
+        SettingRow(stringResource(R.string.user_id_label), user.id.toString()) {}
         DividerLine()
-        SettingRow(stringResource(R.string.settings_account), "@${user.account}") {
-            Text(
-                if (user.isFollowed) stringResource(R.string.action_following) else stringResource(R.string.action_not_followed),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        SettingRow(stringResource(R.string.settings_account), "@${user.account}") {}
         if (user.comment.isNotBlank()) {
             DividerLine()
             Text(user.comment, color = MiuixTheme.colorScheme.onBackground, style = MiuixTheme.textStyles.body1, lineHeight = 23.sp)

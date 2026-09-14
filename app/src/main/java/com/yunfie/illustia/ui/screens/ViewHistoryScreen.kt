@@ -214,11 +214,6 @@ fun ViewHistoryScreen(
 
             gridItems(visibleHistory, key = { it.id }, contentType = { "illust_card" }) { illust ->
                 val isSelected = illust.id in selectedIds
-                LaunchedEffect(illust.id) {
-                    if (illust.artistId == 0L) {
-                        viewModel.lazyLoadPartialIllust(illust.id)
-                    }
-                }
                 IllustCard(
                     illust = illust,
                     isSelected = isSelected,
