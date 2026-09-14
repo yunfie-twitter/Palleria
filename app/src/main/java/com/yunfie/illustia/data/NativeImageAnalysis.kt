@@ -43,13 +43,15 @@ internal object NativeImageAnalysis {
         maxDimension: Int,
     ): PixelSample {
         val softwareBitmap =
-            if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
-                null
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
-                runCatching { bitmap.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull()
-            } else {
-                bitmap
-            } ?: return PixelSample(0, 0, IntArray(0))
+            (
+                if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+                    null
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
+                    runCatching { bitmap.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull()
+                } else {
+                    bitmap
+                }
+            ) ?: return PixelSample(0, 0, IntArray(0))
         var sampled: Bitmap? = null
         return try {
             val scale =
@@ -59,14 +61,15 @@ internal object NativeImageAnalysis {
                 )
             val width = (softwareBitmap.width * scale).roundToInt().coerceAtLeast(1)
             val height = (softwareBitmap.height * scale).roundToInt().coerceAtLeast(1)
-            sampled =
+            val currentSampled =
                 if (width == softwareBitmap.width && height == softwareBitmap.height) {
                     softwareBitmap
                 } else {
                     Bitmap.createScaledBitmap(softwareBitmap, width, height, true)
                 }
+            sampled = currentSampled
             val pixels = IntArray(width * height)
-            sampled.getPixels(pixels, 0, width, 0, 0, width, height)
+            currentSampled.getPixels(pixels, 0, width, 0, 0, width, height)
             PixelSample(width, height, pixels)
         } catch (_: Throwable) {
             PixelSample(0, 0, IntArray(0))
