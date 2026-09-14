@@ -3,13 +3,22 @@ package com.yunfie.illustia.ui.screens.profile
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
@@ -122,10 +132,12 @@ internal fun UserProfilePagerContent(
     pagerState: PagerState,
     worksGridState: LazyGridState,
     bookmarksGridState: LazyGridState,
+    infoListState: LazyListState = rememberLazyListState(),
     modifier: Modifier = Modifier,
     onTabSelected: (Int) -> Unit,
     showProfileHeader: Boolean,
     onIllustLongClick: ((Illust) -> Unit)? = null,
+    onCollapseHeader: () -> Unit = {},
 ) {
     var showAvatarPreview by remember(user.id) { mutableStateOf(false) }
     val tabListState = rememberLazyListState()
@@ -134,26 +146,34 @@ internal fun UserProfilePagerContent(
             onDismissRequest = { showAvatarPreview = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .miuixClickable(onClick = { showAvatarPreview = false }),
-                contentAlignment = Alignment.Center,
+            var dialogVisible by remember { mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(Unit) { dialogVisible = true }
+            AnimatedVisibility(
+                visible = dialogVisible,
+                enter = fadeIn(tween(240)) + scaleIn(tween(240), initialScale = 0.82f),
+                exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.82f),
             ) {
-                AvatarImage(
-                    url = user.profileImageUrl,
-                    name = user.name,
-                    size = 280.dp,
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                )
-                HeaderOverlayIcon(
-                    icon = MiuixIcons.Close,
-                    onClick = { showAvatarPreview = false },
-                    modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(16.dp),
-                    contentColor = Color.White,
-                )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.94f))
+                            .miuixClickable(onClick = { showAvatarPreview = false }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AvatarImage(
+                        url = user.profileImageUrl,
+                        name = user.name,
+                        size = 280.dp,
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    )
+                    HeaderOverlayIcon(
+                        icon = MiuixIcons.Close,
+                        onClick = { showAvatarPreview = false },
+                        modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(16.dp),
+                        contentColor = Color.White,
+                    )
+                }
             }
         }
     }
@@ -162,12 +182,12 @@ internal fun UserProfilePagerContent(
             visible = showProfileHeader,
             enter =
                 expandVertically(
-                    animationSpec = tween(320),
+                    animationSpec = tween(300, easing = FastOutSlowInEasing),
                     expandFrom = Alignment.Top,
                 ) + fadeIn(animationSpec = tween(220, delayMillis = 60)),
             exit =
                 shrinkVertically(
-                    animationSpec = tween(280),
+                    animationSpec = tween(260, easing = FastOutSlowInEasing),
                     shrinkTowards = Alignment.Top,
                 ) + fadeOut(animationSpec = tween(180)),
         ) {
@@ -182,18 +202,19 @@ internal fun UserProfilePagerContent(
                 backgroundColor = backgroundColor,
                 onAvatarClick = { showAvatarPreview = true },
                 tabListState = tabListState,
+                onCollapseHeader = onCollapseHeader,
             )
         }
         AnimatedVisibility(
             visible = !showProfileHeader,
             enter =
                 expandVertically(
-                    animationSpec = tween(280),
+                    animationSpec = tween(260, easing = FastOutSlowInEasing),
                     expandFrom = Alignment.Top,
-                ) + fadeIn(animationSpec = tween(200, delayMillis = 80)),
+                ) + fadeIn(animationSpec = tween(200, delayMillis = 60)),
             exit =
                 shrinkVertically(
-                    animationSpec = tween(220),
+                    animationSpec = tween(220, easing = FastOutSlowInEasing),
                     shrinkTowards = Alignment.Top,
                 ) + fadeOut(animationSpec = tween(140)),
         ) {
@@ -232,7 +253,7 @@ internal fun UserProfilePagerContent(
 
                 1 -> {
                     if (isMuted) {
-                        UserInfoPage(backgroundColor) { MutedUserContentNotice(onUnmuteUser) }
+                        UserInfoPage(backgroundColor, infoListState) { MutedUserContentNotice(onUnmuteUser) }
                     } else {
                         UserIllustGridPage(
                             illusts = bookmarks,
@@ -251,7 +272,7 @@ internal fun UserProfilePagerContent(
                 }
 
                 else -> {
-                    UserInfoPage(backgroundColor) { UserDetailsCard(user) }
+                    UserInfoPage(backgroundColor, infoListState) { UserDetailsCard(user) }
                 }
             }
         }
@@ -270,8 +291,21 @@ private fun UserProfileHeader(
     backgroundColor: Color,
     onAvatarClick: () -> Unit,
     tabListState: LazyListState,
+    onCollapseHeader: () -> Unit = {},
 ) {
-    Column(Modifier.fillMaxWidth()) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .draggable(
+                orientation = Orientation.Vertical,
+                state =
+                    rememberDraggableState { delta ->
+                        if (delta < -8f) {
+                            onCollapseHeader()
+                        }
+                    },
+            ),
+    ) {
         Box(
             modifier =
                 Modifier
@@ -435,11 +469,32 @@ internal fun UserProfileSmallTopAppBar(
         }
 
     val barScrimColor by animateColorAsState(
-        targetValue = if (compact) MiuixTheme.colorScheme.background.copy(alpha = 0.76f) else Color.Transparent,
+        targetValue = if (compact) MiuixTheme.colorScheme.background.copy(alpha = 0.85f) else Color.Transparent,
+        animationSpec = tween(280),
         label = "profile-top-bar-color",
     )
+    val blurAlpha by animateFloatAsState(
+        targetValue = if (compact) 1f else 0f,
+        animationSpec = tween(280),
+        label = "profile-blur-alpha",
+    )
+    val buttonBgColor by animateColorAsState(
+        targetValue = if (compact) Color.Transparent else Color.White.copy(alpha = 0.92f),
+        animationSpec = tween(240),
+        label = "profile-btn-bg",
+    )
+    val buttonContentColor by animateColorAsState(
+        targetValue = if (compact) MiuixTheme.colorScheme.onBackground else Color.Black,
+        animationSpec = tween(240),
+        label = "profile-btn-content",
+    )
+    val borderAlpha by animateFloatAsState(
+        targetValue = if (compact) 0.12f else 0f,
+        animationSpec = tween(240),
+        label = "profile-border-alpha",
+    )
     Box(Modifier.fillMaxWidth()) {
-        if (compact && user.backgroundImageUrl != null) {
+        if (blurAlpha > 0.005f && user.backgroundImageUrl != null) {
             PixivImage(
                 url = user.backgroundImageUrl,
                 contentDescription = null,
@@ -447,10 +502,20 @@ internal fun UserProfileSmallTopAppBar(
                 modifier =
                     Modifier
                         .matchParentSize()
+                        .graphicsLayer { alpha = blurAlpha }
                         .blur(24.dp),
             )
         }
         Box(Modifier.matchParentSize().background(barScrimColor))
+        if (borderAlpha > 0.005f) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(0.5.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(MiuixTheme.colorScheme.outline.copy(alpha = borderAlpha)),
+            )
+        }
         Row(
             modifier =
                 Modifier
@@ -463,32 +528,38 @@ internal fun UserProfileSmallTopAppBar(
             HeaderOverlayIcon(
                 icon = MiuixIcons.Back,
                 onClick = onBack,
-                backgroundColor = if (compact) Color.Transparent else Color.White.copy(alpha = 0.92f),
-                contentColor = if (compact) MiuixTheme.colorScheme.onBackground else Color.Black,
+                backgroundColor = buttonBgColor,
+                contentColor = buttonContentColor,
             )
-            if (compact) {
-                Text(
-                    text = shareTitle,
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .padding(horizontal = 16.dp)
-                            .miuixClickable(onClick = onTitleClick),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else {
-                Spacer(Modifier.weight(1f))
+            Box(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                AnimatedVisibility(
+                    visible = compact,
+                    enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { -it / 2 },
+                    exit = fadeOut(tween(160)) + slideOutVertically(tween(160)) { -it / 2 },
+                ) {
+                    Text(
+                        text = shareTitle,
+                        modifier = Modifier.miuixClickable(onClick = onTitleClick),
+                        color = MiuixTheme.colorScheme.onBackground,
+                        style = MiuixTheme.textStyles.title4,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             Box {
                 HeaderOverlayIcon(
                     icon = MiuixIcons.More,
                     onClick = { showMoreMenu = true },
-                    backgroundColor = if (compact) Color.Transparent else Color.White.copy(alpha = 0.92f),
-                    contentColor = if (compact) MiuixTheme.colorScheme.onBackground else Color.Black,
+                    backgroundColor = buttonBgColor,
+                    contentColor = buttonContentColor,
                 )
                 OverlayCascadingListPopup(
                     show = showMoreMenu,
@@ -669,10 +740,12 @@ private fun UserIllustGridPage(
 @Composable
 private fun UserInfoPage(
     backgroundColor: Color,
+    listState: LazyListState = rememberLazyListState(),
     content: @Composable () -> Unit,
 ) {
     LazyColumn(
-        Modifier.fillMaxSize().background(backgroundColor),
+        state = listState,
+        modifier = Modifier.fillMaxSize().background(backgroundColor),
         contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 96.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -122,53 +123,54 @@ fun UserProfileScreen(
         }
 
     val bookmarkGridState = remember(user.id) { LazyGridState() }
+    val infoListState = remember(user.id) { LazyListState() }
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val selectedTab = pagerState.currentPage
     var isHeaderCollapsed by remember(user.id) { mutableStateOf(false) }
-    val activeGridState = if (selectedTab == 1) bookmarkGridState else gridState
 
-    val isAtTop by remember(activeGridState) {
+    val activeIsAtTop by remember(selectedTab, gridState, bookmarkGridState, infoListState) {
         derivedStateOf {
-            activeGridState.firstVisibleItemIndex == 0 && activeGridState.firstVisibleItemScrollOffset <= 0
+            when (selectedTab) {
+                0 -> gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset <= 0
+                1 -> bookmarkGridState.firstVisibleItemIndex == 0 && bookmarkGridState.firstVisibleItemScrollOffset <= 0
+                else -> infoListState.firstVisibleItemIndex == 0 && infoListState.firstVisibleItemScrollOffset <= 0
+            }
         }
     }
 
-    LaunchedEffect(isAtTop) {
-        if (isAtTop) {
-            isHeaderCollapsed = false
-        }
-    }
-
-    // Track scroll events reliably without bouncing / flapping on short content lists
+    // Coordinate collapsing/expanding across all tabs and short content lists without flapping
     val profileScrollConnection =
-        remember(selectedTab, activeGridState) {
+        remember(activeIsAtTop) {
             object : NestedScrollConnection {
                 override fun onPreScroll(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (selectedTab != 2) {
-                        if (available.y < -12f &&
-                            (activeGridState.firstVisibleItemIndex > 0 || activeGridState.firstVisibleItemScrollOffset > 32)
-                        ) {
-                            isHeaderCollapsed = true
-                        } else if (available.y > 8f && activeGridState.firstVisibleItemIndex == 0 &&
-                            activeGridState.firstVisibleItemScrollOffset <= 12
-                        ) {
-                            isHeaderCollapsed = false
-                        }
+                    if (available.y < -10f) {
+                        isHeaderCollapsed = true
+                    } else if (available.y > 8f && activeIsAtTop) {
+                        isHeaderCollapsed = false
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (available.y > 8f && activeIsAtTop) {
+                        isHeaderCollapsed = false
                     }
                     return Offset.Zero
                 }
             }
         }
 
-    val isContentScrolled by remember(selectedTab, activeGridState, isHeaderCollapsed, isAtTop) {
+    val isContentScrolled by remember(isHeaderCollapsed, activeIsAtTop) {
         derivedStateOf {
-            selectedTab != 2 &&
-                !isAtTop &&
-                (isHeaderCollapsed || activeGridState.firstVisibleItemIndex > 0 || activeGridState.firstVisibleItemScrollOffset > 24)
+            isHeaderCollapsed || !activeIsAtTop
         }
     }
 
@@ -227,6 +229,7 @@ fun UserProfileScreen(
             when (selectedTab) {
                 0 -> gridState.animateScrollToItem(0)
                 1 -> bookmarkGridState.animateScrollToItem(0)
+                else -> infoListState.animateScrollToItem(0)
             }
         }
     }
@@ -256,10 +259,12 @@ fun UserProfileScreen(
             pagerState = pagerState,
             worksGridState = gridState,
             bookmarksGridState = bookmarkGridState,
+            infoListState = infoListState,
             modifier = pageModifier,
             onTabSelected = selectTab,
             showProfileHeader = !isContentScrolled,
             onIllustLongClick = onIllustLongClick,
+            onCollapseHeader = { isHeaderCollapsed = true },
         )
     }
 
