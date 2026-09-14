@@ -140,11 +140,14 @@
     <!-- Illust detail screen -->
     <string name="detail_save_image_title">Save Image</string>
     <string name="detail_save_image_confirm">Save this image to the Palleria folder.</string>
+    <string name="detail_save_ugoira_title">Save Ugoira</string>
+    <string name="detail_save_ugoira_confirm">Save this ugoira as a GIF to the Palleria folder.</string>
     <string name="detail_unfollow_title">Unfollow</string>
     <string name="detail_unfollow_confirm">Unfollow %1$s?</string>
     <string name="detail_open_in_browser">Open in Browser</string>
     <string name="detail_share">Share</string>
     <string name="detail_save_image">Save Image</string>
+    <string name="detail_save_ugoira">Save Ugoira</string>
     <string name="detail_save_all_pages">Save All Pages</string>
     <string name="detail_copy_url">Copy URL</string>
     <string name="detail_mute_work">Mute This Work</string>

@@ -214,10 +214,11 @@ fun IllustDetailScreen(
     }
 
     if (pendingSave != null) {
+        val isUgoira = illust.type == "ugoira"
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.detail_save_image_title),
-            summary = stringResource(R.string.detail_save_image_confirm),
+            title = stringResource(if (isUgoira) R.string.detail_save_ugoira_title else R.string.detail_save_image_title),
+            summary = stringResource(if (isUgoira) R.string.detail_save_ugoira_confirm else R.string.detail_save_image_confirm),
             confirmText = stringResource(R.string.action_save),
             onConfirm = {
                 pendingSave?.let { (url, filename) -> onSaveImage(url, filename) }

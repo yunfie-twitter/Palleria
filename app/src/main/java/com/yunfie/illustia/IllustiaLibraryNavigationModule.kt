@@ -3,6 +3,7 @@ package com.yunfie.illustia
 import android.app.Application
 import android.net.ConnectivityManager
 import androidx.lifecycle.viewModelScope
+import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
@@ -24,6 +25,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 /** Downloads, offline library, notifications, settings navigation, and account switching. */
+@Suppress("LargeClass")
 abstract class IllustiaLibraryNavigationModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
@@ -47,16 +49,15 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 val currentIllust = resolveDownloadIllust(filename)
                 val targetName = buildDownloadPath(filename, currentIllust)
-                downloadImageToGallery(url, targetName)
-                if (
-                    _uiState.value.settings.autoBookmarkOnDownload &&
-                    currentIllust != null &&
-                    !currentIllust.isBookmarked &&
-                    currentIllust.hasImageUrl(url)
-                ) {
+                if (currentIllust?.type == "ugoira") {
+                    downloadUgoiraToGallery(currentIllust, targetName)
+                } else {
+                    downloadImageToGallery(url, targetName)
+                }
+                if (shouldAutoBookmark(currentIllust, url)) {
                     val settings = _uiState.value.settings
                     val restrict = if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
-                    val updated = repository.toggleBookmark(currentIllust, restrict)
+                    val updated = repository.toggleBookmark(currentIllust!!, restrict)
                     updateIllustEverywhere(updated)
                 }
                 terminalStatus = DownloadQueueStatus.Completed
@@ -352,6 +353,38 @@ abstract class IllustiaLibraryNavigationModule(
                 responseMimeType = body.contentType()?.toString(),
             )
         }
+    }
+
+    private suspend fun downloadUgoiraToGallery(
+        illust: Illust,
+        filename: String,
+    ) {
+        val playback = loadUgoiraPlayback(illust.id)
+        if (playback.frames.isEmpty()) {
+            throw IllegalStateException(str(R.string.ugoira_load_failed))
+        }
+        val cacheDir = getApplication<Application>().cacheDir
+        val tempGif = File.createTempFile("ugoira_${illust.id}_", ".gif", cacheDir)
+        try {
+            tempGif.outputStream().buffered().use { output ->
+                AnimatedGifEncoder.encode(playback.frames, output)
+            }
+            tempGif.inputStream().buffered().use { input ->
+                imageStore.save(
+                    input = input,
+                    name = filename,
+                    sourceUrl = "https://www.pixiv.net/artworks/${illust.id}.gif",
+                    responseMimeType = "image/gif",
+                )
+            }
+        } finally {
+            tempGif.delete()
+        }
+    }
+
+    private fun shouldAutoBookmark(illust: Illust?, url: String): Boolean {
+        if (!_uiState.value.settings.autoBookmarkOnDownload || illust == null) return false
+        return !illust.isBookmarked && (illust.type == "ugoira" || illust.hasImageUrl(url))
     }
 
     fun clearAppCache() {

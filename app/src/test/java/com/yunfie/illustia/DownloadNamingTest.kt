@@ -29,6 +29,8 @@ class DownloadNamingTest :
                 "cover.jpg"
             "cover.png".withImageExtension("https://example.test/image.jpg", "image/jpeg") shouldBe
                 "cover.png"
+            "ugoira_12345".withImageExtension("https://example.test/ugoira.gif", "image/gif") shouldBe
+                "ugoira_12345.gif"
         }
 
         "extracts only an illustia-prefixed id" {

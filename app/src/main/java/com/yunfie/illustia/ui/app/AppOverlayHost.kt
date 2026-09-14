@@ -125,7 +125,15 @@ internal fun AppOverlayHost(
                     modifier = Modifier.fillMaxWidth(),
                     colors = overlayActionButtonColors(),
                 ) {
-                    Text(stringResource(R.string.detail_save_image))
+                    Text(
+                        stringResource(
+                            if (illust.type == "ugoira") {
+                                R.string.detail_save_ugoira
+                            } else {
+                                R.string.detail_save_image
+                            },
+                        ),
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(

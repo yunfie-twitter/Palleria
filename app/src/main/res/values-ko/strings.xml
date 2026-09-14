@@ -139,11 +139,14 @@
     <!-- Illust detail screen -->
     <string name="detail_save_image_title">이미지 저장</string>
     <string name="detail_save_image_confirm">이 이미지를 Palleria 폴더에 저장합니다.</string>
+    <string name="detail_save_ugoira_title">우고이라 저장</string>
+    <string name="detail_save_ugoira_confirm">이 우고이라를 GIF로 Palleria 폴더에 저장합니다.</string>
     <string name="detail_unfollow_title">팔로우 해제</string>
     <string name="detail_unfollow_confirm">%1$s 님을 팔로우 해제할까요?</string>
     <string name="detail_open_in_browser">브라우저에서 열기</string>
     <string name="detail_share">공유</string>
     <string name="detail_save_image">이미지 저장</string>
+    <string name="detail_save_ugoira">우고이라 저장</string>
     <string name="detail_save_all_pages">모든 페이지 저장</string>
     <string name="detail_copy_url">URL 복사</string>
     <string name="detail_mute_work">이 작품 뮤트</string>

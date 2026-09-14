@@ -122,11 +122,14 @@
     <string name="favorite_tags_works_not_found">未找到“#%1$s”的作品</string>
     <string name="detail_save_image_title">保存图像</string>
     <string name="detail_save_image_confirm">将此图像保存到 Palleria 文件夹。</string>
+    <string name="detail_save_ugoira_title">保存动图</string>
+    <string name="detail_save_ugoira_confirm">将此动图作为GIF保存到 Palleria 文件夹。</string>
     <string name="detail_unfollow_title">取消关注</string>
     <string name="detail_unfollow_confirm">取消关注 %1$s？</string>
     <string name="detail_open_in_browser">在浏览器中打开</string>
     <string name="detail_share">分享</string>
     <string name="detail_save_image">保存图像</string>
+    <string name="detail_save_ugoira">保存动图</string>
     <string name="detail_save_all_pages">保存所有页面</string>
     <string name="detail_copy_url">复制 URL</string>
     <string name="detail_mute_work">将此作品静音</string>

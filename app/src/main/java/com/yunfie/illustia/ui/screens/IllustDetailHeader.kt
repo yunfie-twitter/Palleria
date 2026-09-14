@@ -103,7 +103,13 @@ internal fun IllustDetailHeader(
     val clipboard = remember(context) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
     val openInBrowserLabel = stringResource(R.string.detail_open_in_browser)
     val shareLabel = stringResource(R.string.detail_share)
-    val saveImageLabel = stringResource(R.string.detail_save_image)
+    val isUgoira = illust.type == "ugoira"
+    val saveActionLabel =
+        if (isUgoira) {
+            stringResource(R.string.detail_save_ugoira)
+        } else {
+            stringResource(R.string.detail_save_image)
+        }
     val saveAllPagesLabel = stringResource(R.string.detail_save_all_pages)
     val copyUrlLabel = stringResource(R.string.detail_copy_url)
     val muteWorkLabel = stringResource(R.string.detail_mute_work)
@@ -378,7 +384,7 @@ internal fun IllustDetailHeader(
                                         },
                                     ),
                                     DropdownItem(
-                                        text = saveImageLabel,
+                                        text = saveActionLabel,
                                         onClick = {
                                             onSaveImage(
                                                 illust.originalImageUrl ?: illust.imageUrl,

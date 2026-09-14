@@ -145,11 +145,14 @@
     <!-- Illust detail screen -->
     <string name="detail_save_image_title">画像を保存</string>
     <string name="detail_save_image_confirm">この画像をPalleriaフォルダへ保存します。</string>
+    <string name="detail_save_ugoira_title">うごイラを保存</string>
+    <string name="detail_save_ugoira_confirm">このうごイラをGIFとしてPalleriaフォルダへ保存します。</string>
     <string name="detail_unfollow_title">フォローを解除</string>
     <string name="detail_unfollow_confirm">%1$s さんのフォローを解除しますか？</string>
     <string name="detail_open_in_browser">ブラウザで開く</string>
     <string name="detail_share">シェア</string>
     <string name="detail_save_image">画像を保存</string>
+    <string name="detail_save_ugoira">うごイラを保存</string>
     <string name="detail_save_all_pages">全ページを保存</string>
     <string name="detail_copy_url">URLをコピー</string>
     <string name="detail_mute_work">この作品をミュート</string>
