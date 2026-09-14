@@ -23,10 +23,13 @@ internal object NativeImageAnalysis {
                     x < insetX || x >= sample.width - insetX
             }
         val analysis = analyzeRgba(rgba)
-        if (analysis.sampleCount == 0u) {
-            return analyzeRgba(pixelsToRgba(sample.pixels)).averageLuminance >= 0.58
-        }
-        return analysis.averageLuminance >= 0.58
+        val effectiveAnalysis =
+            if (analysis.sampleCount == 0u) {
+                analyzeRgba(pixelsToRgba(sample.pixels))
+            } else {
+                analysis
+            }
+        return effectiveAnalysis.averageLuminance >= 0.58
     }
 
     fun dominantColor(bitmap: Bitmap): Int {
@@ -39,16 +42,14 @@ internal object NativeImageAnalysis {
         bitmap: Bitmap,
         maxDimension: Int,
     ): PixelSample {
-        if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
-            return PixelSample(0, 0, IntArray(0))
-        }
         val softwareBitmap =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
+            if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+                null
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
                 runCatching { bitmap.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull()
-                    ?: return PixelSample(0, 0, IntArray(0))
             } else {
                 bitmap
-            }
+            } ?: return PixelSample(0, 0, IntArray(0))
         var sampled: Bitmap? = null
         return try {
             val scale =

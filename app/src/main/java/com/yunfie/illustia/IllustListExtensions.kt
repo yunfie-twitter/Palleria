@@ -65,21 +65,24 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
     val updatedUserBookmarks = selectedUserBookmarks.replaceIllustIfPresent(updated)
     val updatedSelected = if (selectedIllust?.id == updated.id) updated else selectedIllust
 
-    if (
-        updatedHome === homeItems &&
-        updatedSearch === searchItems &&
-        updatedTimeline === timelineItems &&
-        updatedShortsFeed === shortsFeedItems &&
-        updatedWatchlist === watchlistItems &&
-        updatedRanking === rankingItems &&
-        updatedRankingModeItems == rankingModeItems &&
-        updatedRelated === relatedIllusts &&
-        updatedHistory === settings.viewHistory &&
-        updatedBookmarks === bookmarkItems &&
-        updatedUserIllusts === selectedUserIllusts &&
-        updatedUserBookmarks === selectedUserBookmarks &&
-        updatedSelected === selectedIllust
-    ) {
+    val unchanged =
+        listOf(
+            updatedHome === homeItems,
+            updatedSearch === searchItems,
+            updatedTimeline === timelineItems,
+            updatedShortsFeed === shortsFeedItems,
+            updatedWatchlist === watchlistItems,
+            updatedRanking === rankingItems,
+            updatedRankingModeItems == rankingModeItems,
+            updatedRelated === relatedIllusts,
+            updatedHistory === settings.viewHistory,
+            updatedBookmarks === bookmarkItems,
+            updatedUserIllusts === selectedUserIllusts,
+            updatedUserBookmarks === selectedUserBookmarks,
+            updatedSelected === selectedIllust,
+        ).all { it }
+
+    if (unchanged) {
         return this
     }
 

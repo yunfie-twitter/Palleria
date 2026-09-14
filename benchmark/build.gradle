@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id "com.android.test"
-    id "org.jetbrains.kotlin.android"
     id "androidx.baselineprofile"
+    alias(libs.plugins.kotlin.android)
 }
 
 android {

@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id "com.android.application"
     id "androidx.baselineprofile"
-    id "org.jetbrains.kotlin.android"
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     id "org.jetbrains.kotlin.plugin.compose"
     id "org.jetbrains.kotlin.plugin.serialization"
@@ -109,6 +109,10 @@ detekt {
     config.setFrom(files("config/detekt/detekt.yml"))
     parallel = true
     ignoreFailures = false
+}
+
+tasks.withType(dev.detekt.gradle.Detekt).configureEach {
+    jvmTarget = "17"
 }
 
 def supportedKtlintCheckTasks = [

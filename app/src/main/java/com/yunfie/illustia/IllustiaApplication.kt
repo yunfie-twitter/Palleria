@@ -27,6 +27,8 @@ import okio.Path.Companion.toOkioPath
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
+private const val WIDGET_PREVIEW_DELAY_MILLIS = 6_000L
+
 class IllustiaApplication : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val postStartupWorkStarted = AtomicBoolean(false)
@@ -120,7 +122,7 @@ class IllustiaApplication : Application() {
             val settings = repository.readSettings()
             PalleriaAccount.reconcile(appContext, settings.accounts)
             launch {
-                delay(6_000L)
+                delay(WIDGET_PREVIEW_DELAY_MILLIS)
                 RankingWidgetProvider.publishPreview(appContext)
                 IllustWidgetProvider.publishPreview(appContext)
             }

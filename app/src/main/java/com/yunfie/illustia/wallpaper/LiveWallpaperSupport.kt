@@ -6,8 +6,9 @@ import com.yunfie.illustia.platform.DesktopEnvironment
 
 internal object LiveWallpaperSupport {
     fun isSupported(context: Context? = null): Boolean {
-        if (context != null && DesktopEnvironment.isDesktop(context)) return false
-        if (DesktopEnvironment.isWsa()) return false
+        if ((context != null && DesktopEnvironment.isDesktop(context)) || DesktopEnvironment.isWsa()) {
+            return false
+        }
         return !isHyperOsDevice(
             manufacturer = Build.MANUFACTURER,
             brand = Build.BRAND,

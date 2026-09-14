@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 
 @Dao
+@Suppress("TooManyFunctions")
 interface SettingsDao {
     @Query("SELECT * FROM search_history ORDER BY position ASC")
     fun getSearchHistory(): List<SearchHistoryEntity>

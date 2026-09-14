@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Settings mutations, app/privacy locking, and calculator-backed unlock behavior. */
+@Suppress("LargeClass")
 abstract class IllustiaSettingsSecurityModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,

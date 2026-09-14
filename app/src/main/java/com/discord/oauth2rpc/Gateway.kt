@@ -24,13 +24,17 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
+private const val DEFAULT_TIMEOUT_SECONDS = 15L
+private const val CLOSE_STATUS_NORMAL = 1000
+
+@Suppress("TooManyFunctions")
 class Gateway(
     private val token: String,
     private val okHttpClient: OkHttpClient =
         OkHttpClient
             .Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
@@ -123,6 +127,7 @@ class Gateway(
             }
         }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun handleMessage(text: String) {
         try {
             val json = JSONObject(text)
@@ -132,45 +137,49 @@ class Gateway(
             }
             val t = json.optString("t").takeIf { it.isNotBlank() }
             val d = json.opt("d")
-
-            when (op) {
-                Constants.Opcode.HELLO -> {
-                    val helloData = d as? JSONObject
-                    val heartbeatInterval = helloData?.optLong("heartbeat_interval", 41250L) ?: 41250L
-                    startHeartbeat(heartbeatInterval)
-                    identify()
-                }
-
-                Constants.Opcode.HEARTBEAT_ACK -> {
-                    heartbeatAckReceived = true
-                }
-
-                Constants.Opcode.HEARTBEAT -> {
-                    sendHeartbeat()
-                }
-
-                Constants.Opcode.RECONNECT -> {
-                    reconnect()
-                }
-
-                Constants.Opcode.INVALID_SESSION -> {
-                    val resumable = (d as? Boolean) ?: false
-                    if (!resumable) {
-                        identify()
-                    }
-                }
-
-                Constants.Opcode.DISPATCH -> {
-                    if (t == "READY" && d is JSONObject) {
-                        handleReady(d)
-                    }
-                }
-            }
+            handleOpcode(op, t, d)
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing gateway message: ${e.message}", e)
         }
     }
 
+    private fun handleOpcode(op: Int, t: String?, d: Any?) {
+        when (op) {
+            Constants.Opcode.HELLO -> {
+                val helloData = d as? JSONObject
+                val heartbeatInterval = helloData?.optLong("heartbeat_interval", 41250L) ?: 41250L
+                startHeartbeat(heartbeatInterval)
+                identify()
+            }
+
+            Constants.Opcode.HEARTBEAT_ACK -> {
+                heartbeatAckReceived = true
+            }
+
+            Constants.Opcode.HEARTBEAT -> {
+                sendHeartbeat()
+            }
+
+            Constants.Opcode.RECONNECT -> {
+                reconnect()
+            }
+
+            Constants.Opcode.INVALID_SESSION -> {
+                val resumable = (d as? Boolean) ?: false
+                if (!resumable) {
+                    identify()
+                }
+            }
+
+            Constants.Opcode.DISPATCH -> {
+                if (t == "READY" && d is JSONObject) {
+                    handleReady(d)
+                }
+            }
+        }
+    }
+
+    @Suppress("NestedBlockDepth")
     private fun identify() {
         updateState(GatewayConnectionState.IDENTIFYING)
         val identifyPayload =
@@ -319,7 +328,7 @@ class Gateway(
         heartbeatJob?.cancel()
         heartbeatJob = null
         try {
-            webSocket?.close(1000, "Normal Closure")
+            webSocket?.close(CLOSE_STATUS_NORMAL, "Normal Closure")
         } catch (ignored: Exception) {
         }
         webSocket = null

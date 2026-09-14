@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
+private const val DEFAULT_RELATED_ILLUST_COLUMN_COUNT = 3
+
 internal fun readFromDataStore(
     preferences: Preferences,
     roomData: RoomSettingsData,
@@ -278,7 +280,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         disableHorizontalSwipeInShortsFeed = preferences.getBoolean("disableHorizontalSwipeInShortsFeed", false),
         verticalColumnCount = preferences.getInt("verticalColumnCount", 2),
         horizontalColumnCount = preferences.getInt("horizontalColumnCount", 4),
-        relatedIllustColumnCount = preferences.getInt("relatedIllustColumnCount", 3),
+        relatedIllustColumnCount = preferences.getInt("relatedIllustColumnCount", DEFAULT_RELATED_ILLUST_COLUMN_COUNT),
         pixivNetworkMode = preferences.getString(KEY_PIXIV_NETWORK_MODE, "standard") ?: "standard",
         pixivImageProxyBaseUrl = preferences.getString(KEY_PIXIV_IMAGE_PROXY_BASE_URL, "").orEmpty(),
         mutedIllusts =

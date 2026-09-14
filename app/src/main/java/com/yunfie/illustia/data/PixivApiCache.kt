@@ -2,12 +2,15 @@ package com.yunfie.illustia.data
 
 import java.util.concurrent.ConcurrentHashMap
 
+private const val DEFAULT_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
+private const val DEFAULT_MAX_ENTRIES: Int = 300
+
 /**
  * Thread-safe in-memory cache for Pixiv API responses to reduce API traffic and mitigate HTTP 429 (Rate Limiting).
  */
 class PixivApiCache(
-    private val defaultTtlMillis: Long = 10 * 60 * 1000L, // 10 minutes
-    private val maxEntries: Int = 300,
+    private val defaultTtlMillis: Long = DEFAULT_TTL_MILLIS,
+    private val maxEntries: Int = DEFAULT_MAX_ENTRIES,
 ) {
     data class CacheEntry<T>(
         val data: T,
@@ -23,8 +26,8 @@ class PixivApiCache(
         key: String,
         now: Long = System.currentTimeMillis(),
     ): T? {
-        val entry = cache[key] ?: return null
-        if (entry.isExpired(now)) {
+        val entry = cache[key]
+        if (entry == null || entry.isExpired(now)) {
             return null
         }
         @Suppress("UNCHECKED_CAST")

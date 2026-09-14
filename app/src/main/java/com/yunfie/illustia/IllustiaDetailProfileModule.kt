@@ -27,6 +27,15 @@ abstract class IllustiaDetailProfileModule(
 ) : IllustiaAuthFeedModule(app, managedDataRepository) {
     fun openIllust(illust: Illust) {
         captureProfileReturnDetail()
+        recordViewHistory(illust)
+        _uiState.update {
+            it.copy(selectedIllust = illust, selectedIllustUser = null, selectedIllustFirstComment = null, relatedIllusts = emptyList())
+        }
+        _detailNavigationRequests.tryEmit(illust.id)
+        launchDetailExtras(illust)
+    }
+
+    private fun recordViewHistory(illust: Illust) {
         if (_uiState.value.settings.saveViewHistory) {
             val history =
                 (listOf(illust) + _uiState.value.settings.viewHistory)
@@ -34,10 +43,9 @@ abstract class IllustiaDetailProfileModule(
                     .take(48)
             updateSettings { it.copy(viewHistory = history) }
         }
-        _uiState.update {
-            it.copy(selectedIllust = illust, selectedIllustUser = null, selectedIllustFirstComment = null, relatedIllusts = emptyList())
-        }
-        _detailNavigationRequests.tryEmit(illust.id)
+    }
+
+    private fun launchDetailExtras(illust: Illust) {
         detailExtrasJob?.cancel()
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {

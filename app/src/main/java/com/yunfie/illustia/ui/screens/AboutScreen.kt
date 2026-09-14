@@ -58,7 +58,7 @@ private const val FDROID_URL = "https://yunfi.f5.si/Illustia-dev/repo"
 
 @Composable
 fun AboutScreen(
-    state: IllustiaUiState,
+    @Suppress("UnusedParameter") state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {

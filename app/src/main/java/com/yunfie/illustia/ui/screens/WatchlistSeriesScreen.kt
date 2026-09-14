@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.yunfie.illustia.ui.screens
 
 import android.app.Activity
@@ -110,6 +112,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
+@Suppress("MatchingDeclarationName")
 enum class WatchlistSortOrder {
     Newest,
     Oldest,

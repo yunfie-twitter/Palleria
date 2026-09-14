@@ -141,6 +141,7 @@ data class RichPresence(
         return packet
     }
 
+    @Suppress("TooManyFunctions")
     class Builder {
         private var applicationId: String? = null
         private var name: String = "Palleria"

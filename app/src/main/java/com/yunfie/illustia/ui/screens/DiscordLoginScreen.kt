@@ -122,9 +122,7 @@ fun DiscordLoginScreen(
                                 url: String?,
                             ) {
                                 super.onPageFinished(view, url)
-                                if (url != null &&
-                                    (url.endsWith("/app") || url.contains("discord.com/channels/@me") || url.contains("discord.com/app"))
-                                ) {
+                                if (isDiscordAppUrl(url)) {
                                     view.loadUrl(JS_SNIPPET)
                                 }
                             }
@@ -157,4 +155,9 @@ fun DiscordLoginScreen(
             },
         )
     }
+}
+
+private fun isDiscordAppUrl(url: String?): Boolean {
+    if (url == null) return false
+    return url.endsWith("/app") || url.contains("discord.com/channels/@me") || url.contains("discord.com/app")
 }

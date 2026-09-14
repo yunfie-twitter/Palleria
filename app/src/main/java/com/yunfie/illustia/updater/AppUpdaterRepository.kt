@@ -19,8 +19,15 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import kotlin.coroutines.resume
 
+private const val HTTP_NOT_FOUND = 404
+private const val SHIZUKU_MIN_API_VERSION = 11
+private const val SHIZUKU_DEFAULT_REQUEST_CODE = 1001
+private const val THREAD_JOIN_TIMEOUT_MS = 5000L
+
+@Suppress("TooManyFunctions")
 class AppUpdaterRepository(
     private val context: Context,
     private val httpClient: OkHttpClient = OkHttpClient(),
@@ -48,7 +55,7 @@ class AppUpdaterRepository(
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         val body = response.body.string()
-                        if (response.code == 404) return@runCatching null
+                        if (response.code == HTTP_NOT_FOUND) return@runCatching null
                         throw IllegalStateException("GitHub API error (): ")
                     }
                     val bodyString = response.body.string()
@@ -156,18 +163,18 @@ class AppUpdaterRepository(
     fun isShizukuPermissionGranted(): Boolean =
         runCatching {
             if (!isShizukuAvailable()) return false
-            if (Shizuku.getVersion() < 11) {
+            if (Shizuku.getVersion() < SHIZUKU_MIN_API_VERSION) {
                 context.checkSelfPermission(ShizukuProvider.PERMISSION) == PackageManager.PERMISSION_GRANTED
             } else {
                 Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
             }
         }.getOrDefault(false)
 
-    fun requestShizukuPermission(requestCode: Int = 1001) {
+    fun requestShizukuPermission(requestCode: Int = SHIZUKU_DEFAULT_REQUEST_CODE) {
         runCatching {
             if (isShizukuAvailable()) {
                 if (!isShizukuPermissionGranted()) {
-                    if (Shizuku.getVersion() >= 11) {
+                    if (Shizuku.getVersion() >= SHIZUKU_MIN_API_VERSION) {
                         Shizuku.requestPermission(requestCode)
                     }
                 }
@@ -177,7 +184,7 @@ class AppUpdaterRepository(
                         override fun onBinderReceived() {
                             runCatching {
                                 Shizuku.removeBinderReceivedListener(this)
-                                if (!isShizukuPermissionGranted() && Shizuku.getVersion() >= 11) {
+                                if (!isShizukuPermissionGranted() && Shizuku.getVersion() >= SHIZUKU_MIN_API_VERSION) {
                                     Shizuku.requestPermission(requestCode)
                                 }
                             }
@@ -211,9 +218,9 @@ class AppUpdaterRepository(
             }
 
             if (isShizukuPermissionGranted()) return@withContext true
-            if (Shizuku.getVersion() < 11) return@withContext false
+            if (Shizuku.getVersion() < SHIZUKU_MIN_API_VERSION) return@withContext false
 
-            try {
+            runCatching {
                 suspendCancellableCoroutine { continuation ->
                     val listener =
                         object : Shizuku.OnRequestPermissionResultListener {
@@ -235,9 +242,7 @@ class AppUpdaterRepository(
                     }
                     Shizuku.requestPermission(requestCode)
                 }
-            } catch (e: Exception) {
-                false
-            }
+            }.getOrDefault(false)
         }
 
     suspend fun installApk(
@@ -282,28 +287,15 @@ class AppUpdaterRepository(
     }
 
     private fun installViaShizuku(apkFile: File) {
-        require(apkFile.exists() && apkFile.isFile) { "APK file does not exist: ${apkFile.absolutePath}" }
+        require(apkFile.exists() && apkFile.isFile && apkFile.length() > 0) {
+            "Valid APK file required: ${apkFile.absolutePath}"
+        }
         val fileSize = apkFile.length()
-        require(fileSize > 0) { "APK file is empty: ${apkFile.absolutePath}" }
 
         // Use streaming installation with -S <fileSize> via standard input.
         // Direct file paths cannot be read by shell UID (2000) due to app private sandbox permissions.
         val command = arrayOf("pm", "install", "-r", "-d", "-t", "-S", fileSize.toString())
-        val newProcessMethod =
-            Shizuku::class.java
-                .getDeclaredMethod(
-                    "newProcess",
-                    Array<String>::class.java,
-                    Array<String>::class.java,
-                    String::class.java,
-                ).apply { isAccessible = true }
-
-        val process =
-            runCatching {
-                newProcessMethod.invoke(null, command, null, null) as Process
-            }.getOrElse { error ->
-                throw IllegalStateException("Failed to start Shizuku process: ${error.message}", error)
-            }
+        val process = createShizukuProcess(command)
 
         var stdout = ""
         var stderr = ""
@@ -324,21 +316,11 @@ class AppUpdaterRepository(
                     }.getOrDefault("")
             }.apply { start() }
 
-        try {
-            process.outputStream.use { outputStream ->
-                apkFile.inputStream().use { inputStream ->
-                    inputStream.copyTo(outputStream, bufferSize = 65536)
-                }
-                outputStream.flush()
-            }
-        } catch (e: Exception) {
-            runCatching { process.destroy() }
-            throw IllegalStateException("Failed to stream APK to Shizuku installer: ${e.message}", e)
-        }
+        streamApkToProcess(process, apkFile)
 
         val exitCode = process.waitFor()
-        runCatching { stdoutThread.join(5000) }
-        runCatching { stderrThread.join(5000) }
+        runCatching { stdoutThread.join(THREAD_JOIN_TIMEOUT_MS) }
+        runCatching { stderrThread.join(THREAD_JOIN_TIMEOUT_MS) }
 
         val combinedOutput = "$stdout\n$stderr".trim()
         val hasFailure =
@@ -349,6 +331,37 @@ class AppUpdaterRepository(
         if (exitCode != 0 || hasFailure || !hasSuccess) {
             val errorDetails = combinedOutput.ifBlank { "Exit code $exitCode" }
             throw IllegalStateException("Shizuku installation failed ($exitCode): $errorDetails")
+        }
+    }
+
+    private fun createShizukuProcess(command: Array<String>): Process {
+        val newProcessMethod =
+            Shizuku::class.java
+                .getDeclaredMethod(
+                    "newProcess",
+                    Array<String>::class.java,
+                    Array<String>::class.java,
+                    String::class.java,
+                ).apply { isAccessible = true }
+
+        return runCatching {
+            newProcessMethod.invoke(null, command, null, null) as Process
+        }.getOrElse { error ->
+            throw IllegalStateException("Failed to start Shizuku process: ${error.message}", error)
+        }
+    }
+
+    private fun streamApkToProcess(process: Process, apkFile: File) {
+        try {
+            process.outputStream.use { outputStream ->
+                apkFile.inputStream().use { inputStream ->
+                    inputStream.copyTo(outputStream, bufferSize = 65536)
+                }
+                outputStream.flush()
+            }
+        } catch (e: IOException) {
+            runCatching { process.destroy() }
+            throw IllegalStateException("Failed to stream APK to Shizuku installer: ${e.message}", e)
         }
     }
 

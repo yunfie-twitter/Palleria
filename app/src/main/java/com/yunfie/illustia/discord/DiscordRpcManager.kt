@@ -63,7 +63,7 @@ class DiscordRpcManager(
         updateJob?.cancel()
         updateJob =
             scope.launch {
-                delay(600L) // Debounce rapid UI state updates
+                delay(DEBOUNCE_DELAY_MS) // Debounce rapid UI state updates
 
                 mutex.withLock {
                     val token =
@@ -85,113 +85,12 @@ class DiscordRpcManager(
                     }
 
                     val appId = settings.discordApplicationId.trim().ifBlank { DEFAULT_APP_ID }
-                    val showDetails = settings.discordRpcShowArtworkDetails
-                    val showButtons = settings.discordRpcShowButtons
-
-                    val activity =
-                        if (selectedIllust != null) {
-                            if (currentArtworkId != selectedIllust.id) {
-                                currentArtworkId = selectedIllust.id
-                                artworkStart = System.currentTimeMillis()
-                            }
-                            val detailText =
-                                if (showDetails) {
-                                    selectedIllust.title.take(128).ifBlank { "作品を閲覧中" }
-                                } else {
-                                    "作品を閲覧中"
-                                }
-                            val stateText =
-                                if (showDetails) {
-                                    "by ${selectedIllust.artistName}".take(128).ifBlank { "Palleria" }
-                                } else {
-                                    "Palleria"
-                                }
-                            val btns =
-                                if (showButtons) {
-                                    if (showDetails) {
-                                        listOf(BUTTON_PIXIV_LABEL, BUTTON_DOWNLOAD_LABEL)
-                                    } else {
-                                        listOf(BUTTON_DOWNLOAD_LABEL)
-                                    }
-                                } else {
-                                    null
-                                }
-                            val meta =
-                                if (showButtons) {
-                                    if (showDetails) {
-                                        Metadata(
-                                            buttonUrls =
-                                                listOf(
-                                                    "https://www.pixiv.net/artworks/${selectedIllust.id}",
-                                                    DOWNLOAD_URL,
-                                                ),
-                                        )
-                                    } else {
-                                        Metadata(buttonUrls = listOf(DOWNLOAD_URL))
-                                    }
-                                } else {
-                                    null
-                                }
-
-                            Activity(
-                                applicationId = appId,
-                                name = "Palleria",
-                                details = detailText,
-                                state = stateText,
-                                type = 0,
-                                timestamps = Timestamps(start = artworkStart, end = null),
-                                assets =
-                                    Assets(
-                                        largeImage = "palleria_logo",
-                                        largeText = "Palleria",
-                                        smallImage = null,
-                                        smallText = null,
-                                    ),
-                                flags = ActivityFlags.INSTANCE,
-                                buttons = btns,
-                                metadata = meta,
-                            )
-                        } else {
-                            currentArtworkId = null
-                            val btns =
-                                if (showButtons) {
-                                    listOf(BUTTON_DOWNLOAD_LABEL)
-                                } else {
-                                    null
-                                }
-                            val meta =
-                                if (showButtons) {
-                                    Metadata(buttonUrls = listOf(DOWNLOAD_URL))
-                                } else {
-                                    null
-                                }
-
-                            Activity(
-                                applicationId = appId,
-                                name = "Palleria",
-                                details = "イラストを閲覧中",
-                                state = "Palleria",
-                                type = 0,
-                                timestamps = Timestamps(start = sessionStart, end = null),
-                                assets =
-                                    Assets(
-                                        largeImage = "palleria_logo",
-                                        largeText = "Palleria",
-                                        smallImage = null,
-                                        smallText = null,
-                                    ),
-                                flags = ActivityFlags.INSTANCE,
-                                buttons = btns,
-                                metadata = meta,
-                            )
-                        }
-
-                    val now = System.currentTimeMillis()
+                    val activity = buildActivity(settings, selectedIllust, appId)
                     val richPresence =
                         RichPresence(
                             activities = listOf(activity),
                             afk = false,
-                            since = now,
+                            since = System.currentTimeMillis(),
                             status = "online",
                         )
 
@@ -205,54 +104,128 @@ class DiscordRpcManager(
                         recordDiagnostic("既存接続への送信に失敗したため、再接続します")
                     }
 
-                    // Spin up new client if token changed or connection not active
-                    tearDown()
-                    recordDiagnostic("Discord Gateway に接続を開始しました (Application ID: $appId)")
-                    try {
-                        val newGateway = Gateway(token = token, scope = scope)
-                        gateway = newGateway
-                        activeToken = token
-
-                        newGateway.onReady = { readyEvent ->
-                            recordDiagnostic("Discord Gateway に接続し、Presence を送信しました (${readyEvent.user.username})")
-                        }
-                        newGateway.onClose = { code, reason ->
-                            recordDiagnostic("Discord Gateway から切断されました (Code: $code, Reason: $reason)")
-                        }
-                        newGateway.onError = { error ->
-                            recordDiagnostic("Discord Gateway エラー: ${error.safeDiagnosticMessage()}")
-                        }
-
-                        newGateway.connect(richPresence)
-
-                        // Wait for connection or premature error
-                        val readyState =
-                            withTimeoutOrNull(CONNECTION_TIMEOUT_MS) {
-                                newGateway.connectionState.firstOrNull {
-                                    it == GatewayConnectionState.READY ||
-                                        it == GatewayConnectionState.CLOSED ||
-                                        it == GatewayConnectionState.ERROR
-                                }
-                            }
-
-                        if (readyState == GatewayConnectionState.READY) {
-                            // Successfully connected and presence sent
-                        } else if (readyState == GatewayConnectionState.ERROR || readyState == GatewayConnectionState.CLOSED) {
-                            recordDiagnostic("Discord 接続が拒否または切断されました (Token を確認してください)")
-                            tearDown()
-                        } else {
-                            recordDiagnostic("接続がタイムアウトしました。Token、ネットワーク、Discord 側の制限を確認してください")
-                            tearDown()
-                        }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Exception) {
-                        Log.e(TAG, "Failed to start Discord Gateway", error)
-                        recordDiagnostic("Discord 接続エラー: ${error.safeDiagnosticMessage()}")
-                        tearDown()
-                    }
+                    launchNewGateway(token, appId, richPresence)
                 }
             }
+    }
+
+    private fun buildActivity(
+        settings: AppSettings,
+        selectedIllust: Illust?,
+        appId: String,
+    ): Activity {
+        val showDetails = settings.discordRpcShowArtworkDetails
+        val showButtons = settings.discordRpcShowButtons
+        val (detailText, stateText, startTimestamp) =
+            if (selectedIllust != null) {
+                if (currentArtworkId != selectedIllust.id) {
+                    currentArtworkId = selectedIllust.id
+                    artworkStart = System.currentTimeMillis()
+                }
+                val details = if (showDetails) selectedIllust.title.take(128).ifBlank { "作品を閲覧中" } else "作品を閲覧中"
+                val state = if (showDetails) "by ${selectedIllust.artistName}".take(128).ifBlank { "Palleria" } else "Palleria"
+                Triple(details, state, artworkStart)
+            } else {
+                currentArtworkId = null
+                Triple("イラストを閲覧中", "Palleria", sessionStart)
+            }
+
+        val buttons =
+            if (showButtons) {
+                if (selectedIllust != null && showDetails) {
+                    listOf(BUTTON_PIXIV_LABEL, BUTTON_DOWNLOAD_LABEL)
+                } else {
+                    listOf(BUTTON_DOWNLOAD_LABEL)
+                }
+            } else {
+                null
+            }
+
+        val metadata =
+            if (showButtons) {
+                if (selectedIllust != null && showDetails) {
+                    Metadata(
+                        buttonUrls = listOf("https://www.pixiv.net/artworks/${selectedIllust.id}", DOWNLOAD_URL),
+                    )
+                } else {
+                    Metadata(buttonUrls = listOf(DOWNLOAD_URL))
+                }
+            } else {
+                null
+            }
+
+        return Activity(
+            applicationId = appId,
+            name = "Palleria",
+            details = detailText,
+            state = stateText,
+            type = 0,
+            timestamps = Timestamps(start = startTimestamp, end = null),
+            assets =
+                Assets(
+                    largeImage = "palleria_logo",
+                    largeText = "Palleria",
+                    smallImage = null,
+                    smallText = null,
+                ),
+            flags = ActivityFlags.INSTANCE,
+            buttons = buttons,
+            metadata = metadata,
+        )
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun launchNewGateway(
+        token: String,
+        appId: String,
+        richPresence: RichPresence,
+    ) {
+        // Spin up new client if token changed or connection not active
+        tearDown()
+        recordDiagnostic("Discord Gateway に接続を開始しました (Application ID: $appId)")
+        try {
+            val newGateway = Gateway(token = token, scope = scope)
+            gateway = newGateway
+            activeToken = token
+
+            newGateway.onReady = { readyEvent ->
+                recordDiagnostic("Discord Gateway に接続し、Presence を送信しました (${readyEvent.user.username})")
+            }
+            newGateway.onClose = { code, reason ->
+                recordDiagnostic("Discord Gateway から切断されました (Code: $code, Reason: $reason)")
+            }
+            newGateway.onError = { error ->
+                recordDiagnostic("Discord Gateway エラー: ${error.safeDiagnosticMessage()}")
+            }
+
+            newGateway.connect(richPresence)
+
+            // Wait for connection or premature error
+            val readyState =
+                withTimeoutOrNull(CONNECTION_TIMEOUT_MS) {
+                    newGateway.connectionState.firstOrNull {
+                        it == GatewayConnectionState.READY ||
+                            it == GatewayConnectionState.CLOSED ||
+                            it == GatewayConnectionState.ERROR
+                    }
+                }
+
+            if (readyState == GatewayConnectionState.READY) {
+                // Successfully connected and presence sent
+            } else if (readyState == GatewayConnectionState.ERROR || readyState == GatewayConnectionState.CLOSED) {
+                recordDiagnostic("Discord 接続が拒否または切断されました (Token を確認してください)")
+                tearDown()
+            } else {
+                recordDiagnostic("接続がタイムアウトしました。Token、ネットワーク、Discord 側の制限を確認してください")
+                tearDown()
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to start Discord Gateway", error)
+            recordDiagnostic("Discord 接続エラー: ${error.safeDiagnosticMessage()}")
+            tearDown()
+        }
     }
 
     fun close() {
@@ -289,6 +262,7 @@ class DiscordRpcManager(
         const val DOWNLOAD_URL = "https://yunfi.f5.si/Palleria/user/installation"
         const val BUTTON_PIXIV_LABEL = "Pixivで見る"
         const val BUTTON_DOWNLOAD_LABEL = "Palleriaをダウンロード"
+        private const val DEBOUNCE_DELAY_MS = 600L
         private const val CONNECTION_TIMEOUT_MS = 15_000L
         private const val MAX_DIAGNOSTIC_ENTRIES = 20
         private const val MAX_ERROR_MESSAGE_LENGTH = 240
@@ -302,8 +276,7 @@ class DiscordRpcManager(
 
         fun isSupported(context: Context? = null): Boolean {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return false
-            if (context != null && !hasSufficientRam(context)) return false
-            return true
+            return context == null || hasSufficientRam(context)
         }
 
         fun hasSufficientRam(context: Context): Boolean = !PlatformCapabilities.isLowRamDevice(context)

@@ -447,11 +447,10 @@ class MainActivity : FragmentActivity() {
                     ?.toString()
                     ?.trim()
             }.getOrNull().orEmpty()
-        if (text.isBlank() || text == lastHandledClipboardText) return
-        if (NativeIntentRouter.parseText(text) == null) return
-
-        lastHandledClipboardText = text
-        viewModel.handleClipboardText(text)
+        if (text.isNotBlank() && text != lastHandledClipboardText && NativeIntentRouter.parseText(text) != null) {
+            lastHandledClipboardText = text
+            viewModel.handleClipboardText(text)
+        }
     }
 
     private fun applySecureWindow(secure: Boolean) {
@@ -638,34 +637,42 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN) {
-            val isCtrl = event.isCtrlPressed
-            val isAlt = event.isAltPressed
-            when {
-                isCtrl && event.keyCode == KeyEvent.KEYCODE_R -> {
-                    val state = viewModel.uiState.value
-                    when {
-                        state.selectedIllust != null -> viewModel.refreshIllustDetail(state.selectedIllust.id)
-                        state.showUserPage && state.selectedUser != null -> viewModel.openUserPage(state.selectedUser.id)
-                        else -> viewModel.refreshHome()
-                    }
-                    return true
-                }
-
-                isCtrl && event.keyCode == KeyEvent.KEYCODE_F -> {
-                    AppShortcutRouter.trigger(AppShortcutDestination.Search)
-                    return true
-                }
-
-                event.keyCode == KeyEvent.KEYCODE_ESCAPE ||
-                    (isAlt && event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -> {
-                    if (onBackPressedDispatcher.hasEnabledCallbacks()) {
-                        onBackPressedDispatcher.onBackPressed()
-                        return true
-                    }
-                }
-            }
+        if (event.action == KeyEvent.ACTION_DOWN && handleKeyDown(event)) {
+            return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun handleKeyDown(event: KeyEvent): Boolean {
+        val isCtrl = event.isCtrlPressed
+        val isAlt = event.isAltPressed
+        return when {
+            isCtrl && event.keyCode == KeyEvent.KEYCODE_R -> {
+                val state = viewModel.uiState.value
+                when {
+                    state.selectedIllust != null -> viewModel.refreshIllustDetail(state.selectedIllust.id)
+                    state.showUserPage && state.selectedUser != null -> viewModel.openUserPage(state.selectedUser.id)
+                    else -> viewModel.refreshHome()
+                }
+                true
+            }
+
+            isCtrl && event.keyCode == KeyEvent.KEYCODE_F -> {
+                AppShortcutRouter.trigger(AppShortcutDestination.Search)
+                true
+            }
+
+            event.keyCode == KeyEvent.KEYCODE_ESCAPE ||
+                (isAlt && event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -> {
+                if (onBackPressedDispatcher.hasEnabledCallbacks()) {
+                    onBackPressedDispatcher.onBackPressed()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            else -> false
+        }
     }
 }

@@ -20,12 +20,9 @@ internal object PlatformCapabilities {
         val activityManager =
             context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
                 ?: return false
-        if (activityManager.isLowRamDevice) {
-            return true
-        }
         val memoryInfo = ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memoryInfo)
-        return memoryInfo.totalMem <= LOW_RAM_THRESHOLD_BYTES
+        return activityManager.isLowRamDevice || memoryInfo.totalMem <= LOW_RAM_THRESHOLD_BYTES
     }
 
     fun isLowSpecDevice(context: Context): Boolean {

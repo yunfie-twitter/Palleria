@@ -44,6 +44,7 @@ class Rest(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     suspend fun request(
         route: Route,
         body: JSONObject? = null,

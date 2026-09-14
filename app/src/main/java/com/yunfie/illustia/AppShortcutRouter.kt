@@ -19,8 +19,9 @@ object AppShortcutRouter {
     val pending: StateFlow<AppShortcutDestination?> = _pending.asStateFlow()
 
     fun accept(intent: Intent?): Boolean {
-        if (intent == null) return false
-        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return false
+        if (intent == null || intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) {
+            return false
+        }
         return acceptAction(intent.action)
     }
 

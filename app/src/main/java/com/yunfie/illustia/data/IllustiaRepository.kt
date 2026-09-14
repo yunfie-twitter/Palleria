@@ -39,6 +39,14 @@ import com.yunfie.illustia.settings.withSyncedCollections
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+private const val CACHE_TTL_SHORT_MILLIS = 3 * 60 * 1000L // 3 minutes
+private const val CACHE_TTL_MEDIUM_MILLIS = 5 * 60 * 1000L // 5 minutes
+private const val CACHE_TTL_STANDARD_MILLIS = 10 * 60 * 1000L // 10 minutes
+private const val CACHE_TTL_SERIES_MILLIS = 15 * 60 * 1000L // 15 minutes
+private const val CACHE_TTL_LONG_MILLIS = 30 * 60 * 1000L // 30 minutes
+private const val CACHE_TTL_HOUR_MILLIS = 60 * 60 * 1000L // 1 hour
+private const val HTTP_TOO_MANY_REQUESTS = 429
+
 class IllustiaRepository(
     private val settingsStore: SettingsStore,
 ) {
@@ -60,12 +68,13 @@ class IllustiaRepository(
 
     internal suspend inline fun <reified T : Any> withApiCache(
         key: String,
-        ttlMillis: Long = 10 * 60 * 1000L,
+        ttlMillis: Long = CACHE_TTL_STANDARD_MILLIS,
         forceRefresh: Boolean = false,
         crossinline block: suspend () -> T,
     ): T {
         if (!forceRefresh) {
-            apiCache.get<T>(key)?.let { return it }
+            val cached = apiCache.get<T>(key)
+            if (cached != null) return cached
         }
         return try {
             val result = block()
@@ -73,10 +82,13 @@ class IllustiaRepository(
             result
         } catch (expectedFailure: Exception) {
             val error = expectedFailure
-            if (error.isPixivRateLimited() || error.isTransientConnectionIssue()) {
-                apiCache.getStale<T>(key)?.let { return it }
-            }
-            throw error
+            val fallback =
+                if (error.isPixivRateLimited() || error.isTransientConnectionIssue()) {
+                    apiCache.getStale<T>(key)
+                } else {
+                    null
+                }
+            fallback ?: throw error
         }
     }
 
@@ -204,7 +216,7 @@ class IllustiaRepository(
         mode: String,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("ranking:$mode", 10 * 60 * 1000L, forceRefresh) {
+        withApiCache("ranking:$mode", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.ranking(session, mode) }
         }
 
@@ -212,7 +224,7 @@ class IllustiaRepository(
         restrict: Restrict,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("following:$restrict", 5 * 60 * 1000L, forceRefresh) {
+        withApiCache("following:$restrict", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.following(session, restrict) }
         }
 
@@ -220,7 +232,7 @@ class IllustiaRepository(
         kind: HomeFeedKind,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("home_feed:${kind.name}", 3 * 60 * 1000L, forceRefresh) {
+        withApiCache("home_feed:${kind.name}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
             withSessionRetry { session ->
                 when (kind) {
                     HomeFeedKind.Recommended -> apiClient.recommended(session)
@@ -234,7 +246,7 @@ class IllustiaRepository(
         }
 
     suspend fun loadNovels(forceRefresh: Boolean = false): PageResult<NovelPreview> =
-        withApiCache("novels:recommended", 10 * 60 * 1000L, forceRefresh) {
+        withApiCache("novels:recommended", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.recommendedNovels(session) }
         }
 
@@ -245,7 +257,7 @@ class IllustiaRepository(
         novelId: Long,
         forceRefresh: Boolean = false,
     ): NovelTextContent =
-        withApiCache("novel_text:$novelId", 60 * 60 * 1000L, forceRefresh) {
+        withApiCache("novel_text:$novelId", CACHE_TTL_HOUR_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.novelText(session, novelId) }
         }
 
@@ -258,7 +270,7 @@ class IllustiaRepository(
         includeR18: Boolean,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L, forceRefresh) {
+        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
                 apiClient.search(session, word, sort, target, duration, bookmarkFilter, includeR18)
             }
@@ -273,7 +285,7 @@ class IllustiaRepository(
         includeR18: Boolean,
         forceRefresh: Boolean = false,
     ): PageResult<NovelPreview> =
-        withApiCache("search_novels:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", 5 * 60 * 1000L, forceRefresh) {
+        withApiCache("search_novels:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
                 apiClient.searchNovels(session, word, sort, target, duration, bookmarkFilter, includeR18)
             }
@@ -283,12 +295,12 @@ class IllustiaRepository(
         word: String,
         forceRefresh: Boolean = false,
     ): PageResult<UserPreview> =
-        withApiCache("search_users:$word", 5 * 60 * 1000L, forceRefresh) {
+        withApiCache("search_users:$word", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.searchUsers(session, word) }
         }
 
     suspend fun trendingTags(forceRefresh: Boolean = false): List<String> =
-        withApiCache("trending_tags", 30 * 60 * 1000L, forceRefresh) {
+        withApiCache("trending_tags", CACHE_TTL_LONG_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.trendingTags(session) }
         }
 
@@ -296,7 +308,7 @@ class IllustiaRepository(
         word: String,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("popular_preview:$word", 10 * 60 * 1000L, forceRefresh) {
+        withApiCache("popular_preview:$word", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.popularPreview(session, word) }
         }
 
@@ -306,13 +318,13 @@ class IllustiaRepository(
     ): List<String> {
         val trimmed = word.trim()
         if (trimmed.isBlank()) return emptyList()
-        return withApiCache("autocomplete:${trimmed.lowercase()}", 30 * 60 * 1000L, forceRefresh) {
+        return withApiCache("autocomplete:${trimmed.lowercase()}", CACHE_TTL_LONG_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.searchAutocomplete(session, trimmed) }
         }
     }
 
     suspend fun watchlistManga(forceRefresh: Boolean = false): WatchlistMangaModel =
-        withApiCache("watchlist_manga", 10 * 60 * 1000L, forceRefresh) {
+        withApiCache("watchlist_manga", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.watchlistManga(session) }
         }
 
@@ -323,7 +335,7 @@ class IllustiaRepository(
         illustSeriesId: Long,
         forceRefresh: Boolean = false,
     ): IllustSeriesWithIdModel =
-        withApiCache("illust_series:$illustSeriesId", 15 * 60 * 1000L, forceRefresh) {
+        withApiCache("illust_series:$illustSeriesId", CACHE_TTL_SERIES_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.illustSeries(session, illustSeriesId) }
         }
 
@@ -400,7 +412,7 @@ class IllustiaRepository(
         restrict: Restrict,
         forceRefresh: Boolean = false,
     ): PageResult<UserPreview> =
-        withApiCache("following_users:$restrict", 5 * 60 * 1000L, forceRefresh) {
+        withApiCache("following_users:$restrict", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
                 val userId =
                     session.userId
@@ -413,7 +425,7 @@ class IllustiaRepository(
         userId: Long,
         forceRefresh: Boolean = false,
     ): UserProfile =
-        withApiCache("user_detail:$userId", 15 * 60 * 1000L, forceRefresh) {
+        withApiCache("user_detail:$userId", CACHE_TTL_SERIES_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.userDetail(session, userId) }
         }
 
@@ -421,7 +433,7 @@ class IllustiaRepository(
         userId: Long,
         forceRefresh: Boolean = false,
     ): UserFollowDetail =
-        withApiCache("user_follow_detail:$userId", 10 * 60 * 1000L, forceRefresh) {
+        withApiCache("user_follow_detail:$userId", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.userFollowDetail(session, userId) }
         }
 
@@ -497,7 +509,7 @@ class IllustiaRepository(
         illustId: Long,
         forceRefresh: Boolean = false,
     ): Illust =
-        withApiCache("illust_detail:$illustId", 15 * 60 * 1000L, forceRefresh) {
+        withApiCache("illust_detail:$illustId", CACHE_TTL_SERIES_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.illustDetail(session, illustId) }
         }
 
@@ -505,7 +517,7 @@ class IllustiaRepository(
         illustId: Long,
         forceRefresh: Boolean = false,
     ): UgoiraMetadataResponse =
-        withApiCache("ugoira_meta:$illustId", 30 * 60 * 1000L, forceRefresh) {
+        withApiCache("ugoira_meta:$illustId", CACHE_TTL_LONG_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.ugoiraMetadata(session, illustId) }
         }
 
@@ -519,7 +531,7 @@ class IllustiaRepository(
         illustId: Long,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("related_illusts:$illustId", 10 * 60 * 1000L, forceRefresh) {
+        withApiCache("related_illusts:$illustId", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.relatedIllusts(session, illustId) }
         }
 
@@ -549,7 +561,7 @@ class IllustiaRepository(
         restrict: Restrict,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("bookmarks:$userId:$restrict", 5 * 60 * 1000L, forceRefresh) {
+        withApiCache("bookmarks:$userId:$restrict", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict) }
         }
 
@@ -669,12 +681,14 @@ class IllustiaRepository(
     private fun Throwable.isPixivRateLimited(): Boolean {
         var current: Throwable? = this
         while (current != null) {
-            if (current is PixivApiException && current.statusCode == 429) return true
-            val message = current.message.orEmpty()
-            if (message.contains("429") ||
-                message.contains("rate limit", ignoreCase = true) ||
-                message.contains("Too Many Requests", ignoreCase = true)
-            ) {
+            val isRateLimited =
+                (current is PixivApiException && current.statusCode == HTTP_TOO_MANY_REQUESTS) ||
+                    current.message.orEmpty().let { msg ->
+                        msg.contains("429") ||
+                            msg.contains("rate limit", ignoreCase = true) ||
+                            msg.contains("Too Many Requests", ignoreCase = true)
+                    }
+            if (isRateLimited) {
                 return true
             }
             current = current.cause

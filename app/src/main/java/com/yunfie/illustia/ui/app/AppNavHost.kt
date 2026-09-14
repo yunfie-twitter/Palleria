@@ -60,6 +60,7 @@ import com.yunfie.illustia.ui.screens.UpdateSettingsScreen
 import com.yunfie.illustia.ui.screens.UserProfileScreen
 import com.yunfie.illustia.ui.screens.ViewHistoryScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
+import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -468,15 +469,16 @@ internal fun AppNavHost(
                     LaunchedEffect(route.userId) {
                         viewModel.openUserPage(route.userId)
                     }
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.surface),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator()
-                    }
+                    UserProfileSkeletonScreen(
+                        onBack = {
+                            if (appState.state.userPageFromSheet) {
+                                viewModel.collapseUserPageToSheet()
+                            } else {
+                                viewModel.hideUserPage()
+                                onPopRoute()
+                            }
+                        },
+                    )
                 }
             }
             entry(AppRoute.AppLockSetup) {

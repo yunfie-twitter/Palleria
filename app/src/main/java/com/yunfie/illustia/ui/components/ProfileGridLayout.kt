@@ -34,11 +34,17 @@ internal fun adaptiveRecommendedTagColumns(): Int {
     }
 }
 
+private const val WIDTH_DP_EXTRA_LARGE = 1_400
+private const val WIDTH_DP_LARGE = 1_100
+private const val TAG_COLUMNS_EXTRA_LARGE = 8
+private const val TAG_COLUMNS_LARGE = 7
+private const val TAG_COLUMNS_EXPANDED = 6
+
 internal fun recommendedTagColumnsForWidth(screenWidthDp: Int): Int =
     when {
-        screenWidthDp >= 1_400 -> 8
-        screenWidthDp >= 1_100 -> 7
-        screenWidthDp >= 840 -> 6
+        screenWidthDp >= WIDTH_DP_EXTRA_LARGE -> TAG_COLUMNS_EXTRA_LARGE
+        screenWidthDp >= WIDTH_DP_LARGE -> TAG_COLUMNS_LARGE
+        screenWidthDp >= 840 -> TAG_COLUMNS_EXPANDED
         screenWidthDp >= 600 -> 4
         else -> 3
     }
