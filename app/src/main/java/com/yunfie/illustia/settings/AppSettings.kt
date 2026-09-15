@@ -72,6 +72,7 @@ data class AppSettings(
     val downloadFolderByArtist: Boolean = true,
     val downloadFolderByWork: Boolean = true,
     val autoTagOnBookmark: Boolean = false,
+    val ugoiraSaveFormat: String = "mp4", // mp4 | gif
     val simultaneousDownloads: Int = 2,
     val offlineWifiOnly: Boolean = true,
     val offlineStorageLimitBytes: Long = 5L * 1024 * 1024 * 1024,

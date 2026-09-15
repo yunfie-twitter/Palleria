@@ -354,6 +354,10 @@
     <string name="image_download_folder_by_work_desc">Automatically create a work folder when saving</string>
     <string name="image_default_save_location">Default save location</string>
     <string name="image_default_save_location_fallback">Pictures/Palleria</string>
+    <string name="image_ugoira_save_format">Ugoira save format</string>
+    <string name="image_ugoira_save_format_desc">Select format when saving animated illustrations (MP4 / GIF)</string>
+    <string name="image_ugoira_format_mp4">MP4 Video (Recommended)</string>
+    <string name="image_ugoira_format_gif">GIF Animation</string>
     <string name="offline_wifi_only">Save only on Wi-Fi</string>
     <string name="offline_wifi_only_desc">Do not save while on mobile data.</string>
     <string name="offline_capacity_limit">Storage limit</string>

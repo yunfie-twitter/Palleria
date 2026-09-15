@@ -297,6 +297,15 @@ fun ImageSettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { folderPicker.launch(null) },
                         )
+                        DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.image_ugoira_save_format),
+                            summary = stringResource(R.string.image_ugoira_save_format_desc),
+                            values = listOf("mp4", "gif"),
+                            selected = state.settings.ugoiraSaveFormat,
+                            label = { ugoiraSaveFormatLabel(it) },
+                            onSelect = viewModel::updateUgoiraSaveFormat,
+                        )
                     }
                 }
             }
@@ -573,4 +582,11 @@ private fun liveWallpaperBackgroundLabel(value: String): String =
         "dominant" -> stringResource(R.string.live_wallpaper_background_dominant)
         "blur" -> stringResource(R.string.live_wallpaper_background_blur)
         else -> stringResource(R.string.live_wallpaper_background_black)
+    }
+
+@Composable
+private fun ugoiraSaveFormatLabel(value: String): String =
+    when (value) {
+        "gif" -> stringResource(R.string.image_ugoira_format_gif)
+        else -> stringResource(R.string.image_ugoira_format_mp4)
     }
