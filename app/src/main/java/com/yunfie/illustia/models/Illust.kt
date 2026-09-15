@@ -25,6 +25,7 @@ data class Illust(
     val totalBookmarks: Int = 0,
     val totalComments: Int? = null,
     val series: IllustSeries? = null,
+    val illustAiType: Int = 0,
 ) {
     /** サムネイル用URL (square → medium → original のフォールバック) */
     val thumbnailUrl: String = squareImageUrl.ifBlank { mediumImageUrl.ifBlank { imageUrl } }
@@ -33,7 +34,7 @@ data class Illust(
     val previewUrl: String = mediumImageUrl.ifBlank { imageUrl }
 
     /** AI作品かどうか */
-    val isAi: Boolean = tags.any { it.equals("AI", ignoreCase = true) || it.contains("AI生成") }
+    val isAi: Boolean = illustAiType == 2 || tags.any { it.equals("AI", ignoreCase = true) || it.contains("AI生成") }
 
     /** カードバッジテキスト (AI / manga / ページ数) */
     val cardBadgeText: String? =

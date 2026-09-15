@@ -22,6 +22,7 @@ import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.SettingSwitchRow
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -140,6 +141,12 @@ internal fun SearchOptionsContent(
             selected = state.settings.searchBookmarkFilter,
             label = { stringResource(it.labelResId) },
             onSelect = viewModel::updateSearchBookmarkFilter,
+        )
+        SettingSwitchRow(
+            title = stringResource(R.string.settings_hide_ai_works),
+            checked = state.settings.hideAiWorks,
+            onCheckedChange = viewModel::updateHideAiWorks,
+            summary = stringResource(R.string.settings_hide_ai_works_desc),
         )
     }
 }

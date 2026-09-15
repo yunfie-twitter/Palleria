@@ -123,17 +123,23 @@ internal fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> =
         ),
     )
 
-internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> = visibleWith(settings.toMuteFilter())
+internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> {
+    val list = visibleWith(settings.toMuteFilter())
+    return if (settings.hideAiWorks) list.filterNot { it.isAi } else list
+}
 
 internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): List<Illust> {
     val filter = settings.toMuteFilter()
-    if (filter.illustIds.isEmpty() && filter.userIds.isEmpty()) {
-        return this
-    }
-    return filterNot { illust ->
-        illust.id in filter.illustIds ||
-            illust.artistId in filter.userIds
-    }
+    val list =
+        if (filter.illustIds.isEmpty() && filter.userIds.isEmpty()) {
+            this
+        } else {
+            filterNot { illust ->
+                illust.id in filter.illustIds ||
+                    illust.artistId in filter.userIds
+            }
+        }
+    return if (settings.hideAiWorks) list.filterNot { it.isAi } else list
 }
 
 internal fun Illust.isMutedByTags(settings: AppSettings): Boolean {
