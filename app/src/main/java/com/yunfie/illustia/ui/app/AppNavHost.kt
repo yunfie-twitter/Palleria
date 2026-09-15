@@ -118,7 +118,7 @@ internal fun AppNavHost(
             }
             entry(
                 AppRoute.Search,
-                metadata = artworkPageTransitionMetadata(),
+                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
             ) {
                 SearchScreen(
                     state = appState.state,
@@ -131,7 +131,7 @@ internal fun AppNavHost(
                 )
             }
             entry<AppRoute.TagSearch>(
-                metadata = artworkPageTransitionMetadata(),
+                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
             ) {
                 SearchScreen(
                     state = appState.state,
@@ -141,7 +141,7 @@ internal fun AppNavHost(
                 )
             }
             entry<AppRoute.SearchResults>(
-                metadata = artworkPageTransitionMetadata(),
+                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
             ) { route ->
                 LaunchedEffect(route.query) {
                     if (route.query.isNotBlank() && appState.state.activeSearchWord != route.query) {
@@ -166,7 +166,7 @@ internal fun AppNavHost(
                 )
             }
             entry<AppRoute.Detail>(
-                metadata = artworkPageTransitionMetadata(),
+                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
             ) { route ->
                 val selectedIllust = appState.state.selectedIllust
                 val snapshot =
@@ -251,7 +251,7 @@ internal fun AppNavHost(
             }
             entry(
                 AppRoute.ImageViewer,
-                metadata = artworkPageTransitionMetadata(),
+                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
             ) {
                 appState.state.imageViewerIllust?.let { illust ->
                     ImageViewerScreen(
@@ -550,16 +550,18 @@ internal fun AppNavHost(
     )
 }
 
-private fun artworkPageTransitionMetadata(): Map<String, Any> =
-    transitionSpec {
+private fun artworkPageTransitionMetadata(smoothTransitions: Boolean = true): Map<String, Any> {
+    val duration = if (smoothTransitions) 320 else 0
+    val popDuration = if (smoothTransitions) 280 else 0
+    return transitionSpec {
         ContentTransform(
             slideInHorizontally(
                 initialOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(320),
+                animationSpec = tween(duration),
             ),
             slideOutHorizontally(
                 targetOffsetX = { fullWidth -> -fullWidth / 4 },
-                animationSpec = tween(320),
+                animationSpec = tween(duration),
             ),
         )
     } +
@@ -567,11 +569,11 @@ private fun artworkPageTransitionMetadata(): Map<String, Any> =
             ContentTransform(
                 slideInHorizontally(
                     initialOffsetX = { fullWidth -> -fullWidth / 4 },
-                    animationSpec = tween(280),
+                    animationSpec = tween(popDuration),
                 ),
                 slideOutHorizontally(
                     targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(280),
+                    animationSpec = tween(popDuration),
                 ),
             )
         } +
@@ -579,11 +581,12 @@ private fun artworkPageTransitionMetadata(): Map<String, Any> =
             ContentTransform(
                 slideInHorizontally(
                     initialOffsetX = { fullWidth -> -fullWidth / 4 },
-                    animationSpec = tween(280),
+                    animationSpec = tween(popDuration),
                 ),
                 slideOutHorizontally(
                     targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(280),
+                    animationSpec = tween(popDuration),
                 ),
             )
         }
+}

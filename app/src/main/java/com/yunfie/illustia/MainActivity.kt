@@ -234,6 +234,11 @@ class MainActivity : FragmentActivity() {
                 applyAppLanguage(settings.appLanguage)
             }
 
+            LaunchedEffect(settingsLoaded, settings.notchOptimization) {
+                if (!settingsLoaded) return@LaunchedEffect
+                applyNotchOptimization(settings.notchOptimization)
+            }
+
             LaunchedEffect(settingsLoaded, settings.themeMode, systemDark) {
                 if (!settingsLoaded) return@LaunchedEffect
                 val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
@@ -473,6 +478,23 @@ class MainActivity : FragmentActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
                 setRecentsScreenshotEnabled(true)
+            }
+        }
+    }
+
+    private fun applyNotchOptimization(enabled: Boolean) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            val desiredMode =
+                if (enabled) {
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                } else {
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+                }
+            if (window.attributes.layoutInDisplayCutoutMode != desiredMode) {
+                window.attributes =
+                    window.attributes.apply {
+                        layoutInDisplayCutoutMode = desiredMode
+                    }
             }
         }
     }

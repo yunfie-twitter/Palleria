@@ -550,28 +550,16 @@ abstract class IllustiaLibraryNavigationModule(
         }
     }
 
-    fun closeViewHistory() {
-    }
-
     fun openMuteSettings() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.MuteSettings)
-    }
-
-    fun closeMuteSettings() {
     }
 
     fun openAppData() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.AppData)
     }
 
-    fun closeAppData() {
-    }
-
     fun openAbout() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.About)
-    }
-
-    fun closeAbout() {
     }
 
     fun openFavoriteTags() {
@@ -592,9 +580,6 @@ abstract class IllustiaLibraryNavigationModule(
 
     fun openExperimentalSettings() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.ExperimentalSettings)
-    }
-
-    fun closeFavoriteTags() {
     }
 
     fun openAccountSwitcher() {
