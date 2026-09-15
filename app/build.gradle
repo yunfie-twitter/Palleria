@@ -23,7 +23,7 @@ android {
         minSdk androidMinSdk
         targetSdk 36
         versionCode 96
-        versionName "5.13.0"
+        versionName "6.0.0"
     }
 
     signingConfigs {
