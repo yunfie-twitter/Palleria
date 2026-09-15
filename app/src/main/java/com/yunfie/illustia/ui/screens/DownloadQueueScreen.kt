@@ -104,7 +104,11 @@ fun DownloadQueueScreen(
                         it.status == DownloadQueueStatus.Waiting ||
                             it.status == DownloadQueueStatus.Downloading
                     },
-                completed = sorted.filter { it.status == DownloadQueueStatus.Completed },
+                completed =
+                    sorted.filter {
+                        it.status == DownloadQueueStatus.Completed ||
+                            it.status == DownloadQueueStatus.Skipped
+                    },
                 failed = sorted.filter { it.status == DownloadQueueStatus.Failed },
             )
         }
@@ -431,6 +435,7 @@ private fun DownloadStatusGlyph(
                     DownloadQueueStatus.Waiting -> "…"
                     DownloadQueueStatus.Downloading -> "↓"
                     DownloadQueueStatus.Completed -> "✓"
+                    DownloadQueueStatus.Skipped -> "⏭"
                     DownloadQueueStatus.Failed -> "!"
                 },
             color = accent.copy(alpha = alpha),
@@ -481,6 +486,7 @@ private fun statusAccent(status: DownloadQueueStatus): Color =
         DownloadQueueStatus.Waiting -> MiuixTheme.colorScheme.onSurfaceVariantSummary
         DownloadQueueStatus.Downloading -> MiuixTheme.colorScheme.primary
         DownloadQueueStatus.Completed -> Color(0xFF2AA876)
+        DownloadQueueStatus.Skipped -> Color(0xFFF59E0B)
         DownloadQueueStatus.Failed -> MiuixTheme.colorScheme.error
     }
 
@@ -490,5 +496,6 @@ private fun queueStatusLabel(status: DownloadQueueStatus): String =
         DownloadQueueStatus.Waiting -> stringResource(R.string.download_queue_waiting)
         DownloadQueueStatus.Downloading -> stringResource(R.string.download_queue_downloading)
         DownloadQueueStatus.Completed -> stringResource(R.string.download_queue_completed)
+        DownloadQueueStatus.Skipped -> stringResource(R.string.download_queue_skipped)
         DownloadQueueStatus.Failed -> stringResource(R.string.download_queue_failed)
     }

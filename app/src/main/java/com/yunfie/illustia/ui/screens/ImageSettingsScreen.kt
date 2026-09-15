@@ -297,6 +297,15 @@ fun ImageSettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { folderPicker.launch(null) },
                         )
+                        DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.image_duplicate_save_mode),
+                            summary = stringResource(R.string.image_duplicate_save_mode_desc),
+                            values = listOf("skip", "overwrite", "always"),
+                            selected = state.settings.duplicateSaveMode,
+                            label = { duplicateSaveModeLabel(it) },
+                            onSelect = viewModel::updateDuplicateSaveMode,
+                        )
                     }
                 }
             }
@@ -573,4 +582,12 @@ private fun liveWallpaperBackgroundLabel(value: String): String =
         "dominant" -> stringResource(R.string.live_wallpaper_background_dominant)
         "blur" -> stringResource(R.string.live_wallpaper_background_blur)
         else -> stringResource(R.string.live_wallpaper_background_black)
+    }
+
+@Composable
+private fun duplicateSaveModeLabel(value: String): String =
+    when (value) {
+        "overwrite" -> stringResource(R.string.image_duplicate_mode_overwrite)
+        "always" -> stringResource(R.string.image_duplicate_mode_always)
+        else -> stringResource(R.string.image_duplicate_mode_skip)
     }

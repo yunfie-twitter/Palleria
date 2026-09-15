@@ -669,6 +669,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(autoBookmarkOnDownload = value) }
     }
 
+    fun updateDuplicateSaveMode(value: String) {
+        updateSettings { it.copy(duplicateSaveMode = value) }
+    }
+
     fun updateDownloadFolderByArtist(value: Boolean) {
         updateSettings { it.copy(downloadFolderByArtist = value) }
     }

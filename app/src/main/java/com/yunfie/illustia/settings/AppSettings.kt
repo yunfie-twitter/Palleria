@@ -69,6 +69,7 @@ data class AppSettings(
     val privateBookmarkDefault: Boolean = false,
     val autoDownloadOnBookmark: Boolean = false,
     val autoBookmarkOnDownload: Boolean = false,
+    val duplicateSaveMode: String = "skip", // skip | overwrite | always
     val downloadFolderByArtist: Boolean = true,
     val downloadFolderByWork: Boolean = true,
     val autoTagOnBookmark: Boolean = false,
