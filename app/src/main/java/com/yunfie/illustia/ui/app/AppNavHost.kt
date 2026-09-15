@@ -284,6 +284,7 @@ internal fun AppNavHost(
                     novel = appState.state.selectedNovel,
                     text = appState.state.selectedNovelText,
                     loadState = appState.loadState,
+                    settings = appState.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onRetry = {

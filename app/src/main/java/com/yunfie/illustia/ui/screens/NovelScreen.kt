@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -170,13 +172,13 @@ fun NovelScreen(
 }
 
 private const val DARK_LUMINANCE_THRESHOLD = 0.5f
-private const val DEFAULT_FONT_SIZE = 17f
 
 @Composable
 fun NovelReaderScreen(
     novel: NovelPreview?,
     text: NovelTextContent?,
     loadState: LoadState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onRetry: () -> Unit,
@@ -198,10 +200,10 @@ fun NovelReaderScreen(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
 
-    var fontSize by rememberSaveable { mutableFloatStateOf(DEFAULT_FONT_SIZE) }
-    var lineSpacing by rememberSaveable { mutableStateOf(NovelLineSpacing.Normal) }
-    var theme by rememberSaveable { mutableStateOf(NovelTheme.System) }
-    var layoutMode by rememberSaveable { mutableStateOf(NovelLayoutMode.Paged) }
+    val fontSize = settings.novelFontSize
+    val lineSpacing = remember(settings.novelLineSpacing) { NovelLineSpacing.fromId(settings.novelLineSpacing) }
+    val theme = remember(settings.novelTheme) { NovelTheme.fromId(settings.novelTheme) }
+    val layoutMode = remember(settings.novelLayoutMode) { NovelLayoutMode.fromId(settings.novelLayoutMode) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var showTocSheet by rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
@@ -316,6 +318,16 @@ fun NovelReaderScreen(
             }
         },
     ) { scaffoldPadding ->
+        val layoutDirection = LocalLayoutDirection.current
+        val readerPadding =
+            remember(scaffoldPadding, layoutDirection) {
+                PaddingValues(
+                    start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
+                    top = scaffoldPadding.calculateTopPadding(),
+                    end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
+                    bottom = scaffoldPadding.calculateBottomPadding(),
+                )
+            }
         when {
             loadState == LoadState.Loading && text == null -> {
                 Box(
@@ -348,7 +360,7 @@ fun NovelReaderScreen(
                                 onJumpPage = ::jumpToPage,
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 scrollBehavior = scrollBehavior,
-                                contentPadding = scaffoldPadding,
+                                contentPadding = readerPadding,
                             )
                         }
                     }
@@ -365,7 +377,7 @@ fun NovelReaderScreen(
                             onJumpPage = ::jumpToPage,
                             onToggleControls = { controlsVisible = !controlsVisible },
                             scrollBehavior = scrollBehavior,
-                            contentPadding = scaffoldPadding,
+                            contentPadding = readerPadding,
                             modifier = Modifier.fillMaxSize().background(backgroundColor),
                         )
                     }
@@ -402,15 +414,15 @@ fun NovelReaderScreen(
     NovelSettingsBottomSheet(
         show = showSettingsSheet,
         fontSize = fontSize,
-        onFontSizeChange = { fontSize = it },
+        onFontSizeChange = viewModel::updateNovelFontSize,
         lineSpacing = lineSpacing,
-        onLineSpacingChange = { lineSpacing = it },
+        onLineSpacingChange = { viewModel.updateNovelLineSpacing(it.id) },
         theme = theme,
-        onThemeChange = { theme = it },
+        onThemeChange = { viewModel.updateNovelTheme(it.id) },
         layoutMode = layoutMode,
         onLayoutModeChange = { newMode ->
             val current = currentPage
-            layoutMode = newMode
+            viewModel.updateNovelLayoutMode(newMode.id)
             jumpToPage(current)
         },
         onDismiss = { showSettingsSheet = false },

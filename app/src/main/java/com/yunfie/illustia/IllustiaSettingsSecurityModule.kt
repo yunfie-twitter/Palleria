@@ -24,6 +24,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val MIN_NOVEL_FONT_SIZE = 12f
+private const val MAX_NOVEL_FONT_SIZE = 32f
+
 /** Settings mutations, app/privacy locking, and calculator-backed unlock behavior. */
 @Suppress("LargeClass")
 abstract class IllustiaSettingsSecurityModule(
@@ -700,6 +703,22 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateMangaReaderMode(value: String) {
         updateSettings { it.copy(mangaReaderMode = value) }
+    }
+
+    fun updateNovelFontSize(value: Float) {
+        updateSettings { it.copy(novelFontSize = value.coerceIn(MIN_NOVEL_FONT_SIZE, MAX_NOVEL_FONT_SIZE)) }
+    }
+
+    fun updateNovelLineSpacing(value: String) {
+        updateSettings { it.copy(novelLineSpacing = value) }
+    }
+
+    fun updateNovelTheme(value: String) {
+        updateSettings { it.copy(novelTheme = value) }
+    }
+
+    fun updateNovelLayoutMode(value: String) {
+        updateSettings { it.copy(novelLayoutMode = value) }
     }
 
     fun updateSmartCacheEnabled(value: Boolean) {

@@ -51,12 +51,13 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 enum class NovelTheme(
+    val id: String,
     val displayNameRes: Int,
 ) {
-    System(R.string.novel_theme_system),
-    Sepia(R.string.novel_theme_sepia),
-    Dark(R.string.novel_theme_dark),
-    Black(R.string.novel_theme_black),
+    System("system", R.string.novel_theme_system),
+    Sepia("sepia", R.string.novel_theme_sepia),
+    Dark("dark", R.string.novel_theme_dark),
+    Black("black", R.string.novel_theme_black),
     ;
 
     @Composable
@@ -76,6 +77,10 @@ enum class NovelTheme(
             Dark -> Color(0xFFE0E0E0)
             Black -> Color(0xFFCCCCCC)
         }
+
+    companion object {
+        fun fromId(id: String?): NovelTheme = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: System
+    }
 }
 
 private const val LINE_SPACING_COMPACT = 1.35f
@@ -83,19 +88,31 @@ private const val LINE_SPACING_NORMAL = 1.65f
 private const val LINE_SPACING_RELAXED = 2.0f
 
 enum class NovelLineSpacing(
+    val id: String,
     val multiplier: Float,
     val labelRes: Int,
 ) {
-    Compact(LINE_SPACING_COMPACT, R.string.novel_line_height_compact),
-    Normal(LINE_SPACING_NORMAL, R.string.novel_line_height_normal),
-    Relaxed(LINE_SPACING_RELAXED, R.string.novel_line_height_relaxed),
+    Compact("compact", LINE_SPACING_COMPACT, R.string.novel_line_height_compact),
+    Normal("normal", LINE_SPACING_NORMAL, R.string.novel_line_height_normal),
+    Relaxed("relaxed", LINE_SPACING_RELAXED, R.string.novel_line_height_relaxed),
+    ;
+
+    companion object {
+        fun fromId(id: String?): NovelLineSpacing = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: Normal
+    }
 }
 
 enum class NovelLayoutMode(
+    val id: String,
     val labelRes: Int,
 ) {
-    Paged(R.string.novel_layout_paged),
-    Scroll(R.string.novel_layout_scroll),
+    Paged("paged", R.string.novel_layout_paged),
+    Scroll("scroll", R.string.novel_layout_scroll),
+    ;
+
+    companion object {
+        fun fromId(id: String?): NovelLayoutMode = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: Paged
+    }
 }
 
 internal sealed interface NovelBlock

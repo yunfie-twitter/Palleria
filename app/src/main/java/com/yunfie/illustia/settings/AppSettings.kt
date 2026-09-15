@@ -127,6 +127,10 @@ data class AppSettings(
     val discordRpcShowArtworkDetails: Boolean = false,
     val discordRpcShowButtons: Boolean = true,
     val discordRpcShowLogs: Boolean = false,
+    val novelFontSize: Float = 17f,
+    val novelLineSpacing: String = "normal",
+    val novelTheme: String = "system",
+    val novelLayoutMode: String = "paged",
 ) {
     val useHighQualityFeedImages: Boolean
         get() = highQualityImages && feedPreviewQuality != "low"

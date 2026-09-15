@@ -170,6 +170,10 @@ internal fun readFromDataStore(
         discordRpcShowArtworkDetails = preferences[DISCORD_RPC_SHOW_ARTWORK_DETAILS] ?: false,
         discordRpcShowButtons = preferences[DISCORD_RPC_SHOW_BUTTONS] ?: true,
         discordRpcShowLogs = preferences[DISCORD_RPC_SHOW_LOGS] ?: false,
+        novelFontSize = preferences[NOVEL_FONT_SIZE] ?: 17f,
+        novelLineSpacing = preferences[NOVEL_LINE_SPACING] ?: "normal",
+        novelTheme = preferences[NOVEL_THEME] ?: "system",
+        novelLayoutMode = preferences[NOVEL_LAYOUT_MODE] ?: "paged",
     )
 }
 
@@ -444,6 +448,10 @@ internal fun writeToDataStore(
     preferences[DISCORD_RPC_SHOW_ARTWORK_DETAILS] = settings.discordRpcShowArtworkDetails
     preferences[DISCORD_RPC_SHOW_BUTTONS] = settings.discordRpcShowButtons
     preferences[DISCORD_RPC_SHOW_LOGS] = settings.discordRpcShowLogs
+    preferences[NOVEL_FONT_SIZE] = settings.novelFontSize
+    preferences[NOVEL_LINE_SPACING] = settings.novelLineSpacing
+    preferences[NOVEL_THEME] = settings.novelTheme
+    preferences[NOVEL_LAYOUT_MODE] = settings.novelLayoutMode
 }
 
 internal fun writeSensitiveSettings(

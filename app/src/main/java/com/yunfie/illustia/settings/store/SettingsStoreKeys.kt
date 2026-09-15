@@ -1,6 +1,7 @@
 package com.yunfie.illustia.settings.store
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -158,3 +159,7 @@ internal val DISCORD_APPLICATION_ID = stringPreferencesKey("discordApplicationId
 internal val DISCORD_RPC_SHOW_ARTWORK_DETAILS = booleanPreferencesKey("discordRpcShowArtworkDetails")
 internal val DISCORD_RPC_SHOW_BUTTONS = booleanPreferencesKey("discordRpcShowButtons")
 internal val DISCORD_RPC_SHOW_LOGS = booleanPreferencesKey("discordRpcShowLogs")
+internal val NOVEL_FONT_SIZE = floatPreferencesKey("novelFontSize")
+internal val NOVEL_LINE_SPACING = stringPreferencesKey("novelLineSpacing")
+internal val NOVEL_THEME = stringPreferencesKey("novelTheme")
+internal val NOVEL_LAYOUT_MODE = stringPreferencesKey("novelLayoutMode")
