@@ -111,6 +111,9 @@ internal fun AppNavHost(
                         onSelectedWatchlistSeriesIdChange(seriesId)
                         onNavigate(AppRoute.IllustSeries)
                     },
+                    onNavigateToResults = { query ->
+                        onNavigate(AppRoute.SearchResults(query))
+                    },
                 )
             }
             entry(
@@ -120,7 +123,11 @@ internal fun AppNavHost(
                 SearchScreen(
                     state = appState.state,
                     viewModel = viewModel,
-                    onBackFromResults = onPopRoute,
+                    isResultRoute = false,
+                    onBack = onPopRoute,
+                    onNavigateToResults = { query ->
+                        onNavigate(AppRoute.SearchResults(query))
+                    },
                 )
             }
             entry<AppRoute.TagSearch>(
@@ -129,15 +136,22 @@ internal fun AppNavHost(
                 SearchScreen(
                     state = appState.state,
                     viewModel = viewModel,
+                    isResultRoute = true,
                     onBackFromResults = onPopRoute,
                 )
             }
             entry<AppRoute.SearchResults>(
                 metadata = artworkPageTransitionMetadata(),
-            ) {
+            ) { route ->
+                LaunchedEffect(route.query) {
+                    if (route.query.isNotBlank() && appState.state.activeSearchWord != route.query) {
+                        viewModel.submitSearch(route.query)
+                    }
+                }
                 SearchScreen(
                     state = appState.state,
                     viewModel = viewModel,
+                    isResultRoute = true,
                     onBackFromResults = onPopRoute,
                 )
             }

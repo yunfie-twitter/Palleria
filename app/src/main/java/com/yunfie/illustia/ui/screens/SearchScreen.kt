@@ -98,17 +98,24 @@ fun SearchScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     widgetSelectionMode: Boolean = false,
+    isResultRoute: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
+    onBack: (() -> Unit)? = null,
     onBackFromResults: (() -> Unit)? = null,
+    onNavigateToResults: ((String) -> Unit)? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val suggestionStore = remember(repository) { SuggestionStore(repository) }
     val autocompleteSuggestions by suggestionStore.autoWords.collectAsStateWithLifecycle()
 
-    val isResultMode by remember(state.activeSearchWord) {
+    val isResultMode by remember(state.activeSearchWord, isResultRoute, widgetSelectionMode) {
         derivedStateOf {
-            state.activeSearchWord.isNotBlank()
+            if (widgetSelectionMode) {
+                state.activeSearchWord.isNotBlank()
+            } else {
+                isResultRoute
+            }
         }
     }
 
@@ -131,19 +138,29 @@ fun SearchScreen(
         }
     }
 
-    val onClearResults = { viewModel.clearSearchResults() }
+    val onClearResults = {
+        if (isResultRoute) {
+            onBackFromResults?.invoke() ?: viewModel.clearSearchResults()
+        } else {
+            viewModel.clearSearchResults()
+        }
+    }
     val onExpandedChange: (Boolean) -> Unit = { expanded ->
         searchExpanded = expanded
         if (!expanded && state.searchDraft.isBlank()) {
-            viewModel.clearSearchResults()
+            onClearResults()
         }
     }
     val onUpdateDraft: (String) -> Unit = { viewModel.updateSearchDraft(it) }
     val onSubmit: (String) -> Unit = { word ->
-        if (word.isBlank()) {
-            viewModel.clearSearchResults()
+        val trimmed = word.trim()
+        if (trimmed.isBlank()) {
+            onClearResults()
         } else {
-            viewModel.submitSearch(word)
+            viewModel.submitSearch(trimmed)
+            if (!isResultRoute) {
+                onNavigateToResults?.invoke(trimmed)
+            }
         }
         searchExpanded = false
     }
@@ -170,18 +187,22 @@ fun SearchScreen(
     if (searchExpanded) {
         BackHandler(enabled = true) {
             if (state.searchDraft.isBlank()) {
-                viewModel.clearSearchResults()
+                onClearResults()
             }
             searchExpanded = false
+        }
+    } else if (widgetSelectionMode && isResultMode) {
+        BackHandler(enabled = true) {
+            viewModel.clearSearchResults()
         }
     } else if (onBackFromResults != null) {
         PredictiveBackGestureHandler(enabled = true) {
             viewModel.clearSearchResults()
             onBackFromResults()
         }
-    } else if (isResultMode) {
+    } else if (onBack != null) {
         PredictiveBackGestureHandler(enabled = true) {
-            viewModel.clearSearchResults()
+            onBack()
         }
     }
 
@@ -225,6 +246,35 @@ fun SearchScreen(
                         onSearch = {
                             val target = state.searchDraft.ifBlank { state.activeSearchWord }
                             onSubmit(target)
+                        },
+                        onSuggestionClick = {
+                            onSubmit(it)
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            } else if (onBack != null && !searchExpanded) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    HeaderIcon(
+                        MiuixIcons.Back,
+                        onClick = onBack,
+                        modifier = Modifier.height(56.dp),
+                    )
+                    SearchToolbar(
+                        value = state.searchDraft,
+                        expanded = false,
+                        suggestions = suggestions,
+                        historyCount = state.settings.searchHistory.size,
+                        onExpandedChange = onExpandedChange,
+                        onValueChange = onUpdateDraft,
+                        onSearch = {
+                            onSubmit(state.searchDraft)
                         },
                         onSuggestionClick = {
                             onSubmit(it)
@@ -277,6 +327,7 @@ fun SearchScreen(
                             viewModel = viewModel,
                             showHeader = true,
                             onIllustSelected = onIllustSelected,
+                            onSearch = onSubmit,
                         )
                     }
                 }

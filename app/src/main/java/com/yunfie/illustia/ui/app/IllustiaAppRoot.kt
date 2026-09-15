@@ -262,7 +262,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     LaunchedEffect(state.activeSearchWord) {
         if (state.activeSearchWord.isNotBlank()) {
             if (
-                backStack.lastOrNull() != AppRoute.Search &&
                 backStack.lastOrNull() !is AppRoute.TagSearch &&
                 backStack.lastOrNull() !is AppRoute.SearchResults
             ) {

@@ -75,6 +75,7 @@ internal fun MainSurface(
     onOpenNovels: () -> Unit,
     onOpenComments: (Long) -> Unit,
     onOpenWatchlistSeries: (Long) -> Unit,
+    onNavigateToResults: (String) -> Unit,
 ) {
     val tabs = mainTabs(appState.settings)
     val navigationTabs = visibleTabs(appState.settings)
@@ -107,9 +108,6 @@ internal fun MainSurface(
                 }
             }
         }
-    val isSearchResultMode =
-        selectedTab == AppTab.Search &&
-            appState.state.activeSearchWord.isNotBlank()
     val doubleBackExitMessage = stringResource(R.string.msg_double_back_exit)
 
     LaunchedEffect(selectedTab) {
@@ -144,7 +142,7 @@ internal fun MainSurface(
             containerColor = MiuixTheme.colorScheme.surface,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (!useNavigationRail && !isSearchResultMode) {
+                if (!useNavigationRail) {
                     if (appState.settings.navigationStyle == "standard") {
                         NavigationBar(
                             color = MiuixTheme.colorScheme.surfaceContainer,
@@ -197,7 +195,6 @@ internal fun MainSurface(
                 beyondViewportPageCount = 0,
                 userScrollEnabled =
                     appState.settings.swipeToSwitchWorks &&
-                        !isSearchResultMode &&
                         !(selectedTab == AppTab.ShortsFeed && appState.settings.disableHorizontalSwipeInShortsFeed),
                 modifier =
                     Modifier
@@ -255,7 +252,12 @@ internal fun MainSurface(
                     }
 
                     AppTab.Search -> {
-                        SearchScreen(state = appState.state, viewModel = viewModel)
+                        SearchScreen(
+                            state = appState.state,
+                            viewModel = viewModel,
+                            isResultRoute = false,
+                            onNavigateToResults = onNavigateToResults,
+                        )
                     }
 
                     AppTab.ShortsFeed -> {
