@@ -2,7 +2,6 @@ package com.yunfie.illustia.ui.components
 
 import android.content.Context
 import android.net.ConnectivityManager
-import androidx.activity.ExperimentalActivityApi
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -82,16 +81,11 @@ fun NonAmoledDarkTheme(content: @Composable () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalActivityApi::class)
 @Composable
 fun PredictiveBackGestureHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 ) {
-    if (PlatformCapabilities.supportsPredictiveBack()) {
-        return
-    }
-
     BackHandler(enabled = enabled) {
         onBack()
     }
