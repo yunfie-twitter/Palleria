@@ -178,6 +178,7 @@ internal fun readFromDataStore(
         novelTheme = preferences[NOVEL_THEME] ?: "system",
         novelLayoutMode = preferences[NOVEL_LAYOUT_MODE] ?: "paged",
         novelProgress = decodeNovelProgress(preferences[NOVEL_PROGRESS_RECORDS]),
+        novelFontFamily = preferences[NOVEL_FONT_FAMILY] ?: "system",
     )
 }
 
@@ -454,6 +455,7 @@ internal fun writeToDataStore(
     preferences[NOVEL_THEME] = settings.novelTheme
     preferences[NOVEL_LAYOUT_MODE] = settings.novelLayoutMode
     preferences[NOVEL_PROGRESS_RECORDS] = encodeNovelProgress(settings.novelProgress)
+    preferences[NOVEL_FONT_FAMILY] = settings.novelFontFamily
 }
 
 internal fun writeSensitiveSettings(

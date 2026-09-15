@@ -807,6 +807,12 @@
     <string name="novel_layout_mode">ページ送り</string>
     <string name="novel_layout_paged">ページめくり</string>
     <string name="novel_layout_scroll">縦スクロール</string>
+    <string name="novel_layout_vertical">縦書き</string>
+    <string name="novel_font_family">フォント</string>
+    <string name="novel_font_system">システム</string>
+    <string name="novel_font_serif">明朝体</string>
+    <string name="novel_font_sans_serif">ゴシック</string>
+    <string name="novel_inline_illust_label">挿絵 (ID: %1$d)</string>
     <string name="novel_open_illust">作品を見る</string>
     <string name="calculator_error">エラー</string>
     <string name="error_novel_load_failed">小説を読み込めませんでした。</string>

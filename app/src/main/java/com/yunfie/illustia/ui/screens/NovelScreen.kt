@@ -308,6 +308,7 @@ fun NovelReaderScreen(
     val lineSpacing = remember(settings.novelLineSpacing) { NovelLineSpacing.fromId(settings.novelLineSpacing) }
     val theme = remember(settings.novelTheme) { NovelTheme.fromId(settings.novelTheme) }
     val layoutMode = remember(settings.novelLayoutMode) { NovelLayoutMode.fromId(settings.novelLayoutMode) }
+    val fontFamily = remember(settings.novelFontFamily) { NovelFontFamily.fromId(settings.novelFontFamily) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var showTocSheet by rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
@@ -357,7 +358,7 @@ fun NovelReaderScreen(
 
     val currentPage =
         when (layoutMode) {
-            NovelLayoutMode.Paged -> pagerState.currentPage
+            NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> pagerState.currentPage
             NovelLayoutMode.Scroll -> currentScrollPage
         }
 
@@ -375,7 +376,7 @@ fun NovelReaderScreen(
         if (targetPage in pages.indices) {
             coroutineScope.launch {
                 when (layoutMode) {
-                    NovelLayoutMode.Paged -> {
+                    NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
                         pagerState.animateScrollToPage(targetPage)
                     }
 
@@ -469,6 +470,7 @@ fun NovelReaderScreen(
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,
                                 textColor = textColor,
+                                fontFamily = fontFamily.fontFamily,
                                 viewModel = viewModel,
                                 uriHandler = uriHandler,
                                 seriesNextId = text.seriesNextId,
@@ -489,6 +491,7 @@ fun NovelReaderScreen(
                             fontSize = fontSize,
                             lineHeightMultiplier = lineSpacing.multiplier,
                             textColor = textColor,
+                            fontFamily = fontFamily.fontFamily,
                             viewModel = viewModel,
                             uriHandler = uriHandler,
                             seriesNextId = text.seriesNextId,
@@ -500,6 +503,29 @@ fun NovelReaderScreen(
                             contentPadding = readerPadding,
                             modifier = Modifier.fillMaxSize().background(backgroundColor),
                         )
+                    }
+
+                    NovelLayoutMode.Vertical -> {
+                        HorizontalPager(
+                            state = pagerState,
+                            reverseLayout = true,
+                            modifier = Modifier.fillMaxSize().background(backgroundColor),
+                        ) { pageIndex ->
+                            NovelReaderVerticalPage(
+                                page = pages[pageIndex],
+                                pageIndex = pageIndex,
+                                pageCount = pages.size,
+                                fontSize = fontSize,
+                                lineHeightMultiplier = lineSpacing.multiplier,
+                                textColor = textColor,
+                                fontFamily = fontFamily.fontFamily,
+                                viewModel = viewModel,
+                                onJumpPage = ::jumpToPage,
+                                onToggleControls = { controlsVisible = !controlsVisible },
+                                scrollBehavior = scrollBehavior,
+                                contentPadding = readerPadding,
+                            )
+                        }
                     }
                 }
             }
@@ -553,6 +579,8 @@ fun NovelReaderScreen(
             viewModel.updateNovelLayoutMode(newMode.id)
             jumpToPage(current)
         },
+        fontFamily = fontFamily,
+        onFontFamilyChange = { viewModel.updateNovelFontFamily(it.id) },
         onDismiss = { showSettingsSheet = false },
     )
 }
