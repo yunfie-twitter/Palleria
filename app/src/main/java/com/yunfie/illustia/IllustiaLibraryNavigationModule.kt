@@ -3,6 +3,7 @@ package com.yunfie.illustia
 import android.app.Application
 import android.net.ConnectivityManager
 import androidx.lifecycle.viewModelScope
+import coil3.SingletonImageLoader
 import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
@@ -393,7 +394,27 @@ abstract class IllustiaLibraryNavigationModule(
     fun clearAppCache() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                getApplication<Application>().cacheDir.deleteRecursively()
+                val appContext = getApplication<Application>().applicationContext
+                runCatching {
+                    val imageLoader = SingletonImageLoader.get(appContext)
+                    imageLoader.diskCache?.clear()
+                    imageLoader.memoryCache?.clear()
+                }
+
+                val cacheRoot = appContext.cacheDir
+                cacheRoot.listFiles()?.forEach { file ->
+                    when {
+                        file.name == "image_cache" || file.name == "http_cache" -> {
+                            file.listFiles()?.forEach { child -> child.deleteRecursively() }
+                        }
+
+                        file.name.startsWith("ugoira_") ||
+                            file.name.startsWith("temp_") ||
+                            file.name.endsWith(".tmp") -> {
+                            file.deleteRecursively()
+                        }
+                    }
+                }
                 _uiState.update { it.copy(message = str(R.string.msg_cache_deleted), loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
