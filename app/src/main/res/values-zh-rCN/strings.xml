@@ -54,6 +54,12 @@
     <string name="novel_reader_loading">正在加载文本...</string>
     <string name="novel_series_prev">上一篇：%1$s</string>
     <string name="novel_series_next">下一篇：%1$s</string>
+    <string name="novel_layout_vertical">竖排</string>
+    <string name="novel_font_family">字体</string>
+    <string name="novel_font_system">系统</string>
+    <string name="novel_font_serif">宋体/明朝</string>
+    <string name="novel_font_sans_serif">黑体</string>
+    <string name="novel_inline_illust_label">插图 (ID: %1$d)</string>
     <string name="feed_recommended">推荐</string>
     <string name="feed_ranking">排名</string>
     <string name="feed_new">新</string>

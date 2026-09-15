@@ -290,6 +290,8 @@ internal fun NovelSettingsBottomSheet(
     onThemeChange: (NovelTheme) -> Unit,
     layoutMode: NovelLayoutMode,
     onLayoutModeChange: (NovelLayoutMode) -> Unit,
+    fontFamily: NovelFontFamily,
+    onFontFamilyChange: (NovelFontFamily) -> Unit,
     onDismiss: () -> Unit,
 ) {
     if (!show) return
@@ -331,6 +333,48 @@ internal fun NovelSettingsBottomSheet(
                     steps = FONT_SIZE_STEPS,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+
+            ElevatedPanel {
+                Text(
+                    text = stringResource(R.string.novel_font_family),
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.Bold,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    NovelFontFamily.entries.forEach { font ->
+                        val isSelected = font == fontFamily
+                        Box(
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .squircleSurface(
+                                        color =
+                                            if (isSelected) {
+                                                MiuixTheme.colorScheme.primary
+                                            } else {
+                                                MiuixTheme.colorScheme.surfaceContainerHighest
+                                            },
+                                        cornerRadius = 14.dp,
+                                    ).miuixClickable(
+                                        pressedScale = 0.95f,
+                                        haptic = true,
+                                        onClick = { onFontFamilyChange(font) },
+                                    ).padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(font.labelRes),
+                                color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                style = MiuixTheme.textStyles.body2,
+                            )
+                        }
+                    }
+                }
             }
 
             ElevatedPanel {

@@ -119,6 +119,12 @@ abstract class IllustiaDetailProfileModule(
         }
     }
 
+    suspend fun getIllustPreviewUrl(illustId: Long): String? =
+        withContext(Dispatchers.IO) {
+            findIllustById(illustId)?.mediumImageUrl
+                ?: runCatching { repository.illustDetail(illustId).mediumImageUrl }.getOrNull()
+        }
+
     fun refreshIllustDetail(illustId: Long) {
         detailExtrasJob?.cancel()
         detailExtrasJob =
