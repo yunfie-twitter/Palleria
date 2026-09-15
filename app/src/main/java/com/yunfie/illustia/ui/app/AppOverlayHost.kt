@@ -359,15 +359,20 @@ internal fun AppOverlayHost(
         )
     }
 
+    var showLockResetConfirmDialog by remember { mutableStateOf(false) }
+
     if (appState.state.showLockRecoveryDialog) {
         OverlayDialog(
             show = true,
             title = stringResource(R.string.app_lock_recovery_title),
-            summary = stringResource(R.string.app_lock_recovery_summary),
+            summary = stringResource(R.string.app_lock_recovery_summary, appState.state.settings.appLockFailCount),
             backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
             onDismissRequest = {},
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Button(
                     onClick = viewModel::openRecoveryWebLogin,
                     modifier = Modifier.fillMaxWidth(),
@@ -380,7 +385,34 @@ internal fun AppOverlayHost(
                         fontWeight = FontWeight.Bold,
                     )
                 }
+                Button(
+                    onClick = { showLockResetConfirmDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    colors = overlayActionButtonColors(),
+                ) {
+                    Text(
+                        stringResource(R.string.app_lock_recovery_reset),
+                        color = MiuixTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
+    }
+
+    if (showLockResetConfirmDialog) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.app_lock_recovery_reset_confirm_title),
+            summary = stringResource(R.string.app_lock_recovery_reset_confirm_summary),
+            confirmText = stringResource(R.string.app_lock_recovery_reset),
+            destructive = true,
+            onConfirm = {
+                showLockResetConfirmDialog = false
+                viewModel.resetAppFromLock()
+            },
+            onDismiss = { showLockResetConfirmDialog = false },
+        )
     }
 }

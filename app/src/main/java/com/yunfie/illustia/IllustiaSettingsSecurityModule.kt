@@ -618,6 +618,32 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
+    fun resetAppFromLock() {
+        viewModelScope.launch {
+            appLockRecoveryLogin = false
+            disableAppLock()
+            resetLockFailCount()
+            _uiState.update {
+                it.copy(
+                    appLocked = false,
+                    privacyLocked = false,
+                    showLockRecoveryDialog = false,
+                    webLoginRequest = null,
+                )
+            }
+            repository.logout()
+            val nextSettings = repository.readSettings()
+            _uiState.update {
+                IllustiaUiState(
+                    settings = nextSettings,
+                    settingsLoaded = true,
+                    message = str(R.string.msg_logged_out),
+                )
+            }
+            refreshRankingWidget()
+        }
+    }
+
     fun cooldownRemainingSeconds(): Long {
         val until = _uiState.value.settings.appLockCooldownUntil
         if (until == 0L) return 0L

@@ -51,6 +51,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.delay
@@ -82,6 +83,7 @@ fun AppLockScreen(
     var cooldownRemaining by remember { mutableStateOf(0L) }
     var errorFlash by remember { mutableFloatStateOf(0f) }
     var showRecoverySheet by remember { mutableStateOf(false) }
+    var showResetConfirmDialog by remember { mutableStateOf(false) }
 
     // Block all back navigation while locked.
     BackHandler(enabled = true) {}
@@ -330,7 +332,7 @@ fun AppLockScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.app_lock_recovery_summary),
+                    text = stringResource(R.string.app_lock_recovery_summary, failCount),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -343,10 +345,43 @@ fun AppLockScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = overlayActionButtonColors(),
                 ) {
-                    Text(stringResource(R.string.app_lock_recovery_verify))
+                    Text(
+                        stringResource(R.string.app_lock_recovery_verify),
+                        color = MiuixTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Button(
+                    onClick = {
+                        showRecoverySheet = false
+                        showResetConfirmDialog = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = overlayActionButtonColors(),
+                ) {
+                    Text(
+                        stringResource(R.string.app_lock_recovery_reset),
+                        color = MiuixTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }
+    }
+
+    if (showResetConfirmDialog) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.app_lock_recovery_reset_confirm_title),
+            summary = stringResource(R.string.app_lock_recovery_reset_confirm_summary),
+            confirmText = stringResource(R.string.app_lock_recovery_reset),
+            destructive = true,
+            onConfirm = {
+                showResetConfirmDialog = false
+                viewModel.resetAppFromLock()
+            },
+            onDismiss = { showResetConfirmDialog = false },
+        )
     }
 }
 

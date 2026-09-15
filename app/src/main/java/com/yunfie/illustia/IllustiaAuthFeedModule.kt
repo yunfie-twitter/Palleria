@@ -70,6 +70,35 @@ abstract class IllustiaAuthFeedModule(
         appLockRecoveryLogin = false
         runLoading {
             val session = repository.loginWithAuthorizationCode(code, request.codeVerifier)
+            if (wasRecovery) {
+                val state = _uiState.value
+                val currentAccId = state.currentAccount?.id
+                val settings = state.settings
+                val resolvedAccount = settings.resolveLoggedInAccount()
+                val resolvedId = resolvedAccount?.id
+                val accounts = settings.accounts
+                val firstAccount = accounts.firstOrNull()
+                val firstStoredId = firstAccount?.userId
+                val expectedUserId = currentAccId ?: resolvedId ?: firstStoredId
+                val isMatchingUser =
+                    if (expectedUserId != null) {
+                        session.userId == expectedUserId
+                    } else if (accounts.isNotEmpty()) {
+                        val sessionUserId = session.userId
+                        sessionUserId != null && accounts.any { it.userId == sessionUserId }
+                    } else {
+                        true
+                    }
+                if (!isMatchingUser) {
+                    _uiState.update {
+                        it.copy(
+                            webLoginRequest = null,
+                            message = str(R.string.app_lock_recovery_account_mismatch),
+                        )
+                    }
+                    return@runLoading
+                }
+            }
             applyLoggedInSession(session.accessToken.isNotBlank(), str(R.string.msg_web_login_complete))
             loadHomeInternal(_uiState.value.homeKind)
             if (wasRecovery) {

@@ -340,9 +340,12 @@
     <string name="app_lock_cooldown">%.0f秒後に再試行してください</string>
     <string name="app_lock_forgot_pin">PINを忘れましたか？</string>
     <string name="app_lock_recovery_title">ロックの解除方法を選択</string>
-    <string name="app_lock_recovery_summary">PINの入力に12回失敗しました。本人確認を行うか、アプリを初期化してください。</string>
+    <string name="app_lock_recovery_summary">PINの入力に%1$d回失敗しました。本人確認を行うか、アプリを初期化してください。</string>
     <string name="app_lock_recovery_verify">Pixivアカウントで本人確認</string>
     <string name="app_lock_recovery_reset">アプリを初期化</string>
+    <string name="app_lock_recovery_account_mismatch">ログインしたPixivアカウントが一致しません。ロック中のアカウントで本人確認を行ってください。</string>
+    <string name="app_lock_recovery_reset_confirm_title">アプリを初期化しますか？</string>
+    <string name="app_lock_recovery_reset_confirm_summary">アカウント情報やアプリロック設定が削除され、初期状態に戻ります。この操作は取り消せません。</string>
 
     <!-- Image settings screen -->
     <string name="image_settings_title">画像設定</string>

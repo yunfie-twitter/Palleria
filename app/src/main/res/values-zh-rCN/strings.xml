@@ -281,9 +281,12 @@
     <string name="app_lock_cooldown">%.0f 秒后重试</string>
     <string name="app_lock_forgot_pin">忘记 PIN 码？</string>
     <string name="app_lock_recovery_title">选择恢复方法</string>
-    <string name="app_lock_recovery_summary">您已输入 PIN 码 12 次失败。验证您的身份或重置应用程序。</string>
+    <string name="app_lock_recovery_summary">您已输入 PIN 码 %1$d 次失败。验证您的身份或重置应用程序。</string>
     <string name="app_lock_recovery_verify">使用 Pixiv 帐户验证</string>
     <string name="app_lock_recovery_reset">重置应用数据</string>
+    <string name="app_lock_recovery_account_mismatch">登录的 Pixiv 帐户不匹配。请使用当前锁定的帐户进行验证。</string>
+    <string name="app_lock_recovery_reset_confirm_title">重置应用数据？</string>
+    <string name="app_lock_recovery_reset_confirm_summary">帐户信息和应用锁设置将被删除，应用将恢复至初始状态。此操作无法撤销。</string>
     <string name="image_settings_title">图像设置</string>
     <string name="image_section_storage">存储</string>
     <string name="image_download_folder_by_artist">按艺术家分组</string>

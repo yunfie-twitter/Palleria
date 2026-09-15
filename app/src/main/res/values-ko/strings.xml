@@ -307,10 +307,12 @@
     <string name="app_lock_attempts_remaining">남은 시도 횟수: %d회</string>
     <string name="app_lock_cooldown">%.0f초 후 다시 시도하세요</string>
     <string name="app_lock_forgot_pin">PIN을 잊으셨나요?</string>
-    <string name="app_lock_recovery_title">복구 방법 선택</string>
-    <string name="app_lock_recovery_summary">PIN 입력에 12번 실패했습니다. 본인 확인을 하거나 앱을 초기화하세요.</string>
+    <string name="app_lock_recovery_summary">PIN 입력에 %1$d번 실패했습니다. 본인 확인을 하거나 앱을 초기화하세요.</string>
     <string name="app_lock_recovery_verify">Pixiv 계정으로 확인</string>
     <string name="app_lock_recovery_reset">앱 데이터 초기화</string>
+    <string name="app_lock_recovery_account_mismatch">로그인한 Pixiv 계정이 일치하지 않습니다. 현재 잠긴 계정으로 본인 확인을 진행해 주세요.</string>
+    <string name="app_lock_recovery_reset_confirm_title">앱 데이터를 초기화하시겠습니까?</string>
+    <string name="app_lock_recovery_reset_confirm_summary">계정 정보 및 앱 잠금 설정이 삭제되고 초기 상태로 되돌아갑니다. 이 작업은 취소할 수 없습니다.</string>
 
     <!-- Image settings screen -->
     <string name="image_settings_title">이미지 설정</string>

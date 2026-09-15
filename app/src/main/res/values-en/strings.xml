@@ -338,9 +338,12 @@
     <string name="app_lock_cooldown">Try again in %.0f seconds</string>
     <string name="app_lock_forgot_pin">Forgot PIN?</string>
     <string name="app_lock_recovery_title">Choose Recovery Method</string>
-    <string name="app_lock_recovery_summary">You have failed to enter the PIN 12 times. Verify your identity or reset the app.</string>
+    <string name="app_lock_recovery_summary">You have failed to enter the PIN %1$d times. Verify your identity or reset the app.</string>
     <string name="app_lock_recovery_verify">Verify with Pixiv account</string>
     <string name="app_lock_recovery_reset">Reset app data</string>
+    <string name="app_lock_recovery_account_mismatch">The logged-in Pixiv account does not match. Please verify with the account that is currently locked.</string>
+    <string name="app_lock_recovery_reset_confirm_title">Reset app data?</string>
+    <string name="app_lock_recovery_reset_confirm_summary">Account information and app lock settings will be removed, returning the app to its initial state. This action cannot be undone.</string>
 
     <!-- Image settings screen -->
     <string name="image_settings_title">Image Settings</string>
