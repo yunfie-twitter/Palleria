@@ -67,6 +67,18 @@
     <string name="novel_reader_loading">本文を読み込んでいます…</string>
     <string name="novel_series_prev">前の話: %1$s</string>
     <string name="novel_series_next">次の話: %1$s</string>
+    <string name="novel_filter_all">すべて</string>
+    <string name="novel_filter_reading">読書中</string>
+    <string name="novel_filter_later">積読</string>
+    <string name="novel_filter_completed">読了</string>
+    <string name="novel_resume_reading">続きから (%1$d/%2$d)</string>
+    <string name="novel_status_reading">読書中</string>
+    <string name="novel_status_later">積読</string>
+    <string name="novel_status_completed">読了</string>
+    <string name="novel_status_unread">未読</string>
+    <string name="novel_series_section">シリーズ作品</string>
+    <string name="novel_series_prev_episode">前の話へ</string>
+    <string name="novel_series_next_episode">次の話へ</string>
 
     <!-- Enum labels -->
     <string name="feed_recommended">おすすめ</string>

@@ -33,7 +33,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun NovelCard(
     novel: NovelPreview,
+    progress: com.yunfie.illustia.models.NovelReadingProgress? = null,
     onClick: () -> Unit,
+    onStatusToggle: (() -> Unit)? = null,
 ) {
     ElevatedPanel(modifier = Modifier.fillMaxWidth().miuixClickable(onClick = onClick)) {
         Row(
@@ -97,9 +99,56 @@ internal fun NovelCard(
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     NovelMetaPill(text = stringResource(R.string.novel_page_count, novel.pageCount))
                     NovelMetaPill(text = stringResource(R.string.novel_bookmark_count, novel.totalBookmarks))
+                    if (progress != null && progress.status != com.yunfie.illustia.models.NovelReadingStatus.Unread) {
+                        val (statusText, statusBg, statusFg) =
+                            when (progress.status) {
+                                com.yunfie.illustia.models.NovelReadingStatus.Reading -> {
+                                    Triple(
+                                        if (progress.lastReadPage > 0) {
+                                            stringResource(R.string.novel_resume_reading, progress.lastReadPage + 1, progress.totalPages)
+                                        } else {
+                                            stringResource(R.string.novel_status_reading)
+                                        },
+                                        MiuixTheme.colorScheme.primaryContainer,
+                                        MiuixTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                }
+
+                                com.yunfie.illustia.models.NovelReadingStatus.Completed -> {
+                                    Triple(
+                                        stringResource(R.string.novel_status_completed),
+                                        MiuixTheme.colorScheme.primary,
+                                        MiuixTheme.colorScheme.onPrimary,
+                                    )
+                                }
+
+                                com.yunfie.illustia.models.NovelReadingStatus.Later -> {
+                                    Triple(
+                                        stringResource(R.string.novel_status_later),
+                                        MiuixTheme.colorScheme.secondaryContainer,
+                                        MiuixTheme.colorScheme.onSecondaryContainer,
+                                    )
+                                }
+
+                                com.yunfie.illustia.models.NovelReadingStatus.Unread -> {
+                                    Triple("", Color.Transparent, Color.Transparent)
+                                }
+                            }
+                        if (statusText.isNotEmpty()) {
+                            NovelMetaPill(
+                                text = statusText,
+                                backgroundColor = statusBg,
+                                textColor = statusFg,
+                                onClick = onStatusToggle,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -107,19 +156,31 @@ internal fun NovelCard(
 }
 
 @Composable
-internal fun NovelMetaPill(text: String) {
+internal fun NovelMetaPill(
+    text: String,
+    backgroundColor: Color = MiuixTheme.colorScheme.surfaceContainerHighest,
+    textColor: Color = MiuixTheme.colorScheme.onSurface,
+    onClick: (() -> Unit)? = null,
+) {
     Box(
         modifier =
             Modifier
                 .clip(RoundedCornerShape(999.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .background(backgroundColor)
+                .then(
+                    if (onClick != null) {
+                        Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onClick)
+                    } else {
+                        Modifier
+                    },
+                ).padding(horizontal = 10.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
+            color = textColor,
         )
     }
 }

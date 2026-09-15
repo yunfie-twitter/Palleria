@@ -28,3 +28,26 @@ data class NovelTextContent(
     val seriesNextId: Long?,
     val seriesNextTitle: String?,
 )
+
+enum class NovelReadingStatus(
+    val id: String,
+) {
+    Unread("unread"),
+    Reading("reading"),
+    Completed("completed"),
+    Later("later"),
+    ;
+
+    companion object {
+        fun fromId(id: String?): NovelReadingStatus = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: Unread
+    }
+}
+
+@Immutable
+data class NovelReadingProgress(
+    val novelId: Long,
+    val lastReadPage: Int = 0,
+    val totalPages: Int = 1,
+    val updatedAt: Long = 0L,
+    val status: NovelReadingStatus = NovelReadingStatus.Reading,
+)

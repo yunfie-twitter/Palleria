@@ -133,6 +133,7 @@ data class AppSettings(
     val novelLineSpacing: String = "normal",
     val novelTheme: String = "system",
     val novelLayoutMode: String = "paged",
+    val novelProgress: Map<Long, com.yunfie.illustia.models.NovelReadingProgress> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean
         get() = highQualityImages && feedPreviewQuality != "low"
