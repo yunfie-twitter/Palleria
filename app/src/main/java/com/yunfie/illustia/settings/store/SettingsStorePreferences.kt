@@ -174,6 +174,7 @@ internal fun readFromDataStore(
         novelLineSpacing = preferences[NOVEL_LINE_SPACING] ?: "normal",
         novelTheme = preferences[NOVEL_THEME] ?: "system",
         novelLayoutMode = preferences[NOVEL_LAYOUT_MODE] ?: "paged",
+        novelProgress = decodeNovelProgress(preferences[NOVEL_PROGRESS_RECORDS]),
     )
 }
 
@@ -452,6 +453,7 @@ internal fun writeToDataStore(
     preferences[NOVEL_LINE_SPACING] = settings.novelLineSpacing
     preferences[NOVEL_THEME] = settings.novelTheme
     preferences[NOVEL_LAYOUT_MODE] = settings.novelLayoutMode
+    preferences[NOVEL_PROGRESS_RECORDS] = encodeNovelProgress(settings.novelProgress)
 }
 
 internal fun writeSensitiveSettings(

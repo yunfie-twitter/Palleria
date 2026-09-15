@@ -68,6 +68,15 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
+private enum class NovelFilterTab(
+    val labelRes: Int,
+) {
+    All(R.string.novel_filter_all),
+    Reading(R.string.novel_filter_reading),
+    Later(R.string.novel_filter_later),
+    Completed(R.string.novel_filter_completed),
+}
+
 @Composable
 fun NovelScreen(
     items: List<NovelPreview>,
@@ -79,6 +88,33 @@ fun NovelScreen(
 ) {
     val gridState = remember { LazyGridState() }
     val scrollBehavior = MiuixScrollBehavior()
+    var selectedFilter by rememberSaveable { mutableStateOf(NovelFilterTab.All) }
+    val filteredItems =
+        remember(items, selectedFilter, settings.novelProgress) {
+            when (selectedFilter) {
+                NovelFilterTab.All -> {
+                    items
+                }
+
+                NovelFilterTab.Reading -> {
+                    items.filter {
+                        settings.novelProgress[it.id]?.status == com.yunfie.illustia.models.NovelReadingStatus.Reading
+                    }
+                }
+
+                NovelFilterTab.Later -> {
+                    items.filter {
+                        settings.novelProgress[it.id]?.status == com.yunfie.illustia.models.NovelReadingStatus.Later
+                    }
+                }
+
+                NovelFilterTab.Completed -> {
+                    items.filter {
+                        settings.novelProgress[it.id]?.status == com.yunfie.illustia.models.NovelReadingStatus.Completed
+                    }
+                }
+            }
+        }
     val prefetchUrls =
         remember(items) {
             items
@@ -143,20 +179,72 @@ fun NovelScreen(
                     ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (items.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        NovelFilterTab.entries.forEach { tab ->
+                            val isSelected = selectedFilter == tab
+                            NovelMetaPill(
+                                text = stringResource(tab.labelRes),
+                                backgroundColor =
+                                    if (isSelected) {
+                                        MiuixTheme.colorScheme.primary
+                                    } else {
+                                        MiuixTheme.colorScheme.surfaceContainerHighest
+                                    },
+                                textColor =
+                                    if (isSelected) {
+                                        MiuixTheme.colorScheme.onPrimary
+                                    } else {
+                                        MiuixTheme.colorScheme.onSurface
+                                    },
+                                onClick = { selectedFilter = tab },
+                            )
+                        }
+                    }
+                }
+                if (filteredItems.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
                 }
-                if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+                if (filteredItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.novel_empty))
                     }
                 }
 
-                gridItems(items, key = { it.id }, contentType = { "novel_card" }) { novel ->
-                    NovelCard(novel = novel, onClick = { viewModel.openNovel(novel) })
+                gridItems(filteredItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
+                    val progress = settings.novelProgress[novel.id]
+                    NovelCard(
+                        novel = novel,
+                        progress = progress,
+                        onClick = { viewModel.openNovel(novel) },
+                        onStatusToggle = {
+                            val next =
+                                when (progress?.status) {
+                                    com.yunfie.illustia.models.NovelReadingStatus.Reading -> {
+                                        com.yunfie.illustia.models.NovelReadingStatus.Later
+                                    }
+
+                                    com.yunfie.illustia.models.NovelReadingStatus.Later -> {
+                                        com.yunfie.illustia.models.NovelReadingStatus.Completed
+                                    }
+
+                                    com.yunfie.illustia.models.NovelReadingStatus.Completed -> {
+                                        com.yunfie.illustia.models.NovelReadingStatus.Unread
+                                    }
+
+                                    else -> {
+                                        com.yunfie.illustia.models.NovelReadingStatus.Reading
+                                    }
+                                }
+                            viewModel.setNovelReadingStatus(novel.id, next)
+                        },
+                    )
                 }
 
-                if (!settings.autoLoadMore && nextUrl != null) {
+                if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreNovels,
@@ -194,11 +282,27 @@ fun NovelReaderScreen(
                 .ifEmpty { listOf(NovelPage(emptyList())) }
         }
     val chapters = remember(pages) { extractChapters(pages) }
-    val pagerState = rememberPagerState(pageCount = { pages.size })
+    val initialPage =
+        remember(currentNovel.id, pages.size) {
+            val saved = settings.novelProgress[currentNovel.id]?.lastReadPage ?: 0
+            saved.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+        }
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pages.size })
     val continuousListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+
+    LaunchedEffect(currentNovel.id, pages.size) {
+        val saved = settings.novelProgress[currentNovel.id]?.lastReadPage ?: 0
+        if (saved > 0 && saved < pages.size) {
+            var targetIndex = 0
+            for (i in 0 until saved) {
+                targetIndex += 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
+            }
+            continuousListState.scrollToItem(targetIndex)
+        }
+    }
 
     val fontSize = settings.novelFontSize
     val lineSpacing = remember(settings.novelLineSpacing) { NovelLineSpacing.fromId(settings.novelLineSpacing) }
@@ -256,6 +360,16 @@ fun NovelReaderScreen(
             NovelLayoutMode.Paged -> pagerState.currentPage
             NovelLayoutMode.Scroll -> currentScrollPage
         }
+
+    LaunchedEffect(currentPage, pages.size) {
+        if (pages.isNotEmpty() && currentPage in pages.indices) {
+            viewModel.updateNovelProgress(
+                novelId = currentNovel.id,
+                page = currentPage,
+                totalPages = pages.size,
+            )
+        }
+    }
 
     fun jumpToPage(targetPage: Int) {
         if (targetPage in pages.indices) {
@@ -357,7 +471,10 @@ fun NovelReaderScreen(
                                 textColor = textColor,
                                 viewModel = viewModel,
                                 uriHandler = uriHandler,
+                                seriesNextId = text.seriesNextId,
+                                seriesNextTitle = text.seriesNextTitle,
                                 onJumpPage = ::jumpToPage,
+                                onOpenSeriesEpisode = { id, title -> viewModel.openNovelById(id, title) },
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 scrollBehavior = scrollBehavior,
                                 contentPadding = readerPadding,
@@ -374,7 +491,10 @@ fun NovelReaderScreen(
                             textColor = textColor,
                             viewModel = viewModel,
                             uriHandler = uriHandler,
+                            seriesNextId = text.seriesNextId,
+                            seriesNextTitle = text.seriesNextTitle,
                             onJumpPage = ::jumpToPage,
+                            onOpenSeriesEpisode = { id, title -> viewModel.openNovelById(id, title) },
                             onToggleControls = { controlsVisible = !controlsVisible },
                             scrollBehavior = scrollBehavior,
                             contentPadding = readerPadding,
@@ -407,7 +527,15 @@ fun NovelReaderScreen(
         currentPage = currentPage,
         pageCount = pages.size,
         chapters = chapters,
+        seriesPrevId = text?.seriesPrevId,
+        seriesPrevTitle = text?.seriesPrevTitle,
+        seriesNextId = text?.seriesNextId,
+        seriesNextTitle = text?.seriesNextTitle,
         onJumpPage = ::jumpToPage,
+        onOpenSeriesEpisode = { id, title ->
+            viewModel.openNovelById(id, title)
+            showTocSheet = false
+        },
         onDismiss = { showTocSheet = false },
     )
 

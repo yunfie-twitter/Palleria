@@ -62,6 +62,18 @@
     <string name="novel_reader_loading">Loading the text…</string>
     <string name="novel_series_prev">Previous: %1$s</string>
     <string name="novel_series_next">Next: %1$s</string>
+    <string name="novel_filter_all">All</string>
+    <string name="novel_filter_reading">Reading</string>
+    <string name="novel_filter_later">Read Later</string>
+    <string name="novel_filter_completed">Completed</string>
+    <string name="novel_resume_reading">Resume (%1$d/%2$d)</string>
+    <string name="novel_status_reading">Reading</string>
+    <string name="novel_status_later">Read Later</string>
+    <string name="novel_status_completed">Completed</string>
+    <string name="novel_status_unread">Unread</string>
+    <string name="novel_series_section">Series</string>
+    <string name="novel_series_prev_episode">Previous Episode</string>
+    <string name="novel_series_next_episode">Next Episode</string>
 
     <!-- Enum labels -->
     <string name="feed_recommended">Recommended</string>

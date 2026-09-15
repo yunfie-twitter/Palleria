@@ -170,7 +170,12 @@ internal fun NovelTocBottomSheet(
     currentPage: Int,
     pageCount: Int,
     chapters: List<NovelChapterInfo>,
+    seriesPrevId: Long? = null,
+    seriesPrevTitle: String? = null,
+    seriesNextId: Long? = null,
+    seriesNextTitle: String? = null,
     onJumpPage: (Int) -> Unit,
+    onOpenSeriesEpisode: ((Long, String) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     if (!show) return
@@ -185,6 +190,73 @@ internal fun NovelTocBottomSheet(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (seriesPrevId != null || seriesNextId != null) {
+                item {
+                    Text(
+                        text = stringResource(R.string.novel_series_section),
+                        style = MiuixTheme.textStyles.headline1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+                item {
+                    ElevatedPanel(contentPadding = PaddingValues(12.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (seriesPrevId != null) {
+                                Row(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .miuixClickable(
+                                                pressedScale = 0.98f,
+                                                haptic = true,
+                                                onClick = {
+                                                    onOpenSeriesEpisode?.invoke(seriesPrevId, seriesPrevTitle.orEmpty())
+                                                    onDismiss()
+                                                },
+                                            ).padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(MiuixIcons.Back, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Text(
+                                        text = stringResource(R.string.novel_series_prev, seriesPrevTitle.orEmpty()),
+                                        style = MiuixTheme.textStyles.body1,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+                            if (seriesPrevId != null && seriesNextId != null) {
+                                DividerLine()
+                            }
+                            if (seriesNextId != null) {
+                                Row(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .miuixClickable(
+                                                pressedScale = 0.98f,
+                                                haptic = true,
+                                                onClick = {
+                                                    onOpenSeriesEpisode?.invoke(seriesNextId, seriesNextTitle.orEmpty())
+                                                    onDismiss()
+                                                },
+                                            ).padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.novel_series_next, seriesNextTitle.orEmpty()),
+                                        style = MiuixTheme.textStyles.body1,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Icon(MiuixIcons.ChevronForward, contentDescription = null, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if (chapters.isNotEmpty()) {
                 item {
                     Text(
