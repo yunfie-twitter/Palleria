@@ -114,6 +114,7 @@ internal fun readFromDataStore(
         privateBookmarkDefault = preferences[PRIVATE_BOOKMARK_DEFAULT] ?: false,
         autoDownloadOnBookmark = preferences[AUTO_DOWNLOAD_ON_BOOKMARK] ?: false,
         autoBookmarkOnDownload = preferences[AUTO_BOOKMARK_ON_DOWNLOAD] ?: false,
+        duplicateSaveMode = preferences[DUPLICATE_SAVE_MODE] ?: "skip",
         downloadFolderByArtist = preferences[DOWNLOAD_FOLDER_BY_ARTIST] ?: true,
         downloadFolderByWork = preferences[DOWNLOAD_FOLDER_BY_WORK] ?: true,
         autoTagOnBookmark = preferences[AUTO_TAG_ON_BOOKMARK] ?: false,
@@ -270,6 +271,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         privateBookmarkDefault = preferences.getBoolean("privateBookmarkDefault", false),
         autoDownloadOnBookmark = preferences.getBoolean("autoDownloadOnBookmark", false),
         autoBookmarkOnDownload = preferences.getBoolean("autoBookmarkOnDownload", false),
+        duplicateSaveMode = preferences.getString(KEY_DUPLICATE_SAVE_MODE, "skip") ?: "skip",
         downloadFolderByArtist = preferences.getBoolean("downloadFolderByArtist", true),
         downloadFolderByWork = preferences.getBoolean("downloadFolderByWork", true),
         autoTagOnBookmark = preferences.getBoolean("autoTagOnBookmark", false),
@@ -395,6 +397,7 @@ internal fun writeToDataStore(
     preferences[PRIVATE_BOOKMARK_DEFAULT] = settings.privateBookmarkDefault
     preferences[AUTO_DOWNLOAD_ON_BOOKMARK] = settings.autoDownloadOnBookmark
     preferences[AUTO_BOOKMARK_ON_DOWNLOAD] = settings.autoBookmarkOnDownload
+    preferences[DUPLICATE_SAVE_MODE] = settings.duplicateSaveMode
     preferences[DOWNLOAD_FOLDER_BY_ARTIST] = settings.downloadFolderByArtist
     preferences[DOWNLOAD_FOLDER_BY_WORK] = settings.downloadFolderByWork
     preferences[AUTO_TAG_ON_BOOKMARK] = settings.autoTagOnBookmark

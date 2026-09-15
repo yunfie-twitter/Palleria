@@ -50,17 +50,17 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 val currentIllust = resolveDownloadIllust(filename)
                 val targetName = buildDownloadPath(filename, currentIllust)
-                if (currentIllust?.type == "ugoira") {
-                    downloadUgoiraToGallery(currentIllust, targetName)
-                } else {
-                    downloadImageToGallery(url, targetName)
-                }
-                if (shouldAutoBookmark(currentIllust, url)) {
-                    val settings = _uiState.value.settings
-                    val restrict = if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
-                    val updated = repository.toggleBookmark(currentIllust!!, restrict)
-                    updateIllustEverywhere(updated)
-                }
+                val checkUrl = resolveCheckUrl(url, currentIllust)
+                val (finalName, clearOld) =
+                    resolveDuplicateTarget(targetName, checkUrl, _uiState.value.settings.duplicateSaveMode)
+                        ?: run {
+                            terminalStatus = DownloadQueueStatus.Skipped
+                            _uiState.update {
+                                it.copy(loadState = LoadState.Loaded, message = str(R.string.msg_save_skipped_duplicate))
+                            }
+                            return@launch
+                        }
+                executeGalleryDownload(currentIllust, url, finalName, clearOld)
                 terminalStatus = DownloadQueueStatus.Completed
                 _uiState.update { it.copy(loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
@@ -75,6 +75,63 @@ abstract class IllustiaLibraryNavigationModule(
                 terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
                 releaseDownloadSlot()
             }
+        }
+    }
+
+    private fun resolveCheckUrl(
+        url: String,
+        illust: Illust?,
+    ): String =
+        if (illust?.type == "ugoira") {
+            "https://www.pixiv.net/artworks/${illust.id}.gif"
+        } else {
+            proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
+        }
+
+    private fun resolveDuplicateTarget(
+        targetName: String,
+        checkUrl: String,
+        mode: String,
+    ): Pair<String, Boolean>? {
+        if (!imageStore.exists(targetName, checkUrl)) {
+            return targetName to false
+        }
+        return when (mode) {
+            "overwrite" -> targetName to true
+            "always" -> findUniqueTargetName(targetName, checkUrl) to false
+            else -> null
+        }
+    }
+
+    private fun findUniqueTargetName(
+        targetName: String,
+        checkUrl: String,
+    ): String {
+        var counter = 1
+        var candidate = "${targetName}_$counter"
+        while (imageStore.exists(candidate, checkUrl)) {
+            counter++
+            candidate = "${targetName}_$counter"
+        }
+        return candidate
+    }
+
+    private suspend fun executeGalleryDownload(
+        illust: Illust?,
+        url: String,
+        targetName: String,
+        clearOld: Boolean,
+    ) {
+        if (illust?.type == "ugoira") {
+            downloadUgoiraToGallery(illust, targetName, clearOld)
+        } else {
+            downloadImageToGallery(url, targetName, clearOld)
+        }
+        if (shouldAutoBookmark(illust, url)) {
+            val settings = _uiState.value.settings
+            val restrict = if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
+            val updated = repository.toggleBookmark(illust!!, restrict)
+            updateIllustEverywhere(updated)
         }
     }
 
@@ -333,6 +390,7 @@ abstract class IllustiaLibraryNavigationModule(
     private fun downloadImageToGallery(
         url: String,
         filename: String,
+        clearOld: Boolean = false,
     ) {
         val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
         val request =
@@ -352,6 +410,7 @@ abstract class IllustiaLibraryNavigationModule(
                 name = filename,
                 sourceUrl = requestUrl,
                 responseMimeType = body.contentType()?.toString(),
+                clearOld = clearOld,
             )
         }
     }
@@ -359,6 +418,7 @@ abstract class IllustiaLibraryNavigationModule(
     private suspend fun downloadUgoiraToGallery(
         illust: Illust,
         filename: String,
+        clearOld: Boolean = false,
     ) {
         val playback = loadUgoiraPlayback(illust.id)
         if (playback.frames.isEmpty()) {
@@ -376,6 +436,7 @@ abstract class IllustiaLibraryNavigationModule(
                     name = filename,
                     sourceUrl = "https://www.pixiv.net/artworks/${illust.id}.gif",
                     responseMimeType = "image/gif",
+                    clearOld = clearOld,
                 )
             }
         } finally {

@@ -143,6 +143,7 @@ enum class DownloadQueueStatus {
     Waiting,
     Downloading,
     Completed,
+    Skipped,
     Failed,
 }
 

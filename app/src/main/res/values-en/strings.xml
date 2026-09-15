@@ -190,6 +190,7 @@
     <string name="download_queue_waiting">Waiting</string>
     <string name="download_queue_downloading">Downloading</string>
     <string name="download_queue_completed">Download Complete</string>
+    <string name="download_queue_skipped">Skipped</string>
     <string name="download_queue_failed">Download Failed</string>
     <string name="download_queue_section_downloading">Downloading</string>
     <string name="download_queue_section_completed">Completed</string>
@@ -356,6 +357,12 @@
     <string name="image_download_folder_by_work_desc">Automatically create a work folder when saving</string>
     <string name="image_default_save_location">Default save location</string>
     <string name="image_default_save_location_fallback">Pictures/Palleria</string>
+    <string name="image_duplicate_save_mode">Duplicate save action</string>
+    <string name="image_duplicate_save_mode_desc">Action to take when an image is already saved</string>
+    <string name="image_duplicate_mode_skip">Skip (Recommended)</string>
+    <string name="image_duplicate_mode_overwrite">Overwrite</string>
+    <string name="image_duplicate_mode_always">Always save copy</string>
+    <string name="msg_save_skipped_duplicate">Skipped because image already exists</string>
     <string name="offline_wifi_only">Save only on Wi-Fi</string>
     <string name="offline_wifi_only_desc">Do not save while on mobile data.</string>
     <string name="offline_capacity_limit">Storage limit</string>

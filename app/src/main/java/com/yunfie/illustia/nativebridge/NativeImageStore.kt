@@ -54,12 +54,22 @@ class NativeImageStore(
         sourceUrl: String = "",
     ): Boolean {
         val displayName = if (sourceUrl.isBlank()) name else name.withImageExtension(sourceUrl, null)
-        return when (saveMode()) {
+        val hasDirectMatch = checkExists(displayName)
+        val hasAltMatch =
+            !hasDirectMatch && sourceUrl.isNotBlank() && !name.substringAfterLast('/').contains('.') &&
+                SUPPORTED_EXTENSIONS.any { ext ->
+                    val altName = "$name.$ext"
+                    altName != displayName && checkExists(altName)
+                }
+        return hasDirectMatch || hasAltMatch
+    }
+
+    private fun checkExists(displayName: String): Boolean =
+        when (saveMode()) {
             SAVE_MODE_SAF -> existsInTree(displayName)
             SAVE_MODE_DIRECT -> File(baseDirectPath(), displayName).exists()
             else -> existsInMediaStore(displayName)
         }
-    }
 
     fun currentPath(): String? =
         when (saveMode()) {
@@ -339,6 +349,9 @@ class NativeImageStore(
         if (clearOld && displayName.contains("_p0")) {
             File(baseDirectPath(), displayName.replace("_p0", "")).delete()
         }
+        if (clearOld && target.exists()) {
+            target.delete()
+        }
         target.outputStream().use { output ->
             input.use { it.copyTo(output) }
         }
@@ -367,10 +380,12 @@ class NativeImageStore(
 
     private fun existsInTree(displayName: String): Boolean {
         val tree = writableTree() ?: return false
-        val treeId = DocumentsContract.getTreeDocumentId(tree.uri)
-        val fileId = if (treeId.endsWith(":")) "$treeId$displayName" else "$treeId/$displayName"
-        val uri = DocumentsContract.buildDocumentUriUsingTree(tree.uri, fileId)
-        return DocumentFile.fromSingleUri(context, uri)?.exists() == true
+        val names = displayName.split('/').filter { it.isNotBlank() }
+        val parent =
+            names.dropLast(1).fold<String, DocumentFile?>(tree) { dir, segment ->
+                dir?.findFile(segment)?.takeIf { it.isDirectory }
+            }
+        return names.lastOrNull()?.let { fileName -> parent?.findFile(fileName)?.exists() } == true
     }
 
     private fun deleteOldMediaStoreEntry(
