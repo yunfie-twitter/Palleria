@@ -531,29 +531,15 @@ internal fun UserProfileSmallTopAppBar(
                 backgroundColor = buttonBgColor,
                 contentColor = buttonContentColor,
             )
-            Box(
+            TopBarTitle(
+                visible = compact,
+                title = shareTitle,
+                onTitleClick = onTitleClick,
                 modifier =
                     Modifier
                         .weight(1f)
                         .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                AnimatedVisibility(
-                    visible = compact,
-                    enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { -it / 2 },
-                    exit = fadeOut(tween(160)) + slideOutVertically(tween(160)) { -it / 2 },
-                ) {
-                    Text(
-                        text = shareTitle,
-                        modifier = Modifier.miuixClickable(onClick = onTitleClick),
-                        color = MiuixTheme.colorScheme.onBackground,
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            )
             Box {
                 HeaderOverlayIcon(
                     icon = MiuixIcons.More,
@@ -567,6 +553,35 @@ internal fun UserProfileSmallTopAppBar(
                     onDismissRequest = { showMoreMenu = false },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TopBarTitle(
+    visible: Boolean,
+    title: String,
+    onTitleClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { -it / 2 },
+            exit = fadeOut(tween(160)) + slideOutVertically(tween(160)) { -it / 2 },
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.miuixClickable(onClick = onTitleClick),
+                color = MiuixTheme.colorScheme.onBackground,
+                style = MiuixTheme.textStyles.title4,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
