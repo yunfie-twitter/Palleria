@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.BookmarkChromeState
@@ -31,17 +33,18 @@ import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal enum class FollowingUserSort {
@@ -62,6 +65,7 @@ fun BookmarkScreen(
     onOpenWatchlistSeries: (Long) -> Unit,
 ) {
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
+    var showSortPopup by remember { mutableStateOf(false) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val watchlistStore = remember(repository) { WatchlistStore(repository) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
@@ -122,12 +126,8 @@ fun BookmarkScreen(
                 .background(MiuixTheme.colorScheme.surface),
     ) {
         TopAppBar(
-            title =
-                androidx.compose.ui.res
-                    .stringResource(R.string.nav_bookmarks_full),
-            largeTitle =
-                androidx.compose.ui.res
-                    .stringResource(R.string.nav_bookmarks_full),
+            title = stringResource(R.string.nav_bookmarks_full),
+            largeTitle = stringResource(R.string.nav_bookmarks_full),
             scrollBehavior = scrollBehavior,
             actions = {
                 if (selectedTopTab == 1) {
@@ -146,41 +146,45 @@ fun BookmarkScreen(
                     )
                 }
                 if (selectedTopTab == 3) {
-                    val newestLabel =
-                        androidx.compose.ui.res
-                            .stringResource(R.string.sort_date_desc)
-                    val oldestLabel =
-                        androidx.compose.ui.res
-                            .stringResource(R.string.sort_date_asc)
-                    val nameLabel =
-                        androidx.compose.ui.res
-                            .stringResource(R.string.sort_name_asc)
-                    WindowIconDropdownMenu(
-                        entry =
-                            DropdownEntry(
-                                items =
-                                    listOf(
-                                        DropdownItem(
-                                            text = if (followingUserSort == FollowingUserSort.Newest) "✓ $newestLabel" else newestLabel,
-                                            onClick = { followingUserSort = FollowingUserSort.Newest },
-                                        ),
-                                        DropdownItem(
-                                            text = if (followingUserSort == FollowingUserSort.Oldest) "✓ $oldestLabel" else oldestLabel,
-                                            onClick = { followingUserSort = FollowingUserSort.Oldest },
-                                        ),
-                                        DropdownItem(
-                                            text = if (followingUserSort == FollowingUserSort.Name) "✓ $nameLabel" else nameLabel,
-                                            onClick = { followingUserSort = FollowingUserSort.Name },
-                                        ),
-                                    ),
-                            ),
-                    ) {
-                        Icon(
-                            MiuixIcons.Filter,
-                            contentDescription =
-                                androidx.compose.ui.res
-                                    .stringResource(R.string.action_sort),
+                    val sortOptions =
+                        listOf(
+                            stringResource(R.string.sort_date_desc),
+                            stringResource(R.string.sort_date_asc),
+                            stringResource(R.string.sort_name_asc),
                         )
+                    Box {
+                        IconButton(
+                            onClick = {
+                                performAppHapticFeedback(context, haptic, hapticMode)
+                                showSortPopup = true
+                            },
+                        ) {
+                            Icon(
+                                MiuixIcons.Filter,
+                                contentDescription = stringResource(R.string.action_sort),
+                            )
+                        }
+                        OverlayListPopup(
+                            show = showSortPopup,
+                            alignment = PopupPositionProvider.Align.TopEnd,
+                            onDismissRequest = { showSortPopup = false },
+                        ) {
+                            ListPopupColumn {
+                                sortOptions.forEachIndexed { index, string ->
+                                    DropdownImpl(
+                                        text = string,
+                                        optionSize = sortOptions.size,
+                                        isSelected = followingUserSort.ordinal == index,
+                                        index = index,
+                                        onSelectedIndexChange = {
+                                            performAppHapticFeedback(context, haptic, hapticMode)
+                                            followingUserSort = FollowingUserSort.entries[index]
+                                            showSortPopup = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 IconButton(onClick = {
