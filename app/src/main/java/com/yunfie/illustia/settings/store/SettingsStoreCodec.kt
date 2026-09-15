@@ -211,3 +211,43 @@ internal fun String.decodeBase64Field(): String =
     runCatching {
         String(Base64.decode(this, Base64.URL_SAFE or Base64.NO_WRAP))
     }.getOrDefault("")
+
+internal fun encodeNovelProgress(progressMap: Map<Long, com.yunfie.illustia.models.NovelReadingProgress>): String {
+    val array = JSONArray()
+    progressMap.values.forEach { progress ->
+        val obj =
+            JSONObject().apply {
+                put("novelId", progress.novelId)
+                put("lastReadPage", progress.lastReadPage)
+                put("totalPages", progress.totalPages)
+                put("updatedAt", progress.updatedAt)
+                put("status", progress.status.id)
+            }
+        array.put(obj)
+    }
+    return array.toString()
+}
+
+internal fun decodeNovelProgress(value: String?): Map<Long, com.yunfie.illustia.models.NovelReadingProgress> {
+    if (value.isNullOrBlank()) return emptyMap()
+    return runCatching {
+        val array = JSONArray(value)
+        (0 until array.length())
+            .mapNotNull { i ->
+                val obj = array.optJSONObject(i) ?: return@mapNotNull null
+                val id = obj.optLong("novelId", 0L)
+                if (id <= 0L) return@mapNotNull null
+                val status =
+                    com.yunfie.illustia.models.NovelReadingStatus
+                        .fromId(obj.optString("status"))
+                id to
+                    com.yunfie.illustia.models.NovelReadingProgress(
+                        novelId = id,
+                        lastReadPage = obj.optInt("lastReadPage", 0),
+                        totalPages = obj.optInt("totalPages", 1),
+                        updatedAt = obj.optLong("updatedAt", 0L),
+                        status = status,
+                    )
+            }.toMap()
+    }.getOrDefault(emptyMap())
+}
