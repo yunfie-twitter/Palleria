@@ -779,6 +779,12 @@
     <string name="novel_layout_mode">Reading Mode</string>
     <string name="novel_layout_paged">Paged</string>
     <string name="novel_layout_scroll">Continuous Scroll</string>
+    <string name="novel_layout_vertical">Vertical</string>
+    <string name="novel_font_family">Font</string>
+    <string name="novel_font_system">System</string>
+    <string name="novel_font_serif">Mincho (Serif)</string>
+    <string name="novel_font_sans_serif">Gothic (Sans-serif)</string>
+    <string name="novel_inline_illust_label">Illustration (ID: %1$d)</string>
     <string name="novel_open_illust">View artwork</string>
     <string name="nav_shorts_feed">Shorts</string>
     <string name="general_shorts_feed">Shorts Feed</string>

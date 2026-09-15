@@ -131,6 +131,7 @@ data class AppSettings(
     val novelLineSpacing: String = "normal",
     val novelTheme: String = "system",
     val novelLayoutMode: String = "paged",
+    val novelFontFamily: String = "system",
 ) {
     val useHighQualityFeedImages: Boolean
         get() = highQualityImages && feedPreviewQuality != "low"

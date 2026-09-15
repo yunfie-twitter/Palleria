@@ -721,6 +721,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(novelLayoutMode = value) }
     }
 
+    fun updateNovelFontFamily(value: String) {
+        updateSettings { it.copy(novelFontFamily = value) }
+    }
+
     fun updateSmartCacheEnabled(value: Boolean) {
         updateSettings { it.copy(smartCacheEnabled = value) }
     }

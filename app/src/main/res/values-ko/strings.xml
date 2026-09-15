@@ -61,6 +61,13 @@
     <string name="novel_reader_loading">본문 불러오는 중…</string>
     <string name="novel_series_prev">이전: %1$s</string>
     <string name="novel_series_next">다음: %1$s</string>
+    <string name="novel_series_next_episode">다음 에피소드</string>
+    <string name="novel_layout_vertical">세로쓰기</string>
+    <string name="novel_font_family">글꼴</string>
+    <string name="novel_font_system">시스템</string>
+    <string name="novel_font_serif">명조체</string>
+    <string name="novel_font_sans_serif">고딕체</string>
+    <string name="novel_inline_illust_label">삽화 (ID: %1$d)</string>
 
     <!-- Enum labels -->
     <string name="feed_recommended">추천</string>
