@@ -116,6 +116,7 @@ internal fun readFromDataStore(
         downloadFolderByArtist = preferences[DOWNLOAD_FOLDER_BY_ARTIST] ?: true,
         downloadFolderByWork = preferences[DOWNLOAD_FOLDER_BY_WORK] ?: true,
         autoTagOnBookmark = preferences[AUTO_TAG_ON_BOOKMARK] ?: false,
+        ugoiraSaveFormat = preferences[UGOIRA_SAVE_FORMAT] ?: "mp4",
         simultaneousDownloads = preferences[SIMULTANEOUS_DOWNLOADS] ?: 2,
         offlineWifiOnly = preferences[OFFLINE_WIFI_ONLY] ?: true,
         offlineStorageLimitBytes = preferences[OFFLINE_STORAGE_LIMIT_BYTES] ?: DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES,
@@ -271,6 +272,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         downloadFolderByArtist = preferences.getBoolean("downloadFolderByArtist", true),
         downloadFolderByWork = preferences.getBoolean("downloadFolderByWork", true),
         autoTagOnBookmark = preferences.getBoolean("autoTagOnBookmark", false),
+        ugoiraSaveFormat = preferences.getString("ugoiraSaveFormat", "mp4") ?: "mp4",
         simultaneousDownloads = preferences.getInt("simultaneousDownloads", 2),
         offlineWifiOnly = preferences.getBoolean("offlineWifiOnly", true),
         offlineStorageLimitBytes = preferences.getLong("offlineStorageLimitBytes", DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES),
@@ -395,6 +397,7 @@ internal fun writeToDataStore(
     preferences[DOWNLOAD_FOLDER_BY_ARTIST] = settings.downloadFolderByArtist
     preferences[DOWNLOAD_FOLDER_BY_WORK] = settings.downloadFolderByWork
     preferences[AUTO_TAG_ON_BOOKMARK] = settings.autoTagOnBookmark
+    preferences[UGOIRA_SAVE_FORMAT] = settings.ugoiraSaveFormat
     preferences[SIMULTANEOUS_DOWNLOADS] = settings.simultaneousDownloads
     preferences[OFFLINE_WIFI_ONLY] = settings.offlineWifiOnly
     preferences[OFFLINE_STORAGE_LIMIT_BYTES] = settings.offlineStorageLimitBytes

@@ -681,6 +681,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(autoTagOnBookmark = value) }
     }
 
+    fun updateUgoiraSaveFormat(value: String) {
+        updateSettings { it.copy(ugoiraSaveFormat = value) }
+    }
+
     fun updateSimultaneousDownloads(value: Int) {
         updateSettings { it.copy(simultaneousDownloads = value.coerceIn(1, 4)) }
     }
