@@ -120,6 +120,9 @@ class IllustiaApplication : Application() {
                     pallaSyncCoordinator.recoverInterruptedActivation()
                 }.getOrDefault(false)
             val settings = repository.readSettings()
+            withContext(Dispatchers.Main.immediate) {
+                setTelemetryEnabled(settings.sendTelemetry)
+            }
             PalleriaAccount.reconcile(appContext, settings.accounts)
             launch {
                 delay(WIDGET_PREVIEW_DELAY_MILLIS)
