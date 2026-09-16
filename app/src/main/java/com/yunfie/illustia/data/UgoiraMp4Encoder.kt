@@ -31,6 +31,8 @@ object UgoiraMp4Encoder {
     private const val TIMEOUT_US = 10_000L
     private const val I_FRAME_INTERVAL_SEC = 1
     private const val MIN_VIDEO_DURATION_MS = 2_000L
+    private const val MAX_DEQUEUE_ATTEMPTS = 50
+    private const val MAX_EOS_DRAIN_ATTEMPTS = 50
 
     fun encode(
         frames: List<UgoiraPlaybackFrame>,
@@ -90,6 +92,18 @@ object UgoiraMp4Encoder {
 
         try {
             var currentPtsUs = 0L
+            val drain: () -> Unit = {
+                drainEncoder(
+                    codec = codec,
+                    muxer = muxer,
+                    bufferInfo = bufferInfo,
+                    getMuxerStarted = { muxerStarted },
+                    setMuxerStarted = { muxerStarted = it },
+                    getVideoTrack = { videoTrackIndex },
+                    setVideoTrack = { videoTrackIndex = it },
+                    endOfStream = false,
+                )
+            }
 
             for (loop in 0 until loopCount) {
                 for (frame in frames) {
@@ -100,23 +114,22 @@ object UgoiraMp4Encoder {
                     bitmap.getPixels(pixels, 0, targetWidth, 0, 0, targetWidth, targetHeight)
                     bitmap.recycle()
 
-                    feedFrameToEncoder(codec, pixels, targetWidth, targetHeight, colorFormat, currentPtsUs)
-                    drainEncoder(
+                    feedFrameToEncoder(
                         codec = codec,
-                        muxer = muxer,
-                        bufferInfo = bufferInfo,
-                        getMuxerStarted = { muxerStarted },
-                        setMuxerStarted = { muxerStarted = it },
-                        getVideoTrack = { videoTrackIndex },
-                        setVideoTrack = { videoTrackIndex = it },
-                        endOfStream = false,
+                        pixels = pixels,
+                        width = targetWidth,
+                        height = targetHeight,
+                        colorFormat = colorFormat,
+                        ptsUs = currentPtsUs,
+                        onDrain = drain,
                     )
+                    drain()
 
                     currentPtsUs += frameDurationUs
                 }
             }
 
-            signalEndOfStream(codec, currentPtsUs)
+            signalEndOfStream(codec, currentPtsUs, drain)
             drainEncoder(
                 codec = codec,
                 muxer = muxer,
@@ -180,10 +193,19 @@ object UgoiraMp4Encoder {
         height: Int,
         colorFormat: Int,
         ptsUs: Long,
+        onDrain: () -> Unit,
     ) {
         var inputIndex = -1
+        var attempts = 0
         while (inputIndex < 0) {
             inputIndex = codec.dequeueInputBuffer(TIMEOUT_US)
+            if (inputIndex < 0) {
+                onDrain()
+                attempts++
+                if (attempts >= MAX_DEQUEUE_ATTEMPTS) {
+                    error("Timeout waiting for encoder input buffer")
+                }
+            }
         }
 
         val inputImage = runCatching { codec.getInputImage(inputIndex) }.getOrNull()
@@ -207,10 +229,19 @@ object UgoiraMp4Encoder {
     private fun signalEndOfStream(
         codec: MediaCodec,
         ptsUs: Long,
+        onDrain: () -> Unit,
     ) {
         var inputIndex = -1
+        var attempts = 0
         while (inputIndex < 0) {
             inputIndex = codec.dequeueInputBuffer(TIMEOUT_US)
+            if (inputIndex < 0) {
+                onDrain()
+                attempts++
+                if (attempts >= MAX_DEQUEUE_ATTEMPTS) {
+                    error("Timeout waiting for encoder input buffer for EOS")
+                }
+            }
         }
         codec.queueInputBuffer(inputIndex, 0, 0, ptsUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
     }
@@ -225,11 +256,14 @@ object UgoiraMp4Encoder {
         setVideoTrack: (Int) -> Unit,
         endOfStream: Boolean,
     ) {
+        var eosAttempts = 0
         while (true) {
             val outputIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
             when {
                 outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> {
                     if (!endOfStream) break
+                    eosAttempts++
+                    if (eosAttempts >= MAX_EOS_DRAIN_ATTEMPTS) break
                 }
 
                 outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {

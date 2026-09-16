@@ -129,10 +129,10 @@ abstract class IllustiaLibraryNavigationModule(
         } else {
             downloadImageToGallery(url, targetName, clearOld)
         }
-        if (shouldAutoBookmark(illust, url)) {
+        if (illust != null && shouldAutoBookmark(illust, url)) {
             val settings = _uiState.value.settings
             val restrict = if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
-            val updated = repository.toggleBookmark(illust!!, restrict)
+            val updated = repository.toggleBookmark(illust, restrict)
             updateIllustEverywhere(updated)
         }
     }

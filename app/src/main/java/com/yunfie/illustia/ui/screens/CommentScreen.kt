@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -129,7 +129,10 @@ fun CommentScreen(
                     if (state.comments.isEmpty() && !state.isLoading) {
                         item { EmptyState(stringResource(R.string.detail_comments)) }
                     }
-                    items(state.comments, key = { it.id ?: it.hashCode().toLong() }) { comment ->
+                    itemsIndexed(
+                        items = state.comments,
+                        key = { index, comment -> comment.id ?: "comment_$index" },
+                    ) { _, comment ->
                         CommentRow(
                             comment = comment,
                             onOpenUser = comment.user?.id?.let { userId -> { onOpenUser(userId) } },
