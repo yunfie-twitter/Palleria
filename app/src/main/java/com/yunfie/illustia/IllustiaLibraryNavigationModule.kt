@@ -572,6 +572,10 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.DiscordLogin)
     }
 
+    fun openWallpaperPlaylistSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.WallpaperPlaylistSettings)
+    }
+
     fun openPallaSyncDevices() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.PallaSyncDevices)
     }

@@ -401,6 +401,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.UpdateSettings -> AppRoute.UpdateSettings
                     IllustiaNavigationRequest.DiscordSettings -> AppRoute.DiscordSettings
                     IllustiaNavigationRequest.DiscordLogin -> AppRoute.DiscordLogin
+                    IllustiaNavigationRequest.WallpaperPlaylistSettings -> AppRoute.WallpaperPlaylistSettings
                 },
             )
         }

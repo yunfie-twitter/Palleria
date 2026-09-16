@@ -59,6 +59,7 @@ import com.yunfie.illustia.ui.screens.SettingsScreen
 import com.yunfie.illustia.ui.screens.UpdateSettingsScreen
 import com.yunfie.illustia.ui.screens.UserProfileScreen
 import com.yunfie.illustia.ui.screens.ViewHistoryScreen
+import com.yunfie.illustia.ui.screens.WallpaperPlaylistSettingsScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -302,7 +303,19 @@ internal fun AppNavHost(
                 ExperimentalSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ImageSettings) {
-                ImageSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                ImageSettingsScreen(
+                    state = appState.state,
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                    onOpenWallpaperPlaylistSettings = { onNavigate(AppRoute.WallpaperPlaylistSettings) },
+                )
+            }
+            entry(AppRoute.WallpaperPlaylistSettings) {
+                WallpaperPlaylistSettingsScreen(
+                    state = appState.state,
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                )
             }
             entry(AppRoute.BookmarkSettings) {
                 BookmarkSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)

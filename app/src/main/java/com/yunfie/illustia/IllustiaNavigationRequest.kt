@@ -29,4 +29,5 @@ enum class IllustiaNavigationRequest {
     UpdateSettings,
     DiscordSettings,
     DiscordLogin,
+    WallpaperPlaylistSettings,
 }
