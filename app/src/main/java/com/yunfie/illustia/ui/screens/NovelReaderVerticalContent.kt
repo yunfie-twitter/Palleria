@@ -168,6 +168,7 @@ internal object NovelVerticalEngine {
         paragraph: NovelParagraphBlock,
         maxChars: Int,
     ): List<List<NovelVerticalToken>> {
+        val effectiveMaxChars = maxChars.coerceIn(VERTICAL_MIN_CHARS, VERTICAL_MAX_CHARS)
         val tokens = mutableListOf<NovelVerticalToken>()
         paragraph.items.forEach { item ->
             appendTokens(item, tokens)
@@ -182,8 +183,8 @@ internal object NovelVerticalEngine {
             val weight = tokenWeight(token)
             val isForbidden = isLineStartForbidden(token)
 
-            if (currentWeight + weight > maxChars && currentColumn.isNotEmpty()) {
-                if (isForbidden && currentWeight <= maxChars + 1) {
+            if (currentWeight + weight > effectiveMaxChars && currentColumn.isNotEmpty()) {
+                if (isForbidden && currentWeight <= effectiveMaxChars + 1) {
                     currentColumn.add(token)
                     columns.add(currentColumn)
                     currentColumn = mutableListOf()
@@ -285,7 +286,7 @@ internal fun NovelReaderVerticalPage(
                 ).padding(contentPadding),
     ) {
         val availableHeight = (maxHeight - 24.dp).coerceAtLeast(100.dp)
-        val charHeight = (fontSize * lineHeightMultiplier).dp
+        val charHeight = (fontSize.coerceAtLeast(8f) * lineHeightMultiplier.coerceAtLeast(0.5f)).dp
         val maxChars = (availableHeight / charHeight).toInt().coerceIn(VERTICAL_MIN_CHARS, VERTICAL_MAX_CHARS)
 
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {

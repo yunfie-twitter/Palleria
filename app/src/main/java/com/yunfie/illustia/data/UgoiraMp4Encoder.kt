@@ -72,7 +72,8 @@ object UgoiraMp4Encoder {
         val colorFormat = selectColorFormat(codec.codecInfo, MIME_TYPE)
 
         val bitRate = (targetWidth * targetHeight * 4).coerceIn(1_000_000, 12_000_000)
-        val estimatedFps = (1000.0 / (totalCycleMs.toDouble() / frames.size)).roundToInt().coerceIn(1, 60)
+        val averageDelayMs = (totalCycleMs.toDouble() / frames.size.coerceAtLeast(1)).coerceAtLeast(10.0)
+        val estimatedFps = (1000.0 / averageDelayMs).roundToInt().coerceIn(1, 60)
 
         val format =
             MediaFormat.createVideoFormat(MIME_TYPE, targetWidth, targetHeight).apply {

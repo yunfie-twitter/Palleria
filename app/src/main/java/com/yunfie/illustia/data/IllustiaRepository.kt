@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data
 
+import com.yunfie.illustia.isCancellationFailure
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NetworkMode
@@ -81,6 +82,7 @@ class IllustiaRepository(
             apiCache.put(key, result, ttlMillis = ttlMillis)
             result
         } catch (expectedFailure: Exception) {
+            if (expectedFailure.isCancellationFailure()) throw expectedFailure
             val error = expectedFailure
             val fallback =
                 if (error.isPixivRateLimited() || error.isTransientConnectionIssue()) {
@@ -602,6 +604,7 @@ class IllustiaRepository(
             try {
                 return block(activeSession)
             } catch (expectedFailure: Exception) {
+                if (expectedFailure.isCancellationFailure()) throw expectedFailure
                 val error = expectedFailure
                 when {
                     error.isPixivAuthExpired() -> {

@@ -32,10 +32,19 @@ internal fun String.withImageExtension(
             "image/jpeg", "image/jpg" -> "jpg"
             "image/webp" -> "webp"
             "image/gif" -> "gif"
-            else -> sourceUrl.substringAfterLast('.', "").takeIf { it.length in 2..5 }
+            else -> sourceUrl.extractUrlExtension()
         }
     return extension?.takeIf(String::isNotBlank)?.let { "$this.$it" } ?: this
 }
+
+private const val MIN_EXTENSION_LENGTH = 2
+private const val MAX_EXTENSION_LENGTH = 5
+
+private fun String.extractUrlExtension(): String? =
+    substringBefore('?')
+        .substringBefore('#')
+        .substringAfterLast('.', "")
+        .takeIf { it.length in MIN_EXTENSION_LENGTH..MAX_EXTENSION_LENGTH }
 
 internal fun extractIllustId(filename: String): Long? =
     ILLUST_ID_PATTERN
