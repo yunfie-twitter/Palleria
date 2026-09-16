@@ -263,7 +263,7 @@ object UgoiraMp4Encoder {
                 outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> {
                     if (!endOfStream) break
                     eosAttempts++
-                    if (eosAttempts >= MAX_EOS_DRAIN_ATTEMPTS) break
+                    if (eosAttempts >= MAX_EOS_DRAIN_ATTEMPTS) error("Timeout draining encoder after end of stream")
                 }
 
                 outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
