@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id "com.android.application"
     id "androidx.baselineprofile"
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     id "org.jetbrains.kotlin.plugin.compose"
     id "org.jetbrains.kotlin.plugin.serialization"
@@ -15,52 +14,54 @@ ext.releaseKeystorePath = System.getenv("KEYSTORE_PATH")
 def androidMinSdk = 24
 
 android {
-    namespace "com.yunfie.illustia"
-    compileSdk 37
+    namespace = "com.yunfie.illustia"
+    compileSdk = 37
     defaultConfig {
-        applicationId "com.yunfie.illustia"
+        applicationId = "com.yunfie.illustia"
         // Android 7.0 (API 24) and newer.
-        minSdk androidMinSdk
-        targetSdk 36
-        versionCode 97
-        versionName "6.1.0-beta.1"
+        minSdk = androidMinSdk
+        targetSdk = 36
+        versionCode = 97
+        versionName = "6.1.0-beta.1"
     }
 
     signingConfigs {
         if (project.ext.releaseKeystorePath) {
             release {
-                storeFile file(project.ext.releaseKeystorePath)
-                storePassword System.getenv("KEYSTORE_PASSWORD")
-                keyAlias System.getenv("KEY_ALIAS")
-                keyPassword System.getenv("KEY_PASSWORD")
+                storeFile = file(project.ext.releaseKeystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
             }
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            signingConfig project.ext.releaseKeystorePath ? signingConfigs.release : signingConfigs.debug
+            signingConfig = project.ext.releaseKeystorePath ? signingConfigs.release : signingConfigs.debug
         }
     }
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
 
 
     buildFeatures {
-        compose true
+        compose = true
     }
 
     sourceSets {
-        main.kotlin.srcDir "$buildDir/generated/uniffi/kotlin"
-        main.jniLibs.srcDir "$buildDir/generated/uniffi/jniLibs"
+        named("main") {
+            kotlin.srcDir layout.buildDirectory.dir("generated/uniffi/kotlin").get().asFile
+            jniLibs.srcDir layout.buildDirectory.dir("generated/uniffi/jniLibs").get().asFile
+        }
     }
 
     packaging {
@@ -74,10 +75,10 @@ android {
     // installation; split outputs reduce download size on supported devices.
     splits {
         abi {
-            enable true
+            enable = true
             reset()
             include "arm64-v8a", "armeabi-v7a", "x86_64"
-            universalApk true
+            universalApk = true
         }
     }
 
