@@ -86,6 +86,10 @@ fun PredictiveBackGestureHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 ) {
+    if (PlatformCapabilities.supportsPredictiveBack()) {
+        return
+    }
+
     BackHandler(enabled = enabled) {
         onBack()
     }
