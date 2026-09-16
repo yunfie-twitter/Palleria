@@ -306,6 +306,15 @@ fun ImageSettingsScreen(
                             label = { duplicateSaveModeLabel(it) },
                             onSelect = viewModel::updateDuplicateSaveMode,
                         )
+                        DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.image_ugoira_save_format),
+                            summary = stringResource(R.string.image_ugoira_save_format_desc),
+                            values = listOf("mp4", "gif"),
+                            selected = state.settings.ugoiraSaveFormat,
+                            label = { ugoiraSaveFormatLabel(it) },
+                            onSelect = viewModel::updateUgoiraSaveFormat,
+                        )
                     }
                 }
             }
@@ -590,4 +599,11 @@ private fun duplicateSaveModeLabel(value: String): String =
         "overwrite" -> stringResource(R.string.image_duplicate_mode_overwrite)
         "always" -> stringResource(R.string.image_duplicate_mode_always)
         else -> stringResource(R.string.image_duplicate_mode_skip)
+    }
+
+@Composable
+private fun ugoiraSaveFormatLabel(value: String): String =
+    when (value) {
+        "gif" -> stringResource(R.string.image_ugoira_format_gif)
+        else -> stringResource(R.string.image_ugoira_format_mp4)
     }

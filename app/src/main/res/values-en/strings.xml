@@ -363,6 +363,10 @@
     <string name="image_duplicate_mode_overwrite">Overwrite</string>
     <string name="image_duplicate_mode_always">Always save copy</string>
     <string name="msg_save_skipped_duplicate">Skipped because image already exists</string>
+    <string name="image_ugoira_save_format">Ugoira save format</string>
+    <string name="image_ugoira_save_format_desc">Select format when saving animated illustrations (MP4 / GIF)</string>
+    <string name="image_ugoira_format_mp4">MP4 Video (Recommended)</string>
+    <string name="image_ugoira_format_gif">GIF Animation</string>
     <string name="offline_wifi_only">Save only on Wi-Fi</string>
     <string name="offline_wifi_only_desc">Do not save while on mobile data.</string>
     <string name="offline_capacity_limit">Storage limit</string>

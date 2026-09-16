@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import coil3.SingletonImageLoader
 import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository
+import com.yunfie.illustia.data.UgoiraMp4Encoder
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.settings.db.SavedIllustEntity
@@ -425,22 +427,60 @@ abstract class IllustiaLibraryNavigationModule(
             throw IllegalStateException(str(R.string.ugoira_load_failed))
         }
         val cacheDir = getApplication<Application>().cacheDir
-        val tempGif = File.createTempFile("ugoira_${illust.id}_", ".gif", cacheDir)
+        if (_uiState.value.settings.ugoiraSaveFormat == "gif") {
+            saveUgoiraAsGif(illust.id, playback.frames, filename, cacheDir, clearOld)
+        } else {
+            saveUgoiraAsMp4(illust.id, playback.frames, filename, cacheDir, clearOld)
+        }
+    }
+
+    private fun saveUgoiraAsGif(
+        illustId: Long,
+        frames: List<UgoiraPlaybackFrame>,
+        filename: String,
+        cacheDir: File,
+        clearOld: Boolean = false,
+    ) {
+        val tempGif = File.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
         try {
             tempGif.outputStream().buffered().use { output ->
-                AnimatedGifEncoder.encode(playback.frames, output)
+                AnimatedGifEncoder.encode(frames, output)
             }
             tempGif.inputStream().buffered().use { input ->
                 imageStore.save(
                     input = input,
                     name = filename,
-                    sourceUrl = "https://www.pixiv.net/artworks/${illust.id}.gif",
+                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
                     responseMimeType = "image/gif",
                     clearOld = clearOld,
                 )
             }
         } finally {
             tempGif.delete()
+        }
+    }
+
+    private fun saveUgoiraAsMp4(
+        illustId: Long,
+        frames: List<UgoiraPlaybackFrame>,
+        filename: String,
+        cacheDir: File,
+        clearOld: Boolean = false,
+    ) {
+        val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
+        try {
+            UgoiraMp4Encoder.encode(frames, tempMp4)
+            tempMp4.inputStream().buffered().use { input ->
+                imageStore.save(
+                    input = input,
+                    name = filename,
+                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
+                    responseMimeType = "video/mp4",
+                    clearOld = clearOld,
+                )
+            }
+        } finally {
+            tempMp4.delete()
         }
     }
 

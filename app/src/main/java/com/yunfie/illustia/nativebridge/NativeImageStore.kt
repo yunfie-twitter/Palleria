@@ -297,7 +297,7 @@ class NativeImageStore(
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
         val uri =
-            resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            resolver.insert(contentUriFor(displayName), contentValues)
                 ?: throw IllegalStateException("MediaStoreへの登録に失敗しました。")
         runCatching {
             resolver.openOutputStream(uri, "w")?.use { output ->
@@ -366,12 +366,12 @@ class NativeImageStore(
 
     private fun existsInMediaStore(displayName: String): Boolean {
         val relativePath = mediaRelativePath(displayName)
-        val selection = "${MediaStore.Images.Media.RELATIVE_PATH} = ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
+        val selection = "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} = ?"
         val args = arrayOf(relativePath.ensureTrailingSlash(), displayName.substringAfterLast('/'))
         return context.contentResolver
             .query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                arrayOf(MediaStore.Images.Media._ID),
+                contentUriFor(displayName),
+                arrayOf(MediaStore.MediaColumns._ID),
                 selection,
                 args,
                 null,
@@ -393,14 +393,22 @@ class NativeImageStore(
         relativePath: String,
     ) {
         val resolver = context.contentResolver
-        val selection = "${MediaStore.Images.Media.RELATIVE_PATH} = ? AND ${MediaStore.Images.Media.DISPLAY_NAME} = ?"
+        val contentUri = contentUriFor(displayName)
+        val selection = "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} = ?"
         val args = arrayOf(relativePath.ensureTrailingSlash(), displayName.substringAfterLast('/'))
-        resolver.delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, selection, args)
+        resolver.delete(contentUri, selection, args)
         if (displayName.contains("_p0")) {
             val oldName = displayName.replace("_p0", "").substringAfterLast('/')
-            resolver.delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, selection, arrayOf(relativePath.ensureTrailingSlash(), oldName))
+            resolver.delete(contentUri, selection, arrayOf(relativePath.ensureTrailingSlash(), oldName))
         }
     }
+
+    private fun contentUriFor(displayName: String): Uri =
+        if (displayName.endsWith(".mp4", ignoreCase = true)) {
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
 
     private fun writableTree(): DocumentFile? {
         val uri =
@@ -438,6 +446,7 @@ class NativeImageStore(
             "png" -> "image/png"
             "webp" -> "image/webp"
             "gif" -> "image/gif"
+            "mp4" -> "video/mp4"
             else -> "image/jpeg"
         }
     }
@@ -453,6 +462,7 @@ class NativeImageStore(
                 "image/png" -> "png"
                 "image/webp" -> "webp"
                 "image/gif" -> "gif"
+                "video/mp4" -> "mp4"
                 else -> sourceUrl.imageExtension().takeIf { it in SUPPORTED_EXTENSIONS } ?: "jpg"
             }
         return "$this.$extension"
@@ -481,8 +491,8 @@ class NativeImageStore(
         private const val KEY_SAVE_MODE = "saveMode"
         private const val KEY_STORE_PATH = "storePath"
         private const val MAX_LISTED_IMAGES = 2_000
-        private val SUPPORTED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
-        private val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
+        private val SUPPORTED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif", "mp4")
+        private val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4")
     }
 }
 

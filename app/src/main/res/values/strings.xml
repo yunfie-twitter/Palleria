@@ -365,6 +365,10 @@
     <string name="image_duplicate_mode_overwrite">上書き保存</string>
     <string name="image_duplicate_mode_always">常に別名で保存</string>
     <string name="msg_save_skipped_duplicate">既に保存されているためスキップしました</string>
+    <string name="image_ugoira_save_format">うごイラの保存形式</string>
+    <string name="image_ugoira_save_format_desc">うごイラ保存時のファイル形式（MP4 / GIF）を設定します</string>
+    <string name="image_ugoira_format_mp4">MP4動画（推奨）</string>
+    <string name="image_ugoira_format_gif">GIFアニメーション</string>
     <string name="offline_wifi_only">Wi-Fi接続時のみ保存</string>
     <string name="offline_wifi_only_desc">モバイルデータ通信中は保存しません</string>
     <string name="offline_capacity_limit">保存容量の上限</string>

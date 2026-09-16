@@ -118,6 +118,7 @@ internal fun readFromDataStore(
         downloadFolderByArtist = preferences[DOWNLOAD_FOLDER_BY_ARTIST] ?: true,
         downloadFolderByWork = preferences[DOWNLOAD_FOLDER_BY_WORK] ?: true,
         autoTagOnBookmark = preferences[AUTO_TAG_ON_BOOKMARK] ?: false,
+        ugoiraSaveFormat = preferences[UGOIRA_SAVE_FORMAT] ?: "mp4",
         simultaneousDownloads = preferences[SIMULTANEOUS_DOWNLOADS] ?: 2,
         offlineWifiOnly = preferences[OFFLINE_WIFI_ONLY] ?: true,
         offlineStorageLimitBytes = preferences[OFFLINE_STORAGE_LIMIT_BYTES] ?: DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES,
@@ -196,13 +197,24 @@ internal suspend fun writeDataStorePreferences(
     }
 }
 
+private fun SharedPreferences.getSafeString(
+    key: String,
+    default: String,
+): String = getString(key, default) ?: default
+
+private fun SharedPreferences.getLongList(key: String): List<Long> =
+    getString(key, "").orEmpty().split(",").mapNotNull { it.toLongOrNull() }
+
+private fun SharedPreferences.getNonEmptyStringList(key: String): List<String> =
+    getString(key, "").orEmpty().split(",").filter { it.isNotBlank() }
+
 internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSettings =
     AppSettings(
         refreshToken = preferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences.getLong(KEY_BOOKMARK_USER_ID, 0L).takeIf { it > 0L },
-        appLanguage = preferences.getString(KEY_APP_LANGUAGE, "system") ?: "system",
-        appFont = preferences.getString(KEY_APP_FONT, "system") ?: "system",
-        themeMode = preferences.getString(KEY_THEME_MODE, "system") ?: "system",
+        appLanguage = preferences.getSafeString(KEY_APP_LANGUAGE, "system"),
+        appFont = preferences.getSafeString(KEY_APP_FONT, "system"),
+        themeMode = preferences.getSafeString(KEY_THEME_MODE, "system"),
         useDynamicColor = preferences.getBoolean(KEY_USE_DYNAMIC_COLOR, true),
         seedColor = preferences.getLong(KEY_SEED_COLOR, 0xFF42A5F5L),
         onboardingSetupCompleted = preferences.getBoolean(KEY_ONBOARDING_SETUP_COMPLETED, false),
@@ -240,13 +252,13 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         saveViewHistory = preferences.getBoolean("saveViewHistory", true),
         saveSearchHistory = preferences.getBoolean("saveSearchHistory", true),
         appLockEnabled = preferences.getBoolean("appLockEnabled", false),
-        appLockTiming = preferences.getString("appLockTiming", "launch") ?: "launch",
+        appLockTiming = preferences.getSafeString("appLockTiming", "launch"),
         biometricEnabled = preferences.getBoolean("biometricEnabled", false),
         appLockFailCount = 0,
         appLockCooldownUntil = 0L,
         viewHistory = decodeHistoryIllusts(preferences.getString(KEY_VIEW_HISTORY, "")).take(MAX_VIEW_HISTORY),
         smoothTransitions = preferences.getBoolean(KEY_SMOOTH_TRANSITIONS, true),
-        hapticMode = preferences.getString(KEY_HAPTIC_MODE, "rich") ?: "rich",
+        hapticMode = preferences.getSafeString(KEY_HAPTIC_MODE, "rich"),
         prefetchImages = preferences.getBoolean(KEY_PREFETCH_IMAGES, false),
         autoLoadMore = preferences.getBoolean("autoLoadMore", false),
         notchOptimization = preferences.getBoolean("notchOptimization", true),
@@ -257,7 +269,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         amoledMode = preferences.getBoolean("amoledMode", false),
         navigationOrder = decodeStringList(preferences.getString("navigationOrder", null)).ifEmpty { DEFAULT_NAVIGATION_ORDER },
         hiddenNavigationTabs = decodeStringList(preferences.getString("hiddenNavigationTabs", null)),
-        navigationStyle = preferences.getString("navigationStyle", "standard") ?: "standard",
+        navigationStyle = preferences.getSafeString("navigationStyle", "standard"),
         artworkThemeEnabled = preferences.getBoolean("artworkThemeEnabled", false),
         showCardTitle = preferences.getBoolean("showCardTitle", true),
         showCardArtist = preferences.getBoolean("showCardArtist", true),
@@ -271,50 +283,31 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         privateBookmarkDefault = preferences.getBoolean("privateBookmarkDefault", false),
         autoDownloadOnBookmark = preferences.getBoolean("autoDownloadOnBookmark", false),
         autoBookmarkOnDownload = preferences.getBoolean("autoBookmarkOnDownload", false),
-        duplicateSaveMode = preferences.getString(KEY_DUPLICATE_SAVE_MODE, "skip") ?: "skip",
+        duplicateSaveMode = preferences.getSafeString(KEY_DUPLICATE_SAVE_MODE, "skip"),
         downloadFolderByArtist = preferences.getBoolean("downloadFolderByArtist", true),
         downloadFolderByWork = preferences.getBoolean("downloadFolderByWork", true),
         autoTagOnBookmark = preferences.getBoolean("autoTagOnBookmark", false),
+        ugoiraSaveFormat = preferences.getSafeString("ugoiraSaveFormat", "mp4"),
         simultaneousDownloads = preferences.getInt("simultaneousDownloads", 2),
         offlineWifiOnly = preferences.getBoolean("offlineWifiOnly", true),
         offlineStorageLimitBytes = preferences.getLong("offlineStorageLimitBytes", DEFAULT_OFFLINE_STORAGE_LIMIT_BYTES),
-        feedPreviewQuality = preferences.getString("feedPreviewQuality", "low") ?: "low",
-        illustDetailQuality = preferences.getString("illustDetailQuality", "medium") ?: "medium",
-        mangaDetailQuality = preferences.getString("mangaDetailQuality", "low") ?: "low",
-        fullscreenQuality = preferences.getString("fullscreenQuality", "high") ?: "high",
-        startupScreen = preferences.getString("startupScreen", "home") ?: "home",
+        feedPreviewQuality = preferences.getSafeString("feedPreviewQuality", "low"),
+        illustDetailQuality = preferences.getSafeString("illustDetailQuality", "medium"),
+        mangaDetailQuality = preferences.getSafeString("mangaDetailQuality", "low"),
+        fullscreenQuality = preferences.getSafeString("fullscreenQuality", "high"),
+        startupScreen = preferences.getSafeString("startupScreen", "home"),
         userProfileBottomSheetEnabled = preferences.getBoolean("userProfileBottomSheetEnabled", false),
         shortsFeedEnabled = preferences.getBoolean("shortsFeedEnabled", false),
         disableHorizontalSwipeInShortsFeed = preferences.getBoolean("disableHorizontalSwipeInShortsFeed", false),
         verticalColumnCount = preferences.getInt("verticalColumnCount", 2),
         horizontalColumnCount = preferences.getInt("horizontalColumnCount", 4),
         relatedIllustColumnCount = preferences.getInt("relatedIllustColumnCount", DEFAULT_RELATED_ILLUST_COLUMN_COUNT),
-        pixivNetworkMode = preferences.getString(KEY_PIXIV_NETWORK_MODE, "standard") ?: "standard",
+        pixivNetworkMode = preferences.getSafeString(KEY_PIXIV_NETWORK_MODE, "standard"),
         pixivImageProxyBaseUrl = preferences.getString(KEY_PIXIV_IMAGE_PROXY_BASE_URL, "").orEmpty(),
-        mutedIllusts =
-            preferences
-                .getString("mutedIllusts", "")
-                .orEmpty()
-                .split(",")
-                .mapNotNull { it.toLongOrNull() },
-        mutedUsers =
-            preferences
-                .getString("mutedUsers", "")
-                .orEmpty()
-                .split(",")
-                .mapNotNull { it.toLongOrNull() },
-        mutedTags =
-            preferences
-                .getString("mutedTags", "")
-                .orEmpty()
-                .split(",")
-                .filter { it.isNotBlank() },
-        seenFeedIllusts =
-            preferences
-                .getString("seenFeedIllusts", "")
-                .orEmpty()
-                .split(",")
-                .mapNotNull { it.toLongOrNull() },
+        mutedIllusts = preferences.getLongList("mutedIllusts"),
+        mutedUsers = preferences.getLongList("mutedUsers"),
+        mutedTags = preferences.getNonEmptyStringList("mutedTags"),
+        seenFeedIllusts = preferences.getLongList("seenFeedIllusts"),
         accounts = decodeAccounts(preferences.getString(KEY_ACCOUNTS, "").orEmpty()),
         activeAccountIndex = preferences.getInt(KEY_ACTIVE_ACCOUNT_INDEX, -1),
         privacyModeEnabled = false,
@@ -401,6 +394,7 @@ internal fun writeToDataStore(
     preferences[DOWNLOAD_FOLDER_BY_ARTIST] = settings.downloadFolderByArtist
     preferences[DOWNLOAD_FOLDER_BY_WORK] = settings.downloadFolderByWork
     preferences[AUTO_TAG_ON_BOOKMARK] = settings.autoTagOnBookmark
+    preferences[UGOIRA_SAVE_FORMAT] = settings.ugoiraSaveFormat
     preferences[SIMULTANEOUS_DOWNLOADS] = settings.simultaneousDownloads
     preferences[OFFLINE_WIFI_ONLY] = settings.offlineWifiOnly
     preferences[OFFLINE_STORAGE_LIMIT_BYTES] = settings.offlineStorageLimitBytes
