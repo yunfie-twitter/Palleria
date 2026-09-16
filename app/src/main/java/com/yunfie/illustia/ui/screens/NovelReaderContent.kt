@@ -654,7 +654,7 @@ private fun NovelParagraph(
                         val annotation =
                             if (offset >= 0) block.text.getStringAnnotations("URL", offset, offset).firstOrNull() else null
                         if (annotation != null) {
-                            uriHandler.openUri(annotation.item)
+                            runCatching { uriHandler.openUri(annotation.item) }
                         } else {
                             onToggleControls()
                         }

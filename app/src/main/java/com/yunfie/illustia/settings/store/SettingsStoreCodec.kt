@@ -243,8 +243,8 @@ internal fun decodeNovelProgress(value: String?): Map<Long, com.yunfie.illustia.
                 id to
                     com.yunfie.illustia.models.NovelReadingProgress(
                         novelId = id,
-                        lastReadPage = obj.optInt("lastReadPage", 0),
-                        totalPages = obj.optInt("totalPages", 1),
+                        lastReadPage = obj.optInt("lastReadPage", 0).coerceAtLeast(0),
+                        totalPages = obj.optInt("totalPages", 1).coerceAtLeast(1),
                         updatedAt = obj.optLong("updatedAt", 0L),
                         status = status,
                     )

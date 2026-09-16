@@ -87,7 +87,7 @@ internal fun NovelBottomControlBar(
                     )
                     if (pageCount > 1) {
                         Slider(
-                            value = (currentPage + 1).toFloat(),
+                            value = (currentPage + 1).toFloat().coerceIn(1f, pageCount.toFloat()),
                             onValueChange = { onPageChange((it.toInt() - 1).coerceIn(0, pageCount - 1)) },
                             valueRange = 1f..pageCount.toFloat(),
                             steps = (pageCount - 2).coerceAtLeast(0),
