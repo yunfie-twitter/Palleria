@@ -78,7 +78,7 @@ internal class RustPixivHttpClient(
         withContext(Dispatchers.IO) {
             nativeCall {
                 native.loginWithRefreshToken(refreshToken).let {
-                    PixivSession(it.accessToken, it.refreshToken, it.userId?.toLongOrNull())
+                    PixivSession(it.accessToken, it.refreshToken, it.userId?.toLong())
                 }
             }
         }
@@ -90,7 +90,7 @@ internal class RustPixivHttpClient(
         withContext(Dispatchers.IO) {
             nativeCall {
                 native.loginWithAuthorizationCode(code, codeVerifier).let {
-                    PixivSession(it.accessToken, it.refreshToken, it.userId?.toLongOrNull())
+                    PixivSession(it.accessToken, it.refreshToken, it.userId?.toLong())
                 }
             }
         }

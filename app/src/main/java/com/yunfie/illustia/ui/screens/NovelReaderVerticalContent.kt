@@ -441,9 +441,10 @@ private fun NovelVerticalArtworkCard(
                         .background(MiuixTheme.colorScheme.surfaceContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                if (previewUrl != null) {
+                val currentPreviewUrl = previewUrl
+                if (currentPreviewUrl != null) {
                     PixivImage(
-                        url = previewUrl,
+                        url = currentPreviewUrl,
                         contentDescription = stringResource(R.string.novel_inline_illust_label),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
