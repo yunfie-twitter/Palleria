@@ -60,6 +60,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -400,18 +401,27 @@ fun NovelReaderScreen(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                TopAppBar(
+                SmallTopAppBar(
                     title = currentNovel.title,
-                    largeTitle = currentNovel.title,
+                    color = backgroundColor,
+                    titleColor = textColor,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.action_close),
+                                tint = textColor,
+                            )
                         }
                     },
                     actions = {
                         IconButton(onClick = onRetry) {
-                            Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                            Icon(
+                                imageVector = MiuixIcons.Refresh,
+                                contentDescription = stringResource(R.string.dialog_reload),
+                                tint = textColor,
+                            )
                         }
                     },
                 )
@@ -435,14 +445,12 @@ fun NovelReaderScreen(
     ) { scaffoldPadding ->
         val layoutDirection = LocalLayoutDirection.current
         val readerPadding =
-            remember(scaffoldPadding, layoutDirection) {
-                PaddingValues(
-                    start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
-                    top = scaffoldPadding.calculateTopPadding(),
-                    end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
-                    bottom = scaffoldPadding.calculateBottomPadding(),
-                )
-            }
+            PaddingValues(
+                start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
+                top = scaffoldPadding.calculateTopPadding(),
+                end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
+                bottom = scaffoldPadding.calculateBottomPadding(),
+            )
         when {
             loadState == LoadState.Loading && text == null -> {
                 Box(
