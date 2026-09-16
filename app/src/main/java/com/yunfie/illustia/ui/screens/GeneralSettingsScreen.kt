@@ -214,34 +214,11 @@ fun GeneralSettingsScreen(
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.general_user_profile_bottom_sheet),
-                            checked = state.settings.userProfileBottomSheetEnabled,
-                            onCheckedChange = viewModel::updateUserProfileBottomSheetEnabled,
-                            summary = stringResource(R.string.general_user_profile_bottom_sheet_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
                             title = stringResource(R.string.settings_hide_ai_works),
                             checked = state.settings.hideAiWorks,
                             onCheckedChange = viewModel::updateHideAiWorks,
                             summary = stringResource(R.string.settings_hide_ai_works_desc),
                         )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.general_shorts_feed),
-                            checked = state.settings.shortsFeedEnabled,
-                            onCheckedChange = viewModel::updateShortsFeedEnabled,
-                            summary = stringResource(R.string.general_shorts_feed_desc),
-                        )
-                        if (state.settings.shortsFeedEnabled) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe),
-                                checked = state.settings.disableHorizontalSwipeInShortsFeed,
-                                onCheckedChange = viewModel::updateDisableHorizontalSwipeInShortsFeed,
-                                summary = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe_desc),
-                            )
-                        }
                     }
                 }
             }
