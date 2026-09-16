@@ -470,7 +470,6 @@ private fun com.yunfie.illustia.rust.Illust.toAppModel(): Illust =
         totalBookmarks = totalBookmarks,
         totalComments = totalComments,
         series = series?.let { IllustSeries(id = it.id, title = it.title) },
-        illustAiType = illustAiType,
     )
 
 private fun com.yunfie.illustia.rust.UserProfile.toAppModel(): UserProfile =
