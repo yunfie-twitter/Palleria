@@ -135,6 +135,7 @@ data class AppSettings(
     val novelTheme: String = "system",
     val novelLayoutMode: String = "paged",
     val novelProgress: Map<Long, com.yunfie.illustia.models.NovelReadingProgress> = emptyMap(),
+    val novelFontFamily: String = "system",
 ) {
     val useHighQualityFeedImages: Boolean
         get() = highQualityImages && feedPreviewQuality != "low"
