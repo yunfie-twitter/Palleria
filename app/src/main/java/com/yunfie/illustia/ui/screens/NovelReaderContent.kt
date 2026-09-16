@@ -54,6 +54,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -508,7 +509,7 @@ private fun NovelChapterItem(
 }
 
 @Composable
-private fun NovelJumpButton(
+internal fun NovelJumpButton(
     pageNumber: Int,
     onJumpPage: (Int) -> Unit,
 ) {
@@ -550,11 +551,12 @@ private fun NovelArtworkCard(
                 .padding(vertical = 4.dp)
                 .clickable(onClick = onOpen),
     ) {
+        val currentPreviewUrl = previewUrl
         Column(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (previewUrl != null) {
+            if (currentPreviewUrl != null) {
                 Box(
                     modifier =
                         Modifier
@@ -565,7 +567,7 @@ private fun NovelArtworkCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     PixivImage(
-                        url = previewUrl,
+                        url = currentPreviewUrl,
                         contentDescription = stringResource(R.string.novel_inline_illust_label),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -577,7 +579,7 @@ private fun NovelArtworkCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (previewUrl == null) {
+                if (currentPreviewUrl == null) {
                     Box(
                         modifier =
                             Modifier
@@ -728,7 +730,7 @@ private fun createInlineRubyContent(
         }
     }
 
-fun parseNovelPages(rawText: String): List<NovelPage> = NovelContentParser.parsePages(rawText)
+internal fun parseNovelPages(rawText: String): List<NovelPage> = NovelContentParser.parsePages(rawText)
 
 internal object NovelContentParser {
     fun parsePages(rawText: String): List<NovelPage> {
