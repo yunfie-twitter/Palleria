@@ -7,6 +7,7 @@ buildscript {
         // Keep these security overrides in both scopes; versions live in gradle.properties.
         def bcVersion = providers.gradleProperty("security.bouncycastleVersion").get()
         def nettyVersion = providers.gradleProperty("security.nettyVersion").get()
+        def logbackVersion = providers.gradleProperty("security.logbackVersion").get()
         classpath "org.bouncycastle:bcpkix-jdk18on:${bcVersion}"
         classpath "org.bouncycastle:bcprov-jdk18on:${bcVersion}"
         classpath "org.bouncycastle:bcutil-jdk18on:${bcVersion}"
@@ -16,6 +17,8 @@ buildscript {
         classpath "io.netty:netty-common:${nettyVersion}"
         classpath "io.netty:netty-handler:${nettyVersion}"
         classpath "io.netty:netty-handler-proxy:${nettyVersion}"
+        classpath "ch.qos.logback:logback-core:${logbackVersion}"
+        classpath "ch.qos.logback:logback-classic:${logbackVersion}"
         classpath "org.jdom:jdom2:${providers.gradleProperty('security.jdomVersion').get()}"
         classpath "org.apache.httpcomponents:httpclient:${providers.gradleProperty('security.httpClientVersion').get()}"
         classpath "org.apache.commons:commons-lang3:${providers.gradleProperty('security.commonsLangVersion').get()}"
