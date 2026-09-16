@@ -195,6 +195,74 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
+    fun openNovelById(
+        novelId: Long,
+        title: String = "",
+    ) {
+        val existing = _uiState.value.novelItems.firstOrNull { it.id == novelId }
+        val novel =
+            existing ?: NovelPreview(
+                id = novelId,
+                title = title,
+                caption = "",
+                userId = 0L,
+                userName = "",
+                userAccount = "",
+                coverUrl = "",
+                pageCount = 1,
+                textLength = 0,
+                isBookmarked = false,
+                totalBookmarks = 0,
+                totalView = 0,
+            )
+        openNovel(novel)
+    }
+
+    fun updateNovelProgress(
+        novelId: Long,
+        page: Int,
+        totalPages: Int,
+        status: com.yunfie.illustia.models.NovelReadingStatus? = null,
+    ) {
+        updateSettings { current ->
+            val existing = current.novelProgress[novelId]
+            val resolvedStatus =
+                status ?: when {
+                    page >= totalPages - 1 && totalPages > 1 -> com.yunfie.illustia.models.NovelReadingStatus.Completed
+                    existing != null && existing.status != com.yunfie.illustia.models.NovelReadingStatus.Unread -> existing.status
+                    else -> com.yunfie.illustia.models.NovelReadingStatus.Reading
+                }
+            val record =
+                com.yunfie.illustia.models.NovelReadingProgress(
+                    novelId = novelId,
+                    lastReadPage = page,
+                    totalPages = totalPages,
+                    updatedAt = System.currentTimeMillis(),
+                    status = resolvedStatus,
+                )
+            current.copy(novelProgress = current.novelProgress + (novelId to record))
+        }
+    }
+
+    fun setNovelReadingStatus(
+        novelId: Long,
+        status: com.yunfie.illustia.models.NovelReadingStatus,
+    ) {
+        updateSettings { current ->
+            val existing = current.novelProgress[novelId]
+            val record =
+                existing?.copy(status = status, updatedAt = System.currentTimeMillis())
+                    ?: com.yunfie.illustia.models.NovelReadingProgress(
+                        novelId = novelId,
+                        lastReadPage = 0,
+                        totalPages = 1,
+                        updatedAt = System.currentTimeMillis(),
+                        status = status,
+                    )
+            current.copy(novelProgress = current.novelProgress + (novelId to record))
+        }
+    }
+
     fun closeNovel() {
         _uiState.update { it.copy(selectedNovel = null, selectedNovelText = null) }
     }

@@ -161,7 +161,10 @@ internal fun NovelReaderPage(
     textColor: Color,
     viewModel: IllustiaViewModel,
     uriHandler: UriHandler,
+    seriesNextId: Long? = null,
+    seriesNextTitle: String? = null,
     onJumpPage: (Int) -> Unit,
+    onOpenSeriesEpisode: ((Long, String) -> Unit)? = null,
     onToggleControls: () -> Unit,
     scrollBehavior: ScrollBehavior,
     contentPadding: PaddingValues,
@@ -195,6 +198,47 @@ internal fun NovelReaderPage(
                 onToggleControls = onToggleControls,
             )
         }
+        if (pageIndex == pageCount - 1 && seriesNextId != null) {
+            item {
+                ElevatedPanel(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 24.dp)
+                            .miuixClickable(
+                                pressedScale = 0.98f,
+                                haptic = true,
+                                onClick = { onOpenSeriesEpisode?.invoke(seriesNextId, seriesNextTitle.orEmpty()) },
+                            ),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.novel_series_next_episode),
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(R.string.novel_series_next_episode) },
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Icon(
+                            MiuixIcons.ChevronForward,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -207,7 +251,10 @@ internal fun NovelReaderContinuousContent(
     textColor: Color,
     viewModel: IllustiaViewModel,
     uriHandler: UriHandler,
+    seriesNextId: Long? = null,
+    seriesNextTitle: String? = null,
     onJumpPage: (Int) -> Unit,
+    onOpenSeriesEpisode: ((Long, String) -> Unit)? = null,
     onToggleControls: () -> Unit,
     scrollBehavior: ScrollBehavior,
     contentPadding: PaddingValues,
@@ -259,6 +306,47 @@ internal fun NovelReaderContinuousContent(
                                 .height(1.dp)
                                 .background(textColor.copy(alpha = 0.12f)),
                     )
+                }
+            }
+        }
+        if (seriesNextId != null) {
+            item(key = "series_next_episode_card") {
+                ElevatedPanel(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 24.dp)
+                            .miuixClickable(
+                                pressedScale = 0.98f,
+                                haptic = true,
+                                onClick = { onOpenSeriesEpisode?.invoke(seriesNextId, seriesNextTitle.orEmpty()) },
+                            ),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.novel_series_next_episode),
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(R.string.novel_series_next_episode) },
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Icon(
+                            MiuixIcons.ChevronForward,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
         }
