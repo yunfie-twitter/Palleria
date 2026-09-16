@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
@@ -260,10 +261,13 @@ internal fun NovelReaderPage(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item {
+        item(key = "page_header_$pageIndex") {
             NovelMetaPill(text = "${pageIndex + 1} / $pageCount")
         }
-        items(page.blocks) { block ->
+        itemsIndexed(
+            items = page.blocks,
+            key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
+        ) { _, block ->
             NovelBlockItem(
                 block = block,
                 fontSize = fontSize,
@@ -277,7 +281,7 @@ internal fun NovelReaderPage(
             )
         }
         if (pageIndex == pageCount - 1 && seriesNextId != null) {
-            item {
+            item(key = "series_next_$seriesNextId") {
                 ElevatedPanel(
                     modifier =
                         Modifier
@@ -363,7 +367,10 @@ internal fun NovelReaderContinuousContent(
                     NovelMetaPill(text = "${pageIndex + 1} / ${pages.size}")
                 }
             }
-            items(page.blocks) { block ->
+            itemsIndexed(
+                items = page.blocks,
+                key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
+            ) { _, block ->
                 NovelBlockItem(
                     block = block,
                     fontSize = fontSize,

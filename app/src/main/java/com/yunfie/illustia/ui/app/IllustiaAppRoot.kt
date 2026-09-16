@@ -430,8 +430,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     }
 
     LaunchedEffect(state.selectedIllust?.id) {
-        if (state.selectedIllust != null) {
-            navigate(AppRoute.Detail(state.selectedIllust!!.id))
+        val selected = state.selectedIllust
+        if (selected != null) {
+            navigate(AppRoute.Detail(selected.id))
         } else if (backStack.lastOrNull() is AppRoute.Detail) {
             backStack.removeAt(backStack.lastIndex)
         }
