@@ -319,7 +319,7 @@ dependencies {
     implementation libs.miuix.navigation3.ui
     implementation libs.shizuku.api
     implementation libs.shizuku.provider
-    implementation 'com.github.woheller69:FreeDroidWarn:V1.+'
+    implementation 'com.github.woheller69:FreeDroidWarn:V1.14'
 
     // Test dependencies
     testImplementation libs.kotest.runner
