@@ -299,9 +299,9 @@ fun PrivacyModeSettingsScreen(
                 )
 
                 // Error message (Req 5.7)
-                if (changeCodeError != null) {
+                changeCodeError?.let { errorText ->
                     Text(
-                        text = changeCodeError!!,
+                        text = errorText,
                         color = MiuixTheme.colorScheme.error,
                         style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.SemiBold,
@@ -384,9 +384,9 @@ fun PrivacyModeSettingsScreen(
                 )
 
                 // Error message
-                if (dummyNameError != null) {
+                dummyNameError?.let { errorText ->
                     Text(
-                        text = dummyNameError!!,
+                        text = errorText,
                         color = MiuixTheme.colorScheme.error,
                         style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.SemiBold,

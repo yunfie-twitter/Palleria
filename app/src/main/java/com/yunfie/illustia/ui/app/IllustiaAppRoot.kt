@@ -235,9 +235,10 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
-    LaunchedEffect(pagerState.settledPage) {
-        selectedTab = tabs[pagerState.settledPage]
-        viewModel.activeTab = selectedTab
+    LaunchedEffect(pagerState.settledPage, tabs) {
+        val tab = tabs.getOrNull(pagerState.settledPage) ?: tabs.firstOrNull() ?: initialTab
+        selectedTab = tab
+        viewModel.activeTab = tab
     }
 
     LaunchedEffect(tabs) {

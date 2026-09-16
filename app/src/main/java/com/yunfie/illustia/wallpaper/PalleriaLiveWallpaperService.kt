@@ -324,9 +324,10 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             progress: Float,
             settings: AppSettings,
         ) {
+            if (next.isRecycled) return
             withCanvas { canvas ->
                 drawBackground(canvas, next, settings)
-                old?.let {
+                old?.takeUnless { it.isRecycled }?.let {
                     paint.alpha = ((1f - progress) * 255).toInt()
                     drawScaled(canvas, it, settings.liveWallpaperScaleMode)
                 }
@@ -341,6 +342,7 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             alpha: Float,
             settings: AppSettings? = null,
         ) {
+            if (bitmap.isRecycled) return
             val resolved = settings ?: return
             withCanvas { canvas ->
                 drawBackground(canvas, bitmap, resolved)
@@ -386,9 +388,10 @@ class PalleriaLiveWallpaperService : WallpaperService() {
 
                 "blur" -> {
                     canvas.drawColor(Color.BLACK)
+                    val blurredCache = currentBlurred
                     val blurred =
-                        if (bitmap === current && currentBlurred != null && !currentBlurred!!.isRecycled) {
-                            currentBlurred!!
+                        if (bitmap === current && blurredCache != null && !blurredCache.isRecycled) {
+                            blurredCache
                         } else {
                             createBlurred(bitmap)
                         }
@@ -411,8 +414,10 @@ class PalleriaLiveWallpaperService : WallpaperService() {
             bitmap: Bitmap,
             mode: String,
         ) {
+            if (bitmap.isRecycled) return
             val sourceWidth = bitmap.width.toFloat()
             val sourceHeight = bitmap.height.toFloat()
+            if (sourceWidth <= 0f || sourceHeight <= 0f) return
             val scale =
                 when (mode) {
                     "contain" -> min(surfaceWidth / sourceWidth, surfaceHeight / sourceHeight)
@@ -486,8 +491,10 @@ private fun decodeSampledBitmap(
         }
     }.getOrNull()
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    val targetWidth = width.coerceAtLeast(1)
+    val targetHeight = height.coerceAtLeast(1)
     var sample = 1
-    while (bounds.outWidth / (sample * 2) >= width && bounds.outHeight / (sample * 2) >= height) {
+    while (bounds.outWidth / (sample * 2) >= targetWidth && bounds.outHeight / (sample * 2) >= targetHeight) {
         sample *= 2
     }
     return runCatching {
