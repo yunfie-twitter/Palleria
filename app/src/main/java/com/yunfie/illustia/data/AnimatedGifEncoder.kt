@@ -97,6 +97,7 @@ object AnimatedGifEncoder {
             LzwEncoder(width, height, indexedPixels, 8).encode(output)
         }
 
+        check(!isFirstFrame) { "No frames could be decoded for animated GIF" }
         output.write(0x3B) // GIF trailer
         output.flush()
     }

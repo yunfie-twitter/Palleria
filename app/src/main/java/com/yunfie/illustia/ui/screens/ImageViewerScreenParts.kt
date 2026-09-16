@@ -61,7 +61,9 @@ private suspend fun PointerInputScope.detectZoomAndPanGestures(
                 val centroid = event.calculateCentroid(useCurrent = true)
 
                 if (isZoomed() || pressedCount >= 2) {
-                    if (zoomChange != 1f || panChange != Offset.Zero) {
+                    val validZoom = zoomChange.isFinite() && zoomChange > 0f
+                    val hasMovement = zoomChange != 1f || panChange != Offset.Zero
+                    if (validZoom && hasMovement) {
                         onGesture(centroid, panChange, zoomChange)
                     }
                     event.changes.forEach { change ->
@@ -175,9 +177,11 @@ internal fun ZoomablePixivImage(
                     detectZoomAndPanGestures(
                         isZoomed = { scale > 1.02f },
                         onGesture = { centroid, pan, zoom ->
+                            if (!zoom.isFinite() || zoom <= 0f) return@detectZoomAndPanGestures
                             zoomAnimation[0]?.cancel()
                             val previousScale = scale
                             val nextScale = (scale * zoom).coerceIn(1f, 6f)
+                            if (!nextScale.isFinite() || scale <= 0f) return@detectZoomAndPanGestures
                             val appliedZoom = nextScale / scale
                             val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
                             val focalPoint = centroid - viewportCenter

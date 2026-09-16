@@ -441,7 +441,7 @@ class NativeImageStore(
         sourceUrl: String,
     ): String {
         val type = responseMimeType?.substringBefore(";")?.lowercase(Locale.ROOT)
-        if (type in SUPPORTED_MIME_TYPES) return type!!
+        if (type != null && type in SUPPORTED_MIME_TYPES) return type
         return when (sourceUrl.imageExtension()) {
             "png" -> "image/png"
             "webp" -> "image/webp"

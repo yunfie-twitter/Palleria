@@ -56,7 +56,7 @@ class AppUpdaterRepository(
                     if (!response.isSuccessful) {
                         val body = response.body.string()
                         if (response.code == HTTP_NOT_FOUND) return@runCatching null
-                        throw IllegalStateException("GitHub API error (): ")
+                        throw IllegalStateException("GitHub API error (${response.code}): $body")
                     }
                     val bodyString = response.body.string()
                     val jsonObject = json.parseToJsonElement(bodyString).jsonObject
@@ -126,11 +126,11 @@ class AppUpdaterRepository(
                 val request = Request.Builder().url(release.apkDownloadUrl).build()
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IllegalStateException("Download failed ()")
+                        throw IllegalStateException("Download failed (${response.code})")
                     }
                     val body = response.body
                     val totalBytes = if (release.apkSize > 0) release.apkSize else body.contentLength()
-                    val tempFile = File(updatesDir, ".tmp")
+                    val tempFile = File(updatesDir, "${release.apkFileName}.tmp")
                     body.byteStream().use { input ->
                         FileOutputStream(tempFile).use { output ->
                             val buffer = ByteArray(8192)

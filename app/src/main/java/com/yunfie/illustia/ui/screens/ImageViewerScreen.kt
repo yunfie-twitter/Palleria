@@ -160,7 +160,7 @@ fun ImageViewerScreen(
     }
 
     fun shareCurrentPage() {
-        val url = imageUrls[pagerState.currentPage]
+        val url = imageUrls.getOrNull(pagerState.currentPage) ?: return
         val sendIntent =
             Intent().apply {
                 action = Intent.ACTION_SEND
@@ -176,6 +176,7 @@ fun ImageViewerScreen(
     }
 
     fun movePage(direction: Int) {
+        if (imageUrls.isEmpty()) return
         val targetPage = (pagerState.currentPage + direction).coerceIn(0, imageUrls.lastIndex)
         if (targetPage == pagerState.currentPage) return
         coroutineScope.launch {
