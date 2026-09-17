@@ -79,7 +79,9 @@ internal fun SearchResultGrid(
             }
         }
     PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages)
+    val gridState = viewModel.searchResultGridState
     AutoLoadMoreEffect(
+        gridState = gridState,
         enabled = state.settings.autoLoadMore,
         nextUrl =
             when {
@@ -91,7 +93,6 @@ internal fun SearchResultGrid(
         onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
     )
 
-    val gridState = viewModel.searchResultGridState
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(if (page == 0 && !isNovelResult) adaptiveIllustColumns(state.settings) else 1),

@@ -94,12 +94,13 @@ internal fun FeedTabContent(
         remember(items, feedHighQuality) {
             items
                 .asSequence()
-                .take(16)
+                .take(8)
                 .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
                 .toList()
         }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
+        gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = loadState == LoadState.Loading,
@@ -190,12 +191,13 @@ internal fun FollowingTabContent(
         remember(items, feedHighQuality) {
             items
                 .asSequence()
-                .take(16)
+                .take(8)
                 .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
                 .toList()
         }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
+        gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = loadState == LoadState.Loading,

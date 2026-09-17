@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -583,12 +584,13 @@ fun IllustGrid(
     showBookmarkButton: Boolean = true,
     isMutedByTag: (Illust) -> Boolean = { false },
     contentPadding: PaddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = MainNavigationContentPadding),
+    state: LazyGridState = rememberLazyGridState(),
 ) {
     if (illusts.isEmpty()) {
         EmptyState(emptyMessage)
     } else {
         LazyVerticalGrid(
-            state = rememberLazyGridState(),
+            state = state,
             columns = GridCells.Fixed(columns.coerceAtLeast(1)),
             modifier = modifier.fillMaxSize(),
             contentPadding = contentPadding,
@@ -596,10 +598,12 @@ fun IllustGrid(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             items(illusts, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                val onClick = remember(illust, onOpenIllust) { { onOpenIllust(illust) } }
+                val onBookmarkClick = remember(illust, onBookmark) { { onBookmark(illust) } }
                 IllustCard(
                     illust = illust,
-                    onBookmark = { onBookmark(illust) },
-                    onClick = { onOpenIllust(illust) },
+                    onBookmark = onBookmarkClick,
+                    onClick = onClick,
                     showBookmarkButton = showBookmarkButton,
                     isMutedByTag = isMutedByTag(illust),
                 )

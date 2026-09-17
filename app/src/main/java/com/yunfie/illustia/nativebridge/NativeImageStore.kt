@@ -11,16 +11,11 @@ import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.documentfile.provider.DocumentFile
 import com.yunfie.illustia.platform.PlatformCapabilities
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.InputStream
+import java.util.ArrayDeque
 import java.util.Collections
 import java.util.Locale
-import java.util.concurrent.CopyOnWriteArrayList
 
 class NativeImageStore(
     private val context: Context,
@@ -203,39 +198,31 @@ class NativeImageStore(
             }.orEmpty()
     }
 
-    private fun listDocumentImages(root: DocumentFile): List<NativeSavedImage> =
-        runBlocking {
-            val result = CopyOnWriteArrayList<NativeSavedImage>()
+    private fun listDocumentImages(root: DocumentFile): List<NativeSavedImage> {
+        val result = mutableListOf<NativeSavedImage>()
+        val queue = ArrayDeque<DocumentFile>()
+        queue.add(root)
 
-            suspend fun walk(directory: DocumentFile) {
-                if (result.size >= MAX_LISTED_IMAGES) return
-                val items = directory.listFiles()
-                coroutineScope {
-                    val files = items.filter { it.isFile && it.isSupportedImage() }
-                    files.forEach { item ->
-                        if (result.size < MAX_LISTED_IMAGES) {
-                            result.add(
-                                NativeSavedImage(
-                                    uri = item.uri.toString(),
-                                    name = item.name.orEmpty(),
-                                    modifiedAtMillis = item.lastModified(),
-                                ),
-                            )
-                        }
-                    }
-                    val dirs = items.filter { it.isDirectory }
-                    dirs
-                        .map {
-                            async(Dispatchers.IO) {
-                                walk(it)
-                            }
-                        }.awaitAll()
+        while (queue.isNotEmpty() && result.size < MAX_LISTED_IMAGES) {
+            val dir = queue.removeFirst()
+            val items = dir.listFiles()
+            for (item in items) {
+                if (item.isFile && item.isSupportedImage()) {
+                    result.add(
+                        NativeSavedImage(
+                            uri = item.uri.toString(),
+                            name = item.name.orEmpty(),
+                            modifiedAtMillis = item.lastModified(),
+                        ),
+                    )
+                    if (result.size >= MAX_LISTED_IMAGES) break
+                } else if (item.isDirectory) {
+                    queue.add(item)
                 }
             }
-
-            walk(root)
-            result.sortedByDescending(NativeSavedImage::modifiedAtMillis)
         }
+        return result.sortedByDescending(NativeSavedImage::modifiedAtMillis)
+    }
 
     private fun listFileImages(root: File): List<NativeSavedImage> {
         if (!root.isDirectory) return emptyList()

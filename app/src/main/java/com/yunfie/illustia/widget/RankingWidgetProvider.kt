@@ -392,7 +392,9 @@ private fun artworkPendingIntent(
     illustId: Long,
 ): PendingIntent {
     val intent =
-        Intent(Intent.ACTION_VIEW, Uri.parse("https://www.pixiv.net/artworks/$illustId")).apply {
+        Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            data = Uri.parse("https://www.pixiv.net/artworks/$illustId")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
     val requestCode = (illustId xor (illustId ushr 32)).toInt()

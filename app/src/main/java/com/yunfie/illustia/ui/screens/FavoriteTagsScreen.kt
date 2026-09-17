@@ -148,6 +148,7 @@ fun FavoriteTagsScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             AutoLoadMoreEffect(
+                gridState = gridState,
                 enabled = state.settings.autoLoadMore,
                 nextUrl = state.watchlistNextUrl,
                 isLoading = state.loadState == LoadState.Loading,

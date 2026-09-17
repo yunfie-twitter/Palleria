@@ -277,6 +277,7 @@ private fun RankingGridContent(
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
 
     AutoLoadMoreEffect(
+        gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = loadState == LoadState.Loading,

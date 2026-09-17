@@ -101,6 +101,7 @@ internal fun BookmarkWatchlistTab(
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
+            gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = watchlistState.model?.nextUrl,
             isLoading = watchlistState.isLoading,
@@ -356,6 +357,7 @@ internal fun BookmarkMainTab(
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
+            gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.bookmarkNextUrl,
             isLoading = loadState == LoadState.Loading,
@@ -423,6 +425,7 @@ internal fun BookmarkTimelineTab(
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
+            gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.timelineNextUrl,
             isLoading = loadState == LoadState.Loading,
@@ -507,6 +510,7 @@ internal fun BookmarkFollowingTab(
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
+            gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.followingUsersNextUrl,
             isLoading = loadState == LoadState.Loading,

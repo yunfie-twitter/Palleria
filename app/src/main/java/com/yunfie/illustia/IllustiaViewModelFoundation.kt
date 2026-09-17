@@ -68,6 +68,9 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
+private const val MIN_SMART_CACHE_PREFETCH = 4
+private const val MAX_SMART_CACHE_PREFETCH = 16
+
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
     val baseSettings: AppSettings? = null,
@@ -164,6 +167,10 @@ abstract class IllustiaViewModelFoundation(
     internal val appStateStore = AppStateStore()
     internal val _uiState: AppStateStore = appStateStore
     val uiState: StateFlow<IllustiaUiState> = appStateStore.state
+
+    @Suppress("VariableNaming")
+    internal val _calculatorState = MutableStateFlow(CalculatorUiState())
+    val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()
     protected val deferredStartupDataStarted = AtomicBoolean(false)
     protected val initialSyncRevision = SettingsStore.syncUpdates.value?.revision ?: 0L
     protected val initialPallaSyncStateRevision =
@@ -285,13 +292,9 @@ abstract class IllustiaViewModelFoundation(
         val proxyBaseUrl = settings.pixivImageProxyBaseUrl
         items
             .asSequence()
-            .take(settings.smartCacheItemCount.coerceIn(4, 30))
-            .flatMap { illust ->
-                (
-                    illust.mediumImagePages.ifEmpty {
-                        listOf(illust.mediumImageUrl.ifBlank { illust.imageUrl })
-                    }
-                ).asSequence()
+            .take(settings.smartCacheItemCount.coerceIn(MIN_SMART_CACHE_PREFETCH, MAX_SMART_CACHE_PREFETCH))
+            .map { illust ->
+                illust.mediumImagePages.firstOrNull() ?: illust.mediumImageUrl.ifBlank { illust.imageUrl }
             }.filter(String::isNotBlank)
             .distinct()
             .forEach { url ->

@@ -654,10 +654,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 }
             } else {
                 CalculatorScreen(
-                    buffer = state.calculatorBuffer,
-                    history = state.calculatorHistory,
-                    isTransitioning = false,
                     viewModel = viewModel,
+                    isTransitioning = false,
                 )
             }
 

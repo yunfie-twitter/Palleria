@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.CalculatorHistoryEntry
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -64,11 +65,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun CalculatorScreen(
-    buffer: String,
-    history: List<CalculatorHistoryEntry>,
-    isTransitioning: Boolean,
     viewModel: IllustiaViewModel,
+    isTransitioning: Boolean = false,
+    buffer: String? = null,
+    history: List<CalculatorHistoryEntry>? = null,
 ) {
+    val calcState by viewModel.calculatorState.collectAsStateWithLifecycle()
+    val activeBuffer = buffer ?: calcState.buffer
+    val activeHistory = history ?: calcState.history
     // ロック中はバックナビゲーションを無効にする
     BackHandler(enabled = true) {}
 
@@ -125,12 +129,12 @@ fun CalculatorScreen(
                             verticalArrangement = Arrangement.SpaceBetween,
                         ) {
                             CalculatorHistorySection(
-                                history = history,
+                                history = activeHistory,
                                 onVerifyAndUnlock = { code -> viewModel.verifyAndUnlockPrivacy(code) },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
                             CalculatorDisplay(
-                                buffer = buffer,
+                                buffer = activeBuffer,
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             )
                         }
@@ -154,7 +158,7 @@ fun CalculatorScreen(
                     ) {
                         // ── 履歴リスト（上部）──────────────────────────────────────────────
                         CalculatorHistorySection(
-                            history = history,
+                            history = activeHistory,
                             onVerifyAndUnlock = { code -> viewModel.verifyAndUnlockPrivacy(code) },
                             modifier =
                                 Modifier
@@ -164,7 +168,7 @@ fun CalculatorScreen(
 
                         // ── 表示エリア ────────────────────────────────────────────────────
                         CalculatorDisplay(
-                            buffer = buffer,
+                            buffer = activeBuffer,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()

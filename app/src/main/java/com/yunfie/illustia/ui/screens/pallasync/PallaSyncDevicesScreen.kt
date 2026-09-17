@@ -28,8 +28,10 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -54,17 +56,17 @@ fun PallaSyncDevicesScreen(
         if (!state.settings.pallaSyncEnabled) return@LaunchedEffect
 
         val dao = PallaSyncDatabase.getDatabase(context).pallaSyncDao()
-        devices = dao.getAllDevices()
+        devices = withContext(Dispatchers.IO) { dao.getAllDevices() }
 
-        val chainState = dao.getAllChainStates().firstOrNull()
+        val chainState = withContext(Dispatchers.IO) { dao.getAllChainStates() }.firstOrNull()
         if (chainState != null) {
             syncManager.fetchDevices(syncManager.getServerUrl(), chainState.chainId)
-            devices = dao.getAllDevices()
+            devices = withContext(Dispatchers.IO) { dao.getAllDevices() }
         }
 
         while (isActive) {
             delay(2_000)
-            devices = dao.getAllDevices()
+            devices = withContext(Dispatchers.IO) { dao.getAllDevices() }
         }
     }
 

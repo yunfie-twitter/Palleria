@@ -33,7 +33,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -87,26 +86,36 @@ class SettingsStore internal constructor(
     private val dao = database.settingsDao()
 
     init {
-        migrateIfNeeded()
+        // Migration will be executed on first suspend read/write off main thread
     }
 
-    suspend fun read(viewHistoryLimit: Int? = null): AppSettings =
-        readAppSettingsImpl(dataStore, sensitivePreferences, dao, viewHistoryLimit)
+    suspend fun read(viewHistoryLimit: Int? = null): AppSettings {
+        ensureMigrated()
+        return readAppSettingsImpl(dataStore, sensitivePreferences, dao, viewHistoryLimit)
+    }
 
-    suspend fun readStartup(): AppSettings = readStartupAppSettingsImpl(dataStore, sensitivePreferences)
+    suspend fun readStartup(): AppSettings {
+        ensureMigrated()
+        return readStartupAppSettingsImpl(dataStore, sensitivePreferences)
+    }
 
-    suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings =
-        readAppSettingsImpl(dataStore, sensitivePreferences, dao, limit)
+    suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings {
+        ensureMigrated()
+        return readAppSettingsImpl(dataStore, sensitivePreferences, dao, limit)
+    }
 
-    suspend fun readFullViewHistory(): List<Illust> =
-        withContext(Dispatchers.IO) {
+    suspend fun readFullViewHistory(): List<Illust> {
+        ensureMigrated()
+        return withContext(Dispatchers.IO) {
             dao.getViewHistory().map(::illustFromEntity)
         }
+    }
 
     suspend fun write(
         settings: AppSettings,
         baseSettings: AppSettings? = null,
     ): AppSettings {
+        ensureMigrated()
         val base = baseSettings ?: persistenceMutex.withLock { read() }
         val events =
             if (base.pallaSyncEnabled && settings.pallaSyncEnabled) {
@@ -277,11 +286,11 @@ class SettingsStore internal constructor(
 
     fun savedIllustDir(): File = File(appContext.filesDir, "saved_illusts")
 
-    private fun migrateIfNeeded() {
+    private suspend fun ensureMigrated() {
         if (migrationCompleted) return
-        synchronized(migrationLock) {
-            if (migrationCompleted) return
-            runBlocking(Dispatchers.IO) {
+        migrationMutex.withLock {
+            if (migrationCompleted) return@withLock
+            withContext(Dispatchers.IO) {
                 migrateSettingsIfNeededImpl(dataStore, encryptedPreferences, legacyPreferences, database, dao)
             }
             migrationCompleted = true
@@ -318,7 +327,7 @@ class SettingsStore internal constructor(
         @Volatile
         private var migrationCompleted = false
         private val encryptedPreferencesLock = Any()
-        private val migrationLock = Any()
+        private val migrationMutex = Mutex()
 
         fun dataStoreFor(context: Context): DataStore<Preferences> =
             sharedDataStore ?: synchronized(this) {

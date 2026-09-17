@@ -740,10 +740,13 @@ private fun createInlineRubyContent(
 internal fun parseNovelPages(rawText: String): List<NovelPage> = NovelContentParser.parsePages(rawText)
 
 internal object NovelContentParser {
+    private val NEWPAGE_REGEX = Regex("""\s*\[newpage\]\s*""")
+    private val TOKEN_PATTERN = Regex("""(\[\[(?:rb|emphasismark|jumpuri):.*?\]\]|\[(?:b|i):.*?\])""")
+
     fun parsePages(rawText: String): List<NovelPage> {
         val normalized = rawText.replace("\r\n", "\n")
         return normalized
-            .split(Regex("""\s*\[newpage\]\s*"""))
+            .split(NEWPAGE_REGEX)
             .map { parsePage(it) }
             .ifEmpty { listOf(NovelPage(emptyList())) }
     }
@@ -811,10 +814,9 @@ internal object NovelContentParser {
 
     private fun parseParagraph(rawParagraph: String): NovelParagraphBlock {
         val items = mutableListOf<NovelInlineItem>()
-        val pattern = Regex("""(\[\[(?:rb|emphasismark|jumpuri):.*?\]\]|\[(?:b|i):.*?\])""")
         var lastIndex = 0
 
-        pattern.findAll(rawParagraph).forEach { match ->
+        TOKEN_PATTERN.findAll(rawParagraph).forEach { match ->
             if (match.range.first > lastIndex) {
                 items += NovelInlineItem.Text(rawParagraph.substring(lastIndex, match.range.first))
             }

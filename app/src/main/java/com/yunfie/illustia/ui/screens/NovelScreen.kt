@@ -28,6 +28,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,7 +54,9 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -126,6 +129,7 @@ fun NovelScreen(
         }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
+        gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = loadState == LoadState.Loading,
@@ -274,14 +278,20 @@ fun NovelReaderScreen(
 ) {
     val currentNovel = novel ?: return
     val scrollBehavior = MiuixScrollBehavior()
-    val pages =
-        remember(text?.text) {
-            text
-                ?.text
-                ?.let(::parseNovelPages)
-                .orEmpty()
-                .ifEmpty { listOf(NovelPage(emptyList())) }
-        }
+    val pages by produceState(
+        initialValue = listOf(NovelPage(emptyList())),
+        key1 = text?.text,
+    ) {
+        val raw = text?.text
+        value =
+            if (raw.isNullOrBlank()) {
+                listOf(NovelPage(emptyList()))
+            } else {
+                withContext(Dispatchers.Default) {
+                    parseNovelPages(raw)
+                }.ifEmpty { listOf(NovelPage(emptyList())) }
+            }
+    }
     val chapters = remember(pages) { extractChapters(pages) }
     val initialPage =
         remember(currentNovel.id, pages.size) {

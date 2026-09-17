@@ -455,6 +455,7 @@ abstract class IllustiaSettingsSecurityModule(
      */
     fun disablePrivacyMode() {
         updateSettings { it.copy(privacyModeEnabled = false) }
+        _calculatorState.update { it.copy(buffer = "") }
         _uiState.update { it.copy(privacyLocked = false, calculatorBuffer = "", isTransitioningToIllustia = false) }
         refreshPrivacySensitiveWidgets()
     }
@@ -487,6 +488,7 @@ abstract class IllustiaSettingsSecurityModule(
         privacyUnlockJob?.cancel()
         privacyUnlockJob =
             viewModelScope.launch {
+                _calculatorState.update { it.copy(buffer = "") }
                 _uiState.update { it.copy(privacyLocked = false, isTransitioningToIllustia = false, calculatorBuffer = "") }
                 resumePendingNativeIntentIfReady()
                 val settings = _uiState.value.settings
@@ -507,6 +509,7 @@ abstract class IllustiaSettingsSecurityModule(
     fun lockPrivacyMode() {
         if (_uiState.value.settings.privacyModeEnabled) {
             privacyUnlockJob?.cancel()
+            _calculatorState.update { it.copy(buffer = "") }
             _uiState.update { it.copy(privacyLocked = true, calculatorBuffer = "", isTransitioningToIllustia = false) }
         }
     }
@@ -514,9 +517,9 @@ abstract class IllustiaSettingsSecurityModule(
     // ─── 電卓バッファ操作 ───────────────────────────────────────────────────────
 
     fun appendToCalculatorBuffer(char: Char) {
-        _uiState.update { state ->
-            if (state.calculatorBuffer.length < 50) {
-                state.copy(calculatorBuffer = state.calculatorBuffer + char)
+        _calculatorState.update { state ->
+            if (state.buffer.length < 50) {
+                state.copy(buffer = state.buffer + char)
             } else {
                 state
             }
@@ -524,13 +527,13 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     fun clearCalculatorBuffer() {
-        _uiState.update { it.copy(calculatorBuffer = "") }
+        _calculatorState.update { it.copy(buffer = "") }
     }
 
     fun deleteLastCalculatorBuffer() {
-        _uiState.update { state ->
-            if (state.calculatorBuffer.isNotEmpty()) {
-                state.copy(calculatorBuffer = state.calculatorBuffer.dropLast(1))
+        _calculatorState.update { state ->
+            if (state.buffer.isNotEmpty()) {
+                state.copy(buffer = state.buffer.dropLast(1))
             } else {
                 state
             }
@@ -538,12 +541,13 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     fun evaluateCalculatorExpression() {
-        val buffer = _uiState.value.calculatorBuffer
+        val buffer = _calculatorState.value.buffer
         if (buffer.isBlank()) return
 
         // パターンB: 解除コード照合
         if (verifyAndUnlockPrivacy(buffer)) {
             // 解除成功: 履歴に記録しない、バッファは confirmPrivacyUnlock でクリア
+            _calculatorState.update { it.copy(buffer = "") }
             return
         }
 
@@ -551,17 +555,17 @@ abstract class IllustiaSettingsSecurityModule(
         val result = CalculatorEngine.evaluate(buffer)
         val resultStr = if (result != null) CalculatorEngine.formatResult(result) else null
 
-        _uiState.update { state ->
+        _calculatorState.update { state ->
             val newHistory =
                 if (resultStr != null) {
                     val entry = CalculatorHistoryEntry(expression = buffer, result = resultStr)
-                    (listOf(entry) + state.calculatorHistory).take(20)
+                    (listOf(entry) + state.history).take(20)
                 } else {
-                    state.calculatorHistory
+                    state.history
                 }
             state.copy(
-                calculatorBuffer = resultStr ?: "エラー",
-                calculatorHistory = newHistory,
+                buffer = resultStr ?: "エラー",
+                history = newHistory,
             )
         }
     }
