@@ -767,4 +767,5 @@ private fun Illusts.toIllust(): Illust =
         isBookmarked = isBookmarked,
         totalComments = totalComments,
         series = series,
+        xRestrict = xRestrict,
     )
