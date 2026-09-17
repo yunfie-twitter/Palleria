@@ -1,6 +1,8 @@
 package com.yunfie.illustia
 
 import android.app.Application
+import io.sentry.ITransaction
+import io.sentry.SpanStatus
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
@@ -32,6 +34,14 @@ private const val WIDGET_PREVIEW_DELAY_MILLIS = 6_000L
 class IllustiaApplication : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val postStartupWorkStarted = AtomicBoolean(false)
+
+    /**
+     * Tracks the cold-start performance transaction from [onCreate] through
+     * [startPostStartupWork]. Remains `null` when telemetry is disabled or when
+     * [GlitchTipTelemetry] has not yet been enabled (settings are read async).
+     */
+    @Volatile
+    private var startupTransaction: ITransaction? = null
 
     val settingsStore: SettingsStore by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         SettingsStore(this)
@@ -76,6 +86,10 @@ class IllustiaApplication : Application() {
                 }.getOrDefault(false)
             withContext(Dispatchers.Main.immediate) {
                 setTelemetryEnabled(telemetryEnabled)
+                // Begin measuring cold-start duration. startTransaction returns null
+                // when telemetry is disabled, so no extra consent check is required.
+                startupTransaction =
+                    GlitchTipTelemetry.startTransaction("app.startup", "app.launch")
             }
         }
         val appContext = applicationContext
@@ -130,6 +144,10 @@ class IllustiaApplication : Application() {
                 IllustWidgetProvider.publishPreview(appContext)
             }
             setPallaSyncEnabled(recoveredPallaSync || settings.pallaSyncEnabled)
+            // Mark the end of the cold-start window. finish() is a no-op when
+            // startupTransaction is null (telemetry disabled or not yet enabled).
+            startupTransaction?.finish(SpanStatus.OK)
+            startupTransaction = null
         }
     }
 
