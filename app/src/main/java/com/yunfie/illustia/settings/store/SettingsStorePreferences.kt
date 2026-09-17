@@ -52,7 +52,7 @@ internal fun readFromDataStore(
         useDynamicColor = preferences[USE_DYNAMIC_COLOR] ?: true,
         seedColor = preferences[SEED_COLOR] ?: 0xFF42A5F5L,
         onboardingSetupCompleted = preferences[ONBOARDING_SETUP_COMPLETED] ?: false,
-        allowR18 = preferences[ALLOW_R18] ?: false,
+        allowR18 = preferences[ALLOW_R18] ?: true,
         highQualityImages = preferences[HIGH_QUALITY_IMAGES] ?: true,
         bookmarkRestrict = enumValueOrDefault(preferences[BOOKMARK_RESTRICT], com.yunfie.illustia.models.Restrict.Public),
         searchSort = enumValueOrDefault(preferences[SEARCH_SORT], com.yunfie.illustia.models.SearchSort.DateDesc),
@@ -220,7 +220,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         useDynamicColor = preferences.getBoolean(KEY_USE_DYNAMIC_COLOR, true),
         seedColor = preferences.getLong(KEY_SEED_COLOR, 0xFF42A5F5L),
         onboardingSetupCompleted = preferences.getBoolean(KEY_ONBOARDING_SETUP_COMPLETED, false),
-        allowR18 = preferences.getBoolean(KEY_ALLOW_R18, false),
+        allowR18 = preferences.getBoolean(KEY_ALLOW_R18, true),
         highQualityImages = preferences.getBoolean(KEY_HIGH_QUALITY, true),
         bookmarkRestrict =
             enumValueOrDefault(

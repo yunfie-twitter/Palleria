@@ -202,18 +202,7 @@ abstract class IllustiaLibraryNavigationModule(
                             pageCount = 1
                             savedAt = System.currentTimeMillis()
                             saveGroup = current.artistName
-                            xRestrict =
-                                if (
-                                    current.tags.any {
-                                        it.equals("R-18", ignoreCase = true) ||
-                                            it.equals("R18", ignoreCase = true) ||
-                                            it.equals("R-18G", ignoreCase = true)
-                                    }
-                                ) {
-                                    1
-                                } else {
-                                    0
-                                }
+                            xRestrict = if (current.isR18) 1 else 0
                         },
                         pages,
                     )

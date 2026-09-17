@@ -25,6 +25,7 @@ data class Illust(
     val totalBookmarks: Int = 0,
     val totalComments: Int? = null,
     val series: IllustSeries? = null,
+    val xRestrict: Int = 0,
     val illustAiType: Int = 0,
 ) {
     /** サムネイル用URL (square → medium → original のフォールバック) */
@@ -35,6 +36,18 @@ data class Illust(
 
     /** AI作品かどうか */
     val isAi: Boolean = illustAiType == 2 || tags.any { it.equals("AI", ignoreCase = true) || it.contains("AI生成") }
+
+    /** R-18作品かどうか */
+    val isR18: Boolean =
+        xRestrict > 0 ||
+            tags.any { tag ->
+                tag.equals("R-18", ignoreCase = true) ||
+                    tag.equals("R18", ignoreCase = true) ||
+                    tag.equals("R-18G", ignoreCase = true) ||
+                    tag.equals("R18G", ignoreCase = true) ||
+                    tag.startsWith("R-18", ignoreCase = true) ||
+                    tag.startsWith("R18", ignoreCase = true)
+            }
 
     /** カードバッジテキスト (AI / manga / ページ数) */
     val cardBadgeText: String? =

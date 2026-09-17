@@ -19,6 +19,7 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGrid
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.visibleWithSettings
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -37,7 +38,7 @@ fun OfflineLibraryScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
     val columns = adaptiveIllustColumns(state.settings)
-    val savedIllusts = state.savedIllusts.map(SavedIllustEntity::toIllust)
+    val savedIllusts = state.savedIllusts.map(SavedIllustEntity::toIllust).visibleWithSettings(state.settings)
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -92,5 +93,6 @@ private fun SavedIllustEntity.toIllust(): Illust {
         tags = emptyList(),
         pageCount = pageCount,
         isBookmarked = false,
+        xRestrict = xRestrict,
     )
 }
