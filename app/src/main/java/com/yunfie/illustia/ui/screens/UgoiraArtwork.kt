@@ -18,7 +18,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -78,7 +77,8 @@ internal fun UgoiraArtwork(
             }
     }
     val playback = playbackResult?.getOrNull()
-    val decodedBitmaps = remember(playback) { mutableStateMapOf<Int, ImageBitmap>() }
+    val decodedBitmaps = remember(playback) { HashMap<Int, ImageBitmap>() }
+    var currentBitmap by remember(playback, reloadKey) { mutableStateOf<ImageBitmap?>(null) }
     var currentFrameIndex by remember(playback, reloadKey) { mutableIntStateOf(0) }
     var scale by remember(previewUrl) { mutableFloatStateOf(1f) }
     var offset by remember(previewUrl) { mutableStateOf(Offset.Zero) }
@@ -148,6 +148,8 @@ internal fun UgoiraArtwork(
         }
     }
 
+    // フレームのデコードは通常 HashMap に書き込む（Compose State への変更なし）。
+    // 再コンポーズが必要なのはアニメーションループが currentBitmap を更新したときだけ。
     LaunchedEffect(playback) {
         val frames = playback?.frames ?: return@LaunchedEffect
         withContext(Dispatchers.IO) {
@@ -174,6 +176,8 @@ internal fun UgoiraArtwork(
         while (isActive) {
             val frame = frames[index]
             currentFrameIndex = index
+            // decodedBitmaps は通常 HashMap なので読み取りは安全（ロック不要）
+            currentBitmap = decodedBitmaps[index]
             val delayDuration = normalizedUgoiraDelayMillis(frame.delayMillis)
             nextTargetTime += delayDuration
             val waitTime = nextTargetTime - System.currentTimeMillis()
@@ -266,10 +270,9 @@ internal fun UgoiraArtwork(
                         },
             ) {
                 val contentScale = if (zoomEnabled) ContentScale.Fit else ContentScale.FillWidth
-                val currentBitmap = decodedBitmaps[currentFrameIndex]
                 if (currentBitmap != null) {
                     Image(
-                        bitmap = currentBitmap,
+                        bitmap = currentBitmap!!,
                         contentDescription = contentDescription,
                         contentScale = contentScale,
                         modifier = Modifier.fillMaxSize(),

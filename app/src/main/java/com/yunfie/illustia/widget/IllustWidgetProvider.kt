@@ -28,12 +28,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class IllustWidgetProvider : AppWidgetProvider() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        refreshAll(context)
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                refreshAllSuspend(context)
+            } finally {
+                pendingResult.finish()
+            }
+        }
     }
 
     override fun onUpdate(
@@ -70,7 +78,16 @@ class IllustWidgetProvider : AppWidgetProvider() {
     ) {
         super.onReceive(context, intent)
         when (intent.action) {
-            ACTION_REFRESH_ILLUST_WIDGET -> refreshAll(context)
+            ACTION_REFRESH_ILLUST_WIDGET -> {
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        refreshAllSuspend(context)
+                    } finally {
+                        pendingResult.finish()
+                    }
+                }
+            }
         }
     }
 
@@ -98,6 +115,11 @@ class IllustWidgetProvider : AppWidgetProvider() {
             val ids = manager.getAppWidgetIds(ComponentName(context, IllustWidgetProvider::class.java))
             ids.forEach { updateWidget(context, manager, it) }
         }
+
+        suspend fun refreshAllSuspend(context: Context) =
+            withContext(Dispatchers.IO) {
+                refreshAll(context)
+            }
 
         private fun buildPreview(context: Context): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.illust_widget)

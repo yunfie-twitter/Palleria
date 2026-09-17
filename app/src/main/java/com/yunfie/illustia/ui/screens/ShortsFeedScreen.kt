@@ -15,7 +15,9 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -31,6 +33,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.PixivImage
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -59,16 +63,28 @@ fun ShortsFeedScreen(
             pageCount = { items.size },
         )
 
-    LaunchedEffect(pagerState.currentPage, items) {
-        items.getOrNull(pagerState.currentPage)?.let {
-            viewModel.updateShortsFeedCurrentIllust(it.id)
-        }
+    LaunchedEffect(pagerState, items) {
+        snapshotFlow { pagerState.currentPage }
+            .distinctUntilChanged()
+            .collect { page ->
+                items.getOrNull(page)?.let {
+                    viewModel.updateShortsFeedCurrentIllust(it.id)
+                }
+            }
     }
 
-    LaunchedEffect(pagerState.currentPage, items.size) {
-        if (items.isNotEmpty() && pagerState.currentPage >= items.lastIndex - 2) {
-            viewModel.loadMoreShortsFeed()
+    val nearEnd =
+        remember(pagerState, items) {
+            derivedStateOf {
+                val page = pagerState.currentPage
+                items.isNotEmpty() && page >= items.lastIndex - 1
+            }
         }
+    LaunchedEffect(nearEnd) {
+        snapshotFlow { nearEnd.value }
+            .distinctUntilChanged()
+            .filter { it }
+            .collect { viewModel.loadMoreShortsFeed() }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {

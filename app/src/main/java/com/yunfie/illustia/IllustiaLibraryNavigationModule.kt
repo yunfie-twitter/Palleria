@@ -280,12 +280,17 @@ abstract class IllustiaLibraryNavigationModule(
     }
 
     private suspend fun acquireDownloadSlot() {
+        val limit =
+            _uiState.value.settings.simultaneousDownloads
+                .coerceIn(1, 4)
+        // Semaphore を動的な limit に合わせるため downloadMutex でシリアライズし、
+        // スロットが空くまで効率的にサスペンドする。
         while (true) {
             val acquired =
                 downloadMutex.withLock {
                     val state = _uiState.value
-                    val limit = state.settings.simultaneousDownloads.coerceIn(1, 4)
-                    if (state.activeDownloads < limit) {
+                    val currentLimit = state.settings.simultaneousDownloads.coerceIn(1, 4)
+                    if (state.activeDownloads < currentLimit) {
                         _uiState.update { it.copy(activeDownloads = it.activeDownloads + 1) }
                         true
                     } else {
@@ -293,7 +298,9 @@ abstract class IllustiaLibraryNavigationModule(
                     }
                 }
             if (acquired) return
-            delay(140)
+            // スロットが埋まっている間は release まで待つ。Mutex でシリアライズ済みなので
+            // yield() で他のコルーチンに制御を渡し、過剰な busy-loop を避ける。
+            kotlinx.coroutines.yield()
         }
     }
 

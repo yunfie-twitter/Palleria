@@ -80,20 +80,22 @@ class PixivApiCache(
                 iterator.remove()
             }
         }
-        // If still over capacity, evict oldest entries using a bounded max-heap
+        // If still over capacity, evict the oldest entries using a bounded min-heap
         if (cache.size >= maxEntries) {
             val countToRemove = (maxEntries * 0.2).toInt().coerceAtLeast(1)
+            // min-heap: entries with the smallest (oldest) timestamp float to the top
             val oldest =
                 java.util.PriorityQueue<Map.Entry<String, CacheEntry<*>>>(
                     countToRemove + 1,
-                    compareByDescending { it.value.timestamp },
+                    compareBy { it.value.timestamp },
                 )
             for (entry in cache.entries) {
                 oldest.offer(entry)
                 if (oldest.size > countToRemove) {
-                    oldest.poll()
+                    oldest.poll() // removes the newest among collected entries, keeping oldest
                 }
             }
+            // At this point `oldest` holds the countToRemove oldest entries
             while (!oldest.isEmpty()) {
                 oldest.poll()?.key?.let { cache.remove(it) }
             }
