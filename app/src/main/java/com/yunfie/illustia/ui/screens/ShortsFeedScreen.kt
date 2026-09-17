@@ -95,8 +95,12 @@ fun ShortsFeedScreen(
                 modifier = Modifier.align(Alignment.Center),
             )
         } else {
-            VerticalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                val illust = items[page]
+            VerticalPager(
+                state = pagerState,
+                key = { page -> items.getOrNull(page)?.id ?: page },
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                val illust = items.getOrNull(page) ?: return@VerticalPager
                 Box(
                     modifier =
                         Modifier

@@ -237,15 +237,7 @@ fun IllustSeriesScreen(
                 .nestedScroll(seriesScrollConnection)
                 .background(backgroundColor),
     ) {
-        // Blurred backdrop behind PullToRefresh (only active at the very top on pull-down)
-        val rawPullProgress = pullToRefreshState.pullProgress
-        val pullProgress =
-            if (rawPullProgress > 0.06f) {
-                ((rawPullProgress - 0.06f) / 0.94f).coerceIn(0f, 1f)
-            } else {
-                0f
-            }
-        if (pullProgress > 0.001f && !coverUrl.isNullOrBlank()) {
+        if (!coverUrl.isNullOrBlank()) {
             PixivImage(
                 url = coverUrl,
                 contentDescription = null,
@@ -254,13 +246,21 @@ fun IllustSeriesScreen(
                     Modifier
                         .fillMaxSize()
                         .blur(36.dp)
-                        .graphicsLayer { alpha = pullProgress * 0.48f },
+                        .graphicsLayer {
+                            val raw = pullToRefreshState.pullProgress
+                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                            alpha = progress * 0.48f
+                        },
             )
             Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(backgroundColor.copy(alpha = pullProgress * 0.65f)),
+                        .graphicsLayer {
+                            val raw = pullToRefreshState.pullProgress
+                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                            alpha = progress * 0.65f
+                        }.background(backgroundColor),
             )
         }
 

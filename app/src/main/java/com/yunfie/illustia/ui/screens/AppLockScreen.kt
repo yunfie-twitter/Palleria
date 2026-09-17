@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -84,6 +86,7 @@ fun AppLockScreen(
     var errorFlash by remember { mutableFloatStateOf(0f) }
     var showRecoverySheet by remember { mutableStateOf(false) }
     var showResetConfirmDialog by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Block all back navigation while locked.
     BackHandler(enabled = true) {}
@@ -193,16 +196,18 @@ fun AppLockScreen(
         val newPin = pin + digit
         pin = newPin
         if (newPin.length == 6) {
-            if (viewModel.verifyPin(newPin)) {
-                viewModel.resetLockFailCount()
-                triggerUnlockAnimation()
-            } else {
-                error = true
-                shake = true
-                errorFlash = 1f
-                vibrateError()
-                viewModel.recordLockFailure()
-                pin = ""
+            coroutineScope.launch {
+                if (viewModel.verifyPin(newPin)) {
+                    viewModel.resetLockFailCount()
+                    triggerUnlockAnimation()
+                } else {
+                    error = true
+                    shake = true
+                    errorFlash = 1f
+                    vibrateError()
+                    viewModel.recordLockFailure()
+                    pin = ""
+                }
             }
         }
     }

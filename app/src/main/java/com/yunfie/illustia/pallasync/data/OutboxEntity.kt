@@ -2,9 +2,16 @@ package com.yunfie.illustia.pallasync.data
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "pallasync_outbox")
+@Entity(
+    tableName = "pallasync_outbox",
+    indices = [
+        Index(value = ["status"]),
+        Index(value = ["chain_id", "status"]),
+    ],
+)
 data class OutboxEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "chain_id") val chainId: String,

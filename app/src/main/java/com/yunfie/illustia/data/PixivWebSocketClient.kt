@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,6 +100,7 @@ class PixivWebSocketClient internal constructor(
         reconnectJob?.cancel()
         socket.getAndSet(null)?.close(code, reason)
         _state.value = PixivWebSocketState.Closed
+        scope.cancel()
     }
 
     override fun close() {

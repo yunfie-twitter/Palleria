@@ -106,6 +106,10 @@ data class IllustiaUiState(
 data class CalculatorHistoryEntry(
     val expression: String,
     val result: String,
+    val id: String =
+        java.util.UUID
+            .randomUUID()
+            .toString(),
 )
 
 @Immutable

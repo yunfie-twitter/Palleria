@@ -155,8 +155,11 @@ abstract class IllustiaLibraryNavigationModule(
     fun saveOfflineImage(
         url: String,
         filename: String,
+        illust: Illust? = null,
     ) {
+        val targetIllust = illust ?: _uiState.value.selectedIllust ?: return
         viewModelScope.launch(Dispatchers.IO) {
+            var savedFile: File? = null
             try {
                 if (_uiState.value.settings.offlineWifiOnly && getApplication<Application>().applicationContext.isNetworkMetered()) {
                     _uiState.update { it.copy(message = str(R.string.offline_wifi_only_desc)) }
@@ -180,11 +183,11 @@ abstract class IllustiaLibraryNavigationModule(
                     val body = response.body
                     val contentType = body.contentType()?.toString()
                     val file = saveOfflineFile(filename, requestUrl, contentType, body.byteStream())
-                    val current = _uiState.value.selectedIllust ?: return@use
+                    savedFile = file
                     val pages =
                         listOf(
                             SavedIllustPageEntity().apply {
-                                illustId = current.id
+                                illustId = targetIllust.id
                                 pageIndex = 0
                                 localPath = file.absolutePath
                                 sourceUrl = requestUrl
@@ -192,17 +195,17 @@ abstract class IllustiaLibraryNavigationModule(
                         )
                     settingsStore.saveSavedIllust(
                         SavedIllustEntity().apply {
-                            illustId = current.id
-                            title = current.title
-                            artistName = current.artistName
-                            artistId = current.artistId
-                            thumbUrl = current.thumbnailUrl
+                            illustId = targetIllust.id
+                            title = targetIllust.title
+                            artistName = targetIllust.artistName
+                            artistId = targetIllust.artistId
+                            thumbUrl = targetIllust.thumbnailUrl
                             localCoverPath = file.absolutePath
                             localPagePathsJson = "[\"${file.absolutePath.replace("\\", "\\\\")}\"]"
                             pageCount = 1
                             savedAt = System.currentTimeMillis()
-                            saveGroup = current.artistName
-                            xRestrict = if (current.isR18) 1 else 0
+                            saveGroup = targetIllust.artistName
+                            xRestrict = if (targetIllust.isR18) 1 else 0
                         },
                         pages,
                     )
@@ -211,6 +214,10 @@ abstract class IllustiaLibraryNavigationModule(
                 }
             } catch (expectedFailure: Exception) {
                 val e = expectedFailure
+                try {
+                    savedFile?.delete()
+                } catch (_: Throwable) {
+                }
                 if (isCancellation(e)) throw e
                 _uiState.update { it.copy(message = cleanErrorMessage(e, str(R.string.error_save_failed))) }
             }
@@ -374,8 +381,13 @@ abstract class IllustiaLibraryNavigationModule(
         val dir = settingsStore.savedIllustDir()
         dir.mkdirs()
         val target = File(dir, filename.withImageExtension(sourceUrl, responseMimeType))
-        input.use { stream ->
-            FileOutputStream(target).use { output -> stream.copyTo(output) }
+        try {
+            input.use { stream ->
+                FileOutputStream(target).use { output -> stream.copyTo(output) }
+            }
+        } catch (e: java.io.IOException) {
+            target.delete()
+            throw e
         }
         return target
     }

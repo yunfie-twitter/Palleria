@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
                 SavedIllustEntity.class,
                 SavedIllustPageEntity.class
         },
-        version = 3,
+        version = 4,
         exportSchema = false
 )
 public abstract class IllustiaDatabase extends RoomDatabase {
@@ -28,6 +28,12 @@ public abstract class IllustiaDatabase extends RoomDatabase {
         @Override
         public void migrate(SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE saved_illusts ADD COLUMN xRestrict INTEGER NOT NULL DEFAULT 0");
+        }
+    };
+    private static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_saved_illust_pages_illustId ON saved_illust_pages(illustId)");
         }
     };
 
@@ -44,7 +50,7 @@ public abstract class IllustiaDatabase extends RoomDatabase {
                                 IllustiaDatabase.class,
                                 "illustia.db"
                         )
-                        .addMigrations(MIGRATION_2_3)
+                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                         .fallbackToDestructiveMigration()
                         .build();
                 INSTANCE = current;

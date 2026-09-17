@@ -26,54 +26,77 @@ internal suspend fun readRoomSettingsData(
         )
     }
 
+@Suppress("LongMethod")
 internal suspend fun writeRoomSettingsData(
     database: IllustiaDatabase,
     dao: SettingsDao,
     settings: AppSettings,
+    baseSettings: AppSettings? = null,
 ): Unit =
     withContext(Dispatchers.IO) {
+        val searchHistoryChanged = baseSettings == null || baseSettings.searchHistory != settings.searchHistory
+        val favoriteTagsChanged = baseSettings == null || baseSettings.favoriteTags != settings.favoriteTags
+        val viewHistoryChanged = baseSettings == null || baseSettings.viewHistory != settings.viewHistory
+        val accountsChanged = baseSettings == null || baseSettings.accounts != settings.accounts
+
+        val historyChanged = searchHistoryChanged || favoriteTagsChanged
+        val dataChanged = viewHistoryChanged || accountsChanged
+
+        if (!historyChanged && !dataChanged) {
+            return@withContext
+        }
+
         database.runInTransaction(
             Runnable {
-                dao.clearSearchHistory()
-                dao.insertSearchHistory(
-                    settings.searchHistory.take(MAX_SEARCH_HISTORY).mapIndexed { index, query ->
-                        SearchHistoryEntity(query, index)
-                    },
-                )
+                if (searchHistoryChanged) {
+                    dao.clearSearchHistory()
+                    dao.insertSearchHistory(
+                        settings.searchHistory.take(MAX_SEARCH_HISTORY).mapIndexed { index, query ->
+                            SearchHistoryEntity(query, index)
+                        },
+                    )
+                }
 
-                dao.clearFavoriteTags()
-                dao.insertFavoriteTags(
-                    settings.favoriteTags.mapIndexed { index, tag ->
-                        FavoriteTagEntity(tag, index)
-                    },
-                )
-                dao.clearViewHistory()
-                dao.insertViewHistory(
-                    settings.viewHistory.take(MAX_VIEW_HISTORY).mapIndexed { index, illust ->
-                        ViewHistoryEntity(
-                            illust.id,
-                            illust.title,
-                            illust.artistName,
-                            illust.imageUrl,
-                            illust.pageCount,
-                            illust.type,
-                            index,
-                        )
-                    },
-                )
+                if (favoriteTagsChanged) {
+                    dao.clearFavoriteTags()
+                    dao.insertFavoriteTags(
+                        settings.favoriteTags.mapIndexed { index, tag ->
+                            FavoriteTagEntity(tag, index)
+                        },
+                    )
+                }
 
-                dao.clearAccounts()
-                dao.insertAccounts(
-                    settings.accounts.mapIndexed { index, account ->
-                        AccountEntity(
-                            account.userId,
-                            account.name,
-                            account.account,
-                            account.profileImageUrl,
-                            index,
-                        )
-                    },
-                )
+                if (viewHistoryChanged) {
+                    dao.clearViewHistory()
+                    dao.insertViewHistory(
+                        settings.viewHistory.take(MAX_VIEW_HISTORY).mapIndexed { index, illust ->
+                            ViewHistoryEntity(
+                                illust.id,
+                                illust.title,
+                                illust.artistName,
+                                illust.imageUrl,
+                                illust.pageCount,
+                                illust.type,
+                                index,
+                            )
+                        },
+                    )
+                }
+
+                if (accountsChanged) {
+                    dao.clearAccounts()
+                    dao.insertAccounts(
+                        settings.accounts.mapIndexed { index, account ->
+                            AccountEntity(
+                                account.userId,
+                                account.name,
+                                account.account,
+                                account.profileImageUrl,
+                                index,
+                            )
+                        },
+                    )
+                }
             },
         )
     }

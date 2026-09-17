@@ -282,7 +282,11 @@ class DiscordRpcManager(
         fun hasSufficientRam(context: Context): Boolean = !PlatformCapabilities.isLowRamDevice(context)
 
         private fun recordDiagnosticStatic(message: String) {
-            val entry = "${DIAGNOSTIC_TIME_FORMAT.format(Date())}  $message"
+            val formattedTime =
+                synchronized(DIAGNOSTIC_TIME_FORMAT) {
+                    DIAGNOSTIC_TIME_FORMAT.format(Date())
+                }
+            val entry = "$formattedTime  $message"
             Log.d(TAG, entry)
             _diagnostics.value = (_diagnostics.value + entry).takeLast(MAX_DIAGNOSTIC_ENTRIES)
         }

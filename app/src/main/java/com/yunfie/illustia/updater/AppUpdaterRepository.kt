@@ -29,6 +29,8 @@ private const val HTTP_NOT_FOUND = 404
 private const val SHIZUKU_MIN_API_VERSION = 11
 private const val SHIZUKU_DEFAULT_REQUEST_CODE = 1001
 private const val THREAD_JOIN_TIMEOUT_MS = 5000L
+private const val PROGRESS_THROTTLE_INTERVAL_MS = 100L
+private const val PROGRESS_THROTTLE_DELTA = 0.01f
 
 @Suppress("TooManyFunctions")
 class AppUpdaterRepository(
@@ -122,7 +124,7 @@ class AppUpdaterRepository(
         currentVersion: String = getCurrentVersionName(),
     ): Boolean = compareVersions(remoteVersion, currentVersion) > 0
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun downloadApk(
         release: AppReleaseInfo,
         onProgress: (progress: Float, downloadedBytes: Long, totalBytes: Long) -> Unit,
@@ -154,12 +156,23 @@ class AppUpdaterRepository(
                             val buffer = ByteArray(8192)
                             var readBytes: Int
                             var totalRead = 0L
+                            var lastProgressTime = 0L
+                            var lastReportedProgress = -1f
                             while (input.read(buffer).also { readBytes = it } != -1) {
                                 output.write(buffer, 0, readBytes)
                                 messageDigest.update(buffer, 0, readBytes)
                                 totalRead += readBytes
-                                val progress = if (totalBytes > 0) totalRead.toFloat() / totalBytes.toFloat() else 0f
-                                onProgress(progress.coerceIn(0f, 1f), totalRead, totalBytes)
+                                val progress = if (totalBytes > 0) (totalRead.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
+                                val now = System.currentTimeMillis()
+                                if (
+                                    now - lastProgressTime >= PROGRESS_THROTTLE_INTERVAL_MS ||
+                                    progress - lastReportedProgress >= PROGRESS_THROTTLE_DELTA ||
+                                    totalRead == totalBytes
+                                ) {
+                                    lastProgressTime = now
+                                    lastReportedProgress = progress
+                                    onProgress(progress, totalRead, totalBytes)
+                                }
                             }
                             output.flush()
                         }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -289,16 +291,24 @@ internal fun NovelReaderVerticalPage(
         val charHeight = (fontSize.coerceAtLeast(8f) * lineHeightMultiplier.coerceAtLeast(0.5f)).dp
         val maxChars = (availableHeight / charHeight).toInt().coerceIn(VERTICAL_MIN_CHARS, VERTICAL_MAX_CHARS)
 
+        val columnsByParagraph =
+            remember(page, maxChars) {
+                page.blocks.filterIsInstance<NovelParagraphBlock>().associateWith { block ->
+                    NovelVerticalEngine.breakIntoColumns(block, maxChars)
+                }
+            }
+
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
             LazyRow(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy((fontSize * VERTICAL_COLUMN_SPACING_FACTOR).dp),
             ) {
-                page.blocks.forEach { block ->
+                page.blocks.forEachIndexed { blockIndex, block ->
                     renderVerticalBlock(
+                        blockIndex = blockIndex,
                         block = block,
-                        maxChars = maxChars,
+                        columns = columnsByParagraph[block],
                         fontSize = fontSize,
                         textColor = textColor,
                         fontFamily = fontFamily,
@@ -321,8 +331,9 @@ internal fun NovelReaderVerticalPage(
 }
 
 private fun LazyListScope.renderVerticalBlock(
+    blockIndex: Int,
     block: NovelBlock,
-    maxChars: Int,
+    columns: List<List<NovelVerticalToken>>?,
     fontSize: Float,
     textColor: Color,
     fontFamily: FontFamily,
@@ -331,19 +342,19 @@ private fun LazyListScope.renderVerticalBlock(
 ) {
     when (block) {
         NovelSpacerBlock -> {
-            item {
+            item(key = "spacer_$blockIndex") {
                 Spacer(modifier = Modifier.width((fontSize * VERTICAL_SPACER_WIDTH_FACTOR).dp))
             }
         }
 
         is NovelChapterBlock -> {
-            item {
+            item(key = "chapter_${blockIndex}_${block.title}") {
                 NovelVerticalChapterItem(title = block.title, textColor = textColor, fontFamily = fontFamily)
             }
         }
 
         is NovelPixivImageBlock -> {
-            item {
+            item(key = "image_${blockIndex}_${block.illustId}") {
                 NovelVerticalArtworkCard(
                     illustId = block.illustId,
                     textColor = textColor,
@@ -354,14 +365,17 @@ private fun LazyListScope.renderVerticalBlock(
         }
 
         is NovelJumpBlock -> {
-            item {
+            item(key = "jump_${blockIndex}_${block.pageNumber}") {
                 NovelJumpButton(pageNumber = block.pageNumber, onJumpPage = onJumpPage)
             }
         }
 
         is NovelParagraphBlock -> {
-            val columns = NovelVerticalEngine.breakIntoColumns(block, maxChars)
-            items(columns) { columnTokens ->
+            val cols = columns ?: emptyList()
+            itemsIndexed(
+                items = cols,
+                key = { colIndex, _ -> "para_${blockIndex}_col_$colIndex" },
+            ) { _, columnTokens ->
                 NovelVerticalColumn(
                     tokens = columnTokens,
                     fontSize = fontSize,
@@ -396,15 +410,15 @@ private fun NovelVerticalChapterItem(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            title.forEach { ch ->
-                Text(
-                    text = NovelVerticalEngine.convertPunctuation(ch).toString(),
-                    style = MiuixTheme.textStyles.title2,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor,
-                    fontFamily = fontFamily,
-                )
-            }
+            val batchedText = title.map { NovelVerticalEngine.convertPunctuation(it) }.joinToString("\n")
+            Text(
+                text = batchedText,
+                style = MiuixTheme.textStyles.title2,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontFamily = fontFamily,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -487,6 +501,20 @@ private fun NovelVerticalArtworkCard(
     }
 }
 
+private sealed interface NovelVerticalRenderSegment {
+    data class BatchedChars(
+        val text: String,
+    ) : NovelVerticalRenderSegment
+
+    data class Ruby(
+        val token: NovelVerticalToken.Ruby,
+    ) : NovelVerticalRenderSegment
+
+    data class Emphasis(
+        val token: NovelVerticalToken.Emphasis,
+    ) : NovelVerticalRenderSegment
+}
+
 @Composable
 private fun NovelVerticalColumn(
     tokens: List<NovelVerticalToken>,
@@ -495,29 +523,74 @@ private fun NovelVerticalColumn(
     fontFamily: FontFamily,
     modifier: Modifier = Modifier,
 ) {
+    val segments =
+        remember(tokens) {
+            val list = mutableListOf<NovelVerticalRenderSegment>()
+            val sb = StringBuilder()
+            for (token in tokens) {
+                when (token) {
+                    is NovelVerticalToken.Char -> {
+                        if (sb.isNotEmpty()) sb.append('\n')
+                        sb.append(token.char)
+                    }
+
+                    is NovelVerticalToken.Ruby -> {
+                        if (sb.isNotEmpty()) {
+                            list.add(NovelVerticalRenderSegment.BatchedChars(sb.toString()))
+                            sb.clear()
+                        }
+                        list.add(NovelVerticalRenderSegment.Ruby(token))
+                    }
+
+                    is NovelVerticalToken.Emphasis -> {
+                        if (sb.isNotEmpty()) {
+                            list.add(NovelVerticalRenderSegment.BatchedChars(sb.toString()))
+                            sb.clear()
+                        }
+                        list.add(NovelVerticalRenderSegment.Emphasis(token))
+                    }
+                }
+            }
+            if (sb.isNotEmpty()) {
+                list.add(NovelVerticalRenderSegment.BatchedChars(sb.toString()))
+            }
+            list
+        }
+
     Column(
         modifier = modifier.fillMaxHeight().padding(horizontal = (fontSize * VERTICAL_PADDING_HORIZONTAL_FACTOR).dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        tokens.forEach { token ->
-            when (token) {
-                is NovelVerticalToken.Char -> {
+        segments.forEach { segment ->
+            when (segment) {
+                is NovelVerticalRenderSegment.BatchedChars -> {
                     Text(
-                        text = token.char.toString(),
+                        text = segment.text,
                         fontSize = fontSize.sp,
                         lineHeight = fontSize.sp,
                         fontFamily = fontFamily,
                         color = textColor,
+                        textAlign = TextAlign.Center,
                     )
                 }
 
-                is NovelVerticalToken.Ruby -> {
-                    NovelVerticalRubyToken(token = token, fontSize = fontSize, textColor = textColor, fontFamily = fontFamily)
+                is NovelVerticalRenderSegment.Ruby -> {
+                    NovelVerticalRubyToken(
+                        token = segment.token,
+                        fontSize = fontSize,
+                        textColor = textColor,
+                        fontFamily = fontFamily,
+                    )
                 }
 
-                is NovelVerticalToken.Emphasis -> {
-                    NovelVerticalEmphasisToken(token = token, fontSize = fontSize, textColor = textColor, fontFamily = fontFamily)
+                is NovelVerticalRenderSegment.Emphasis -> {
+                    NovelVerticalEmphasisToken(
+                        token = segment.token,
+                        fontSize = fontSize,
+                        textColor = textColor,
+                        fontFamily = fontFamily,
+                    )
                 }
             }
         }
@@ -536,26 +609,26 @@ private fun NovelVerticalRubyToken(
         horizontalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            token.ruby.forEach { rChar ->
-                Text(
-                    text = NovelVerticalEngine.convertPunctuation(rChar).toString(),
-                    fontSize = (fontSize * RUBY_FONT_SCALE).sp,
-                    lineHeight = (fontSize * RUBY_LINE_HEIGHT_SCALE).sp,
-                    fontFamily = fontFamily,
-                    color = textColor.copy(alpha = 0.85f),
-                )
-            }
+            val batchedRuby = token.ruby.map { NovelVerticalEngine.convertPunctuation(it) }.joinToString("\n")
+            Text(
+                text = batchedRuby,
+                fontSize = (fontSize * RUBY_FONT_SCALE).sp,
+                lineHeight = (fontSize * RUBY_LINE_HEIGHT_SCALE).sp,
+                fontFamily = fontFamily,
+                color = textColor.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center,
+            )
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            token.base.forEach { bChar ->
-                Text(
-                    text = NovelVerticalEngine.convertPunctuation(bChar).toString(),
-                    fontSize = fontSize.sp,
-                    lineHeight = fontSize.sp,
-                    fontFamily = fontFamily,
-                    color = textColor,
-                )
-            }
+            val batchedBase = token.base.map { NovelVerticalEngine.convertPunctuation(it) }.joinToString("\n")
+            Text(
+                text = batchedBase,
+                fontSize = fontSize.sp,
+                lineHeight = fontSize.sp,
+                fontFamily = fontFamily,
+                color = textColor,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
