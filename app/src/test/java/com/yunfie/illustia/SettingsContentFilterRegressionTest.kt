@@ -17,48 +17,110 @@ class SettingsContentFilterRegressionTest :
     FunSpec({
         // isR18 は xRestrict > 0 で判定される
         // isAi は illustAiType == 2 で判定される
-        val normalIllust = Illust(
-            id = 1L, title = "Normal", type = "illust", caption = "",
-            artistId = 0L, artistName = "", artistAvatarUrl = null,
-            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
-            tags = emptyList(), pageCount = 1, isBookmarked = false,
-            xRestrict = 0, illustAiType = 0,
-        )
-        val r18Illust = Illust(
-            id = 2L, title = "R18", type = "illust", caption = "",
-            artistId = 0L, artistName = "", artistAvatarUrl = null,
-            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
-            tags = emptyList(), pageCount = 1, isBookmarked = false,
-            xRestrict = 1, illustAiType = 0,
-        )
-        val aiIllust = Illust(
-            id = 3L, title = "AI", type = "illust", caption = "",
-            artistId = 0L, artistName = "", artistAvatarUrl = null,
-            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
-            tags = emptyList(), pageCount = 1, isBookmarked = false,
-            xRestrict = 0, illustAiType = 2,
-        )
-        val r18AiIllust = Illust(
-            id = 4L, title = "R18 AI", type = "illust", caption = "",
-            artistId = 0L, artistName = "", artistAvatarUrl = null,
-            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
-            tags = emptyList(), pageCount = 1, isBookmarked = false,
-            xRestrict = 1, illustAiType = 2,
-        )
+        val normalIllust =
+            Illust(
+                id = 1L,
+                title = "Normal",
+                type = "illust",
+                caption = "",
+                artistId = 0L,
+                artistName = "",
+                artistAvatarUrl = null,
+                squareImageUrl = "",
+                imageUrl = "",
+                originalImageUrl = null,
+                tags = emptyList(),
+                pageCount = 1,
+                isBookmarked = false,
+                xRestrict = 0,
+                illustAiType = 0,
+            )
+        val r18Illust =
+            Illust(
+                id = 2L,
+                title = "R18",
+                type = "illust",
+                caption = "",
+                artistId = 0L,
+                artistName = "",
+                artistAvatarUrl = null,
+                squareImageUrl = "",
+                imageUrl = "",
+                originalImageUrl = null,
+                tags = emptyList(),
+                pageCount = 1,
+                isBookmarked = false,
+                xRestrict = 1,
+                illustAiType = 0,
+            )
+        val aiIllust =
+            Illust(
+                id = 3L,
+                title = "AI",
+                type = "illust",
+                caption = "",
+                artistId = 0L,
+                artistName = "",
+                artistAvatarUrl = null,
+                squareImageUrl = "",
+                imageUrl = "",
+                originalImageUrl = null,
+                tags = emptyList(),
+                pageCount = 1,
+                isBookmarked = false,
+                xRestrict = 0,
+                illustAiType = 2,
+            )
+        val r18AiIllust =
+            Illust(
+                id = 4L,
+                title = "R18 AI",
+                type = "illust",
+                caption = "",
+                artistId = 0L,
+                artistName = "",
+                artistAvatarUrl = null,
+                squareImageUrl = "",
+                imageUrl = "",
+                originalImageUrl = null,
+                tags = emptyList(),
+                pageCount = 1,
+                isBookmarked = false,
+                xRestrict = 1,
+                illustAiType = 2,
+            )
 
         // isR18 は title/caption に "R-18" を含む場合に判定される
-        val normalNovel = NovelPreview(
-            id = 10L, title = "Normal Novel", caption = "",
-            userId = 0L, userName = "", userAccount = "",
-            coverUrl = "", pageCount = 1, textLength = 0,
-            isBookmarked = false, totalBookmarks = 0, totalView = 0,
-        )
-        val r18Novel = NovelPreview(
-            id = 20L, title = "R-18 Novel", caption = "",
-            userId = 0L, userName = "", userAccount = "",
-            coverUrl = "", pageCount = 1, textLength = 0,
-            isBookmarked = false, totalBookmarks = 0, totalView = 0,
-        )
+        val normalNovel =
+            NovelPreview(
+                id = 10L,
+                title = "Normal Novel",
+                caption = "",
+                userId = 0L,
+                userName = "",
+                userAccount = "",
+                coverUrl = "",
+                pageCount = 1,
+                textLength = 0,
+                isBookmarked = false,
+                totalBookmarks = 0,
+                totalView = 0,
+            )
+        val r18Novel =
+            NovelPreview(
+                id = 20L,
+                title = "R-18 Novel",
+                caption = "",
+                userId = 0L,
+                userName = "",
+                userAccount = "",
+                coverUrl = "",
+                pageCount = 1,
+                textLength = 0,
+                isBookmarked = false,
+                totalBookmarks = 0,
+                totalView = 0,
+            )
 
         test("1. R18 content is purged when allowR18 == false regardless of prior state") {
             // ケース1A: allowR18が元からfalseの状態で、状態内にR18コンテンツが混入・復元された場合
@@ -68,7 +130,8 @@ class SettingsContentFilterRegressionTest :
                     homeItems = listOf(normalIllust, r18Illust),
                     novelItems = listOf(normalNovel, r18Novel),
                 )
-            val filteredA = initialStateAlreadyRestricted.withSettings(AppSettings(allowR18 = false, hideAiWorks = false))
+            val filteredA =
+                initialStateAlreadyRestricted.withSettings(AppSettings(allowR18 = false, hideAiWorks = false))
             filteredA.homeItems.shouldContainExactly(normalIllust)
             filteredA.novelItems.shouldContainExactly(normalNovel)
 
@@ -79,7 +142,8 @@ class SettingsContentFilterRegressionTest :
                     homeItems = listOf(normalIllust, r18Illust),
                     novelItems = listOf(normalNovel, r18Novel),
                 )
-            val filteredB = initialStateAllowed.withSettings(AppSettings(allowR18 = false, hideAiWorks = false))
+            val filteredB =
+                initialStateAllowed.withSettings(AppSettings(allowR18 = false, hideAiWorks = false))
             filteredB.homeItems.shouldContainExactly(normalIllust)
             filteredB.novelItems.shouldContainExactly(normalNovel)
         }
@@ -91,7 +155,8 @@ class SettingsContentFilterRegressionTest :
                     settings = AppSettings(allowR18 = true, hideAiWorks = true),
                     homeItems = listOf(normalIllust, aiIllust, r18Illust, r18AiIllust),
                 )
-            val filteredA = initialStateAlreadyHidingAi.withSettings(AppSettings(allowR18 = true, hideAiWorks = true))
+            val filteredA =
+                initialStateAlreadyHidingAi.withSettings(AppSettings(allowR18 = true, hideAiWorks = true))
             filteredA.homeItems.shouldContainExactly(normalIllust, r18Illust)
 
             // ケース2B: hideAiWorks == false から hideAiWorks == true への遷移時
@@ -100,7 +165,8 @@ class SettingsContentFilterRegressionTest :
                     settings = AppSettings(allowR18 = true, hideAiWorks = false),
                     homeItems = listOf(normalIllust, aiIllust, r18Illust, r18AiIllust),
                 )
-            val filteredB = initialStateShowingAi.withSettings(AppSettings(allowR18 = true, hideAiWorks = true))
+            val filteredB =
+                initialStateShowingAi.withSettings(AppSettings(allowR18 = true, hideAiWorks = true))
             filteredB.homeItems.shouldContainExactly(normalIllust, r18Illust)
         }
 
