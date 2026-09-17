@@ -30,4 +30,5 @@ enum class IllustiaNavigationRequest {
     DiscordSettings,
     DiscordLogin,
     WallpaperPlaylistSettings,
+    Novels,
 }

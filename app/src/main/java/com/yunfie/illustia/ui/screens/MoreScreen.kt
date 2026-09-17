@@ -56,6 +56,7 @@ import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Timer
@@ -123,6 +124,7 @@ private fun rememberQuickActions(
         state.activeDownloads,
         state.settings.favoriteTags.size,
         state.settings.pallaSyncEnabled,
+        state.settings.hideHomeNovelButton,
     ) {
         buildList {
             add(
@@ -162,6 +164,15 @@ private fun rememberQuickActions(
                         title = context.getString(R.string.login_feature_sync),
                         icon = MiuixIcons.Refresh,
                         onClick = viewModel::openPallaSyncDevices,
+                    ),
+                )
+            }
+            if (state.settings.hideHomeNovelButton) {
+                add(
+                    MoreAction(
+                        title = context.getString(R.string.nav_novel),
+                        icon = MiuixIcons.Photos,
+                        onClick = viewModel::openNovels,
                     ),
                 )
             }

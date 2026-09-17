@@ -219,6 +219,8 @@
     <string name="settings_experimental_summary">体验仍在开发中的功能</string>
     <string name="general_settings_title">常规设置</string>
     <string name="experimental_settings_title">实验性功能</string>
+    <string name="experimental_hide_home_novel_button">隐藏首页小说按钮</string>
+    <string name="experimental_hide_home_novel_button_desc">隐藏首页顶部栏的小说按钮，并放置在“更多”中</string>
     <string name="general_section_display">显示</string>
     <string name="general_section_interaction">交互</string>
     <string name="general_section_startup">启动</string>

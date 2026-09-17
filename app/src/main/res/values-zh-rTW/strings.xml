@@ -219,6 +219,8 @@
     <string name="settings_experimental_summary">體驗仍在開發中的功能</string>
     <string name="general_settings_title">常規設定</string>
     <string name="experimental_settings_title">實驗性功能</string>
+    <string name="experimental_hide_home_novel_button">隱藏首頁小說按鈕</string>
+    <string name="experimental_hide_home_novel_button_desc">隱藏首頁頂部欄的小說按鈕，並放置在「更多」中</string>
     <string name="general_section_display">顯示</string>
     <string name="general_section_interaction">交互</string>
     <string name="general_section_startup">啟動</string>

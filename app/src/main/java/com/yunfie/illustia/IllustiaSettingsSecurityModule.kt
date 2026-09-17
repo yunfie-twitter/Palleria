@@ -338,6 +338,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(disableHorizontalSwipeInShortsFeed = value) }
     }
 
+    fun updateHideHomeNovelButton(value: Boolean) {
+        updateSettings { it.copy(hideHomeNovelButton = value) }
+    }
+
     fun updateShowAiBadge(value: Boolean) {
         updateSettings { it.copy(showAiBadge = value) }
     }
