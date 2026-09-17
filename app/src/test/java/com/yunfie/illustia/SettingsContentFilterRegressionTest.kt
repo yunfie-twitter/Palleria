@@ -15,13 +15,50 @@ import io.kotest.matchers.shouldBe
  */
 class SettingsContentFilterRegressionTest :
     FunSpec({
-        val normalIllust = Illust(id = 1L, title = "Normal", isR18 = false, isAi = false)
-        val r18Illust = Illust(id = 2L, title = "R18", isR18 = true, isAi = false)
-        val aiIllust = Illust(id = 3L, title = "AI", isR18 = false, isAi = true)
-        val r18AiIllust = Illust(id = 4L, title = "R18 AI", isR18 = true, isAi = true)
+        // isR18 は xRestrict > 0 で判定される
+        // isAi は illustAiType == 2 で判定される
+        val normalIllust = Illust(
+            id = 1L, title = "Normal", type = "illust", caption = "",
+            artistId = 0L, artistName = "", artistAvatarUrl = null,
+            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
+            tags = emptyList(), pageCount = 1, isBookmarked = false,
+            xRestrict = 0, illustAiType = 0,
+        )
+        val r18Illust = Illust(
+            id = 2L, title = "R18", type = "illust", caption = "",
+            artistId = 0L, artistName = "", artistAvatarUrl = null,
+            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
+            tags = emptyList(), pageCount = 1, isBookmarked = false,
+            xRestrict = 1, illustAiType = 0,
+        )
+        val aiIllust = Illust(
+            id = 3L, title = "AI", type = "illust", caption = "",
+            artistId = 0L, artistName = "", artistAvatarUrl = null,
+            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
+            tags = emptyList(), pageCount = 1, isBookmarked = false,
+            xRestrict = 0, illustAiType = 2,
+        )
+        val r18AiIllust = Illust(
+            id = 4L, title = "R18 AI", type = "illust", caption = "",
+            artistId = 0L, artistName = "", artistAvatarUrl = null,
+            squareImageUrl = "", imageUrl = "", originalImageUrl = null,
+            tags = emptyList(), pageCount = 1, isBookmarked = false,
+            xRestrict = 1, illustAiType = 2,
+        )
 
-        val normalNovel = NovelPreview(id = 10L, title = "Normal Novel", isR18 = false)
-        val r18Novel = NovelPreview(id = 20L, title = "R18 Novel", isR18 = true)
+        // isR18 は title/caption に "R-18" を含む場合に判定される
+        val normalNovel = NovelPreview(
+            id = 10L, title = "Normal Novel", caption = "",
+            userId = 0L, userName = "", userAccount = "",
+            coverUrl = "", pageCount = 1, textLength = 0,
+            isBookmarked = false, totalBookmarks = 0, totalView = 0,
+        )
+        val r18Novel = NovelPreview(
+            id = 20L, title = "R-18 Novel", caption = "",
+            userId = 0L, userName = "", userAccount = "",
+            coverUrl = "", pageCount = 1, textLength = 0,
+            isBookmarked = false, totalBookmarks = 0, totalView = 0,
+        )
 
         test("1. R18 content is purged when allowR18 == false regardless of prior state") {
             // ケース1A: allowR18が元からfalseの状態で、状態内にR18コンテンツが混入・復元された場合
