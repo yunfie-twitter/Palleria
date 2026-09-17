@@ -1,8 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import io.sentry.ITransaction
-import io.sentry.SpanStatus
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
@@ -17,6 +15,8 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.widget.IllustWidgetProvider
 import com.yunfie.illustia.widget.RankingWidgetProvider
+import io.sentry.ITransaction
+import io.sentry.SpanStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
