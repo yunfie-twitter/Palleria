@@ -746,7 +746,13 @@ abstract class IllustiaViewModelFoundation(
                     _updateCheckState.value = UpdateCheckState.ReadyToInstall(file, release)
                 }.onFailure { error ->
                     _updateCheckState.value = UpdateCheckState.Error(error.message ?: "Download failed")
-                    _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
+                    val msgRes =
+                        if (error is SecurityException) {
+                            R.string.update_checksum_failed
+                        } else {
+                            R.string.update_download_failed
+                        }
+                    _uiState.update { it.copy(message = str(msgRes)) }
                 }
         }
     }

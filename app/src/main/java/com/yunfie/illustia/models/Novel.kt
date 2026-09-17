@@ -1,8 +1,6 @@
 package com.yunfie.illustia.models
 
 import androidx.compose.runtime.Immutable
-import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.toMuteFilter
 
 @Immutable
 data class NovelPreview(
@@ -29,12 +27,6 @@ data class NovelPreview(
             caption.contains("R18", ignoreCase = true) ||
             caption.contains("R-18G", ignoreCase = true) ||
             caption.contains("R18G", ignoreCase = true)
-}
-
-fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List<NovelPreview> {
-    val filter = settings.toMuteFilter()
-    val userFiltered = if (filter.userIds.isEmpty()) this else filterNot { it.userId in filter.userIds }
-    return if (!settings.allowR18) userFiltered.filterNot { it.isR18 } else userFiltered
 }
 
 @Immutable

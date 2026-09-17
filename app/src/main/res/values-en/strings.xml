@@ -925,6 +925,7 @@
     <string name="update_installing">Installing…</string>
     <string name="update_check_failed">Failed to check for updates</string>
     <string name="update_download_failed">Failed to download update</string>
+    <string name="update_checksum_failed">APK integrity verification (checksum) failed</string>
     <string name="update_install_failed">Failed to install update: %1$s</string>
     <string name="update_auto_check_startup">Check for updates on launch</string>
     <string name="update_auto_check_startup_desc">Automatically checks for newer versions when opening the app</string>

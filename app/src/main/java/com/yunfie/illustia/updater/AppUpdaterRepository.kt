@@ -3,6 +3,7 @@ package com.yunfie.illustia.updater
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -10,6 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -20,6 +22,7 @@ import rikka.shizuku.ShizukuProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.security.MessageDigest
 import kotlin.coroutines.resume
 
 private const val HTTP_NOT_FOUND = 404
@@ -42,6 +45,7 @@ class AppUpdaterRepository(
             packageInfo.versionName.orEmpty()
         }.getOrNull()?.ifBlank { "5.5.24" } ?: "5.5.24"
 
+    @Suppress("LongMethod")
     suspend fun fetchLatestRelease(): Result<AppReleaseInfo?> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -73,22 +77,28 @@ class AppUpdaterRepository(
                     val htmlUrl = jsonObject["html_url"]?.jsonPrimitive?.content.orEmpty()
 
                     val assets = jsonObject["assets"]?.let { it as? JsonArray } ?: JsonArray(emptyList())
-                    var apkUrl = ""
-                    var apkName = ""
-                    var apkSize = 0L
-
-                    for (asset in assets) {
-                        val assetObj = asset.jsonObject
-                        val name = assetObj["name"]?.jsonPrimitive?.content.orEmpty()
-                        if (name.endsWith(".apk", ignoreCase = true)) {
-                            apkUrl = assetObj["browser_download_url"]?.jsonPrimitive?.content.orEmpty()
-                            apkName = name
-                            apkSize = assetObj["size"]?.jsonPrimitive?.longOrNull ?: 0L
-                            break
+                    val apkAssets =
+                        assets.mapNotNull { runCatching { it.jsonObject }.getOrNull() }.filter {
+                            val name = it["name"]?.jsonPrimitive?.content.orEmpty()
+                            name.endsWith(".apk", ignoreCase = true)
                         }
-                    }
+                    val chosenAsset = selectBestApkAsset(apkAssets)
+                    val apkUrl =
+                        chosenAsset
+                            ?.get("browser_download_url")
+                            ?.jsonPrimitive
+                            ?.content
+                            .orEmpty()
+                    val apkName =
+                        chosenAsset
+                            ?.get("name")
+                            ?.jsonPrimitive
+                            ?.content
+                            .orEmpty()
+                    val apkSize = chosenAsset?.get("size")?.jsonPrimitive?.longOrNull ?: 0L
+                    val sha256Checksum = chosenAsset?.let { extractSha256(it, body, apkName.orEmpty()) }
 
-                    if (versionName.isBlank() || apkUrl.isBlank()) {
+                    if (versionName.isBlank() || apkUrl.isNullOrBlank()) {
                         return@runCatching null
                     }
 
@@ -99,8 +109,9 @@ class AppUpdaterRepository(
                         publishedAt = publishedAt,
                         htmlUrl = htmlUrl,
                         apkDownloadUrl = apkUrl,
-                        apkFileName = apkName.ifBlank { "Palleria-.apk" },
+                        apkFileName = apkName?.ifBlank { "Palleria-.apk" } ?: "Palleria-.apk",
                         apkSize = apkSize,
+                        sha256Checksum = sha256Checksum,
                     )
                 }
             }
@@ -111,6 +122,7 @@ class AppUpdaterRepository(
         currentVersion: String = getCurrentVersionName(),
     ): Boolean = compareVersions(remoteVersion, currentVersion) > 0
 
+    @Suppress("CyclomaticComplexMethod")
     suspend fun downloadApk(
         release: AppReleaseInfo,
         onProgress: (progress: Float, downloadedBytes: Long, totalBytes: Long) -> Unit,
@@ -120,8 +132,12 @@ class AppUpdaterRepository(
                 val sanitizedFileName = File(release.apkFileName).name.ifBlank { "Palleria-update.apk" }
                 val targetFile = File(updatesDir, sanitizedFileName)
                 if (targetFile.exists() && targetFile.length() == release.apkSize && release.apkSize > 0) {
-                    onProgress(1.0f, release.apkSize, release.apkSize)
-                    return@runCatching targetFile
+                    if (verifyFileChecksum(targetFile, release.sha256Checksum)) {
+                        onProgress(1.0f, release.apkSize, release.apkSize)
+                        return@runCatching targetFile
+                    } else {
+                        targetFile.delete()
+                    }
                 }
 
                 val request = Request.Builder().url(release.apkDownloadUrl).build()
@@ -132,6 +148,7 @@ class AppUpdaterRepository(
                     val body = response.body
                     val totalBytes = if (release.apkSize > 0) release.apkSize else body.contentLength()
                     val tempFile = File(updatesDir, "$sanitizedFileName.tmp")
+                    val messageDigest = MessageDigest.getInstance("SHA-256")
                     body.byteStream().use { input ->
                         FileOutputStream(tempFile).use { output ->
                             val buffer = ByteArray(8192)
@@ -139,6 +156,7 @@ class AppUpdaterRepository(
                             var totalRead = 0L
                             while (input.read(buffer).also { readBytes = it } != -1) {
                                 output.write(buffer, 0, readBytes)
+                                messageDigest.update(buffer, 0, readBytes)
                                 totalRead += readBytes
                                 val progress = if (totalBytes > 0) totalRead.toFloat() / totalBytes.toFloat() else 0f
                                 onProgress(progress.coerceIn(0f, 1f), totalRead, totalBytes)
@@ -146,6 +164,16 @@ class AppUpdaterRepository(
                             output.flush()
                         }
                     }
+
+                    val computedSha256 = messageDigest.digest().joinToString("") { "%02x".format(it) }
+                    val expectedSha256 = release.sha256Checksum?.trim()?.lowercase()
+                    if (!expectedSha256.isNullOrBlank() && !computedSha256.equals(expectedSha256, ignoreCase = true)) {
+                        if (tempFile.exists()) tempFile.delete()
+                        throw SecurityException(
+                            "APK checksum verification failed. Expected: $expectedSha256, Calculated: $computedSha256",
+                        )
+                    }
+
                     if (targetFile.exists()) targetFile.delete()
                     if (!tempFile.renameTo(targetFile)) {
                         tempFile.copyTo(targetFile, overwrite = true)
@@ -155,6 +183,29 @@ class AppUpdaterRepository(
                 }
             }
         }
+
+    fun calculateFileSha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    @Suppress("ReturnCount")
+    fun verifyFileChecksum(
+        file: File,
+        expectedSha256: String?,
+    ): Boolean {
+        if (expectedSha256.isNullOrBlank()) return true
+        if (!file.exists() || !file.isFile || file.length() == 0L) return false
+        val actual = runCatching { calculateFileSha256(file) }.getOrNull() ?: return false
+        return actual.equals(expectedSha256.trim(), ignoreCase = true)
+    }
 
     fun isShizukuAvailable(): Boolean =
         runCatching {
@@ -485,6 +536,88 @@ class AppUpdaterRepository(
 
     companion object {
         private val SESSION_ID_REGEX = Regex("""\[(\d+)\]|session\s+(\d+)""", RegexOption.IGNORE_CASE)
+        private val SHA256_REGEX = Regex("^[a-fA-F0-9]{64}$")
+
+        @Suppress("ReturnCount")
+        fun extractSha256(
+            assetObj: JsonObject,
+            releaseBody: String = "",
+            apkName: String = "",
+        ): String? {
+            val digest =
+                assetObj["digest"]
+                    ?.jsonPrimitive
+                    ?.content
+                    .orEmpty()
+                    .trim()
+            if (digest.isNotBlank()) {
+                val candidate = if (digest.contains(':')) digest.substringAfter(':').trim() else digest
+                if (candidate.matches(SHA256_REGEX)) {
+                    return candidate.lowercase()
+                }
+            }
+
+            if (apkName.isNotBlank() && releaseBody.isNotBlank()) {
+                val patternFileSpecific =
+                    Regex("""([a-fA-F0-9]{64})\s+[*]?${Regex.escape(apkName)}""", RegexOption.IGNORE_CASE)
+                patternFileSpecific.find(releaseBody)?.groupValues?.get(1)?.let {
+                    return it.lowercase()
+                }
+
+                val patternNameFirst =
+                    Regex("""${Regex.escape(apkName)}\s*[:=\s]\s*([a-fA-F0-9]{64})""", RegexOption.IGNORE_CASE)
+                patternNameFirst.find(releaseBody)?.groupValues?.get(1)?.let {
+                    return it.lowercase()
+                }
+            }
+
+            if (releaseBody.isNotBlank()) {
+                val patternLabeled = Regex("""(?:sha256|SHA256)\s*[:=]?\s*([a-fA-F0-9]{64})""")
+                patternLabeled.find(releaseBody)?.groupValues?.get(1)?.let {
+                    return it.lowercase()
+                }
+            }
+
+            return null
+        }
+
+        @Suppress("ReturnCount")
+        fun selectBestApkAsset(
+            apkAssets: List<JsonObject>,
+            supportedAbis: Array<String> = Build.SUPPORTED_ABIS,
+        ): JsonObject? {
+            if (apkAssets.isEmpty()) return null
+            if (apkAssets.size == 1) return apkAssets.first()
+
+            for (abi in supportedAbis) {
+                val normalizedAbi = abi.lowercase()
+                val match =
+                    apkAssets.firstOrNull { asset ->
+                        val name =
+                            asset["name"]
+                                ?.jsonPrimitive
+                                ?.content
+                                .orEmpty()
+                                .lowercase()
+                        name.contains(normalizedAbi)
+                    }
+                if (match != null) return match
+            }
+
+            val universalMatch =
+                apkAssets.firstOrNull { asset ->
+                    val name =
+                        asset["name"]
+                            ?.jsonPrimitive
+                            ?.content
+                            .orEmpty()
+                            .lowercase()
+                    name.contains("universal")
+                }
+            if (universalMatch != null) return universalMatch
+
+            return apkAssets.first()
+        }
 
         fun extractSessionId(output: String): Int? {
             val match = SESSION_ID_REGEX.find(output)
