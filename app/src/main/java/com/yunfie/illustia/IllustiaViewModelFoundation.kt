@@ -153,6 +153,11 @@ abstract class IllustiaViewModelFoundation(
     internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
     internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
     internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
+
+    fun clearDetailSnapshots() {
+        detailSnapshots.clear()
+    }
+
     protected val rankingGridStates = mutableMapOf<String, LazyGridState>()
     protected val userProfileGridStates = mutableMapOf<Long, LazyGridState>()
     protected val downloadClient: OkHttpClient by lazy {

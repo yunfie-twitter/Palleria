@@ -38,10 +38,11 @@ internal suspend fun writeAppSettings(
     database: IllustiaDatabase,
     dao: SettingsDao,
     settings: AppSettings,
+    baseSettings: AppSettings? = null,
 ) {
     writeDataStorePreferences(dataStore, settings)
     writeSensitiveSettings(sensitivePreferences, settings)
-    writeRoomSettingsData(database, dao, settings)
+    writeRoomSettingsData(database, dao, settings, baseSettings)
 }
 
 internal suspend fun writeSyncedCollections(

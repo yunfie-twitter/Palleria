@@ -251,21 +251,22 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(dummyIconVariant = value) }
     }
 
-    fun verifyCurrentUnlockCode(code: String): Boolean = settingsStore.verifyUnlockCode(code)
+    suspend fun verifyCurrentUnlockCode(code: String): Boolean = settingsStore.verifyUnlockCode(code)
 
     fun applyDummyIconSettings(context: android.content.Context) {
         val settings = _uiState.value.settings
         applyDummyAppIcon(context, settings.privacyModeEnabled)
     }
 
-    fun changeUnlockCode(
+    suspend fun changeUnlockCode(
         currentCode: String,
         newCode: String,
     ): Boolean {
-        if (!settingsStore.isValidUnlockCode(newCode)) return false
-        if (!settingsStore.verifyUnlockCode(currentCode)) return false
-        settingsStore.saveUnlockCodeHash(newCode)
-        return true
+        if (settingsStore.isValidUnlockCode(newCode) && settingsStore.verifyUnlockCode(currentCode)) {
+            settingsStore.saveUnlockCodeHash(newCode)
+            return true
+        }
+        return false
     }
 
     fun applyDummyAppIcon(
@@ -362,7 +363,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(saveSearchHistory = value) }
     }
 
-    fun unlockApp(pin: String): Boolean =
+    suspend fun unlockApp(pin: String): Boolean =
         if (settingsStore.verifyPin(pin)) {
             resumeAfterUnlock()
             true
@@ -370,7 +371,7 @@ abstract class IllustiaSettingsSecurityModule(
             false
         }
 
-    fun verifyPin(pin: String): Boolean = settingsStore.verifyPin(pin)
+    suspend fun verifyPin(pin: String): Boolean = settingsStore.verifyPin(pin)
 
     fun confirmUnlock() {
         resumeAfterUnlock()
@@ -472,7 +473,7 @@ abstract class IllustiaSettingsSecurityModule(
      * 解除コードを検証し、成功なら遷移アニメーションを開始する。
      * @return 照合成功なら true
      */
-    fun verifyAndUnlockPrivacy(code: String): Boolean =
+    suspend fun verifyAndUnlockPrivacy(code: String): Boolean =
         if (settingsStore.verifyUnlockCode(code)) {
             _uiState.update { it.copy(isTransitioningToIllustia = true) }
             true
@@ -544,29 +545,31 @@ abstract class IllustiaSettingsSecurityModule(
         val buffer = _calculatorState.value.buffer
         if (buffer.isBlank()) return
 
-        // パターンB: 解除コード照合
-        if (verifyAndUnlockPrivacy(buffer)) {
-            // 解除成功: 履歴に記録しない、バッファは confirmPrivacyUnlock でクリア
-            _calculatorState.update { it.copy(buffer = "") }
-            return
-        }
+        viewModelScope.launch {
+            // パターンB: 解除コード照合
+            if (verifyAndUnlockPrivacy(buffer)) {
+                // 解除成功: 履歴に記録しない、バッファは confirmPrivacyUnlock でクリア
+                _calculatorState.update { it.copy(buffer = "") }
+                return@launch
+            }
 
-        // 通常の計算
-        val result = CalculatorEngine.evaluate(buffer)
-        val resultStr = if (result != null) CalculatorEngine.formatResult(result) else null
+            // 通常の計算
+            val result = CalculatorEngine.evaluate(buffer)
+            val resultStr = if (result != null) CalculatorEngine.formatResult(result) else null
 
-        _calculatorState.update { state ->
-            val newHistory =
-                if (resultStr != null) {
-                    val entry = CalculatorHistoryEntry(expression = buffer, result = resultStr)
-                    (listOf(entry) + state.history).take(20)
-                } else {
-                    state.history
-                }
-            state.copy(
-                buffer = resultStr ?: "エラー",
-                history = newHistory,
-            )
+            _calculatorState.update { state ->
+                val newHistory =
+                    if (resultStr != null) {
+                        val entry = CalculatorHistoryEntry(expression = buffer, result = resultStr)
+                        (listOf(entry) + state.history).take(20)
+                    } else {
+                        state.history
+                    }
+                state.copy(
+                    buffer = resultStr ?: "エラー",
+                    history = newHistory,
+                )
+            }
         }
     }
 

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -36,6 +37,7 @@ import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -91,6 +93,7 @@ fun PrivacyModeSettingsScreen(
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
+    val coroutineScope = rememberCoroutineScope()
     val defaultDummyAppName = stringResource(R.string.app_name_dummy)
 
     // ── Enable privacy mode dialog state ──────────────────────────────────────
@@ -405,15 +408,17 @@ fun PrivacyModeSettingsScreen(
                                     }
                                 }
                             } else {
-                                if (viewModel.verifyCurrentUnlockCode(enableCodeInput)) {
-                                    viewModel.enablePrivacyMode()
-                                    showEnableCodeDialog = false
-                                    isResettingCode = false
-                                    enableCodeInput = ""
-                                    enableCodeConfirm = ""
-                                    enableCodeError = null
-                                } else {
-                                    enableCodeError = enableCodeIncorrectText
+                                coroutineScope.launch {
+                                    if (viewModel.verifyCurrentUnlockCode(enableCodeInput)) {
+                                        viewModel.enablePrivacyMode()
+                                        showEnableCodeDialog = false
+                                        isResettingCode = false
+                                        enableCodeInput = ""
+                                        enableCodeConfirm = ""
+                                        enableCodeError = null
+                                    } else {
+                                        enableCodeError = enableCodeIncorrectText
+                                    }
                                 }
                             }
                         },
@@ -509,15 +514,17 @@ fun PrivacyModeSettingsScreen(
                     Button(
                         onClick = {
                             // Validate and apply (Req 5.3, 5.4)
-                            val success = viewModel.changeUnlockCode(currentCode, newCode)
-                            if (success) {
-                                showChangeCodeDialog = false
-                                currentCode = ""
-                                newCode = ""
-                                changeCodeError = null
-                            } else {
-                                // Show error — either wrong current code or invalid new code (Req 5.7)
-                                changeCodeError = changeCodeErrorText
+                            coroutineScope.launch {
+                                val success = viewModel.changeUnlockCode(currentCode, newCode)
+                                if (success) {
+                                    showChangeCodeDialog = false
+                                    currentCode = ""
+                                    newCode = ""
+                                    changeCodeError = null
+                                } else {
+                                    // Show error — either wrong current code or invalid new code (Req 5.7)
+                                    changeCodeError = changeCodeErrorText
+                                }
                             }
                         },
                         modifier = Modifier.weight(1f),

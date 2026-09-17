@@ -383,32 +383,31 @@ fun IllustDetailScreen(
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
         ) {
-            val rawPullProgress = pullToRefreshState.pullProgress
-            val pullProgress =
-                if (rawPullProgress > 0.06f) {
-                    ((rawPullProgress - 0.06f) / 0.94f).coerceIn(0f, 1f)
-                } else {
-                    0f
-                }
-            if (pullProgress > 0.001f) {
-                PixivImage(
-                    url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .blur(36.dp)
-                            .graphicsLayer { alpha = pullProgress * 0.55f },
-                    thumbnail = true,
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(MiuixTheme.colorScheme.surface.copy(alpha = pullProgress * 0.42f)),
-                )
-            }
+            PixivImage(
+                url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .blur(36.dp)
+                        .graphicsLayer {
+                            val raw = pullToRefreshState.pullProgress
+                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                            alpha = progress * 0.55f
+                        },
+                thumbnail = true,
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val raw = pullToRefreshState.pullProgress
+                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                            alpha = progress * 0.42f
+                        }.background(MiuixTheme.colorScheme.surface),
+            )
 
             Surface(
                 modifier =

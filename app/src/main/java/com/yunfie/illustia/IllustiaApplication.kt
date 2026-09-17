@@ -46,8 +46,8 @@ class IllustiaApplication : Application() {
             .Builder()
             .dispatcher(
                 Dispatcher().apply {
-                    maxRequests = 8
-                    maxRequestsPerHost = 4
+                    maxRequests = 64
+                    maxRequestsPerHost = 16
                 },
             ).connectionPool(okhttp3.ConnectionPool(4, 5, TimeUnit.MINUTES))
             .connectTimeout(12, TimeUnit.SECONDS)

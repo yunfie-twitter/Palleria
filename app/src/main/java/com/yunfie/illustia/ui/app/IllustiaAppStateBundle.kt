@@ -1,11 +1,13 @@
 package com.yunfie.illustia.ui.app
 
+import androidx.compose.runtime.Immutable
 import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.HomeChromeState
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.NovelChromeState
 import com.yunfie.illustia.RankingChromeState
 
+@Immutable
 internal class IllustiaAppStateBundle(
     val state: IllustiaUiState,
 ) {

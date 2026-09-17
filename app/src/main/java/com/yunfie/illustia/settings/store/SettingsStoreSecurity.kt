@@ -2,6 +2,8 @@ package com.yunfie.illustia.settings.store
 
 import android.content.SharedPreferences
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -21,22 +23,23 @@ internal fun savePinHash(
         .apply()
 }
 
-internal fun verifyPinHash(
+internal suspend fun verifyPinHash(
     prefs: SharedPreferences,
     pin: String,
-): Boolean {
-    val storedHash = prefs.getString(KEY_PIN_HASH, null) ?: return false
-    val salt = prefs.getString(KEY_PIN_SALT, null)
-    if (salt == null) {
-        val legacyMatch = constantTimeEquals(sha256(pin).toByteArray(), storedHash.toByteArray())
-        if (legacyMatch) {
-            savePinHash(prefs, pin)
+): Boolean =
+    withContext(Dispatchers.Default) {
+        val storedHash = prefs.getString(KEY_PIN_HASH, null) ?: return@withContext false
+        val salt = prefs.getString(KEY_PIN_SALT, null)
+        if (salt == null) {
+            val legacyMatch = constantTimeEquals(sha256(pin).toByteArray(), storedHash.toByteArray())
+            if (legacyMatch) {
+                savePinHash(prefs, pin)
+            }
+            return@withContext legacyMatch
         }
-        return legacyMatch
+        val computed = pbkdf2(pin, salt)
+        constantTimeEquals(computed.toByteArray(), storedHash.toByteArray())
     }
-    val computed = pbkdf2(pin, salt)
-    return constantTimeEquals(computed.toByteArray(), storedHash.toByteArray())
-}
 
 internal fun hasPinSet(prefs: SharedPreferences): Boolean = prefs.getString(KEY_PIN_HASH, null) != null
 
@@ -61,20 +64,21 @@ internal fun saveUnlockCodeHash(
         .apply()
 }
 
-internal fun verifyUnlockCodeHash(
+internal suspend fun verifyUnlockCodeHash(
     prefs: SharedPreferences,
     code: String,
-): Boolean {
-    return try {
-        val storedHash = prefs.getString(KEY_UNLOCK_CODE_HASH, null) ?: return false
-        val salt = prefs.getString(KEY_UNLOCK_CODE_SALT, null) ?: return false
-        val computed = pbkdf2(code, salt)
-        constantTimeEquals(computed.toByteArray(), storedHash.toByteArray())
-    } catch (expectedFailure: GeneralSecurityException) {
-        Log.e("SettingsStore", "verifyUnlockCode error", expectedFailure)
-        false
+): Boolean =
+    withContext(Dispatchers.Default) {
+        try {
+            val storedHash = prefs.getString(KEY_UNLOCK_CODE_HASH, null) ?: return@withContext false
+            val salt = prefs.getString(KEY_UNLOCK_CODE_SALT, null) ?: return@withContext false
+            val computed = pbkdf2(code, salt)
+            constantTimeEquals(computed.toByteArray(), storedHash.toByteArray())
+        } catch (expectedFailure: GeneralSecurityException) {
+            Log.e("SettingsStore", "verifyUnlockCode error", expectedFailure)
+            false
+        }
     }
-}
 
 internal fun hasUnlockCodeSet(prefs: SharedPreferences): Boolean = prefs.getString(KEY_UNLOCK_CODE_HASH, null) != null
 

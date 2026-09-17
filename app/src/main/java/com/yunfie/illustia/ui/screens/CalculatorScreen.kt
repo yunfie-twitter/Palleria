@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +58,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -70,6 +72,7 @@ fun CalculatorScreen(
     buffer: String? = null,
     history: List<CalculatorHistoryEntry>? = null,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val calcState by viewModel.calculatorState.collectAsStateWithLifecycle()
     val activeBuffer = buffer ?: calcState.buffer
     val activeHistory = history ?: calcState.history
@@ -130,7 +133,11 @@ fun CalculatorScreen(
                         ) {
                             CalculatorHistorySection(
                                 history = activeHistory,
-                                onVerifyAndUnlock = { code -> viewModel.verifyAndUnlockPrivacy(code) },
+                                onVerifyAndUnlock = { code ->
+                                    coroutineScope.launch {
+                                        viewModel.verifyAndUnlockPrivacy(code)
+                                    }
+                                },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
                             CalculatorDisplay(
@@ -159,7 +166,11 @@ fun CalculatorScreen(
                         // ── 履歴リスト（上部）──────────────────────────────────────────────
                         CalculatorHistorySection(
                             history = activeHistory,
-                            onVerifyAndUnlock = { code -> viewModel.verifyAndUnlockPrivacy(code) },
+                            onVerifyAndUnlock = { code ->
+                                coroutineScope.launch {
+                                    viewModel.verifyAndUnlockPrivacy(code)
+                                }
+                            },
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
@@ -263,7 +274,9 @@ fun CalculatorScreen(
                                         cornerUnlockCode = ""
                                         // 照合成功: ViewModel が遷移を開始する (Req 4.6)
                                         // 照合失敗: ダイアログを閉じるだけ、フィードバックなし (Req 4.7)
-                                        viewModel.verifyAndUnlockPrivacy(code)
+                                        coroutineScope.launch {
+                                            viewModel.verifyAndUnlockPrivacy(code)
+                                        }
                                     },
                                     colors = overlayActionButtonColors(),
                                 ) {

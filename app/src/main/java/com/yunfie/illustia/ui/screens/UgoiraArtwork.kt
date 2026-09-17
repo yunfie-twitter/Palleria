@@ -56,6 +56,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.concurrent.ConcurrentHashMap
+
+private const val MAX_CACHED_FRAMES = 24
+private const val PREFETCH_AHEAD = 18
+private const val KEEP_BEHIND = 4
 
 @Composable
 internal fun UgoiraArtwork(
@@ -77,7 +82,7 @@ internal fun UgoiraArtwork(
             }
     }
     val playback = playbackResult?.getOrNull()
-    val decodedBitmaps = remember(playback) { HashMap<Int, ImageBitmap>() }
+    val decodedBitmaps = remember(playback) { ConcurrentHashMap<Int, ImageBitmap>() }
     var currentBitmap by remember(playback, reloadKey) { mutableStateOf<ImageBitmap?>(null) }
     var currentFrameIndex by remember(playback, reloadKey) { mutableIntStateOf(0) }
     var scale by remember(previewUrl) { mutableFloatStateOf(1f) }
@@ -148,20 +153,54 @@ internal fun UgoiraArtwork(
         }
     }
 
-    // フレームのデコードは通常 HashMap に書き込む（Compose State への変更なし）。
-    // 再コンポーズが必要なのはアニメーションループが currentBitmap を更新したときだけ。
+    // フレームのデコードは ConcurrentHashMap に書き込む。
+    // メモリ上限を超えないよう、フレーム数が多い場合は再生位置前後のスライディングウィンドウで管理する。
     LaunchedEffect(playback) {
         val frames = playback?.frames ?: return@LaunchedEffect
+        if (frames.isEmpty()) return@LaunchedEffect
         withContext(Dispatchers.IO) {
-            frames.forEachIndexed { index, frame ->
-                if (!isActive) return@withContext
-                if (!decodedBitmaps.containsKey(index)) {
-                    val bitmap =
-                        runCatching {
-                            BitmapFactory.decodeFile(frame.filePath)?.asImageBitmap()
-                        }.getOrNull()
-                    if (bitmap != null) {
-                        decodedBitmaps[index] = bitmap
+            if (frames.size <= MAX_CACHED_FRAMES) {
+                frames.forEachIndexed { index, frame ->
+                    if (!isActive) return@withContext
+                    if (!decodedBitmaps.containsKey(index)) {
+                        val bitmap =
+                            runCatching {
+                                BitmapFactory.decodeFile(frame.filePath)?.asImageBitmap()
+                            }.getOrNull()
+                        if (bitmap != null) {
+                            decodedBitmaps[index] = bitmap
+                        }
+                    }
+                }
+            } else {
+                while (isActive) {
+                    val current = currentFrameIndex
+                    val needed =
+                        (-KEEP_BEHIND..PREFETCH_AHEAD)
+                            .map {
+                                (current + it + frames.size) % frames.size
+                            }.toSet()
+                    decodedBitmaps.keys.retainAll(needed)
+
+                    for (step in 0..PREFETCH_AHEAD) {
+                        if (!isActive) break
+                        val targetIdx = (current + step) % frames.size
+                        if (!decodedBitmaps.containsKey(targetIdx)) {
+                            val bitmap =
+                                runCatching {
+                                    BitmapFactory.decodeFile(frames[targetIdx].filePath)?.asImageBitmap()
+                                }.getOrNull()
+                            if (bitmap != null) {
+                                decodedBitmaps[targetIdx] = bitmap
+                                if (targetIdx == currentFrameIndex && currentBitmap == null) {
+                                    currentBitmap = bitmap
+                                }
+                            }
+                        }
+                    }
+
+                    while (isActive && currentFrameIndex == current) {
+                        delay(10)
                     }
                 }
             }
@@ -176,8 +215,21 @@ internal fun UgoiraArtwork(
         while (isActive) {
             val frame = frames[index]
             currentFrameIndex = index
-            // decodedBitmaps は通常 HashMap なので読み取りは安全（ロック不要）
-            currentBitmap = decodedBitmaps[index]
+            var bitmap = decodedBitmaps[index]
+            if (bitmap == null) {
+                bitmap =
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            BitmapFactory.decodeFile(frame.filePath)?.asImageBitmap()
+                        }.getOrNull()
+                    }
+                if (bitmap != null) {
+                    decodedBitmaps[index] = bitmap
+                }
+            }
+            if (bitmap != null) {
+                currentBitmap = bitmap
+            }
             val delayDuration = normalizedUgoiraDelayMillis(frame.delayMillis)
             nextTargetTime += delayDuration
             val waitTime = nextTargetTime - System.currentTimeMillis()
