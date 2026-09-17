@@ -191,7 +191,12 @@ abstract class IllustiaViewModelFoundation(
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val userNavigationRequests: SharedFlow<Long> = _userNavigationRequests
-    val appUpdaterRepository: AppUpdaterRepository by lazy { AppUpdaterRepository(getApplication()) }
+    val appUpdaterRepository: AppUpdaterRepository by lazy {
+        AppUpdaterRepository(
+            context = getApplication(),
+            httpClient = (getApplication<Application>() as IllustiaApplication).sharedHttpClient,
+        )
+    }
 
     @Suppress("VariableNaming")
     protected val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
@@ -270,11 +275,12 @@ abstract class IllustiaViewModelFoundation(
         warmSmartCache(items)
         val shownIds = items.map { it.id }
         updateSettings { settings ->
+            // LinkedHashSet で挿入順を保持しながら O(N) で重複排除する。
+            val merged = LinkedHashSet<Long>(shownIds.size + settings.seenFeedIllusts.size)
+            merged.addAll(shownIds)
+            merged.addAll(settings.seenFeedIllusts)
             settings.copy(
-                seenFeedIllusts =
-                    (shownIds + settings.seenFeedIllusts)
-                        .distinct()
-                        .take(MAX_SEEN_FEED_ILLUSTS),
+                seenFeedIllusts = merged.take(MAX_SEEN_FEED_ILLUSTS),
             )
         }
     }
@@ -746,7 +752,13 @@ abstract class IllustiaViewModelFoundation(
                     _updateCheckState.value = UpdateCheckState.ReadyToInstall(file, release)
                 }.onFailure { error ->
                     _updateCheckState.value = UpdateCheckState.Error(error.message ?: "Download failed")
-                    _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
+                    val msgRes =
+                        if (error is SecurityException) {
+                            R.string.update_checksum_failed
+                        } else {
+                            R.string.update_download_failed
+                        }
+                    _uiState.update { it.copy(message = str(msgRes)) }
                 }
         }
     }

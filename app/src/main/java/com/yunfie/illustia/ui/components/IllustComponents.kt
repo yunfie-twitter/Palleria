@@ -62,27 +62,36 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
+/** shimmerValue: -1f → 2f の範囲でシマー位置を表す。省略時は内部で独自 Transition を生成する（後方互換）。 */
 @Composable
-fun IllustCardSkeleton(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "illustSkeleton")
-    val shimmer =
-        transition.animateFloat(
-            initialValue = -1f,
-            targetValue = 2f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "illustSkeletonShimmer",
-        )
+fun IllustCardSkeleton(
+    modifier: Modifier = Modifier,
+    shimmerValue: Float? = null,
+) {
+    val innerTransition = if (shimmerValue == null) rememberInfiniteTransition(label = "illustSkeleton") else null
+    val shimmerFloat =
+        if (shimmerValue != null) {
+            shimmerValue
+        } else {
+            val anim by innerTransition!!.animateFloat(
+                initialValue = -1f,
+                targetValue = 2f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Restart,
+                    ),
+                label = "illustSkeletonShimmer",
+            )
+            anim
+        }
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
     val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }
     val shimmerModifier =
         Modifier.drawWithCache {
             onDrawBehind {
-                val startX = shimmer.value * size.width
+                val startX = shimmerFloat * size.width
                 drawRect(
                     brush =
                         Brush.linearGradient(
@@ -141,6 +150,19 @@ fun IllustGridSkeleton(
     itemCount: Int = 6,
     contentPadding: PaddingValues = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
 ) {
+    // 1つの InfiniteTransition をすべてのスケルトンで共有することで、
+    // 複数スケルトン同時表示時のアニメーション計算コストを削減する。
+    val sharedTransition = rememberInfiniteTransition(label = "gridSkeleton")
+    val shimmerValue by sharedTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "gridSkeletonShimmer",
+    )
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns.coerceAtLeast(1)),
         modifier = modifier.fillMaxSize(),
@@ -150,7 +172,7 @@ fun IllustGridSkeleton(
         userScrollEnabled = false,
     ) {
         items(itemCount, contentType = { "illust_skeleton" }) {
-            IllustCardSkeleton()
+            IllustCardSkeleton(shimmerValue = shimmerValue)
         }
     }
 }

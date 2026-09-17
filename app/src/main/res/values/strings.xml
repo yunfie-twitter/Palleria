@@ -925,6 +925,7 @@
     <string name="update_installing">インストール中…</string>
     <string name="update_check_failed">アップデートの確認に失敗しました</string>
     <string name="update_download_failed">アップデートのダウンロードに失敗しました</string>
+    <string name="update_checksum_failed">APKの整合性検証（チェックサム）に失敗しました</string>
     <string name="update_install_failed">アップデートのインストールに失敗しました: %1$s</string>
     <string name="update_auto_check_startup">起動時に更新を確認</string>
     <string name="update_auto_check_startup_desc">アプリ起動時に新しいバージョンがないか自動で確認します</string>

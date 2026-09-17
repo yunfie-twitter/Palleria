@@ -28,6 +28,7 @@ data class AppReleaseInfo(
     val apkDownloadUrl: String,
     val apkFileName: String,
     val apkSize: Long,
+    val sha256Checksum: String? = null,
 )
 
 sealed interface UpdateCheckState {

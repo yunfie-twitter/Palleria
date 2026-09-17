@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.yunfie.illustia
 
 import com.yunfie.illustia.models.Illust
@@ -156,6 +158,12 @@ internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illus
     val list = visibleWith(settings.toMuteFilter())
     val r18Filtered = if (!settings.allowR18) list.filterNot { it.isR18 } else list
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
+}
+
+internal fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List<NovelPreview> {
+    val filter = settings.toMuteFilter()
+    val userFiltered = if (filter.userIds.isEmpty()) this else filterNot { it.userId in filter.userIds }
+    return if (!settings.allowR18) userFiltered.filterNot { it.isR18 } else userFiltered
 }
 
 internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): List<Illust> {
