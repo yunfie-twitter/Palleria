@@ -712,6 +712,14 @@
     <string name="privacy_mode_title">개인정보 보호 모드</string>
     <string name="privacy_mode_enabled_desc">사용 — 시작할 때 계산기 표시</string>
     <string name="privacy_mode_disabled_desc">사용 안 함 — 일반 시작 화면 표시</string>
+    <string name="privacy_enable_dialog_title">개인정보 보호 모드 사용</string>
+    <string name="privacy_enable_set_code_desc">계산기 화면에서 입력할 잠금 해제 코드(4~20자)를 설정하세요.</string>
+    <string name="privacy_enable_enter_code_desc">개인정보 보호 모드를 사용하려면 잠금 해제 코드를 입력하세요.</string>
+    <string name="privacy_code_confirm">잠금 해제 코드 확인</string>
+    <string name="privacy_code_mismatch">잠금 해제 코드가 일치하지 않습니다.</string>
+    <string name="privacy_code_invalid">잠금 해제 코드는 4~20자여야 합니다.</string>
+    <string name="privacy_code_incorrect">잠금 해제 코드가 올바르지 않습니다.</string>
+    <string name="privacy_reset_code">잠금 해제 코드 재설정</string>
     <string name="privacy_unlock_code_section">잠금 해제 코드</string>
     <string name="privacy_unlock_code">잠금 해제 코드</string>
     <string name="privacy_enter_unlock_code">잠금 해제 코드 입력</string>

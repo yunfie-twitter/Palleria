@@ -654,6 +654,14 @@
     <string name="privacy_mode_title">隐私模式</string>
     <string name="privacy_mode_enabled_desc">已启用 — 在启动时显示计算器</string>
     <string name="privacy_mode_disabled_desc">禁用 — 显示常规启动屏幕</string>
+    <string name="privacy_enable_dialog_title">启用隐私模式</string>
+    <string name="privacy_enable_set_code_desc">请设置在计算器屏幕上输入的解锁代码（4–20 个字符）。</string>
+    <string name="privacy_enable_enter_code_desc">请输入解锁代码以启用隐私模式。</string>
+    <string name="privacy_code_confirm">确认解锁代码</string>
+    <string name="privacy_code_mismatch">解锁代码不匹配。</string>
+    <string name="privacy_code_invalid">解锁代码必须为 4–20 个字符。</string>
+    <string name="privacy_code_incorrect">解锁代码不正确。</string>
+    <string name="privacy_reset_code">重置解锁代码</string>
     <string name="privacy_unlock_code_section">解锁代码</string>
     <string name="privacy_unlock_code">解锁代码</string>
     <string name="privacy_enter_unlock_code">输入解锁代码</string>
