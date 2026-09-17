@@ -244,6 +244,8 @@
     <!-- General settings screen -->
     <string name="general_settings_title">일반 설정</string>
     <string name="experimental_settings_title">실험적 기능</string>
+    <string name="experimental_hide_home_novel_button">홈 소설 버튼 숨기기</string>
+    <string name="experimental_hide_home_novel_button_desc">홈 상단의 소설 버튼을 숨기고 \'더보기\'에 배치합니다</string>
     <string name="general_section_display">표시</string>
     <string name="general_section_interaction">조작</string>
     <string name="general_section_startup">시작</string>

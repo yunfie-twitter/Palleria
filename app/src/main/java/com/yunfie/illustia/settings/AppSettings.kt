@@ -91,6 +91,7 @@ data class AppSettings(
     val userProfileBottomSheetEnabled: Boolean = false,
     val shortsFeedEnabled: Boolean = false,
     val disableHorizontalSwipeInShortsFeed: Boolean = false,
+    val hideHomeNovelButton: Boolean = true,
     val verticalColumnCount: Int = 2,
     val horizontalColumnCount: Int = 4,
     val relatedIllustColumnCount: Int = 3,

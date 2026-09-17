@@ -257,6 +257,8 @@
     <string name="experimental_start_tab_desc">アプリを開いたときに最初に表示するタブです</string>
     <string name="experimental_tab_visible">下部タブに表示</string>
     <string name="experimental_tab_hidden">下部タブでは非表示</string>
+    <string name="experimental_hide_home_novel_button">ホームの小説ボタンを非表示</string>
+    <string name="experimental_hide_home_novel_button_desc">ホーム画面上部の小説ボタンを非表示にし、「もっと見る」内に配置します</string>
     <string name="experimental_card_section">作品カード</string>
     <string name="experimental_card_title">タイトルを表示</string>
     <string name="experimental_card_artist">作者名を表示</string>

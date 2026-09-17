@@ -135,6 +135,7 @@ internal fun readFromDataStore(
         userProfileBottomSheetEnabled = preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] ?: false,
         shortsFeedEnabled = preferences[SHORTS_FEED_ENABLED] ?: false,
         disableHorizontalSwipeInShortsFeed = preferences[DISABLE_HORIZONTAL_SWIPE_IN_SHORTS_FEED] ?: false,
+        hideHomeNovelButton = preferences[HIDE_HOME_NOVEL_BUTTON] ?: true,
         verticalColumnCount = preferences[VERTICAL_COLUMN_COUNT] ?: 2,
         horizontalColumnCount = preferences[HORIZONTAL_COLUMN_COUNT] ?: 4,
         relatedIllustColumnCount = preferences[RELATED_ILLUST_COLUMN_COUNT] ?: 3,
@@ -301,6 +302,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         userProfileBottomSheetEnabled = preferences.getBoolean("userProfileBottomSheetEnabled", false),
         shortsFeedEnabled = preferences.getBoolean("shortsFeedEnabled", false),
         disableHorizontalSwipeInShortsFeed = preferences.getBoolean("disableHorizontalSwipeInShortsFeed", false),
+        hideHomeNovelButton = preferences.getBoolean(KEY_HIDE_HOME_NOVEL_BUTTON, true),
         verticalColumnCount = preferences.getInt("verticalColumnCount", 2),
         horizontalColumnCount = preferences.getInt("horizontalColumnCount", 4),
         relatedIllustColumnCount = preferences.getInt("relatedIllustColumnCount", DEFAULT_RELATED_ILLUST_COLUMN_COUNT),
@@ -413,6 +415,7 @@ internal fun writeToDataStore(
     preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] = settings.userProfileBottomSheetEnabled
     preferences[SHORTS_FEED_ENABLED] = settings.shortsFeedEnabled
     preferences[DISABLE_HORIZONTAL_SWIPE_IN_SHORTS_FEED] = settings.disableHorizontalSwipeInShortsFeed
+    preferences[HIDE_HOME_NOVEL_BUTTON] = settings.hideHomeNovelButton
     preferences[VERTICAL_COLUMN_COUNT] = settings.verticalColumnCount
     preferences[HORIZONTAL_COLUMN_COUNT] = settings.horizontalColumnCount
     preferences[RELATED_ILLUST_COLUMN_COUNT] = settings.relatedIllustColumnCount

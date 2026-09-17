@@ -252,6 +252,8 @@
     <string name="experimental_start_tab_desc">The first tab shown when the app opens</string>
     <string name="experimental_tab_visible">Shown in bottom navigation</string>
     <string name="experimental_tab_hidden">Hidden from bottom navigation</string>
+    <string name="experimental_hide_home_novel_button">Hide novel button on Home</string>
+    <string name="experimental_hide_home_novel_button_desc">Hides the novel button in the Home top bar and places it in More</string>
     <string name="experimental_card_section">Artwork cards</string>
     <string name="experimental_card_title">Show title</string>
     <string name="experimental_card_artist">Show artist</string>

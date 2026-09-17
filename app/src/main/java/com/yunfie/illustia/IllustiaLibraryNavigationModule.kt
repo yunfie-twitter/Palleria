@@ -665,6 +665,10 @@ abstract class IllustiaLibraryNavigationModule(
         }
     }
 
+    fun openNovels() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.Novels)
+    }
+
     fun openMuteSettings() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.MuteSettings)
     }

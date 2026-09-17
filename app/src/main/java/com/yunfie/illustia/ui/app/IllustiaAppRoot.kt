@@ -402,6 +402,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.DiscordSettings -> AppRoute.DiscordSettings
                     IllustiaNavigationRequest.DiscordLogin -> AppRoute.DiscordLogin
                     IllustiaNavigationRequest.WallpaperPlaylistSettings -> AppRoute.WallpaperPlaylistSettings
+                    IllustiaNavigationRequest.Novels -> AppRoute.NovelList
                 },
             )
         }

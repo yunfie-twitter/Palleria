@@ -108,11 +108,13 @@ fun HomeScreen(
                         Icon(MiuixIcons.Search, contentDescription = stringResource(R.string.nav_search))
                     }
                 }
-                IconButton(onClick = onOpenNovels) {
-                    Icon(
-                        MiuixIcons.Photos,
-                        contentDescription = stringResource(R.string.nav_novel),
-                    )
+                if (!settings.hideHomeNovelButton) {
+                    IconButton(onClick = onOpenNovels) {
+                        Icon(
+                            MiuixIcons.Photos,
+                            contentDescription = stringResource(R.string.nav_novel),
+                        )
+                    }
                 }
                 IconButton(
                     onClick = {

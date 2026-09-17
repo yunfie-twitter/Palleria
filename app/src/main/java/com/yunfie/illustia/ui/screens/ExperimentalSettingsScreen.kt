@@ -159,6 +159,13 @@ fun ExperimentalSettingsScreen(
                                 summary = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe_desc),
                             )
                         }
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.experimental_hide_home_novel_button),
+                            checked = state.settings.hideHomeNovelButton,
+                            onCheckedChange = viewModel::updateHideHomeNovelButton,
+                            summary = stringResource(R.string.experimental_hide_home_novel_button_desc),
+                        )
                     }
                     ElevatedPanel {
                         orderedIds.forEachIndexed { index, id ->

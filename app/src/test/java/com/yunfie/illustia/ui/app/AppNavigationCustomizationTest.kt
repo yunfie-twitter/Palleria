@@ -43,4 +43,9 @@ class AppNavigationCustomizationTest {
 
         assertEquals(2, visibleTabs(settings).size)
     }
+
+    @Test
+    fun `hideHomeNovelButton is true by default`() {
+        assertEquals(true, AppSettings().hideHomeNovelButton)
+    }
 }
