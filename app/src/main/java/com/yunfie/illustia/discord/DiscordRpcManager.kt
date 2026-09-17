@@ -165,8 +165,8 @@ class DiscordRpcManager(
                 Assets(
                     largeImage = "palleria_logo",
                     largeText = "Palleria",
-                    smallImage = null,
-                    smallText = null,
+                    smallImage = "palleria_logo",
+                    smallText = "palleria_logo",
                 ),
             flags = ActivityFlags.INSTANCE,
             buttons = buttons,
