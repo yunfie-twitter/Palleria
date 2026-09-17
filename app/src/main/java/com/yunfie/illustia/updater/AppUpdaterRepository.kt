@@ -292,28 +292,86 @@ class AppUpdaterRepository(
         }
         val fileSize = apkFile.length()
 
-        // Use streaming installation with -S <fileSize> via standard input.
-        // Direct file paths cannot be read by shell UID (2000) due to app private sandbox permissions.
-        val command = arrayOf("pm", "install", "-r", "-d", "-t", "-S", fileSize.toString())
+        val sessionId = createInstallSession(fileSize)
+        var committed = false
+        try {
+            writeApkToSession(sessionId, fileSize, apkFile)
+            commitInstallSession(sessionId)
+            committed = true
+        } finally {
+            if (!committed) {
+                abandonInstallSession(sessionId)
+            }
+        }
+    }
+
+    private fun createInstallSession(fileSize: Long): Int {
+        // Attempt session creation with installer package attribution first
+        val primaryCommand =
+            arrayOf(
+                "pm",
+                "install-create",
+                "-r",
+                "-d",
+                "-t",
+                "-i",
+                context.packageName,
+                "-S",
+                fileSize.toString(),
+            )
+        val (exitCode, output) = runShizukuCommand(primaryCommand)
+        val parsedId = extractSessionId(output)
+        if (exitCode == 0 && parsedId != null && !output.contains("Failure", ignoreCase = true)) {
+            return parsedId
+        }
+
+        // Fallback without -i flag if restricted on vendor ROMs
+        val fallbackCommand =
+            arrayOf(
+                "pm",
+                "install-create",
+                "-r",
+                "-d",
+                "-t",
+                "-S",
+                fileSize.toString(),
+            )
+        val (fallbackExitCode, fallbackOutput) = runShizukuCommand(fallbackCommand)
+        val fallbackId = extractSessionId(fallbackOutput)
+        if (fallbackExitCode == 0 && fallbackId != null && !fallbackOutput.contains("Failure", ignoreCase = true)) {
+            return fallbackId
+        }
+
+        val errorDetails = fallbackOutput.ifBlank { output }.ifBlank { "Exit code $fallbackExitCode" }
+        throw IllegalStateException("Failed to create PackageInstaller session via Shizuku ($fallbackExitCode): $errorDetails")
+    }
+
+    private fun writeApkToSession(
+        sessionId: Int,
+        fileSize: Long,
+        apkFile: File,
+    ) {
+        val command =
+            arrayOf(
+                "pm",
+                "install-write",
+                "-S",
+                fileSize.toString(),
+                sessionId.toString(),
+                "base.apk",
+                "-",
+            )
         val process = createShizukuProcess(command)
 
         var stdout = ""
         var stderr = ""
-
         val stdoutThread =
             Thread {
-                stdout =
-                    runCatching {
-                        process.inputStream.bufferedReader().readText()
-                    }.getOrDefault("")
+                stdout = runCatching { process.inputStream.bufferedReader().readText() }.getOrDefault("")
             }.apply { start() }
-
         val stderrThread =
             Thread {
-                stderr =
-                    runCatching {
-                        process.errorStream.bufferedReader().readText()
-                    }.getOrDefault("")
+                stderr = runCatching { process.errorStream.bufferedReader().readText() }.getOrDefault("")
             }.apply { start() }
 
         streamApkToProcess(process, apkFile)
@@ -326,12 +384,54 @@ class AppUpdaterRepository(
         val hasFailure =
             combinedOutput.contains("Failure", ignoreCase = true) ||
                 combinedOutput.contains("Error:", ignoreCase = true)
-        val hasSuccess = combinedOutput.contains("Success", ignoreCase = true)
+
+        if (exitCode != 0 || hasFailure) {
+            val errorDetails = combinedOutput.ifBlank { "Exit code $exitCode" }
+            throw IllegalStateException("Failed to stream APK to session $sessionId: $errorDetails")
+        }
+    }
+
+    private fun commitInstallSession(sessionId: Int) {
+        val command = arrayOf("pm", "install-commit", sessionId.toString())
+        val (exitCode, output) = runShizukuCommand(command)
+        val hasFailure =
+            output.contains("Failure", ignoreCase = true) ||
+                output.contains("Error:", ignoreCase = true)
+        val hasSuccess = output.contains("Success", ignoreCase = true)
 
         if (exitCode != 0 || hasFailure || !hasSuccess) {
-            val errorDetails = combinedOutput.ifBlank { "Exit code $exitCode" }
-            throw IllegalStateException("Shizuku installation failed ($exitCode): $errorDetails")
+            val errorDetails = output.ifBlank { "Exit code $exitCode" }
+            throw IllegalStateException("Failed to commit Shizuku session $sessionId: $errorDetails")
         }
+    }
+
+    private fun abandonInstallSession(sessionId: Int) {
+        runCatching {
+            val command = arrayOf("pm", "install-abandon", sessionId.toString())
+            runShizukuCommand(command)
+        }
+    }
+
+    private fun runShizukuCommand(command: Array<String>): Pair<Int, String> {
+        val process = createShizukuProcess(command)
+        var stdout = ""
+        var stderr = ""
+
+        val stdoutThread =
+            Thread {
+                stdout = runCatching { process.inputStream.bufferedReader().readText() }.getOrDefault("")
+            }.apply { start() }
+
+        val stderrThread =
+            Thread {
+                stderr = runCatching { process.errorStream.bufferedReader().readText() }.getOrDefault("")
+            }.apply { start() }
+
+        val exitCode = process.waitFor()
+        runCatching { stdoutThread.join(THREAD_JOIN_TIMEOUT_MS) }
+        runCatching { stderrThread.join(THREAD_JOIN_TIMEOUT_MS) }
+
+        return Pair(exitCode, "$stdout\n$stderr".trim())
     }
 
     private fun createShizukuProcess(command: Array<String>): Process {
@@ -369,6 +469,14 @@ class AppUpdaterRepository(
     }
 
     companion object {
+        private val SESSION_ID_REGEX = Regex("""\[(\d+)\]|session\s+(\d+)""", RegexOption.IGNORE_CASE)
+
+        fun extractSessionId(output: String): Int? {
+            val match = SESSION_ID_REGEX.find(output)
+            val idString = match?.groupValues?.drop(1)?.firstOrNull { it.isNotBlank() }
+            return idString?.toIntOrNull()
+        }
+
         fun compareVersions(
             v1: String,
             v2: String,

@@ -24,4 +24,13 @@ class AppUpdaterRepositoryTest :
             UpdateInstallMethod.SHIZUKU.value shouldBe "shizuku"
             UpdateInstallMethod.STANDARD_APK.value shouldBe "standard_apk"
         }
+
+        "extracts PackageInstaller session ID correctly from various outputs" {
+            AppUpdaterRepository.extractSessionId("Success: created install session [12345678]") shouldBe 12345678
+            AppUpdaterRepository.extractSessionId("Success: created install session 987654") shouldBe 987654
+            AppUpdaterRepository.extractSessionId("created install session [42]\n") shouldBe 42
+            AppUpdaterRepository.extractSessionId("Failure [INSTALL_FAILED_INVALID_APK]") shouldBe null
+            AppUpdaterRepository.extractSessionId("Error: unknown command") shouldBe null
+            AppUpdaterRepository.extractSessionId("") shouldBe null
+        }
     })
