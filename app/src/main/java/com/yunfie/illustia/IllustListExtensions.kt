@@ -35,6 +35,7 @@ internal fun List<Illust>.appendIllusts(next: List<Illust>): List<Illust> {
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
 internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiState {
     val filter = settings.toMuteFilter()
     val updated =
@@ -44,22 +45,27 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
             mutedUsersSet = filter.userIds,
             mutedTagsSet = filter.tags,
         )
-    if (settings.allowR18) return updated
+    val purgeR18 = this.settings.allowR18 && !settings.allowR18
+    val purgeAi = !this.settings.hideAiWorks && settings.hideAiWorks
+    if (!purgeR18 && !purgeAi) return updated
+
+    val shouldDropIllust: (Illust) -> Boolean = { (purgeR18 && it.isR18) || (purgeAi && it.isAi) }
+    val shouldDropNovel: (NovelPreview) -> Boolean = { purgeR18 && it.isR18 }
 
     return updated.copy(
-        homeItems = updated.homeItems.filterNot { it.isR18 },
-        searchItems = updated.searchItems.filterNot { it.isR18 },
-        timelineItems = updated.timelineItems.filterNot { it.isR18 },
-        shortsFeedItems = updated.shortsFeedItems.filterNot { it.isR18 },
-        watchlistItems = updated.watchlistItems.filterNot { it.isR18 },
-        rankingItems = updated.rankingItems.filterNot { it.isR18 },
-        rankingModeItems = updated.rankingModeItems.mapValues { (_, list) -> list.filterNot { it.isR18 } },
-        relatedIllusts = updated.relatedIllusts.filterNot { it.isR18 },
-        bookmarkItems = updated.bookmarkItems.filterNot { it.isR18 },
-        selectedUserIllusts = updated.selectedUserIllusts.filterNot { it.isR18 },
-        selectedUserBookmarks = updated.selectedUserBookmarks.filterNot { it.isR18 },
-        searchNovelItems = updated.searchNovelItems.filterNot { it.isR18 },
-        novelItems = updated.novelItems.filterNot { it.isR18 },
+        homeItems = updated.homeItems.filterNot(shouldDropIllust),
+        searchItems = updated.searchItems.filterNot(shouldDropIllust),
+        timelineItems = updated.timelineItems.filterNot(shouldDropIllust),
+        shortsFeedItems = updated.shortsFeedItems.filterNot(shouldDropIllust),
+        watchlistItems = updated.watchlistItems.filterNot(shouldDropIllust),
+        rankingItems = updated.rankingItems.filterNot(shouldDropIllust),
+        rankingModeItems = updated.rankingModeItems.mapValues { (_, list) -> list.filterNot(shouldDropIllust) },
+        relatedIllusts = updated.relatedIllusts.filterNot(shouldDropIllust),
+        bookmarkItems = updated.bookmarkItems.filterNot(shouldDropIllust),
+        selectedUserIllusts = updated.selectedUserIllusts.filterNot(shouldDropIllust),
+        selectedUserBookmarks = updated.selectedUserBookmarks.filterNot(shouldDropIllust),
+        searchNovelItems = updated.searchNovelItems.filterNot(shouldDropNovel),
+        novelItems = updated.novelItems.filterNot(shouldDropNovel),
     )
 }
 

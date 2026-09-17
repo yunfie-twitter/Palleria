@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -86,6 +88,7 @@ fun AppLockSetupScreen(
     val haptic = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
 
     var pendingAction by remember { mutableStateOf<PinVerifyAction?>(null) }
     var verifyPin by remember { mutableStateOf("") }
@@ -187,27 +190,29 @@ fun AppLockSetupScreen(
         val newPin = verifyPin + digit
         verifyPin = newPin
         if (newPin.length == 6) {
-            if (viewModel.verifyPin(newPin)) {
-                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
-                viewModel.resetLockFailCount()
-                when (val action = pendingAction) {
-                    is PinVerifyAction.Disable -> {
-                        viewModel.disableAppLock()
-                    }
+            coroutineScope.launch {
+                if (viewModel.verifyPin(newPin)) {
+                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                    viewModel.resetLockFailCount()
+                    when (val action = pendingAction) {
+                        is PinVerifyAction.Disable -> {
+                            viewModel.disableAppLock()
+                        }
 
-                    is PinVerifyAction.ChangeTiming -> {
-                        viewModel.updateAppLockTiming(action.newValue)
-                    }
+                        is PinVerifyAction.ChangeTiming -> {
+                            viewModel.updateAppLockTiming(action.newValue)
+                        }
 
-                    null -> {}
+                        null -> {}
+                    }
+                    dismissPinOverlay()
+                } else {
+                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Error)
+                    verifyError = true
+                    verifyShake = true
+                    viewModel.recordLockFailure()
+                    verifyPin = ""
                 }
-                dismissPinOverlay()
-            } else {
-                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Error)
-                verifyError = true
-                verifyShake = true
-                viewModel.recordLockFailure()
-                verifyPin = ""
             }
         }
     }

@@ -53,6 +53,10 @@ class PixivApiCacheTest :
             cache.put("key6", "value6", ttlMillis = 10000L, now = 600L)
             (cache.size <= 5) shouldBe true
             cache.get<String>("key6", now = 600L) shouldBe "value6"
+            // Oldest entry (key1 with timestamp 100L) must have been evicted
+            cache.get<String>("key1", now = 600L) shouldBe null
+            // Newer entries must remain
+            cache.get<String>("key5", now = 600L) shouldBe "value5"
         }
 
         "clear should remove all cached items" {

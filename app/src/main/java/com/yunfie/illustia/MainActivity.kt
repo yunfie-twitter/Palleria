@@ -85,6 +85,7 @@ class MainActivity : FragmentActivity() {
     }
     private var lastHandledClipboardText: String? = null
     private var appliedRefreshRateHint: Float? = null
+    private var processLifecycleObserver: DefaultLifecycleObserver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
@@ -164,6 +165,7 @@ class MainActivity : FragmentActivity() {
                     }
                 }
             }
+        processLifecycleObserver = lifecycleObserver
         androidx.lifecycle.ProcessLifecycleOwner
             .get()
             .lifecycle
@@ -707,5 +709,16 @@ class MainActivity : FragmentActivity() {
                 false
             }
         }
+    }
+
+    override fun onDestroy() {
+        processLifecycleObserver?.let { observer ->
+            androidx.lifecycle.ProcessLifecycleOwner
+                .get()
+                .lifecycle
+                .removeObserver(observer)
+            processLifecycleObserver = null
+        }
+        super.onDestroy()
     }
 }

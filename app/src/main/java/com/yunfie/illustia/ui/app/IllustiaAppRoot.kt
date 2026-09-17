@@ -105,7 +105,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 .DiscordRpcManager(context.applicationContext)
         }
 
-    val appState = IllustiaAppStateBundle(state)
+    val appState = remember(state) { IllustiaAppStateBundle(state) }
 
     LaunchedEffect(state.webLoginRequest) {
         val request = state.webLoginRequest ?: return@LaunchedEffect
@@ -219,11 +219,13 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 backStack.clear()
                 backStack.add(AppRoute.Main)
                 selectedWatchlistSeriesIds.clear()
+                viewModel.clearDetailSnapshots()
             }
         } else {
             backStack.clear()
             backStack.add(AppRoute.Onboarding)
             selectedWatchlistSeriesIds.clear()
+            viewModel.clearDetailSnapshots()
         }
     }
 
@@ -232,6 +234,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             backStack.clear()
             backStack.add(AppRoute.Main)
             selectedWatchlistSeriesIds.clear()
+            viewModel.clearDetailSnapshots()
         }
     }
 
@@ -292,6 +295,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         backStack.clear()
         backStack.add(AppRoute.Main)
         selectedWatchlistSeriesIds.clear()
+        viewModel.clearDetailSnapshots()
         when (destination) {
             AppShortcutDestination.Search -> {
                 if (settings.shortsFeedEnabled) {

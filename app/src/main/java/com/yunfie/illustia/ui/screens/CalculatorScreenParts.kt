@@ -64,7 +64,7 @@ private val LocalCompactCalculatorButtons = compositionLocalOf { false }
 @Composable
 internal fun CalculatorHistorySection(
     history: List<CalculatorHistoryEntry>,
-    onVerifyAndUnlock: (String) -> Boolean,
+    onVerifyAndUnlock: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -115,7 +115,10 @@ internal fun CalculatorHistorySection(
                         .fillMaxWidth(),
                 reverseLayout = false,
             ) {
-                items(displayHistory) { entry ->
+                items(
+                    items = displayHistory,
+                    key = { it.id },
+                ) { entry ->
                     CalculatorHistoryItem(entry = entry)
                 }
             }

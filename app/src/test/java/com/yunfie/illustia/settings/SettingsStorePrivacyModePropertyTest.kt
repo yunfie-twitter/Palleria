@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
@@ -43,31 +44,33 @@ class SettingsStorePrivacyModePropertyTest {
     }
 
     @Test
-    fun `Property 1 解除コードのラウンドトリップ保存`() {
-        repeat(100) {
-            val code = randomCode(Random.nextInt(4, 21))
-            settingsStore.clearUnlockCodeHash()
-            settingsStore.saveUnlockCodeHash(code)
+    fun `Property 1 解除コードのラウンドトリップ保存`() =
+        runBlocking {
+            repeat(100) {
+                val code = randomCode(Random.nextInt(4, 21))
+                settingsStore.clearUnlockCodeHash()
+                settingsStore.saveUnlockCodeHash(code)
 
-            settingsStore.hasUnlockCodeSet().shouldBeTrue()
-            settingsStore.verifyUnlockCode(code).shouldBeTrue()
+                settingsStore.hasUnlockCodeSet().shouldBeTrue()
+                settingsStore.verifyUnlockCode(code).shouldBeTrue()
+            }
         }
-    }
 
     @Test
-    fun `Property 2 解除コードの非衝突性`() {
-        repeat(100) {
-            val firstCode = randomCode(Random.nextInt(4, 21))
-            var secondCode = randomCode(Random.nextInt(4, 21))
-            while (secondCode == firstCode) {
-                secondCode = randomCode(Random.nextInt(4, 21))
-            }
-            settingsStore.clearUnlockCodeHash()
-            settingsStore.saveUnlockCodeHash(firstCode)
+    fun `Property 2 解除コードの非衝突性`() =
+        runBlocking {
+            repeat(100) {
+                val firstCode = randomCode(Random.nextInt(4, 21))
+                var secondCode = randomCode(Random.nextInt(4, 21))
+                while (secondCode == firstCode) {
+                    secondCode = randomCode(Random.nextInt(4, 21))
+                }
+                settingsStore.clearUnlockCodeHash()
+                settingsStore.saveUnlockCodeHash(firstCode)
 
-            settingsStore.verifyUnlockCode(secondCode).shouldBeFalse()
+                settingsStore.verifyUnlockCode(secondCode).shouldBeFalse()
+            }
         }
-    }
 
     @Test
     fun `Property 6 解除コードの長さバリデーション`() {

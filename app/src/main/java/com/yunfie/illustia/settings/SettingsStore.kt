@@ -153,7 +153,7 @@ class SettingsStore internal constructor(
                             pallaSyncEnabled = enabled,
                             pallaSyncServerUrl = serverUrl,
                         ).withSyncedCollections(rebasedCollections)
-                writeAppSettingsImpl(dataStore, sensitivePreferences, database, dao, rebased)
+                writeAppSettingsImpl(dataStore, sensitivePreferences, database, dao, rebased, baseSettings = base)
                 // These non-sensitive values are needed before the asynchronous authoritative
                 // settings load completes. Keep a lightweight startup mirror off the DataStore path.
                 legacyPreferences
@@ -161,7 +161,7 @@ class SettingsStore internal constructor(
                     .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
                     .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
                     .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
-                    .commit()
+                    .apply()
 
                 rebased
             }
@@ -219,9 +219,10 @@ class SettingsStore internal constructor(
         }
     }
 
-    suspend fun clearSensitive() {
-        clearSensitiveSettingsImpl(dataStore, sensitivePreferences, legacyPreferences, database, dao)
-    }
+    suspend fun clearSensitive() =
+        withContext(Dispatchers.IO) {
+            clearSensitiveSettingsImpl(dataStore, sensitivePreferences, legacyPreferences, database, dao)
+        }
 
     suspend fun getSavedIllusts() =
         withContext(Dispatchers.IO) {
@@ -257,7 +258,7 @@ class SettingsStore internal constructor(
         savePinHashImpl(sensitivePreferences, pin)
     }
 
-    fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
+    suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
 
     fun hasPinSet(): Boolean = hasPinSetImpl(sensitivePreferences)
 
@@ -269,7 +270,7 @@ class SettingsStore internal constructor(
         saveUnlockCodeHashImpl(sensitivePreferences, code)
     }
 
-    fun verifyUnlockCode(code: String): Boolean = verifyUnlockCodeHashImpl(sensitivePreferences, code)
+    suspend fun verifyUnlockCode(code: String): Boolean = verifyUnlockCodeHashImpl(sensitivePreferences, code)
 
     fun hasUnlockCodeSet(): Boolean = hasUnlockCodeSetImpl(sensitivePreferences)
 
@@ -391,7 +392,7 @@ class SettingsStore internal constructor(
             startupPreferences
                 .edit()
                 .putBoolean(KEY_STARTUP_PRIVACY_MODE, enabled)
-                .commit()
+                .apply()
             return enabled
         }
 

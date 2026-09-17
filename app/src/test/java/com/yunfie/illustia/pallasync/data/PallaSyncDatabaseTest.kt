@@ -102,6 +102,29 @@ class PallaSyncDatabaseTest {
             "DROP " in normalized || "DELETE " in normalized
         } shouldBe true
     }
+
+    @Test
+    fun `version 4 to 5 migration creates indices on outbox table`() {
+        val statements = mutableListOf<String>()
+        val recordingDatabase =
+            Proxy.newProxyInstance(
+                SupportSQLiteDatabase::class.java.classLoader,
+                arrayOf(SupportSQLiteDatabase::class.java),
+            ) { _, method, arguments ->
+                if (method.name == "execSQL") {
+                    statements += arguments?.firstOrNull() as String
+                }
+                null
+            } as SupportSQLiteDatabase
+
+        PallaSyncDatabase.MIGRATION_4_5.migrate(recordingDatabase)
+
+        statements.size shouldBe 2
+        statements[0].normalizedSql() shouldBe
+            "CREATE INDEX IF NOT EXISTS index_pallasync_outbox_status ON pallasync_outbox(status)"
+        statements[1].normalizedSql() shouldBe
+            "CREATE INDEX IF NOT EXISTS index_pallasync_outbox_chain_id_status ON pallasync_outbox(chain_id, status)"
+    }
 }
 
 private fun chainState(chainId: String) =

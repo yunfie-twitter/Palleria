@@ -93,6 +93,8 @@ object UgoiraMp4Encoder {
 
         try {
             var currentPtsUs = 0L
+            val pixels = IntArray(targetWidth * targetHeight)
+            val yuvBuffer = ByteArray(targetWidth * targetHeight * 3 / 2)
             val drain: () -> Unit = {
                 drainEncoder(
                     codec = codec,
@@ -111,13 +113,13 @@ object UgoiraMp4Encoder {
                     val frameDurationUs = normalizedUgoiraDelayMillis(frame.delayMillis) * 1_000L
                     val bitmap = loadAndScaleBitmap(frame.filePath, targetWidth, targetHeight) ?: continue
 
-                    val pixels = IntArray(targetWidth * targetHeight)
                     bitmap.getPixels(pixels, 0, targetWidth, 0, 0, targetWidth, targetHeight)
                     bitmap.recycle()
 
                     feedFrameToEncoder(
                         codec = codec,
                         pixels = pixels,
+                        yuvBuffer = yuvBuffer,
                         width = targetWidth,
                         height = targetHeight,
                         colorFormat = colorFormat,
@@ -190,6 +192,7 @@ object UgoiraMp4Encoder {
     private fun feedFrameToEncoder(
         codec: MediaCodec,
         pixels: IntArray,
+        yuvBuffer: ByteArray,
         width: Int,
         height: Int,
         colorFormat: Int,
@@ -216,14 +219,13 @@ object UgoiraMp4Encoder {
         } else {
             val inputBuffer = codec.getInputBuffer(inputIndex) ?: error("Input buffer is null")
             inputBuffer.clear()
-            val yuv = ByteArray(width * height * 3 / 2)
             if (colorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar) {
-                rgbToI420(pixels, width, height, yuv)
+                rgbToI420(pixels, width, height, yuvBuffer)
             } else {
-                rgbToNv12(pixels, width, height, yuv)
+                rgbToNv12(pixels, width, height, yuvBuffer)
             }
-            inputBuffer.put(yuv)
-            codec.queueInputBuffer(inputIndex, 0, yuv.size, ptsUs, 0)
+            inputBuffer.put(yuvBuffer)
+            codec.queueInputBuffer(inputIndex, 0, yuvBuffer.size, ptsUs, 0)
         }
     }
 

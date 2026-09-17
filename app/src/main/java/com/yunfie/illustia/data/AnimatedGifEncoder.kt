@@ -34,6 +34,9 @@ object AnimatedGifEncoder {
         require(frames.isNotEmpty()) { "Frames must not be empty" }
 
         var isFirstFrame = true
+        var pixelBuffer: IntArray? = null
+        var rgbBuffer: ByteArray? = null
+        var indexedPixelBuffer: ByteArray? = null
 
         for (frame in frames) {
             val decodeOptions =
@@ -57,11 +60,25 @@ object AnimatedGifEncoder {
 
             val width = bitmap.width
             val height = bitmap.height
-            val pixels = IntArray(width * height)
+            val pixelCount = width * height
+            val currentPixels = pixelBuffer
+            val pixels =
+                if (currentPixels != null && currentPixels.size == pixelCount) {
+                    currentPixels
+                } else {
+                    IntArray(pixelCount).also { pixelBuffer = it }
+                }
             bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
             bitmap.recycle()
 
-            val rgbBytes = ByteArray(width * height * 3)
+            val rgbByteCount = pixelCount * 3
+            val currentRgb = rgbBuffer
+            val rgbBytes =
+                if (currentRgb != null && currentRgb.size == rgbByteCount) {
+                    currentRgb
+                } else {
+                    ByteArray(rgbByteCount).also { rgbBuffer = it }
+                }
             var byteIndex = 0
             for (pixel in pixels) {
                 rgbBytes[byteIndex++] = ((pixel shr 16) and 0xFF).toByte() // R
@@ -69,10 +86,16 @@ object AnimatedGifEncoder {
                 rgbBytes[byteIndex++] = (pixel and 0xFF).toByte() // B
             }
 
-            val nq = NeuQuant(rgbBytes, rgbBytes.size, DEFAULT_SAMPLE_FACTOR)
+            val nq = NeuQuant(rgbBytes, rgbByteCount, DEFAULT_SAMPLE_FACTOR)
             val colorTable = nq.process()
-            val indexedPixels = ByteArray(pixels.size)
-            for (i in pixels.indices) {
+            val currentIndexed = indexedPixelBuffer
+            val indexedPixels =
+                if (currentIndexed != null && currentIndexed.size == pixelCount) {
+                    currentIndexed
+                } else {
+                    ByteArray(pixelCount).also { indexedPixelBuffer = it }
+                }
+            for (i in 0 until pixelCount) {
                 val r = (pixels[i] shr 16) and 0xFF
                 val g = (pixels[i] shr 8) and 0xFF
                 val b = pixels[i] and 0xFF

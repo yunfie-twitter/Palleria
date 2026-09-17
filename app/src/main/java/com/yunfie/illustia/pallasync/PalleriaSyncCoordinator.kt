@@ -167,7 +167,7 @@ internal class PalleriaSyncCoordinator(
             else -> null
         }
 
-    fun getPallaSyncKeystore(): PallaSyncKeystore = PallaSyncKeystore(appContext)
+    fun getPallaSyncKeystore(): PallaSyncKeystore = keystore
 
     /** Repairs a process death between staged-key and Room activation commits. */
     suspend fun recoverInterruptedActivation(): Boolean {

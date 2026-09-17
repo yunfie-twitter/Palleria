@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -50,6 +52,7 @@ fun PinSetupScreen(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
+    val coroutineScope = rememberCoroutineScope()
 
     var step by remember { mutableIntStateOf(0) }
     var newPin by remember { mutableStateOf("") }
@@ -104,14 +107,17 @@ fun PinSetupScreen(
                 if (pin.length >= 6) return
                 pin += digit
                 if (pin.length == 6) {
-                    if (viewModel.verifyPin(pin)) {
-                        pin = ""
-                        step = 2
-                    } else {
-                        performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Error)
-                        error = incorrectError
-                        shake = true
-                        pin = ""
+                    val candidatePin = pin
+                    coroutineScope.launch {
+                        if (viewModel.verifyPin(candidatePin)) {
+                            pin = ""
+                            step = 2
+                        } else {
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Error)
+                            error = incorrectError
+                            shake = true
+                            pin = ""
+                        }
                     }
                 }
             }
