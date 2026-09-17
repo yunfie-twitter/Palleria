@@ -57,9 +57,11 @@ class PixivApiCache(
     }
 
     fun removeByPrefix(prefix: String) {
-        val keysToRemove = cache.keys.filter { it.startsWith(prefix) }
-        for (key in keysToRemove) {
-            cache.remove(key)
+        val iterator = cache.keys.iterator()
+        while (iterator.hasNext()) {
+            if (iterator.next().startsWith(prefix)) {
+                iterator.remove()
+            }
         }
     }
 
@@ -71,17 +73,29 @@ class PixivApiCache(
         get() = cache.size
 
     private fun evictOldest(now: Long) {
-        // Remove expired entries first
-        val expired = cache.entries.filter { it.value.isExpired(now) }
-        for ((k, _) in expired) {
-            cache.remove(k)
+        // Remove expired entries first in place
+        val iterator = cache.entries.iterator()
+        while (iterator.hasNext()) {
+            if (iterator.next().value.isExpired(now)) {
+                iterator.remove()
+            }
         }
-        // If still over capacity, evict oldest entries
+        // If still over capacity, evict oldest entries using a bounded max-heap
         if (cache.size >= maxEntries) {
-            val sorted = cache.entries.sortedBy { it.value.timestamp }
             val countToRemove = (maxEntries * 0.2).toInt().coerceAtLeast(1)
-            for (i in 0 until countToRemove.coerceAtMost(sorted.size)) {
-                cache.remove(sorted[i].key)
+            val oldest =
+                java.util.PriorityQueue<Map.Entry<String, CacheEntry<*>>>(
+                    countToRemove + 1,
+                    compareByDescending { it.value.timestamp },
+                )
+            for (entry in cache.entries) {
+                oldest.offer(entry)
+                if (oldest.size > countToRemove) {
+                    oldest.poll()
+                }
+            }
+            while (!oldest.isEmpty()) {
+                oldest.poll()?.key?.let { cache.remove(it) }
             }
         }
     }

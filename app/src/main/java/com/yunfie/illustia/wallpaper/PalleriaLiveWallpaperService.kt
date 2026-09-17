@@ -55,12 +55,18 @@ class PalleriaLiveWallpaperService : WallpaperService() {
         private var lastTapAt = 0L
         private var lastOffset = Float.NaN
         private var pendingScreenChange = false
+        private val settingsStore by lazy { SettingsStore(applicationContext) }
+        private val imageStore by lazy { NativeImageStore(applicationContext) }
+        private var cachedCandidates: List<com.yunfie.illustia.nativebridge.NativeSavedImage> = emptyList()
+        private var cachedFolderUri: String? = null
+        private var lastCandidateScanTime = 0L
         private val settingsChangedReceiver =
             object : BroadcastReceiver() {
                 override fun onReceive(
                     context: Context?,
                     intent: Intent?,
                 ) {
+                    lastCandidateScanTime = 0L
                     if (visible) loadNext(forceDifferent = false)
                 }
             }
@@ -201,19 +207,31 @@ class PalleriaLiveWallpaperService : WallpaperService() {
                 scope.launch {
                     val result =
                         withContext(Dispatchers.IO) {
-                            val store = SettingsStore(applicationContext)
-                            val settings = store.read()
+                            val settings = settingsStore.read()
                             if (settings.privacyModeEnabled) {
                                 return@withContext WallpaperLoadResult(settings, null, null)
                             }
-                            val imageStore = NativeImageStore(applicationContext)
                             val selectedFolder =
                                 settings.liveWallpaperSourceFolder
                                     .takeIf {
                                         settings.liveWallpaperSource == "selected_folder" ||
                                             settings.liveWallpaperSource == "folder"
                                     }
-                            val candidates = imageStore.listSavedImages(selectedFolder)
+                            val now = System.currentTimeMillis()
+                            val shouldRescan =
+                                selectedFolder != cachedFolderUri ||
+                                    now - lastCandidateScanTime > 300_000L ||
+                                    cachedCandidates.isEmpty()
+                            val candidates =
+                                if (shouldRescan) {
+                                    val scanned = imageStore.listSavedImages(selectedFolder)
+                                    cachedFolderUri = selectedFolder
+                                    lastCandidateScanTime = now
+                                    cachedCandidates = scanned
+                                    scanned
+                                } else {
+                                    cachedCandidates
+                                }
                             val selected = selectCandidate(candidates, settings, currentPath, forceDifferent)
                             val bitmap =
                                 selected

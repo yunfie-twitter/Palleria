@@ -109,6 +109,12 @@ data class CalculatorHistoryEntry(
 )
 
 @Immutable
+data class CalculatorUiState(
+    val buffer: String = "",
+    val history: List<CalculatorHistoryEntry> = emptyList(),
+)
+
+@Immutable
 data class RecommendedTagTile(
     val tag: String,
     val imageUrl: String? = null,

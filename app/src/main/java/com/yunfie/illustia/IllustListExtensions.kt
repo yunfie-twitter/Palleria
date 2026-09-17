@@ -61,6 +61,7 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
     )
 }
 
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState {
     val updatedHome = homeItems.replaceIllustIfPresent(updated)
     val updatedSearch = searchItems.replaceIllustIfPresent(updated)
@@ -68,9 +69,20 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
     val updatedShortsFeed = shortsFeedItems.replaceIllustIfPresent(updated)
     val updatedWatchlist = watchlistItems.replaceIllustIfPresent(updated)
     val updatedRanking = rankingItems.replaceIllustIfPresent(updated)
+    var rankingModeChanged = false
     val updatedRankingModeItems =
-        rankingModeItems.mapValues { (_, list) ->
-            list.replaceIllustIfPresent(updated)
+        if (rankingModeItems.isEmpty()) {
+            rankingModeItems
+        } else {
+            val nextMap = LinkedHashMap<String, List<Illust>>(rankingModeItems.size)
+            rankingModeItems.forEach { (key, list) ->
+                val replaced = list.replaceIllustIfPresent(updated)
+                if (replaced !== list) {
+                    rankingModeChanged = true
+                }
+                nextMap[key] = replaced
+            }
+            if (rankingModeChanged) nextMap else rankingModeItems
         }
     val updatedRelated = relatedIllusts.replaceIllustIfPresent(updated)
     val updatedHistory = settings.viewHistory.replaceIllustIfPresent(updated)
@@ -85,21 +97,19 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
     val updatedSelected = if (selectedIllust?.id == updated.id) updated else selectedIllust
 
     val unchanged =
-        listOf(
-            updatedHome === homeItems,
-            updatedSearch === searchItems,
-            updatedTimeline === timelineItems,
-            updatedShortsFeed === shortsFeedItems,
-            updatedWatchlist === watchlistItems,
-            updatedRanking === rankingItems,
-            updatedRankingModeItems == rankingModeItems,
-            updatedRelated === relatedIllusts,
-            updatedHistory === settings.viewHistory,
-            updatedBookmarks === bookmarkItems,
-            updatedUserIllusts === selectedUserIllusts,
-            updatedUserBookmarks === selectedUserBookmarks,
-            updatedSelected === selectedIllust,
-        ).all { it }
+        updatedHome === homeItems &&
+            updatedSearch === searchItems &&
+            updatedTimeline === timelineItems &&
+            updatedShortsFeed === shortsFeedItems &&
+            updatedWatchlist === watchlistItems &&
+            updatedRanking === rankingItems &&
+            !rankingModeChanged &&
+            updatedRelated === relatedIllusts &&
+            updatedHistory === settings.viewHistory &&
+            updatedBookmarks === bookmarkItems &&
+            updatedUserIllusts === selectedUserIllusts &&
+            updatedUserBookmarks === selectedUserBookmarks &&
+            updatedSelected === selectedIllust
 
     if (unchanged) {
         return this

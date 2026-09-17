@@ -282,10 +282,8 @@ internal fun MainSurface(
 
         if (appState.state.privacyLocked) {
             CalculatorScreen(
-                buffer = appState.state.calculatorBuffer,
-                history = appState.state.calculatorHistory,
-                isTransitioning = appState.state.isTransitioningToIllustia,
                 viewModel = viewModel,
+                isTransitioning = appState.state.isTransitioningToIllustia,
             )
         } else if (appState.state.appLocked && appState.state.settings.appLockEnabled) {
             AppLockScreen(

@@ -41,6 +41,7 @@ import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -83,14 +84,17 @@ fun PallaSyncSettingsScreen(
                     .getDatabase(context)
             val dao = db.pallaSyncDao()
 
-            launch {
+            launch(kotlinx.coroutines.Dispatchers.IO) {
                 while (isActive) {
-                    devices = dao.getAllDevices()
+                    val fetchedDevices = dao.getAllDevices()
+                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        devices = fetchedDevices
+                    }
                     kotlinx.coroutines.delay(2000)
                 }
             }
 
-            launch {
+            launch(kotlinx.coroutines.Dispatchers.IO) {
                 kotlinx.coroutines.delay(1000)
                 val chainState = dao.getAllChainStates().firstOrNull()
                 if (chainState != null) {

@@ -226,6 +226,7 @@ fun WatchlistSeriesScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             AutoLoadMoreEffect(
+                gridState = gridState,
                 enabled = settings.autoLoadMore,
                 nextUrl = state.model?.nextUrl,
                 isLoading = state.isLoading,

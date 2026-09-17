@@ -117,7 +117,8 @@ class AppUpdaterRepository(
     ): Result<File> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val targetFile = File(updatesDir, release.apkFileName)
+                val sanitizedFileName = File(release.apkFileName).name.ifBlank { "Palleria-update.apk" }
+                val targetFile = File(updatesDir, sanitizedFileName)
                 if (targetFile.exists() && targetFile.length() == release.apkSize && release.apkSize > 0) {
                     onProgress(1.0f, release.apkSize, release.apkSize)
                     return@runCatching targetFile
@@ -130,7 +131,7 @@ class AppUpdaterRepository(
                     }
                     val body = response.body
                     val totalBytes = if (release.apkSize > 0) release.apkSize else body.contentLength()
-                    val tempFile = File(updatesDir, "${release.apkFileName}.tmp")
+                    val tempFile = File(updatesDir, "$sanitizedFileName.tmp")
                     body.byteStream().use { input ->
                         FileOutputStream(tempFile).use { output ->
                             val buffer = ByteArray(8192)
@@ -276,7 +277,23 @@ class AppUpdaterRepository(
             }
         }
 
+    private fun validateApkFile(apkFile: File) {
+        val canonicalApk = apkFile.canonicalFile
+        val canonicalUpdates = updatesDir.canonicalFile
+        require(canonicalApk.path.startsWith(canonicalUpdates.path)) {
+            "Unauthorized APK file location: ${apkFile.absolutePath}"
+        }
+        require(canonicalApk.exists() && canonicalApk.isFile && canonicalApk.length() > 0) {
+            "Valid APK file required: ${apkFile.absolutePath}"
+        }
+        val archiveInfo = context.packageManager.getPackageArchiveInfo(canonicalApk.absolutePath, 0)
+        require(archiveInfo != null && archiveInfo.packageName == context.packageName) {
+            "APK package (${archiveInfo?.packageName}) does not match app (${context.packageName})"
+        }
+    }
+
     private fun installViaStandardIntent(apkFile: File) {
+        validateApkFile(apkFile)
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
         val intent =
             Intent(Intent.ACTION_VIEW).apply {
@@ -287,9 +304,7 @@ class AppUpdaterRepository(
     }
 
     private fun installViaShizuku(apkFile: File) {
-        require(apkFile.exists() && apkFile.isFile && apkFile.length() > 0) {
-            "Valid APK file required: ${apkFile.absolutePath}"
-        }
+        validateApkFile(apkFile)
         val fileSize = apkFile.length()
 
         val sessionId = createInstallSession(fileSize)

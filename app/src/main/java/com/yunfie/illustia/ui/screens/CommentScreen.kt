@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,7 +81,9 @@ fun CommentScreen(
     LaunchedEffect(store) {
         store.fetch()
     }
+    val listState = rememberLazyListState()
     AutoLoadMoreEffect(
+        listState = listState,
         enabled = settings.autoLoadMore,
         nextUrl = state.nextUrl,
         isLoading = state.isLoading,
@@ -119,6 +122,7 @@ fun CommentScreen(
                 modifier = Modifier.weight(1f),
             ) {
                 androidx.compose.foundation.lazy.LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
