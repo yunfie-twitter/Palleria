@@ -36,7 +36,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Contacts
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
-import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Settings
@@ -70,7 +69,7 @@ fun SettingsScreen(
     val mutedTotal = state.settings.mutedIllusts.size + state.settings.mutedUsers.size + state.settings.mutedTags.size
 
     val categories =
-        remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal, state.settings.privacyModeEnabled) {
+        remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal) {
             listOf(
                 SettingsCategory(
                     context.getString(R.string.settings_general),
@@ -125,15 +124,6 @@ fun SettingsScreen(
                 ) {
                     viewModel.openUpdateSettings()
                 },
-                SettingsCategory(
-                    context.getString(R.string.privacy_mode_title),
-                    if (state.settings.privacyModeEnabled) {
-                        context.getString(R.string.privacy_settings_enabled)
-                    } else {
-                        context.getString(R.string.privacy_settings_disabled)
-                    },
-                    MiuixIcons.Lock,
-                ) { viewModel.openPrivacyModeSettings() },
                 SettingsCategory(
                     context.getString(R.string.experimental_settings_title),
                     context.getString(R.string.settings_experimental_summary),

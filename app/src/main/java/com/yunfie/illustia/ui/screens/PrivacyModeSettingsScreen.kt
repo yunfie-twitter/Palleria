@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -92,6 +93,16 @@ fun PrivacyModeSettingsScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val defaultDummyAppName = stringResource(R.string.app_name_dummy)
 
+    // ── Enable privacy mode dialog state ──────────────────────────────────────
+    var showEnableCodeDialog by remember { mutableStateOf(false) }
+    var isResettingCode by remember { mutableStateOf(false) }
+    var enableCodeInput by remember { mutableStateOf("") }
+    var enableCodeConfirm by remember { mutableStateOf("") }
+    var enableCodeError by remember { mutableStateOf<String?>(null) }
+    val enableCodeMismatchText = stringResource(R.string.privacy_code_mismatch)
+    val enableCodeInvalidText = stringResource(R.string.privacy_code_invalid)
+    val enableCodeIncorrectText = stringResource(R.string.privacy_code_incorrect)
+
     // ── Change unlock code dialog state ───────────────────────────────────────
     var showChangeCodeDialog by remember { mutableStateOf(false) }
     var currentCode by remember { mutableStateOf("") }
@@ -143,7 +154,11 @@ fun PrivacyModeSettingsScreen(
                             checked = state.settings.privacyModeEnabled,
                             onCheckedChange = { enabled ->
                                 if (enabled) {
-                                    viewModel.enablePrivacyMode()
+                                    enableCodeInput = ""
+                                    enableCodeConfirm = ""
+                                    enableCodeError = null
+                                    isResettingCode = false
+                                    showEnableCodeDialog = true
                                 } else {
                                     viewModel.disablePrivacyMode()
                                 }
@@ -242,6 +257,171 @@ fun PrivacyModeSettingsScreen(
                             label = { dummyIconLabel(it) },
                             onSelect = { viewModel.updateDummyIconVariant(it) },
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Enable Privacy Mode Dialog ────────────────────────────────────────────
+    if (showEnableCodeDialog) {
+        val requiresNewCode = !viewModel.hasUnlockCodeSet() || isResettingCode
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.privacy_enable_dialog_title),
+            onDismissRequest = {
+                showEnableCodeDialog = false
+                isResettingCode = false
+                enableCodeInput = ""
+                enableCodeConfirm = ""
+                enableCodeError = null
+            },
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text =
+                        stringResource(
+                            if (requiresNewCode) {
+                                R.string.privacy_enable_set_code_desc
+                            } else {
+                                R.string.privacy_enable_enter_code_desc
+                            },
+                        ),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+
+                if (requiresNewCode) {
+                    TextField(
+                        value = enableCodeInput,
+                        onValueChange = {
+                            enableCodeInput = it
+                            enableCodeError = null
+                        },
+                        label = stringResource(R.string.privacy_new_code),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.NumberPassword,
+                                imeAction = ImeAction.Next,
+                            ),
+                    )
+
+                    TextField(
+                        value = enableCodeConfirm,
+                        onValueChange = {
+                            enableCodeConfirm = it
+                            enableCodeError = null
+                        },
+                        label = stringResource(R.string.privacy_code_confirm),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.NumberPassword,
+                                imeAction = ImeAction.Done,
+                            ),
+                    )
+                } else {
+                    TextField(
+                        value = enableCodeInput,
+                        onValueChange = {
+                            enableCodeInput = it
+                            enableCodeError = null
+                        },
+                        label = stringResource(R.string.privacy_unlock_code),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.NumberPassword,
+                                imeAction = ImeAction.Done,
+                            ),
+                    )
+
+                    Text(
+                        text = stringResource(R.string.privacy_reset_code),
+                        color = MiuixTheme.colorScheme.primary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier =
+                            Modifier.clickable {
+                                isResettingCode = true
+                                enableCodeInput = ""
+                                enableCodeConfirm = ""
+                                enableCodeError = null
+                            },
+                    )
+                }
+
+                enableCodeError?.let { errorText ->
+                    Text(
+                        text = errorText,
+                        color = MiuixTheme.colorScheme.error,
+                        style = MiuixTheme.textStyles.footnote1,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = {
+                            showEnableCodeDialog = false
+                            isResettingCode = false
+                            enableCodeInput = ""
+                            enableCodeConfirm = ""
+                            enableCodeError = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = overlayActionButtonColors(),
+                        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    ) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                    Button(
+                        onClick = {
+                            if (requiresNewCode) {
+                                if (enableCodeInput != enableCodeConfirm) {
+                                    enableCodeError = enableCodeMismatchText
+                                } else if (!viewModel.isValidUnlockCode(enableCodeInput)) {
+                                    enableCodeError = enableCodeInvalidText
+                                } else {
+                                    val success = viewModel.enablePrivacyModeWithCode(enableCodeInput)
+                                    if (success) {
+                                        showEnableCodeDialog = false
+                                        isResettingCode = false
+                                        enableCodeInput = ""
+                                        enableCodeConfirm = ""
+                                        enableCodeError = null
+                                    } else {
+                                        enableCodeError = enableCodeInvalidText
+                                    }
+                                }
+                            } else {
+                                if (viewModel.verifyCurrentUnlockCode(enableCodeInput)) {
+                                    viewModel.enablePrivacyMode()
+                                    showEnableCodeDialog = false
+                                    isResettingCode = false
+                                    enableCodeInput = ""
+                                    enableCodeConfirm = ""
+                                    enableCodeError = null
+                                } else {
+                                    enableCodeError = enableCodeIncorrectText
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = overlayActionButtonColors(),
+                        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    ) {
+                        Text(stringResource(R.string.action_enable), fontWeight = FontWeight.Bold)
                     }
                 }
             }

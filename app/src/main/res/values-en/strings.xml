@@ -748,6 +748,14 @@
     <string name="privacy_mode_title">Privacy Mode</string>
     <string name="privacy_mode_enabled_desc">Enabled — show the calculator at launch</string>
     <string name="privacy_mode_disabled_desc">Disabled — show the regular launch screen</string>
+    <string name="privacy_enable_dialog_title">Enable Privacy Mode</string>
+    <string name="privacy_enable_set_code_desc">Set an unlock code (4–20 characters) to enter on the calculator screen.</string>
+    <string name="privacy_enable_enter_code_desc">Enter your unlock code to enable Privacy Mode.</string>
+    <string name="privacy_code_confirm">Confirm unlock code</string>
+    <string name="privacy_code_mismatch">Unlock codes do not match.</string>
+    <string name="privacy_code_invalid">Unlock code must be 4–20 characters.</string>
+    <string name="privacy_code_incorrect">Incorrect unlock code.</string>
+    <string name="privacy_reset_code">Reset unlock code</string>
     <string name="privacy_unlock_code_section">Unlock Code</string>
     <string name="privacy_unlock_code">Unlock code</string>
     <string name="privacy_enter_unlock_code">Enter unlock code</string>

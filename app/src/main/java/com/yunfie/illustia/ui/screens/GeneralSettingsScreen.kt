@@ -236,6 +236,17 @@ fun GeneralSettingsScreen(
                                     stringResource(R.string.app_lock_disabled)
                                 },
                         )
+                        DividerLine()
+                        SettingLinkRow(
+                            title = stringResource(R.string.privacy_mode_title),
+                            onClick = { viewModel.openPrivacyModeSettings() },
+                            summary =
+                                if (state.settings.privacyModeEnabled) {
+                                    stringResource(R.string.privacy_settings_enabled)
+                                } else {
+                                    stringResource(R.string.privacy_settings_disabled)
+                                },
+                        )
                     }
                 }
             }

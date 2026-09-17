@@ -418,6 +418,21 @@ abstract class IllustiaSettingsSecurityModule(
 
     // ─── Privacy Mode 制御 ─────────────────────────────────────────────────────
 
+    fun hasUnlockCodeSet(): Boolean = settingsStore.hasUnlockCodeSet()
+
+    fun isValidUnlockCode(code: String): Boolean = settingsStore.isValidUnlockCode(code)
+
+    /**
+     * 指定した解除コードを設定してプライバシーモードを有効化する。
+     * @return 解除コードが有効な形式であれば true
+     */
+    fun enablePrivacyModeWithCode(code: String): Boolean {
+        if (!settingsStore.isValidUnlockCode(code)) return false
+        settingsStore.saveUnlockCodeHash(code)
+        enablePrivacyMode()
+        return true
+    }
+
     /**
      * プライバシーモードを有効化する。
      * 解除コードが未設定なら初期コード "168" を保存する。

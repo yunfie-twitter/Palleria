@@ -751,6 +751,14 @@
     <string name="privacy_mode_title">プライバシーモード</string>
     <string name="privacy_mode_enabled_desc">有効 — 起動時に電卓を表示します</string>
     <string name="privacy_mode_disabled_desc">無効 — 通常の起動画面を表示します</string>
+    <string name="privacy_enable_dialog_title">プライバシーモードの有効化</string>
+    <string name="privacy_enable_set_code_desc">電卓画面で入力する解除コード（4〜20文字）を設定してください。</string>
+    <string name="privacy_enable_enter_code_desc">プライバシーモードを有効化するには解除コードを入力してください。</string>
+    <string name="privacy_code_confirm">解除コード（確認）</string>
+    <string name="privacy_code_mismatch">解除コードが一致しません。</string>
+    <string name="privacy_code_invalid">解除コードは4〜20文字で入力してください。</string>
+    <string name="privacy_code_incorrect">解除コードが正しくありません。</string>
+    <string name="privacy_reset_code">解除コードを再設定する</string>
     <string name="privacy_unlock_code_section">解除コード</string>
     <string name="privacy_unlock_code">解除コード</string>
     <string name="privacy_enter_unlock_code">解除コードを入力</string>
