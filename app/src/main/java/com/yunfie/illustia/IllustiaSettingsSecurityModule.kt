@@ -545,29 +545,31 @@ abstract class IllustiaSettingsSecurityModule(
         val buffer = _calculatorState.value.buffer
         if (buffer.isBlank()) return
 
-        // パターンB: 解除コード照合
-        if (verifyAndUnlockPrivacy(buffer)) {
-            // 解除成功: 履歴に記録しない、バッファは confirmPrivacyUnlock でクリア
-            _calculatorState.update { it.copy(buffer = "") }
-            return
-        }
+        viewModelScope.launch {
+            // パターンB: 解除コード照合
+            if (verifyAndUnlockPrivacy(buffer)) {
+                // 解除成功: 履歴に記録しない、バッファは confirmPrivacyUnlock でクリア
+                _calculatorState.update { it.copy(buffer = "") }
+                return@launch
+            }
 
-        // 通常の計算
-        val result = CalculatorEngine.evaluate(buffer)
-        val resultStr = if (result != null) CalculatorEngine.formatResult(result) else null
+            // 通常の計算
+            val result = CalculatorEngine.evaluate(buffer)
+            val resultStr = if (result != null) CalculatorEngine.formatResult(result) else null
 
-        _calculatorState.update { state ->
-            val newHistory =
-                if (resultStr != null) {
-                    val entry = CalculatorHistoryEntry(expression = buffer, result = resultStr)
-                    (listOf(entry) + state.history).take(20)
-                } else {
-                    state.history
-                }
-            state.copy(
-                buffer = resultStr ?: "エラー",
-                history = newHistory,
-            )
+            _calculatorState.update { state ->
+                val newHistory =
+                    if (resultStr != null) {
+                        val entry = CalculatorHistoryEntry(expression = buffer, result = resultStr)
+                        (listOf(entry) + state.history).take(20)
+                    } else {
+                        state.history
+                    }
+                state.copy(
+                    buffer = resultStr ?: "エラー",
+                    history = newHistory,
+                )
+            }
         }
     }
 
