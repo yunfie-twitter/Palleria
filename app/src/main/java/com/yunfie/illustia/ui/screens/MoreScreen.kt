@@ -141,13 +141,15 @@ private fun rememberQuickActions(
                     onClick = viewModel::openViewHistory,
                 ),
             )
-            add(
-                MoreAction(
-                    title = context.getString(R.string.more_notifications),
-                    icon = MiuixIcons.Messages,
-                    onClick = viewModel::openNotifications,
-                ),
-            )
+            if (!state.settings.hideHomeNovelButton) {
+                add(
+                    MoreAction(
+                        title = context.getString(R.string.more_notifications),
+                        icon = MiuixIcons.Messages,
+                        onClick = viewModel::openNotifications,
+                    ),
+                )
+            }
             add(
                 MoreAction(
                     title = context.getString(R.string.more_favorite_tags),

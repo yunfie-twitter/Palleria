@@ -32,6 +32,7 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Search
@@ -113,6 +114,13 @@ fun HomeScreen(
                         Icon(
                             MiuixIcons.Photos,
                             contentDescription = stringResource(R.string.nav_novel),
+                        )
+                    }
+                } else {
+                    IconButton(onClick = viewModel::openNotifications) {
+                        Icon(
+                            MiuixIcons.Messages,
+                            contentDescription = stringResource(R.string.more_notifications),
                         )
                     }
                 }

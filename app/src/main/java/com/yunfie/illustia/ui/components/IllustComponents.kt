@@ -68,23 +68,18 @@ fun IllustCardSkeleton(
     modifier: Modifier = Modifier,
     shimmerValue: Float? = null,
 ) {
-    val innerTransition = if (shimmerValue == null) rememberInfiniteTransition(label = "illustSkeleton") else null
-    val shimmerFloat =
-        if (shimmerValue != null) {
-            shimmerValue
-        } else {
-            val anim by innerTransition!!.animateFloat(
-                initialValue = -1f,
-                targetValue = 2f,
-                animationSpec =
-                    infiniteRepeatable(
-                        animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Restart,
-                    ),
-                label = "illustSkeletonShimmer",
-            )
-            anim
-        }
+    val defaultTransition = rememberInfiniteTransition(label = "illustSkeleton")
+    val defaultAnim by defaultTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "illustSkeletonShimmer",
+    )
+    val shimmerFloat = shimmerValue ?: defaultAnim
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
     val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }

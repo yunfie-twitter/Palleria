@@ -68,15 +68,28 @@ class WallpaperPlaylistReceiver : BroadcastReceiver() {
     }
 }
 
+private const val MAX_WALLPAPER_SEARCH_DEPTH = 3
 private val WallpaperImageExtensions = setOf("jpg", "jpeg", "png", "webp")
 
 private fun File.randomWallpaperFile(random: Random = Random.Default): File? {
-    var selected: File? = null
-    var candidateCount = 0
-    walkTopDown().forEach { file ->
-        if (!file.isFile || file.extension.lowercase() !in WallpaperImageExtensions) return@forEach
-        candidateCount += 1
-        if (random.nextInt(candidateCount) == 0) selected = file
+    if (!isDirectory) {
+        return if (isFile && extension.lowercase() in WallpaperImageExtensions) this else null
     }
-    return selected
+    val directFiles =
+        listFiles { file ->
+            file.isFile && file.extension.lowercase() in WallpaperImageExtensions
+        }
+    return if (!directFiles.isNullOrEmpty()) {
+        directFiles[random.nextInt(directFiles.size)]
+    } else {
+        var selected: File? = null
+        var candidateCount = 0
+        walkTopDown().maxDepth(MAX_WALLPAPER_SEARCH_DEPTH).forEach { file ->
+            if (file.isFile && file.extension.lowercase() in WallpaperImageExtensions) {
+                candidateCount += 1
+                if (random.nextInt(candidateCount) == 0) selected = file
+            }
+        }
+        selected
+    }
 }

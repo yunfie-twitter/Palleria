@@ -39,14 +39,22 @@ class CrashHandler : Thread.UncaughtExceptionHandler {
 
     private fun handleException(ex: Throwable?): Boolean {
         if (ex == null) return false
-        thread {
-            Looper.prepare()
-            val message = crashMessage(ex)
-            Toast.makeText(context, message, Toast.LENGTH_LONG).also {
-                it.setGravity(Gravity.CENTER, 0, 0)
-                it.show()
+        try {
+            thread {
+                try {
+                    Looper.prepare()
+                    val message = crashMessage(ex)
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).also {
+                        it.setGravity(Gravity.CENTER, 0, 0)
+                        it.show()
+                    }
+                    Looper.loop()
+                } catch (_: Throwable) {
+                    // Ignore toast failures in dying process
+                }
             }
-            Looper.loop()
+        } catch (_: Throwable) {
+            // Ignore thread spawn failure
         }
         return true
     }
