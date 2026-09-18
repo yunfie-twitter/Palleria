@@ -123,7 +123,7 @@ internal fun BookmarkWatchlistTab(
             verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
         ) {
             if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) {
-                gridItems(List(6) { it }, contentType = { "watchlist_series_skeleton" }) {
+                gridItems(List(6) { it }, key = { "watchlist_skeleton_$it" }, contentType = { "watchlist_series_skeleton" }) {
                     WatchlistSeriesCardSkeleton()
                 }
             }

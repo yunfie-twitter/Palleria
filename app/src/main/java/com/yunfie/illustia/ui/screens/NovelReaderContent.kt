@@ -267,6 +267,7 @@ internal fun NovelReaderPage(
         itemsIndexed(
             items = page.blocks,
             key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
+            contentType = { _, block -> block::class.java.simpleName },
         ) { _, block ->
             NovelBlockItem(
                 block = block,
@@ -370,6 +371,7 @@ internal fun NovelReaderContinuousContent(
             itemsIndexed(
                 items = page.blocks,
                 key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
+                contentType = { _, block -> block::class.java.simpleName },
             ) { _, block ->
                 NovelBlockItem(
                     block = block,
@@ -648,7 +650,7 @@ private fun NovelParagraph(
             color = textColor,
         )
 
-    val urlAnnotations = block.text.getStringAnnotations("URL", 0, block.text.length)
+    val urlAnnotations = remember(block.text) { block.text.getStringAnnotations("URL", 0, block.text.length) }
     if (urlAnnotations.isNotEmpty()) {
         var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
         BasicText(

@@ -26,6 +26,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -351,20 +352,22 @@ fun NovelReaderScreen(
     val backgroundColor = theme.backgroundColor()
     val textColor = theme.textColor()
 
-    val currentScrollPage =
-        remember(continuousListState.firstVisibleItemIndex, pages) {
-            val firstVisible = continuousListState.firstVisibleItemIndex
-            var count = 0
-            var pageIdx = 0
-            for (i in pages.indices) {
-                val pageItems = 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
-                if (firstVisible < count + pageItems) {
-                    pageIdx = i
-                    break
+    val currentScrollPage by
+        remember(continuousListState, pages) {
+            derivedStateOf {
+                val firstVisible = continuousListState.firstVisibleItemIndex
+                var count = 0
+                var pageIdx = 0
+                for (i in pages.indices) {
+                    val pageItems = 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
+                    if (firstVisible < count + pageItems) {
+                        pageIdx = i
+                        break
+                    }
+                    count += pageItems
                 }
-                count += pageItems
+                pageIdx.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
             }
-            pageIdx.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
         }
 
     val currentPage =

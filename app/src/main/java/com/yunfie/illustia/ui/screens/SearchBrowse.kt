@@ -84,6 +84,12 @@ internal fun BrowseArea(
             }
         }
         if (state.settings.viewHistory.isNotEmpty()) {
+            val recentIllusts =
+                remember(state.settings.viewHistory, state.settings.mutedTags) {
+                    state.settings.viewHistory
+                        .visibleWithMutedTagsVisible(state.settings)
+                        .take(8)
+                }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionHeader(
                     stringResource(R.string.search_recent_viewed),
@@ -97,9 +103,7 @@ internal fun BrowseArea(
                     contentPadding = PaddingValues(bottom = 4.dp),
                 ) {
                     items(
-                        state.settings.viewHistory
-                            .visibleWithMutedTagsVisible(state.settings)
-                            .take(8),
+                        recentIllusts,
                         key = {
                             "recent_${it.id}"
                         },
