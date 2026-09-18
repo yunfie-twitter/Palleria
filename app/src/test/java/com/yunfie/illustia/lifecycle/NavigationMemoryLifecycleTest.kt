@@ -3,8 +3,8 @@ package com.yunfie.illustia.lifecycle
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
 /**
@@ -14,8 +14,8 @@ class NavigationMemoryLifecycleTest :
     FunSpec({
         test("detailSnapshots are preserved during backstack pushes and cleared on reset") {
             val snapshots = mutableMapOf<Long, DetailEntrySnapshot>()
-            val dummyIllust1 = Illust(id = 101L, title = "Artwork 1")
-            val dummyIllust2 = Illust(id = 102L, title = "Artwork 2")
+            val dummyIllust1 = dummyIllust(id = 101L, title = "Artwork 1")
+            val dummyIllust2 = dummyIllust(id = 102L, title = "Artwork 2")
 
             // 1. 詳細画面を開く（スナップショット蓄積）
             snapshots[101L] = DetailEntrySnapshot(illust = dummyIllust1)
@@ -31,3 +31,24 @@ class NavigationMemoryLifecycleTest :
             snapshots.shouldBeEmpty()
         }
     })
+
+private fun dummyIllust(
+    id: Long,
+    title: String,
+): Illust =
+    Illust(
+        id = id,
+        title = title,
+        type = "illust",
+        caption = "",
+        artistId = 100L,
+        artistName = "Artist",
+        artistAvatarUrl = null,
+        squareImageUrl = "https://example.com/square.jpg",
+        imageUrl = "https://example.com/large.jpg",
+        originalImageUrl = null,
+        tags = emptyList(),
+        pageCount = 1,
+        isBookmarked = false,
+        xRestrict = 0,
+    )
