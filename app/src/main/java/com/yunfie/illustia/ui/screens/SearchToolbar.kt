@@ -59,11 +59,10 @@ fun SearchToolbar(
             val historyItems = if (showLiveSuggestions) emptyList() else suggestions.take(shownHistoryCount)
             val suggestedItems =
                 if (showLiveSuggestions) {
-                    suggestions
-                        .drop(shownHistoryCount)
-                        .filter { it.contains(query, ignoreCase = true) }
-                        .ifEmpty { listOf(query) }
-                        .take(8)
+                    val nonHistory = suggestions.drop(shownHistoryCount)
+                    val matching = nonHistory.filter { it.contains(query, ignoreCase = true) }
+                    val combined = (matching + nonHistory).distinct()
+                    combined.ifEmpty { listOf(query) }.take(8)
                 } else {
                     emptyList()
                 }

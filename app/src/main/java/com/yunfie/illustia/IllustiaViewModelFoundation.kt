@@ -149,6 +149,7 @@ abstract class IllustiaViewModelFoundation(
     val homeFeedGridState = LazyGridState()
     val homeTimelineGridState = LazyGridState()
     val searchResultGridState = LazyGridState()
+    val userSearchResultGridState = LazyGridState()
     val searchBrowseGridState = LazyGridState()
     internal var activeTab: AppTab? = null
     internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)

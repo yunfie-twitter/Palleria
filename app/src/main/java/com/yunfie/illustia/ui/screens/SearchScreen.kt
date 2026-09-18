@@ -120,11 +120,13 @@ fun SearchScreen(
     }
 
     val liveQuery = (if (searchExpanded) state.searchDraft else state.activeSearchWord).trim()
-    LaunchedEffect(liveQuery) {
-        if (liveQuery.isNotEmpty()) {
+    LaunchedEffect(liveQuery, searchExpanded) {
+        if (searchExpanded && liveQuery.isNotEmpty()) {
             delay(250)
+            suggestionStore.fetch(liveQuery)
+        } else if (!searchExpanded || liveQuery.isEmpty()) {
+            suggestionStore.fetch("")
         }
-        suggestionStore.fetch(liveQuery)
     }
 
     val suggestions =
@@ -157,7 +159,10 @@ fun SearchScreen(
         if (trimmed.isBlank()) {
             onClearResults()
         } else {
-            if (onNavigateToResults != null) {
+            val nativeEvent = NativeIntentRouter.parseText(trimmed)
+            if (nativeEvent is NativeIntentEvent.Artwork || nativeEvent is NativeIntentEvent.User) {
+                viewModel.submitSearch(trimmed)
+            } else if (onNavigateToResults != null) {
                 onNavigateToResults.invoke(trimmed)
             } else {
                 viewModel.submitSearch(trimmed)
