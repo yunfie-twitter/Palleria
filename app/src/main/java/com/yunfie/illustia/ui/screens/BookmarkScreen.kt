@@ -33,17 +33,18 @@ import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.extra.DropdownEntry
-import top.yukonga.miuix.kmp.extra.DropdownItem
-import top.yukonga.miuix.kmp.extra.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal enum class FollowingUserSort {
@@ -64,6 +65,7 @@ fun BookmarkScreen(
     onOpenWatchlistSeries: (Long) -> Unit,
 ) {
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
+    var showSortPopup by remember { mutableStateOf(false) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val watchlistStore = remember(repository) { WatchlistStore(repository) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
@@ -150,27 +152,39 @@ fun BookmarkScreen(
                             stringResource(R.string.sort_date_asc),
                             stringResource(R.string.sort_name_asc),
                         )
-                    val entry =
-                        remember(followingUserSort, sortOptions) {
-                            DropdownEntry(
-                                items =
-                                    sortOptions.mapIndexed { index, string ->
-                                        DropdownItem(
-                                            text = string,
-                                            selected = followingUserSort.ordinal == index,
-                                            onClick = {
-                                                performAppHapticFeedback(context, haptic, hapticMode)
-                                                followingUserSort = FollowingUserSort.entries[index]
-                                            },
-                                        )
-                                    },
+                    Box {
+                        IconButton(
+                            onClick = {
+                                performAppHapticFeedback(context, haptic, hapticMode)
+                                showSortPopup = true
+                            },
+                        ) {
+                            Icon(
+                                MiuixIcons.Filter,
+                                contentDescription = stringResource(R.string.action_sort),
                             )
                         }
-                    OverlayIconDropdownMenu(entry = entry) {
-                        Icon(
-                            MiuixIcons.Filter,
-                            contentDescription = stringResource(R.string.action_sort),
-                        )
+                        OverlayListPopup(
+                            show = showSortPopup,
+                            alignment = PopupPositionProvider.Align.TopEnd,
+                            onDismissRequest = { showSortPopup = false },
+                        ) {
+                            ListPopupColumn {
+                                sortOptions.forEachIndexed { index, string ->
+                                    DropdownImpl(
+                                        text = string,
+                                        optionSize = sortOptions.size,
+                                        isSelected = followingUserSort.ordinal == index,
+                                        index = index,
+                                        onSelectedIndexChange = {
+                                            performAppHapticFeedback(context, haptic, hapticMode)
+                                            followingUserSort = FollowingUserSort.entries[index]
+                                            showSortPopup = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 IconButton(onClick = {

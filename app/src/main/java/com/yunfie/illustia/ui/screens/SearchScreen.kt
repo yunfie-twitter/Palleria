@@ -157,9 +157,10 @@ fun SearchScreen(
         if (trimmed.isBlank()) {
             onClearResults()
         } else {
-            viewModel.submitSearch(trimmed)
-            if (!isResultRoute) {
-                onNavigateToResults?.invoke(trimmed)
+            if (onNavigateToResults != null) {
+                onNavigateToResults.invoke(trimmed)
+            } else {
+                viewModel.submitSearch(trimmed)
             }
         }
         searchExpanded = false

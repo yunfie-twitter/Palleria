@@ -62,7 +62,12 @@ internal fun BrowseArea(
                     .toList()
             historyUrls + tagUrls
         }
-    PrefetchPixivImages(browsePrefetchUrls, enabled = state.settings.prefetchImages)
+    val recentIllusts =
+        remember(state.settings.viewHistory, state.settings.mutedTags) {
+            state.settings.viewHistory
+                .visibleWithMutedTagsVisible(state.settings)
+                .take(8)
+        }
 
     LazyVerticalGrid(
         state = viewModel.searchBrowseGridState,
@@ -83,13 +88,7 @@ internal fun BrowseArea(
                 )
             }
         }
-        if (state.settings.viewHistory.isNotEmpty()) {
-            val recentIllusts =
-                remember(state.settings.viewHistory, state.settings.mutedTags) {
-                    state.settings.viewHistory
-                        .visibleWithMutedTagsVisible(state.settings)
-                        .take(8)
-                }
+        if (recentIllusts.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionHeader(
                     stringResource(R.string.search_recent_viewed),

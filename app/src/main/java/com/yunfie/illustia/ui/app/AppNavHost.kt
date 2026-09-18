@@ -139,6 +139,7 @@ internal fun AppNavHost(
                     viewModel = viewModel,
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
+                    onNavigateToResults = { query -> onNavigate(AppRoute.SearchResults(query)) },
                 )
             }
             entry<AppRoute.SearchResults>(
@@ -154,6 +155,7 @@ internal fun AppNavHost(
                     viewModel = viewModel,
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
+                    onNavigateToResults = { query -> onNavigate(AppRoute.SearchResults(query)) },
                 )
             }
             entry(AppRoute.Onboarding) {
