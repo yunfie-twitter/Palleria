@@ -313,7 +313,7 @@ internal fun NovelTocBottomSheet(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(pageCount) { pageIdx ->
+                        items(pageCount, key = { it }) { pageIdx ->
                             val isSelected = pageIdx == currentPage
                             Box(
                                 modifier =

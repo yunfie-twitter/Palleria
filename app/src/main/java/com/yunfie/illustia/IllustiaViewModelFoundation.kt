@@ -140,6 +140,7 @@ abstract class IllustiaViewModelFoundation(
     protected companion object {
         val RECOMMENDED_TAG_CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(30)
         const val MAX_SEEN_FEED_ILLUSTS = 2_000
+        const val MAX_CACHED_GRID_STATES = 16
     }
 
     val bookmarkTimelineGridState = LazyGridState()
@@ -156,10 +157,22 @@ abstract class IllustiaViewModelFoundation(
 
     fun clearDetailSnapshots() {
         detailSnapshots.clear()
+        clearScrollStates()
     }
 
-    protected val rankingGridStates = mutableMapOf<String, LazyGridState>()
-    protected val userProfileGridStates = mutableMapOf<Long, LazyGridState>()
+    fun clearScrollStates() {
+        rankingGridStates.clear()
+        userProfileGridStates.clear()
+    }
+
+    protected val rankingGridStates: MutableMap<String, LazyGridState> =
+        object : java.util.LinkedHashMap<String, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
+        }
+    protected val userProfileGridStates: MutableMap<Long, LazyGridState> =
+        object : java.util.LinkedHashMap<Long, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
+        }
     protected val downloadClient: OkHttpClient by lazy {
         (getApplication<Application>() as IllustiaApplication)
             .sharedHttpClient

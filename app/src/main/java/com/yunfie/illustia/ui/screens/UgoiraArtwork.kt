@@ -322,9 +322,10 @@ internal fun UgoiraArtwork(
                         },
             ) {
                 val contentScale = if (zoomEnabled) ContentScale.Fit else ContentScale.FillWidth
-                if (currentBitmap != null) {
+                val bmp = currentBitmap
+                if (bmp != null) {
                     Image(
-                        bitmap = currentBitmap!!,
+                        bitmap = bmp,
                         contentDescription = contentDescription,
                         contentScale = contentScale,
                         modifier = Modifier.fillMaxSize(),

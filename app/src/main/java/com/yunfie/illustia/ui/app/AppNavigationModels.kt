@@ -181,7 +181,7 @@ internal sealed interface AppRoute : NavKey {
 
 internal data class DetailEntrySnapshot(
     val illust: Illust,
-    val relatedIllusts: List<Illust>,
-    val firstComment: Comment?,
-    val user: UserProfile?,
+    val relatedIllusts: List<Illust> = emptyList(),
+    val firstComment: Comment? = null,
+    val user: UserProfile? = null,
 )
