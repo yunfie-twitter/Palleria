@@ -493,7 +493,14 @@
     <string name="data_delete_view_history">Delete View History</string>
     <string name="view_history_delete_selected">Delete Selected View History</string>
     <string name="view_history_delete_selected_desc">Delete the selected %1$s.</string>
+    <string name="view_history_delete_all">Delete All History</string>
     <string name="view_history_selected_count">Selected %1$d</string>
+    <string name="view_history_select_all">Select All</string>
+    <string name="view_history_deselect_all">Deselect All</string>
+    <string name="view_history_bookmark_selected">Bookmark Selected</string>
+    <string name="view_history_sort_artist">By Artist</string>
+    <string name="view_history_show_search">Show Search</string>
+    <string name="view_history_hide_search">Hide Search</string>
     <string name="view_history_search_hint">Search titles, artists, or tags</string>
     <string name="data_delete_search_history">Delete Search History</string>
     <string name="data_delete_watchlist_tags">Delete Watchlist Tags</string>

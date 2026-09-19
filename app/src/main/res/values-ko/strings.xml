@@ -455,7 +455,14 @@
     <string name="data_delete_view_history">열람 기록 삭제</string>
     <string name="view_history_delete_selected">선택한 열람 기록 삭제</string>
     <string name="view_history_delete_selected_desc">선택한 %1$s을(를) 삭제합니다.</string>
+    <string name="view_history_delete_all">모든 기록 삭제</string>
     <string name="view_history_selected_count">%1$d개 선택됨</string>
+    <string name="view_history_select_all">전체 선택</string>
+    <string name="view_history_deselect_all">선택 해제</string>
+    <string name="view_history_bookmark_selected">선택한 작품 북마크</string>
+    <string name="view_history_sort_artist">작가명순</string>
+    <string name="view_history_show_search">검색 표시</string>
+    <string name="view_history_hide_search">검색 숨기기</string>
     <string name="view_history_search_hint">제목, 작가 또는 태그 검색</string>
     <string name="data_delete_search_history">검색 기록 삭제</string>
     <string name="data_delete_watchlist_tags">관심 목록 태그 삭제</string>

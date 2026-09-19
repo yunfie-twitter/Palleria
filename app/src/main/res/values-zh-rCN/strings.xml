@@ -421,7 +421,14 @@
     <string name="data_delete_view_history">删除查看历史记录</string>
     <string name="view_history_delete_selected">删除选定的查看历史记录</string>
     <string name="view_history_delete_selected_desc">删除选定的 %1$s。</string>
+    <string name="view_history_delete_all">删除所有历史记录</string>
     <string name="view_history_selected_count">选定的 %1$d</string>
+    <string name="view_history_select_all">全选</string>
+    <string name="view_history_deselect_all">取消全选</string>
+    <string name="view_history_bookmark_selected">收藏选中的作品</string>
+    <string name="view_history_sort_artist">按作者</string>
+    <string name="view_history_show_search">显示搜索</string>
+    <string name="view_history_hide_search">隐藏搜索</string>
     <string name="view_history_search_hint">搜索标题、艺术家或标签</string>
     <string name="data_delete_search_history">删除搜索历史记录</string>
     <string name="data_delete_watchlist_tags">删除监视列表标签</string>
