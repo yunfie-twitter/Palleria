@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">Tampilkan koneksi Kehadiran Kaya dan log diagnostik</string>
     <string name="discord_log_empty">Belum ada log. Status koneksi akan muncul di sini setelah Rich Presence diaktifkan.</string>
     <string name="discord_log_clear">Hapus catatan</string>
+    <string name="action_report_problem">Laporkan masalah</string>
+    <string name="report_dialog_title">Laporkan masalah</string>
+    <string name="report_reason_commercial">Komersial / Spam</string>
+    <string name="report_reason_infringement">Pelanggaran hak cipta / Cetak ulang tanpa izin</string>
+    <string name="report_reason_inappropriate">Konten tidak pantas / Pelanggaran ketentuan</string>
+    <string name="report_reason_other">Lainnya</string>
+    <string name="report_message_hint">Detail (opsional)</string>
+    <string name="action_submit_report">Kirim laporan</string>
+    <string name="msg_report_submitted">Laporan berhasil dikirim</string>
+    <string name="msg_report_failed">Gagal mengirim laporan</string>
 </resources>

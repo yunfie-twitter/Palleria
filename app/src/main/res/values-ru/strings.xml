@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">Отображение подключений Rich Presence и журналов диагностики</string>
     <string name="discord_log_empty">Логов пока нет. Статус подключения появится здесь после включения расширенного присутствия.</string>
     <string name="discord_log_clear">Очистить журнал</string>
+    <string name="action_report_problem">Пожаловаться на проблему</string>
+    <string name="report_dialog_title">Пожаловаться</string>
+    <string name="report_reason_commercial">Спам или реклама</string>
+    <string name="report_reason_infringement">Нарушение авторских прав / Перезалив</string>
+    <string name="report_reason_inappropriate">Неподобающий контент / Нарушение правил</string>
+    <string name="report_reason_other">Другое</string>
+    <string name="report_message_hint">Подробности (необязательно)</string>
+    <string name="action_submit_report">Отправить жалобу</string>
+    <string name="msg_report_submitted">Жалоба успешно отправлена</string>
+    <string name="msg_report_failed">Не удалось отправить жалобу</string>
 </resources>

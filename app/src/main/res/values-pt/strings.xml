@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">Exibir registros de diagnóstico e conexão Rich Presence</string>
     <string name="discord_log_empty">Ainda não há registros. O status da conexão aparecerá aqui depois que o Rich Presence for ativado.</string>
     <string name="discord_log_clear">Limpar registro</string>
+    <string name="action_report_problem">Relatar um problema</string>
+    <string name="report_dialog_title">Relatar um problema</string>
+    <string name="report_reason_commercial">Comercial / Spam</string>
+    <string name="report_reason_infringement">Violação de direitos autorais / Reimpressão não autorizada</string>
+    <string name="report_reason_inappropriate">Conteúdo impróprio / Violação dos termos</string>
+    <string name="report_reason_other">Outro</string>
+    <string name="report_message_hint">Detalhes (opcional)</string>
+    <string name="action_submit_report">Enviar denúncia</string>
+    <string name="msg_report_submitted">Denúncia enviada com sucesso</string>
+    <string name="msg_report_failed">Falha ao enviar denúncia</string>
 </resources>

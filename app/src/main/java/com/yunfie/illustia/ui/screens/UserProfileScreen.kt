@@ -72,6 +72,7 @@ fun UserProfileScreen(
     onToggleFollow: () -> Unit,
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
+    onReportUser: ((Long, String, String) -> Unit)? = null,
     isMuted: Boolean,
     onUnmuteUser: () -> Unit,
     gridState: LazyGridState,
@@ -290,6 +291,7 @@ fun UserProfileScreen(
                     showRelatedUsers = true
                     onLoadRelatedUsers()
                 },
+                onReportUser = onReportUser,
                 onTitleClick = scrollToTop,
                 compact = isContentScrolled,
             )

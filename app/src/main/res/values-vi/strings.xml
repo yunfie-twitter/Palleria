@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">Hiển thị nhật ký chẩn đoán và kết nối Rich Presence</string>
     <string name="discord_log_empty">Chưa có nhật ký nào. Trạng thái kết nối sẽ xuất hiện ở đây sau khi bật Hiện diện phong phú.</string>
     <string name="discord_log_clear">Xóa nhật ký</string>
+    <string name="action_report_problem">Báo cáo sự cố</string>
+    <string name="report_dialog_title">Báo cáo sự cố</string>
+    <string name="report_reason_commercial">Thương mại / Spam</string>
+    <string name="report_reason_infringement">Vi phạm bản quyền / Đăng lại trái phép</string>
+    <string name="report_reason_inappropriate">Nội dung không phù hợp / Vi phạm điều khoản</string>
+    <string name="report_reason_other">Khác</string>
+    <string name="report_message_hint">Chi tiết (tùy chọn)</string>
+    <string name="action_submit_report">Gửi báo cáo</string>
+    <string name="msg_report_submitted">Báo cáo đã được gửi thành công</string>
+    <string name="msg_report_failed">Gửi báo cáo thất bại</string>
 </resources>

@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">Zeigen Sie Rich Presence-Verbindungs- und Diagnoseprotokolle an</string>
     <string name="discord_log_empty">Noch keine Protokolle. Der Verbindungsstatus wird hier angezeigt, nachdem Rich Presence aktiviert wurde.</string>
     <string name="discord_log_clear">Protokoll löschen</string>
+    <string name="action_report_problem">Ein Problem melden</string>
+    <string name="report_dialog_title">Ein Problem melden</string>
+    <string name="report_reason_commercial">Kommerziell / Spam</string>
+    <string name="report_reason_infringement">Urheberrechtsverletzung / Unerlaubte Weiterverbreitung</string>
+    <string name="report_reason_inappropriate">Unangemessener Inhalt / Verstoß gegen Richtlinien</string>
+    <string name="report_reason_other">Sonstiges</string>
+    <string name="report_message_hint">Details (optional)</string>
+    <string name="action_submit_report">Meldung absenden</string>
+    <string name="msg_report_submitted">Meldung erfolgreich übermittelt</string>
+    <string name="msg_report_failed">Fehler beim Senden der Meldung</string>
 </resources>

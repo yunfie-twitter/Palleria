@@ -473,6 +473,14 @@ class IllustiaRepository(
         withSessionRetry { session -> apiClient.reportIllust(session, illustId, problemType, message) }
     }
 
+    suspend fun reportUser(
+        userId: Long,
+        problemType: String? = null,
+        message: String? = null,
+    ) {
+        withSessionRetry { session -> apiClient.reportUser(session, userId, problemType, message) }
+    }
+
     suspend fun addNovelBookmark(
         novelId: Long,
         restrict: Restrict,

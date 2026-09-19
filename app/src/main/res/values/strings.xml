@@ -995,4 +995,14 @@
     <string name="discord_enable_log_desc">Rich Presence の接続ログと診断情報を表示します</string>
     <string name="discord_log_empty">まだログはありません。Rich Presence を有効にすると接続状況がここに表示されます。</string>
     <string name="discord_log_clear">ログを消去</string>
+    <string name="action_report_problem">問題を報告</string>
+    <string name="report_dialog_title">問題を報告</string>
+    <string name="report_reason_commercial">商業目的・スパム</string>
+    <string name="report_reason_infringement">著作権侵害・無断転載</string>
+    <string name="report_reason_inappropriate">不適切なコンテンツ・規約違反</string>
+    <string name="report_reason_other">その他</string>
+    <string name="report_message_hint">詳細情報（任意）</string>
+    <string name="action_submit_report">報告する</string>
+    <string name="msg_report_submitted">報告を送信しました</string>
+    <string name="msg_report_failed">報告の送信に失敗しました</string>
 </resources>

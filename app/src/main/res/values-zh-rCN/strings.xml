@@ -799,4 +799,14 @@
     <string name="user_filter_all">全部</string>
     <string name="user_filter_illust_only">仅插画</string>
     <string name="user_filter_manga_only">仅漫画</string>
+    <string name="action_report_problem">举报问题</string>
+    <string name="report_dialog_title">举报问题</string>
+    <string name="report_reason_commercial">商业广告 / 垃圾信息</string>
+    <string name="report_reason_infringement">侵犯版权 / 未授权转载</string>
+    <string name="report_reason_inappropriate">不当内容 / 违反条款</string>
+    <string name="report_reason_other">其他</string>
+    <string name="report_message_hint">详细信息（可选）</string>
+    <string name="action_submit_report">提交举报</string>
+    <string name="msg_report_submitted">举报已成功提交</string>
+    <string name="msg_report_failed">举报提交失败</string>
 </resources>

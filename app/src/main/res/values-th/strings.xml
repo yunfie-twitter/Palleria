@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">แสดงการเชื่อมต่อ Rich Presence และบันทึกการวินิจฉัย</string>
     <string name="discord_log_empty">ยังไม่มีบันทึก สถานะการเชื่อมต่อจะปรากฏที่นี่หลังจากเปิดใช้งาน Rich Presence</string>
     <string name="discord_log_clear">ล้างบันทึก</string>
+    <string name="action_report_problem">รายงานปัญหา</string>
+    <string name="report_dialog_title">รายงานปัญหา</string>
+    <string name="report_reason_commercial">เชิงพาณิชย์ / สแปม</string>
+    <string name="report_reason_infringement">ละเมิดลิขสิทธิ์ / นำไปโพสต์ใหม่โดยไม่ได้รับอนุญาต</string>
+    <string name="report_reason_inappropriate">เนื้อหาที่ไม่เหมาะสม / ละเมิดข้อกำหนด</string>
+    <string name="report_reason_other">อื่นๆ</string>
+    <string name="report_message_hint">รายละเอียด (ไม่บังคับ)</string>
+    <string name="action_submit_report">ส่งรายงาน</string>
+    <string name="msg_report_submitted">ส่งรายงานเรียบร้อยแล้ว</string>
+    <string name="msg_report_failed">ไม่สามารถส่งรายงานได้</string>
 </resources>

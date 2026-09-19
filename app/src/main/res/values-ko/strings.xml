@@ -856,4 +856,14 @@
     <string name="user_filter_all">전체</string>
     <string name="user_filter_illust_only">일러스트만</string>
     <string name="user_filter_manga_only">만화만</string>
+    <string name="action_report_problem">문제 신고</string>
+    <string name="report_dialog_title">문제 신고</string>
+    <string name="report_reason_commercial">상업적 목적 / 스팸</string>
+    <string name="report_reason_infringement">저작권 침해 / 무단 전재</string>
+    <string name="report_reason_inappropriate">부적절한 콘텐츠 / 이용약관 위반</string>
+    <string name="report_reason_other">기타</string>
+    <string name="report_message_hint">세부 정보 (선택 사항)</string>
+    <string name="action_submit_report">신고하기</string>
+    <string name="msg_report_submitted">신고가 성공적으로 접수되었습니다</string>
+    <string name="msg_report_failed">신고 제출에 실패했습니다</string>
 </resources>

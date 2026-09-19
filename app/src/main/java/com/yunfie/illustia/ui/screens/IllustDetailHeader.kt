@@ -52,6 +52,7 @@ import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,6 +86,7 @@ internal fun IllustDetailHeader(
     onMuteIllust: () -> Unit,
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
+    onReportIllust: ((Long, String, String) -> Unit)? = null,
     loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
     showImage: Boolean,
     maskMutedArtwork: Boolean,
@@ -114,10 +116,12 @@ internal fun IllustDetailHeader(
     val copyUrlLabel = stringResource(R.string.detail_copy_url)
     val muteWorkLabel = stringResource(R.string.detail_mute_work)
     val muteArtistLabel = stringResource(R.string.detail_mute_artist)
+    val reportProblemLabel = stringResource(R.string.action_report_problem)
     val moreLabel = stringResource(R.string.detail_more)
     val browserFailedMessage = stringResource(R.string.error_browser_failed)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val urlCopiedMessage = stringResource(R.string.msg_url_copied)
+    var showReportDialog by remember(illust.id) { mutableStateOf(false) }
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
     val previewUrl: String =
         remember(illust.id, highQualityImages, detailQuality) {
@@ -412,7 +416,7 @@ internal fun IllustDetailHeader(
                         ),
                         DropdownEntry(
                             items =
-                                listOf(
+                                listOfNotNull(
                                     DropdownItem(
                                         text = muteWorkLabel,
                                         onClick = {
@@ -427,6 +431,14 @@ internal fun IllustDetailHeader(
                                             onBack()
                                         },
                                     ),
+                                    if (onReportIllust != null) {
+                                        DropdownItem(
+                                            text = reportProblemLabel,
+                                            onClick = { showReportDialog = true },
+                                        )
+                                    } else {
+                                        null
+                                    },
                                 ),
                         ),
                     ),
@@ -439,6 +451,17 @@ internal fun IllustDetailHeader(
                 Icon(MiuixIcons.More, contentDescription = moreLabel, tint = headerIconTint, modifier = Modifier.size(24.dp))
             }
         }
+    }
+
+    if (onReportIllust != null) {
+        ReportProblemDialog(
+            show = showReportDialog,
+            targetTitle = illust.title,
+            onDismiss = { showReportDialog = false },
+            onSubmit = { problemType, message ->
+                onReportIllust(illust.id, problemType, message)
+            },
+        )
     }
 }
 

@@ -79,6 +79,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -348,6 +349,7 @@ internal fun UserProfileSmallTopAppBar(
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
     onOpenRelatedUsers: () -> Unit,
+    onReportUser: ((Long, String, String) -> Unit)? = null,
     onTitleClick: () -> Unit = {},
     compact: Boolean,
 ) {
@@ -364,9 +366,11 @@ internal fun UserProfileSmallTopAppBar(
     val filterMangaLabel = stringResource(R.string.user_filter_manga_only)
     val relatedLabel = stringResource(R.string.user_tab_related)
     val muteLabel = stringResource(R.string.dialog_mute)
+    val reportProblemLabel = stringResource(R.string.action_report_problem)
     val shareTitle = user.name.ifBlank { "@${user.account}" }
     val profileUrl = remember(user.id) { "https://www.pixiv.net/users/${user.id}" }
     var showMoreMenu by remember { mutableStateOf(false) }
+    var showReportDialog by remember(user.id) { mutableStateOf(false) }
 
     val performHaptic =
         com.yunfie.illustia.ui.components
@@ -390,6 +394,8 @@ internal fun UserProfileSmallTopAppBar(
             filterMangaLabel,
             relatedLabel,
             muteLabel,
+            reportProblemLabel,
+            onReportUser,
         ) {
             listOf(
                 DropdownEntry(
@@ -459,7 +465,7 @@ internal fun UserProfileSmallTopAppBar(
                 ),
                 DropdownEntry(
                     items =
-                        listOf(
+                        listOfNotNull(
                             DropdownItem(
                                 text = shareLabel,
                                 onClick = {
@@ -484,6 +490,14 @@ internal fun UserProfileSmallTopAppBar(
                                     onBack()
                                 },
                             ),
+                            if (onReportUser != null) {
+                                DropdownItem(
+                                    text = reportProblemLabel,
+                                    onClick = { showReportDialog = true },
+                                )
+                            } else {
+                                null
+                            },
                         ),
                 ),
             )
@@ -581,6 +595,17 @@ internal fun UserProfileSmallTopAppBar(
                 )
             }
         }
+    }
+
+    if (onReportUser != null) {
+        ReportProblemDialog(
+            show = showReportDialog,
+            targetTitle = user.name.ifBlank { "@${user.account}" },
+            onDismiss = { showReportDialog = false },
+            onSubmit = { problemType, message ->
+                onReportUser(user.id, problemType, message)
+            },
+        )
     }
 }
 

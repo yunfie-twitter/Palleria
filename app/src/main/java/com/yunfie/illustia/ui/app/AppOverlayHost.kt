@@ -291,6 +291,7 @@ internal fun AppOverlayHost(
                     onToggleFollow = { viewModel.toggleFollow(user) },
                     onMuteUser = { viewModel.muteUser(user.id) },
                     onMessage = viewModel::showMessage,
+                    onReportUser = viewModel::reportUser,
                     isMuted =
                         appState.state.settings.mutedUsers
                             .contains(user.id),

@@ -996,4 +996,14 @@
     <string name="discord_enable_log_desc">Afficher les journaux de connexion et de diagnostic Rich Presence</string>
     <string name="discord_log_empty">Aucun journal pour l\'instant. L’état de la connexion apparaîtra ici une fois Rich Presence activé.</string>
     <string name="discord_log_clear">Effacer le journal</string>
+    <string name="action_report_problem">Signaler un problème</string>
+    <string name="report_dialog_title">Signaler un problème</string>
+    <string name="report_reason_commercial">Commercial / Spam</string>
+    <string name="report_reason_infringement">Atteinte aux droits d\'auteur / Reproduction non autorisée</string>
+    <string name="report_reason_inappropriate">Contenu inapproprié / Violation des conditions</string>
+    <string name="report_reason_other">Autre</string>
+    <string name="report_message_hint">Détails (facultatif)</string>
+    <string name="action_submit_report">Envoyer le signalement</string>
+    <string name="msg_report_submitted">Signalement envoyé avec succès</string>
+    <string name="msg_report_failed">Échec de l\'envoi du signalement</string>
 </resources>
