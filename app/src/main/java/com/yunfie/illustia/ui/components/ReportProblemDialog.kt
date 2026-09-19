@@ -24,11 +24,16 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.OverlayDialog
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
 fun ReportProblemDialog(
@@ -42,21 +47,40 @@ fun ReportProblemDialog(
     val performHaptic = rememberHapticFeedbackAction()
     var selectedReason by remember { mutableStateOf(ReportReason.Inappropriate) }
     var messageText by remember { mutableStateOf("") }
+    val sheetBackground = LocalBottomSheetBackgroundColor.current
 
-    OverlayDialog(
+    WindowBottomSheet(
         show = show,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.report_dialog_title),
-        summary = targetTitle,
-        backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+        backgroundColor = sheetBackground,
+        startAction = {
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    imageVector = MiuixIcons.Close,
+                    contentDescription = stringResource(R.string.action_close),
+                )
+            }
+        },
         onDismissRequest = onDismiss,
+        insideMargin = BottomSheetInsideMargin,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (targetTitle.isNotBlank()) {
+                Text(
+                    text = targetTitle,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSecondary,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = MiuixTheme.colorScheme.surfaceContainer,
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -66,11 +90,11 @@ fun ReportProblemDialog(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable {
                                         performHaptic(AppHapticEffect.Toggle)
                                         selectedReason = reason
-                                    }.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    }.padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
