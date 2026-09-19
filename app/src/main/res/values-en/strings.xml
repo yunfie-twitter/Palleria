@@ -302,6 +302,8 @@
     <string name="general_haptics_clear">Clear Haptics</string>
     <string name="general_r18">Show R-18 Content</string>
     <string name="general_r18_desc">Display works containing mature content</string>
+    <string name="general_r18g">Show R-18G Content</string>
+    <string name="general_r18g_desc">Display works containing grotesque or extreme violence content</string>
     <string name="general_ai_badge">AI Badge</string>
     <string name="general_ai_badge_desc">Show a small badge on works with AI-related tags</string>
     <string name="general_smooth">Smooth Animations</string>

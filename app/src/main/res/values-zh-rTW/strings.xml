@@ -250,6 +250,8 @@
     <string name="general_haptics_clear">清晰的觸覺</string>
     <string name="general_r18">顯示 R-18 內容</string>
     <string name="general_r18_desc">顯示包含成人內容的作品</string>
+    <string name="general_r18g">顯示 R-18G 內容</string>
+    <string name="general_r18g_desc">顯示包含重度血腥暴力等內容的作品</string>
     <string name="general_ai_badge">AI 徽章</string>
     <string name="general_ai_badge_desc">在有AI相關標籤的作品上顯示一個小徽章</string>
     <string name="general_smooth">流暢的動畫</string>

@@ -27,6 +27,13 @@ data class NovelPreview(
             caption.contains("R18", ignoreCase = true) ||
             caption.contains("R-18G", ignoreCase = true) ||
             caption.contains("R18G", ignoreCase = true)
+
+    /** R-18G作品かどうか */
+    val isR18G: Boolean =
+        title.contains("R-18G", ignoreCase = true) ||
+            title.contains("R18G", ignoreCase = true) ||
+            caption.contains("R-18G", ignoreCase = true) ||
+            caption.contains("R18G", ignoreCase = true)
 }
 
 @Immutable

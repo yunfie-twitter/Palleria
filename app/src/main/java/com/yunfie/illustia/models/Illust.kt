@@ -49,6 +49,16 @@ data class Illust(
                     tag.startsWith("R18", ignoreCase = true)
             }
 
+    /** R-18G作品かどうか */
+    val isR18G: Boolean =
+        xRestrict >= 2 ||
+            tags.any { tag ->
+                tag.equals("R-18G", ignoreCase = true) ||
+                    tag.equals("R18G", ignoreCase = true) ||
+                    tag.startsWith("R-18G", ignoreCase = true) ||
+                    tag.startsWith("R18G", ignoreCase = true)
+            }
+
     /** カードバッジテキスト (AI / manga / ページ数) */
     val cardBadgeText: String? =
         when {

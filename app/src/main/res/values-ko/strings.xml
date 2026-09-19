@@ -275,6 +275,8 @@
     <string name="general_haptics_clear">선명한 햅틱</string>
     <string name="general_r18">R-18 콘텐츠 표시</string>
     <string name="general_r18_desc">성인용 콘텐츠가 포함된 작품을 표시합니다</string>
+    <string name="general_r18g">R-18G 표시</string>
+    <string name="general_r18g_desc">그로테스크하거나 과도한 폭력적인 콘텐츠가 포함된 작품을 표시합니다</string>
     <string name="general_ai_badge">AI 배지</string>
     <string name="general_ai_badge_desc">AI 관련 태그가 있는 작품에 작은 배지를 표시합니다</string>
     <string name="general_smooth">부드러운 애니메이션</string>

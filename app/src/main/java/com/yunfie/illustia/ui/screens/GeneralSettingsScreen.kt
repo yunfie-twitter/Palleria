@@ -129,6 +129,15 @@ fun GeneralSettingsScreen(
                             onCheckedChange = viewModel::updateAllowR18,
                             summary = stringResource(R.string.general_r18_desc),
                         )
+                        if (state.settings.allowR18) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.general_r18g),
+                                checked = state.settings.allowR18G,
+                                onCheckedChange = viewModel::updateAllowR18G,
+                                summary = stringResource(R.string.general_r18g_desc),
+                            )
+                        }
                     }
                 }
             }

@@ -298,6 +298,8 @@
     <string name="general_language_desc">Palleria の表示言語と Pixiv API の言語を切り替えます</string>
     <string name="general_r18">R-18コンテンツを表示</string>
     <string name="general_r18_desc">不適切な表現を含む作品を表示します</string>
+    <string name="general_r18g">R-18Gを表示</string>
+    <string name="general_r18g_desc">過度な表現（グロテスク・暴力など）を含む作品を表示します</string>
     <string name="general_ai_badge">AIバッジ</string>
     <string name="general_ai_badge_desc">AI関連タグを含む作品に小さなバッジを表示します</string>
     <string name="general_smooth">スムーズなアニメーション</string>

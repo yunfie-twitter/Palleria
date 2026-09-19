@@ -14,6 +14,7 @@ internal data class SearchSettings(
     val bookmarkFilter: SearchBookmarkFilter,
     val usersEnabled: Boolean,
     val allowR18: Boolean,
+    val allowR18G: Boolean,
 )
 
 internal data class SecuritySettings(
@@ -68,6 +69,7 @@ internal fun AppSettings.searchProjection() =
         searchBookmarkFilter,
         searchUsersEnabled,
         allowR18,
+        allowR18G,
     )
 
 internal fun AppSettings.securityProjection() =

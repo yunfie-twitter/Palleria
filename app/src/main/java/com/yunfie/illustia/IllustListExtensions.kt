@@ -35,18 +35,47 @@ internal fun List<Illust>.appendIllusts(next: List<Illust>): List<Illust> {
     }
 }
 
-private fun List<Illust>.filterRestricted(
+private fun Illust.isRestricted(
     filterR18: Boolean,
+    filterR18G: Boolean,
     filterAi: Boolean,
-): List<Illust> {
-    if (isEmpty() || (!filterR18 && !filterAi)) return this
-    val hasRestricted = any { (filterR18 && it.isR18) || (filterAi && it.isAi) }
-    return if (hasRestricted) filterNot { (filterR18 && it.isR18) || (filterAi && it.isAi) } else this
+): Boolean {
+    var restricted = false
+    if (filterR18 && isR18) restricted = true
+    if (filterR18G && isR18G) restricted = true
+    if (filterAi && isAi) restricted = true
+    return restricted
 }
 
-private fun List<NovelPreview>.filterRestrictedNovels(filterR18: Boolean): List<NovelPreview> {
-    if (isEmpty() || !filterR18) return this
-    return if (any { it.isR18 }) filterNot { it.isR18 } else this
+private fun NovelPreview.isRestricted(
+    filterR18: Boolean,
+    filterR18G: Boolean,
+): Boolean {
+    var restricted = false
+    if (filterR18 && isR18) restricted = true
+    if (filterR18G && isR18G) restricted = true
+    return restricted
+}
+
+private fun List<Illust>.filterRestricted(
+    filterR18: Boolean,
+    filterR18G: Boolean,
+    filterAi: Boolean,
+): List<Illust> {
+    val hasFilter = filterR18 || filterR18G || filterAi
+    if (isEmpty() || !hasFilter) return this
+    val hasRestricted = any { it.isRestricted(filterR18, filterR18G, filterAi) }
+    return if (hasRestricted) filterNot { it.isRestricted(filterR18, filterR18G, filterAi) } else this
+}
+
+private fun List<NovelPreview>.filterRestrictedNovels(
+    filterR18: Boolean,
+    filterR18G: Boolean,
+): List<NovelPreview> {
+    val hasFilter = filterR18 || filterR18G
+    if (isEmpty() || !hasFilter) return this
+    val hasRestricted = any { it.isRestricted(filterR18, filterR18G) }
+    return if (hasRestricted) filterNot { it.isRestricted(filterR18, filterR18G) } else this
 }
 
 @Suppress("CyclomaticComplexMethod")
@@ -61,32 +90,34 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
         )
 
     val filterR18 = !settings.allowR18
+    val filterR18G = settings.allowR18 && !settings.allowR18G
     val filterAi = settings.hideAiWorks
-    if (!filterR18 && !filterAi) return updated
+    val hasFilter = filterR18 || filterR18G || filterAi
+    if (!hasFilter) return updated
 
     val updatedRankingMode =
         if (updated.rankingModeItems.isEmpty()) {
             updated.rankingModeItems
         } else {
             updated.rankingModeItems.mapValues { (_, list) ->
-                list.filterRestricted(filterR18, filterAi)
+                list.filterRestricted(filterR18, filterR18G, filterAi)
             }
         }
 
     return updated.copy(
-        homeItems = updated.homeItems.filterRestricted(filterR18, filterAi),
-        searchItems = updated.searchItems.filterRestricted(filterR18, filterAi),
-        timelineItems = updated.timelineItems.filterRestricted(filterR18, filterAi),
-        shortsFeedItems = updated.shortsFeedItems.filterRestricted(filterR18, filterAi),
-        watchlistItems = updated.watchlistItems.filterRestricted(filterR18, filterAi),
-        rankingItems = updated.rankingItems.filterRestricted(filterR18, filterAi),
+        homeItems = updated.homeItems.filterRestricted(filterR18, filterR18G, filterAi),
+        searchItems = updated.searchItems.filterRestricted(filterR18, filterR18G, filterAi),
+        timelineItems = updated.timelineItems.filterRestricted(filterR18, filterR18G, filterAi),
+        shortsFeedItems = updated.shortsFeedItems.filterRestricted(filterR18, filterR18G, filterAi),
+        watchlistItems = updated.watchlistItems.filterRestricted(filterR18, filterR18G, filterAi),
+        rankingItems = updated.rankingItems.filterRestricted(filterR18, filterR18G, filterAi),
         rankingModeItems = updatedRankingMode,
-        relatedIllusts = updated.relatedIllusts.filterRestricted(filterR18, filterAi),
-        bookmarkItems = updated.bookmarkItems.filterRestricted(filterR18, filterAi),
-        selectedUserIllusts = updated.selectedUserIllusts.filterRestricted(filterR18, filterAi),
-        selectedUserBookmarks = updated.selectedUserBookmarks.filterRestricted(filterR18, filterAi),
-        searchNovelItems = updated.searchNovelItems.filterRestrictedNovels(filterR18),
-        novelItems = updated.novelItems.filterRestrictedNovels(filterR18),
+        relatedIllusts = updated.relatedIllusts.filterRestricted(filterR18, filterR18G, filterAi),
+        bookmarkItems = updated.bookmarkItems.filterRestricted(filterR18, filterR18G, filterAi),
+        selectedUserIllusts = updated.selectedUserIllusts.filterRestricted(filterR18, filterR18G, filterAi),
+        selectedUserBookmarks = updated.selectedUserBookmarks.filterRestricted(filterR18, filterR18G, filterAi),
+        searchNovelItems = updated.searchNovelItems.filterRestrictedNovels(filterR18, filterR18G),
+        novelItems = updated.novelItems.filterRestrictedNovels(filterR18, filterR18G),
     )
 }
 
@@ -184,7 +215,14 @@ internal fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> =
 @JvmName("visibleIllustsWithSettings")
 internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> {
     val list = visibleWith(settings.toMuteFilter())
-    val r18Filtered = if (!settings.allowR18) list.filterNot { it.isR18 } else list
+    val r18Filtered =
+        if (!settings.allowR18) {
+            list.filterNot { it.isR18 }
+        } else if (!settings.allowR18G) {
+            list.filterNot { it.isR18G }
+        } else {
+            list
+        }
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
 }
 
@@ -192,7 +230,13 @@ internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illus
 internal fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List<NovelPreview> {
     val filter = settings.toMuteFilter()
     val userFiltered = if (filter.userIds.isEmpty()) this else filterNot { it.userId in filter.userIds }
-    return if (!settings.allowR18) userFiltered.filterNot { it.isR18 } else userFiltered
+    return if (!settings.allowR18) {
+        userFiltered.filterNot { it.isR18 }
+    } else if (!settings.allowR18G) {
+        userFiltered.filterNot { it.isR18G }
+    } else {
+        userFiltered
+    }
 }
 
 internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): List<Illust> {
@@ -206,7 +250,14 @@ internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): Li
                     illust.artistId in filter.userIds
             }
         }
-    val r18Filtered = if (!settings.allowR18) list.filterNot { it.isR18 } else list
+    val r18Filtered =
+        if (!settings.allowR18) {
+            list.filterNot { it.isR18 }
+        } else if (!settings.allowR18G) {
+            list.filterNot { it.isR18G }
+        } else {
+            list
+        }
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
 }
 

@@ -145,6 +145,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(allowR18 = value) }
     }
 
+    fun updateAllowR18G(value: Boolean) {
+        updateSettings { it.copy(allowR18G = value) }
+    }
+
     fun updateHighQuality(value: Boolean) {
         updateSettings { it.copy(highQualityImages = value) }
     }
