@@ -113,6 +113,7 @@ internal fun AppNavHost(
                         onNavigate(AppRoute.IllustSeries)
                     },
                     onNavigateToResults = { query ->
+                        viewModel.submitSearch(query)
                         onNavigate(AppRoute.SearchResults(query))
                     },
                 )
@@ -127,6 +128,7 @@ internal fun AppNavHost(
                     isResultRoute = false,
                     onBack = onPopRoute,
                     onNavigateToResults = { query ->
+                        viewModel.submitSearch(query)
                         onNavigate(AppRoute.SearchResults(query))
                     },
                 )
@@ -139,23 +141,24 @@ internal fun AppNavHost(
                     viewModel = viewModel,
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
-                    onNavigateToResults = { query -> onNavigate(AppRoute.SearchResults(query)) },
+                    onNavigateToResults = { query ->
+                        viewModel.submitSearch(query)
+                        onNavigate(AppRoute.SearchResults(query))
+                    },
                 )
             }
             entry<AppRoute.SearchResults>(
                 metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
-            ) { route ->
-                LaunchedEffect(route.query) {
-                    if (route.query.isNotBlank() && appState.state.activeSearchWord != route.query) {
-                        viewModel.submitSearch(route.query)
-                    }
-                }
+            ) {
                 SearchScreen(
                     state = appState.state,
                     viewModel = viewModel,
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
-                    onNavigateToResults = { query -> onNavigate(AppRoute.SearchResults(query)) },
+                    onNavigateToResults = { query ->
+                        viewModel.submitSearch(query)
+                        onNavigate(AppRoute.SearchResults(query))
+                    },
                 )
             }
             entry(AppRoute.Onboarding) {
