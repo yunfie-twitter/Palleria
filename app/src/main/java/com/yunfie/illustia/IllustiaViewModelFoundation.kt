@@ -39,6 +39,7 @@ import com.yunfie.illustia.settings.withSyncedCollections
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
+import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdaterRepository
@@ -154,10 +155,12 @@ abstract class IllustiaViewModelFoundation(
     internal var activeTab: AppTab? = null
     internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
     internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
+    internal val searchSnapshots = androidx.compose.runtime.mutableStateMapOf<String, SearchEntrySnapshot>()
     internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
     fun clearDetailSnapshots() {
         detailSnapshots.clear()
+        searchSnapshots.clear()
         clearScrollStates()
     }
 
