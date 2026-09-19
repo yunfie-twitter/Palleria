@@ -2,6 +2,7 @@ package com.yunfie.illustia.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -102,6 +104,20 @@ fun HomeScreen(
             title = stringResource(R.string.nav_home),
             largeTitle = stringResource(R.string.nav_home),
             scrollBehavior = scrollBehavior,
+            modifier =
+                Modifier.pointerInput(selectedTab) {
+                    detectTapGestures {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            scrollBehavior.state.heightOffset = 0f
+                            scrollBehavior.state.contentOffset = 0f
+                            when (selectedTab) {
+                                HomeTab.Feed -> viewModel.homeFeedGridState.animateScrollToItem(0)
+                                HomeTab.Following -> viewModel.homeTimelineGridState.animateScrollToItem(0)
+                            }
+                        }
+                    }
+                },
             navigationIcon = {
                 IconButton(onClick = {
                     performHaptic(AppHapticEffect.Click)
