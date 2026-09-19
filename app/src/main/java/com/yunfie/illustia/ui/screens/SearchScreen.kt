@@ -395,7 +395,7 @@ private fun SearchResultsArea(
     val isSearchFilterActive =
         state.settings.searchSort != SearchSort.DateDesc ||
             state.settings.searchTarget != SearchTarget.PartialTags ||
-            state.settings.searchWorkType != SearchWorkType.All ||
+            state.settings.searchWorkType != SearchWorkType.Artworks ||
             state.settings.searchDuration != SearchDuration.All ||
             state.settings.searchBookmarkFilter != SearchBookmarkFilter.None ||
             state.settings.hideAiWorks

@@ -894,7 +894,7 @@ abstract class IllustiaSettingsSecurityModule(
             it.copy(
                 searchSort = SearchSort.DateDesc,
                 searchTarget = SearchTarget.PartialTags,
-                searchWorkType = SearchWorkType.All,
+                searchWorkType = SearchWorkType.Artworks,
                 searchDuration = SearchDuration.All,
                 searchBookmarkFilter = SearchBookmarkFilter.None,
                 hideAiWorks = false,

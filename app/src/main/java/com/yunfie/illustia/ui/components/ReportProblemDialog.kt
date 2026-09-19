@@ -73,15 +73,15 @@ fun ReportProblemDialog(
                 Text(
                     text = targetTitle,
                     style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSecondary,
+                    color = MiuixTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = MiuixTheme.colorScheme.surfaceContainer,
+                cornerRadius = 16.dp,
+                insideMargin = PaddingValues(0.dp),
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     ReportReason.entries.forEach { reason ->

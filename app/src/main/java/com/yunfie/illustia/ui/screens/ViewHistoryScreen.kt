@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,10 +40,10 @@ import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -51,7 +52,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.overlay.OverlayIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
@@ -88,6 +89,7 @@ fun ViewHistoryScreen(
     var deleteTarget by remember { mutableStateOf<ViewHistoryDeleteTarget?>(null) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
     var showSearch by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var sortOrder by remember { mutableStateOf(ViewHistorySortOrder.Newest) }
     var filterType by remember { mutableStateOf(ViewHistoryTypeFilter.All) }
@@ -416,14 +418,19 @@ fun ViewHistoryScreen(
                             },
                         )
                     }
-                    OverlayIconCascadingDropdownMenu(
-                        entries = menuEntries,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.More,
+                    Box {
+                        HeaderIcon(
+                            icon = MiuixIcons.More,
                             contentDescription = moreLabel,
-                            tint = MiuixTheme.colorScheme.onBackground,
-                            modifier = Modifier.size(28.dp),
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                showMoreMenu = true
+                            },
+                        )
+                        OverlayCascadingListPopup(
+                            show = showMoreMenu,
+                            entries = menuEntries,
+                            onDismissRequest = { showMoreMenu = false },
                         )
                     }
                 },
@@ -454,15 +461,15 @@ fun ViewHistoryScreen(
                         inputField = {
                             InputField(
                                 query = searchQuery,
-                                onQueryChange = { searchQuery = it },
+                                onQueryChange = { query -> searchQuery = query },
                                 onSearch = { showSearch = false },
                                 expanded = showSearch,
-                                onExpandedChange = { showSearch = it },
+                                onExpandedChange = { expanded -> showSearch = expanded },
                                 label = stringResource(R.string.view_history_search_hint),
                             )
                         },
                         expanded = showSearch,
-                        onExpandedChange = { showSearch = it },
+                        onExpandedChange = { expanded -> showSearch = expanded },
                         modifier = Modifier.fillMaxWidth(),
                         outsideEndAction = {
                             HeaderIcon(

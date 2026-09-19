@@ -156,9 +156,10 @@ internal fun SearchOptionsContent(
             summary = stringResource(R.string.settings_hide_ai_works_desc),
         )
         Button(
-            text = stringResource(R.string.search_reset_filters),
             onClick = { viewModel.resetSearchOptions() },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        )
+        ) {
+            Text(stringResource(R.string.search_reset_filters))
+        }
     }
 }

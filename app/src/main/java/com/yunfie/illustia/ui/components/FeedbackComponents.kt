@@ -62,9 +62,10 @@ fun StateBanner(
                 if (onRetry != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
-                        text = stringResource(R.string.action_retry),
                         onClick = onRetry,
-                    )
+                    ) {
+                        Text(stringResource(R.string.action_retry))
+                    }
                 }
             }
         }
