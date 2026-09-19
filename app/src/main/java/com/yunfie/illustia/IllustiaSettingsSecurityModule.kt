@@ -259,7 +259,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun applyDummyIconSettings(context: android.content.Context) {
         val settings = _uiState.value.settings
-        applyDummyAppIcon(context, settings.privacyModeEnabled)
+        applyDummyAppIcon(context, settings.privacyModeEnabled, settings.appIconVariant)
     }
 
     suspend fun changeUnlockCode(
@@ -276,10 +276,15 @@ abstract class IllustiaSettingsSecurityModule(
     fun applyDummyAppIcon(
         context: android.content.Context,
         enabled: Boolean,
+        appIconVariant: String = _uiState.value.settings.appIconVariant,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            DummyAppIconSwitcher.apply(context, enabled)
+            DummyAppIconSwitcher.apply(context, enabled, appIconVariant)
         }
+    }
+
+    fun updateAppIconVariant(value: String) {
+        updateSettings { it.copy(appIconVariant = value) }
     }
 
     fun updateAmoledMode(value: Boolean) {

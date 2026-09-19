@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Enviar reporte</string>
     <string name="msg_report_submitted">Reporte enviado con éxito</string>
     <string name="msg_report_failed">Error al enviar el reporte</string>
+    <string name="experimental_app_icon">Icono de la aplicación</string>
+    <string name="experimental_app_icon_desc">Cambiar el diseño del icono de la aplicación</string>
+    <string name="experimental_app_icon_default">Predeterminado</string>
+    <string name="experimental_app_icon_cat">Gato (Cat)</string>
 </resources>

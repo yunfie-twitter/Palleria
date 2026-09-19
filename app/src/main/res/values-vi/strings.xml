@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Gửi báo cáo</string>
     <string name="msg_report_submitted">Báo cáo đã được gửi thành công</string>
     <string name="msg_report_failed">Gửi báo cáo thất bại</string>
+    <string name="experimental_app_icon">Biểu tượng ứng dụng</string>
+    <string name="experimental_app_icon_desc">Thay đổi thiết kế biểu tượng ứng dụng</string>
+    <string name="experimental_app_icon_default">Mặc định</string>
+    <string name="experimental_app_icon_cat">Mèo (Cat)</string>
 </resources>

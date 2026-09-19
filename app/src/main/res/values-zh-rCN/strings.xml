@@ -809,4 +809,8 @@
     <string name="action_submit_report">提交举报</string>
     <string name="msg_report_submitted">举报已成功提交</string>
     <string name="msg_report_failed">举报提交失败</string>
+    <string name="experimental_app_icon">应用图标</string>
+    <string name="experimental_app_icon_desc">更改应用图标设计</string>
+    <string name="experimental_app_icon_default">默认</string>
+    <string name="experimental_app_icon_cat">猫咪 (Cat)</string>
 </resources>

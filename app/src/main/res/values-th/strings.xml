@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">ส่งรายงาน</string>
     <string name="msg_report_submitted">ส่งรายงานเรียบร้อยแล้ว</string>
     <string name="msg_report_failed">ไม่สามารถส่งรายงานได้</string>
+    <string name="experimental_app_icon">ไอคอนแอป</string>
+    <string name="experimental_app_icon_desc">เปลี่ยนการออกแบบไอคอนแอป</string>
+    <string name="experimental_app_icon_default">ค่าเริ่มต้น</string>
+    <string name="experimental_app_icon_cat">แมว (Cat)</string>
 </resources>

@@ -279,7 +279,13 @@ class MainActivity : FragmentActivity() {
                 updateRecentsTaskDescription(settings)
             }
 
-            LaunchedEffect(settingsLoaded, settings.privacyModeEnabled, settings.dummyAppName, settings.dummyIconVariant) {
+            LaunchedEffect(
+                settingsLoaded,
+                settings.privacyModeEnabled,
+                settings.appIconVariant,
+                settings.dummyAppName,
+                settings.dummyIconVariant,
+            ) {
                 if (!settingsLoaded) return@LaunchedEffect
                 viewModel.applyDummyIconSettings(this@MainActivity)
             }

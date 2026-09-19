@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Meldung absenden</string>
     <string name="msg_report_submitted">Meldung erfolgreich übermittelt</string>
     <string name="msg_report_failed">Fehler beim Senden der Meldung</string>
+    <string name="experimental_app_icon">App-Symbol</string>
+    <string name="experimental_app_icon_desc">Design des App-Symbols ändern</string>
+    <string name="experimental_app_icon_default">Standard</string>
+    <string name="experimental_app_icon_cat">Katze (Cat)</string>
 </resources>

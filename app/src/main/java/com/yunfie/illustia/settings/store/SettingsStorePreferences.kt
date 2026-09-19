@@ -99,6 +99,7 @@ internal fun readFromDataStore(
         swipeToSwitchWorks = preferences[SWIPE_TO_SWITCH_WORKS] ?: true,
         secureWindow = preferences[SECURE_WINDOW] ?: false,
         amoledMode = preferences[AMOLED_MODE] ?: false,
+        appIconVariant = preferences[APP_ICON_VARIANT] ?: "default",
         navigationOrder = decodeStringList(preferences[NAVIGATION_ORDER_JSON]).ifEmpty { DEFAULT_NAVIGATION_ORDER },
         hiddenNavigationTabs = decodeStringList(preferences[HIDDEN_NAVIGATION_TABS_JSON]),
         navigationStyle = preferences[NAVIGATION_STYLE] ?: "standard",
@@ -272,6 +273,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         swipeToSwitchWorks = preferences.getBoolean("swipeToSwitchWorks", true),
         secureWindow = preferences.getBoolean("secureWindow", false),
         amoledMode = preferences.getBoolean("amoledMode", false),
+        appIconVariant = preferences.getSafeString("appIconVariant", "default"),
         navigationOrder = decodeStringList(preferences.getString("navigationOrder", null)).ifEmpty { DEFAULT_NAVIGATION_ORDER },
         hiddenNavigationTabs = decodeStringList(preferences.getString("hiddenNavigationTabs", null)),
         navigationStyle = preferences.getSafeString("navigationStyle", "standard"),
@@ -381,6 +383,7 @@ internal fun writeToDataStore(
     preferences[SWIPE_TO_SWITCH_WORKS] = settings.swipeToSwitchWorks
     preferences[SECURE_WINDOW] = settings.secureWindow
     preferences[AMOLED_MODE] = settings.amoledMode
+    preferences[APP_ICON_VARIANT] = settings.appIconVariant
     preferences[NAVIGATION_ORDER_JSON] = encodeStringList(settings.navigationOrder)
     preferences[HIDDEN_NAVIGATION_TABS_JSON] = encodeStringList(settings.hiddenNavigationTabs)
     preferences[NAVIGATION_STYLE] = settings.navigationStyle

@@ -1005,4 +1005,8 @@
     <string name="action_submit_report">Submit Report</string>
     <string name="msg_report_submitted">Report submitted successfully</string>
     <string name="msg_report_failed">Failed to submit report</string>
+    <string name="experimental_app_icon">App Icon</string>
+    <string name="experimental_app_icon_desc">Change the app icon design</string>
+    <string name="experimental_app_icon_default">Default</string>
+    <string name="experimental_app_icon_cat">Cat</string>
 </resources>

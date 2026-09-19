@@ -439,6 +439,24 @@
         </activity-alias>
 
         <activity-alias
+            android:name=".MainActivityCat"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_cat"
+            android:roundIcon="@mipmap/ic_launcher_cat_round"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.Splash"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+
+        <activity-alias
             android:name=".ProcessTextActivity"
             android:exported="true"
             android:label="@string/process_text_search"

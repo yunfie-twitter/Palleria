@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Envoyer le signalement</string>
     <string name="msg_report_submitted">Signalement envoyé avec succès</string>
     <string name="msg_report_failed">Échec de l\'envoi du signalement</string>
+    <string name="experimental_app_icon">Icône de l'application</string>
+    <string name="experimental_app_icon_desc">Modifier le design de l'icône de l'application</string>
+    <string name="experimental_app_icon_default">Par défaut</string>
+    <string name="experimental_app_icon_cat">Chat (Cat)</string>
 </resources>

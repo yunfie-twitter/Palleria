@@ -8,21 +8,29 @@ import android.util.Log
 object DummyAppIconSwitcher {
     private const val ALIAS_REAL = "com.yunfie.illustia.MainActivityAlias"
     private const val ALIAS_DUMMY = "com.yunfie.illustia.MainActivityDummy"
+    private const val ALIAS_CAT = "com.yunfie.illustia.MainActivityCat"
 
     fun apply(
         context: Context,
         privacyModeEnabled: Boolean,
+        appIconVariant: String = "default",
     ) {
         val packageManager = context.packageManager
         try {
-            val realState =
-                if (privacyModeEnabled) {
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-                } else {
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                }
             val dummyState =
                 if (privacyModeEnabled) {
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                } else {
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                }
+            val catState =
+                if (!privacyModeEnabled && appIconVariant == "cat") {
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                } else {
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                }
+            val realState =
+                if (!privacyModeEnabled && appIconVariant != "cat") {
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                 } else {
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED
@@ -38,6 +46,12 @@ object DummyAppIconSwitcher {
                 packageManager = packageManager,
                 componentName = ComponentName(context, ALIAS_DUMMY),
                 desiredState = dummyState,
+                enabledByDefault = false,
+            )
+            setComponentStateIfNeeded(
+                packageManager = packageManager,
+                componentName = ComponentName(context, ALIAS_CAT),
+                desiredState = catState,
                 enabledByDefault = false,
             )
 

@@ -809,4 +809,8 @@
     <string name="action_submit_report">提交檢舉</string>
     <string name="msg_report_submitted">檢舉已成功提交</string>
     <string name="msg_report_failed">檢舉提交失敗</string>
+    <string name="experimental_app_icon">應用程式圖示</string>
+    <string name="experimental_app_icon_desc">更改應用程式圖示設計</string>
+    <string name="experimental_app_icon_default">預設</string>
+    <string name="experimental_app_icon_cat">貓咪 (Cat)</string>
 </resources>

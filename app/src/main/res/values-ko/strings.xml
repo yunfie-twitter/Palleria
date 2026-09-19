@@ -866,4 +866,8 @@
     <string name="action_submit_report">신고하기</string>
     <string name="msg_report_submitted">신고가 성공적으로 접수되었습니다</string>
     <string name="msg_report_failed">신고 제출에 실패했습니다</string>
+    <string name="experimental_app_icon">앱 아이콘</string>
+    <string name="experimental_app_icon_desc">앱 아이콘 디자인을 변경합니다</string>
+    <string name="experimental_app_icon_default">기본값</string>
+    <string name="experimental_app_icon_cat">고양이 (Cat)</string>
 </resources>

@@ -1005,4 +1005,8 @@
     <string name="action_submit_report">報告する</string>
     <string name="msg_report_submitted">報告を送信しました</string>
     <string name="msg_report_failed">報告の送信に失敗しました</string>
+    <string name="experimental_app_icon">アプリアイコン</string>
+    <string name="experimental_app_icon_desc">アプリアイコンのデザインを変更します</string>
+    <string name="experimental_app_icon_default">デフォルト</string>
+    <string name="experimental_app_icon_cat">猫 (Cat)</string>
 </resources>
