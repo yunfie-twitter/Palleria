@@ -205,14 +205,14 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.SearchResults -> {
-                if (state.activeSearchWord != revealed.keyword) {
-                    viewModel.submitSearch(revealed.keyword)
+                if (state.activeSearchWord != revealed.query) {
+                    viewModel.submitSearch(revealed.query)
                 }
             }
 
             is AppRoute.TagSearch -> {
-                if (state.activeSearchWord != revealed.tag) {
-                    viewModel.submitSearch(revealed.tag)
+                if (state.activeSearchWord != revealed.word) {
+                    viewModel.submitSearch(revealed.word)
                 }
             }
 

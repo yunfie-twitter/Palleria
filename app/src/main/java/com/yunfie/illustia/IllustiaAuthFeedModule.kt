@@ -11,6 +11,7 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
