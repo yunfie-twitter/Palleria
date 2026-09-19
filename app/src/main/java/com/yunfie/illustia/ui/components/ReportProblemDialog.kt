@@ -73,7 +73,7 @@ fun ReportProblemDialog(
                 Text(
                     text = targetTitle,
                     style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariant,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
