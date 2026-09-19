@@ -10,6 +10,7 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -570,6 +571,24 @@ abstract class IllustiaAuthFeedModule(
                 searchNovelNextUrl = null,
                 userSearchItems = emptyList(),
                 userSearchNextUrl = null,
+            )
+        }
+    }
+
+    fun restoreSearchResults(snapshot: SearchEntrySnapshot) {
+        searchJob?.cancel()
+        searchSnapshot = null
+        _uiState.update {
+            it.copy(
+                searchDraft = snapshot.query,
+                activeSearchWord = snapshot.query,
+                searchItems = snapshot.searchItems,
+                searchNextUrl = snapshot.searchNextUrl,
+                searchNovelItems = snapshot.searchNovelItems,
+                searchNovelNextUrl = snapshot.searchNovelNextUrl,
+                userSearchItems = snapshot.userSearchItems,
+                userSearchNextUrl = snapshot.userSearchNextUrl,
+                loadState = LoadState.Loaded,
             )
         }
     }

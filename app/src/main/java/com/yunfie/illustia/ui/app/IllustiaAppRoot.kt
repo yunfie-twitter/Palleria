@@ -89,6 +89,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
     val backStack = viewModel.navigationBackStack
     val detailSnapshots = viewModel.detailSnapshots
+    val searchSnapshots = viewModel.searchSnapshots
     val pagerState =
         androidx.compose.foundation.pager.rememberPagerState(
             initialPage = initialPage,
@@ -152,13 +153,21 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.TagSearch -> {
+                if (backStack.none { it == removed }) {
+                    searchSnapshots.remove(removed.word)
+                }
                 if (revealed !is AppRoute.TagSearch && revealed !is AppRoute.SearchResults) {
+                    searchSnapshots.clear()
                     viewModel.clearSearchResults()
                 }
             }
 
             is AppRoute.SearchResults -> {
+                if (backStack.none { it == removed }) {
+                    searchSnapshots.remove(removed.query)
+                }
                 if (revealed !is AppRoute.SearchResults && revealed !is AppRoute.TagSearch) {
+                    searchSnapshots.clear()
                     viewModel.clearSearchResults()
                 }
             }
@@ -205,13 +214,19 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.SearchResults -> {
-                if (state.activeSearchWord != revealed.query) {
+                val snapshot = searchSnapshots[revealed.query]
+                if (snapshot != null) {
+                    viewModel.restoreSearchResults(snapshot)
+                } else if (state.activeSearchWord != revealed.query) {
                     viewModel.submitSearch(revealed.query)
                 }
             }
 
             is AppRoute.TagSearch -> {
-                if (state.activeSearchWord != revealed.word) {
+                val snapshot = searchSnapshots[revealed.word]
+                if (snapshot != null) {
+                    viewModel.restoreSearchResults(snapshot)
+                } else if (state.activeSearchWord != revealed.word) {
                     viewModel.submitSearch(revealed.word)
                 }
             }
@@ -478,6 +493,29 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
+    LaunchedEffect(
+        state.activeSearchWord,
+        state.searchItems,
+        state.searchNextUrl,
+        state.searchNovelItems,
+        state.searchNovelNextUrl,
+        state.userSearchItems,
+        state.userSearchNextUrl,
+    ) {
+        if (state.activeSearchWord.isNotBlank()) {
+            searchSnapshots[state.activeSearchWord] =
+                SearchEntrySnapshot(
+                    query = state.activeSearchWord,
+                    searchItems = state.searchItems,
+                    searchNextUrl = state.searchNextUrl,
+                    searchNovelItems = state.searchNovelItems,
+                    searchNovelNextUrl = state.searchNovelNextUrl,
+                    userSearchItems = state.userSearchItems,
+                    userSearchNextUrl = state.userSearchNextUrl,
+                )
+        }
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.detailNavigationRequests.collect { illustId ->
             navigate(AppRoute.Detail(illustId))
@@ -638,6 +676,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                         viewModel = viewModel,
                                         backStack = backStack,
                                         detailSnapshots = detailSnapshots,
+                                        searchSnapshots = searchSnapshots,
                                         selectedTab = selectedTab,
                                         pagerState = pagerState,
                                         homeScrollBehavior = homeScrollBehavior,
