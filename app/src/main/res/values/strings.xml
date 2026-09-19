@@ -128,6 +128,10 @@
     <string name="search_empty_user">ユーザーが見つかりません</string>
     <string name="search_recent_viewed">最近見た作品</string>
     <string name="search_recommended_tags">おすすめのタグ</string>
+    <string name="search_reset_filters">検索条件をリセット</string>
+    <string name="search_delete_history_item">履歴を削除</string>
+    <string name="action_retry">再試行</string>
+    <string name="viewer_page_jump">ページを指定</string>
 
     <!-- Bookmark screen -->
     <string name="bookmark_tab_timeline">タイムライン</string>

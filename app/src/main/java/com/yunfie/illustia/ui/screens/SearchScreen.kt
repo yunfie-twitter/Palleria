@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +57,7 @@ import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
@@ -248,6 +250,7 @@ fun SearchScreen(
                         expanded = false,
                         suggestions = suggestions,
                         historyCount = state.settings.searchHistory.size,
+                        onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
                         onExpandedChange = { expanded ->
                             if (expanded && state.searchDraft.isBlank()) {
                                 onUpdateDraft(state.activeSearchWord)
@@ -289,6 +292,7 @@ fun SearchScreen(
                         expanded = false,
                         suggestions = suggestions,
                         historyCount = state.settings.searchHistory.size,
+                        onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
                         onExpandedChange = onExpandedChange,
                         onValueChange = onUpdateDraft,
                         onSearch = {
@@ -306,6 +310,7 @@ fun SearchScreen(
                     expanded = searchExpanded,
                     suggestions = suggestions,
                     historyCount = state.settings.searchHistory.size,
+                    onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
                     onExpandedChange = onExpandedChange,
                     onValueChange = onUpdateDraft,
                     onSearch = {
@@ -387,6 +392,13 @@ private fun SearchResultsArea(
     }
 
     val performHaptic = rememberHapticFeedbackAction()
+    val isSearchFilterActive =
+        state.settings.searchSort != SearchSort.DateDesc ||
+            state.settings.searchTarget != SearchTarget.PartialTags ||
+            state.settings.searchWorkType != SearchWorkType.All ||
+            state.settings.searchDuration != SearchDuration.All ||
+            state.settings.searchBookmarkFilter != SearchBookmarkFilter.None ||
+            state.settings.hideAiWorks
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -405,15 +417,28 @@ private fun SearchResultsArea(
                 },
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = {
-                performHaptic(AppHapticEffect.Click)
-                showOptionsSheet = true
-            }) {
-                Icon(
-                    imageVector = MiuixIcons.Filter,
-                    contentDescription = stringResource(R.string.search_options),
-                    tint = MiuixTheme.colorScheme.onBackground,
-                )
+            Box {
+                IconButton(onClick = {
+                    performHaptic(AppHapticEffect.Click)
+                    showOptionsSheet = true
+                }) {
+                    Icon(
+                        imageVector = MiuixIcons.Filter,
+                        contentDescription = stringResource(R.string.search_options),
+                        tint = if (isSearchFilterActive) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+                    )
+                }
+                if (isSearchFilterActive) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(8.dp)
+                                .align(Alignment.TopEnd)
+                                .padding(end = 4.dp, top = 4.dp)
+                                .clip(CircleShape)
+                                .background(MiuixTheme.colorScheme.primary),
+                    )
+                }
             }
         }
 

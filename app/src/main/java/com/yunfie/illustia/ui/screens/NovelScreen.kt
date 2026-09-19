@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
@@ -93,6 +95,8 @@ fun NovelScreen(
 ) {
     val gridState = remember { LazyGridState() }
     val scrollBehavior = MiuixScrollBehavior()
+    val performHaptic = rememberHapticFeedbackAction()
+    val coroutineScope = rememberCoroutineScope()
     var selectedFilter by rememberSaveable { mutableStateOf(NovelFilterTab.All) }
     val filteredItems =
         remember(items, selectedFilter, settings.novelProgress) {
@@ -150,6 +154,17 @@ fun NovelScreen(
                 title = stringResource(R.string.nav_novel),
                 largeTitle = stringResource(R.string.nav_novel),
                 scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                scrollBehavior.state.heightOffset = 0f
+                                scrollBehavior.state.contentOffset = 0f
+                                gridState.animateScrollToItem(0)
+                            }
+                        }
+                    },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))

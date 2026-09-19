@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -69,12 +70,14 @@ import top.yukonga.miuix.kmp.basic.FloatingToolbar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.ToolbarPosition
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Background
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
@@ -130,12 +133,15 @@ fun ImageViewerScreen(
     val coroutineScope = rememberCoroutineScope()
     var isZoomed by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
+    var showSeekSlider by remember { mutableStateOf(false) }
     val comicMode = illust.type == "manga" && imageUrls.size > 1 && mangaReaderMode == "vertical"
 
     LaunchedEffect(showControls) {
         if (showControls) {
             delay(4000)
             showControls = false
+        } else {
+            showSeekSlider = false
         }
     }
 
@@ -227,81 +233,140 @@ fun ImageViewerScreen(
                     shadowElevation = 12.dp,
                     showDivider = false,
                 ) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
+                    if (showSeekSlider && imageUrls.size > 1) {
+                        Column(
                             modifier =
                                 Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f))
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Photos,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.size(20.dp),
-                                )
                                 Text(
                                     text = "${pagerState.currentPage + 1} / ${imageUrls.size}",
                                     color = MiuixTheme.colorScheme.onSurface,
                                     style = MiuixTheme.textStyles.title4,
                                 )
+                                IconButton(
+                                    onClick = {
+                                        performHaptic(AppHapticEffect.Click)
+                                        showSeekSlider = false
+                                    },
+                                    minWidth = 32.dp,
+                                    minHeight = 32.dp,
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Close,
+                                        contentDescription = stringResource(R.string.action_close),
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
                             }
+                            Slider(
+                                value = (pagerState.currentPage + 1).toFloat(),
+                                onValueChange = { targetPage ->
+                                    val targetIndex = (targetPage.toInt() - 1).coerceIn(0, imageUrls.lastIndex)
+                                    if (targetIndex != pagerState.currentPage) {
+                                        performHaptic(AppHapticEffect.Toggle)
+                                        coroutineScope.launch {
+                                            pagerState.scrollToPage(targetIndex)
+                                        }
+                                    }
+                                },
+                                valueRange = 1f..imageUrls.size.toFloat(),
+                                steps = (imageUrls.size - 2).coerceAtLeast(0),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
-                        Box(
+                    } else {
+                        Row(
                             modifier =
                                 Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        if (isBookmarked) {
-                                            MiuixTheme.colorScheme.primaryContainer
-                                        } else {
-                                            MiuixTheme.colorScheme.surfaceContainerHighest
-                                        },
-                                    ),
-                            contentAlignment = Alignment.Center,
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            IconButton(onClick = {
-                                performHaptic(AppHapticEffect.Toggle)
-                                onBookmark()
-                            }) {
-                                Icon(
-                                    imageVector = if (isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                    contentDescription = stringResource(R.string.action_bookmark),
-                                    tint = if (isBookmarked) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-                                )
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f))
+                                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                                        .clickable(
+                                            enabled = imageUrls.size > 1,
+                                            onClick = {
+                                                performHaptic(AppHapticEffect.Click)
+                                                showSeekSlider = true
+                                            },
+                                        ),
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Photos,
+                                        contentDescription = null,
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        text = "${pagerState.currentPage + 1} / ${imageUrls.size}",
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        style = MiuixTheme.textStyles.title4,
+                                    )
+                                }
                             }
-                        }
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            IconButton(onClick = {
-                                performHaptic(AppHapticEffect.Click)
-                                shareCurrentPage()
-                            }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Share,
-                                    contentDescription = stringResource(R.string.action_share),
-                                    tint = MiuixTheme.colorScheme.primary,
-                                )
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            if (isBookmarked) {
+                                                MiuixTheme.colorScheme.primaryContainer
+                                            } else {
+                                                MiuixTheme.colorScheme.surfaceContainerHighest
+                                            },
+                                        ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                IconButton(onClick = {
+                                    performHaptic(AppHapticEffect.Toggle)
+                                    onBookmark()
+                                }) {
+                                    Icon(
+                                        imageVector = if (isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
+                                        contentDescription = stringResource(R.string.action_bookmark),
+                                        tint = if (isBookmarked) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                IconButton(onClick = {
+                                    performHaptic(AppHapticEffect.Click)
+                                    shareCurrentPage()
+                                }) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Share,
+                                        contentDescription = stringResource(R.string.action_share),
+                                        tint = MiuixTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
                     }

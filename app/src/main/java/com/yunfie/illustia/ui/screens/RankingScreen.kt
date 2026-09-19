@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -136,6 +138,20 @@ fun RankingScreen(
             title = stringResource(R.string.nav_ranking),
             largeTitle = stringResource(R.string.nav_ranking),
             scrollBehavior = scrollBehavior,
+            modifier =
+                Modifier.pointerInput(pagerState.currentPage) {
+                    detectTapGestures {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            scrollBehavior.state.heightOffset = 0f
+                            scrollBehavior.state.contentOffset = 0f
+                            val currentMode = modes.getOrNull(pagerState.currentPage)
+                            if (currentMode != null) {
+                                viewModel.rankingGridState(currentMode).animateScrollToItem(0)
+                            }
+                        }
+                    }
+                },
             actions = {
                 IconButton(onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) }) {
                     Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))

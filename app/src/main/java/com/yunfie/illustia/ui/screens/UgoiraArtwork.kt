@@ -261,12 +261,16 @@ internal fun UgoiraArtwork(
                             onTap = { onTap?.invoke() },
                             onDoubleTap =
                                 if (zoomEnabled) {
-                                    {
+                                    { tapOffset ->
                                         performHaptic(AppHapticEffect.Click)
                                         if (scale > 1.02f) {
                                             animateTo(1f, Offset.Zero)
                                         } else {
-                                            animateTo(2.5f, Offset.Zero)
+                                            val targetScale = 2.5f
+                                            val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+                                            val focalPoint = tapOffset - viewportCenter
+                                            val targetOffset = clampedOffset(-focalPoint * (targetScale - 1f), targetScale)
+                                            animateTo(targetScale, targetOffset)
                                         }
                                     }
                                 } else {

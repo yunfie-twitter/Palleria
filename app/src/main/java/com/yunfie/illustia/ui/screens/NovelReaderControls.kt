@@ -124,7 +124,10 @@ internal fun NovelBottomControlBar(
                         },
                         enabled = currentPage > 0,
                     ) {
-                        Icon(MiuixIcons.Back, contentDescription = null)
+                        Icon(
+                            imageVector = MiuixIcons.Back,
+                            contentDescription = stringResource(R.string.novel_series_prev_episode),
+                        )
                     }
 
                     Button(
@@ -142,7 +145,11 @@ internal fun NovelBottomControlBar(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(MiuixIcons.Filter, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(
+                                imageVector = MiuixIcons.Filter,
+                                contentDescription = stringResource(R.string.novel_toc),
+                                modifier = Modifier.size(16.dp),
+                            )
                             Text(stringResource(R.string.novel_toc))
                         }
                     }
@@ -162,7 +169,11 @@ internal fun NovelBottomControlBar(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(MiuixIcons.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(
+                                imageVector = MiuixIcons.Settings,
+                                contentDescription = stringResource(R.string.novel_display_settings),
+                                modifier = Modifier.size(16.dp),
+                            )
                             Text(stringResource(R.string.novel_display_settings))
                         }
                     }
@@ -176,7 +187,7 @@ internal fun NovelBottomControlBar(
                     ) {
                         Icon(
                             imageVector = MiuixIcons.ChevronForward,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.novel_series_next_episode),
                         )
                     }
                 }

@@ -889,6 +889,20 @@ abstract class IllustiaSettingsSecurityModule(
         refreshActiveSearch()
     }
 
+    fun resetSearchOptions() {
+        updateSettings {
+            it.copy(
+                searchSort = SearchSort.DateDesc,
+                searchTarget = SearchTarget.PartialTags,
+                searchWorkType = SearchWorkType.All,
+                searchDuration = SearchDuration.All,
+                searchBookmarkFilter = SearchBookmarkFilter.None,
+                hideAiWorks = false,
+            )
+        }
+        refreshActiveSearch()
+    }
+
     fun updateSearchDraft(value: String) {
         _uiState.update { it.copy(searchDraft = value) }
     }

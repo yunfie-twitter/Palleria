@@ -1,6 +1,8 @@
 package com.yunfie.illustia.ui.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,10 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -23,12 +28,16 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun StateBanner(loadState: LoadState) {
+fun StateBanner(
+    loadState: LoadState,
+    modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null,
+) {
     when (loadState) {
         LoadState.Loading -> {
             Box(
                 modifier =
-                    Modifier
+                    modifier
                         .fillMaxWidth()
                         .height(160.dp),
                 contentAlignment = Alignment.Center,
@@ -38,15 +47,26 @@ fun StateBanner(loadState: LoadState) {
         }
 
         is LoadState.Error -> {
-            Text(
-                text = loadState.message,
-                color = MiuixTheme.colorScheme.error,
+            Column(
                 modifier =
-                    Modifier
+                    modifier
                         .fillMaxWidth()
                         .padding(horizontal = 28.dp, vertical = 6.dp),
-                textAlign = TextAlign.Center,
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = loadState.message,
+                    color = MiuixTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+                if (onRetry != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        text = stringResource(R.string.action_retry),
+                        onClick = onRetry,
+                    )
+                }
+            }
         }
 
         LoadState.Idle,
@@ -75,6 +95,7 @@ fun HeaderIcon(
     icon: ImageVector,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
 ) {
     IconButton(
         onClick = onClick ?: {},
@@ -85,7 +106,7 @@ fun HeaderIcon(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = MiuixTheme.colorScheme.onBackground,
             modifier = Modifier.size(28.dp),
         )
@@ -99,6 +120,7 @@ fun HeaderOverlayIcon(
     modifier: Modifier = Modifier,
     backgroundColor: Color = Color.Black.copy(alpha = 0.35f),
     contentColor: Color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+    contentDescription: String? = null,
 ) {
     IconButton(
         onClick = onClick,
@@ -110,7 +132,7 @@ fun HeaderOverlayIcon(
     ) {
         Icon(
             icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = contentColor,
             modifier = Modifier.size(24.dp),
         )

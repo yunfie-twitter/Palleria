@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -127,6 +129,21 @@ fun BookmarkScreen(
             title = stringResource(R.string.nav_bookmarks_full),
             largeTitle = stringResource(R.string.nav_bookmarks_full),
             scrollBehavior = scrollBehavior,
+            modifier =
+                Modifier.pointerInput(selectedTopTab) {
+                    detectTapGestures {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            scrollBehavior.state.heightOffset = 0f
+                            scrollBehavior.state.contentOffset = 0f
+                            when (selectedTopTab) {
+                                0 -> viewModel.bookmarkTimelineGridState.animateScrollToItem(0)
+                                1 -> viewModel.bookmarkMainGridState.animateScrollToItem(0)
+                                3 -> viewModel.bookmarkFollowingGridState.animateScrollToItem(0)
+                            }
+                        }
+                    }
+                },
             actions = {
                 if (selectedTopTab == 1) {
                     RestrictPill(

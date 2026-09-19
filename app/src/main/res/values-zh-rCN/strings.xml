@@ -117,6 +117,10 @@
     <string name="search_empty_user">未找到用户</string>
     <string name="search_recent_viewed">最近查看</string>
     <string name="search_recommended_tags">推荐标签</string>
+    <string name="search_reset_filters">重置筛选条件</string>
+    <string name="search_delete_history_item">删除历史记录</string>
+    <string name="action_retry">重试</string>
+    <string name="viewer_page_jump">跳转到页面</string>
     <string name="bookmark_tab_timeline">时间轴</string>
     <string name="bookmark_tab_bookmarks">书签</string>
     <string name="bookmark_tab_watchlist">监视列表</string>

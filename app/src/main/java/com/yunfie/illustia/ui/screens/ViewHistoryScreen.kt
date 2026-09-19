@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +16,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
@@ -33,20 +36,22 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.visibleWithSettings
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SearchBar
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.overlay.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
@@ -364,6 +369,7 @@ fun ViewHistoryScreen(
         }
 
     val scrollBehavior = MiuixScrollBehavior()
+    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -372,6 +378,17 @@ fun ViewHistoryScreen(
                 largeTitle = stringResource(R.string.more_view_history),
                 subtitle = if (hasSelection) stringResource(R.string.view_history_selected_count, selectedIds.size) else "",
                 scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                scrollBehavior.state.heightOffset = 0f
+                                scrollBehavior.state.contentOffset = 0f
+                                gridState.animateScrollToItem(0)
+                            }
+                        }
+                    },
                 navigationIcon = {
                     HeaderIcon(
                         MiuixIcons.Back,
