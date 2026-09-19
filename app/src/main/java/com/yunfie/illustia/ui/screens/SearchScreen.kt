@@ -149,8 +149,11 @@ fun SearchScreen(
     }
     val onExpandedChange: (Boolean) -> Unit = { expanded ->
         searchExpanded = expanded
-        if (!expanded && state.searchDraft.isBlank()) {
-            onClearResults()
+        if (!expanded) {
+            viewModel.updateSearchDraft(state.activeSearchWord)
+            if (state.activeSearchWord.isBlank()) {
+                onClearResults()
+            }
         }
     }
     val onUpdateDraft: (String) -> Unit = { viewModel.updateSearchDraft(it) }
@@ -192,7 +195,8 @@ fun SearchScreen(
 
     if (searchExpanded) {
         BackHandler(enabled = true) {
-            if (state.searchDraft.isBlank()) {
+            viewModel.updateSearchDraft(state.activeSearchWord)
+            if (state.activeSearchWord.isBlank()) {
                 onClearResults()
             }
             searchExpanded = false
@@ -203,7 +207,6 @@ fun SearchScreen(
         }
     } else if (onBackFromResults != null) {
         PredictiveBackGestureHandler(enabled = true) {
-            viewModel.clearSearchResults()
             onBackFromResults()
         }
     } else if (onBack != null) {
@@ -349,7 +352,7 @@ private fun SearchResultsArea(
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
-    var showOptionsSheet by remember { mutableStateOf(false) }
+    var showOptionsSheet by rememberSaveable { mutableStateOf(false) }
     val tabIllust = stringResource(R.string.search_tab_illust)
     val tabNovel = stringResource(R.string.search_tab_novel)
     val tabUser = stringResource(R.string.search_tab_user)

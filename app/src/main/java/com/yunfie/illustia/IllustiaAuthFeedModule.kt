@@ -516,7 +516,11 @@ abstract class IllustiaAuthFeedModule(
                             searchNextUrl = page?.nextUrl,
                             searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
                             searchNovelNextUrl = novelPage?.nextUrl,
-                            userSearchItems = users?.items.orEmpty(),
+                            userSearchItems =
+                                users
+                                    ?.items
+                                    ?.filterNot { user -> user.id in it.mutedUsersSet }
+                                    .orEmpty(),
                             userSearchNextUrl = users?.nextUrl,
                             loadState = LoadState.Loaded,
                         )
