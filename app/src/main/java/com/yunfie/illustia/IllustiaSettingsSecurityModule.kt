@@ -145,6 +145,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(allowR18 = value) }
     }
 
+    fun updateAllowR18G(value: Boolean) {
+        updateSettings { it.copy(allowR18G = value) }
+    }
+
     fun updateHighQuality(value: Boolean) {
         updateSettings { it.copy(highQualityImages = value) }
     }
@@ -882,6 +886,20 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateSearchUsersEnabled(value: Boolean) {
         updateSettings { it.copy(searchUsersEnabled = value) }
+        refreshActiveSearch()
+    }
+
+    fun resetSearchOptions() {
+        updateSettings {
+            it.copy(
+                searchSort = SearchSort.DateDesc,
+                searchTarget = SearchTarget.PartialTags,
+                searchWorkType = SearchWorkType.Artworks,
+                searchDuration = SearchDuration.All,
+                searchBookmarkFilter = SearchBookmarkFilter.None,
+                hideAiWorks = false,
+            )
+        }
         refreshActiveSearch()
     }
 

@@ -123,6 +123,10 @@
     <string name="search_empty_user">No users found</string>
     <string name="search_recent_viewed">Recently Viewed</string>
     <string name="search_recommended_tags">Recommended Tags</string>
+    <string name="search_reset_filters">Reset Search Filters</string>
+    <string name="search_delete_history_item">Delete History Item</string>
+    <string name="action_retry">Retry</string>
+    <string name="viewer_page_jump">Jump to Page</string>
 
     <!-- Bookmark screen -->
     <string name="bookmark_tab_timeline">Timeline</string>
@@ -302,6 +306,8 @@
     <string name="general_haptics_clear">Clear Haptics</string>
     <string name="general_r18">Show R-18 Content</string>
     <string name="general_r18_desc">Display works containing mature content</string>
+    <string name="general_r18g">Show R-18G Content</string>
+    <string name="general_r18g_desc">Display works containing grotesque or extreme violence content</string>
     <string name="general_ai_badge">AI Badge</string>
     <string name="general_ai_badge_desc">Show a small badge on works with AI-related tags</string>
     <string name="general_smooth">Smooth Animations</string>
@@ -428,6 +434,7 @@
     <string name="language_indonesian">Bahasa Indonesia</string>
     <string name="language_thai">ไทย</string>
     <string name="language_vietnamese">Tiếng Việt</string>
+    <string name="language_italian">Italian</string>
     <string name="language_chinese_simplified">简体中文</string>
     <string name="language_chinese_traditional">繁體中文</string>
     <string name="general_section_font">Font</string>
@@ -491,7 +498,14 @@
     <string name="data_delete_view_history">Delete View History</string>
     <string name="view_history_delete_selected">Delete Selected View History</string>
     <string name="view_history_delete_selected_desc">Delete the selected %1$s.</string>
+    <string name="view_history_delete_all">Delete All History</string>
     <string name="view_history_selected_count">Selected %1$d</string>
+    <string name="view_history_select_all">Select All</string>
+    <string name="view_history_deselect_all">Deselect All</string>
+    <string name="view_history_bookmark_selected">Bookmark Selected</string>
+    <string name="view_history_sort_artist">By Artist</string>
+    <string name="view_history_show_search">Show Search</string>
+    <string name="view_history_hide_search">Hide Search</string>
     <string name="view_history_search_hint">Search titles, artists, or tags</string>
     <string name="data_delete_search_history">Delete Search History</string>
     <string name="data_delete_watchlist_tags">Delete Watchlist Tags</string>
@@ -981,4 +995,14 @@
     <string name="discord_enable_log_desc">Display Rich Presence connection and diagnostic logs</string>
     <string name="discord_log_empty">No logs yet. Connection status will appear here after Rich Presence is enabled.</string>
     <string name="discord_log_clear">Clear log</string>
+    <string name="action_report_problem">Report a problem</string>
+    <string name="report_dialog_title">Report a problem</string>
+    <string name="report_reason_commercial">Commercial / Spam</string>
+    <string name="report_reason_infringement">Copyright infringement / Unauthorized reprint</string>
+    <string name="report_reason_inappropriate">Inappropriate content / Terms violation</string>
+    <string name="report_reason_other">Other</string>
+    <string name="report_message_hint">Details (optional)</string>
+    <string name="action_submit_report">Submit Report</string>
+    <string name="msg_report_submitted">Report submitted successfully</string>
+    <string name="msg_report_failed">Failed to submit report</string>
 </resources>

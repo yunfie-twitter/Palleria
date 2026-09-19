@@ -457,6 +457,18 @@ class PixivApiClient(
         postAuthedForm(session, "https://app-api.pixiv.net/v1/illust/report", form.build())
     }
 
+    suspend fun reportUser(
+        session: PixivSession,
+        userId: Long,
+        problemType: String?,
+        message: String?,
+    ) {
+        val form = FormBody.Builder().add("user_id", userId.toString())
+        problemType?.let { form.add("type_of_problem", it) }
+        message?.let { form.add("message", it) }
+        postAuthedForm(session, "https://app-api.pixiv.net/v1/user/report", form.build())
+    }
+
     suspend fun addNovelBookmark(
         session: PixivSession,
         novelId: Long,

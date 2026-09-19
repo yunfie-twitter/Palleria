@@ -32,7 +32,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -92,7 +94,7 @@ internal fun ZoomablePixivImage(
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     val animationScope = rememberCoroutineScope()
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
-    val haptic = LocalHapticFeedback.current
+    val performHaptic = rememberHapticFeedbackAction()
 
     fun notifyZoomChanged(
         previous: Float,
@@ -161,7 +163,7 @@ internal fun ZoomablePixivImage(
                     detectTapGestures(
                         onTap = { onTap() },
                         onDoubleTap = { tapOffset ->
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            performHaptic(AppHapticEffect.Click)
                             if (scale > 1.02f) {
                                 animateTo(1f, Offset.Zero)
                             } else {

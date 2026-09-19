@@ -128,6 +128,10 @@
     <string name="search_empty_user">ユーザーが見つかりません</string>
     <string name="search_recent_viewed">最近見た作品</string>
     <string name="search_recommended_tags">おすすめのタグ</string>
+    <string name="search_reset_filters">検索条件をリセット</string>
+    <string name="search_delete_history_item">履歴を削除</string>
+    <string name="action_retry">再試行</string>
+    <string name="viewer_page_jump">ページを指定</string>
 
     <!-- Bookmark screen -->
     <string name="bookmark_tab_timeline">タイムライン</string>
@@ -298,6 +302,8 @@
     <string name="general_language_desc">Palleria の表示言語と Pixiv API の言語を切り替えます</string>
     <string name="general_r18">R-18コンテンツを表示</string>
     <string name="general_r18_desc">不適切な表現を含む作品を表示します</string>
+    <string name="general_r18g">R-18Gを表示</string>
+    <string name="general_r18g_desc">過度な表現（グロテスク・暴力など）を含む作品を表示します</string>
     <string name="general_ai_badge">AIバッジ</string>
     <string name="general_ai_badge_desc">AI関連タグを含む作品に小さなバッジを表示します</string>
     <string name="general_smooth">スムーズなアニメーション</string>
@@ -430,6 +436,7 @@
     <string name="language_indonesian">Bahasa Indonesia</string>
     <string name="language_thai">ไทย</string>
     <string name="language_vietnamese">Tiếng Việt</string>
+    <string name="language_italian">Italiano</string>
     <string name="language_chinese_simplified">简体中文</string>
     <string name="language_chinese_traditional">繁體中文</string>
     <string name="general_section_font">フォント</string>
@@ -496,7 +503,14 @@
     <string name="data_delete_view_history">閲覧履歴を削除</string>
     <string name="view_history_delete_selected">選択した閲覧履歴を削除</string>
     <string name="view_history_delete_selected_desc">選択中の%1$sを削除します。</string>
+    <string name="view_history_delete_all">すべての履歴を削除</string>
     <string name="view_history_selected_count">選択中 %1$d 件</string>
+    <string name="view_history_select_all">すべて選択</string>
+    <string name="view_history_deselect_all">選択解除</string>
+    <string name="view_history_bookmark_selected">選択した作品をブックマーク</string>
+    <string name="view_history_sort_artist">作者名順</string>
+    <string name="view_history_show_search">検索を表示</string>
+    <string name="view_history_hide_search">検索を非表示</string>
     <string name="view_history_search_hint">作品名・作者名・タグで検索</string>
     <string name="data_delete_search_history">検索履歴を削除</string>
     <string name="data_delete_watchlist_tags">Watchlistタグを削除</string>
@@ -981,4 +995,14 @@
     <string name="discord_enable_log_desc">Rich Presence の接続ログと診断情報を表示します</string>
     <string name="discord_log_empty">まだログはありません。Rich Presence を有効にすると接続状況がここに表示されます。</string>
     <string name="discord_log_clear">ログを消去</string>
+    <string name="action_report_problem">問題を報告</string>
+    <string name="report_dialog_title">問題を報告</string>
+    <string name="report_reason_commercial">商業目的・スパム</string>
+    <string name="report_reason_infringement">著作権侵害・無断転載</string>
+    <string name="report_reason_inappropriate">不適切なコンテンツ・規約違反</string>
+    <string name="report_reason_other">その他</string>
+    <string name="report_message_hint">詳細情報（任意）</string>
+    <string name="action_submit_report">報告する</string>
+    <string name="msg_report_submitted">報告を送信しました</string>
+    <string name="msg_report_failed">報告の送信に失敗しました</string>
 </resources>

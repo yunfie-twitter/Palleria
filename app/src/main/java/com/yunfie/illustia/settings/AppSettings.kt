@@ -26,6 +26,7 @@ data class AppSettings(
     val seedColor: Long = DEFAULT_SEED_COLOR,
     val onboardingSetupCompleted: Boolean = false,
     val allowR18: Boolean = true,
+    val allowR18G: Boolean = true,
     val highQualityImages: Boolean = true,
     val bookmarkRestrict: Restrict = Restrict.Public,
     val searchSort: SearchSort = SearchSort.DateDesc,

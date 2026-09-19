@@ -23,11 +23,13 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -53,6 +55,11 @@ internal fun SearchOptionsSheet(
         startAction = {
             IconButton(onClick = onDismiss) {
                 Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+            }
+        },
+        endAction = {
+            IconButton(onClick = { viewModel.resetSearchOptions() }) {
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.search_reset_filters))
             }
         },
         onDismissRequest = onDismiss,
@@ -148,5 +155,11 @@ internal fun SearchOptionsContent(
             onCheckedChange = viewModel::updateHideAiWorks,
             summary = stringResource(R.string.settings_hide_ai_works_desc),
         )
+        Button(
+            onClick = { viewModel.resetSearchOptions() },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        ) {
+            Text(stringResource(R.string.search_reset_filters))
+        }
     }
 }

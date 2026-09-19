@@ -2,6 +2,7 @@ package com.yunfie.illustia.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,6 +27,8 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -88,6 +92,8 @@ fun HomeScreen(
         }
         onDispose {}
     }
+    val performHaptic = rememberHapticFeedbackAction()
+
     Column(
         modifier =
             Modifier
@@ -98,26 +104,52 @@ fun HomeScreen(
             title = stringResource(R.string.nav_home),
             largeTitle = stringResource(R.string.nav_home),
             scrollBehavior = scrollBehavior,
+            modifier =
+                Modifier.pointerInput(selectedTab) {
+                    detectTapGestures {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            scrollBehavior.state.heightOffset = 0f
+                            scrollBehavior.state.contentOffset = 0f
+                            when (selectedTab) {
+                                HomeTab.Feed -> viewModel.homeFeedGridState.animateScrollToItem(0)
+                                HomeTab.Following -> viewModel.homeTimelineGridState.animateScrollToItem(0)
+                            }
+                        }
+                    }
+                },
             navigationIcon = {
-                IconButton(onClick = viewModel::openAccountSwitcher) {
+                IconButton(onClick = {
+                    performHaptic(AppHapticEffect.Click)
+                    viewModel.openAccountSwitcher()
+                }) {
                     HomeAccountAvatar(account = currentAccount)
                 }
             },
             actions = {
                 if (settings.shortsFeedEnabled) {
-                    IconButton(onClick = onSearch) {
+                    IconButton(onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onSearch()
+                    }) {
                         Icon(MiuixIcons.Search, contentDescription = stringResource(R.string.nav_search))
                     }
                 }
                 if (!settings.hideHomeNovelButton) {
-                    IconButton(onClick = onOpenNovels) {
+                    IconButton(onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onOpenNovels()
+                    }) {
                         Icon(
                             MiuixIcons.Photos,
                             contentDescription = stringResource(R.string.nav_novel),
                         )
                     }
                 } else {
-                    IconButton(onClick = viewModel::openNotifications) {
+                    IconButton(onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        viewModel.openNotifications()
+                    }) {
                         Icon(
                             MiuixIcons.Messages,
                             contentDescription = stringResource(R.string.more_notifications),
@@ -126,6 +158,7 @@ fun HomeScreen(
                 }
                 IconButton(
                     onClick = {
+                        performHaptic(AppHapticEffect.Click)
                         when (selectedTab) {
                             HomeTab.Feed -> viewModel.refreshHome(forceRefresh = true)
                             HomeTab.Following -> viewModel.refreshTimeline(forceRefresh = true)
@@ -142,6 +175,9 @@ fun HomeScreen(
                 HomeTabRow(
                     selectedTabIndex = selectedTab.ordinal,
                     onTabSelected = { index ->
+                        if (index != selectedTab.ordinal) {
+                            performHaptic(AppHapticEffect.Toggle)
+                        }
                         coroutineScope.launch { pagerState.animateScrollToPage(index) }
                     },
                     modifier =

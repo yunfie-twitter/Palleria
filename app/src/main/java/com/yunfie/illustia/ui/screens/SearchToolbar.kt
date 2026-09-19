@@ -4,16 +4,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -27,7 +34,9 @@ fun SearchToolbar(
     modifier: Modifier = Modifier,
     suggestions: List<String> = emptyList(),
     historyCount: Int = 0,
+    onRemoveHistoryItem: ((String) -> Unit)? = null,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     SearchBar(
         inputField = {
             InputField(
@@ -83,7 +92,32 @@ fun SearchToolbar(
                 BasicComponent(
                     title = suggestion,
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onSuggestionClick(suggestion) },
+                    onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onSuggestionClick(suggestion)
+                    },
+                    endActions =
+                        if (onRemoveHistoryItem != null) {
+                            {
+                                IconButton(
+                                    onClick = {
+                                        performHaptic(AppHapticEffect.Click)
+                                        onRemoveHistoryItem(suggestion)
+                                    },
+                                    minWidth = 36.dp,
+                                    minHeight = 36.dp,
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Close,
+                                        contentDescription = stringResource(R.string.search_delete_history_item),
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                 )
             }
             if (suggestedItems.isNotEmpty()) {
@@ -99,7 +133,10 @@ fun SearchToolbar(
                 BasicComponent(
                     title = suggestion,
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onSuggestionClick(suggestion) },
+                    onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onSuggestionClick(suggestion)
+                    },
                 )
             }
         }

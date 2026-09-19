@@ -2,6 +2,7 @@ package com.yunfie.illustia.ui.screens
 
 import android.text.Html
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,14 +14,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,12 +34,15 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.PixivNotification
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -61,6 +68,9 @@ fun NotificationScreen(
         if (state.notifications.isEmpty()) viewModel.refreshNotifications()
     }
     val scrollBehavior = MiuixScrollBehavior()
+    val listState = rememberLazyListState()
+    val performHaptic = rememberHapticFeedbackAction()
+    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -68,12 +78,24 @@ fun NotificationScreen(
                 title = stringResource(R.string.more_notifications),
                 largeTitle = stringResource(R.string.more_notifications),
                 scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                scrollBehavior.state.heightOffset = 0f
+                                scrollBehavior.state.contentOffset = 0f
+                                listState.animateScrollToItem(0)
+                            }
+                        }
+                    },
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
                 actions = { HeaderIcon(MiuixIcons.Refresh, onClick = viewModel::refreshNotifications) },
             )
         },
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(

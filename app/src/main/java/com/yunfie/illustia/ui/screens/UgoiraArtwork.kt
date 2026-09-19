@@ -33,20 +33,19 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.normalizedUgoiraDelayMillis
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -72,7 +71,7 @@ internal fun UgoiraArtwork(
     onZoomChanged: (Boolean) -> Unit = {},
     onTap: (() -> Unit)? = null,
 ) {
-    val haptic = LocalHapticFeedback.current
+    val performHaptic = rememberHapticFeedbackAction()
     val animationScope = rememberCoroutineScope()
     var reloadKey by remember { mutableIntStateOf(0) }
     val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey) {
@@ -262,12 +261,16 @@ internal fun UgoiraArtwork(
                             onTap = { onTap?.invoke() },
                             onDoubleTap =
                                 if (zoomEnabled) {
-                                    {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    { tapOffset ->
+                                        performHaptic(AppHapticEffect.Click)
                                         if (scale > 1.02f) {
                                             animateTo(1f, Offset.Zero)
                                         } else {
-                                            animateTo(2.5f, Offset.Zero)
+                                            val targetScale = 2.5f
+                                            val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+                                            val focalPoint = tapOffset - viewportCenter
+                                            val targetOffset = clampedOffset(-focalPoint * (targetScale - 1f), targetScale)
+                                            animateTo(targetScale, targetOffset)
                                         }
                                     }
                                 } else {

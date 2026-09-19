@@ -41,7 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.screens.AccountSwitchSheet
 import com.yunfie.illustia.ui.screens.AppLockScreen
 import com.yunfie.illustia.ui.screens.BookmarkScreen
@@ -79,6 +81,7 @@ internal fun MainSurface(
     onOpenWatchlistSeries: (Long) -> Unit,
     onNavigateToResults: (String) -> Unit,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     val tabs = mainTabs(appState.settings)
     val navigationTabs = visibleTabs(appState.settings)
     val context = LocalContext.current
@@ -154,6 +157,7 @@ internal fun MainSurface(
                             NavigationBarItem(
                                 selected = selectedTab == tab,
                                 onClick = {
+                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                                     viewModel.closeAccountSwitcher()
                                     onTabSelected(pageIndex, tab)
                                 },
@@ -276,6 +280,7 @@ internal fun MainSurface(
                                 FloatingNavigationBarItem(
                                     selected = selectedTab == tab,
                                     onClick = {
+                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                                         navigationVisible = true
                                         viewModel.closeAccountSwitcher()
                                         onTabSelected(pageIndex, tab)

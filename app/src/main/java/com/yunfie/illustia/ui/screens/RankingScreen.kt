@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,14 +43,17 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.isMutedByTags
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -66,13 +71,7 @@ import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Background
-import top.yukonga.miuix.kmp.icon.extended.Copy
-import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.absoluteValue
@@ -80,11 +79,11 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 
 @Composable
 fun RankingScreen(
-    items: List<com.yunfie.illustia.models.Illust>,
-    loadState: com.yunfie.illustia.models.LoadState,
+    items: List<Illust>,
+    loadState: LoadState,
     nextUrl: String?,
     mode: String,
-    settings: com.yunfie.illustia.settings.AppSettings,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
 ) {
     val modes =
@@ -92,6 +91,7 @@ fun RankingScreen(
             listOf("day", "day_male", "day_female", "week", "month", "week_rookie", "day_ai")
         }
     val coroutineScope = rememberCoroutineScope()
+    val performHaptic = rememberHapticFeedbackAction()
     val currentIndex = modes.indexOf(mode).coerceAtLeast(0)
     val pagerState =
         rememberPagerState(
@@ -138,6 +138,20 @@ fun RankingScreen(
             title = stringResource(R.string.nav_ranking),
             largeTitle = stringResource(R.string.nav_ranking),
             scrollBehavior = scrollBehavior,
+            modifier =
+                Modifier.pointerInput(pagerState.currentPage) {
+                    detectTapGestures {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            scrollBehavior.state.heightOffset = 0f
+                            scrollBehavior.state.contentOffset = 0f
+                            val currentMode = modes.getOrNull(pagerState.currentPage)
+                            if (currentMode != null) {
+                                viewModel.rankingGridState(currentMode).animateScrollToItem(0)
+                            }
+                        }
+                    }
+                },
             actions = {
                 IconButton(onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) }) {
                     Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
@@ -168,6 +182,7 @@ fun RankingScreen(
                         selectedTabIndex = modes.indexOf(modes[pagerState.targetPage]).coerceAtLeast(0),
                         onTabSelected = { index ->
                             if (modes.getOrNull(index) == null) return@TabRow
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
@@ -235,10 +250,16 @@ private fun RankingModeTabs(
             stringResource(R.string.ranking_week_rookie),
             stringResource(R.string.ranking_day_ai),
         )
+    val performHaptic = rememberHapticFeedbackAction()
     TabRow(
         tabs = tabLabels,
         selectedTabIndex = modes.indexOf(currentMode).coerceAtLeast(0),
-        onTabSelected = { index -> modes.getOrNull(index)?.let(onSelectMode) },
+        onTabSelected = { index ->
+            modes.getOrNull(index)?.let {
+                performHaptic(AppHapticEffect.Toggle)
+                onSelectMode(it)
+            }
+        },
         colors =
             TabRowDefaults.tabRowColors(
                 backgroundColor = scheme.surfaceContainer.copy(alpha = 0.88f),

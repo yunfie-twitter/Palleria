@@ -664,6 +664,10 @@ abstract class IllustiaAuthFeedModule(
         updateSettings { it.copy(searchHistory = emptyList()) }
     }
 
+    fun removeSearchHistoryItem(query: String) {
+        updateSettings { it.copy(searchHistory = it.searchHistory.filterNot { item -> item == query }) }
+    }
+
     fun clearFavoriteTags() {
         updateSettings { it.copy(favoriteTags = emptyList()) }
         _uiState.update { it.copy(message = str(R.string.msg_watchlist_tags_deleted)) }

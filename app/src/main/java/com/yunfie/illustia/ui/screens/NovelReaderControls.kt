@@ -20,11 +20,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -58,6 +60,7 @@ internal fun NovelBottomControlBar(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     Box(
         modifier =
             modifier
@@ -88,7 +91,13 @@ internal fun NovelBottomControlBar(
                     if (pageCount > 1) {
                         Slider(
                             value = (currentPage + 1).toFloat().coerceIn(1f, pageCount.toFloat()),
-                            onValueChange = { onPageChange((it.toInt() - 1).coerceIn(0, pageCount - 1)) },
+                            onValueChange = {
+                                val target = (it.toInt() - 1).coerceIn(0, pageCount - 1)
+                                if (target != currentPage) {
+                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                    onPageChange(target)
+                                }
+                            },
                             valueRange = 1f..pageCount.toFloat(),
                             steps = (pageCount - 2).coerceAtLeast(0),
                             modifier = Modifier.weight(1f),
@@ -109,14 +118,23 @@ internal fun NovelBottomControlBar(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(
-                        onClick = { onPageChange((currentPage - 1).coerceAtLeast(0)) },
+                        onClick = {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                            onPageChange((currentPage - 1).coerceAtLeast(0))
+                        },
                         enabled = currentPage > 0,
                     ) {
-                        Icon(MiuixIcons.Back, contentDescription = null)
+                        Icon(
+                            imageVector = MiuixIcons.Back,
+                            contentDescription = stringResource(R.string.novel_series_prev_episode),
+                        )
                     }
 
                     Button(
-                        onClick = onOpenToc,
+                        onClick = {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                            onOpenToc()
+                        },
                         colors =
                             ButtonDefaults.buttonColors(
                                 color = MiuixTheme.colorScheme.surfaceContainerHighest,
@@ -127,13 +145,20 @@ internal fun NovelBottomControlBar(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(MiuixIcons.Filter, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(
+                                imageVector = MiuixIcons.Filter,
+                                contentDescription = stringResource(R.string.novel_toc),
+                                modifier = Modifier.size(16.dp),
+                            )
                             Text(stringResource(R.string.novel_toc))
                         }
                     }
 
                     Button(
-                        onClick = onOpenSettings,
+                        onClick = {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                            onOpenSettings()
+                        },
                         colors =
                             ButtonDefaults.buttonColors(
                                 color = MiuixTheme.colorScheme.surfaceContainerHighest,
@@ -144,18 +169,25 @@ internal fun NovelBottomControlBar(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(MiuixIcons.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(
+                                imageVector = MiuixIcons.Settings,
+                                contentDescription = stringResource(R.string.novel_display_settings),
+                                modifier = Modifier.size(16.dp),
+                            )
                             Text(stringResource(R.string.novel_display_settings))
                         }
                     }
 
                     IconButton(
-                        onClick = { onPageChange((currentPage + 1).coerceAtMost(pageCount - 1)) },
+                        onClick = {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                            onPageChange((currentPage + 1).coerceAtMost(pageCount - 1))
+                        },
                         enabled = currentPage < pageCount - 1,
                     ) {
                         Icon(
                             imageVector = MiuixIcons.ChevronForward,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.novel_series_next_episode),
                         )
                     }
                 }
@@ -367,6 +399,7 @@ internal fun NovelSettingsBottomSheet(
     onDismiss: () -> Unit,
 ) {
     if (!show) return
+    val performHaptic = rememberHapticFeedbackAction()
     OverlayBottomSheet(
         show = true,
         title = stringResource(R.string.novel_display_settings),
@@ -400,7 +433,12 @@ internal fun NovelSettingsBottomSheet(
                 }
                 Slider(
                     value = fontSize,
-                    onValueChange = onFontSizeChange,
+                    onValueChange = {
+                        if (it.toInt() != fontSize.toInt()) {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                        }
+                        onFontSizeChange(it)
+                    },
                     valueRange = MIN_FONT_SIZE..MAX_FONT_SIZE,
                     steps = FONT_SIZE_STEPS,
                     modifier = Modifier.fillMaxWidth(),

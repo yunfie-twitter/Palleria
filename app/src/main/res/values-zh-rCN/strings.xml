@@ -117,6 +117,10 @@
     <string name="search_empty_user">未找到用户</string>
     <string name="search_recent_viewed">最近查看</string>
     <string name="search_recommended_tags">推荐标签</string>
+    <string name="search_reset_filters">重置筛选条件</string>
+    <string name="search_delete_history_item">删除历史记录</string>
+    <string name="action_retry">重试</string>
+    <string name="viewer_page_jump">跳转到页面</string>
     <string name="bookmark_tab_timeline">时间轴</string>
     <string name="bookmark_tab_bookmarks">书签</string>
     <string name="bookmark_tab_watchlist">监视列表</string>
@@ -250,6 +254,8 @@
     <string name="general_haptics_clear">清晰的触觉</string>
     <string name="general_r18">显示 R-18 内容</string>
     <string name="general_r18_desc">显示包含成人内容的作品</string>
+    <string name="general_r18g">显示 R-18G 内容</string>
+    <string name="general_r18g_desc">显示包含重度血腥暴力等内容的作品</string>
     <string name="general_ai_badge">AI 徽章</string>
     <string name="general_ai_badge_desc">在带有AI相关标签的作品上显示一个小徽章</string>
     <string name="general_smooth">流畅的动画</string>
@@ -362,6 +368,7 @@
     <string name="language_indonesian">Bahasa Indonesia</string>
     <string name="language_thai">ไทย</string>
     <string name="language_vietnamese">Tiếng Việt</string>
+    <string name="language_italian">Italiano</string>
     <string name="language_chinese_simplified">简体中文</string>
     <string name="language_chinese_traditional">繁體中文</string>
     <string name="general_section_font">字体</string>
@@ -419,7 +426,14 @@
     <string name="data_delete_view_history">删除查看历史记录</string>
     <string name="view_history_delete_selected">删除选定的查看历史记录</string>
     <string name="view_history_delete_selected_desc">删除选定的 %1$s。</string>
+    <string name="view_history_delete_all">删除所有历史记录</string>
     <string name="view_history_selected_count">选定的 %1$d</string>
+    <string name="view_history_select_all">全选</string>
+    <string name="view_history_deselect_all">取消全选</string>
+    <string name="view_history_bookmark_selected">收藏选中的作品</string>
+    <string name="view_history_sort_artist">按作者</string>
+    <string name="view_history_show_search">显示搜索</string>
+    <string name="view_history_hide_search">隐藏搜索</string>
     <string name="view_history_search_hint">搜索标题、艺术家或标签</string>
     <string name="data_delete_search_history">删除搜索历史记录</string>
     <string name="data_delete_watchlist_tags">删除监视列表标签</string>
@@ -785,4 +799,14 @@
     <string name="user_filter_all">全部</string>
     <string name="user_filter_illust_only">仅插画</string>
     <string name="user_filter_manga_only">仅漫画</string>
+    <string name="action_report_problem">举报问题</string>
+    <string name="report_dialog_title">举报问题</string>
+    <string name="report_reason_commercial">商业广告 / 垃圾信息</string>
+    <string name="report_reason_infringement">侵犯版权 / 未授权转载</string>
+    <string name="report_reason_inappropriate">不当内容 / 违反条款</string>
+    <string name="report_reason_other">其他</string>
+    <string name="report_message_hint">详细信息（可选）</string>
+    <string name="action_submit_report">提交举报</string>
+    <string name="msg_report_submitted">举报已成功提交</string>
+    <string name="msg_report_failed">举报提交失败</string>
 </resources>

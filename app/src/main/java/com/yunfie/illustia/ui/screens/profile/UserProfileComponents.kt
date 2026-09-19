@@ -79,6 +79,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -348,6 +349,7 @@ internal fun UserProfileSmallTopAppBar(
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
     onOpenRelatedUsers: () -> Unit,
+    onReportUser: ((Long, String, String) -> Unit)? = null,
     onTitleClick: () -> Unit = {},
     compact: Boolean,
 ) {
@@ -364,10 +366,15 @@ internal fun UserProfileSmallTopAppBar(
     val filterMangaLabel = stringResource(R.string.user_filter_manga_only)
     val relatedLabel = stringResource(R.string.user_tab_related)
     val muteLabel = stringResource(R.string.dialog_mute)
+    val reportProblemLabel = stringResource(R.string.action_report_problem)
     val shareTitle = user.name.ifBlank { "@${user.account}" }
     val profileUrl = remember(user.id) { "https://www.pixiv.net/users/${user.id}" }
     var showMoreMenu by remember { mutableStateOf(false) }
+    var showReportDialog by remember(user.id) { mutableStateOf(false) }
 
+    val performHaptic =
+        com.yunfie.illustia.ui.components
+            .rememberHapticFeedbackAction()
     val menuEntries =
         remember(
             sortOrder,
@@ -387,6 +394,8 @@ internal fun UserProfileSmallTopAppBar(
             filterMangaLabel,
             relatedLabel,
             muteLabel,
+            reportProblemLabel,
+            onReportUser,
         ) {
             listOf(
                 DropdownEntry(
@@ -399,17 +408,26 @@ internal fun UserProfileSmallTopAppBar(
                                         DropdownItem(
                                             text = sortNewestLabel,
                                             selected = sortOrder == UserWorkSortOrder.Newest,
-                                            onClick = { onSortOrderChange(UserWorkSortOrder.Newest) },
+                                            onClick = {
+                                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                                onSortOrderChange(UserWorkSortOrder.Newest)
+                                            },
                                         ),
                                         DropdownItem(
                                             text = sortOldestLabel,
                                             selected = sortOrder == UserWorkSortOrder.Oldest,
-                                            onClick = { onSortOrderChange(UserWorkSortOrder.Oldest) },
+                                            onClick = {
+                                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                                onSortOrderChange(UserWorkSortOrder.Oldest)
+                                            },
                                         ),
                                         DropdownItem(
                                             text = sortPopularLabel,
                                             selected = sortOrder == UserWorkSortOrder.MostBookmarks,
-                                            onClick = { onSortOrderChange(UserWorkSortOrder.MostBookmarks) },
+                                            onClick = {
+                                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                                onSortOrderChange(UserWorkSortOrder.MostBookmarks)
+                                            },
                                         ),
                                     ),
                             ),
@@ -420,17 +438,26 @@ internal fun UserProfileSmallTopAppBar(
                                         DropdownItem(
                                             text = filterAllLabel,
                                             selected = typeFilter == UserWorkTypeFilter.All,
-                                            onClick = { onTypeFilterChange(UserWorkTypeFilter.All) },
+                                            onClick = {
+                                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                                onTypeFilterChange(UserWorkTypeFilter.All)
+                                            },
                                         ),
                                         DropdownItem(
                                             text = filterIllustLabel,
                                             selected = typeFilter == UserWorkTypeFilter.IllustOnly,
-                                            onClick = { onTypeFilterChange(UserWorkTypeFilter.IllustOnly) },
+                                            onClick = {
+                                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                                onTypeFilterChange(UserWorkTypeFilter.IllustOnly)
+                                            },
                                         ),
                                         DropdownItem(
                                             text = filterMangaLabel,
                                             selected = typeFilter == UserWorkTypeFilter.MangaOnly,
-                                            onClick = { onTypeFilterChange(UserWorkTypeFilter.MangaOnly) },
+                                            onClick = {
+                                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                                onTypeFilterChange(UserWorkTypeFilter.MangaOnly)
+                                            },
                                         ),
                                     ),
                             ),
@@ -438,7 +465,7 @@ internal fun UserProfileSmallTopAppBar(
                 ),
                 DropdownEntry(
                     items =
-                        listOf(
+                        listOfNotNull(
                             DropdownItem(
                                 text = shareLabel,
                                 onClick = {
@@ -463,6 +490,14 @@ internal fun UserProfileSmallTopAppBar(
                                     onBack()
                                 },
                             ),
+                            if (onReportUser != null) {
+                                DropdownItem(
+                                    text = reportProblemLabel,
+                                    onClick = { showReportDialog = true },
+                                )
+                            } else {
+                                null
+                            },
                         ),
                 ),
             )
@@ -527,7 +562,10 @@ internal fun UserProfileSmallTopAppBar(
         ) {
             HeaderOverlayIcon(
                 icon = MiuixIcons.Back,
-                onClick = onBack,
+                onClick = {
+                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                    onBack()
+                },
                 backgroundColor = buttonBgColor,
                 contentColor = buttonContentColor,
             )
@@ -543,7 +581,10 @@ internal fun UserProfileSmallTopAppBar(
             Box {
                 HeaderOverlayIcon(
                     icon = MiuixIcons.More,
-                    onClick = { showMoreMenu = true },
+                    onClick = {
+                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                        showMoreMenu = true
+                    },
                     backgroundColor = buttonBgColor,
                     contentColor = buttonContentColor,
                 )
@@ -554,6 +595,17 @@ internal fun UserProfileSmallTopAppBar(
                 )
             }
         }
+    }
+
+    if (onReportUser != null) {
+        ReportProblemDialog(
+            show = showReportDialog,
+            targetTitle = user.name.ifBlank { "@${user.account}" },
+            onDismiss = { showReportDialog = false },
+            onSubmit = { problemType, message ->
+                onReportUser(user.id, problemType, message)
+            },
+        )
     }
 }
 
@@ -657,6 +709,9 @@ internal fun UserProfileTabs(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
 ) {
+    val performHaptic =
+        com.yunfie.illustia.ui.components
+            .rememberHapticFeedbackAction()
     val tabs =
         listOf(
             stringResource(R.string.user_tab_works),
@@ -667,7 +722,12 @@ internal fun UserProfileTabs(
         modifier = modifier.fillMaxWidth(),
         tabs = tabs,
         selectedTabIndex = selectedTab,
-        onTabSelected = onTabSelected,
+        onTabSelected = { index ->
+            if (index != selectedTab) {
+                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+            }
+            onTabSelected(index)
+        },
         listState = listState,
     )
 }

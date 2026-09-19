@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import top.yukonga.miuix.kmp.basic.Icon
@@ -52,6 +54,7 @@ fun ShortsFeedScreen(
     onOpenComments: (Long) -> Unit,
 ) {
     val context = LocalContext.current
+    val performHaptic = rememberHapticFeedbackAction()
     val shareLabel = stringResource(R.string.action_share)
     val initialPage =
         remember(items, currentIllustId) {
@@ -64,9 +67,14 @@ fun ShortsFeedScreen(
         )
 
     LaunchedEffect(pagerState, items) {
+        var isFirstCollection = true
         snapshotFlow { pagerState.currentPage }
             .distinctUntilChanged()
             .collect { page ->
+                if (!isFirstCollection) {
+                    performHaptic(AppHapticEffect.Toggle)
+                }
+                isFirstCollection = false
                 items.getOrNull(page)?.let {
                     viewModel.updateShortsFeedCurrentIllust(it.id)
                 }
@@ -108,7 +116,10 @@ fun ShortsFeedScreen(
                             .background(Color.Black)
                             .combinedClickable(
                                 onClick = { viewModel.openIllust(illust) },
-                                onLongClick = { viewModel.onIllustLongPress(illust) },
+                                onLongClick = {
+                                    performHaptic(AppHapticEffect.Click)
+                                    viewModel.onIllustLongPress(illust)
+                                },
                             ),
                 ) {
                     PixivImage(
@@ -159,7 +170,10 @@ fun ShortsFeedScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         IconButton(
-                            onClick = { viewModel.toggleBookmark(illust) },
+                            onClick = {
+                                performHaptic(AppHapticEffect.Toggle)
+                                viewModel.toggleBookmark(illust)
+                            },
                             modifier = Modifier.size(64.dp),
                             backgroundColor = Color.Black.copy(alpha = 0.56f),
                         ) {
@@ -171,7 +185,10 @@ fun ShortsFeedScreen(
                             )
                         }
                         IconButton(
-                            onClick = { onOpenComments(illust.id) },
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                onOpenComments(illust.id)
+                            },
                             modifier = Modifier.size(64.dp),
                             backgroundColor = Color.Black.copy(alpha = 0.56f),
                         ) {
@@ -184,6 +201,7 @@ fun ShortsFeedScreen(
                         }
                         IconButton(
                             onClick = {
+                                performHaptic(AppHapticEffect.Click)
                                 val intent =
                                     Intent(Intent.ACTION_SEND).apply {
                                         type = "text/plain"

@@ -589,4 +589,50 @@ abstract class IllustiaDetailProfileModule(
     fun unmuteTag(tag: String) {
         updateSettings { it.copy(mutedTags = it.mutedTags.filterNot { mutedTag -> mutedTag == tag }) }
     }
+
+    fun reportIllust(
+        illustId: Long,
+        problemType: String?,
+        message: String?,
+        onComplete: ((Boolean) -> Unit)? = null,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.reportIllust(illustId, problemType, message)
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(message = str(R.string.msg_report_submitted)) }
+                    onComplete?.invoke(true)
+                }
+            } catch (expectedFailure: Exception) {
+                if (isCancellation(expectedFailure)) throw expectedFailure
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(message = cleanErrorMessage(expectedFailure, str(R.string.msg_report_failed))) }
+                    onComplete?.invoke(false)
+                }
+            }
+        }
+    }
+
+    fun reportUser(
+        userId: Long,
+        problemType: String?,
+        message: String?,
+        onComplete: ((Boolean) -> Unit)? = null,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.reportUser(userId, problemType, message)
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(message = str(R.string.msg_report_submitted)) }
+                    onComplete?.invoke(true)
+                }
+            } catch (expectedFailure: Exception) {
+                if (isCancellation(expectedFailure)) throw expectedFailure
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(message = cleanErrorMessage(expectedFailure, str(R.string.msg_report_failed))) }
+                    onComplete?.invoke(false)
+                }
+            }
+        }
+    }
 }

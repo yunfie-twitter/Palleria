@@ -25,6 +25,7 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
@@ -199,6 +200,7 @@ internal fun AppOverlayHost(
             val userSheetBackground = LocalBottomSheetBackgroundColor.current
             val userSheetHeight = minOf(configuration.screenHeightDp.dp * 0.68f, 560.dp)
             var showRelatedUsers by remember(user.id) { mutableStateOf(false) }
+            var showReportUserSheet by remember(user.id) { mutableStateOf(false) }
             val shareLabel = stringResource(R.string.detail_share)
             val shareFailedMessage = stringResource(R.string.error_share_failed)
             val shareTitle = user.name.ifBlank { "@${user.account}" }
@@ -253,6 +255,10 @@ internal fun AppOverlayHost(
                                                     viewModel.closeUser()
                                                 },
                                             ),
+                                            DropdownItem(
+                                                text = stringResource(R.string.action_report_problem),
+                                                onClick = { showReportUserSheet = true },
+                                            ),
                                         ),
                                 ),
                         ) {
@@ -291,6 +297,7 @@ internal fun AppOverlayHost(
                     onToggleFollow = { viewModel.toggleFollow(user) },
                     onMuteUser = { viewModel.muteUser(user.id) },
                     onMessage = viewModel::showMessage,
+                    onReportUser = viewModel::reportUser,
                     isMuted =
                         appState.state.settings.mutedUsers
                             .contains(user.id),
@@ -323,6 +330,15 @@ internal fun AppOverlayHost(
                     onLoadMore = viewModel::loadMoreSelectedRelatedUsers,
                 )
             }
+
+            ReportProblemDialog(
+                show = showReportUserSheet,
+                targetTitle = user.name.ifBlank { "@${user.account}" },
+                onDismiss = { showReportUserSheet = false },
+                onSubmit = { problemType, message ->
+                    viewModel.reportUser(user.id, problemType, message)
+                },
+            )
         }
     }
 
