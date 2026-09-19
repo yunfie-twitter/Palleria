@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Kirim laporan</string>
     <string name="msg_report_submitted">Laporan berhasil dikirim</string>
     <string name="msg_report_failed">Gagal mengirim laporan</string>
+    <string name="experimental_app_icon">Ikon Aplikasi</string>
+    <string name="experimental_app_icon_desc">Ubah desain ikon aplikasi</string>
+    <string name="experimental_app_icon_default">Default</string>
+    <string name="experimental_app_icon_cat">Kucing (Cat)</string>
 </resources>

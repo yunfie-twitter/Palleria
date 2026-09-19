@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Отправить жалобу</string>
     <string name="msg_report_submitted">Жалоба успешно отправлена</string>
     <string name="msg_report_failed">Не удалось отправить жалобу</string>
+    <string name="experimental_app_icon">Значок приложения</string>
+    <string name="experimental_app_icon_desc">Изменить дизайн значка приложения</string>
+    <string name="experimental_app_icon_default">По умолчанию</string>
+    <string name="experimental_app_icon_cat">Котик (Cat)</string>
 </resources>

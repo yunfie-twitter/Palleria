@@ -101,6 +101,20 @@ fun ExperimentalSettingsScreen(
                             onCheckedChange = viewModel::updateUserProfileBottomSheetEnabled,
                             summary = stringResource(R.string.general_user_profile_bottom_sheet_desc),
                         )
+                        DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.experimental_app_icon),
+                            summary = stringResource(R.string.experimental_app_icon_desc),
+                            selected = state.settings.appIconVariant,
+                            values = listOf("default", "cat"),
+                            label = { variant ->
+                                when (variant) {
+                                    "cat" -> stringResource(R.string.experimental_app_icon_cat)
+                                    else -> stringResource(R.string.experimental_app_icon_default)
+                                }
+                            },
+                            onSelect = viewModel::updateAppIconVariant,
+                        )
                     }
                 }
             }

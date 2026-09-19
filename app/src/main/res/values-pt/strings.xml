@@ -1006,4 +1006,8 @@
     <string name="action_submit_report">Enviar denúncia</string>
     <string name="msg_report_submitted">Denúncia enviada com sucesso</string>
     <string name="msg_report_failed">Falha ao enviar denúncia</string>
+    <string name="experimental_app_icon">Ícone do aplicativo</string>
+    <string name="experimental_app_icon_desc">Alterar o design do ícone do aplicativo</string>
+    <string name="experimental_app_icon_default">Padrão</string>
+    <string name="experimental_app_icon_cat">Gato (Cat)</string>
 </resources>

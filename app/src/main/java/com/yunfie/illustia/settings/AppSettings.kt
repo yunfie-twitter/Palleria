@@ -55,6 +55,7 @@ data class AppSettings(
     val swipeToSwitchWorks: Boolean = true,
     val secureWindow: Boolean = false,
     val amoledMode: Boolean = false,
+    val appIconVariant: String = "default",
     val navigationOrder: List<String> = DEFAULT_NAVIGATION_ORDER,
     val hiddenNavigationTabs: List<String> = emptyList(),
     val navigationStyle: String = "standard",
