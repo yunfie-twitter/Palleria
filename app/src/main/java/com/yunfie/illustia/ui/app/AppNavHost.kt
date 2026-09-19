@@ -71,6 +71,7 @@ internal fun AppNavHost(
     viewModel: IllustiaViewModel,
     backStack: MutableList<NavKey>,
     detailSnapshots: Map<Long, DetailEntrySnapshot>,
+    searchSnapshots: Map<String, SearchEntrySnapshot> = emptyMap(),
     selectedTab: AppTab,
     pagerState: androidx.compose.foundation.pager.PagerState,
     homeScrollBehavior: ScrollBehavior,
@@ -135,29 +136,91 @@ internal fun AppNavHost(
             }
             entry<AppRoute.TagSearch>(
                 metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
-            ) {
+            ) { route ->
+                val query = route.word
+                val isCurrentActive = appState.state.activeSearchWord == query
+                val snapshot =
+                    if (isCurrentActive) {
+                        SearchEntrySnapshot(
+                            query = query,
+                            searchItems = appState.state.searchItems,
+                            searchNextUrl = appState.state.searchNextUrl,
+                            searchNovelItems = appState.state.searchNovelItems,
+                            searchNovelNextUrl = appState.state.searchNovelNextUrl,
+                            userSearchItems = appState.state.userSearchItems,
+                            userSearchNextUrl = appState.state.userSearchNextUrl,
+                        )
+                    } else {
+                        searchSnapshots[query]
+                    }
+                val effectiveState =
+                    if (isCurrentActive) {
+                        appState.state
+                    } else {
+                        appState.state.copy(
+                            activeSearchWord = query,
+                            searchDraft = query,
+                            searchItems = snapshot?.searchItems.orEmpty(),
+                            searchNextUrl = snapshot?.searchNextUrl,
+                            searchNovelItems = snapshot?.searchNovelItems.orEmpty(),
+                            searchNovelNextUrl = snapshot?.searchNovelNextUrl,
+                            userSearchItems = snapshot?.userSearchItems.orEmpty(),
+                            userSearchNextUrl = snapshot?.userSearchNextUrl,
+                        )
+                    }
                 SearchScreen(
-                    state = appState.state,
+                    state = effectiveState,
                     viewModel = viewModel,
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
-                    onNavigateToResults = { query ->
-                        viewModel.submitSearch(query)
-                        onNavigate(AppRoute.SearchResults(query))
+                    onNavigateToResults = { nextQuery ->
+                        viewModel.submitSearch(nextQuery)
+                        onNavigate(AppRoute.SearchResults(nextQuery))
                     },
                 )
             }
             entry<AppRoute.SearchResults>(
                 metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
-            ) {
+            ) { route ->
+                val query = route.query
+                val isCurrentActive = appState.state.activeSearchWord == query
+                val snapshot =
+                    if (isCurrentActive) {
+                        SearchEntrySnapshot(
+                            query = query,
+                            searchItems = appState.state.searchItems,
+                            searchNextUrl = appState.state.searchNextUrl,
+                            searchNovelItems = appState.state.searchNovelItems,
+                            searchNovelNextUrl = appState.state.searchNovelNextUrl,
+                            userSearchItems = appState.state.userSearchItems,
+                            userSearchNextUrl = appState.state.userSearchNextUrl,
+                        )
+                    } else {
+                        searchSnapshots[query]
+                    }
+                val effectiveState =
+                    if (isCurrentActive) {
+                        appState.state
+                    } else {
+                        appState.state.copy(
+                            activeSearchWord = query,
+                            searchDraft = query,
+                            searchItems = snapshot?.searchItems.orEmpty(),
+                            searchNextUrl = snapshot?.searchNextUrl,
+                            searchNovelItems = snapshot?.searchNovelItems.orEmpty(),
+                            searchNovelNextUrl = snapshot?.searchNovelNextUrl,
+                            userSearchItems = snapshot?.userSearchItems.orEmpty(),
+                            userSearchNextUrl = snapshot?.userSearchNextUrl,
+                        )
+                    }
                 SearchScreen(
-                    state = appState.state,
+                    state = effectiveState,
                     viewModel = viewModel,
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
-                    onNavigateToResults = { query ->
-                        viewModel.submitSearch(query)
-                        onNavigate(AppRoute.SearchResults(query))
+                    onNavigateToResults = { nextQuery ->
+                        viewModel.submitSearch(nextQuery)
+                        onNavigate(AppRoute.SearchResults(nextQuery))
                     },
                 )
             }

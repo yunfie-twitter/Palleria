@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.settings.AppSettings
@@ -184,4 +186,14 @@ internal data class DetailEntrySnapshot(
     val relatedIllusts: List<Illust> = emptyList(),
     val firstComment: Comment? = null,
     val user: UserProfile? = null,
+)
+
+internal data class SearchEntrySnapshot(
+    val query: String,
+    val searchItems: List<Illust> = emptyList(),
+    val searchNextUrl: String? = null,
+    val searchNovelItems: List<NovelPreview> = emptyList(),
+    val searchNovelNextUrl: String? = null,
+    val userSearchItems: List<UserPreview> = emptyList(),
+    val userSearchNextUrl: String? = null,
 )
