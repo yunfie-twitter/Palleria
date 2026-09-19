@@ -26,6 +26,19 @@ enum class AppHapticEffect {
     Error,
 }
 
+@androidx.compose.runtime.Composable
+fun rememberHapticFeedbackAction(): (AppHapticEffect) -> Unit {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
+
+    return androidx.compose.runtime.remember(context, hapticFeedback, hapticMode) {
+        { effect ->
+            performAppHapticFeedback(context, hapticFeedback, hapticMode, effect)
+        }
+    }
+}
+
 fun performAppHapticFeedback(
     context: Context,
     hapticFeedback: HapticFeedback,

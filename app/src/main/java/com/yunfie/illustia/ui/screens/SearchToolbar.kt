@@ -10,6 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.SearchBar
@@ -28,6 +30,7 @@ fun SearchToolbar(
     suggestions: List<String> = emptyList(),
     historyCount: Int = 0,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     SearchBar(
         inputField = {
             InputField(
@@ -83,7 +86,10 @@ fun SearchToolbar(
                 BasicComponent(
                     title = suggestion,
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onSuggestionClick(suggestion) },
+                    onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onSuggestionClick(suggestion)
+                    },
                 )
             }
             if (suggestedItems.isNotEmpty()) {
@@ -99,7 +105,10 @@ fun SearchToolbar(
                 BasicComponent(
                     title = suggestion,
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onSuggestionClick(suggestion) },
+                    onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onSuggestionClick(suggestion)
+                    },
                 )
             }
         }

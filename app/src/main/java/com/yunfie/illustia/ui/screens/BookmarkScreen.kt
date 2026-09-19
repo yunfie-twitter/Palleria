@@ -29,9 +29,9 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
-import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
@@ -115,9 +115,7 @@ fun BookmarkScreen(
     }
 
     val scrollBehavior = MiuixScrollBehavior()
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    val hapticMode = LocalAppHapticMode.current
+    val performHaptic = rememberHapticFeedbackAction()
 
     Column(
         modifier =
@@ -134,6 +132,7 @@ fun BookmarkScreen(
                     RestrictPill(
                         restrict = settings.bookmarkRestrict,
                         onClick = {
+                            performHaptic(AppHapticEffect.Toggle)
                             val next =
                                 if (settings.bookmarkRestrict == Restrict.Public) {
                                     Restrict.Private
@@ -155,7 +154,7 @@ fun BookmarkScreen(
                     Box {
                         IconButton(
                             onClick = {
-                                performAppHapticFeedback(context, haptic, hapticMode)
+                                performHaptic(AppHapticEffect.Click)
                                 showSortPopup = true
                             },
                         ) {
@@ -177,7 +176,7 @@ fun BookmarkScreen(
                                         isSelected = followingUserSort.ordinal == index,
                                         index = index,
                                         onSelectedIndexChange = {
-                                            performAppHapticFeedback(context, haptic, hapticMode)
+                                            performHaptic(AppHapticEffect.Toggle)
                                             followingUserSort = FollowingUserSort.entries[index]
                                             showSortPopup = false
                                         },
@@ -188,7 +187,7 @@ fun BookmarkScreen(
                     }
                 }
                 IconButton(onClick = {
-                    performAppHapticFeedback(context, haptic, hapticMode)
+                    performHaptic(AppHapticEffect.Click)
                     when (selectedTopTab) {
                         0 -> viewModel.refreshTimeline(forceRefresh = true)
                         2 -> coroutineScope.launch { watchlistStore.fetch() }
@@ -207,7 +206,12 @@ fun BookmarkScreen(
             bottomContent = {
                 CompactBookmarkTabs(
                     selectedTab = selectedTopTab,
-                    onSelect = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                    onSelect = { index ->
+                        if (index != selectedTopTab) {
+                            performHaptic(AppHapticEffect.Toggle)
+                        }
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
                 )
             },

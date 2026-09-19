@@ -58,8 +58,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -186,6 +188,8 @@ fun ImageViewerScreen(
 
     PredictiveBackGestureHandler(onBack = onBack)
 
+    val performHaptic = rememberHapticFeedbackAction()
+
     Scaffold(
         containerColor = Color.Black,
         contentWindowInsets = WindowInsets(0),
@@ -199,7 +203,10 @@ fun ImageViewerScreen(
                     titleColor = Color.White,
                     modifier = Modifier.padding(top = safeTop),
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onBack()
+                        }) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
                                 contentDescription = stringResource(R.string.action_close),
@@ -267,7 +274,10 @@ fun ImageViewerScreen(
                                     ),
                             contentAlignment = Alignment.Center,
                         ) {
-                            IconButton(onClick = onBookmark) {
+                            IconButton(onClick = {
+                                performHaptic(AppHapticEffect.Toggle)
+                                onBookmark()
+                            }) {
                                 Icon(
                                     imageVector = if (isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
                                     contentDescription = stringResource(R.string.action_bookmark),
@@ -283,7 +293,10 @@ fun ImageViewerScreen(
                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest),
                             contentAlignment = Alignment.Center,
                         ) {
-                            IconButton(onClick = { shareCurrentPage() }) {
+                            IconButton(onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                shareCurrentPage()
+                            }) {
                                 Icon(
                                     imageVector = MiuixIcons.Share,
                                     contentDescription = stringResource(R.string.action_share),

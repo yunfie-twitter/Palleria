@@ -645,20 +645,21 @@ fun TagTile(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    val hapticMode = LocalAppHapticMode.current
+    val performHaptic = rememberHapticFeedbackAction()
     Card(
         modifier =
             modifier
                 .aspectRatio(1f)
                 .combinedClickable(
-                    onClick = onClick,
+                    onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        onClick()
+                    },
                     role = Role.Button,
                     onLongClick =
                         onLongClick?.let { longClick ->
                             {
-                                performAppHapticFeedback(context, haptic, hapticMode)
+                                performHaptic(AppHapticEffect.Click)
                                 longClick()
                             }
                         },

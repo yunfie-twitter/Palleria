@@ -212,6 +212,9 @@ fun UserProfileScreen(
         )
     }
 
+    val performHaptic =
+        com.yunfie.illustia.ui.components
+            .rememberHapticFeedbackAction()
     val toggleFollow = {
         if (user.isFollowed) {
             showUnfollowConfirm = true
@@ -221,6 +224,9 @@ fun UserProfileScreen(
         }
     }
     val selectTab: (Int) -> Unit = { index ->
+        if (index != selectedTab) {
+            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+        }
         coroutineScope.launch { pagerState.animateScrollToPage(index) }
     }
     val scrollToTop: () -> Unit = {

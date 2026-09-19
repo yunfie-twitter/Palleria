@@ -236,8 +236,10 @@ fun <T> SettingDropdownRow(
     icon: ImageVector? = null,
     dialogButtonString: String? = null,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     val selectedIndex = values.indexOf(selected).coerceAtLeast(0)
     val onSelectedIndexChange: (Int) -> Unit = { index ->
+        performHaptic(AppHapticEffect.Toggle)
         values.getOrNull(index)?.let(onSelect)
     }
     val startAction: (@Composable () -> Unit)? =
@@ -280,6 +282,7 @@ fun SettingSwitchRow(
     icon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     BasicComponent(
         title = title,
         summary = summary,
@@ -293,13 +296,24 @@ fun SettingSwitchRow(
         endActions = {
             Switch(
                 checked = checked,
-                onCheckedChange = if (enabled) onCheckedChange else null,
+                onCheckedChange =
+                    if (enabled) {
+                        {
+                            performHaptic(AppHapticEffect.Toggle)
+                            onCheckedChange(it)
+                        }
+                    } else {
+                        null
+                    },
                 enabled = enabled,
             )
         },
         onClick =
             if (enabled) {
-                { onCheckedChange(!checked) }
+                {
+                    performHaptic(AppHapticEffect.Toggle)
+                    onCheckedChange(!checked)
+                }
             } else {
                 null
             },
@@ -317,6 +331,7 @@ fun <T> ChoiceRow(
     modifier: Modifier = Modifier,
     columns: Int = 3,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     val safeColumns = columns.coerceAtLeast(1)
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         values.chunked(safeColumns).forEach { row ->
@@ -327,7 +342,12 @@ fun <T> ChoiceRow(
                 row.forEach { value ->
                     val isSelected = value == selected
                     Button(
-                        onClick = { onSelect(value) },
+                        onClick = {
+                            if (!isSelected) {
+                                performHaptic(AppHapticEffect.Toggle)
+                            }
+                            onSelect(value)
+                        },
                         modifier = Modifier.weight(1f),
                         colors =
                             if (isSelected) {
@@ -364,9 +384,7 @@ fun <T> FlowButtons(
     onClick: (T) -> Unit,
     onLongClick: ((T) -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    val hapticMode = LocalAppHapticMode.current
+    val performHaptic = rememberHapticFeedbackAction()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         values.chunked(3).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -376,12 +394,15 @@ fun <T> FlowButtons(
                             Modifier
                                 .weight(1f)
                                 .combinedClickable(
-                                    onClick = { onClick(value) },
+                                    onClick = {
+                                        performHaptic(AppHapticEffect.Click)
+                                        onClick(value)
+                                    },
                                     role = Role.Button,
                                     onLongClick =
                                         onLongClick?.let { longClick ->
                                             {
-                                                performAppHapticFeedback(context, haptic, hapticMode)
+                                                performHaptic(AppHapticEffect.Click)
                                                 longClick(value)
                                             }
                                         },

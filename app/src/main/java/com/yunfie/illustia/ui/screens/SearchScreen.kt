@@ -59,11 +59,13 @@ import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGridSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -216,6 +218,7 @@ fun SearchScreen(
     }
 
     val scheme = MiuixTheme.colorScheme
+    val performHaptic = rememberHapticFeedbackAction()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = scheme.surface,
@@ -234,7 +237,10 @@ fun SearchScreen(
                 ) {
                     HeaderIcon(
                         MiuixIcons.Back,
-                        onClick = onBackFromResults ?: onClearResults,
+                        onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            (onBackFromResults ?: onClearResults).invoke()
+                        },
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(
@@ -272,7 +278,10 @@ fun SearchScreen(
                 ) {
                     HeaderIcon(
                         MiuixIcons.Back,
-                        onClick = onBack,
+                        onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onBack()
+                        },
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(
@@ -377,6 +386,8 @@ private fun SearchResultsArea(
         }
     }
 
+    val performHaptic = rememberHapticFeedbackAction()
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 2.dp, bottom = 2.dp),
@@ -387,11 +398,17 @@ private fun SearchResultsArea(
                 tabs = tabs,
                 selectedTabIndex = selectedResultTab,
                 onTabSelected = { index ->
+                    if (index != selectedResultTab) {
+                        performHaptic(AppHapticEffect.Toggle)
+                    }
                     coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
                 },
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = { showOptionsSheet = true }) {
+            IconButton(onClick = {
+                performHaptic(AppHapticEffect.Click)
+                showOptionsSheet = true
+            }) {
                 Icon(
                     imageVector = MiuixIcons.Filter,
                     contentDescription = stringResource(R.string.search_options),
