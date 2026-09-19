@@ -53,17 +53,21 @@ fun SearchToolbar(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            val query = value.trim().removePrefix("#")
+            val query =
+                value
+                    .trim()
+                    .removePrefix("#")
+                    .removePrefix("＃")
+                    .trim()
             val showLiveSuggestions = query.length >= 2
             val shownHistoryCount = historyCount.coerceAtMost(6)
             val historyItems = if (showLiveSuggestions) emptyList() else suggestions.take(shownHistoryCount)
             val suggestedItems =
                 if (showLiveSuggestions) {
-                    suggestions
-                        .drop(shownHistoryCount)
-                        .filter { it.contains(query, ignoreCase = true) }
-                        .ifEmpty { listOf(query) }
-                        .take(8)
+                    val nonHistory = suggestions.drop(shownHistoryCount)
+                    val matching = nonHistory.filter { it.contains(query, ignoreCase = true) }
+                    val combined = (matching + nonHistory).distinct()
+                    combined.ifEmpty { listOf(query) }.take(8)
                 } else {
                     emptyList()
                 }

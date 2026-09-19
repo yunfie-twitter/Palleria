@@ -64,8 +64,10 @@ abstract class IllustiaBookmarkModule(
         runLoading {
             val page = repository.nextUserSearchPage(nextUrl)
             _uiState.update {
+                val mutedUsers = it.mutedUsersSet
+                val filteredItems = page.items.filterNot { item -> item.id in mutedUsers }
                 it.copy(
-                    userSearchItems = it.userSearchItems.appendUserPreviews(page.items),
+                    userSearchItems = it.userSearchItems.appendUserPreviews(filteredItems),
                     userSearchNextUrl = page.nextUrl,
                 )
             }

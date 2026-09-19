@@ -11,12 +11,14 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Authentication, native intents, search, feeds, timelines, and managed-data transfer. */
+@Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaAuthFeedModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
@@ -371,6 +373,54 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
+    private fun handleSearchIntent(normalized: String): Boolean {
+        val event = NativeIntentRouter.parseText(normalized) ?: return false
+        return when (event) {
+            is NativeIntentEvent.Artwork -> {
+                _uiState.update { it.copy(searchDraft = "") }
+                openIllust(event.id)
+                true
+            }
+
+            is NativeIntentEvent.User -> {
+                _uiState.update { it.copy(searchDraft = "") }
+                openUserPage(event.id)
+                true
+            }
+
+            else -> {
+                false
+            }
+        }
+    }
+
+    private fun updateSearchStateBeforeQuery(
+        normalized: String,
+        forceRefresh: Boolean,
+    ) {
+        if (!forceRefresh) {
+            _uiState.update {
+                it.copy(
+                    searchDraft = normalized,
+                    activeSearchWord = normalized,
+                    searchItems = emptyList(),
+                    searchNextUrl = null,
+                    searchNovelItems = emptyList(),
+                    searchNovelNextUrl = null,
+                    userSearchItems = emptyList(),
+                    userSearchNextUrl = null,
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    searchDraft = normalized,
+                    activeSearchWord = normalized,
+                )
+            }
+        }
+    }
+
     override fun submitSearch(
         word: String,
         forceRefresh: Boolean,
@@ -380,23 +430,8 @@ abstract class IllustiaAuthFeedModule(
             clearSearchResults()
             return
         }
-        when (val event = NativeIntentRouter.parseText(normalized)) {
-            is NativeIntentEvent.Artwork -> {
-                _uiState.update { it.copy(searchDraft = "") }
-                openIllust(event.id)
-                return
-            }
+        if (handleSearchIntent(normalized)) return
 
-            is NativeIntentEvent.User -> {
-                _uiState.update { it.copy(searchDraft = "") }
-                openUserPage(event.id)
-                return
-            }
-
-            else -> {
-                Unit
-            }
-        }
         val settings = _uiState.value.settings
         if (settings.saveSearchHistory) {
             val history =
@@ -406,115 +441,9 @@ abstract class IllustiaAuthFeedModule(
             updateSettings { it.copy(searchHistory = history) }
         }
         searchSnapshot = snapshotSearchState()
-        _uiState.update {
-            it.copy(
-                searchDraft = normalized,
-                activeSearchWord = normalized,
-                searchItems = emptyList(),
-                searchNextUrl = null,
-                searchNovelItems = emptyList(),
-                searchNovelNextUrl = null,
-                userSearchItems = emptyList(),
-                userSearchNextUrl = null,
-            )
-        }
+        updateSearchStateBeforeQuery(normalized, forceRefresh)
         searchJob?.cancel()
-        val job =
-            viewModelScope.launch(Dispatchers.IO) {
-                _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
-                try {
-                    kotlinx.coroutines.coroutineScope {
-                        val currentSettings = _uiState.value.settings
-                        val workType = currentSettings.searchWorkType
-                        val pageDeferred =
-                            if (!workType.isNovel) {
-                                async {
-                                    repository.search(
-                                        word = normalized,
-                                        sort = currentSettings.searchSort,
-                                        target = currentSettings.searchTarget,
-                                        duration = currentSettings.searchDuration,
-                                        bookmarkFilter = currentSettings.searchBookmarkFilter,
-                                        includeR18 = currentSettings.allowR18,
-                                        forceRefresh = forceRefresh,
-                                    )
-                                }
-                            } else {
-                                null
-                            }
-                        val novelPageDeferred =
-                            if (workType.isNovel) {
-                                async {
-                                    repository.searchNovels(
-                                        word = normalized,
-                                        sort = currentSettings.searchSort,
-                                        target = currentSettings.searchTarget,
-                                        duration = currentSettings.searchDuration,
-                                        bookmarkFilter = currentSettings.searchBookmarkFilter,
-                                        includeR18 = currentSettings.allowR18,
-                                        forceRefresh = forceRefresh,
-                                    )
-                                }
-                            } else {
-                                null
-                            }
-                        val usersDeferred =
-                            if (currentSettings.searchUsersEnabled) {
-                                async { repository.searchUsers(normalized, forceRefresh = forceRefresh) }
-                            } else {
-                                null
-                            }
-
-                        val page = pageDeferred?.await()
-                        val novelPage = novelPageDeferred?.await()
-                        val users = usersDeferred?.await()
-
-                        _uiState.update {
-                            it.copy(
-                                searchItems =
-                                    page
-                                        ?.items
-                                        ?.filter { illust -> workType.acceptsIllustType(illust.type) }
-                                        ?.visibleWithMutedTagsVisible(it.settings)
-                                        .orEmpty(),
-                                searchNextUrl = page?.nextUrl,
-                                searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
-                                searchNovelNextUrl = novelPage?.nextUrl,
-                                userSearchItems = users?.items.orEmpty(),
-                                userSearchNextUrl = users?.nextUrl,
-                                loadState = LoadState.Loaded,
-                            )
-                        }
-                    }
-                    searchSnapshot = null
-                } catch (expectedFailure: Exception) {
-                    val error = expectedFailure
-                    if (isCancellation(error)) throw error
-                    if (handleAuthExpired(error)) return@launch
-                    val snapshot = searchSnapshot
-                    if (snapshot != null) {
-                        _uiState.update {
-                            it.copy(
-                                searchDraft = snapshot.searchDraft,
-                                activeSearchWord = snapshot.activeSearchWord,
-                                searchItems = snapshot.searchItems,
-                                searchNextUrl = snapshot.searchNextUrl,
-                                searchNovelItems = snapshot.searchNovelItems,
-                                searchNovelNextUrl = snapshot.searchNovelNextUrl,
-                                userSearchItems = snapshot.userSearchItems,
-                                userSearchNextUrl = snapshot.userSearchNextUrl,
-                                loadState = LoadState.Error(loadFailureMessage(it, error)),
-                            )
-                        }
-                    } else {
-                        _uiState.update {
-                            it.copy(
-                                loadState = LoadState.Error(loadFailureMessage(it, error)),
-                            )
-                        }
-                    }
-                }
-            }
+        val job = executeSearchJob(normalized, forceRefresh)
         searchJob = job
         job.invokeOnCompletion {
             if (searchJob === job) {
@@ -522,6 +451,111 @@ abstract class IllustiaAuthFeedModule(
             }
         }
     }
+
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private fun executeSearchJob(
+        normalized: String,
+        forceRefresh: Boolean,
+    ): Job =
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+            try {
+                kotlinx.coroutines.coroutineScope {
+                    val currentSettings = _uiState.value.settings
+                    val workType = currentSettings.searchWorkType
+                    val pageDeferred =
+                        if (!workType.isNovel) {
+                            async {
+                                repository.search(
+                                    word = normalized,
+                                    sort = currentSettings.searchSort,
+                                    target = currentSettings.searchTarget,
+                                    duration = currentSettings.searchDuration,
+                                    bookmarkFilter = currentSettings.searchBookmarkFilter,
+                                    includeR18 = currentSettings.allowR18,
+                                    forceRefresh = forceRefresh,
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    val novelPageDeferred =
+                        if (workType.isNovel) {
+                            async {
+                                repository.searchNovels(
+                                    word = normalized,
+                                    sort = currentSettings.searchSort,
+                                    target = currentSettings.searchTarget,
+                                    duration = currentSettings.searchDuration,
+                                    bookmarkFilter = currentSettings.searchBookmarkFilter,
+                                    includeR18 = currentSettings.allowR18,
+                                    forceRefresh = forceRefresh,
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    val usersDeferred =
+                        if (currentSettings.searchUsersEnabled) {
+                            async { repository.searchUsers(normalized, forceRefresh = forceRefresh) }
+                        } else {
+                            null
+                        }
+
+                    val page = pageDeferred?.await()
+                    val novelPage = novelPageDeferred?.await()
+                    val users = usersDeferred?.await()
+
+                    _uiState.update {
+                        it.copy(
+                            searchItems =
+                                page
+                                    ?.items
+                                    ?.filter { illust -> workType.acceptsIllustType(illust.type) }
+                                    ?.visibleWithMutedTagsVisible(it.settings)
+                                    .orEmpty(),
+                            searchNextUrl = page?.nextUrl,
+                            searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
+                            searchNovelNextUrl = novelPage?.nextUrl,
+                            userSearchItems =
+                                users
+                                    ?.items
+                                    ?.filterNot { user -> user.id in it.mutedUsersSet }
+                                    .orEmpty(),
+                            userSearchNextUrl = users?.nextUrl,
+                            loadState = LoadState.Loaded,
+                        )
+                    }
+                }
+                searchSnapshot = null
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                val snapshot = searchSnapshot
+                if (snapshot != null) {
+                    _uiState.update {
+                        it.copy(
+                            searchDraft = snapshot.searchDraft,
+                            activeSearchWord = snapshot.activeSearchWord,
+                            searchItems = snapshot.searchItems,
+                            searchNextUrl = snapshot.searchNextUrl,
+                            searchNovelItems = snapshot.searchNovelItems,
+                            searchNovelNextUrl = snapshot.searchNovelNextUrl,
+                            userSearchItems = snapshot.userSearchItems,
+                            userSearchNextUrl = snapshot.userSearchNextUrl,
+                            loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        )
+                    }
+                }
+            }
+        }
 
     fun clearSearchResults() {
         searchJob?.cancel()

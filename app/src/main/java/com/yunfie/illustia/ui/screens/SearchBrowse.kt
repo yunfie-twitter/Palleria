@@ -148,7 +148,11 @@ internal fun BrowseArea(
                                 tag = tag.tag,
                                 imageUrl = tag.imageUrl,
                                 onClick = {
-                                    val query = tag.tag.removePrefix("#")
+                                    val query =
+                                        tag.tag
+                                            .removePrefix("#")
+                                            .removePrefix("＃")
+                                            .trim()
                                     onSearch?.invoke(query) ?: viewModel.submitSearch(query)
                                 },
                                 onLongClick = {

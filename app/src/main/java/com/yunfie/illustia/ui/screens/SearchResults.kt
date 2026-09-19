@@ -79,7 +79,7 @@ internal fun SearchResultGrid(
             }
         }
     PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages)
-    val gridState = viewModel.searchResultGridState
+    val gridState = if (page == 0) viewModel.searchResultGridState else viewModel.userSearchResultGridState
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = state.settings.autoLoadMore,
@@ -117,9 +117,18 @@ internal fun SearchResultGrid(
                         }
                     }
                 }
-                if (state.searchNovelItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyState(stringResource(R.string.search_empty_novel))
+                if (state.searchNovelItems.isEmpty()) {
+                    if (state.loadState is LoadState.Error) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            SearchErrorState(
+                                message = state.loadState.message,
+                                onRetry = { viewModel.submitSearch(forceRefresh = true) },
+                            )
+                        }
+                    } else if (state.loadState != LoadState.Loading) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            EmptyState(stringResource(R.string.search_empty_novel))
+                        }
                     }
                 }
             } else {
@@ -148,9 +157,18 @@ internal fun SearchResultGrid(
                         }
                     }
                 }
-                if (state.searchItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyState(stringResource(R.string.search_empty_illust))
+                if (state.searchItems.isEmpty()) {
+                    if (state.loadState is LoadState.Error) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            SearchErrorState(
+                                message = state.loadState.message,
+                                onRetry = { viewModel.submitSearch(forceRefresh = true) },
+                            )
+                        }
+                    } else if (state.loadState != LoadState.Loading) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            EmptyState(stringResource(R.string.search_empty_illust))
+                        }
                     }
                 }
             }
@@ -158,9 +176,18 @@ internal fun SearchResultGrid(
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
                 UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
-            if (state.userSearchItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.search_empty_user))
+            if (state.userSearchItems.isEmpty()) {
+                if (state.loadState is LoadState.Error) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SearchErrorState(
+                            message = state.loadState.message,
+                            onRetry = { viewModel.submitSearch(forceRefresh = true) },
+                        )
+                    }
+                } else if (state.loadState != LoadState.Loading) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        EmptyState(stringResource(R.string.search_empty_user))
+                    }
                 }
             }
             if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
@@ -174,6 +201,32 @@ internal fun SearchResultGrid(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchErrorState(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = message,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        Button(
+            onClick = onRetry,
+            colors = overlayActionButtonColors(),
+        ) {
+            Text(stringResource(R.string.action_reload))
         }
     }
 }

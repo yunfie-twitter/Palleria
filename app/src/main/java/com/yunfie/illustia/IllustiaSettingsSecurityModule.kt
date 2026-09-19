@@ -349,6 +349,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateHideAiWorks(value: Boolean) {
         updateSettings { it.copy(hideAiWorks = value) }
+        refreshActiveSearch()
     }
 
     fun userProfileGridState(userId: Long): LazyGridState = userProfileGridStates.getOrPut(userId) { LazyGridState() }

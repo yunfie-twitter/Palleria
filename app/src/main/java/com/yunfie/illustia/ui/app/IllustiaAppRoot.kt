@@ -139,6 +139,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             return
         }
         val removed = backStack.removeAt(backStack.lastIndex)
+        val revealed = backStack.lastOrNull()
         when (removed) {
             is AppRoute.Detail -> {
                 if (backStack.none { it == removed }) {
@@ -151,11 +152,15 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.TagSearch -> {
-                viewModel.clearSearchResults()
+                if (revealed !is AppRoute.TagSearch && revealed !is AppRoute.SearchResults) {
+                    viewModel.clearSearchResults()
+                }
             }
 
             is AppRoute.SearchResults -> {
-                viewModel.clearSearchResults()
+                if (revealed !is AppRoute.SearchResults && revealed !is AppRoute.TagSearch) {
+                    viewModel.clearSearchResults()
+                }
             }
 
             AppRoute.NovelList -> {
@@ -180,7 +185,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 Unit
             }
         }
-        when (val revealed = backStack.lastOrNull()) {
+        when (revealed) {
             is AppRoute.Detail -> {
                 val snapshot = detailSnapshots[revealed.illustId]
                 if (snapshot != null) {
@@ -197,6 +202,18 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
 
             is AppRoute.UserProfile -> {
                 viewModel.openUserPage(revealed.userId)
+            }
+
+            is AppRoute.SearchResults -> {
+                if (state.activeSearchWord != revealed.query) {
+                    viewModel.submitSearch(revealed.query)
+                }
+            }
+
+            is AppRoute.TagSearch -> {
+                if (state.activeSearchWord != revealed.word) {
+                    viewModel.submitSearch(revealed.word)
+                }
             }
 
             else -> {

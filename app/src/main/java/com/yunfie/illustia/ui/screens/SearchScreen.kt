@@ -120,11 +120,13 @@ fun SearchScreen(
     }
 
     val liveQuery = (if (searchExpanded) state.searchDraft else state.activeSearchWord).trim()
-    LaunchedEffect(liveQuery) {
-        if (liveQuery.isNotEmpty()) {
+    LaunchedEffect(liveQuery, searchExpanded) {
+        if (searchExpanded && liveQuery.isNotEmpty()) {
             delay(250)
+            suggestionStore.fetch(liveQuery)
+        } else if (!searchExpanded || liveQuery.isEmpty()) {
+            suggestionStore.fetch("")
         }
-        suggestionStore.fetch(liveQuery)
     }
 
     val suggestions =
@@ -147,8 +149,11 @@ fun SearchScreen(
     }
     val onExpandedChange: (Boolean) -> Unit = { expanded ->
         searchExpanded = expanded
-        if (!expanded && state.searchDraft.isBlank()) {
-            onClearResults()
+        if (!expanded) {
+            viewModel.updateSearchDraft(state.activeSearchWord)
+            if (state.activeSearchWord.isBlank()) {
+                onClearResults()
+            }
         }
     }
     val onUpdateDraft: (String) -> Unit = { viewModel.updateSearchDraft(it) }
@@ -157,7 +162,10 @@ fun SearchScreen(
         if (trimmed.isBlank()) {
             onClearResults()
         } else {
-            if (onNavigateToResults != null) {
+            val nativeEvent = NativeIntentRouter.parseText(trimmed)
+            if (nativeEvent is NativeIntentEvent.Artwork || nativeEvent is NativeIntentEvent.User) {
+                viewModel.submitSearch(trimmed)
+            } else if (onNavigateToResults != null) {
                 onNavigateToResults.invoke(trimmed)
             } else {
                 viewModel.submitSearch(trimmed)
@@ -187,7 +195,8 @@ fun SearchScreen(
 
     if (searchExpanded) {
         BackHandler(enabled = true) {
-            if (state.searchDraft.isBlank()) {
+            viewModel.updateSearchDraft(state.activeSearchWord)
+            if (state.activeSearchWord.isBlank()) {
                 onClearResults()
             }
             searchExpanded = false
@@ -198,7 +207,6 @@ fun SearchScreen(
         }
     } else if (onBackFromResults != null) {
         PredictiveBackGestureHandler(enabled = true) {
-            viewModel.clearSearchResults()
             onBackFromResults()
         }
     } else if (onBack != null) {
@@ -344,7 +352,7 @@ private fun SearchResultsArea(
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
-    var showOptionsSheet by remember { mutableStateOf(false) }
+    var showOptionsSheet by rememberSaveable { mutableStateOf(false) }
     val tabIllust = stringResource(R.string.search_tab_illust)
     val tabNovel = stringResource(R.string.search_tab_novel)
     val tabUser = stringResource(R.string.search_tab_user)
