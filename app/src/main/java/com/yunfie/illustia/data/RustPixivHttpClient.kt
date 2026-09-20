@@ -48,9 +48,19 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.models.pixiv.UgoiraZipUrls
 import com.yunfie.illustia.models.pixiv.UserFollowDetail
-import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
+import com.yunfie.illustia.rust.Comment as RustComment
+import com.yunfie.illustia.rust.CommentStamp as RustCommentStamp
+import com.yunfie.illustia.rust.CommentUser as RustCommentUser
+import com.yunfie.illustia.rust.Illust as RustIllust
+import com.yunfie.illustia.rust.MangaSeries as RustMangaSeries
+import com.yunfie.illustia.rust.Notification as RustNotification
+import com.yunfie.illustia.rust.NovelPreview as RustNovelPreview
+import com.yunfie.illustia.rust.ParentComment as RustParentComment
 import com.yunfie.illustia.rust.PixivHttpClient
 import com.yunfie.illustia.rust.PixivRequest
+import com.yunfie.illustia.rust.UgoiraFrame as RustUgoiraFrame
+import com.yunfie.illustia.rust.UserPreview as RustUserPreview
+import com.yunfie.illustia.rust.UserProfile as RustUserProfile
 import com.yunfie.illustia.settings.currentAcceptLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -117,7 +127,7 @@ internal class RustPixivHttpClient(
                         cacheDir = cacheDir,
                         frames =
                             frames.map {
-                                com.yunfie.illustia.rust.UgoiraFrame(
+                                RustUgoiraFrame(
                                     file = it.file,
                                     delayMillis = it.delay,
                                 )
@@ -447,7 +457,7 @@ internal class RustPixivCall(
     }
 }
 
-private fun com.yunfie.illustia.rust.Illust.toAppModel(): Illust =
+private fun RustIllust.toAppModel(): Illust =
     Illust(
         id = id,
         title = title,
@@ -471,7 +481,7 @@ private fun com.yunfie.illustia.rust.Illust.toAppModel(): Illust =
         series = series?.let { IllustSeries(id = it.id, title = it.title) },
     )
 
-private fun com.yunfie.illustia.rust.UserProfile.toAppModel(): UserProfile =
+private fun RustUserProfile.toAppModel(): UserProfile =
     UserProfile(
         id = id,
         name = name,
@@ -482,7 +492,7 @@ private fun com.yunfie.illustia.rust.UserProfile.toAppModel(): UserProfile =
         isFollowed = isFollowed,
     )
 
-private fun com.yunfie.illustia.rust.UserPreview.toAppModel(): UserPreview =
+private fun RustUserPreview.toAppModel(): UserPreview =
     UserPreview(
         id = id,
         name = name,
@@ -493,7 +503,7 @@ private fun com.yunfie.illustia.rust.UserPreview.toAppModel(): UserPreview =
         previewIllusts = previewIllusts.map { it.toAppModel() },
     )
 
-private fun com.yunfie.illustia.rust.Comment.toAppModel(): Comment =
+private fun RustComment.toAppModel(): Comment =
     Comment(
         id = id,
         comment = comment,
@@ -504,7 +514,7 @@ private fun com.yunfie.illustia.rust.Comment.toAppModel(): Comment =
         stamp = stamp?.toAppModel(),
     )
 
-private fun com.yunfie.illustia.rust.ParentComment.toAppModel(): Comment =
+private fun RustParentComment.toAppModel(): Comment =
     Comment(
         id = id,
         comment = comment,
@@ -515,7 +525,7 @@ private fun com.yunfie.illustia.rust.ParentComment.toAppModel(): Comment =
         stamp = stamp?.toAppModel(),
     )
 
-private fun com.yunfie.illustia.rust.CommentUser.toAppModel(): CommentUser =
+private fun RustCommentUser.toAppModel(): CommentUser =
     CommentUser(
         id = id,
         name = name,
@@ -523,13 +533,13 @@ private fun com.yunfie.illustia.rust.CommentUser.toAppModel(): CommentUser =
         profileImageUrls = CommentProfileImageUrls(profileImageUrl),
     )
 
-private fun com.yunfie.illustia.rust.CommentStamp.toAppModel(): CommentStamp =
+private fun RustCommentStamp.toAppModel(): CommentStamp =
     CommentStamp(
         stampId = stampId,
         stampUrl = stampUrl,
     )
 
-private fun com.yunfie.illustia.rust.Notification.toAppModel(): PixivNotification =
+private fun RustNotification.toAppModel(): PixivNotification =
     PixivNotification(
         id = id,
         createdDatetime = createdDatetime,
@@ -555,7 +565,7 @@ private fun com.yunfie.illustia.rust.Notification.toAppModel(): PixivNotificatio
         isRead = isRead,
     )
 
-private fun com.yunfie.illustia.rust.NovelPreview.toAppModel(): NovelPreview =
+private fun RustNovelPreview.toAppModel(): NovelPreview =
     NovelPreview(
         id = id,
         title = title,
@@ -571,7 +581,7 @@ private fun com.yunfie.illustia.rust.NovelPreview.toAppModel(): NovelPreview =
         totalView = totalView,
     )
 
-private fun com.yunfie.illustia.rust.MangaSeries.toAppModel(): MangaSeriesModel =
+private fun RustMangaSeries.toAppModel(): MangaSeriesModel =
     MangaSeriesModel(
         id = id,
         url = url,
@@ -591,7 +601,7 @@ private fun com.yunfie.illustia.rust.MangaSeries.toAppModel(): MangaSeriesModel 
         thumbnailUrl = thumbnailUrl,
     )
 
-private fun com.yunfie.illustia.rust.Illust.toIllusts(): Illusts =
+private fun RustIllust.toIllusts(): Illusts =
     Illusts(
         id = id,
         title = title,

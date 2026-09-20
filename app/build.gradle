@@ -59,9 +59,8 @@ android {
 
     sourceSets {
         named("main") {
-            java.srcDirs += [layout.buildDirectory.dir("generated/uniffi/kotlin")]
-            kotlin.srcDirs += [layout.buildDirectory.dir("generated/uniffi/kotlin")]
-            jniLibs.srcDirs += [layout.buildDirectory.dir("generated/uniffi/jniLibs")]
+            java.srcDirs += [file("build/generated/uniffi/kotlin")]
+            jniLibs.srcDirs += [file("build/generated/uniffi/jniLibs")]
         }
     }
 
@@ -270,7 +269,6 @@ tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.config
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
     dependsOn(generateUniFfiBindings)
-    source(fileTree(uniffiKotlinDir) { include("**/*.kt") })
 }
 
 tasks.withType(JavaCompile).configureEach {
