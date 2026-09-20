@@ -48,6 +48,16 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.models.pixiv.UgoiraZipUrls
 import com.yunfie.illustia.models.pixiv.UserFollowDetail
+import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
+import com.yunfie.illustia.rust.PixivHttpClient
+import com.yunfie.illustia.rust.PixivRequest
+import com.yunfie.illustia.settings.currentAcceptLanguage
+import okhttp3.Request
+import okio.buffer
+import okio.sink
+import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.yunfie.illustia.rust.Comment as RustComment
 import com.yunfie.illustia.rust.CommentStamp as RustCommentStamp
 import com.yunfie.illustia.rust.CommentUser as RustCommentUser
@@ -56,18 +66,9 @@ import com.yunfie.illustia.rust.MangaSeries as RustMangaSeries
 import com.yunfie.illustia.rust.Notification as RustNotification
 import com.yunfie.illustia.rust.NovelPreview as RustNovelPreview
 import com.yunfie.illustia.rust.ParentComment as RustParentComment
-import com.yunfie.illustia.rust.PixivHttpClient
-import com.yunfie.illustia.rust.PixivRequest
 import com.yunfie.illustia.rust.UgoiraFrame as RustUgoiraFrame
 import com.yunfie.illustia.rust.UserPreview as RustUserPreview
 import com.yunfie.illustia.rust.UserProfile as RustUserProfile
-import com.yunfie.illustia.settings.currentAcceptLanguage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.Request
-import okio.buffer
-import okio.sink
-import java.io.ByteArrayOutputStream
 
 /** OkHttp request builder compatibility layer backed by the UniFFI Rust client. */
 internal class RustPixivHttpClient(
