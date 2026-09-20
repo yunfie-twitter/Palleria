@@ -32,7 +32,7 @@ pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
     let result = pixels
         .par_chunks_exact(4)
         .fold(
-            || AnalysisState::default(),
+            AnalysisState::default,
             |mut state, pixel| {
                 let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
                 if alpha < TRANSPARENT_ALPHA {
@@ -55,7 +55,7 @@ pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
             },
         )
         .reduce(
-            || AnalysisState::default(),
+            AnalysisState::default,
             |mut a, b| {
                 a.luminance_sum += b.luminance_sum;
                 a.sample_count += b.sample_count;
