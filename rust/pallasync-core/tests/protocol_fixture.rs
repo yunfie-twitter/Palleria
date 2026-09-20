@@ -16,7 +16,10 @@ fn v2_1_key_derivation_encryption_signature_and_capability_tokens() {
     assert_eq!(keys.chain_salt, repeated_keys.chain_salt);
     assert_eq!(keys.record_key, repeated_keys.record_key);
     assert_eq!(keys.epoch_key, repeated_keys.epoch_key);
-    assert_eq!(keys.admin_key.to_bytes(), repeated_keys.admin_key.to_bytes());
+    assert_eq!(
+        keys.admin_key.to_bytes(),
+        repeated_keys.admin_key.to_bytes()
+    );
 
     let record = crypto::create_sync_record_at(
         &keys.chain_id,
@@ -49,13 +52,16 @@ fn v2_1_key_derivation_encryption_signature_and_capability_tokens() {
             .expect("relay metadata is not part of the client signature")
     );
 
-    let decrypted = crypto::decrypt_sync_record(&record, &keys.encryption_key)
-        .expect("fixture decrypts");
+    let decrypted =
+        crypto::decrypt_sync_record(&record, &keys.encryption_key).expect("fixture decrypts");
     assert_eq!(decrypted, PAYLOAD.as_bytes());
 
     let mut tampered = record.clone();
     tampered.action = "delete".to_string();
-    assert!(!crypto::verify_sync_record(&tampered, &public_key).expect("tampered record fails verification"));
+    assert!(
+        !crypto::verify_sync_record(&tampered, &public_key)
+            .expect("tampered record fails verification")
+    );
 
     // Capability Token verification
     let token = crypto::create_capability_token(
@@ -78,14 +84,18 @@ fn v2_1_key_derivation_encryption_signature_and_capability_tokens() {
     assert_eq!(token_obj.device_id, DEVICE_ID);
     assert_eq!(token_obj.method, "POST");
 
-    let token_canonical = models::capability_token_signing_bytes(&token_obj).expect("canonical JCS");
+    let token_canonical =
+        models::capability_token_signing_bytes(&token_obj).expect("canonical JCS");
     let verifying_key = crypto::decode_verifying_key(&public_key).expect("valid pubkey");
-    assert!(crypto::verify_with_context(
-        &verifying_key,
-        crypto::CTX_CAPABILITY,
-        &token_canonical,
-        &token_obj.signature,
-    ).expect("valid capability token signature"));
+    assert!(
+        crypto::verify_with_context(
+            &verifying_key,
+            crypto::CTX_CAPABILITY,
+            &token_canonical,
+            &token_obj.signature,
+        )
+        .expect("valid capability token signature")
+    );
 }
 
 #[test]
@@ -116,4 +126,3 @@ fn device_record_v2_1_self_signed_and_encrypted() {
     tampered.created_at_ms += 1;
     assert!(!crypto::verify_device_record(&tampered).expect("tampered record fails verification"));
 }
-

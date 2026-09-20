@@ -337,7 +337,8 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createCa
         read_string(&mut env, &query),
         read_string(&mut env, &body_json),
         read_string(&mut env, &signing_key),
-    ) else {
+    )
+    else {
         return std::ptr::null_mut();
     };
 
@@ -363,4 +364,3 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createCa
         Err(_) => std::ptr::null_mut(),
     }
 }
-

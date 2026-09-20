@@ -11,7 +11,7 @@ pub struct SyncRecord {
     #[serde(default)]
     pub epoch: i64,
     pub collection_name: String,
-    pub action: String, // "upsert" or "delete"
+    pub action: String,            // "upsert" or "delete"
     pub encrypted_payload: String, // Base64url encoded XChaCha20Poly1305 ciphertext
     #[serde(default)]
     pub payload_nonce: String, // Base64url encoded 24-byte random nonce
@@ -128,10 +128,14 @@ pub fn device_record_signing_bytes(record: &DeviceRecord) -> Result<Vec<u8>, ser
     unsigned_record_jcs(record)
 }
 
-pub fn capability_token_signing_bytes(token: &CapabilityToken) -> Result<Vec<u8>, serde_json::Error> {
+pub fn capability_token_signing_bytes(
+    token: &CapabilityToken,
+) -> Result<Vec<u8>, serde_json::Error> {
     unsigned_record_jcs(token)
 }
 
-pub fn invitation_bundle_signing_bytes(bundle: &InvitationBundle) -> Result<Vec<u8>, serde_json::Error> {
+pub fn invitation_bundle_signing_bytes(
+    bundle: &InvitationBundle,
+) -> Result<Vec<u8>, serde_json::Error> {
     unsigned_record_jcs(bundle)
 }

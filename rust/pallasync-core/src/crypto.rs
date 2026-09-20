@@ -1,6 +1,6 @@
 use crate::models::{
-    self, CapabilityToken, DeviceRecord, RecordAAD, SyncRecord,
-    PROTOCOL_VERSION_2_0, PROTOCOL_VERSION_2_1,
+    self, CapabilityToken, DeviceRecord, PROTOCOL_VERSION_2_0, PROTOCOL_VERSION_2_1, RecordAAD,
+    SyncRecord,
 };
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use bip39::{Language, Mnemonic};
@@ -11,9 +11,9 @@ use chacha20poly1305::{
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use hkdf::Hkdf;
 use hmac::Hmac;
+use rand::RngCore;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
-use rand::RngCore;
 
 pub type HmacSha256 = Hmac<Sha256>;
 
@@ -52,7 +52,7 @@ pub fn generate_nonce_16() -> [u8; 16] {
 }
 
 pub struct DerivedKeys {
-    pub chain_id: String, // Base64Url
+    pub chain_id: String,   // Base64Url
     pub chain_salt: String, // Base64Url
     pub epoch_key: [u8; 32],
     pub record_key: [u8; 32],
@@ -140,11 +140,7 @@ pub fn generate_ed25519_keypair() -> SigningKey {
     SigningKey::generate(&mut csprng)
 }
 
-pub fn sign_with_context(
-    signing_key: &SigningKey,
-    context: &[u8],
-    canonical_jcs: &[u8],
-) -> String {
+pub fn sign_with_context(signing_key: &SigningKey, context: &[u8], canonical_jcs: &[u8]) -> String {
     let mut msg = Vec::with_capacity(context.len() + canonical_jcs.len());
     msg.extend_from_slice(context);
     msg.extend_from_slice(canonical_jcs);
@@ -323,7 +319,12 @@ pub fn verify_device_record(record: &DeviceRecord) -> Result<bool, String> {
     let public_key = decode_verifying_key(&record.device_public_key)?;
     let canonical = models::device_record_signing_bytes(record)
         .map_err(|error| format!("Cannot canonicalize device record: {error}"))?;
-    verify_with_context(&public_key, CTX_DEVICE_RECORD, &canonical, &record.signature)
+    verify_with_context(
+        &public_key,
+        CTX_DEVICE_RECORD,
+        &canonical,
+        &record.signature,
+    )
 }
 
 pub fn verify_device_record_json(record_json: &str) -> Result<bool, String> {
@@ -359,8 +360,8 @@ pub fn create_sync_record_at(
         lamport,
         created_at_ms,
     };
-    let aad = models::to_jcs(&aad_obj)
-        .map_err(|e| format!("Cannot canonicalize RecordAAD: {e}"))?;
+    let aad =
+        models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize RecordAAD: {e}"))?;
 
     let encrypted_payload = URL_SAFE_NO_PAD.encode(encrypt_record_payload_xchacha(
         encryption_key,
@@ -412,12 +413,9 @@ pub fn decrypt_sync_record(
                     created_at_ms: record.created_at_ms,
                 };
                 if let Ok(aad) = models::to_jcs(&aad_obj) {
-                    if let Ok(plaintext) = decrypt_record_payload_xchacha(
-                        encryption_key,
-                        &nonce_24,
-                        &ciphertext,
-                        &aad,
-                    ) {
+                    if let Ok(plaintext) =
+                        decrypt_record_payload_xchacha(encryption_key, &nonce_24, &ciphertext, &aad)
+                    {
                         return Ok(plaintext);
                     }
                 }
@@ -526,12 +524,9 @@ pub fn decrypt_device_record_v21(
                     "updated_at_ms": record.updated_at_ms
                 });
                 if let Ok(aad) = models::to_jcs(&aad_map) {
-                    if let Ok(plaintext) = decrypt_record_payload_xchacha(
-                        encryption_key,
-                        &nonce_24,
-                        &ciphertext,
-                        &aad,
-                    ) {
+                    if let Ok(plaintext) =
+                        decrypt_record_payload_xchacha(encryption_key, &nonce_24, &ciphertext, &aad)
+                    {
                         return Ok(plaintext);
                     }
                 }
@@ -540,7 +535,11 @@ pub fn decrypt_device_record_v21(
     }
 
     // Fallback to legacy decryption
-    decrypt_device_name(&record.encrypted_device_name, &record.device_id, encryption_key)
+    decrypt_device_name(
+        &record.encrypted_device_name,
+        &record.device_id,
+        encryption_key,
+    )
 }
 
 pub fn create_capability_token(
@@ -580,8 +579,7 @@ pub fn create_capability_token(
         .map_err(|e| format!("Cannot canonicalize capability token: {e}"))?;
     token.signature = sign_with_context(signing_key, CTX_CAPABILITY, &canonical);
 
-    let jcs = models::to_jcs(&token)
-        .map_err(|e| format!("Cannot JCS encode capability token: {e}"))?;
+    let jcs =
+        models::to_jcs(&token).map_err(|e| format!("Cannot JCS encode capability token: {e}"))?;
     Ok(URL_SAFE_NO_PAD.encode(jcs))
 }
-

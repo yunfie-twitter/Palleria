@@ -31,43 +31,36 @@ impl Default for AnalysisState {
 pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
     let result = pixels
         .par_chunks_exact(4)
-        .fold(
-            AnalysisState::default,
-            |mut state, pixel| {
-                let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
-                if alpha < TRANSPARENT_ALPHA {
-                    return state;
-                }
+        .fold(AnalysisState::default, |mut state, pixel| {
+            let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
+            if alpha < TRANSPARENT_ALPHA {
+                return state;
+            }
 
-                state.luminance_sum += relative_luminance(red, green, blue);
-                state.sample_count += 1;
+            state.luminance_sum += relative_luminance(red, green, blue);
+            state.sample_count += 1;
 
-                let index = ((red as usize >> 4) << 8)
-                    | ((green as usize >> 4) << 4)
-                    | (blue as usize >> 4);
-                let bucket = &mut state.buckets[index];
-                bucket.count += 1;
-                bucket.red += red as u64;
-                bucket.green += green as u64;
-                bucket.blue += blue as u64;
+            let index =
+                ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4);
+            let bucket = &mut state.buckets[index];
+            bucket.count += 1;
+            bucket.red += red as u64;
+            bucket.green += green as u64;
+            bucket.blue += blue as u64;
 
-                state
-            },
-        )
-        .reduce(
-            AnalysisState::default,
-            |mut a, b| {
-                a.luminance_sum += b.luminance_sum;
-                a.sample_count += b.sample_count;
-                for i in 0..DOMINANT_BUCKETS {
-                    a.buckets[i].count += b.buckets[i].count;
-                    a.buckets[i].red += b.buckets[i].red;
-                    a.buckets[i].green += b.buckets[i].green;
-                    a.buckets[i].blue += b.buckets[i].blue;
-                }
-                a
-            },
-        );
+            state
+        })
+        .reduce(AnalysisState::default, |mut a, b| {
+            a.luminance_sum += b.luminance_sum;
+            a.sample_count += b.sample_count;
+            for i in 0..DOMINANT_BUCKETS {
+                a.buckets[i].count += b.buckets[i].count;
+                a.buckets[i].red += b.buckets[i].red;
+                a.buckets[i].green += b.buckets[i].green;
+                a.buckets[i].blue += b.buckets[i].blue;
+            }
+            a
+        });
 
     let dominant_argb = result
         .buckets
