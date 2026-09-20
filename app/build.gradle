@@ -59,7 +59,8 @@ android {
 
     sourceSets {
         named("main") {
-            jniLibs.srcDirs += [file("build/generated/uniffi/jniLibs")]
+            kotlin.srcDir layout.buildDirectory.dir("generated/uniffi/kotlin").get().asFile
+            jniLibs.srcDir layout.buildDirectory.dir("generated/uniffi/jniLibs").get().asFile
         }
     }
 
@@ -268,6 +269,7 @@ tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.config
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
     dependsOn(generateUniFfiBindings)
+    source(uniffiKotlinDir)
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -294,14 +296,6 @@ tasks.matching {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
-        // Register the UniFFI-generated Kotlin directory as a source directory for every
-        // variant using the AGP 8+ variant API. addStaticSourceDirectory wires the path
-        // through AGP's Kotlin source handling; task ordering is declared separately via
-        // tasks.matching { compile...Kotlin }.configureEach { dependsOn(generateUniFfiBindings) }.
-        variant.sources.kotlin?.addStaticSourceDirectory(
-            layout.buildDirectory.dir("generated/uniffi/kotlin").get().asFile.absolutePath,
-        )
-
         variant.outputs.forEach { output ->
             def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
             def outputKind = abi ?: "universal"
