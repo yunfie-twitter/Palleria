@@ -293,8 +293,8 @@ internal class RustPixivCall(
                                         },
                                 )
                             },
-                        illustSeriesFirstIllust = page.firstIllust?.toAppModel(),
-                        illusts = page.illusts.map { it.toAppModel() },
+                        illustSeriesFirstIllust = page.firstIllust?.toIllusts(),
+                        illusts = page.illusts.map { it.toIllusts() },
                         nextUrl = page.nextUrl,
                     )
                 }
@@ -591,59 +591,60 @@ private fun com.yunfie.illustia.rust.MangaSeries.toAppModel(): MangaSeriesModel 
         thumbnailUrl = thumbnailUrl,
     )
 
-private fun com.yunfie.illustia.rust.SeriesIllust.toAppModel(): Illusts =
+private fun com.yunfie.illustia.rust.Illust.toIllusts(): Illusts =
     Illusts(
-        id = this.id,
-        title = this.title,
-        type = this.illustType,
+        id = id,
+        title = title,
+        type = illustType,
         imageUrls =
             ImageUrls(
-                squareMedium = this.squareImageUrl,
-                medium = this.mediumImageUrl,
-                large = this.largeImageUrl,
+                squareMedium = squareImageUrl,
+                medium = mediumImageUrl,
+                large = imageUrl,
             ),
-        caption = this.caption,
-        restrict = this.restrict,
+        caption = caption,
+        restrict = 0,
         user =
             PixivUser(
-                id = this.user.id,
-                name = this.user.name,
-                account = this.user.account,
-                profileImageUrls = PixivProfileImageUrls(this.user.profileImageUrl),
-                comment = this.user.comment,
-                isFollowed = this.user.isFollowed,
+                id = artistId,
+                name = artistName,
+                account = "",
+                profileImageUrls = PixivProfileImageUrls(artistAvatarUrl.orEmpty()),
+                comment = null,
+                isFollowed = null,
             ),
-        tags = this.tags.map { PixivTag(it) },
-        tools = this.tools,
-        createDate = this.createDate,
-        pageCount = this.pageCount,
-        width = this.width,
-        height = this.height,
-        sanityLevel = this.sanityLevel,
-        xRestrict = this.xRestrict,
-        metaSinglePage = if (this.hasMetaSinglePage) MetaSinglePage(this.originalImageUrl) else null,
+        tags = tags.map { PixivTag(it) },
+        tools = emptyList(),
+        createDate = "",
+        pageCount = pageCount,
+        width = 0,
+        height = 0,
+        sanityLevel = 0,
+        xRestrict = 0,
+        metaSinglePage = originalImageUrl?.let { MetaSinglePage(it) },
         metaPages =
-            this.metaPages.map {
+            mediumImagePages.indices.map { index ->
                 MetaPages(
                     MetaPagesImageUrls(
-                        squareMedium = it.squareImageUrl,
-                        medium = it.mediumImageUrl,
-                        large = it.largeImageUrl,
-                        original = it.originalImageUrl,
+                        squareMedium = "",
+                        medium = mediumImagePages.getOrElse(index) { "" },
+                        large = imagePages.getOrElse(index) { "" },
+                        original = originalImagePages.getOrElse(index) { "" },
                     ),
                 )
             },
-        totalView = this.totalView,
-        totalBookmarks = this.totalBookmarks,
-        isBookmarked = this.isBookmarked,
-        visible = this.visible,
-        isMuted = this.isMuted,
-        illustAIType = this.illustAiType,
-        series = this.series?.let { IllustSeries(id = it.id, title = it.title) },
-        illustBookStyle = this.illustBookStyle,
-        totalComments = this.totalComments,
+        totalView = 0,
+        totalBookmarks = totalBookmarks,
+        isBookmarked = isBookmarked,
+        visible = true,
+        isMuted = false,
+        illustAIType = 0,
+        series = series?.let { IllustSeries(id = it.id, title = it.title) },
+        illustBookStyle = null,
+        totalComments = totalComments,
     )
 
+@Suppress("TooGenericExceptionCaught")
 private inline fun <T> nativeCall(block: () -> T): T =
     try {
         block()

@@ -16,11 +16,10 @@ pub use models::{
     AccountEditResult, Comment, CommentPage, CommentStamp, CommentUser, CurrentUserProfile, Illust,
     IllustPage, IllustSeries, IllustSeriesDetail, IllustSeriesPage, LoginSession, MangaSeries,
     MangaSeriesUser, Notification, NotificationContent, NotificationPage, NotificationViewMore,
-    NovelPage, NovelPreview, NovelText, OptionalBoolean, ParentComment, PixivRequest, SeriesIllust,
-    SeriesIllustUser, SeriesImagePage, SeriesUser, SpotlightArticle, SpotlightPage, Stamp,
-    StampList, StringList, TrendingTag, TrendingTagList, UgoiraFrame, UgoiraMetadata,
-    UgoiraPlayback, UserFollowDetail, UserPreview, UserPreviewPage, UserProfile,
-    WatchlistMangaPage,
+    NovelPage, NovelPreview, NovelText, OptionalBoolean, ParentComment, PixivRequest,
+    SeriesUser, SpotlightArticle, SpotlightPage, Stamp, StampList, StringList, TrendingTag,
+    TrendingTagList, UgoiraFrame, UgoiraMetadata, UgoiraPlayback, UserFollowDetail, UserPreview,
+    UserPreviewPage, UserProfile, WatchlistMangaPage,
 };
 
 uniffi::setup_scaffolding!();
