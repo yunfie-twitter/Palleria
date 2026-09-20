@@ -60,6 +60,7 @@ android {
     sourceSets {
         named("main") {
             java.srcDirs += [file("build/generated/uniffi/kotlin")]
+            kotlin.srcDirs += [file("build/generated/uniffi/kotlin")]
             jniLibs.srcDirs += [file("build/generated/uniffi/jniLibs")]
         }
     }
@@ -173,6 +174,13 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     dependsOn buildUniFfiHost
     inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
     outputs.dir(uniffiKotlinDir)
+    doFirst {
+        uniffiKotlinDir.get().asFile.mkdirs()
+    }
+    doLast {
+        def generatedFiles = fileTree(uniffiKotlinDir).files
+        logger.lifecycle("generateUniFfiBindings generated ${generatedFiles.size()} files: ${generatedFiles}")
+    }
 }
 
 def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
@@ -269,6 +277,7 @@ tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.config
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
     dependsOn(generateUniFfiBindings)
+    source(uniffiKotlinDir)
 }
 
 tasks.withType(JavaCompile).configureEach {
