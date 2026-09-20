@@ -116,7 +116,7 @@ impl IllustDto {
             sanity_level: self.sanity_level,
             x_restrict: self.x_restrict,
             has_meta_single_page,
-            original_image_url: original,
+            original_image_url: original.map(ToOwned::to_owned),
             meta_pages,
             total_view: self.total_view,
             total_bookmarks: self.total_bookmarks,

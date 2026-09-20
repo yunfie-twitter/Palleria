@@ -65,7 +65,7 @@ impl IllustDto {
             square_image_url: self.image_urls.square_medium.unwrap_or_default(),
             medium_image_url: medium,
             image_url,
-            original_image_url: original,
+            original_image_url: original.map(ToOwned::to_owned),
             medium_image_pages: fallback_pages(medium_pages, &image_pages, &original_pages),
             image_pages: fallback_pages(image_pages, &original_pages, &[]),
             original_image_pages: original_pages,
