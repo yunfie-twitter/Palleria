@@ -429,7 +429,7 @@ internal class RustPixivCall(
             }
         }
 
-    suspend fun awaitComplete() =
+    suspend fun awaitComplete(): Unit =
         withContext(Dispatchers.IO) {
             val nativeRequest = lowerRequest()
             nativeCall {
