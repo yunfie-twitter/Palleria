@@ -111,6 +111,7 @@ internal fun readFromDataStore(
         detailSectionOrder = decodeStringList(preferences[DETAIL_SECTION_ORDER_JSON]).ifEmpty { DEFAULT_DETAIL_SECTION_ORDER },
         skipConfirmOnDetailSave = preferences[SKIP_CONFIRM_ON_DETAIL_SAVE] ?: false,
         showAiBadge = preferences[SHOW_AI_BADGE] ?: true,
+        showR18Badge = preferences[SHOW_R18_BADGE] ?: true,
         hideAiWorks = preferences[HIDE_AI_WORKS] ?: false,
         followOnLike = preferences[FOLLOW_ON_LIKE] ?: false,
         privateBookmarkDefault = preferences[PRIVATE_BOOKMARK_DEFAULT] ?: false,
@@ -285,6 +286,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         detailSectionOrder = decodeStringList(preferences.getString("detailSectionOrder", null)).ifEmpty { DEFAULT_DETAIL_SECTION_ORDER },
         skipConfirmOnDetailSave = preferences.getBoolean("skipConfirmOnDetailSave", false),
         showAiBadge = preferences.getBoolean("showAiBadge", true),
+        showR18Badge = preferences.getBoolean("showR18Badge", true),
         hideAiWorks = preferences.getBoolean("hideAiWorks", false),
         followOnLike = preferences.getBoolean("followOnLike", false),
         privateBookmarkDefault = preferences.getBoolean("privateBookmarkDefault", false),
@@ -395,6 +397,7 @@ internal fun writeToDataStore(
     preferences[DETAIL_SECTION_ORDER_JSON] = encodeStringList(settings.detailSectionOrder)
     preferences[SKIP_CONFIRM_ON_DETAIL_SAVE] = settings.skipConfirmOnDetailSave
     preferences[SHOW_AI_BADGE] = settings.showAiBadge
+    preferences[SHOW_R18_BADGE] = settings.showR18Badge
     preferences[HIDE_AI_WORKS] = settings.hideAiWorks
     preferences[FOLLOW_ON_LIKE] = settings.followOnLike
     preferences[PRIVATE_BOOKMARK_DEFAULT] = settings.privateBookmarkDefault

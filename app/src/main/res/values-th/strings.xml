@@ -268,6 +268,7 @@
     <string name="experimental_card_rating">แสดงเรตติ้ง</string>
     <string name="experimental_card_rating_desc">แสดงจำนวนบุ๊กมาร์กอาร์ตเวิร์คบนการ์ด</string>
     <string name="experimental_card_ai">แสดงป้ายกำกับ AI</string>
+    <string name="experimental_card_r18">แสดงป้ายกำกับ R-18</string>
     <string name="settings_hide_ai_works">ซ่อนผลงานที่สร้างโดย AI</string>
     <string name="settings_hide_ai_works_desc">กรองผลงานที่สร้างโดย AI จากฟีดและผลการค้นหา</string>
     <string name="experimental_artwork_theme_section">ธีมงานศิลปะ</string>

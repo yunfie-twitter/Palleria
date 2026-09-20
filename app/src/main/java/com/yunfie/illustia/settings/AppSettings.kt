@@ -67,6 +67,7 @@ data class AppSettings(
     val detailSectionOrder: List<String> = DEFAULT_DETAIL_SECTION_ORDER,
     val skipConfirmOnDetailSave: Boolean = false,
     val showAiBadge: Boolean = true,
+    val showR18Badge: Boolean = true,
     val hideAiWorks: Boolean = false,
     val followOnLike: Boolean = false,
     val privateBookmarkDefault: Boolean = false,

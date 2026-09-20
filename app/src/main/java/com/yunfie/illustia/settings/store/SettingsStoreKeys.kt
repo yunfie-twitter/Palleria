@@ -104,6 +104,7 @@ internal val SHOW_CARD_BOOKMARK_COUNT = booleanPreferencesKey("showCardBookmarkC
 internal val DETAIL_SECTION_ORDER_JSON = stringPreferencesKey("detailSectionOrder")
 internal val SKIP_CONFIRM_ON_DETAIL_SAVE = booleanPreferencesKey("skipConfirmOnDetailSave")
 internal val SHOW_AI_BADGE = booleanPreferencesKey("showAiBadge")
+internal val SHOW_R18_BADGE = booleanPreferencesKey("showR18Badge")
 internal val HIDE_AI_WORKS = booleanPreferencesKey("hideAiWorks")
 internal val FOLLOW_ON_LIKE = booleanPreferencesKey("followOnLike")
 internal val PRIVATE_BOOKMARK_DEFAULT = booleanPreferencesKey("privateBookmarkDefault")

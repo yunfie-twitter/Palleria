@@ -268,6 +268,7 @@
     <string name="experimental_card_rating">Mostra valutazione</string>
     <string name="experimental_card_rating_desc">Mostra il conteggio dei segnalibri dell\'opera d\'arte sulle carte</string>
     <string name="experimental_card_ai">Mostra etichetta AI</string>
+    <string name="experimental_card_r18">Mostra etichetta R-18</string>
     <string name="settings_hide_ai_works">Nascondi le opere generate dall\'intelligenza artificiale</string>
     <string name="settings_hide_ai_works_desc">Filtra i lavori generati dall\'intelligenza artificiale dai feed e dai risultati di ricerca</string>
     <string name="experimental_artwork_theme_section">Tema dell\'opera d\'arte</string>
