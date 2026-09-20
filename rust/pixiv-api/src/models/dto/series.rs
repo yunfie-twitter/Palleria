@@ -1,3 +1,5 @@
+use super::*;
+
 impl IllustSeriesPageResponse {
     pub(crate) fn into_page(self) -> IllustSeriesPage {
         IllustSeriesPage {

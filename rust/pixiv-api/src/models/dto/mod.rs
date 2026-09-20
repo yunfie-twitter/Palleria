@@ -6,10 +6,9 @@ use super::{
     AccountEditResult, Comment, CommentPage, CommentStamp, CommentUser, CurrentUserProfile, Illust,
     IllustPage, IllustSeries, IllustSeriesDetail, IllustSeriesPage, MangaSeries, MangaSeriesUser,
     Notification, NotificationContent, NotificationPage, NotificationViewMore, NovelPage,
-    NovelPreview, OptionalBoolean, ParentComment,
-    SeriesUser, SpotlightArticle, SpotlightPage, Stamp, StampList, StringList, TrendingTag,
-    TrendingTagList, UgoiraFrame, UgoiraMetadata, UserFollowDetail, UserPreview, UserPreviewPage,
-    UserProfile, WatchlistMangaPage,
+    NovelPreview, OptionalBoolean, ParentComment, SeriesUser, SpotlightArticle, SpotlightPage,
+    Stamp, StampList, StringList, TrendingTag, TrendingTagList, UgoiraFrame, UgoiraMetadata,
+    UserFollowDetail, UserPreview, UserPreviewPage, UserProfile, WatchlistMangaPage,
 };
 
 #[derive(Debug, Deserialize)]
