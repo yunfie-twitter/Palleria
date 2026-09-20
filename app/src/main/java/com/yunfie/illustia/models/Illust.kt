@@ -59,6 +59,14 @@ data class Illust(
                     tag.startsWith("R18G", ignoreCase = true)
             }
 
+    /** 年齢制限バッジテキスト (R-18G / R-18) */
+    val ageRestrictionBadgeText: String? =
+        when {
+            isR18G -> "R-18G"
+            isR18 -> "R-18"
+            else -> null
+        }
+
     /** カードバッジテキスト (AI / manga / ページ数) */
     val cardBadgeText: String? =
         when {

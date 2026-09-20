@@ -19,13 +19,30 @@ class R18FilterTest :
             val r18NoDash = createIllust(id = 4L, tags = listOf("r18"))
             val r18Prefix = createIllust(id = 5L, tags = listOf("R-18BL"))
             val r18Restrict = createIllust(id = 6L, tags = emptyList(), xRestrict = 1)
+            val r18GRestrict = createIllust(id = 7L, tags = emptyList(), xRestrict = 2)
 
             normal.isR18 shouldBe false
+            normal.ageRestrictionBadgeText shouldBe null
+
             r18Tag.isR18 shouldBe true
+            r18Tag.ageRestrictionBadgeText shouldBe "R-18"
+
             r18GTag.isR18 shouldBe true
+            r18GTag.isR18G shouldBe true
+            r18GTag.ageRestrictionBadgeText shouldBe "R-18G"
+
             r18NoDash.isR18 shouldBe true
+            r18NoDash.ageRestrictionBadgeText shouldBe "R-18"
+
             r18Prefix.isR18 shouldBe true
+            r18Prefix.ageRestrictionBadgeText shouldBe "R-18"
+
             r18Restrict.isR18 shouldBe true
+            r18Restrict.ageRestrictionBadgeText shouldBe "R-18"
+
+            r18GRestrict.isR18 shouldBe true
+            r18GRestrict.isR18G shouldBe true
+            r18GRestrict.ageRestrictionBadgeText shouldBe "R-18G"
         }
 
         "NovelPreview correctly identifies R-18 content in title or caption" {
@@ -35,9 +52,17 @@ class R18FilterTest :
             val r18GTitle = createNovel(id = 4L, title = "Dark Fantasy [R-18G]", caption = "")
 
             normal.isR18 shouldBe false
+            normal.ageRestrictionBadgeText shouldBe null
+
             r18Title.isR18 shouldBe true
+            r18Title.ageRestrictionBadgeText shouldBe "R-18"
+
             r18Caption.isR18 shouldBe true
+            r18Caption.ageRestrictionBadgeText shouldBe "R-18"
+
             r18GTitle.isR18 shouldBe true
+            r18GTitle.isR18G shouldBe true
+            r18GTitle.ageRestrictionBadgeText shouldBe "R-18G"
         }
 
         "visibleWithSettings filters out R-18 illusts when allowR18 is false" {

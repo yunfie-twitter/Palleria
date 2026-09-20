@@ -200,6 +200,10 @@ fun IllustCard(
         remember(illust.id, showAiBadge, cardPreferences.showAiBadge) {
             if (illust.isAi && (!showAiBadge || !cardPreferences.showAiBadge)) null else illust.cardBadgeText
         }
+    val ageRestrictionBadgeText =
+        remember(illust.id, illust.isR18, illust.isR18G) {
+            illust.ageRestrictionBadgeText
+        }
 
     IllustCardImpl(
         previewUrl = previewUrl,
@@ -209,6 +213,7 @@ fun IllustCard(
         totalBookmarks = illust.totalBookmarks,
         isBookmarked = illust.isBookmarked,
         cardBadgeText = cardBadgeText,
+        ageRestrictionBadgeText = ageRestrictionBadgeText,
         onBookmark = onBookmark,
         onClick = onClick,
         onLongClick = onLongClick,
@@ -230,6 +235,7 @@ private fun IllustCardImpl(
     totalBookmarks: Int,
     isBookmarked: Boolean,
     cardBadgeText: String?,
+    ageRestrictionBadgeText: String?,
     onBookmark: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
@@ -271,6 +277,7 @@ private fun IllustCardImpl(
                     previewUrl = previewUrl,
                     title = title,
                     badgeText = cardBadgeText,
+                    ageRestrictionBadgeText = ageRestrictionBadgeText,
                     isMutedByTag = isMutedByTag,
                 )
 
@@ -325,6 +332,7 @@ private fun IllustCardThumbnail(
     previewUrl: String,
     title: String,
     badgeText: String?,
+    ageRestrictionBadgeText: String?,
     isMutedByTag: Boolean,
 ) {
     Box(
@@ -341,6 +349,20 @@ private fun IllustCardThumbnail(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
+            )
+        }
+        if (ageRestrictionBadgeText != null) {
+            Text(
+                text = ageRestrictionBadgeText,
+                color = Color.White,
+                style = MiuixTheme.textStyles.footnote2,
+                fontWeight = FontWeight.Black,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .squircleBackground(Color(0xFFFA383E), 6.dp)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
             )
         }
         if (badgeText != null) {
@@ -459,6 +481,10 @@ fun IllustListRow(
         remember(illust.id) {
             if (illust.pageCount > 1) "${illust.pageCount}P" else null
         }
+    val ageRestrictionBadgeText =
+        remember(illust.id, illust.isR18, illust.isR18G) {
+            illust.ageRestrictionBadgeText
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -498,6 +524,20 @@ fun IllustListRow(
                     modifier = Modifier.fillMaxSize(),
                     thumbnail = true,
                 )
+                if (ageRestrictionBadgeText != null) {
+                    Text(
+                        text = ageRestrictionBadgeText,
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        style = MiuixTheme.textStyles.footnote2,
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp)
+                                .squircleBackground(Color(0xFFFA383E), 4.dp)
+                                .padding(horizontal = 4.dp, vertical = 1.dp),
+                    )
+                }
                 if (pageBadgeText != null) {
                     Text(
                         text = pageBadgeText,
@@ -567,6 +607,20 @@ fun HighlightCard(
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
             )
+            if (illust.ageRestrictionBadgeText != null) {
+                Text(
+                    text = illust.ageRestrictionBadgeText,
+                    color = Color.White,
+                    style = MiuixTheme.textStyles.footnote2,
+                    fontWeight = FontWeight.Black,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .squircleBackground(Color(0xFFFA383E), 6.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
             Box(
                 modifier =
                     Modifier
