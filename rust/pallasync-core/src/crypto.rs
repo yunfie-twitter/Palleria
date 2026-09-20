@@ -1,6 +1,5 @@
 use crate::models::{
-    self, CapabilityToken, DeviceRecord, PROTOCOL_VERSION_2_0, PROTOCOL_VERSION_2_1, RecordAAD,
-    SyncRecord,
+    self, CapabilityToken, DeviceRecord, PROTOCOL_VERSION_2_1, RecordAAD, SyncRecord,
 };
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use bip39::{Language, Mnemonic};
@@ -13,6 +12,7 @@ use hkdf::Hkdf;
 use hmac::Hmac;
 use rand::RngCore;
 use rand_core::OsRng;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 pub type HmacSha256 = Hmac<Sha256>;

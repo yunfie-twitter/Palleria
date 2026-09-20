@@ -7,7 +7,6 @@ use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jlong, jstring};
-use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn read_string<'local>(env: &mut JNIEnv<'local>, value: &JString<'local>) -> Option<String> {
