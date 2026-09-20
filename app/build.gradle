@@ -286,7 +286,10 @@ tasks.matching {
     dependsOn(buildRustAndroid, buildPallaSyncCoreAndroid)
 }
 
-tasks.matching { it.name.startsWith("detekt") || it.name.startsWith("ktlint") }.configureEach {
+tasks.matching {
+    def lower = it.name.toLowerCase(Locale.ROOT)
+    lower.contains("ktlint") || lower.contains("detekt") || lower.contains("lint") || lower.contains("spotless")
+}.configureEach {
     dependsOn(generateUniFfiBindings)
 }
 
