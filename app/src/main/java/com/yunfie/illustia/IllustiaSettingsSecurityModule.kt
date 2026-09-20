@@ -91,8 +91,25 @@ abstract class IllustiaSettingsSecurityModule(
     fun loadFullViewHistory() {
         viewModelScope.launch(Dispatchers.IO) {
             val fullHistory = repository.readFullViewHistory()
+            val bookmarkedIds =
+                _uiState.value.bookmarkItems
+                    .asSequence()
+                    .map { it.id }
+                    .toSet()
+            val syncedHistory =
+                if (bookmarkedIds.isNotEmpty()) {
+                    fullHistory.map { illust ->
+                        if (illust.id in bookmarkedIds && !illust.isBookmarked) {
+                            illust.copy(isBookmarked = true)
+                        } else {
+                            illust
+                        }
+                    }
+                } else {
+                    fullHistory
+                }
             _uiState.update { current ->
-                current.withSettings(current.settings.copy(viewHistory = fullHistory))
+                current.withSettings(current.settings.copy(viewHistory = syncedHistory))
             }
         }
     }

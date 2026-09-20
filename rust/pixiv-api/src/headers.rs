@@ -31,10 +31,10 @@ impl PixivHeaders {
             extra.insert(name, value.clone());
         }
         let client_time = Utc::now().format("%Y-%m-%dT%H:%M:%S+00:00").to_string();
-        let client_hash = format!(
-            "{:x}",
-            md5::compute(format!("{client_time}{CLIENT_HASH_SECRET}"))
-        );
+        let mut ctx = md5::Context::new();
+        ctx.consume(client_time.as_bytes());
+        ctx.consume(CLIENT_HASH_SECRET.as_bytes());
+        let client_hash = format!("{:x}", ctx.compute());
         insert_named(&mut extra, "x-client-time", &client_time)?;
         insert_named(&mut extra, "x-client-hash", &client_hash)?;
         if authenticated {

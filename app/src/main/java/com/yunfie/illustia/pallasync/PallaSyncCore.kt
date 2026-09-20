@@ -23,9 +23,10 @@ object PallaSyncCore {
         deviceId: String,
         encryptionKeyBase64: String,
         signingKeyBase64: String,
+        lamport: Long = 0L,
     ): String?
 
-    /** Verifies the unsigned-record JCS SHA-256 Ed25519 signature. */
+    /** Verifies the unsigned-record JCS Ed25519 signature. */
     external fun verifySyncRecord(
         recordJson: String,
         devicePublicKeyBase64: String,
@@ -54,5 +55,17 @@ object PallaSyncCore {
         encryptedDeviceName: String,
         deviceId: String,
         encryptionKeyBase64: String,
+    ): String?
+
+    // Creates Base64URL-encoded capability token for Authorization header
+    external fun createCapabilityToken(
+        chainId: String,
+        deviceId: String,
+        method: String,
+        path: String,
+        query: String,
+        bodyJson: String,
+        signingKeyBase64: String,
+        ttlMs: Long,
     ): String?
 }

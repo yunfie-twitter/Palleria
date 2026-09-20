@@ -51,6 +51,7 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
@@ -65,7 +66,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -113,7 +113,9 @@ internal fun IllustDetailHeader(
             stringResource(R.string.detail_save_image)
         }
     val saveAllPagesLabel = stringResource(R.string.detail_save_all_pages)
+    val saveThisPageLabel = stringResource(R.string.detail_save_this_page)
     val copyUrlLabel = stringResource(R.string.detail_copy_url)
+    val muteLabel = stringResource(R.string.detail_mute)
     val muteWorkLabel = stringResource(R.string.detail_mute_work)
     val muteArtistLabel = stringResource(R.string.detail_mute_artist)
     val reportProblemLabel = stringResource(R.string.action_report_problem)
@@ -182,6 +184,8 @@ internal fun IllustDetailHeader(
             }
         }
 
+    val pagerState = rememberPagerState(pageCount = { imageUrls.size })
+
     Box(
         modifier =
             modifier
@@ -218,8 +222,6 @@ internal fun IllustDetailHeader(
                     }
                 }
             } else {
-                val pagerState = rememberPagerState(pageCount = { imageUrls.size })
-
                 HorizontalPager(
                     state = pagerState,
                     modifier =
@@ -355,12 +357,12 @@ internal fun IllustDetailHeader(
                     Color.White.copy(alpha = 0.92f)
                 }
             HeaderOverlayIcon(
-                MiuixIcons.Back,
-                onBack,
+                icon = MiuixIcons.Back,
+                onClick = onBack,
                 backgroundColor = headerIconBackground,
                 contentColor = headerIconTint,
             )
-            WindowIconDropdownMenu(
+            OverlayIconCascadingDropdownMenu(
                 entries =
                     listOf(
                         DropdownEntry(
@@ -387,23 +389,47 @@ internal fun IllustDetailHeader(
                                             }.onFailure { onMessage(shareFailedMessage) }
                                         },
                                     ),
-                                    DropdownItem(
-                                        text = saveActionLabel,
-                                        onClick = {
-                                            onSaveImage(
-                                                illust.originalImageUrl ?: illust.imageUrl,
-                                                "illustia_${illust.id}",
-                                                !skipConfirmOnDetailSave,
-                                            )
-                                        },
-                                    ),
                                     if (imageUrls.size > 1) {
                                         DropdownItem(
-                                            text = saveAllPagesLabel,
-                                            onClick = { onSaveAllImages(imageUrls, "illustia_${illust.id}") },
+                                            text = saveActionLabel,
+                                            children =
+                                                listOf(
+                                                    DropdownItem(
+                                                        text = saveThisPageLabel,
+                                                        onClick = {
+                                                            val currentPage =
+                                                                pagerState.currentPage.coerceIn(
+                                                                    0,
+                                                                    (imageUrls.size - 1).coerceAtLeast(0),
+                                                                )
+                                                            val targetUrl =
+                                                                illust.originalImagePages.getOrNull(currentPage)
+                                                                    ?: imageUrls.getOrNull(currentPage)
+                                                                    ?: (illust.originalImageUrl ?: illust.imageUrl)
+                                                            onSaveImage(
+                                                                targetUrl,
+                                                                "illustia_${illust.id}_p$currentPage",
+                                                                !skipConfirmOnDetailSave,
+                                                            )
+                                                        },
+                                                    ),
+                                                    DropdownItem(
+                                                        text = saveAllPagesLabel,
+                                                        onClick = { onSaveAllImages(imageUrls, "illustia_${illust.id}") },
+                                                    ),
+                                                ),
                                         )
                                     } else {
-                                        null
+                                        DropdownItem(
+                                            text = saveActionLabel,
+                                            onClick = {
+                                                onSaveImage(
+                                                    illust.originalImageUrl ?: illust.imageUrl,
+                                                    "illustia_${illust.id}",
+                                                    !skipConfirmOnDetailSave,
+                                                )
+                                            },
+                                        )
                                     },
                                     DropdownItem(
                                         text = copyUrlLabel,
@@ -418,18 +444,24 @@ internal fun IllustDetailHeader(
                             items =
                                 listOfNotNull(
                                     DropdownItem(
-                                        text = muteWorkLabel,
-                                        onClick = {
-                                            onMuteIllust()
-                                            onBack()
-                                        },
-                                    ),
-                                    DropdownItem(
-                                        text = muteArtistLabel,
-                                        onClick = {
-                                            onMuteUser()
-                                            onBack()
-                                        },
+                                        text = muteLabel,
+                                        children =
+                                            listOf(
+                                                DropdownItem(
+                                                    text = muteWorkLabel,
+                                                    onClick = {
+                                                        onMuteIllust()
+                                                        onBack()
+                                                    },
+                                                ),
+                                                DropdownItem(
+                                                    text = muteArtistLabel,
+                                                    onClick = {
+                                                        onMuteUser()
+                                                        onBack()
+                                                    },
+                                                ),
+                                            ),
                                     ),
                                     if (onReportIllust != null) {
                                         DropdownItem(
@@ -442,14 +474,11 @@ internal fun IllustDetailHeader(
                                 ),
                         ),
                     ),
-                collapseOnSelection = true,
+                icon = MiuixIcons.More,
                 backgroundColor = headerIconBackground,
-                cornerRadius = 19.dp,
-                minWidth = 38.dp,
-                minHeight = 38.dp,
-            ) {
-                Icon(MiuixIcons.More, contentDescription = moreLabel, tint = headerIconTint, modifier = Modifier.size(24.dp))
-            }
+                contentColor = headerIconTint,
+                contentDescription = moreLabel,
+            )
         }
     }
 

@@ -35,12 +35,13 @@ pub(crate) fn io_error(context: &str, error: std::io::Error) -> ApiError {
 }
 
 pub(crate) fn http_error(status: u16, body: &str) -> ApiError {
+    let trimmed = body.trim();
     ApiError::Http {
         status,
-        detail: if body.trim().is_empty() {
+        detail: if trimmed.is_empty() {
             "Pixiv API request failed".to_owned()
         } else {
-            body.trim().to_owned()
+            trimmed.to_owned()
         },
     }
 }

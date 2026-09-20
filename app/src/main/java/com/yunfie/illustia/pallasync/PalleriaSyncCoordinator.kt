@@ -326,7 +326,12 @@ internal class PalleriaSyncCoordinator(
                     val healthBody =
                         runCatching { json.decodeFromString<PallaSyncHealth>(body) }.getOrNull()
                             ?: return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response was invalid")
-                    if (healthBody.status != "ok" || healthBody.protocolVersion != PALLASYNC_PROTOCOL_VERSION) {
+                    if (healthBody.status != "ok" ||
+                        (
+                            healthBody.protocolVersion != PALLASYNC_PROTOCOL_VERSION &&
+                                healthBody.protocolVersion != PALLASYNC_LEGACY_PROTOCOL_VERSION
+                        )
+                    ) {
                         return@execute PallaSyncHttpResult.ProtocolError(
                             "PallaSync health response advertised an incompatible protocol",
                         )
@@ -342,7 +347,7 @@ internal class PalleriaSyncCoordinator(
         val joinRequest =
             Request
                 .Builder()
-                .url(PallaSyncUrls.devices(baseUrl, chainId))
+                .url(PallaSyncUrls.enrollDevice(baseUrl, chainId))
                 .header("Accept", JSON_MEDIA_TYPE.toString())
                 .post(deviceRecord.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
@@ -484,6 +489,7 @@ internal class PalleriaSyncCoordinator(
                     deviceId = deviceId,
                     encryptionKeyBase64 = keys.encryptionKeyBase64Url,
                     signingKeyBase64 = keys.signingKeyBase64Url,
+                    lamport = lamport,
                 ) ?: error("Native sync record creation failed")
             state = state.copy(lamport = lamport)
             outbox +=
@@ -715,6 +721,28 @@ internal class PalleriaSyncCoordinator(
         return SyncCycleOutcome.Success
     }
 
+    private fun makeCapabilityToken(
+        chainId: String,
+        method: String,
+        path: String,
+        query: String = "",
+        bodyJson: String = "",
+    ): String? {
+        val keys = keysForChainLocked(chainId)
+        val deviceId = keystore.getDeviceId()
+        if (keys == null || deviceId == null) return null
+        return crypto.createCapabilityToken(
+            chainId = chainId,
+            deviceId = deviceId,
+            method = method,
+            path = path,
+            query = query,
+            bodyJson = bodyJson,
+            signingKeyBase64 = keys.signingKeyBase64Url,
+            ttlMs = 300_000L,
+        )
+    }
+
     private suspend fun processOutboxLocked(
         baseUrl: HttpUrl,
         chainId: String,
@@ -723,43 +751,66 @@ internal class PalleriaSyncCoordinator(
         dao.deleteAcceptedEvents()
         val events = dao.getQueuedEvents().filter { it.chainId == chainId }
         if (events.isEmpty()) return PallaSyncHttpResult.Success(Unit)
-        val batchJson = events.joinToString(separator = ",", prefix = "[", postfix = "]") { it.eventJson }
-        val batchRequest =
+        val batchRecordsJson = events.joinToString(separator = ",", prefix = "[", postfix = "]") { it.eventJson }
+        val batchBody = "{\"records\":$batchRecordsJson}"
+        val path = "/pallasync/v2/chains/$chainId/records"
+        val batchToken = makeCapabilityToken(chainId, "POST", path, "", batchBody)
+        val batchRequestBuilder =
             Request
                 .Builder()
                 .url(PallaSyncUrls.recordsEndpoint(baseUrl, chainId))
                 .header("Accept", JSON_MEDIA_TYPE.toString())
-                .post(batchJson.toRequestBody(JSON_MEDIA_TYPE))
-                .build()
+        if (batchToken != null) {
+            batchRequestBuilder.header("Authorization", "PallaSync $batchToken")
+        }
+        val batchRequest = batchRequestBuilder.post(batchBody.toRequestBody(JSON_MEDIA_TYPE)).build()
 
-        when (val result = remote.executeUnit(batchRequest)) {
+        return when (val result = remote.executeUnit(batchRequest)) {
             is PallaSyncHttpResult.Success -> {
                 events.forEach { dao.deleteOutboxEvent(it.id) }
                 log("Uploaded and removed ${events.size} accepted sync record(s) in a single batch")
-                return PallaSyncHttpResult.Success(Unit)
+                PallaSyncHttpResult.Success(Unit)
             }
 
             is PallaSyncHttpResult.ProtocolError -> {
-                if (result.statusCode != 400) {
-                    return result
+                if (result.statusCode == 400) {
+                    log("Batch upload failed, falling back to sequential upload to isolate the bad record")
+                    uploadSequentialOutboxEvents(baseUrl, chainId, events)
+                } else {
+                    result
                 }
-                log("Batch upload failed, falling back to sequential upload to isolate the bad record")
             }
 
             else -> {
-                return result
+                result
             }
         }
+    }
 
+    private suspend fun uploadSequentialOutboxEvents(
+        baseUrl: HttpUrl,
+        chainId: String,
+        events: List<OutboxEntity>,
+    ): PallaSyncHttpResult<Unit> {
+        val dao = db.pallaSyncDao()
+        val path = "/pallasync/v2/chains/$chainId/records"
         var accepted = 0
-        for (event in events) {
-            val request =
+        var errorResult: PallaSyncHttpResult<Unit>? = null
+        var index = 0
+
+        while (index < events.size && errorResult == null) {
+            val event = events[index++]
+            val singleBody = "{\"records\":[${event.eventJson}]}"
+            val singleToken = makeCapabilityToken(chainId, "POST", path, "", singleBody)
+            val singleRequestBuilder =
                 Request
                     .Builder()
                     .url(PallaSyncUrls.recordsEndpoint(baseUrl, chainId))
                     .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .post("[${event.eventJson}]".toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
+            if (singleToken != null) {
+                singleRequestBuilder.header("Authorization", "PallaSync $singleToken")
+            }
+            val request = singleRequestBuilder.post(singleBody.toRequestBody(JSON_MEDIA_TYPE)).build()
             when (val result = remote.executeUnit(request)) {
                 is PallaSyncHttpResult.Success -> {
                     dao.deleteOutboxEvent(event.id)
@@ -771,30 +822,34 @@ internal class PalleriaSyncCoordinator(
                         dao.updateOutboxEvent(event.copy(status = "rejected"))
                         log("Quarantined an unrecoverable local sync record: ${result.message}")
                     } else {
-                        return result
+                        errorResult = result
                     }
                 }
 
                 else -> {
-                    return result
+                    errorResult = result
                 }
             }
         }
         if (accepted > 0) log("Uploaded and removed $accepted accepted sync record(s)")
-        return PallaSyncHttpResult.Success(Unit)
+        return errorResult ?: PallaSyncHttpResult.Success(Unit)
     }
 
     private suspend fun fetchDevicesLocked(
         baseUrl: HttpUrl,
         chainId: String,
     ): PallaSyncHttpResult<Unit> {
-        val request =
+        val path = "/pallasync/v2/chains/$chainId/devices"
+        val token = makeCapabilityToken(chainId, "GET", path, "", "")
+        val requestBuilder =
             Request
                 .Builder()
                 .url(PallaSyncUrls.devices(baseUrl, chainId))
                 .header("Accept", JSON_MEDIA_TYPE.toString())
-                .get()
-                .build()
+        if (token != null) {
+            requestBuilder.header("Authorization", "PallaSync $token")
+        }
+        val request = requestBuilder.get().build()
         val responseResult =
             remote.execute(request) { response ->
                 val body =
@@ -829,7 +884,12 @@ internal class PalleriaSyncCoordinator(
                         log("Ignored a malformed device record")
                         return@forEach
                     }
-            if (device.chainId != chainId || device.protocolVersion != PALLASYNC_PROTOCOL_VERSION) {
+            if (device.chainId != chainId ||
+                (
+                    device.protocolVersion != PALLASYNC_PROTOCOL_VERSION &&
+                        device.protocolVersion != PALLASYNC_LEGACY_PROTOCOL_VERSION
+                )
+            ) {
                 log("Ignored a device record for the wrong chain or protocol")
                 return@forEach
             }
@@ -901,7 +961,7 @@ internal class PalleriaSyncCoordinator(
             val healRequest =
                 Request
                     .Builder()
-                    .url(PallaSyncUrls.devices(baseUrl, chainId))
+                    .url(PallaSyncUrls.enrollDevice(baseUrl, chainId))
                     .header("Accept", JSON_MEDIA_TYPE.toString())
                     .post(record.toRequestBody(JSON_MEDIA_TYPE))
                     .build()
@@ -959,31 +1019,55 @@ internal class PalleriaSyncCoordinator(
         chainId: String,
         afterSeq: Long,
     ): PallaSyncHttpResult<PallaSyncRecordsPage> {
-        val request =
+        val path = "/pallasync/v2/chains/$chainId/records"
+        val query = "after_seq=$afterSeq&limit=$PALLASYNC_PAGE_SIZE"
+        val token = makeCapabilityToken(chainId, "GET", path, query, "")
+        val requestBuilder =
             Request
                 .Builder()
-                .url(PallaSyncUrls.records(baseUrl, chainId, afterSeq, PALLASYNC_PAGE_SIZE))
+                .url(PallaSyncUrls.records(baseUrl, chainId, null, afterSeq, PALLASYNC_PAGE_SIZE))
                 .header("Accept", JSON_MEDIA_TYPE.toString())
-                .get()
-                .build()
+        if (token != null) {
+            requestBuilder.header("Authorization", "PallaSync $token")
+        }
+        val request = requestBuilder.get().build()
         return remote.execute(request) { response ->
-            val nextSeq =
-                response.header(PALLASYNC_NEXT_SEQ_HEADER)?.toLongOrNull()
-                    ?: return@execute PallaSyncHttpResult.ProtocolError("Relay page did not include a valid next cursor")
-            val hasMore =
+            val nextSeqHeader = response.header(PALLASYNC_NEXT_SEQ_HEADER)?.toLongOrNull()
+            val hasMoreHeader =
                 when (response.header(PALLASYNC_HAS_MORE_HEADER)?.lowercase(Locale.ROOT)) {
                     "true" -> true
                     "false" -> false
-                    else -> return@execute PallaSyncHttpResult.ProtocolError("Relay page did not include a valid has-more header")
+                    else -> null
                 }
             val body =
                 response.body?.string()
                     ?: return@execute PallaSyncHttpResult.ProtocolError("Relay page body was empty")
-            val array =
-                runCatching { json.parseToJsonElement(body).jsonArray }.getOrElse {
-                    return@execute PallaSyncHttpResult.ProtocolError("Relay page was not valid JSON")
+
+            parseRecordsResponseBody(body, nextSeqHeader, hasMoreHeader, afterSeq)
+        }
+    }
+
+    private fun parseRecordsResponseBody(
+        body: String,
+        nextSeqHeader: Long?,
+        hasMoreHeader: Boolean?,
+        afterSeq: Long,
+    ): PallaSyncHttpResult<PallaSyncRecordsPage> {
+        val fetchResp = runCatching { json.decodeFromString<PallaSyncFetchRecordsResponse>(body) }.getOrNull()
+        if (fetchResp != null && (fetchResp.records.isNotEmpty() || fetchResp.nextCursor != null)) {
+            val parsedRecords =
+                fetchResp.records.map { wire ->
+                    val raw = json.encodeToString(wire)
+                    PallaSyncPageRecord(wire, raw)
                 }
-            val records =
+            val seq = fetchResp.nextCursor?.toLongOrNull() ?: nextSeqHeader ?: afterSeq
+            val more = hasMoreHeader ?: (fetchResp.nextCursor != null)
+            return PallaSyncHttpResult.Success(PallaSyncRecordsPage(parsedRecords, seq, more))
+        }
+
+        val array = runCatching { json.parseToJsonElement(body).jsonArray }.getOrNull()
+        return if (array != null) {
+            val parsedRecords =
                 array.map { element ->
                     val raw = element.toString()
                     runCatching { json.decodeFromString<PallaSyncWireRecord>(raw) }
@@ -992,7 +1076,11 @@ internal class PalleriaSyncCoordinator(
                             onFailure = { PallaSyncPageRecord(null, raw, it.message ?: "malformed record") },
                         )
                 }
-            PallaSyncHttpResult.Success(PallaSyncRecordsPage(records, nextSeq, hasMore))
+            val seq = nextSeqHeader ?: afterSeq
+            val more = hasMoreHeader ?: false
+            PallaSyncHttpResult.Success(PallaSyncRecordsPage(parsedRecords, seq, more))
+        } else {
+            PallaSyncHttpResult.ProtocolError("Relay page was not valid JSON")
         }
     }
 
@@ -1031,7 +1119,12 @@ internal class PalleriaSyncCoordinator(
                 quarantine(pageRecord.parseError ?: "Malformed sync record")
                 return@forEach
             }
-            if (wire.chainId != chainId || wire.protocolVersion != PALLASYNC_PROTOCOL_VERSION) {
+            if (wire.chainId != chainId ||
+                (
+                    wire.protocolVersion != PALLASYNC_PROTOCOL_VERSION &&
+                        wire.protocolVersion != PALLASYNC_LEGACY_PROTOCOL_VERSION
+                )
+            ) {
                 quarantine("Record chain or protocol did not match the active chain")
                 return@forEach
             }
@@ -1310,6 +1403,7 @@ internal class PalleriaSyncCoordinator(
                         deviceId = deviceId,
                         encryptionKeyBase64 = keys.encryptionKeyBase64Url,
                         signingKeyBase64 = keys.signingKeyBase64Url,
+                        lamport = lamport,
                     ) ?: error("Native sync record creation failed")
                 nextState = nextState.copy(lamport = lamport)
                 OutboxEntity(
@@ -1438,7 +1532,7 @@ internal class PalleriaSyncCoordinator(
             originalImageUrl = null,
             tags = emptyList(),
             pageCount = pageCount,
-            isBookmarked = false,
+            isBookmarked = isBookmarked,
         )
 
     private fun JsonObject.string(name: String): String? = this[name]?.jsonPrimitive?.content?.takeIf(String::isNotBlank)

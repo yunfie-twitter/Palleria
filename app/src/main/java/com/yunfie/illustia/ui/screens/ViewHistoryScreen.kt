@@ -99,9 +99,24 @@ fun ViewHistoryScreen(
     val hasSelection = selectedIds.isNotEmpty()
     val selectedCountText = stringResource(R.string.data_items_count, selectedIds.size)
 
+    val bookmarkedIds =
+        remember(state.bookmarkItems) {
+            state.bookmarkItems
+                .asSequence()
+                .map { it.id }
+                .toSet()
+        }
+
     val visibleHistory =
-        remember(state.settings.viewHistory, state.settings, searchQuery, sortOrder, filterType) {
-            val history = state.settings.viewHistory.visibleWithSettings(state.settings)
+        remember(state.settings.viewHistory, state.settings, searchQuery, sortOrder, filterType, bookmarkedIds) {
+            val history =
+                state.settings.viewHistory.visibleWithSettings(state.settings).map { illust ->
+                    if (illust.id in bookmarkedIds && !illust.isBookmarked) {
+                        illust.copy(isBookmarked = true)
+                    } else {
+                        illust
+                    }
+                }
             filterAndSortHistory(
                 history = history,
                 query = searchQuery.trim(),

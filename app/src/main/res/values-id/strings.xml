@@ -164,9 +164,11 @@
     <string name="detail_open_in_browser">Buka di Peramban</string>
     <string name="detail_share">Bagikan</string>
     <string name="detail_save_image">Simpan Gambar</string>
+    <string name="detail_save_this_page">Simpan Halaman Ini</string>
     <string name="detail_save_ugoira">Selamatkan Ugoira</string>
     <string name="detail_save_all_pages">Simpan Semua Halaman</string>
     <string name="detail_copy_url">Salin URL</string>
+    <string name="detail_mute">Bisukan</string>
     <string name="detail_mute_work">Bisukan Pekerjaan Ini</string>
     <string name="detail_mute_artist">Bisukan Artis Ini</string>
     <string name="detail_more">Lebih lanjut</string>

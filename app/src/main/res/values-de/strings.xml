@@ -164,9 +164,11 @@
     <string name="detail_open_in_browser">Im Browser öffnen</string>
     <string name="detail_share">Teilen</string>
     <string name="detail_save_image">Bild speichern</string>
+    <string name="detail_save_this_page">Diese Seite speichern</string>
     <string name="detail_save_ugoira">Rette Ugoira</string>
     <string name="detail_save_all_pages">Alle Seiten speichern</string>
     <string name="detail_copy_url">URL kopieren</string>
+    <string name="detail_mute">Stummschalten</string>
     <string name="detail_mute_work">Schalten Sie dieses Werk stumm</string>
     <string name="detail_mute_artist">Schalten Sie diesen Künstler stumm</string>
     <string name="detail_more">Mehr</string>

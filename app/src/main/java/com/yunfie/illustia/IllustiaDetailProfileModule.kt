@@ -37,8 +37,10 @@ abstract class IllustiaDetailProfileModule(
 
     private fun recordViewHistory(illust: Illust) {
         if (_uiState.value.settings.saveViewHistory) {
+            val isBookmarked = illust.isBookmarked || _uiState.value.bookmarkItems.any { it.id == illust.id }
+            val recordedIllust = if (illust.isBookmarked != isBookmarked) illust.copy(isBookmarked = isBookmarked) else illust
             val history =
-                (listOf(illust) + _uiState.value.settings.viewHistory)
+                (listOf(recordedIllust) + _uiState.value.settings.viewHistory)
                     .distinctBy { it.id }
                     .take(48)
             updateSettings { it.copy(viewHistory = history) }

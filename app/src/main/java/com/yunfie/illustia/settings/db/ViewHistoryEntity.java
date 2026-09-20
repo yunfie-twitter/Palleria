@@ -18,6 +18,7 @@ public class ViewHistoryEntity {
     @NonNull
     public String type;
     public int position;
+    public boolean isBookmarked;
 
     public ViewHistoryEntity(
             long id,
@@ -26,7 +27,8 @@ public class ViewHistoryEntity {
             @NonNull String imageUrl,
             int pageCount,
             @NonNull String type,
-            int position
+            int position,
+            boolean isBookmarked
     ) {
         this.id = id;
         this.title = title;
@@ -35,5 +37,6 @@ public class ViewHistoryEntity {
         this.pageCount = pageCount;
         this.type = type;
         this.position = position;
+        this.isBookmarked = isBookmarked;
     }
 }

@@ -164,9 +164,11 @@
     <string name="detail_open_in_browser">Mở trong trình duyệt</string>
     <string name="detail_share">Chia sẻ</string>
     <string name="detail_save_image">Lưu hình ảnh</string>
+    <string name="detail_save_this_page">Lưu trang này</string>
     <string name="detail_save_ugoira">Lưu Ugoira</string>
     <string name="detail_save_all_pages">Lưu tất cả các trang</string>
     <string name="detail_copy_url">Sao chép URL</string>
+    <string name="detail_mute">Tắt tiếng</string>
     <string name="detail_mute_work">Tắt tiếng tác phẩm này</string>
     <string name="detail_mute_artist">Tắt tiếng nghệ sĩ này</string>
     <string name="detail_more">Thêm</string>

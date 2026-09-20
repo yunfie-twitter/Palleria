@@ -78,6 +78,7 @@ internal suspend fun writeRoomSettingsData(
                                 illust.pageCount,
                                 illust.type,
                                 index,
+                                illust.isBookmarked,
                             )
                         },
                     )
@@ -132,6 +133,7 @@ internal suspend fun writeSyncedRoomSettingsData(
                         illust.pageCount,
                         illust.type,
                         index,
+                        illust.isBookmarked,
                     )
                 },
             )

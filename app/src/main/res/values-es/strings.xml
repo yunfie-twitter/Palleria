@@ -164,9 +164,11 @@
     <string name="detail_open_in_browser">Abrir en el navegador</string>
     <string name="detail_share">Compartir</string>
     <string name="detail_save_image">Guardar imagen</string>
+    <string name="detail_save_this_page">Guardar esta página</string>
     <string name="detail_save_ugoira">Salva a Ugoira</string>
     <string name="detail_save_all_pages">Guardar todas las páginas</string>
     <string name="detail_copy_url">Copiar URL</string>
+    <string name="detail_mute">Silenciar</string>
     <string name="detail_mute_work">Silenciar este trabajo</string>
     <string name="detail_mute_artist">Silenciar a este artista</string>
     <string name="detail_more">Más</string>

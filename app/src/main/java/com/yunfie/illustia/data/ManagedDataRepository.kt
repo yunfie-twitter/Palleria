@@ -83,6 +83,7 @@ class ManagedDataRepository(
             put("artistName", artistName)
             put("imageUrl", imageUrl)
             put("pageCount", pageCount)
+            put("isBookmarked", isBookmarked)
         }
 
     private fun JSONObject.toHistoryIllust(): Illust? {
@@ -102,7 +103,7 @@ class ManagedDataRepository(
             originalImageUrl = null,
             tags = emptyList(),
             pageCount = optInt("pageCount", 1).coerceAtLeast(1),
-            isBookmarked = false,
+            isBookmarked = optBoolean("isBookmarked", false),
         )
     }
 

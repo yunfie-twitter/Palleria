@@ -25,3 +25,11 @@ hmac = "0.12"
 hex = "0.4.3"
 pbkdf2 = "0.12"
 bip39 = "2.0.0"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+strip = "symbols"
+
