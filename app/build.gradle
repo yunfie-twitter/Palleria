@@ -168,10 +168,11 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "run", "--release", "--bin", "uniffi-bindgen", "--", "generate",
         "--library", uniffiHostLibrary,
+        "--config", new File(rustCrateDir, "uniffi.toml").absolutePath,
         "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
     dependsOn buildUniFfiHost
     inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
-    outputs.file(uniffiKotlinDir.map { it.file("com/yunfie/illustia/rust/palleria_pixiv_api.kt") })
+    outputs.dir(uniffiKotlinDir)
 }
 
 def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
@@ -262,11 +263,15 @@ tasks.register("checkQualityBaselineBudgets") {
     }
 }
 
-tasks.named("preBuild").configure {
+tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.configureEach {
     dependsOn(generateUniFfiBindings, buildRustAndroid, buildPallaSyncCoreAndroid)
 }
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
+    dependsOn(generateUniFfiBindings)
+}
+
+tasks.withType(JavaCompile).configureEach {
     dependsOn(generateUniFfiBindings)
 }
 
