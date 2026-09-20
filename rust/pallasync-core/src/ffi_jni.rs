@@ -53,15 +53,29 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_deriveKe
     let sign_key_b64 = URL_SAFE_NO_PAD.encode(derived.signing_key.to_bytes());
     let pub_key_b64 = URL_SAFE_NO_PAD.encode(derived.signing_key.verifying_key().as_bytes());
 
-    let result = json!({
-        "chain_id": derived.chain_id,
-        "chain_salt": derived.chain_salt,
-        "encryption_key": enc_key_b64,
-        "signing_key": sign_key_b64,
-        "public_key": pub_key_b64
-    });
+    #[derive(serde::Serialize)]
+    struct DerivedKeysOutput<'a> {
+        chain_id: &'a str,
+        chain_salt: &'a str,
+        encryption_key: &'a str,
+        signing_key: &'a str,
+        public_key: &'a str,
+    }
 
-    match env.new_string(result.to_string()) {
+    let output = DerivedKeysOutput {
+        chain_id: &derived.chain_id,
+        chain_salt: &derived.chain_salt,
+        encryption_key: &enc_key_b64,
+        signing_key: &sign_key_b64,
+        public_key: &pub_key_b64,
+    };
+
+    let result_str = match serde_json::to_string(&output) {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match env.new_string(result_str) {
         Ok(output) => output.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
@@ -281,11 +295,13 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptD
     };
 
     // Try decoding as full DeviceRecord if it contains JSON
-    if let Ok(record) = serde_json::from_str::<DeviceRecord>(&encrypted_name_str) {
-        if let Ok(plaintext) = crypto::decrypt_device_record_v21(&record, &encryption_key) {
-            if let Ok(s) = String::from_utf8(plaintext) {
-                if let Ok(output) = env.new_string(s) {
-                    return output.into_raw();
+    if encrypted_name_str.trim_start().starts_with('{') {
+        if let Ok(record) = serde_json::from_str::<DeviceRecord>(&encrypted_name_str) {
+            if let Ok(plaintext) = crypto::decrypt_device_record_v21(&record, &encryption_key) {
+                if let Ok(s) = String::from_utf8(plaintext) {
+                    if let Ok(output) = env.new_string(s) {
+                        return output.into_raw();
+                    }
                 }
             }
         }

@@ -140,7 +140,11 @@ pub(super) async fn read_limited_bytes(
     limit: u64,
     context: &str,
 ) -> Result<Vec<u8>, ApiError> {
-    let mut bytes = Vec::new();
+    let capacity_hint = response
+        .content_length()
+        .filter(|&len| len <= limit)
+        .unwrap_or(0) as usize;
+    let mut bytes = Vec::with_capacity(capacity_hint);
     let mut stream = response.bytes_stream();
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(network_error)?;
@@ -160,10 +164,17 @@ fn response_too_large(context: &str, limit: u64) -> ApiError {
 }
 
 fn error_preview(body: &[u8]) -> String {
-    let normalized = String::from_utf8_lossy(body)
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ");
+    let text = String::from_utf8_lossy(body);
+    let mut normalized = String::new();
+    for word in text.split_whitespace() {
+        if !normalized.is_empty() {
+            normalized.push(' ');
+        }
+        normalized.push_str(word);
+        if normalized.len() >= ERROR_DETAIL_LIMIT * 2 {
+            break;
+        }
+    }
     if normalized.is_empty() {
         return "Pixiv API request failed".to_owned();
     }

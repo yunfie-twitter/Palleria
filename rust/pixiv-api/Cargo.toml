@@ -30,8 +30,11 @@ tiny_http = "0.12"
 uniffi = { version = "0.29", features = ["build"] }
 
 [profile.release]
-lto = "thin"
+lto = "fat"
 codegen-units = 1
+opt-level = 3
+panic = "abort"
+strip = "symbols"
 
 [[bench]]
 name = "illust_decode"

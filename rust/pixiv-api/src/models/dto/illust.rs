@@ -34,23 +34,25 @@ impl IllustDto {
         let original = self
             .meta_single_page
             .as_ref()
-            .and_then(|urls| urls.original.clone())
-            .or_else(|| original_pages.first().cloned());
+            .and_then(|urls| urls.original.as_deref())
+            .or_else(|| original_pages.first().map(|s| s.as_str()));
         let medium = self
             .image_urls
             .medium
-            .clone()
-            .or_else(|| self.image_urls.square_medium.clone())
-            .or_else(|| self.image_urls.large.clone())
-            .or_else(|| original.clone())
-            .unwrap_or_default();
+            .as_deref()
+            .or(self.image_urls.square_medium.as_deref())
+            .or(self.image_urls.large.as_deref())
+            .or(original)
+            .unwrap_or_default()
+            .to_owned();
         let image_url = self
             .image_urls
             .large
-            .clone()
-            .or_else(|| self.image_urls.medium.clone())
-            .or_else(|| original.clone())
-            .unwrap_or_default();
+            .as_deref()
+            .or(self.image_urls.medium.as_deref())
+            .or(original)
+            .unwrap_or_default()
+            .to_owned();
 
         Some(Illust {
             id,

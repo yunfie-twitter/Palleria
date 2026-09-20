@@ -85,7 +85,9 @@ pub fn derive_keys_with_salt(
 
     let hk = Hkdf::<Sha256>::new(Some(salt), &root_seed);
 
-    let mut epoch_info = Vec::from(&b"PALLASYNC-v2.1\0epoch\0"[..]);
+    const EPOCH_CONTEXT: &[u8] = b"PALLASYNC-v2.1\0epoch\0";
+    let mut epoch_info = Vec::with_capacity(EPOCH_CONTEXT.len() + 4);
+    epoch_info.extend_from_slice(EPOCH_CONTEXT);
     epoch_info.extend_from_slice(&0u32.to_be_bytes());
     let mut epoch_key = [0u8; 32];
     hk.expand(&epoch_info, &mut epoch_key)
@@ -111,6 +113,7 @@ pub fn derive_keys_with_salt(
         .map_err(|_| "HKDF fail: admin_seed")?;
 
     let admin_key = SigningKey::from_bytes(&admin_seed);
+    let signing_key = admin_key.clone();
 
     Ok(DerivedKeys {
         chain_id,
@@ -119,9 +122,9 @@ pub fn derive_keys_with_salt(
         record_key,
         device_name_key,
         invite_key,
-        admin_key: admin_key.clone(),
+        admin_key,
         encryption_key: record_key,
-        signing_key: admin_key,
+        signing_key,
     })
 }
 
@@ -129,9 +132,7 @@ pub fn derive_keys_from_seed(seed_phrase: &str) -> Result<DerivedKeys, String> {
     let mut hasher = Sha256::new();
     hasher.update(b"PALLASYNC-DEFAULT-SALT-v2.1\0");
     hasher.update(seed_phrase.as_bytes());
-    let salt_digest = hasher.finalize();
-    let mut salt = [0u8; 32];
-    salt.copy_from_slice(&salt_digest);
+    let salt: [u8; 32] = hasher.finalize().into();
     derive_keys_with_salt(seed_phrase, "", &salt)
 }
 
@@ -176,12 +177,7 @@ pub fn verify_with_context(
 }
 
 pub fn sha256_hash(data: &[u8]) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(data);
-    let result = hasher.finalize();
-    let mut hash = [0u8; 32];
-    hash.copy_from_slice(&result);
-    hash
+    Sha256::digest(data).into()
 }
 
 pub fn derive_record_nonce_legacy(record_id: &str) -> [u8; 12] {
@@ -437,6 +433,15 @@ pub fn decrypt_sync_record(
     Err("Cannot decrypt sync record".to_string())
 }
 
+#[derive(Serialize)]
+struct DeviceNameAAD<'a> {
+    pub r#type: &'static str,
+    pub chain_id: &'a str,
+    pub device_id: &'a str,
+    pub device_public_key: &'a str,
+    pub updated_at_ms: i64,
+}
+
 pub fn create_device_record_at(
     chain_id: &str,
     device_id: &str,
@@ -449,14 +454,14 @@ pub fn create_device_record_at(
     let device_name_nonce = URL_SAFE_NO_PAD.encode(nonce_bytes);
     let public_key_b64 = URL_SAFE_NO_PAD.encode(signing_key.verifying_key().as_bytes());
 
-    let aad_map = serde_json::json!({
-        "type": "PALLASYNC-DEVICE-NAME-v2.1",
-        "chain_id": chain_id,
-        "device_id": device_id,
-        "device_public_key": public_key_b64,
-        "updated_at_ms": created_at_ms
-    });
-    let aad = models::to_jcs(&aad_map).map_err(|e| format!("AAD JCS failure: {e}"))?;
+    let aad_obj = DeviceNameAAD {
+        r#type: "PALLASYNC-DEVICE-NAME-v2.1",
+        chain_id,
+        device_id,
+        device_public_key: &public_key_b64,
+        updated_at_ms: created_at_ms,
+    };
+    let aad = models::to_jcs(&aad_obj).map_err(|e| format!("AAD JCS failure: {e}"))?;
 
     let encrypted_device_name = URL_SAFE_NO_PAD.encode(encrypt_record_payload_xchacha(
         encryption_key,
@@ -516,14 +521,14 @@ pub fn decrypt_device_record_v21(
         if let Ok(nonce_bytes) = URL_SAFE_NO_PAD.decode(&record.device_name_nonce) {
             if nonce_bytes.len() == 24 {
                 let nonce_24: [u8; 24] = nonce_bytes.try_into().unwrap();
-                let aad_map = serde_json::json!({
-                    "type": "PALLASYNC-DEVICE-NAME-v2.1",
-                    "chain_id": record.chain_id,
-                    "device_id": record.device_id,
-                    "device_public_key": record.device_public_key,
-                    "updated_at_ms": record.updated_at_ms
-                });
-                if let Ok(aad) = models::to_jcs(&aad_map) {
+                let aad_obj = DeviceNameAAD {
+                    r#type: "PALLASYNC-DEVICE-NAME-v2.1",
+                    chain_id: &record.chain_id,
+                    device_id: &record.device_id,
+                    device_public_key: &record.device_public_key,
+                    updated_at_ms: record.updated_at_ms,
+                };
+                if let Ok(aad) = models::to_jcs(&aad_obj) {
                     if let Ok(plaintext) =
                         decrypt_record_payload_xchacha(encryption_key, &nonce_24, &ciphertext, &aad)
                     {

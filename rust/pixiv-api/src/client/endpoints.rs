@@ -80,7 +80,16 @@ impl NovelTextDto {
 }
 
 fn novel_preview_error(body: &str) -> String {
-    let preview = body.lines().take(8).collect::<Vec<_>>().join(" ");
+    let mut preview = String::new();
+    for line in body.lines().take(8) {
+        if !preview.is_empty() {
+            preview.push(' ');
+        }
+        preview.push_str(line.trim());
+        if preview.len() >= 320 {
+            break;
+        }
+    }
     format!(
         "novel response could not be parsed: {}",
         preview.chars().take(320).collect::<String>()

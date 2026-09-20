@@ -27,17 +27,38 @@ impl Default for AnalysisState {
     }
 }
 
+use std::sync::OnceLock;
+
+static LINEARIZE_LUT: OnceLock<[f64; 256]> = OnceLock::new();
+
+fn get_linearize_lut() -> &'static [f64; 256] {
+    LINEARIZE_LUT.get_or_init(|| {
+        let mut lut = [0.0; 256];
+        for (i, item) in lut.iter_mut().enumerate() {
+            let normalized = (i as f64) / 255.0;
+            *item = if normalized <= 0.03928 {
+                normalized / 12.92
+            } else {
+                ((normalized + 0.055) / 1.055).powf(2.4)
+            };
+        }
+        lut
+    })
+}
+
 #[uniffi::export]
 pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
+    let lut = get_linearize_lut();
     let result = pixels
         .par_chunks_exact(4)
+        .with_min_len(1024)
         .fold(AnalysisState::default, |mut state, pixel| {
             let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
             if alpha < TRANSPARENT_ALPHA {
                 return state;
             }
 
-            state.luminance_sum += relative_luminance(red, green, blue);
+            state.luminance_sum += relative_luminance(red, green, blue, lut);
             state.sample_count += 1;
 
             let index =
@@ -88,7 +109,7 @@ pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 struct ColorBucket {
     count: u32,
     red: u64,
@@ -96,17 +117,9 @@ struct ColorBucket {
     blue: u64,
 }
 
-fn relative_luminance(red: u8, green: u8, blue: u8) -> f64 {
-    0.2126 * linearize(red) + 0.7152 * linearize(green) + 0.0722 * linearize(blue)
-}
-
-fn linearize(channel: u8) -> f64 {
-    let normalized = f64::from(channel) / 255.0;
-    if normalized <= 0.03928 {
-        normalized / 12.92
-    } else {
-        ((normalized + 0.055) / 1.055).powf(2.4)
-    }
+#[inline(always)]
+fn relative_luminance(red: u8, green: u8, blue: u8, lut: &[f64; 256]) -> f64 {
+    0.2126 * lut[red as usize] + 0.7152 * lut[green as usize] + 0.0722 * lut[blue as usize]
 }
 
 fn argb(red: u8, green: u8, blue: u8) -> i32 {
