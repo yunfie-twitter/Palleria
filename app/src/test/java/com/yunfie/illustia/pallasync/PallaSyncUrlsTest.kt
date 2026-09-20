@@ -10,8 +10,8 @@ class PallaSyncUrlsTest :
             val normalized = normalizedUrl("  https://example.com/relay///  ")
 
             normalized.toString() shouldBe "https://example.com/relay"
-            PallaSyncUrls.records(normalized, "chain", 42L, 999).toString() shouldBe
-                "https://example.com/relay/pallasync/v2/chains/chain/records?after_seq=42&limit=500"
+            PallaSyncUrls.records(normalized, "chain", null, 42L, 999).toString() shouldBe
+                "https://example.com/relay/pallasync/v2/chains/chain/records?limit=500&after_seq=42"
         }
 
         "path values are encoded as segments rather than concatenated" {
