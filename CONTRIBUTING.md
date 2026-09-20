@@ -1,4 +1,4 @@
-# Contributing to Illustia
+# Contributing to Palleria
 
 Thank you for taking the time to contribute.
 
