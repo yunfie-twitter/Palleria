@@ -164,9 +164,11 @@
     <string name="detail_open_in_browser">เปิดในเบราว์เซอร์</string>
     <string name="detail_share">แบ่งปัน</string>
     <string name="detail_save_image">บันทึกภาพ</string>
+    <string name="detail_save_this_page">บันทึกหน้านี้</string>
     <string name="detail_save_ugoira">บันทึกอูโกอิรา</string>
     <string name="detail_save_all_pages">บันทึกหน้าทั้งหมด</string>
     <string name="detail_copy_url">คัดลอก URL</string>
+    <string name="detail_mute">ปิดเสียง</string>
     <string name="detail_mute_work">ปิดเสียงงานนี้</string>
     <string name="detail_mute_artist">ปิดเสียงศิลปินคนนี้</string>
     <string name="detail_more">เพิ่มเติม</string>

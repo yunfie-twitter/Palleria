@@ -151,9 +151,11 @@
     <string name="detail_open_in_browser">在浏览器中打开</string>
     <string name="detail_share">分享</string>
     <string name="detail_save_image">保存图像</string>
+    <string name="detail_save_this_page">保存此页</string>
     <string name="detail_save_ugoira">保存动图</string>
     <string name="detail_save_all_pages">保存所有页面</string>
     <string name="detail_copy_url">复制 URL</string>
+    <string name="detail_mute">屏蔽</string>
     <string name="detail_mute_work">将此作品静音</string>
     <string name="detail_mute_artist">将此艺术家静音</string>
     <string name="detail_more">更多</string>

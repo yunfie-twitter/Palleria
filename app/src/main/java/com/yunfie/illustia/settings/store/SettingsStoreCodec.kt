@@ -155,7 +155,7 @@ internal fun illustFromEntity(entity: ViewHistoryEntity): Illust =
         originalImagePages = emptyList(),
         tags = emptyList(),
         pageCount = entity.pageCount,
-        isBookmarked = false,
+        isBookmarked = entity.isBookmarked,
     )
 
 internal fun historyIllustFromJson(item: JSONObject): Illust? {
@@ -178,7 +178,7 @@ internal fun historyIllustFromJson(item: JSONObject): Illust? {
         originalImagePages = emptyList(),
         tags = emptyList(),
         pageCount = item.optInt("pageCount", 1),
-        isBookmarked = false,
+        isBookmarked = item.optBoolean("isBookmarked", false),
     )
 }
 

@@ -117,7 +117,19 @@ fun DeviceViewHistoryScreen(
                     EmptyState(stringResource(R.string.search_empty_illust))
                 }
             } else {
-                val historyList = viewHistory ?: emptyList()
+                val bookmarkedIds =
+                    state.bookmarkItems
+                        .asSequence()
+                        .map { it.id }
+                        .toSet()
+                val historyList =
+                    (viewHistory ?: emptyList()).map { illust ->
+                        if (illust.id in bookmarkedIds && !illust.isBookmarked) {
+                            illust.copy(isBookmarked = true)
+                        } else {
+                            illust
+                        }
+                    }
                 gridItems(historyList, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     IllustCard(
                         illust = illust,

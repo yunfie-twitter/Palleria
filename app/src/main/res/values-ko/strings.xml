@@ -168,9 +168,11 @@
     <string name="detail_open_in_browser">브라우저에서 열기</string>
     <string name="detail_share">공유</string>
     <string name="detail_save_image">이미지 저장</string>
+    <string name="detail_save_this_page">이 페이지 저장</string>
     <string name="detail_save_ugoira">우고이라 저장</string>
     <string name="detail_save_all_pages">모든 페이지 저장</string>
     <string name="detail_copy_url">URL 복사</string>
+    <string name="detail_mute">뮤트</string>
     <string name="detail_mute_work">이 작품 뮤트</string>
     <string name="detail_mute_artist">이 작가 뮤트</string>
     <string name="detail_more">더 보기</string>

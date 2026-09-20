@@ -219,5 +219,6 @@ private fun viewedIllustEvent(
                 put("imageUrl", illust.imageUrl)
                 put("pageCount", illust.pageCount)
                 put("type", illust.type)
+                put("isBookmarked", illust.isBookmarked)
             },
     )

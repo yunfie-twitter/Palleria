@@ -168,9 +168,11 @@
     <string name="detail_open_in_browser">ブラウザで開く</string>
     <string name="detail_share">シェア</string>
     <string name="detail_save_image">画像を保存</string>
+    <string name="detail_save_this_page">このページを保存</string>
     <string name="detail_save_ugoira">うごイラを保存</string>
     <string name="detail_save_all_pages">全ページを保存</string>
     <string name="detail_copy_url">URLをコピー</string>
+    <string name="detail_mute">ミュート</string>
     <string name="detail_mute_work">この作品をミュート</string>
     <string name="detail_mute_artist">作者をミュート</string>
     <string name="detail_more">その他</string>

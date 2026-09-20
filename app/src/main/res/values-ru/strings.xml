@@ -164,9 +164,11 @@
     <string name="detail_open_in_browser">Открыть в браузере</string>
     <string name="detail_share">Поделиться</string>
     <string name="detail_save_image">Сохранить изображение</string>
+    <string name="detail_save_this_page">Сохранить эту страницу</string>
     <string name="detail_save_ugoira">Спасти Угойру</string>
     <string name="detail_save_all_pages">Сохранить все страницы</string>
     <string name="detail_copy_url">Копировать URL</string>
+    <string name="detail_mute">Скрыть</string>
     <string name="detail_mute_work">Отключить звук этой работы</string>
     <string name="detail_mute_artist">Отключить звук этого исполнителя</string>
     <string name="detail_more">Подробнее</string>

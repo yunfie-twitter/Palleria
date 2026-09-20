@@ -1438,7 +1438,7 @@ internal class PalleriaSyncCoordinator(
             originalImageUrl = null,
             tags = emptyList(),
             pageCount = pageCount,
-            isBookmarked = false,
+            isBookmarked = isBookmarked,
         )
 
     private fun JsonObject.string(name: String): String? = this[name]?.jsonPrimitive?.content?.takeIf(String::isNotBlank)

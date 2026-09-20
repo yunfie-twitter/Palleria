@@ -442,6 +442,10 @@ private fun JsonElement.toHistoryIllust(): Illust? {
                 ?.let {
                     runCatching { it.jsonPrimitive.content.toInt() }.getOrNull()
                 }?.coerceAtLeast(1) ?: 1,
-        isBookmarked = false,
+        isBookmarked =
+            item["isBookmarked"]
+                ?.let {
+                    runCatching { it.jsonPrimitive.content.toBoolean() }.getOrNull()
+                } ?: false,
     )
 }

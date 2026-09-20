@@ -55,6 +55,7 @@ data class ViewedIllustBody(
     val imageUrl: String,
     val pageCount: Int,
     val type: String,
+    val isBookmarked: Boolean = false,
 )
 
 internal data class PallaSyncPendingEvent(
