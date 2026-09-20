@@ -49,7 +49,6 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.models.pixiv.UgoiraZipUrls
 import com.yunfie.illustia.models.pixiv.UserFollowDetail
 import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
-import com.yunfie.illustia.rust.ApiException
 import com.yunfie.illustia.rust.PixivHttpClient
 import com.yunfie.illustia.rust.PixivRequest
 import com.yunfie.illustia.settings.currentAcceptLanguage
@@ -594,37 +593,37 @@ private fun com.yunfie.illustia.rust.MangaSeries.toAppModel(): MangaSeriesModel 
 
 private fun com.yunfie.illustia.rust.SeriesIllust.toAppModel(): Illusts =
     Illusts(
-        id = id,
-        title = title,
-        type = illustType,
+        id = this.id,
+        title = this.title,
+        type = this.illustType,
         imageUrls =
             ImageUrls(
-                squareMedium = squareImageUrl,
-                medium = mediumImageUrl,
-                large = largeImageUrl,
+                squareMedium = this.squareImageUrl,
+                medium = this.mediumImageUrl,
+                large = this.largeImageUrl,
             ),
-        caption = caption,
-        restrict = restrict,
+        caption = this.caption,
+        restrict = this.restrict,
         user =
             PixivUser(
-                id = user.id,
-                name = user.name,
-                account = user.account,
-                profileImageUrls = PixivProfileImageUrls(user.profileImageUrl),
-                comment = user.comment,
-                isFollowed = user.isFollowed,
+                id = this.user.id,
+                name = this.user.name,
+                account = this.user.account,
+                profileImageUrls = PixivProfileImageUrls(this.user.profileImageUrl),
+                comment = this.user.comment,
+                isFollowed = this.user.isFollowed,
             ),
-        tags = tags.map { PixivTag(it) },
-        tools = tools,
-        createDate = createDate,
-        pageCount = pageCount,
-        width = width,
-        height = height,
-        sanityLevel = sanityLevel,
-        xRestrict = xRestrict,
-        metaSinglePage = if (hasMetaSinglePage) MetaSinglePage(originalImageUrl) else null,
+        tags = this.tags.map { PixivTag(it) },
+        tools = this.tools,
+        createDate = this.createDate,
+        pageCount = this.pageCount,
+        width = this.width,
+        height = this.height,
+        sanityLevel = this.sanityLevel,
+        xRestrict = this.xRestrict,
+        metaSinglePage = if (this.hasMetaSinglePage) MetaSinglePage(this.originalImageUrl) else null,
         metaPages =
-            metaPages.map {
+            this.metaPages.map {
                 MetaPages(
                     MetaPagesImageUrls(
                         squareMedium = it.squareImageUrl,
@@ -634,29 +633,38 @@ private fun com.yunfie.illustia.rust.SeriesIllust.toAppModel(): Illusts =
                     ),
                 )
             },
-        totalView = totalView,
-        totalBookmarks = totalBookmarks,
-        isBookmarked = isBookmarked,
-        visible = visible,
-        isMuted = isMuted,
-        illustAIType = illustAiType,
-        series = series?.let { IllustSeries(id = it.id, title = it.title) },
-        illustBookStyle = illustBookStyle,
-        totalComments = totalComments,
+        totalView = this.totalView,
+        totalBookmarks = this.totalBookmarks,
+        isBookmarked = this.isBookmarked,
+        visible = this.visible,
+        isMuted = this.isMuted,
+        illustAIType = this.illustAiType,
+        series = this.series?.let { IllustSeries(id = it.id, title = it.title) },
+        illustBookStyle = this.illustBookStyle,
+        totalComments = this.totalComments,
     )
 
 private inline fun <T> nativeCall(block: () -> T): T =
     try {
         block()
-    } catch (error: ApiException.Http) {
-        throw PixivApiException(error.status.toInt(), error.detail, error)
-    } catch (error: ApiException) {
-        val detail =
-            when (error) {
-                is ApiException.InvalidRequest -> error.detail
-                is ApiException.Network -> error.detail
-                is ApiException.Http -> error.detail
-                is ApiException.InvalidResponse -> error.detail
+    } catch (error: Throwable) {
+        if (error is PixivApiException) throw error
+        val message = error.message ?: error.toString()
+        val status =
+            try {
+                val field = error.javaClass.getDeclaredField("status")
+                field.isAccessible = true
+                (field.get(error) as? Number)?.toInt() ?: 0
+            } catch (_: Throwable) {
+                0
             }
-        throw PixivApiException(0, detail, error)
+        val detail =
+            try {
+                val field = error.javaClass.getDeclaredField("detail")
+                field.isAccessible = true
+                (field.get(error) as? String) ?: message
+            } catch (_: Throwable) {
+                message
+            }
+        throw PixivApiException(status, detail, error)
     }
