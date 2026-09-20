@@ -8,7 +8,7 @@ mod temp_path;
 mod ugoira;
 
 pub use client::PixivHttpClient;
-pub use error::ApiError;
+pub use error::{ApiError, ApiException};
 pub use image_analysis::{ImageAnalysis, analyze_rgba};
 #[cfg(feature = "bench")]
 pub use models::benchmark_decode_illust_page;

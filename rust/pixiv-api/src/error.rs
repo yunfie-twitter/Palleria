@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error, uniffi::Error)]
-pub enum ApiError {
+pub enum ApiException {
     #[error("invalid request: {detail}")]
     InvalidRequest { detail: String },
     #[error("network request failed: {detail}")]
@@ -9,6 +9,8 @@ pub enum ApiError {
     #[error("invalid response: {detail}")]
     InvalidResponse { detail: String },
 }
+
+pub type ApiError = ApiException;
 
 pub(crate) fn network_error(error: reqwest::Error) -> ApiError {
     ApiError::Network {
