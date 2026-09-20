@@ -59,8 +59,7 @@ android {
 
     sourceSets {
         named("main") {
-            kotlin.srcDir layout.buildDirectory.dir("generated/uniffi/kotlin").get().asFile
-            jniLibs.srcDir layout.buildDirectory.dir("generated/uniffi/jniLibs").get().asFile
+            jniLibs.srcDirs += [file("build/generated/uniffi/jniLibs")]
         }
     }
 
@@ -168,10 +167,11 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "run", "--release", "--bin", "uniffi-bindgen", "--", "generate",
         "--library", uniffiHostLibrary,
+        "--config", new File(rustCrateDir, "uniffi.toml").absolutePath,
         "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
     dependsOn buildUniFfiHost
     inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
-    outputs.file(uniffiKotlinDir.map { it.file("com/yunfie/illustia/rust/palleria_pixiv_api.kt") })
+    outputs.dir(uniffiKotlinDir)
 }
 
 def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
@@ -262,11 +262,15 @@ tasks.register("checkQualityBaselineBudgets") {
     }
 }
 
-tasks.named("preBuild").configure {
+tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.configureEach {
     dependsOn(generateUniFfiBindings, buildRustAndroid, buildPallaSyncCoreAndroid)
 }
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
+    dependsOn(generateUniFfiBindings)
+}
+
+tasks.withType(JavaCompile).configureEach {
     dependsOn(generateUniFfiBindings)
 }
 
@@ -281,12 +285,23 @@ tasks.matching {
     dependsOn(buildRustAndroid, buildPallaSyncCoreAndroid)
 }
 
-tasks.matching { it.name.startsWith("detekt") || it.name.startsWith("ktlint") }.configureEach {
+tasks.matching {
+    def lower = it.name.toLowerCase(Locale.ROOT)
+    lower.contains("ktlint") || lower.contains("detekt") || lower.contains("lint") || lower.contains("spotless")
+}.configureEach {
     dependsOn(generateUniFfiBindings)
 }
 
 androidComponents {
     onVariants(selector().all()) { variant ->
+        // Register the UniFFI-generated Kotlin directory as a source directory for every
+        // variant using the AGP 8+ variant API. addStaticSourceDirectory wires the path
+        // through AGP's Kotlin source handling; task ordering is declared separately via
+        // tasks.matching { compile...Kotlin }.configureEach { dependsOn(generateUniFfiBindings) }.
+        variant.sources.kotlin?.addStaticSourceDirectory(
+            layout.buildDirectory.dir("generated/uniffi/kotlin").get().asFile.absolutePath,
+        )
+
         variant.outputs.forEach { output ->
             def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
             def outputKind = abi ?: "universal"

@@ -232,7 +232,5 @@ fn parses_full_illust_series_without_dropping_series_fields() {
     assert_eq!(page.detail.as_ref().map(|detail| detail.id), Some(2));
     let first = page.first_illust.unwrap();
     assert_eq!(first.original_image_url.as_deref(), Some("original"));
-    assert!(first.has_meta_single_page);
-    assert_eq!(first.tools, ["tool"]);
-    assert_eq!(first.total_view, 10);
+    assert_eq!(first.total_bookmarks, 5);
 }

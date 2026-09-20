@@ -6,10 +6,9 @@ use super::{
     AccountEditResult, Comment, CommentPage, CommentStamp, CommentUser, CurrentUserProfile, Illust,
     IllustPage, IllustSeries, IllustSeriesDetail, IllustSeriesPage, MangaSeries, MangaSeriesUser,
     Notification, NotificationContent, NotificationPage, NotificationViewMore, NovelPage,
-    NovelPreview, OptionalBoolean, ParentComment, SeriesIllust, SeriesIllustUser, SeriesImagePage,
-    SeriesUser, SpotlightArticle, SpotlightPage, Stamp, StampList, StringList, TrendingTag,
-    TrendingTagList, UgoiraFrame, UgoiraMetadata, UserFollowDetail, UserPreview, UserPreviewPage,
-    UserProfile, WatchlistMangaPage,
+    NovelPreview, OptionalBoolean, ParentComment, SeriesUser, SpotlightArticle, SpotlightPage,
+    Stamp, StampList, StringList, TrendingTag, TrendingTagList, UgoiraFrame, UgoiraMetadata,
+    UserFollowDetail, UserPreview, UserPreviewPage, UserProfile, WatchlistMangaPage,
 };
 
 #[derive(Debug, Deserialize)]
@@ -103,30 +102,7 @@ pub(crate) struct IllustDto {
     total_comments: Option<i32>,
     series: Option<SeriesDto>,
     #[serde(default)]
-    restrict: i32,
-    #[serde(default)]
-    tools: Vec<String>,
-    #[serde(default)]
-    create_date: String,
-    #[serde(default)]
-    width: i32,
-    #[serde(default)]
-    height: i32,
-    #[serde(default)]
-    sanity_level: i32,
-    #[serde(default)]
-    x_restrict: i32,
-    #[serde(default)]
-    total_view: i32,
-    #[serde(default)]
     total_bookmarks: i32,
-    #[serde(default = "default_true")]
-    visible: bool,
-    #[serde(default)]
-    is_muted: bool,
-    #[serde(default)]
-    illust_ai_type: i32,
-    illust_book_style: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
