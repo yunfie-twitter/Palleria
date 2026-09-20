@@ -294,13 +294,12 @@ tasks.matching {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
-        // Register the UniFFI-generated Kotlin directory as a generated source for every
-        // variant. This is the correct AGP 8+ API — it wires the task dependency AND
-        // makes the directory visible to the Kotlin compiler without relying on the
-        // deprecated source()/srcDirs approaches that are silently ignored in newer AGP.
-        variant.sources.kotlin?.addGeneratedSourceDirectory(
-            generateUniFfiBindings,
-            { it.dir("generated/uniffi/kotlin") },
+        // Register the UniFFI-generated Kotlin directory as a source directory for every
+        // variant using the AGP 8+ variant API. addStaticSourceDirectory wires the path
+        // through AGP's Kotlin source handling; task ordering is declared separately via
+        // tasks.matching { compile...Kotlin }.configureEach { dependsOn(generateUniFfiBindings) }.
+        variant.sources.kotlin?.addStaticSourceDirectory(
+            layout.buildDirectory.dir("generated/uniffi/kotlin").get().asFile.absolutePath,
         )
 
         variant.outputs.forEach { output ->
