@@ -269,6 +269,7 @@ tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.config
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
     dependsOn(generateUniFfiBindings)
+    source(files(uniffiKotlinDir))
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -295,10 +296,6 @@ tasks.matching {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
-        variant.sources.kotlin?.addGeneratedSourceDirectory(
-            generateUniFfiBindings,
-            { uniffiKotlinDir }
-        )
         variant.outputs.forEach { output ->
             def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
             def outputKind = abi ?: "universal"
