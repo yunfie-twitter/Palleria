@@ -12,7 +12,7 @@ use hkdf::Hkdf;
 use hmac::Hmac;
 use rand::RngCore;
 use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 pub type HmacSha256 = Hmac<Sha256>;

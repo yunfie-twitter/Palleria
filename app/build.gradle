@@ -174,13 +174,6 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     dependsOn buildUniFfiHost
     inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
     outputs.dir(uniffiKotlinDir)
-    doFirst {
-        uniffiKotlinDir.get().asFile.mkdirs()
-    }
-    doLast {
-        def generatedFiles = fileTree(uniffiKotlinDir).files
-        logger.lifecycle("generateUniFfiBindings generated ${generatedFiles.size()} files: ${generatedFiles}")
-    }
 }
 
 def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
