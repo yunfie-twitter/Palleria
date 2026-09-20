@@ -201,8 +201,8 @@ fun IllustCard(
             if (illust.isAi && (!showAiBadge || !cardPreferences.showAiBadge)) null else illust.cardBadgeText
         }
     val ageRestrictionBadgeText =
-        remember(illust.id, illust.isR18, illust.isR18G) {
-            illust.ageRestrictionBadgeText
+        remember(illust.id, illust.isR18, illust.isR18G, cardPreferences.showR18Badge) {
+            if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
         }
 
     IllustCardImpl(
@@ -477,13 +477,14 @@ fun IllustListRow(
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val hapticMode = LocalAppHapticMode.current
+    val cardPreferences = LocalArtworkCardPreferences.current
     val pageBadgeText =
         remember(illust.id) {
             if (illust.pageCount > 1) "${illust.pageCount}P" else null
         }
     val ageRestrictionBadgeText =
-        remember(illust.id, illust.isR18, illust.isR18G) {
-            illust.ageRestrictionBadgeText
+        remember(illust.id, illust.isR18, illust.isR18G, cardPreferences.showR18Badge) {
+            if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
         }
 
     Card(
@@ -587,6 +588,7 @@ fun HighlightCard(
     illust: Illust,
     onClick: () -> Unit,
 ) {
+    val cardPreferences = LocalArtworkCardPreferences.current
     Card(
         modifier = Modifier.width(232.dp).height(128.dp),
         cornerRadius = 16.dp,
@@ -607,7 +609,7 @@ fun HighlightCard(
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
             )
-            if (illust.ageRestrictionBadgeText != null) {
+            if (cardPreferences.showR18Badge && illust.ageRestrictionBadgeText != null) {
                 Text(
                     text = illust.ageRestrictionBadgeText,
                     color = Color.White,

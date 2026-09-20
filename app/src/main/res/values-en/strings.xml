@@ -267,6 +267,7 @@
     <string name="experimental_card_rating">Show rating</string>
     <string name="experimental_card_rating_desc">Show the artwork bookmark count on cards</string>
     <string name="experimental_card_ai">Show AI label</string>
+    <string name="experimental_card_r18">Show R-18 label</string>
     <string name="settings_hide_ai_works">Hide AI-generated works</string>
     <string name="settings_hide_ai_works_desc">Filter out AI-generated works from feeds and search results</string>
     <string name="experimental_artwork_theme_section">Artwork theme</string>

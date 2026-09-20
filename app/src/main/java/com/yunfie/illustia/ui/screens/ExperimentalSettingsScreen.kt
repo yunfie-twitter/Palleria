@@ -240,6 +240,12 @@ fun ExperimentalSettingsScreen(
                             checked = state.settings.showAiBadge,
                             onCheckedChange = viewModel::updateShowAiBadge,
                         )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.experimental_card_r18),
+                            checked = state.settings.showR18Badge,
+                            onCheckedChange = viewModel::updateShowR18Badge,
+                        )
                     }
                 }
             }

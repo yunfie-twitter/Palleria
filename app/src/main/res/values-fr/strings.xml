@@ -268,6 +268,7 @@
     <string name="experimental_card_rating">Afficher la note</string>
     <string name="experimental_card_rating_desc">Afficher le nombre de signets d\'illustration sur les cartes</string>
     <string name="experimental_card_ai">Afficher le libellé IA</string>
+    <string name="experimental_card_r18">Afficher le libellé R-18</string>
     <string name="settings_hide_ai_works">Masquer les œuvres générées par l\'IA</string>
     <string name="settings_hide_ai_works_desc">Filtrez les œuvres générées par l\'IA à partir des flux et des résultats de recherche</string>
     <string name="experimental_artwork_theme_section">Thème de l\'œuvre d\'art</string>

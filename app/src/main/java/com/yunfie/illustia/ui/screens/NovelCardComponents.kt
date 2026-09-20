@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Text
@@ -38,6 +39,7 @@ internal fun NovelCard(
     onClick: () -> Unit,
     onStatusToggle: (() -> Unit)? = null,
 ) {
+    val cardPreferences = LocalArtworkCardPreferences.current
     ElevatedPanel(modifier = Modifier.fillMaxWidth().miuixClickable(onClick = onClick)) {
         Row(
             modifier =
@@ -72,7 +74,7 @@ internal fun NovelCard(
                                 ),
                             ),
                 )
-                if (novel.ageRestrictionBadgeText != null) {
+                if (cardPreferences.showR18Badge && novel.ageRestrictionBadgeText != null) {
                     Text(
                         text = novel.ageRestrictionBadgeText,
                         color = Color.White,

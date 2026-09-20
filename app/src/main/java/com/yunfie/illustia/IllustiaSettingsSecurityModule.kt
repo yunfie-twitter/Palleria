@@ -373,6 +373,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(showAiBadge = value) }
     }
 
+    fun updateShowR18Badge(value: Boolean) {
+        updateSettings { it.copy(showR18Badge = value) }
+    }
+
     fun updateHideAiWorks(value: Boolean) {
         updateSettings { it.copy(hideAiWorks = value) }
         refreshActiveSearch()

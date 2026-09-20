@@ -10,6 +10,7 @@ class R18FilterTest :
     StringSpec({
         "AppSettings default has allowR18 enabled" {
             AppSettings().allowR18 shouldBe true
+            AppSettings().showR18Badge shouldBe true
         }
 
         "Illust correctly identifies R-18 content by tag and xRestrict" {

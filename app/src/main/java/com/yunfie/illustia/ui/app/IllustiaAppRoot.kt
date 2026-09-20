@@ -590,6 +590,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 showTags = settings.showCardTags,
                 showBookmarkCount = settings.showCardBookmarkCount,
                 showAiBadge = settings.showAiBadge,
+                showR18Badge = settings.showR18Badge,
             ),
         LocalAppHapticMode provides effectiveHapticMode,
         LocalHapticFeedback provides

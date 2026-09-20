@@ -10,6 +10,7 @@ data class ArtworkCardPreferences(
     val showTags: Boolean = false,
     val showBookmarkCount: Boolean = false,
     val showAiBadge: Boolean = true,
+    val showR18Badge: Boolean = true,
 )
 
 val LocalArtworkCardPreferences = staticCompositionLocalOf { ArtworkCardPreferences() }
