@@ -155,7 +155,7 @@ def rustInputs = files(
     new File(rustCrateDir, "Cargo.lock"),
 )
 
-tasks.register("buildUniFfiHost", Exec) {
+def buildUniFfiHost = tasks.register("buildUniFfiHost", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "build", "--release", "--lib"
@@ -163,24 +163,24 @@ tasks.register("buildUniFfiHost", Exec) {
     outputs.file(uniffiHostLibrary)
 }
 
-tasks.register("generateUniFfiBindings", Exec) {
+def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "run", "--release", "--bin", "uniffi-bindgen", "--", "generate",
         "--library", uniffiHostLibrary,
         "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
-    dependsOn "buildUniFfiHost"
+    dependsOn buildUniFfiHost
     inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
     outputs.file(uniffiKotlinDir.map { it.file("com/yunfie/illustia/rust/palleria_pixiv_api.kt") })
 }
 
-tasks.register("buildRustAndroid", Exec) {
+def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "ndk", "--platform", androidMinSdk.toString(),
         "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
         "-o", uniffiJniDir.get().asFile, "build", "--release"
-    dependsOn "generateUniFfiBindings"
+    dependsOn generateUniFfiBindings
     inputs.files(rustInputs)
     outputs.files(
         uniffiJniDir.map { it.file("arm64-v8a/libpalleria_pixiv_api.so") },
@@ -189,13 +189,25 @@ tasks.register("buildRustAndroid", Exec) {
     )
 }
 
-tasks.register("buildPallaSyncCoreAndroid", Exec) {
-    def pallaSyncCoreCrateDir = rootProject.file("rust/pallasync-core")
+def pallaSyncCoreCrateDir = rootProject.file("rust/pallasync-core")
+def pallaSyncInputs = files(
+    fileTree(new File(pallaSyncCoreCrateDir, "src")) { include "**/*.rs" },
+    new File(pallaSyncCoreCrateDir, "Cargo.toml"),
+    new File(pallaSyncCoreCrateDir, "Cargo.lock"),
+)
+
+def buildPallaSyncCoreAndroid = tasks.register("buildPallaSyncCoreAndroid", Exec) {
     workingDir pallaSyncCoreCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
     commandLine cargoExecutable, "ndk", "--platform", androidMinSdk.toString(),
         "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
         "-o", uniffiJniDir.get().asFile, "build", "--release"
+    inputs.files(pallaSyncInputs)
+    outputs.files(
+        uniffiJniDir.map { it.file("arm64-v8a/libpallasync_core.so") },
+        uniffiJniDir.map { it.file("armeabi-v7a/libpallasync_core.so") },
+        uniffiJniDir.map { it.file("x86_64/libpallasync_core.so") },
+    )
 }
 
 def detektBaselineBudget = 400
@@ -251,7 +263,26 @@ tasks.register("checkQualityBaselineBudgets") {
 }
 
 tasks.named("preBuild").configure {
-    dependsOn "generateUniFfiBindings", "buildRustAndroid", "buildPallaSyncCoreAndroid"
+    dependsOn(generateUniFfiBindings, buildRustAndroid, buildPallaSyncCoreAndroid)
+}
+
+tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
+    dependsOn(generateUniFfiBindings)
+}
+
+tasks.matching { it.name.startsWith("ksp") && it.name.endsWith("Kotlin") }.configureEach {
+    dependsOn(generateUniFfiBindings)
+}
+
+tasks.matching {
+    (it.name.startsWith("merge") || it.name.startsWith("strip")) &&
+        (it.name.contains("NativeLibs") || it.name.contains("JniLib"))
+}.configureEach {
+    dependsOn(buildRustAndroid, buildPallaSyncCoreAndroid)
+}
+
+tasks.matching { it.name.startsWith("detekt") || it.name.startsWith("ktlint") }.configureEach {
+    dependsOn(generateUniFfiBindings)
 }
 
 androidComponents {
