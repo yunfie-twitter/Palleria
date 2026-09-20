@@ -4,7 +4,7 @@ Thank you for taking the time to contribute.
 
 ## Project Overview
 
-Illustia is an Android app built with Kotlin, Jetpack Compose, and Miuix-based UI components. The project uses a single Android application module in this directory.
+Palleria is an Android app built with Kotlin, Jetpack Compose, and Miuix-based UI components. The project uses a single Android application module in this directory.
 
 ## Before You Start
 
