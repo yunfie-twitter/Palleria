@@ -34,6 +34,14 @@ data class NovelPreview(
             title.contains("R18G", ignoreCase = true) ||
             caption.contains("R-18G", ignoreCase = true) ||
             caption.contains("R18G", ignoreCase = true)
+
+    /** 年齢制限バッジテキスト (R-18G / R-18) */
+    val ageRestrictionBadgeText: String? =
+        when {
+            isR18G -> "R-18G"
+            isR18 -> "R-18"
+            else -> null
+        }
 }
 
 @Immutable

@@ -28,6 +28,7 @@ import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -71,6 +72,20 @@ internal fun NovelCard(
                                 ),
                             ),
                 )
+                if (novel.ageRestrictionBadgeText != null) {
+                    Text(
+                        text = novel.ageRestrictionBadgeText,
+                        color = Color.White,
+                        style = MiuixTheme.textStyles.footnote2,
+                        fontWeight = FontWeight.Black,
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopStart)
+                                .padding(6.dp)
+                                .squircleBackground(Color(0xFFFA383E), 6.dp)
+                                .padding(horizontal = 5.dp, vertical = 2.dp),
+                    )
+                }
             }
             Column(
                 modifier = Modifier.weight(1f),
