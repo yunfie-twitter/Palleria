@@ -1,5 +1,5 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use palleria_pixiv_api::{analyze_rgba, average_luminance_rgba, dominant_argb_rgba};
+use palleria_pixiv_api::analyze_rgba;
 
 fn rgba_sample(width: usize, height: usize) -> Vec<u8> {
     (0..width * height)
@@ -13,20 +13,14 @@ fn rgba_sample(width: usize, height: usize) -> Vec<u8> {
 }
 
 fn analyze_image_samples(criterion: &mut Criterion) {
-    let luminance_sample = rgba_sample(40, 40);
-    criterion.bench_function("image luminance/40x40", |bencher| {
-        bencher.iter(|| average_luminance_rgba(black_box(luminance_sample.clone())));
-    });
-    criterion.bench_function("image combined/40x40", |bencher| {
-        bencher.iter(|| analyze_rgba(black_box(luminance_sample.clone())));
+    let sample_40x40 = rgba_sample(40, 40);
+    criterion.bench_function("analyze_rgba/40x40", |bencher| {
+        bencher.iter(|| analyze_rgba(black_box(sample_40x40.clone())));
     });
 
-    let color_sample = rgba_sample(32, 32);
-    criterion.bench_function("image dominant color/32x32", |bencher| {
-        bencher.iter(|| dominant_argb_rgba(black_box(color_sample.clone())));
-    });
-    criterion.bench_function("image combined/32x32", |bencher| {
-        bencher.iter(|| analyze_rgba(black_box(color_sample.clone())));
+    let sample_32x32 = rgba_sample(32, 32);
+    criterion.bench_function("analyze_rgba/32x32", |bencher| {
+        bencher.iter(|| analyze_rgba(black_box(sample_32x32.clone())));
     });
 }
 

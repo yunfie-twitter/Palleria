@@ -36,3 +36,8 @@ codegen-units = 1
 [[bench]]
 name = "illust_decode"
 harness = false
+
+[[bench]]
+name = "image_analysis"
+harness = false
+
