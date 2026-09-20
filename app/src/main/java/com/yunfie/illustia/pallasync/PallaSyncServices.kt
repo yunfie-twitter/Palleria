@@ -29,6 +29,7 @@ internal class PallaSyncCryptoService {
         deviceId: String,
         encryptionKeyBase64: String,
         signingKeyBase64: String,
+        lamport: Long = 0L,
     ): String? =
         PallaSyncCore.createSyncRecord(
             chainId,
@@ -39,6 +40,7 @@ internal class PallaSyncCryptoService {
             deviceId,
             encryptionKeyBase64,
             signingKeyBase64,
+            lamport,
         )
 
     fun verifySyncRecord(
@@ -73,6 +75,27 @@ internal class PallaSyncCryptoService {
         deviceId: String,
         encryptionKeyBase64: String,
     ): String? = PallaSyncCore.decryptDeviceRecord(encryptedDeviceName, deviceId, encryptionKeyBase64)
+
+    fun createCapabilityToken(
+        chainId: String,
+        deviceId: String,
+        method: String,
+        path: String,
+        query: String = "",
+        bodyJson: String = "",
+        signingKeyBase64: String,
+        ttlMs: Long = 300_000L,
+    ): String? =
+        PallaSyncCore.createCapabilityToken(
+            chainId,
+            deviceId,
+            method,
+            path,
+            query,
+            bodyJson,
+            signingKeyBase64,
+            ttlMs,
+        )
 }
 
 internal class PallaSyncRecordProcessor(

@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-internal const val PALLASYNC_PROTOCOL_VERSION = "2.0"
+internal const val PALLASYNC_PROTOCOL_VERSION = "2.1"
+internal const val PALLASYNC_LEGACY_PROTOCOL_VERSION = "2.0"
 internal const val PALLASYNC_PAGE_SIZE = 200
 internal const val PALLASYNC_NEXT_SEQ_HEADER = "PallaSync-Next-Seq"
 internal const val PALLASYNC_HAS_MORE_HEADER = "PallaSync-Has-More"
@@ -21,13 +22,17 @@ internal data class PallaSyncWireRecord(
     @SerialName("protocol_version") val protocolVersion: String,
     @SerialName("chain_id") val chainId: String,
     @SerialName("record_id") val recordId: String,
+    val epoch: Long = 0L,
     @SerialName("collection_name") val collectionName: String,
     val action: String,
     @SerialName("encrypted_payload") val encryptedPayload: String,
+    @SerialName("payload_nonce") val payloadNonce: String = "",
     @SerialName("device_id") val deviceId: String,
+    val lamport: Long = 0L,
     @SerialName("created_at_ms") val createdAtMs: Long,
     val signature: String,
     @SerialName("relay_seq") val relaySeq: Long? = null,
+    @SerialName("server_sequence") val serverSequence: Long? = null,
 )
 
 @Serializable
@@ -36,15 +41,39 @@ internal data class PallaSyncWireDevice(
     @SerialName("chain_id") val chainId: String,
     @SerialName("device_id") val deviceId: String,
     @SerialName("encrypted_device_name") val encryptedDeviceName: String,
+    @SerialName("device_name_nonce") val deviceNameNonce: String = "",
     @SerialName("device_public_key") val devicePublicKey: String,
+    val status: String = "active",
     @SerialName("created_at_ms") val createdAtMs: Long,
+    @SerialName("updated_at_ms") val updatedAtMs: Long = createdAtMs,
     val signature: String,
+)
+
+@Serializable
+internal data class PallaSyncFetchRecordsResponse(
+    val records: List<PallaSyncWireRecord> = emptyList(),
+    @SerialName("next_cursor") val nextCursor: String? = null,
+    @SerialName("server_time_ms") val serverTimeMs: Long? = null,
+)
+
+@Serializable
+internal data class PallaSyncPostRecordsResponse(
+    @SerialName("accepted_record_ids") val acceptedRecordIds: List<String> = emptyList(),
+    @SerialName("duplicate_record_ids") val duplicateRecordIds: List<String> = emptyList(),
+    val rejected: List<PallaSyncRejectedRecord> = emptyList(),
+)
+
+@Serializable
+internal data class PallaSyncRejectedRecord(
+    @SerialName("record_id") val recordId: String,
+    val reason: String = "",
 )
 
 internal data class PallaSyncRecordsPage(
     val records: List<PallaSyncPageRecord>,
     val nextSeq: Long,
     val hasMore: Boolean,
+    val nextCursor: String? = null,
 )
 
 internal data class PallaSyncPageRecord(
@@ -118,22 +147,39 @@ internal object PallaSyncUrls {
 
     fun health(baseUrl: HttpUrl): HttpUrl = endpoint(baseUrl, "health")
 
+    fun parameters(
+        baseUrl: HttpUrl,
+        chainId: String,
+    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "parameters")
+
     fun devices(
         baseUrl: HttpUrl,
         chainId: String,
     ): HttpUrl = endpoint(baseUrl, "chains", chainId, "devices")
 
+    fun enrollDevice(
+        baseUrl: HttpUrl,
+        chainId: String,
+    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "devices", "enroll")
+
     fun records(
         baseUrl: HttpUrl,
         chainId: String,
+        cursor: String?,
         afterSeq: Long,
         limit: Int,
-    ): HttpUrl =
-        recordsEndpoint(baseUrl, chainId)
-            .newBuilder()
-            .addQueryParameter("after_seq", afterSeq.toString())
-            .addQueryParameter("limit", limit.coerceIn(1, 500).toString())
-            .build()
+    ): HttpUrl {
+        val builder =
+            recordsEndpoint(baseUrl, chainId)
+                .newBuilder()
+                .addQueryParameter("limit", limit.coerceIn(1, 500).toString())
+        if (!cursor.isNullOrBlank()) {
+            builder.addQueryParameter("cursor", cursor)
+        } else {
+            builder.addQueryParameter("after_seq", afterSeq.toString())
+        }
+        return builder.build()
+    }
 
     fun recordsEndpoint(
         baseUrl: HttpUrl,

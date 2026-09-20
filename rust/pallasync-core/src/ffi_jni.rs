@@ -1,12 +1,12 @@
 // ffi_jni.rs
-// JNI bindings for PallaSync v2 Android
+// JNI bindings for PallaSync v2.1 Android
 
 use crate::crypto::{self};
-use crate::models::SyncRecord;
+use crate::models::{DeviceRecord, SyncRecord};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::{jboolean, jstring};
+use jni::sys::{jboolean, jlong, jstring};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -55,6 +55,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_deriveKe
 
     let result = json!({
         "chain_id": derived.chain_id,
+        "chain_salt": derived.chain_salt,
         "encryption_key": enc_key_b64,
         "signing_key": sign_key_b64,
         "public_key": pub_key_b64
@@ -78,6 +79,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createSy
     device_id: JString<'local>,
     encryption_key: JString<'local>,
     signing_key: JString<'local>,
+    lamport: jlong,
 ) -> jstring {
     let (
         Some(chain_id_str),
@@ -119,6 +121,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createSy
         &device_id_str,
         &encryption_key,
         &signing_key,
+        lamport,
         created_at_ms,
     ) else {
         return std::ptr::null_mut();
@@ -276,6 +279,18 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptD
         Ok(key) => key,
         Err(_) => return std::ptr::null_mut(),
     };
+
+    // Try decoding as full DeviceRecord if it contains JSON
+    if let Ok(record) = serde_json::from_str::<DeviceRecord>(&encrypted_name_str) {
+        if let Ok(plaintext) = crypto::decrypt_device_record_v21(&record, &encryption_key) {
+            if let Ok(s) = String::from_utf8(plaintext) {
+                if let Ok(output) = env.new_string(s) {
+                    return output.into_raw();
+                }
+            }
+        }
+    }
+
     let plaintext =
         match crypto::decrypt_device_name(&encrypted_name_str, &device_id_str, &encryption_key) {
             Ok(p) => p,
@@ -290,3 +305,62 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptD
         Err(_) => std::ptr::null_mut(),
     }
 }
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createCapabilityToken<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    chain_id: JString<'local>,
+    device_id: JString<'local>,
+    method: JString<'local>,
+    path: JString<'local>,
+    query: JString<'local>,
+    body_json: JString<'local>,
+    signing_key: JString<'local>,
+    ttl_ms: jlong,
+) -> jstring {
+    let (
+        Some(chain_id_str),
+        Some(device_id_str),
+        Some(method_str),
+        Some(path_str),
+        Some(query_str),
+        Some(body_str),
+        Some(signing_key_str),
+    ) = (
+        read_string(&mut env, &chain_id),
+        read_string(&mut env, &device_id),
+        read_string(&mut env, &method),
+        read_string(&mut env, &path),
+        read_string(&mut env, &query),
+        read_string(&mut env, &body_json),
+        read_string(&mut env, &signing_key),
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(signing_key) = crypto::decode_signing_key(&signing_key_str) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(token_str) = crypto::create_capability_token(
+        &chain_id_str,
+        &device_id_str,
+        &method_str,
+        &path_str,
+        &query_str,
+        body_str.as_bytes(),
+        &signing_key,
+        ttl_ms,
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    match env.new_string(token_str) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
