@@ -59,8 +59,6 @@ android {
 
     sourceSets {
         named("main") {
-            java.srcDirs += [file("build/generated/uniffi/kotlin")]
-            kotlin.srcDirs += [file("build/generated/uniffi/kotlin")]
             jniLibs.srcDirs += [file("build/generated/uniffi/jniLibs")]
         }
     }
@@ -270,7 +268,6 @@ tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.config
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
     dependsOn(generateUniFfiBindings)
-    source(uniffiKotlinDir)
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -297,6 +294,15 @@ tasks.matching {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
+        // Register the UniFFI-generated Kotlin directory as a generated source for every
+        // variant. This is the correct AGP 8+ API — it wires the task dependency AND
+        // makes the directory visible to the Kotlin compiler without relying on the
+        // deprecated source()/srcDirs approaches that are silently ignored in newer AGP.
+        variant.sources.kotlin?.addGeneratedSourceDirectory(
+            generateUniFfiBindings,
+            { it.dir("generated/uniffi/kotlin") },
+        )
+
         variant.outputs.forEach { output ->
             def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
             def outputKind = abi ?: "universal"
