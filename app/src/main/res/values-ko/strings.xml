@@ -875,4 +875,6 @@
     <string name="experimental_card_bookmark_button">북마크 버튼 표시</string>
     <string name="experimental_card_double_tap_to_bookmark">더블 탭으로 북마크</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">작품 카드를 빠르게 두 번 탭하여 북마크를 추가하거나 해제합니다</string>
+    <string name="experimental_card_related_r18">관련 일러스트 R-18 표시</string>
+    <string name="experimental_card_related_r18_desc">작품 상세 화면의 관련 일러스트에 R-18/R-18G 배지를 표시합니다</string>
 </resources>

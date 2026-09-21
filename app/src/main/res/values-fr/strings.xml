@@ -272,6 +272,8 @@
     <string name="experimental_card_bookmark_button">Afficher le bouton de favoris</string>
     <string name="experimental_card_double_tap_to_bookmark">Appuyer deux fois pour ajouter aux favoris</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Appuyez rapidement deux fois sur une carte d\'œuvre pour ajouter ou retirer des favoris</string>
+    <string name="experimental_card_related_r18">Afficher R-18 dans les œuvres associées</string>
+    <string name="experimental_card_related_r18_desc">Afficher les badges R-18/R-18G sur les œuvres associées dans la vue détaillée</string>
     <string name="settings_hide_ai_works">Masquer les œuvres générées par l\'IA</string>
     <string name="settings_hide_ai_works_desc">Filtrez les œuvres générées par l\'IA à partir des flux et des résultats de recherche</string>
     <string name="experimental_artwork_theme_section">Thème de l\'œuvre d\'art</string>

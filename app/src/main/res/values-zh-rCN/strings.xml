@@ -818,4 +818,6 @@
     <string name="experimental_card_bookmark_button">显示收藏按钮</string>
     <string name="experimental_card_double_tap_to_bookmark">双击添加收藏</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">快速双击作品卡片以添加或取消收藏</string>
+    <string name="experimental_card_related_r18">相关作品显示 R-18 标识</string>
+    <string name="experimental_card_related_r18_desc">在作品详情界面的相关作品上显示 R-18/R-18G 标识</string>
 </resources>

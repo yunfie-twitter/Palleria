@@ -276,6 +276,8 @@
     <string name="experimental_card_bookmark_button">ブックマークボタンを表示</string>
     <string name="experimental_card_double_tap_to_bookmark">ダブルタップでブックマーク</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">作品カードを素早く2回タップしてブックマークに追加または解除します</string>
+    <string name="experimental_card_related_r18">関連イラストのR-18表示</string>
+    <string name="experimental_card_related_r18_desc">作品詳細画面の関連イラストにR-18/R-18Gバッジを表示します</string>
     <string name="settings_hide_ai_works">AI生成作品を非表示</string>
     <string name="settings_hide_ai_works_desc">フィードや検索結果からAI判定作品を除外します</string>
     <string name="experimental_artwork_theme_section">作品連動テーマ</string>

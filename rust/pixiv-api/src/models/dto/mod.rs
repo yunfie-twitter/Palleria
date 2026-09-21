@@ -103,6 +103,12 @@ pub(crate) struct IllustDto {
     series: Option<SeriesDto>,
     #[serde(default)]
     total_bookmarks: i32,
+    #[serde(default)]
+    x_restrict: i32,
+    #[serde(default)]
+    sanity_level: i32,
+    #[serde(default)]
+    illust_ai_type: i32,
 }
 
 #[derive(Debug, Deserialize)]
