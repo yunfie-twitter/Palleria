@@ -29,6 +29,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -344,6 +345,40 @@ internal class PalleriaSyncCoordinator(
             is PallaSyncHttpResult.Retryable -> return null.also { log(health.message) }
             is PallaSyncHttpResult.ProtocolError -> return null.also { log(health.message) }
         }
+
+        if (isGenesis) {
+            val chainSalt =
+                keysObject.string("chain_salt") ?: return null.also {
+                    log("Derived PallaSync keys did not contain a chain salt")
+                }
+            val chainParams =
+                JsonObject(
+                    mapOf(
+                        "protocol_version" to JsonPrimitive(PALLASYNC_PROTOCOL_VERSION),
+                        "chain_id" to JsonPrimitive(chainId),
+                        "chain_salt" to JsonPrimitive(chainSalt),
+                        "created_at_ms" to JsonPrimitive(System.currentTimeMillis()),
+                        "creator_device_id" to JsonPrimitive(deviceId),
+                        "creator_public_key" to JsonPrimitive(publicKey),
+                        "admin_public_key" to JsonPrimitive(publicKey),
+                        "signature" to JsonPrimitive(""),
+                    ),
+                ).toString()
+            val createChainRequest =
+                Request
+                    .Builder()
+                    .url(PallaSyncUrls.chains(baseUrl))
+                    .header("Accept", JSON_MEDIA_TYPE.toString())
+                    .post(chainParams.toRequestBody(JSON_MEDIA_TYPE))
+                    .build()
+            when (val created = remote.executeUnit(createChainRequest)) {
+                is PallaSyncHttpResult.Success -> Unit
+                is PallaSyncHttpResult.Retryable -> return null.also { log(created.message) }
+                is PallaSyncHttpResult.ProtocolError -> return null.also { log(created.message) }
+                PallaSyncHttpResult.Gone -> return null.also { log("The PallaSync service is unavailable") }
+            }
+        }
+
         val joinRequest =
             Request
                 .Builder()
