@@ -243,9 +243,11 @@ fun PallaSyncSettingsScreen(
                                             Toast.makeText(context, R.string.error_pallasync_create_chain_failed, Toast.LENGTH_SHORT).show()
                                         }
                                     }
+                                } else if (!enabled && state.settings.pallaSyncEnabled) {
+                                    showLeaveConfirm = true
                                 }
                             },
-                            enabled = !state.settings.pallaSyncEnabled && !isCreatingChain,
+                            enabled = !isCreatingChain,
                             summary = stringResource(R.string.pallasync_enable_desc),
                         )
                         DividerLine()
