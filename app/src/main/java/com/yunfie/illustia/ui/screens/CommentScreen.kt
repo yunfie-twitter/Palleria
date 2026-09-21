@@ -52,9 +52,9 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Send
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
 fun CommentScreen(
@@ -90,7 +90,10 @@ fun CommentScreen(
         onLoadMore = { scope.launch { store.next() } },
     )
 
-    OverlayBottomSheet(
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val maxSheetHeight = minOf(configuration.screenHeightDp.dp * 0.72f, 560.dp)
+
+    WindowBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.detail_comments),
@@ -112,9 +115,9 @@ fun CommentScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 560.dp)
-                    .padding(horizontal = 4.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .heightIn(max = maxSheetHeight)
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             PullToRefresh(
                 isRefreshing = state.isLoading && state.comments.isNotEmpty(),
@@ -172,7 +175,7 @@ fun CommentScreen(
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 0.dp),
-                    contentPadding = PaddingValues(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

@@ -35,19 +35,14 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
-import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
-import com.yunfie.illustia.ui.screens.profile.RelatedCreatorsSheetContent
 import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
 import com.yunfie.illustia.ui.screens.profile.UserProfileSmallTopAppBar
 import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
 import com.yunfie.illustia.ui.screens.profile.UserWorkTypeFilter
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun UserProfileScreen(
@@ -55,24 +50,18 @@ fun UserProfileScreen(
     settings: AppSettings,
     illusts: List<Illust>,
     bookmarks: List<Illust>,
-    relatedUsers: List<UserPreview>,
     hasMore: Boolean,
     bookmarkHasMore: Boolean,
-    relatedUsersHasMore: Boolean,
-    relatedUsersLoading: Boolean,
     onBack: () -> Unit,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
     onLoadMore: () -> Unit,
     onLoadBookmarks: () -> Unit,
     onLoadMoreBookmarks: () -> Unit,
-    onLoadRelatedUsers: () -> Unit,
-    onLoadMoreRelatedUsers: () -> Unit,
-    onOpenRelatedUser: (UserPreview) -> Unit,
+    onOpenRelatedUsers: (() -> Unit)? = null,
     onToggleFollow: () -> Unit,
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
-    onReportUser: ((Long, String, String) -> Unit)? = null,
     isMuted: Boolean,
     onUnmuteUser: () -> Unit,
     gridState: LazyGridState,
@@ -88,7 +77,6 @@ fun UserProfileScreen(
     val isDarkTheme = backgroundColor.luminance() < 0.5f
 
     var showUnfollowConfirm by remember(user.id) { mutableStateOf(false) }
-    var showRelatedUsers by remember(user.id) { mutableStateOf(false) }
     var followAnimationTrigger by remember(user.id) { mutableIntStateOf(0) }
     var sortOrder by remember(user.id) { mutableStateOf(UserWorkSortOrder.Newest) }
     var typeFilter by remember(user.id) { mutableStateOf(UserWorkTypeFilter.All) }
@@ -287,37 +275,12 @@ fun UserProfileScreen(
                 onBack = onBack,
                 onMuteUser = onMuteUser,
                 onMessage = onMessage,
-                onOpenRelatedUsers = {
-                    showRelatedUsers = true
-                    onLoadRelatedUsers()
-                },
-                onReportUser = onReportUser,
+                onOpenRelatedUsers = onOpenRelatedUsers ?: {},
                 onTitleClick = scrollToTop,
                 compact = isContentScrolled,
             )
         }
     } else {
         content(contentModifier)
-    }
-
-    OverlayBottomSheet(
-        show = showRelatedUsers,
-        modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.user_tab_related),
-        backgroundColor = LocalBottomSheetBackgroundColor.current,
-        onDismissRequest = { showRelatedUsers = false },
-        insideMargin = BottomSheetInsideMargin,
-    ) {
-        RelatedCreatorsSheetContent(
-            users = relatedUsers,
-            hasMore = relatedUsersHasMore,
-            loading = relatedUsersLoading,
-            onOpenUser = { relatedUser ->
-                showRelatedUsers = false
-                onOpenRelatedUser(relatedUser)
-            },
-            onRetry = onLoadRelatedUsers,
-            onLoadMore = onLoadMoreRelatedUsers,
-        )
     }
 }
