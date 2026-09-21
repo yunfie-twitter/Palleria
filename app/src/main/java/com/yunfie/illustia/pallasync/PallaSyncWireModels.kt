@@ -147,6 +147,8 @@ internal object PallaSyncUrls {
 
     fun health(baseUrl: HttpUrl): HttpUrl = endpoint(baseUrl, "health")
 
+    fun chains(baseUrl: HttpUrl): HttpUrl = endpoint(baseUrl, "chains")
+
     fun parameters(
         baseUrl: HttpUrl,
         chainId: String,
