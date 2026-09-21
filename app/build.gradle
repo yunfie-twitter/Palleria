@@ -172,6 +172,8 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
         "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
     dependsOn buildUniFfiHost
     inputs.files(rustInputs, new File(rustCrateDir, "uniffi.toml"))
+    inputs.file(uniffiHostLibrary)
+    outputs.file(uniffiKotlinDir.map { it.file("com/yunfie/illustia/rust/palleria_pixiv_api.kt") })
     outputs.dir(uniffiKotlinDir)
 }
 
