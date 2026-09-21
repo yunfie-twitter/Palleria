@@ -210,7 +210,33 @@ fun UpdateSettingsScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
 
+            item {
+                Section(stringResource(R.string.update_section_check_and_download)) {
+                    ElevatedPanel {
+                        SettingSwitchRow(
+                            title = stringResource(R.string.update_include_prerelease),
+                            summary = stringResource(R.string.update_include_prerelease_desc),
+                            checked = state.settings.includePrereleaseUpdates,
+                            onCheckedChange = viewModel::updateIncludePrereleaseUpdates,
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.update_notify_new_version),
+                            summary = stringResource(R.string.update_notify_new_version_desc),
+                            checked = state.settings.notifyNewVersion,
+                            onCheckedChange = viewModel::updateNotifyNewVersion,
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.update_auto_download),
+                            summary = stringResource(R.string.update_auto_download_desc),
+                            checked = state.settings.autoDownloadUpdates,
+                            onCheckedChange = viewModel::updateAutoDownloadUpdates,
+                        )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.update_auto_check_startup),

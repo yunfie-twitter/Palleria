@@ -1016,4 +1016,19 @@
     <string name="experimental_app_icon_desc">Thay đổi thiết kế biểu tượng ứng dụng</string>
     <string name="experimental_app_icon_default">Mặc định</string>
     <string name="experimental_app_icon_cat">Mèo (Cat)</string>
+    <string name="notification_channel_app_updates">Cập nhật ứng dụng</string>
+    <string name="notification_channel_app_updates_desc">Thông báo phiên bản mới và cập nhật</string>
+    <string name="update_notification_new_version_title">Có phiên bản mới: %1$s</string>
+    <string name="update_notification_new_version_desc">Nhấn để xem chi tiết bản cập nhật</string>
+    <string name="update_notification_downloaded_title">Bản cập nhật đã sẵn sàng cài đặt: %1$s</string>
+    <string name="update_notification_downloaded_desc">Nhấn để bắt đầu cài đặt</string>
+    <string name="update_notification_installed_title">Đã cài đặt bản cập nhật: %1$s</string>
+    <string name="update_notification_installed_desc">Đã tự động cài đặt qua Shizuku</string>
+    <string name="update_section_check_and_download">Kiểm tra &amp; Tải về</string>
+    <string name="update_include_prerelease">Bao gồm bản phát triển</string>
+    <string name="update_include_prerelease_desc">Nhận cập nhật cho các bản phát hành trước và bản thử nghiệm</string>
+    <string name="update_notify_new_version">Thông báo khi có phiên bản mới</string>
+    <string name="update_notify_new_version_desc">Hiển thị thông báo hệ thống khi có phiên bản mới</string>
+    <string name="update_auto_download">Tự động tải bản cập nhật</string>
+    <string name="update_auto_download_desc">Tự động tải về trong nền (tự động cài đặt nếu bật Shizuku)</string>
 </resources>

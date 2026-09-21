@@ -1016,4 +1016,19 @@
     <string name="experimental_app_icon_desc">Ubah desain ikon aplikasi</string>
     <string name="experimental_app_icon_default">Default</string>
     <string name="experimental_app_icon_cat">Kucing (Cat)</string>
+    <string name="notification_channel_app_updates">Pembaruan Aplikasi</string>
+    <string name="notification_channel_app_updates_desc">Notifikasi untuk versi baru dan pembaruan</string>
+    <string name="update_notification_new_version_title">Versi baru tersedia: %1$s</string>
+    <string name="update_notification_new_version_desc">Ketuk untuk melihat detail pembaruan</string>
+    <string name="update_notification_downloaded_title">Pembaruan siap dipasang: %1$s</string>
+    <string name="update_notification_downloaded_desc">Ketuk untuk memulai pemasangan</string>
+    <string name="update_notification_installed_title">Pembaruan terpasang: %1$s</string>
+    <string name="update_notification_installed_desc">Dipasang secara otomatis via Shizuku</string>
+    <string name="update_section_check_and_download">Pemeriksaan &amp; Unduhan</string>
+    <string name="update_include_prerelease">Sertakan build pengembangan</string>
+    <string name="update_include_prerelease_desc">Menerima pembaruan untuk versi pra-rilis dan pengujian</string>
+    <string name="update_notify_new_version">Beri tahu versi baru</string>
+    <string name="update_notify_new_version_desc">Tampilkan notifikasi sistem saat versi baru dirilis</string>
+    <string name="update_auto_download">Unduh otomatis pembaruan</string>
+    <string name="update_auto_download_desc">Unduh pembaruan secara otomatis di latar belakang (pasang otomatis jika Shizuku aktif)</string>
 </resources>

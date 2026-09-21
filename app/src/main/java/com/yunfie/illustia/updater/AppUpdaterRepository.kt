@@ -12,6 +12,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -47,14 +48,19 @@ class AppUpdaterRepository(
             packageInfo.versionName.orEmpty()
         }.getOrNull()?.ifBlank { "5.5.24" } ?: "5.5.24"
 
-    @Suppress("LongMethod")
-    suspend fun fetchLatestRelease(): Result<AppReleaseInfo?> =
+    suspend fun fetchLatestRelease(includePrerelease: Boolean = false): Result<AppReleaseInfo?> =
         withContext(Dispatchers.IO) {
             runCatching {
+                val url =
+                    if (includePrerelease) {
+                        "https://api.github.com/repos/yunfie-twitter/Palleria/releases?per_page=10"
+                    } else {
+                        "https://api.github.com/repos/yunfie-twitter/Palleria/releases/latest"
+                    }
                 val request =
                     Request
                         .Builder()
-                        .url("https://api.github.com/repos/yunfie-twitter/Palleria/releases/latest")
+                        .url(url)
                         .header("Accept", "application/vnd.github+json")
                         .build()
 
@@ -65,59 +71,80 @@ class AppUpdaterRepository(
                         throw IllegalStateException("GitHub API error (${response.code}): $body")
                     }
                     val bodyString = response.body.string()
-                    val jsonObject = json.parseToJsonElement(bodyString).jsonObject
-                    val tagName = jsonObject["tag_name"]?.jsonPrimitive?.content.orEmpty()
-                    val versionName = tagName.removePrefix("v").trim()
-                    val title =
-                        jsonObject["name"]
-                            ?.jsonPrimitive
-                            ?.content
-                            .orEmpty()
-                            .ifBlank { tagName }
-                    val body = jsonObject["body"]?.jsonPrimitive?.content.orEmpty()
-                    val publishedAt = jsonObject["published_at"]?.jsonPrimitive?.content.orEmpty()
-                    val htmlUrl = jsonObject["html_url"]?.jsonPrimitive?.content.orEmpty()
-
-                    val assets = jsonObject["assets"]?.let { it as? JsonArray } ?: JsonArray(emptyList())
-                    val apkAssets =
-                        assets.mapNotNull { runCatching { it.jsonObject }.getOrNull() }.filter {
-                            val name = it["name"]?.jsonPrimitive?.content.orEmpty()
-                            name.endsWith(".apk", ignoreCase = true)
+                    val element = json.parseToJsonElement(bodyString)
+                    when (element) {
+                        is JsonArray -> {
+                            element.firstNotNullOfOrNull { item ->
+                                val obj = runCatching { item.jsonObject }.getOrNull() ?: return@firstNotNullOfOrNull null
+                                parseReleaseObject(obj)
+                            }
                         }
-                    val chosenAsset = selectBestApkAsset(apkAssets)
-                    val apkUrl =
-                        chosenAsset
-                            ?.get("browser_download_url")
-                            ?.jsonPrimitive
-                            ?.content
-                            .orEmpty()
-                    val apkName =
-                        chosenAsset
-                            ?.get("name")
-                            ?.jsonPrimitive
-                            ?.content
-                            .orEmpty()
-                    val apkSize = chosenAsset?.get("size")?.jsonPrimitive?.longOrNull ?: 0L
-                    val sha256Checksum = chosenAsset?.let { extractSha256(it, body, apkName.orEmpty()) }
 
-                    if (versionName.isBlank() || apkUrl.isNullOrBlank()) {
-                        return@runCatching null
+                        is JsonObject -> {
+                            parseReleaseObject(element)
+                        }
+
+                        else -> {
+                            null
+                        }
                     }
-
-                    AppReleaseInfo(
-                        versionName = versionName,
-                        releaseTitle = title,
-                        releaseNotes = body,
-                        publishedAt = publishedAt,
-                        htmlUrl = htmlUrl,
-                        apkDownloadUrl = apkUrl,
-                        apkFileName = apkName?.ifBlank { "Palleria-.apk" } ?: "Palleria-.apk",
-                        apkSize = apkSize,
-                        sha256Checksum = sha256Checksum,
-                    )
                 }
             }
         }
+
+    private fun parseReleaseObject(jsonObject: JsonObject): AppReleaseInfo? {
+        val tagName = jsonObject["tag_name"]?.jsonPrimitive?.content.orEmpty()
+        val versionName = tagName.removePrefix("v").trim()
+        val title =
+            jsonObject["name"]
+                ?.jsonPrimitive
+                ?.content
+                .orEmpty()
+                .ifBlank { tagName }
+        val body = jsonObject["body"]?.jsonPrimitive?.content.orEmpty()
+        val publishedAt = jsonObject["published_at"]?.jsonPrimitive?.content.orEmpty()
+        val htmlUrl = jsonObject["html_url"]?.jsonPrimitive?.content.orEmpty()
+        val isPrerelease = jsonObject["prerelease"]?.jsonPrimitive?.booleanOrNull ?: false
+
+        val assets = jsonObject["assets"]?.let { it as? JsonArray } ?: JsonArray(emptyList())
+        val apkAssets =
+            assets.mapNotNull { runCatching { it.jsonObject }.getOrNull() }.filter {
+                val name = it["name"]?.jsonPrimitive?.content.orEmpty()
+                name.endsWith(".apk", ignoreCase = true)
+            }
+        val chosenAsset = selectBestApkAsset(apkAssets)
+        val apkUrl =
+            chosenAsset
+                ?.get("browser_download_url")
+                ?.jsonPrimitive
+                ?.content
+                .orEmpty()
+        val apkName =
+            chosenAsset
+                ?.get("name")
+                ?.jsonPrimitive
+                ?.content
+                .orEmpty()
+        val apkSize = chosenAsset?.get("size")?.jsonPrimitive?.longOrNull ?: 0L
+        val sha256Checksum = chosenAsset?.let { extractSha256(it, body, apkName.orEmpty()) }
+
+        if (versionName.isBlank() || apkUrl.isNullOrBlank()) {
+            return null
+        }
+
+        return AppReleaseInfo(
+            versionName = versionName,
+            releaseTitle = title,
+            releaseNotes = body,
+            publishedAt = publishedAt,
+            htmlUrl = htmlUrl,
+            apkDownloadUrl = apkUrl,
+            apkFileName = apkName.ifBlank { "Palleria-$versionName.apk" },
+            apkSize = apkSize,
+            sha256Checksum = sha256Checksum,
+            isPrerelease = isPrerelease,
+        )
+    }
 
     fun isNewerVersion(
         remoteVersion: String,
@@ -638,17 +665,52 @@ class AppUpdaterRepository(
             return idString?.toIntOrNull()
         }
 
+        @Suppress("ReturnCount", "CyclomaticComplexMethod")
         fun compareVersions(
             v1: String,
             v2: String,
         ): Int {
-            val parts1 = v1.split(".", "-", "_").mapNotNull { it.toIntOrNull() }
-            val parts2 = v2.split(".", "-", "_").mapNotNull { it.toIntOrNull() }
+            if (v1 == v2) return 0
+            val core1 = v1.substringBefore("-").trim()
+            val core2 = v2.substringBefore("-").trim()
+
+            val parts1 = core1.split(".").mapNotNull { it.toIntOrNull() }
+            val parts2 = core2.split(".").mapNotNull { it.toIntOrNull() }
             val maxLen = maxOf(parts1.size, parts2.size)
             for (i in 0 until maxLen) {
                 val num1 = parts1.getOrElse(i) { 0 }
                 val num2 = parts2.getOrElse(i) { 0 }
                 if (num1 != num2) return num1.compareTo(num2)
+            }
+
+            val hasPre1 = v1.contains("-")
+            val hasPre2 = v2.contains("-")
+            if (!hasPre1 && hasPre2) return 1
+            if (hasPre1 && !hasPre2) return -1
+            if (!hasPre1 && !hasPre2) return 0
+
+            val pre1 = v1.substringAfter("-").trim()
+            val pre2 = v2.substringAfter("-").trim()
+            val segs1 = pre1.split(".")
+            val segs2 = pre2.split(".")
+            val maxPreLen = maxOf(segs1.size, segs2.size)
+            for (i in 0 until maxPreLen) {
+                val seg1 = segs1.getOrNull(i)
+                val seg2 = segs2.getOrNull(i)
+                if (seg1 == null) return -1
+                if (seg2 == null) return 1
+                val int1 = seg1.toIntOrNull()
+                val int2 = seg2.toIntOrNull()
+                if (int1 != null && int2 != null) {
+                    if (int1 != int2) return int1.compareTo(int2)
+                } else if (int1 != null) {
+                    return -1
+                } else if (int2 != null) {
+                    return 1
+                } else {
+                    val comp = seg1.compareTo(seg2)
+                    if (comp != 0) return comp.compareTo(0)
+                }
             }
             return 0
         }

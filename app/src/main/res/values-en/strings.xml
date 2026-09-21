@@ -1015,4 +1015,19 @@
     <string name="experimental_app_icon_desc">Change the app icon design</string>
     <string name="experimental_app_icon_default">Default</string>
     <string name="experimental_app_icon_cat">Cat</string>
+    <string name="notification_channel_app_updates">App Updates</string>
+    <string name="notification_channel_app_updates_desc">Notifications for new app versions and updates</string>
+    <string name="update_notification_new_version_title">New version available: %1$s</string>
+    <string name="update_notification_new_version_desc">Tap to view update details</string>
+    <string name="update_notification_downloaded_title">Update ready to install: %1$s</string>
+    <string name="update_notification_downloaded_desc">Tap to start installation</string>
+    <string name="update_notification_installed_title">Update installed: %1$s</string>
+    <string name="update_notification_installed_desc">Automatically installed via Shizuku</string>
+    <string name="update_section_check_and_download">Check &amp; Download</string>
+    <string name="update_include_prerelease">Include pre-release builds</string>
+    <string name="update_include_prerelease_desc">Receive updates for pre-release and development versions</string>
+    <string name="update_notify_new_version">Notify on new version</string>
+    <string name="update_notify_new_version_desc">Show system notifications when a new version is released</string>
+    <string name="update_auto_download">Auto-download updates</string>
+    <string name="update_auto_download_desc">Automatically download updates in the background (auto-installs if Shizuku is enabled)</string>
 </resources>

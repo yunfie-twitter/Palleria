@@ -1016,4 +1016,19 @@
     <string name="experimental_app_icon_desc">Modifica il design dell\'icona dell\'applicazione</string>
     <string name="experimental_app_icon_default">Predefinito</string>
     <string name="experimental_app_icon_cat">Gatto (Cat)</string>
+    <string name="notification_channel_app_updates">Aggiornamenti app</string>
+    <string name="notification_channel_app_updates_desc">Notifiche per nuove versioni e aggiornamenti</string>
+    <string name="update_notification_new_version_title">Nuova versione disponibile: %1$s</string>
+    <string name="update_notification_new_version_desc">Tocca per visualizzare i dettagli dell\'aggiornamento</string>
+    <string name="update_notification_downloaded_title">Aggiornamento pronto per l\'installazione: %1$s</string>
+    <string name="update_notification_downloaded_desc">Tocca per avviare l\'installazione</string>
+    <string name="update_notification_installed_title">Aggiornamento installato: %1$s</string>
+    <string name="update_notification_installed_desc">Installato automaticamente tramite Shizuku</string>
+    <string name="update_section_check_and_download">Controllo &amp; Download</string>
+    <string name="update_include_prerelease">Includi build di sviluppo</string>
+    <string name="update_include_prerelease_desc">Ricevi aggiornamenti per versioni di anteprima e test</string>
+    <string name="update_notify_new_version">Notifica nuova versione</string>
+    <string name="update_notify_new_version_desc">Mostra notifiche di sistema al rilascio di una nuova versione</string>
+    <string name="update_auto_download">Download automatico degli aggiornamenti</string>
+    <string name="update_auto_download_desc">Scarica automaticamente in background (installazione automatica se Shizuku è attivo)</string>
 </resources>

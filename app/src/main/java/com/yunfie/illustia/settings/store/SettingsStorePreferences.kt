@@ -174,6 +174,9 @@ internal fun readFromDataStore(
         autoDetectClipboard = preferences[AUTO_DETECT_CLIPBOARD] ?: false,
         updateInstallMethod = preferences[UPDATE_INSTALL_METHOD] ?: "standard_apk",
         autoCheckUpdateOnStartup = preferences[AUTO_CHECK_UPDATE_ON_STARTUP] ?: false,
+        includePrereleaseUpdates = preferences[INCLUDE_PRERELEASE_UPDATES] ?: false,
+        notifyNewVersion = preferences[NOTIFY_NEW_VERSION] ?: true,
+        autoDownloadUpdates = preferences[AUTO_DOWNLOAD_UPDATES] ?: false,
         discordRpcEnabled = preferences[DISCORD_RPC_ENABLED] ?: false,
         discordApplicationId = preferences[DISCORD_APPLICATION_ID] ?: "1544652855233744926",
         discordRpcShowArtworkDetails = preferences[DISCORD_RPC_SHOW_ARTWORK_DETAILS] ?: false,
@@ -463,6 +466,9 @@ internal fun writeToDataStore(
     preferences[AUTO_DETECT_CLIPBOARD] = settings.autoDetectClipboard
     preferences[UPDATE_INSTALL_METHOD] = settings.updateInstallMethod
     preferences[AUTO_CHECK_UPDATE_ON_STARTUP] = settings.autoCheckUpdateOnStartup
+    preferences[INCLUDE_PRERELEASE_UPDATES] = settings.includePrereleaseUpdates
+    preferences[NOTIFY_NEW_VERSION] = settings.notifyNewVersion
+    preferences[AUTO_DOWNLOAD_UPDATES] = settings.autoDownloadUpdates
     preferences[DISCORD_RPC_ENABLED] = settings.discordRpcEnabled
     preferences[DISCORD_APPLICATION_ID] = settings.discordApplicationId
     preferences[DISCORD_RPC_SHOW_ARTWORK_DETAILS] = settings.discordRpcShowArtworkDetails
