@@ -400,8 +400,18 @@ internal fun RelatedIllustsList(
             ) {
                 rowItems.forEach { related ->
                     val ageRestrictionBadgeText =
-                        remember(related.id, related.isR18, related.isR18G, cardPreferences.showR18Badge) {
-                            if (cardPreferences.showR18Badge) related.ageRestrictionBadgeText else null
+                        remember(
+                            related.id,
+                            related.isR18,
+                            related.isR18G,
+                            cardPreferences.showR18Badge,
+                            cardPreferences.showRelatedR18,
+                        ) {
+                            if (cardPreferences.showR18Badge && cardPreferences.showRelatedR18) {
+                                related.ageRestrictionBadgeText
+                            } else {
+                                null
+                            }
                         }
                     Box(modifier = Modifier.weight(1f)) {
                         key(related.id) {

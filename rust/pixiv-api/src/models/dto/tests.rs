@@ -20,7 +20,10 @@ fn parses_illust_page_and_applies_kotlin_compatible_fallbacks() {
                     "tags": [{"name": "tag"}],
                     "page_count": 1,
                     "is_bookmarked": true,
-                    "total_bookmarks": 123
+                    "total_bookmarks": 123,
+                    "x_restrict": 1,
+                    "sanity_level": 4,
+                    "illust_ai_type": 2
                 }],
                 "next_url": "https://example.test/next"
             }"#,
@@ -38,6 +41,9 @@ fn parses_illust_page_and_applies_kotlin_compatible_fallbacks() {
     assert_eq!(illust.tags, ["tag"]);
     assert!(illust.is_bookmarked);
     assert_eq!(illust.total_bookmarks, 123);
+    assert_eq!(illust.x_restrict, 1);
+    assert_eq!(illust.sanity_level, 4);
+    assert_eq!(illust.illust_ai_type, 2);
 }
 
 #[test]

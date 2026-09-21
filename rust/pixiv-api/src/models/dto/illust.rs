@@ -78,6 +78,9 @@ impl IllustDto {
                 id: series.id,
                 title: series.title,
             }),
+            x_restrict: self.x_restrict,
+            sanity_level: self.sanity_level,
+            illust_ai_type: self.illust_ai_type,
         })
     }
 }

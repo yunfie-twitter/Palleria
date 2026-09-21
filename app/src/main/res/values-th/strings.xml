@@ -272,6 +272,8 @@
     <string name="experimental_card_bookmark_button">แสดงปุ่มบุ๊กมาร์ก</string>
     <string name="experimental_card_double_tap_to_bookmark">แตะสองครั้งเพื่อบุ๊กมาร์ก</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">แตะการ์ดผลงานสองครั้งอย่างรวดเร็วเพื่อเพิ่มหรือลบบุ๊กมาร์ก</string>
+    <string name="experimental_card_related_r18">แสดง R-18 ในผลงานที่เกี่ยวข้อง</string>
+    <string name="experimental_card_related_r18_desc">แสดงป้ายกำกับ R-18/R-18G สำหรับผลงานที่เกี่ยวข้องในหน้ารายละเอียด</string>
     <string name="settings_hide_ai_works">ซ่อนผลงานที่สร้างโดย AI</string>
     <string name="settings_hide_ai_works_desc">กรองผลงานที่สร้างโดย AI จากฟีดและผลการค้นหา</string>
     <string name="experimental_artwork_theme_section">ธีมงานศิลปะ</string>

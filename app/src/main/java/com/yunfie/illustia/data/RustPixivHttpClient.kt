@@ -480,6 +480,8 @@ private fun RustIllust.toAppModel(): Illust =
         totalBookmarks = totalBookmarks,
         totalComments = totalComments,
         series = series?.let { IllustSeries(id = it.id, title = it.title) },
+        xRestrict = xRestrict,
+        illustAiType = illustAiType,
     )
 
 private fun RustUserProfile.toAppModel(): UserProfile =
@@ -630,8 +632,8 @@ private fun RustIllust.toIllusts(): Illusts =
         pageCount = pageCount,
         width = 0,
         height = 0,
-        sanityLevel = 0,
-        xRestrict = 0,
+        sanityLevel = sanityLevel,
+        xRestrict = xRestrict,
         metaSinglePage = originalImageUrl?.let { MetaSinglePage(it) },
         metaPages =
             mediumImagePages.indices.map { index ->
@@ -649,7 +651,7 @@ private fun RustIllust.toIllusts(): Illusts =
         isBookmarked = isBookmarked,
         visible = true,
         isMuted = false,
-        illustAIType = 0,
+        illustAIType = illustAiType,
         series = series?.let { IllustSeries(id = it.id, title = it.title) },
         illustBookStyle = null,
         totalComments = totalComments,

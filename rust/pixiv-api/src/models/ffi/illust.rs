@@ -26,6 +26,9 @@ pub struct Illust {
     pub total_bookmarks: i32,
     pub total_comments: Option<i32>,
     pub series: Option<IllustSeries>,
+    pub x_restrict: i32,
+    pub sanity_level: i32,
+    pub illust_ai_type: i32,
 }
 
 #[derive(Debug, uniffi::Record)]

@@ -272,6 +272,8 @@
     <string name="experimental_card_bookmark_button">Tampilkan tombol penanda</string>
     <string name="experimental_card_double_tap_to_bookmark">Ketuk dua kali untuk bookmark</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Ketuk dua kali kartu karya dengan cepat untuk menambah atau menghapus bookmark</string>
+    <string name="experimental_card_related_r18">Tampilkan R-18 di karya terkait</string>
+    <string name="experimental_card_related_r18_desc">Tampilkan lencana R-18/R-18G pada karya terkait di tampilan detail</string>
     <string name="settings_hide_ai_works">Sembunyikan karya yang dihasilkan AI</string>
     <string name="settings_hide_ai_works_desc">Filter karya yang dihasilkan AI dari feed dan hasil pencarian</string>
     <string name="experimental_artwork_theme_section">Tema karya seni</string>
