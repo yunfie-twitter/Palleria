@@ -112,6 +112,7 @@ internal fun readFromDataStore(
         skipConfirmOnDetailSave = preferences[SKIP_CONFIRM_ON_DETAIL_SAVE] ?: false,
         showAiBadge = preferences[SHOW_AI_BADGE] ?: true,
         showR18Badge = preferences[SHOW_R18_BADGE] ?: true,
+        showCardBookmarkButton = preferences[SHOW_CARD_BOOKMARK_BUTTON] ?: true,
         doubleTapToBookmark = preferences[DOUBLE_TAP_TO_BOOKMARK] ?: false,
         hideAiWorks = preferences[HIDE_AI_WORKS] ?: false,
         followOnLike = preferences[FOLLOW_ON_LIKE] ?: false,
@@ -288,6 +289,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         skipConfirmOnDetailSave = preferences.getBoolean("skipConfirmOnDetailSave", false),
         showAiBadge = preferences.getBoolean("showAiBadge", true),
         showR18Badge = preferences.getBoolean("showR18Badge", true),
+        showCardBookmarkButton = preferences.getBoolean("showCardBookmarkButton", true),
         doubleTapToBookmark = preferences.getBoolean("doubleTapToBookmark", false),
         hideAiWorks = preferences.getBoolean("hideAiWorks", false),
         followOnLike = preferences.getBoolean("followOnLike", false),
@@ -400,6 +402,7 @@ internal fun writeToDataStore(
     preferences[SKIP_CONFIRM_ON_DETAIL_SAVE] = settings.skipConfirmOnDetailSave
     preferences[SHOW_AI_BADGE] = settings.showAiBadge
     preferences[SHOW_R18_BADGE] = settings.showR18Badge
+    preferences[SHOW_CARD_BOOKMARK_BUTTON] = settings.showCardBookmarkButton
     preferences[DOUBLE_TAP_TO_BOOKMARK] = settings.doubleTapToBookmark
     preferences[HIDE_AI_WORKS] = settings.hideAiWorks
     preferences[FOLLOW_ON_LIKE] = settings.followOnLike

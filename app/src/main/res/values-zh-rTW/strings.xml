@@ -815,6 +815,7 @@
     <string name="experimental_app_icon_desc">更改應用程式圖示設計</string>
     <string name="experimental_app_icon_default">預設</string>
     <string name="experimental_app_icon_cat">貓咪 (Cat)</string>
+    <string name="experimental_card_bookmark_button">顯示收藏按鈕</string>
     <string name="experimental_card_double_tap_to_bookmark">按兩下加入收藏</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">快速按兩下作品卡片以新增或取消收藏</string>
 </resources>

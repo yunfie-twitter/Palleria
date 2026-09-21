@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,10 +33,13 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -44,10 +48,19 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+internal enum class BookmarkSort {
+    Newest,
+    Oldest,
+    Popular,
+    Title,
+}
 
 internal enum class FollowingUserSort {
     Newest,
@@ -66,6 +79,7 @@ fun BookmarkScreen(
     viewModel: IllustiaViewModel,
     onOpenWatchlistSeries: (Long) -> Unit,
 ) {
+    var bookmarkSort by rememberSaveable { mutableStateOf(BookmarkSort.Newest) }
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
     var showSortPopup by remember { mutableStateOf(false) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
@@ -91,10 +105,19 @@ fun BookmarkScreen(
 
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
+    val sortedBookmarkItems =
+        remember(bookmarkItems, bookmarkSort) {
+            when (bookmarkSort) {
+                BookmarkSort.Newest -> bookmarkItems
+                BookmarkSort.Oldest -> bookmarkItems.reversed()
+                BookmarkSort.Popular -> bookmarkItems.sortedByDescending { it.totalBookmarks }
+                BookmarkSort.Title -> bookmarkItems.sortedBy { it.title }
+            }
+        }
     val activeItems =
         when (selectedTopTab) {
             0 -> timelineItems
-            1 -> bookmarkItems
+            1 -> sortedBookmarkItems
             else -> emptyList()
         }
     val prefetchUrls =
@@ -147,19 +170,106 @@ fun BookmarkScreen(
                 },
             actions = {
                 if (selectedTopTab == 1) {
-                    RestrictPill(
-                        restrict = settings.bookmarkRestrict,
-                        onClick = {
-                            performHaptic(AppHapticEffect.Toggle)
-                            val next =
-                                if (settings.bookmarkRestrict == Restrict.Public) {
-                                    Restrict.Private
-                                } else {
-                                    Restrict.Public
-                                }
-                            viewModel.updateRestrict(next)
-                            viewModel.refreshBookmarks()
-                        },
+                    val publicLabel = stringResource(R.string.restrict_public)
+                    val privateLabel = stringResource(R.string.restrict_private)
+                    val sortLabel = stringResource(R.string.action_sort)
+                    val sortNewestLabel = stringResource(R.string.sort_date_desc)
+                    val sortOldestLabel = stringResource(R.string.sort_date_asc)
+                    val sortPopularLabel = stringResource(R.string.sort_popular_desc)
+                    val sortTitleLabel = stringResource(R.string.sort_name_asc)
+
+                    val bookmarkMenuEntries =
+                        remember(
+                            settings.bookmarkRestrict,
+                            bookmarkSort,
+                            publicLabel,
+                            privateLabel,
+                            sortLabel,
+                            sortNewestLabel,
+                            sortOldestLabel,
+                            sortPopularLabel,
+                            sortTitleLabel,
+                        ) {
+                            listOf(
+                                DropdownEntry(
+                                    items =
+                                        listOf(
+                                            DropdownItem(
+                                                text = publicLabel,
+                                                selected = settings.bookmarkRestrict == Restrict.Public,
+                                                onClick = {
+                                                    if (settings.bookmarkRestrict != Restrict.Public) {
+                                                        performHaptic(AppHapticEffect.Toggle)
+                                                        viewModel.updateRestrict(Restrict.Public)
+                                                        viewModel.refreshBookmarks()
+                                                    }
+                                                },
+                                            ),
+                                            DropdownItem(
+                                                text = privateLabel,
+                                                selected = settings.bookmarkRestrict == Restrict.Private,
+                                                onClick = {
+                                                    if (settings.bookmarkRestrict != Restrict.Private) {
+                                                        performHaptic(AppHapticEffect.Toggle)
+                                                        viewModel.updateRestrict(Restrict.Private)
+                                                        viewModel.refreshBookmarks()
+                                                    }
+                                                },
+                                            ),
+                                        ),
+                                ),
+                                DropdownEntry(
+                                    items =
+                                        listOf(
+                                            DropdownItem(
+                                                text = sortLabel,
+                                                children =
+                                                    listOf(
+                                                        DropdownItem(
+                                                            text = sortNewestLabel,
+                                                            selected = bookmarkSort == BookmarkSort.Newest,
+                                                            onClick = {
+                                                                performHaptic(AppHapticEffect.Toggle)
+                                                                bookmarkSort = BookmarkSort.Newest
+                                                            },
+                                                        ),
+                                                        DropdownItem(
+                                                            text = sortOldestLabel,
+                                                            selected = bookmarkSort == BookmarkSort.Oldest,
+                                                            onClick = {
+                                                                performHaptic(AppHapticEffect.Toggle)
+                                                                bookmarkSort = BookmarkSort.Oldest
+                                                            },
+                                                        ),
+                                                        DropdownItem(
+                                                            text = sortPopularLabel,
+                                                            selected = bookmarkSort == BookmarkSort.Popular,
+                                                            onClick = {
+                                                                performHaptic(AppHapticEffect.Toggle)
+                                                                bookmarkSort = BookmarkSort.Popular
+                                                            },
+                                                        ),
+                                                        DropdownItem(
+                                                            text = sortTitleLabel,
+                                                            selected = bookmarkSort == BookmarkSort.Title,
+                                                            onClick = {
+                                                                performHaptic(AppHapticEffect.Toggle)
+                                                                bookmarkSort = BookmarkSort.Title
+                                                            },
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            )
+                        }
+
+                    OverlayIconCascadingDropdownMenu(
+                        entries = bookmarkMenuEntries,
+                        icon = if (settings.bookmarkRestrict == Restrict.Public) MiuixIcons.Community else MiuixIcons.Lock,
+                        backgroundColor = Color.Transparent,
+                        contentColor = MiuixTheme.colorScheme.onBackground,
+                        contentDescription = stringResource(R.string.nav_bookmarks_full),
                     )
                 }
                 if (selectedTopTab == 3) {
@@ -258,7 +368,7 @@ fun BookmarkScreen(
 
                     1 -> {
                         BookmarkMainTab(
-                            bookmarkItems = bookmarkItems,
+                            bookmarkItems = sortedBookmarkItems,
                             loadState = loadState,
                             settings = settings,
                             feedHighQuality = feedHighQuality,

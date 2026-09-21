@@ -248,6 +248,12 @@ fun ExperimentalSettingsScreen(
                         )
                         DividerLine()
                         SettingSwitchRow(
+                            title = stringResource(R.string.experimental_card_bookmark_button),
+                            checked = state.settings.showCardBookmarkButton,
+                            onCheckedChange = viewModel::updateShowCardBookmarkButton,
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_double_tap_to_bookmark),
                             checked = state.settings.doubleTapToBookmark,
                             onCheckedChange = viewModel::updateDoubleTapToBookmark,

@@ -68,6 +68,7 @@ data class AppSettings(
     val skipConfirmOnDetailSave: Boolean = false,
     val showAiBadge: Boolean = true,
     val showR18Badge: Boolean = true,
+    val showCardBookmarkButton: Boolean = true,
     val doubleTapToBookmark: Boolean = false,
     val hideAiWorks: Boolean = false,
     val followOnLike: Boolean = false,

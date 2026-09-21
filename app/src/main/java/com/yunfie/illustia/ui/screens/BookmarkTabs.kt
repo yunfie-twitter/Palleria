@@ -46,7 +46,6 @@ import com.yunfie.illustia.data.pixiv.WatchlistState
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
-import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.AppSettings
@@ -63,7 +62,6 @@ import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
-import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import kotlinx.coroutines.launch
@@ -77,10 +75,7 @@ import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
-import top.yukonga.miuix.kmp.icon.extended.Lock
-import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -578,40 +573,4 @@ internal fun CompactBookmarkTabs(
         maxWidth = 116.dp,
         height = 45.dp,
     )
-}
-
-@Composable
-internal fun RestrictPill(
-    restrict: Restrict,
-    onClick: () -> Unit,
-) {
-    val icon = if (restrict == Restrict.Public) MiuixIcons.Community else MiuixIcons.Lock
-    Box(
-        modifier =
-            Modifier
-                .height(32.dp)
-                .squircleSurface(MiuixTheme.colorScheme.surfaceContainer, 16.dp)
-                .miuixClickable(haptic = true, onClick = onClick)
-                .padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MiuixTheme.colorScheme.onBackground,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = stringResource(restrict.labelResId),
-                color = MiuixTheme.colorScheme.onBackground,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
 }
