@@ -106,7 +106,7 @@ fun HeaderIcon(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
 ) {
-    val performHaptic = rememberAppHapticFeedback()
+    val performHaptic = rememberHapticFeedbackAction()
     IconButton(
         onClick = {
             if (onClick != null) {
@@ -137,7 +137,7 @@ fun HeaderOverlayIcon(
     contentColor: Color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.9f),
     contentDescription: String? = null,
 ) {
-    val performHaptic = rememberAppHapticFeedback()
+    val performHaptic = rememberHapticFeedbackAction()
     IconButton(
         onClick = {
             performHaptic(AppHapticEffect.Click)
