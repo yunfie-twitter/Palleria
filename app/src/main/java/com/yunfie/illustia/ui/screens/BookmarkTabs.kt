@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,9 +92,9 @@ internal fun BookmarkWatchlistTab(
     watchlistStore: WatchlistStore,
     onOpenWatchlistSeries: (Long) -> Unit,
     scrollBehavior: ScrollBehavior? = null,
+    gridState: LazyGridState = rememberLazyGridState(),
 ) {
     val scope = rememberCoroutineScope()
-    val gridState = rememberLazyGridState()
 
     PullToRefresh(
         isRefreshing = watchlistState.isLoading && watchlistState.mangaSeries.isNotEmpty(),

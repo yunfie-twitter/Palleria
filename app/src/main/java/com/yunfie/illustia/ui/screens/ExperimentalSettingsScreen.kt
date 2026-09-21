@@ -246,6 +246,13 @@ fun ExperimentalSettingsScreen(
                             checked = state.settings.showR18Badge,
                             onCheckedChange = viewModel::updateShowR18Badge,
                         )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.experimental_card_double_tap_to_bookmark),
+                            checked = state.settings.doubleTapToBookmark,
+                            onCheckedChange = viewModel::updateDoubleTapToBookmark,
+                            summary = stringResource(R.string.experimental_card_double_tap_to_bookmark_desc),
+                        )
                     }
                 }
             }

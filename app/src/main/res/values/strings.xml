@@ -273,6 +273,8 @@
     <string name="experimental_card_rating_desc">作品のブックマーク数をカードに表示します</string>
     <string name="experimental_card_ai">AI表示を表示</string>
     <string name="experimental_card_r18">R-18表示を表示</string>
+    <string name="experimental_card_double_tap_to_bookmark">ダブルタップでブックマーク</string>
+    <string name="experimental_card_double_tap_to_bookmark_desc">作品カードを素早く2回タップしてブックマークに追加または解除します</string>
     <string name="settings_hide_ai_works">AI生成作品を非表示</string>
     <string name="settings_hide_ai_works_desc">フィードや検索結果からAI判定作品を除外します</string>
     <string name="experimental_artwork_theme_section">作品連動テーマ</string>

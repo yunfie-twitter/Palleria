@@ -269,6 +269,8 @@
     <string name="experimental_card_rating_desc">Mostrar a contagem de marcadores de arte nos cartões</string>
     <string name="experimental_card_ai">Mostrar rótulo de IA</string>
     <string name="experimental_card_r18">Mostrar rótulo de R-18</string>
+    <string name="experimental_card_double_tap_to_bookmark">Toque duplo para favoritar</string>
+    <string name="experimental_card_double_tap_to_bookmark_desc">Toque duas vezes rapidamente em um cartão de obra para adicionar ou remover dos favoritos</string>
     <string name="settings_hide_ai_works">Ocultar trabalhos gerados por IA</string>
     <string name="settings_hide_ai_works_desc">Filtre trabalhos gerados por IA de feeds e resultados de pesquisa</string>
     <string name="experimental_artwork_theme_section">Tema de arte</string>

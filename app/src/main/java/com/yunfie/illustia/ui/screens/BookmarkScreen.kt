@@ -139,6 +139,7 @@ fun BookmarkScreen(
                             when (selectedTopTab) {
                                 0 -> viewModel.bookmarkTimelineGridState.animateScrollToItem(0)
                                 1 -> viewModel.bookmarkMainGridState.animateScrollToItem(0)
+                                2 -> viewModel.bookmarkWatchlistGridState.animateScrollToItem(0)
                                 3 -> viewModel.bookmarkFollowingGridState.animateScrollToItem(0)
                             }
                         }
@@ -275,6 +276,7 @@ fun BookmarkScreen(
                             watchlistStore = watchlistStore,
                             onOpenWatchlistSeries = onOpenWatchlistSeries,
                             scrollBehavior = scrollBehavior,
+                            gridState = viewModel.bookmarkWatchlistGridState,
                         )
                     }
 
