@@ -53,7 +53,6 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
-import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -86,7 +85,6 @@ internal fun IllustDetailHeader(
     onMuteIllust: () -> Unit,
     onMuteUser: () -> Unit,
     onMessage: (String) -> Unit,
-    onReportIllust: ((Long, String, String) -> Unit)? = null,
     loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
     showImage: Boolean,
     maskMutedArtwork: Boolean,
@@ -123,7 +121,6 @@ internal fun IllustDetailHeader(
     val browserFailedMessage = stringResource(R.string.error_browser_failed)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val urlCopiedMessage = stringResource(R.string.msg_url_copied)
-    var showReportDialog by remember(illust.id) { mutableStateOf(false) }
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
     val previewUrl: String =
         remember(illust.id, highQualityImages, detailQuality) {
@@ -463,14 +460,14 @@ internal fun IllustDetailHeader(
                                                 ),
                                             ),
                                     ),
-                                    if (onReportIllust != null) {
-                                        DropdownItem(
-                                            text = reportProblemLabel,
-                                            onClick = { showReportDialog = true },
-                                        )
-                                    } else {
-                                        null
-                                    },
+                                    DropdownItem(
+                                        text = reportProblemLabel,
+                                        onClick = {
+                                            runCatching {
+                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pixivUrl)))
+                                            }.onFailure { onMessage(browserFailedMessage) }
+                                        },
+                                    ),
                                 ),
                         ),
                     ),
@@ -480,17 +477,6 @@ internal fun IllustDetailHeader(
                 contentDescription = moreLabel,
             )
         }
-    }
-
-    if (onReportIllust != null) {
-        ReportProblemDialog(
-            show = showReportDialog,
-            targetTitle = illust.title,
-            onDismiss = { showReportDialog = false },
-            onSubmit = { problemType, message ->
-                onReportIllust(illust.id, problemType, message)
-            },
-        )
     }
 }
 

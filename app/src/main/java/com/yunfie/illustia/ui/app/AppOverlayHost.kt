@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.app
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,13 +26,11 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.ReportProblemDialog
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import com.yunfie.illustia.ui.screens.UserProfileScreen
-import com.yunfie.illustia.ui.screens.profile.RelatedCreatorsSheetContent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -58,6 +57,7 @@ internal fun AppOverlayHost(
     selectedCommentTarget: Pair<Long, com.yunfie.illustia.data.pixiv.CommentArtworkType>?,
     onDismissComments: () -> Unit,
     onSearchTag: (String) -> Unit,
+    onNavigate: ((AppRoute) -> Unit)? = null,
 ) {
     val configuration = LocalConfiguration.current
     val context = LocalContext.current
@@ -199,8 +199,6 @@ internal fun AppOverlayHost(
         if (!appState.state.showUserPage && !appState.state.userPageDismissed) {
             val userSheetBackground = LocalBottomSheetBackgroundColor.current
             val userSheetHeight = minOf(configuration.screenHeightDp.dp * 0.68f, 560.dp)
-            var showRelatedUsers by remember(user.id) { mutableStateOf(false) }
-            var showReportUserSheet by remember(user.id) { mutableStateOf(false) }
             val shareLabel = stringResource(R.string.detail_share)
             val shareFailedMessage = stringResource(R.string.error_share_failed)
             val shareTitle = user.name.ifBlank { "@${user.account}" }
@@ -244,8 +242,8 @@ internal fun AppOverlayHost(
                                             DropdownItem(
                                                 text = stringResource(R.string.user_tab_related),
                                                 onClick = {
-                                                    showRelatedUsers = true
-                                                    viewModel.loadSelectedRelatedUsers()
+                                                    viewModel.closeUser()
+                                                    onNavigate?.invoke(AppRoute.RelatedUsers(user.id, user.name))
                                                 },
                                             ),
                                             DropdownItem(
@@ -257,7 +255,11 @@ internal fun AppOverlayHost(
                                             ),
                                             DropdownItem(
                                                 text = stringResource(R.string.action_report_problem),
-                                                onClick = { showReportUserSheet = true },
+                                                onClick = {
+                                                    runCatching {
+                                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(profileUrl)))
+                                                    }.onFailure { viewModel.showMessage(shareFailedMessage) }
+                                                },
                                             ),
                                         ),
                                 ),
@@ -277,11 +279,8 @@ internal fun AppOverlayHost(
                     settings = appState.state.settings,
                     illusts = appState.state.selectedUserIllusts,
                     bookmarks = appState.state.selectedUserBookmarks,
-                    relatedUsers = appState.state.selectedRelatedUsers,
                     hasMore = appState.state.selectedUserNextUrl != null,
                     bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
-                    relatedUsersHasMore = appState.state.selectedRelatedUsersNextUrl != null,
-                    relatedUsersLoading = appState.state.selectedRelatedUsersLoading,
                     onBack = viewModel::closeUser,
                     onOpenIllust = { illust ->
                         viewModel.closeUser()
@@ -291,13 +290,13 @@ internal fun AppOverlayHost(
                     onLoadMore = viewModel::loadMoreUserIllusts,
                     onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
                     onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
-                    onLoadRelatedUsers = viewModel::loadSelectedRelatedUsers,
-                    onLoadMoreRelatedUsers = viewModel::loadMoreSelectedRelatedUsers,
-                    onOpenRelatedUser = viewModel::openUserPage,
+                    onOpenRelatedUsers = {
+                        viewModel.closeUser()
+                        onNavigate?.invoke(AppRoute.RelatedUsers(user.id, user.name))
+                    },
                     onToggleFollow = { viewModel.toggleFollow(user) },
                     onMuteUser = { viewModel.muteUser(user.id) },
                     onMessage = viewModel::showMessage,
-                    onReportUser = viewModel::reportUser,
                     isMuted =
                         appState.state.settings.mutedUsers
                             .contains(user.id),
@@ -309,36 +308,6 @@ internal fun AppOverlayHost(
                     contentHeight = userSheetHeight,
                 )
             }
-
-            OverlayBottomSheet(
-                show = showRelatedUsers,
-                modifier = Modifier.scrollEndHaptic(),
-                title = stringResource(R.string.user_tab_related),
-                backgroundColor = userSheetBackground,
-                onDismissRequest = { showRelatedUsers = false },
-                insideMargin = BottomSheetInsideMargin,
-            ) {
-                RelatedCreatorsSheetContent(
-                    users = appState.state.selectedRelatedUsers,
-                    hasMore = appState.state.selectedRelatedUsersNextUrl != null,
-                    loading = appState.state.selectedRelatedUsersLoading,
-                    onOpenUser = { relatedUser ->
-                        showRelatedUsers = false
-                        viewModel.openUser(relatedUser)
-                    },
-                    onRetry = viewModel::loadSelectedRelatedUsers,
-                    onLoadMore = viewModel::loadMoreSelectedRelatedUsers,
-                )
-            }
-
-            ReportProblemDialog(
-                show = showReportUserSheet,
-                targetTitle = user.name.ifBlank { "@${user.account}" },
-                onDismiss = { showReportUserSheet = false },
-                onSubmit = { problemType, message ->
-                    viewModel.reportUser(user.id, problemType, message)
-                },
-            )
         }
     }
 
