@@ -61,6 +61,7 @@ import com.yunfie.illustia.ui.screens.UserProfileScreen
 import com.yunfie.illustia.ui.screens.ViewHistoryScreen
 import com.yunfie.illustia.ui.screens.WallpaperPlaylistSettingsScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
+import com.yunfie.illustia.ui.screens.profile.RelatedUsersScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -299,7 +300,6 @@ internal fun AppNavHost(
                         onSaveImage = viewModel::saveImage,
                         onSaveAllImages = viewModel::saveImages,
                         onMessage = viewModel::showMessage,
-                        onReportIllust = viewModel::reportIllust,
                         loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
                         highQualityImages = appState.state.settings.highQualityImages,
                         detailQuality =
@@ -529,11 +529,8 @@ internal fun AppNavHost(
                         settings = appState.state.settings,
                         illusts = appState.state.selectedUserIllusts,
                         bookmarks = appState.state.selectedUserBookmarks,
-                        relatedUsers = appState.state.selectedRelatedUsers,
                         hasMore = appState.state.selectedUserNextUrl != null,
                         bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
-                        relatedUsersHasMore = appState.state.selectedRelatedUsersNextUrl != null,
-                        relatedUsersLoading = appState.state.selectedRelatedUsersLoading,
                         onBack = {
                             if (appState.state.userPageFromSheet) {
                                 viewModel.collapseUserPageToSheet()
@@ -549,13 +546,12 @@ internal fun AppNavHost(
                         onLoadMore = viewModel::loadMoreUserIllusts,
                         onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
                         onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
-                        onLoadRelatedUsers = viewModel::loadSelectedRelatedUsers,
-                        onLoadMoreRelatedUsers = viewModel::loadMoreSelectedRelatedUsers,
-                        onOpenRelatedUser = viewModel::openUserPage,
+                        onOpenRelatedUsers = {
+                            onNavigate(AppRoute.RelatedUsers(user.id, user.name))
+                        },
                         onToggleFollow = { viewModel.toggleFollow(user) },
                         onMuteUser = { viewModel.muteUser(user.id) },
                         onMessage = viewModel::showMessage,
-                        onReportUser = viewModel::reportUser,
                         isMuted =
                             appState.state.settings.mutedUsers
                                 .contains(user.id),
@@ -579,6 +575,17 @@ internal fun AppNavHost(
                         },
                     )
                 }
+            }
+            entry<AppRoute.RelatedUsers> { route ->
+                RelatedUsersScreen(
+                    userId = route.userId,
+                    userName = route.userName,
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                    onOpenUser = { userId ->
+                        onNavigate(AppRoute.UserProfile(userId))
+                    },
+                )
             }
             entry(AppRoute.AppLockSetup) {
                 AppLockSetupScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
@@ -630,6 +637,7 @@ internal fun AppNavHost(
         selectedCommentTarget = selectedCommentTarget,
         onDismissComments = { onSelectedCommentTargetChange(null) },
         onSearchTag = onSearchTag,
+        onNavigate = onNavigate,
     )
 }
 

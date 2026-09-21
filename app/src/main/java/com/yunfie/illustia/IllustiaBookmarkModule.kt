@@ -114,76 +114,68 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
-    fun loadSelectedRelatedUsers() {
-        val userId = _uiState.value.selectedUser?.id ?: return
-        if (_uiState.value.selectedRelatedUsersLoading || _uiState.value.selectedRelatedUsers.isNotEmpty()) return
+    fun loadSelectedRelatedUsers(
+        targetUserId: Long? = null,
+        force: Boolean = false,
+    ) {
+        val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
+        val shouldSkip =
+            (!force && _uiState.value.selectedRelatedUsersLoading) ||
+                (!force && _uiState.value.selectedRelatedUsers.isNotEmpty() && _uiState.value.selectedUser?.id == userId)
+        if (shouldSkip) return
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(selectedRelatedUsersLoading = true) }
             try {
                 val page = repository.relatedUsers(userId)
                 _uiState.update { state ->
-                    if (state.selectedUser?.id != userId) {
-                        state
-                    } else {
-                        state.copy(
-                            selectedRelatedUsers = page.users.filterNot { it.id == userId },
-                            selectedRelatedUsersNextUrl = page.nextUrl,
-                            selectedRelatedUsersLoading = false,
-                        )
-                    }
+                    state.copy(
+                        selectedRelatedUsers = page.users.filterNot { it.id == userId },
+                        selectedRelatedUsersNextUrl = page.nextUrl,
+                        selectedRelatedUsersLoading = false,
+                    )
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
-                if (handleAuthExpired(error)) return@launch
-                _uiState.update { state ->
-                    if (state.selectedUser?.id == userId) {
+                if (!handleAuthExpired(error)) {
+                    _uiState.update { state ->
                         state.copy(
                             selectedRelatedUsersLoading = false,
                             message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
                         )
-                    } else {
-                        state
                     }
                 }
             }
         }
     }
 
-    fun loadMoreSelectedRelatedUsers() {
-        val userId = _uiState.value.selectedUser?.id ?: return
-        val nextUrl = _uiState.value.selectedRelatedUsersNextUrl ?: return
-        if (_uiState.value.selectedRelatedUsersLoading) return
+    fun loadMoreSelectedRelatedUsers(targetUserId: Long? = null) {
+        val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
+        val nextUrl = _uiState.value.selectedRelatedUsersNextUrl
+        if (nextUrl == null || _uiState.value.selectedRelatedUsersLoading) return
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(selectedRelatedUsersLoading = true) }
             try {
                 val page = repository.nextRelatedUsersPage(nextUrl)
                 _uiState.update { state ->
-                    if (state.selectedUser?.id != userId) {
-                        state
-                    } else {
-                        state.copy(
-                            selectedRelatedUsers =
-                                state.selectedRelatedUsers.appendUserPreviews(
-                                    page.users.filterNot { it.id == userId },
-                                ),
-                            selectedRelatedUsersNextUrl = page.nextUrl,
-                            selectedRelatedUsersLoading = false,
-                        )
-                    }
+                    state.copy(
+                        selectedRelatedUsers =
+                            state.selectedRelatedUsers.appendUserPreviews(
+                                page.users.filterNot { it.id == userId },
+                            ),
+                        selectedRelatedUsersNextUrl = page.nextUrl,
+                        selectedRelatedUsersLoading = false,
+                    )
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
-                if (handleAuthExpired(error)) return@launch
-                _uiState.update { state ->
-                    if (state.selectedUser?.id == userId) {
+                if (!handleAuthExpired(error)) {
+                    _uiState.update { state ->
                         state.copy(
                             selectedRelatedUsersLoading = false,
                             message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
                         )
-                    } else {
-                        state
                     }
                 }
             }
