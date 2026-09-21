@@ -269,6 +269,7 @@
     <string name="experimental_card_rating_desc">Zeigen Sie die Anzahl der Kunstwerk-Lesezeichen auf Karten an</string>
     <string name="experimental_card_ai">AI-Label anzeigen</string>
     <string name="experimental_card_r18">R-18-Label anzeigen</string>
+    <string name="experimental_card_bookmark_button">Lesezeichen-Schaltfläche anzeigen</string>
     <string name="experimental_card_double_tap_to_bookmark">Doppeltippen zum Lesezeichen</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Tippen Sie schnell zweimal auf eine Kunstwerk-Karte, um Lesezeichen hinzuzufügen oder zu entfernen</string>
     <string name="settings_hide_ai_works">KI-generierte Werke ausblenden</string>

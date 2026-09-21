@@ -343,6 +343,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(showCardBookmarkCount = value) }
     }
 
+    fun updateShowCardBookmarkButton(value: Boolean) {
+        updateSettings { it.copy(showCardBookmarkButton = value) }
+    }
+
     fun updateDetailSectionOrder(value: List<String>) {
         val allowed = setOf("artist", "tags", "description", "related")
         val normalized = value.filter { it in allowed }.distinct()

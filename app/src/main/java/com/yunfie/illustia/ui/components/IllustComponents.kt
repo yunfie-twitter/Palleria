@@ -217,7 +217,7 @@ fun IllustCard(
         onBookmark = onBookmark,
         onClick = onClick,
         onLongClick = onLongClick,
-        showBookmarkButton = showBookmarkButton,
+        showBookmarkButton = showBookmarkButton && cardPreferences.showBookmarkButton,
         modifier = modifier,
         isSelected = isSelected,
         isMutedByTag = isMutedByTag,
@@ -621,12 +621,14 @@ fun IllustListRow(
                 )
             }
 
-            BookmarkHeartButton(
-                isBookmarked = illust.isBookmarked,
-                onClick = onBookmark,
-                size = 40.dp,
-                iconSize = 26.dp,
-            )
+            if (cardPreferences.showBookmarkButton) {
+                BookmarkHeartButton(
+                    isBookmarked = illust.isBookmarked,
+                    onClick = onBookmark,
+                    size = 40.dp,
+                    iconSize = 26.dp,
+                )
+            }
         }
     }
 }

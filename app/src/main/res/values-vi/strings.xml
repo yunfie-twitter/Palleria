@@ -269,6 +269,7 @@
     <string name="experimental_card_rating_desc">Hiển thị số lượng dấu trang tác phẩm nghệ thuật trên thẻ</string>
     <string name="experimental_card_ai">Hiển thị nhãn AI</string>
     <string name="experimental_card_r18">Hiển thị nhãn R-18</string>
+    <string name="experimental_card_bookmark_button">Hiển thị nút dấu trang</string>
     <string name="experimental_card_double_tap_to_bookmark">Chạm hai lần để đánh dấu</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Chạm nhanh hai lần vào thẻ tác phẩm để thêm hoặc xóa dấu trang</string>
     <string name="settings_hide_ai_works">Ẩn các tác phẩm do AI tạo ra</string>

@@ -269,6 +269,7 @@
     <string name="experimental_card_rating_desc">Afficher le nombre de signets d\'illustration sur les cartes</string>
     <string name="experimental_card_ai">Afficher le libellé IA</string>
     <string name="experimental_card_r18">Afficher le libellé R-18</string>
+    <string name="experimental_card_bookmark_button">Afficher le bouton de favoris</string>
     <string name="experimental_card_double_tap_to_bookmark">Appuyer deux fois pour ajouter aux favoris</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Appuyez rapidement deux fois sur une carte d\'œuvre pour ajouter ou retirer des favoris</string>
     <string name="settings_hide_ai_works">Masquer les œuvres générées par l\'IA</string>

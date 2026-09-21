@@ -269,6 +269,7 @@
     <string name="experimental_card_rating_desc">Показывать количество закладок иллюстраций на карточках</string>
     <string name="experimental_card_ai">Показать метку AI</string>
     <string name="experimental_card_r18">Показать метку R-18</string>
+    <string name="experimental_card_bookmark_button">Показывать кнопку закладок</string>
     <string name="experimental_card_double_tap_to_bookmark">Двойное нажатие для добавления в закладки</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Быстро коснитесь карточки работы дважды, чтобы добавить или удалить из закладок</string>
     <string name="settings_hide_ai_works">Скрыть работы, созданные ИИ</string>
