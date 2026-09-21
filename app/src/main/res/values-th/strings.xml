@@ -1018,4 +1018,19 @@
     <string name="experimental_app_icon_desc">เปลี่ยนการออกแบบไอคอนแอป</string>
     <string name="experimental_app_icon_default">ค่าเริ่มต้น</string>
     <string name="experimental_app_icon_cat">แมว (Cat)</string>
+    <string name="notification_channel_app_updates">การอัปเดตแอป</string>
+    <string name="notification_channel_app_updates_desc">การแจ้งเตือนสำหรับเวอร์ชันใหม่และการอัปเดต</string>
+    <string name="update_notification_new_version_title">มีเวอร์ชันใหม่: %1$s</string>
+    <string name="update_notification_new_version_desc">แตะเพื่อดูรายละเอียดการอัปเดต</string>
+    <string name="update_notification_downloaded_title">การอัปเดตพร้อมติดตั้ง: %1$s</string>
+    <string name="update_notification_downloaded_desc">แตะเพื่อเริ่มการติดตั้ง</string>
+    <string name="update_notification_installed_title">ติดตั้งการอัปเดตแล้ว: %1$s</string>
+    <string name="update_notification_installed_desc">ติดตั้งอัตโนมัติผ่าน Shizuku เรียบร้อยแล้ว</string>
+    <string name="update_section_check_and_download">ตรวจสอบและดาวน์โหลด</string>
+    <string name="update_include_prerelease">รวมเวอร์ชันสำหรับนักพัฒนา</string>
+    <string name="update_include_prerelease_desc">รับการอัปเดตสำหรับเวอร์ชันทดสอบและเวอร์ชันก่อนเผยแพร่</string>
+    <string name="update_notify_new_version">แจ้งเตือนเมื่อมีเวอร์ชันใหม่</string>
+    <string name="update_notify_new_version_desc">แสดงการแจ้งเตือนของระบบเมื่อมีเวอร์ชันใหม่เผยแพร่</string>
+    <string name="update_auto_download">ดาวน์โหลดการอัปเดตอัตโนมัติ</string>
+    <string name="update_auto_download_desc">ดาวน์โหลดการอัปเดตอัตโนมัติในพื้นหลัง (ติดตั้งอัตโนมัติหากเปิดใช้งาน Shizuku)</string>
 </resources>

@@ -122,6 +122,10 @@
             android:name=".wallpaper.WallpaperPlaylistReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".updater.AppUpdateReceiver"
+            android:exported="false" />
+
         <service
             android:name=".wallpaper.PalleriaLiveWallpaperService"
             android:exported="true"

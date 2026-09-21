@@ -747,8 +747,9 @@ abstract class IllustiaViewModelFoundation(
         if (_updateCheckState.value is UpdateCheckState.Checking || _updateCheckState.value is UpdateCheckState.Downloading) return
         viewModelScope.launch(Dispatchers.IO) {
             _updateCheckState.value = UpdateCheckState.Checking
+            val includePrerelease = _uiState.value.settings.includePrereleaseUpdates
             appUpdaterRepository
-                .fetchLatestRelease()
+                .fetchLatestRelease(includePrerelease = includePrerelease)
                 .onSuccess { release ->
                     if (release != null && appUpdaterRepository.isNewerVersion(release.versionName)) {
                         _updateCheckState.value = UpdateCheckState.UpdateAvailable(release)
@@ -814,5 +815,17 @@ abstract class IllustiaViewModelFoundation(
 
     fun updateAutoCheckUpdateOnStartup(enabled: Boolean) {
         updateSettings { it.copy(autoCheckUpdateOnStartup = enabled) }
+    }
+
+    fun updateIncludePrereleaseUpdates(enabled: Boolean) {
+        updateSettings { it.copy(includePrereleaseUpdates = enabled) }
+    }
+
+    fun updateNotifyNewVersion(enabled: Boolean) {
+        updateSettings { it.copy(notifyNewVersion = enabled) }
+    }
+
+    fun updateAutoDownloadUpdates(enabled: Boolean) {
+        updateSettings { it.copy(autoDownloadUpdates = enabled) }
     }
 }

@@ -1018,4 +1018,19 @@
     <string name="experimental_app_icon_desc">Modifier le design de l\'icône de l\'application</string>
     <string name="experimental_app_icon_default">Par défaut</string>
     <string name="experimental_app_icon_cat">Chat (Cat)</string>
+    <string name="notification_channel_app_updates">Mises à jour</string>
+    <string name="notification_channel_app_updates_desc">Notifications pour les nouvelles versions et mises à jour</string>
+    <string name="update_notification_new_version_title">Nouvelle version disponible : %1$s</string>
+    <string name="update_notification_new_version_desc">Appuyez pour voir les détails de la mise à jour</string>
+    <string name="update_notification_downloaded_title">Mise à jour prête à installer : %1$s</string>
+    <string name="update_notification_downloaded_desc">Appuyez pour lancer l\'installation</string>
+    <string name="update_notification_installed_title">Mise à jour installée : %1$s</string>
+    <string name="update_notification_installed_desc">Installée automatiquement via Shizuku</string>
+    <string name="update_section_check_and_download">Vérification &amp; Téléchargement</string>
+    <string name="update_include_prerelease">Inclure les versions de développement</string>
+    <string name="update_include_prerelease_desc">Recevoir les mises à jour des préversions et versions de test</string>
+    <string name="update_notify_new_version">Notifier lors d\'une nouvelle version</string>
+    <string name="update_notify_new_version_desc">Afficher une notification système lorsqu\'une nouvelle version est publiée</string>
+    <string name="update_auto_download">Téléchargement automatique des mises à jour</string>
+    <string name="update_auto_download_desc">Télécharger automatiquement en arrière-plan (installation automatique si Shizuku est activé)</string>
 </resources>
