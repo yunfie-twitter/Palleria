@@ -70,7 +70,7 @@ class PixivApiClient(
             session,
             pixivApiUrl(
                 "v1/illust/recommended",
-                "filter" to "for_ios",
+                "filter" to "for_android",
                 "include_ranking_label" to "true",
             ),
         )
@@ -102,7 +102,7 @@ class PixivApiClient(
     ): PageResult<Illust> =
         getIllustPage(
             session,
-            pixivApiUrl("v2/illust/follow", "restrict" to restrict.apiValue),
+            pixivApiUrl("v2/illust/follow", "restrict" to restrict.apiValue, "filter" to "for_android"),
         )
 
     suspend fun search(
@@ -297,7 +297,7 @@ class PixivApiClient(
     ): IllustSeriesWithIdModel =
         Request
             .Builder()
-            .url(pixivApiUrl("v1/illust/series", "filter" to "for_ios", "illust_series_id" to illustSeriesId.toString()))
+            .url(pixivApiUrl("v1/illust/series", "filter" to "for_android", "illust_series_id" to illustSeriesId.toString()))
             .pixivApiHeaders(session)
             .get()
             .build()

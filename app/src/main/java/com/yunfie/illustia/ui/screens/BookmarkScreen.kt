@@ -52,6 +52,7 @@ import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -266,7 +267,7 @@ fun BookmarkScreen(
 
                     OverlayIconCascadingDropdownMenu(
                         entries = bookmarkMenuEntries,
-                        icon = if (settings.bookmarkRestrict == Restrict.Public) MiuixIcons.Community else MiuixIcons.Lock,
+                        icon = MiuixIcons.Tune,
                         backgroundColor = Color.Transparent,
                         contentColor = MiuixTheme.colorScheme.onBackground,
                         contentDescription = stringResource(R.string.nav_bookmarks_full),
