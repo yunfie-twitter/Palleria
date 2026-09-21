@@ -815,4 +815,6 @@
     <string name="experimental_app_icon_desc">更改应用图标设计</string>
     <string name="experimental_app_icon_default">默认</string>
     <string name="experimental_app_icon_cat">猫咪 (Cat)</string>
+    <string name="experimental_card_double_tap_to_bookmark">双击添加收藏</string>
+    <string name="experimental_card_double_tap_to_bookmark_desc">快速双击作品卡片以添加或取消收藏</string>
 </resources>

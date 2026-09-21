@@ -268,6 +268,8 @@
     <string name="experimental_card_rating_desc">Show the artwork bookmark count on cards</string>
     <string name="experimental_card_ai">Show AI label</string>
     <string name="experimental_card_r18">Show R-18 label</string>
+    <string name="experimental_card_double_tap_to_bookmark">Double-tap to bookmark</string>
+    <string name="experimental_card_double_tap_to_bookmark_desc">Quickly double-tap an artwork card to add or remove bookmarks</string>
     <string name="settings_hide_ai_works">Hide AI-generated works</string>
     <string name="settings_hide_ai_works_desc">Filter out AI-generated works from feeds and search results</string>
     <string name="experimental_artwork_theme_section">Artwork theme</string>

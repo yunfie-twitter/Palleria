@@ -254,15 +254,38 @@ private fun IllustCardImpl(
         } else {
             modifier
         }
+    val finalModifier =
+        if (preferences.doubleTapToBookmark) {
+            cardModifier
+                .clip(RoundedCornerShape(14.dp))
+                .combinedClickable(
+                    onClick = onClick,
+                    onDoubleClick = {
+                        performAppHapticFeedback(context, haptic, hapticMode)
+                        onBookmark()
+                    },
+                    onLongClick =
+                        if (onLongClick != null) {
+                            {
+                                performAppHapticFeedback(context, haptic, hapticMode)
+                                onLongClick()
+                            }
+                        } else {
+                            null
+                        },
+                )
+        } else {
+            cardModifier
+        }
     Card(
-        modifier = cardModifier,
+        modifier = finalModifier,
         cornerRadius = 14.dp,
         insideMargin = PaddingValues(0.dp),
         colors = CardDefaults.defaultColors(color = Color.Transparent, contentColor = MiuixTheme.colorScheme.onBackground),
         pressFeedbackType = PressFeedbackType.Sink,
-        onClick = onClick,
+        onClick = if (preferences.doubleTapToBookmark) null else onClick,
         onLongPress =
-            if (onLongClick != null) {
+            if (!preferences.doubleTapToBookmark && onLongClick != null) {
                 {
                     performAppHapticFeedback(context, haptic, hapticMode)
                     onLongClick()
@@ -487,8 +510,33 @@ fun IllustListRow(
             if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
         }
 
+    val baseModifier = Modifier.fillMaxWidth()
+    val finalModifier =
+        if (cardPreferences.doubleTapToBookmark) {
+            baseModifier
+                .clip(RoundedCornerShape(18.dp))
+                .combinedClickable(
+                    onClick = onClick,
+                    onDoubleClick = {
+                        performAppHapticFeedback(context, haptic, hapticMode)
+                        onBookmark()
+                    },
+                    onLongClick =
+                        if (onLongClick != null) {
+                            {
+                                performAppHapticFeedback(context, haptic, hapticMode)
+                                onLongClick()
+                            }
+                        } else {
+                            null
+                        },
+                )
+        } else {
+            baseModifier
+        }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = finalModifier,
         cornerRadius = 18.dp,
         insideMargin = PaddingValues(12.dp),
         colors =
@@ -497,9 +545,9 @@ fun IllustListRow(
                 contentColor = MiuixTheme.colorScheme.onBackground,
             ),
         pressFeedbackType = PressFeedbackType.Sink,
-        onClick = onClick,
+        onClick = if (cardPreferences.doubleTapToBookmark) null else onClick,
         onLongPress =
-            if (onLongClick != null) {
+            if (!cardPreferences.doubleTapToBookmark && onLongClick != null) {
                 {
                     performAppHapticFeedback(context, haptic, hapticMode)
                     onLongClick()

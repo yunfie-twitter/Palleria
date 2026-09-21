@@ -146,6 +146,7 @@ abstract class IllustiaViewModelFoundation(
 
     val bookmarkTimelineGridState = LazyGridState()
     val bookmarkMainGridState = LazyGridState()
+    val bookmarkWatchlistGridState = LazyGridState()
     val bookmarkFollowingGridState = LazyGridState()
     val homeFeedGridState = LazyGridState()
     val homeTimelineGridState = LazyGridState()
