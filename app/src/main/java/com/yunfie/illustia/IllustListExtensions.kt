@@ -104,6 +104,9 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
             }
         }
 
+    val filterRelatedR18 = filterR18 || !settings.showR18Badge || !settings.showRelatedR18
+    val filterRelatedR18G = filterR18G || filterRelatedR18
+
     return updated.copy(
         homeItems = updated.homeItems.filterRestricted(filterR18, filterR18G, filterAi),
         searchItems = updated.searchItems.filterRestricted(filterR18, filterR18G, filterAi),
@@ -112,7 +115,7 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
         watchlistItems = updated.watchlistItems.filterRestricted(filterR18, filterR18G, filterAi),
         rankingItems = updated.rankingItems.filterRestricted(filterR18, filterR18G, filterAi),
         rankingModeItems = updatedRankingMode,
-        relatedIllusts = updated.relatedIllusts.filterRestricted(filterR18, filterR18G, filterAi),
+        relatedIllusts = updated.relatedIllusts.filterRestricted(filterRelatedR18, filterRelatedR18G, filterAi),
         bookmarkItems = updated.bookmarkItems.filterRestricted(filterR18, filterR18G, filterAi),
         selectedUserIllusts = updated.selectedUserIllusts.filterRestricted(filterR18, filterR18G, filterAi),
         selectedUserBookmarks = updated.selectedUserBookmarks.filterRestricted(filterR18, filterR18G, filterAi),
@@ -224,6 +227,15 @@ internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illus
             list
         }
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
+}
+
+internal fun List<Illust>.visibleRelatedWithSettings(settings: AppSettings): List<Illust> {
+    val base = visibleWithSettings(settings)
+    return if (settings.showR18Badge && settings.showRelatedR18) {
+        base
+    } else {
+        base.filterNot { it.isR18 || it.isR18G }
+    }
 }
 
 @JvmName("visibleNovelsWithSettings")

@@ -79,7 +79,7 @@ abstract class IllustiaDetailProfileModule(
                             } else {
                                 it.copy(
                                     selectedIllust = fullIllust,
-                                    relatedIllusts = related.items.visibleWithSettings(it.settings),
+                                    relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = firstComment,
                                 )
@@ -154,7 +154,7 @@ abstract class IllustiaDetailProfileModule(
                             } else {
                                 it.copy(
                                     selectedIllust = fullIllust,
-                                    relatedIllusts = related.items.visibleWithSettings(it.settings),
+                                    relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = firstComment,
                                 )

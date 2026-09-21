@@ -17,7 +17,8 @@ internal class PallaSyncRemoteService(
     ): PallaSyncHttpResult<T> =
         try {
             client.newCall(request).execute().use { response ->
-                when (val status = classifyPallaSyncHttpStatus(response.code)) {
+                val errorBody = if (response.code !in 200..299) response.body?.string() else null
+                when (val status = classifyPallaSyncHttpStatus(response.code, errorBody)) {
                     null -> {
                         onSuccess(response)
                     }

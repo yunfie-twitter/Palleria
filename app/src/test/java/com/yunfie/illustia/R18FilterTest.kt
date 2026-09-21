@@ -11,6 +11,7 @@ class R18FilterTest :
         "AppSettings default has allowR18 enabled" {
             AppSettings().allowR18 shouldBe true
             AppSettings().showR18Badge shouldBe true
+            AppSettings().showRelatedR18 shouldBe true
         }
 
         "Illust correctly identifies R-18 content by tag and xRestrict" {

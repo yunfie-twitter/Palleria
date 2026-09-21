@@ -99,7 +99,10 @@ internal sealed interface PallaSyncHttpResult<out T> {
     ) : PallaSyncHttpResult<Nothing>
 }
 
-internal fun classifyPallaSyncHttpStatus(statusCode: Int): PallaSyncHttpResult<Unit>? =
+internal fun classifyPallaSyncHttpStatus(
+    statusCode: Int,
+    errorBody: String? = null,
+): PallaSyncHttpResult<Unit>? =
     when {
         statusCode in 200..299 -> {
             null
@@ -110,14 +113,16 @@ internal fun classifyPallaSyncHttpStatus(statusCode: Int): PallaSyncHttpResult<U
         }
 
         statusCode == 429 || statusCode >= 500 -> {
+            val details = errorBody?.takeIf(String::isNotBlank)?.let { ": $it" } ?: ""
             PallaSyncHttpResult.Retryable(
-                "PallaSync server returned HTTP $statusCode",
+                "PallaSync server returned HTTP $statusCode$details",
             )
         }
 
         else -> {
+            val details = errorBody?.takeIf(String::isNotBlank)?.let { ": $it" } ?: ""
             PallaSyncHttpResult.ProtocolError(
-                "PallaSync server returned HTTP $statusCode",
+                "PallaSync server returned HTTP $statusCode$details",
                 statusCode,
             )
         }

@@ -272,6 +272,8 @@
     <string name="experimental_card_bookmark_button">Hiển thị nút dấu trang</string>
     <string name="experimental_card_double_tap_to_bookmark">Chạm hai lần để đánh dấu</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Chạm nhanh hai lần vào thẻ tác phẩm để thêm hoặc xóa dấu trang</string>
+    <string name="experimental_card_related_r18">Hiển thị R-18 trong tác phẩm liên quan</string>
+    <string name="experimental_card_related_r18_desc">Hiển thị huy hiệu R-18/R-18G trên các tác phẩm liên quan trong chi tiết</string>
     <string name="settings_hide_ai_works">Ẩn các tác phẩm do AI tạo ra</string>
     <string name="settings_hide_ai_works_desc">Lọc các tác phẩm do AI tạo ra khỏi nguồn cấp dữ liệu và kết quả tìm kiếm</string>
     <string name="experimental_artwork_theme_section">Chủ đề tác phẩm nghệ thuật</string>

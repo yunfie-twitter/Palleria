@@ -381,6 +381,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(showR18Badge = value) }
     }
 
+    fun updateShowRelatedR18(value: Boolean) {
+        updateSettings { it.copy(showRelatedR18 = value) }
+    }
+
     fun updateDoubleTapToBookmark(value: Boolean) {
         updateSettings { it.copy(doubleTapToBookmark = value) }
     }

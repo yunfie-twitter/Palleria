@@ -272,6 +272,8 @@
     <string name="experimental_card_bookmark_button">Mostrar botón de marcadores</string>
     <string name="experimental_card_double_tap_to_bookmark">Doble toque para añadir a favoritos</string>
     <string name="experimental_card_double_tap_to_bookmark_desc">Toca dos veces rápidamente una tarjeta de obra para añadir o quitar favoritos</string>
+    <string name="experimental_card_related_r18">Mostrar R-18 en obras relacionadas</string>
+    <string name="experimental_card_related_r18_desc">Muestra etiquetas R-18/R-18G en obras relacionadas en la vista de detalle</string>
     <string name="settings_hide_ai_works">Ocultar obras generadas por IA</string>
     <string name="settings_hide_ai_works_desc">Filtrar trabajos generados por IA de feeds y resultados de búsqueda</string>
     <string name="experimental_artwork_theme_section">Tema de arte</string>

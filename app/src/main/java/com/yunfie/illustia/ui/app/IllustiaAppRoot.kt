@@ -591,6 +591,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 showBookmarkCount = settings.showCardBookmarkCount,
                 showAiBadge = settings.showAiBadge,
                 showR18Badge = settings.showR18Badge,
+                showRelatedR18 = settings.showRelatedR18,
                 showBookmarkButton = settings.showCardBookmarkButton,
                 doubleTapToBookmark = settings.doubleTapToBookmark,
             ),
