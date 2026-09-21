@@ -32,6 +32,7 @@
         <package android:name="com.google.android.apps.translate" />
         <package android:name="com.deepl.mobiletranslator" />
         <package android:name="com.microsoft.translator" />
+        <package android:name="moe.shizuku.privileged.api" />
     </queries>
 
     <application
@@ -108,6 +109,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <receiver
             android:name=".wallpaper.WallpaperPlaylistReceiver"
