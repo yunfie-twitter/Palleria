@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.FlowButtons
 import com.yunfie.illustia.ui.components.FollowPill
+import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -388,6 +389,7 @@ internal fun RelatedIllustsList(
     modifier: Modifier = Modifier,
     configuredColumns: Int = 3,
 ) {
+    val cardPreferences = LocalArtworkCardPreferences.current
     val columns = adaptiveRelatedIllustColumns(configuredColumns)
     val relatedRows = remember(relatedIllusts, columns) { relatedIllusts.chunked(columns) }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -397,6 +399,10 @@ internal fun RelatedIllustsList(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 rowItems.forEach { related ->
+                    val ageRestrictionBadgeText =
+                        remember(related.id, related.isR18, related.isR18G, cardPreferences.showR18Badge) {
+                            if (cardPreferences.showR18Badge) related.ageRestrictionBadgeText else null
+                        }
                     Box(modifier = Modifier.weight(1f)) {
                         key(related.id) {
                             Box(
@@ -415,6 +421,20 @@ internal fun RelatedIllustsList(
                                     modifier = Modifier.fillMaxSize(),
                                     thumbnail = true,
                                 )
+                                if (ageRestrictionBadgeText != null) {
+                                    Text(
+                                        text = ageRestrictionBadgeText,
+                                        color = Color.White,
+                                        style = MiuixTheme.textStyles.footnote2,
+                                        fontWeight = FontWeight.Black,
+                                        modifier =
+                                            Modifier
+                                                .align(Alignment.TopStart)
+                                                .padding(8.dp)
+                                                .squircleBackground(Color(0xFFFA383E), 6.dp)
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
                                 if (related.pageCount > 1) {
                                     Text(
                                         text = "${related.pageCount}P",
