@@ -59,6 +59,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -161,9 +162,7 @@ fun NovelScreen(
                         detectTapGestures {
                             performHaptic(AppHapticEffect.Click)
                             coroutineScope.launch {
-                                scrollBehavior.state.heightOffset = 0f
-                                scrollBehavior.state.contentOffset = 0f
-                                gridState.animateScrollToItem(0)
+                                gridState.smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },

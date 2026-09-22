@@ -49,12 +49,14 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -144,11 +146,9 @@ fun RankingScreen(
                     detectTapGestures {
                         performHaptic(AppHapticEffect.Click)
                         coroutineScope.launch {
-                            scrollBehavior.state.heightOffset = 0f
-                            scrollBehavior.state.contentOffset = 0f
                             val currentMode = modes.getOrNull(pagerState.currentPage)
                             if (currentMode != null) {
-                                viewModel.rankingGridState(currentMode).animateScrollToItem(0)
+                                viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
                             }
                         }
                     }

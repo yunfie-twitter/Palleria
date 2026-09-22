@@ -1,13 +1,17 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
@@ -15,11 +19,15 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.settings.db.SavedIllustEntity
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGrid
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -39,6 +47,9 @@ fun OfflineLibraryScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val columns = adaptiveIllustColumns(state.settings)
     val savedIllusts = state.savedIllusts.map(SavedIllustEntity::toIllust).visibleWithSettings(state.settings)
+    val gridState = rememberLazyGridState()
+    val coroutineScope = rememberCoroutineScope()
+    val performHaptic = rememberHapticFeedbackAction()
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -47,12 +58,22 @@ fun OfflineLibraryScreen(
                 title = stringResource(R.string.offline_library_title),
                 largeTitle = stringResource(R.string.offline_library_title),
                 scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                gridState.smoothScrollToTop(scrollBehavior)
+                            }
+                        }
+                    },
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
             )
         },
     ) { padding ->
         IllustGrid(
             illusts = savedIllusts,
+            state = gridState,
             emptyMessage = stringResource(R.string.offline_library_empty),
             onOpenIllust = { viewModel.openIllust(it) },
             modifier =

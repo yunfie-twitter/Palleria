@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -182,4 +185,30 @@ fun AvatarImage(
             )
         }
     }
+}
+
+const val FAST_SCROLL_THRESHOLD = 20
+
+suspend fun LazyGridState.smoothScrollToTop(scrollBehavior: ScrollBehavior? = null) {
+    if (firstVisibleItemIndex > FAST_SCROLL_THRESHOLD) {
+        scrollToItem(FAST_SCROLL_THRESHOLD)
+    }
+    animateScrollToItem(0, 0)
+    if (firstVisibleItemIndex != 0 || firstVisibleItemScrollOffset != 0) {
+        scrollToItem(0, 0)
+    }
+    scrollBehavior?.state?.heightOffset = 0f
+    scrollBehavior?.state?.contentOffset = 0f
+}
+
+suspend fun LazyListState.smoothScrollToTop(scrollBehavior: ScrollBehavior? = null) {
+    if (firstVisibleItemIndex > FAST_SCROLL_THRESHOLD) {
+        scrollToItem(FAST_SCROLL_THRESHOLD)
+    }
+    animateScrollToItem(0, 0)
+    if (firstVisibleItemIndex != 0 || firstVisibleItemScrollOffset != 0) {
+        scrollToItem(0, 0)
+    }
+    scrollBehavior?.state?.heightOffset = 0f
+    scrollBehavior?.state?.contentOffset = 0f
 }

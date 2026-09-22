@@ -4,7 +4,6 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -25,7 +24,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +39,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaApplication
@@ -177,11 +177,13 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                             runCatching {
                                                 saveSelection(widgetId, pendingIllust, pageIndex)
                                             }.onSuccess {
-                                                IllustWidgetProvider.updateWidget(
-                                                    this@IllustWidgetConfigureActivity,
-                                                    AppWidgetManager.getInstance(this@IllustWidgetConfigureActivity),
-                                                    widgetId,
-                                                )
+                                                runCatching {
+                                                    val glanceManager = GlanceAppWidgetManager(this@IllustWidgetConfigureActivity)
+                                                    val glanceId = glanceManager.getGlanceIdBy(widgetId)
+                                                    IllustGlanceWidget().update(this@IllustWidgetConfigureActivity, glanceId)
+                                                }.onFailure {
+                                                    IllustGlanceWidget().updateAll(this@IllustWidgetConfigureActivity)
+                                                }
                                                 IllustWidgetProvider.publishPreview(this@IllustWidgetConfigureActivity)
                                                 setResult(
                                                     Activity.RESULT_OK,
@@ -252,7 +254,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                     FileOutputStream(rawFile).use { output -> body.byteStream().use { input -> input.copyTo(output) } }
                 }
                 val bitmap =
-                    decodeWidgetBitmap(rawFile, widgetImageMaxDimension)
+                    IllustGlanceWidget.decodeWidgetBitmap(rawFile, widgetImageMaxDimension)
                         ?: throw IOException("Widget image decode failed")
                 FileOutputStream(outputFile).use { output ->
                     if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)) {
@@ -265,60 +267,6 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                 outputFile
             }
         }
-
-    private fun decodeWidgetBitmap(
-        file: File,
-        maxDimension: Int,
-    ): Bitmap? {
-        val bounds =
-            BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-            }
-        BitmapFactory.decodeFile(file.absolutePath, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-        val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxDimension, maxDimension)
-        val decoded =
-            BitmapFactory.decodeFile(
-                file.absolutePath,
-                BitmapFactory.Options().apply {
-                    inSampleSize = sampleSize
-                    inPreferredConfig = Bitmap.Config.RGB_565
-                },
-            ) ?: return null
-
-        if (decoded.width <= maxDimension && decoded.height <= maxDimension) {
-            return decoded
-        }
-
-        val scale =
-            minOf(
-                maxDimension.toFloat() / decoded.width.toFloat(),
-                maxDimension.toFloat() / decoded.height.toFloat(),
-            )
-        val targetWidth = (decoded.width * scale).roundToInt().coerceAtLeast(1)
-        val targetHeight = (decoded.height * scale).roundToInt().coerceAtLeast(1)
-        val scaled = Bitmap.createScaledBitmap(decoded, targetWidth, targetHeight, true)
-        if (scaled != decoded) {
-            decoded.recycle()
-        }
-        return scaled
-    }
-
-    private fun calculateInSampleSize(
-        srcWidth: Int,
-        srcHeight: Int,
-        reqWidth: Int,
-        reqHeight: Int,
-    ): Int {
-        var inSampleSize = 1
-        var halfHeight = srcHeight / 2
-        var halfWidth = srcWidth / 2
-        while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
-            inSampleSize *= 2
-        }
-        return inSampleSize.coerceAtLeast(1)
-    }
 
     private fun widgetPageUrls(
         illust: Illust,
