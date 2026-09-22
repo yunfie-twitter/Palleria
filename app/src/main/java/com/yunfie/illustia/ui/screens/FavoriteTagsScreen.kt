@@ -56,6 +56,7 @@ import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -144,9 +145,7 @@ fun FavoriteTagsScreen(
                         detectTapGestures {
                             performHaptic(AppHapticEffect.Click)
                             coroutineScope.launch {
-                                scrollBehavior.state.heightOffset = 0f
-                                scrollBehavior.state.contentOffset = 0f
-                                gridState.animateScrollToItem(0)
+                                gridState.smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },

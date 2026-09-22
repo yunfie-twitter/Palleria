@@ -1,64 +1,16 @@
 package com.yunfie.illustia.widget
 
-import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProvider
-import android.appwidget.AppWidgetProviderInfo
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
-import android.graphics.RectF
-import android.net.Uri
-import android.os.Build
-import android.view.View
-import android.widget.RemoteViews
-import android.widget.RemoteViews.RemoteResponse
-import androidx.annotation.RequiresApi
-import com.yunfie.illustia.MainActivity
-import com.yunfie.illustia.R
-import com.yunfie.illustia.platform.PlatformCapabilities
-import com.yunfie.illustia.settings.SettingsStore
+import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.io.File
 
-class IllustWidgetProvider : AppWidgetProvider() {
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                refreshAllSuspend(context)
-            } finally {
-                pendingResult.finish()
-            }
-        }
-    }
-
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray,
-    ) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-        val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                appWidgetIds.forEach { updateWidget(context, appWidgetManager, it) }
-            } finally {
-                pendingResult.finish()
-            }
-        }
-    }
+class IllustWidgetProvider : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = IllustGlanceWidget()
 
     override fun onDeleted(
         context: Context,
@@ -72,267 +24,21 @@ class IllustWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    override fun onReceive(
-        context: Context,
-        intent: Intent,
-    ) {
-        super.onReceive(context, intent)
-        when (intent.action) {
-            ACTION_REFRESH_ILLUST_WIDGET -> {
-                val pendingResult = goAsync()
-                CoroutineScope(Dispatchers.IO).launch {
-                    try {
-                        refreshAllSuspend(context)
-                    } finally {
-                        pendingResult.finish()
-                    }
-                }
-            }
-        }
-    }
-
     companion object {
         const val ACTION_REFRESH_ILLUST_WIDGET = "com.yunfie.illustia.widget.ACTION_REFRESH_ILLUST_WIDGET"
-        private const val WIDGET_IMAGE_MAX_DIMENSION = 960
-
-        fun publishPreview(context: Context) {
-            if (!PlatformCapabilities.supportsWidgetPreview()) return
-            if (PlatformCapabilities.isLowRamDevice(context)) return
-
-            val manager = AppWidgetManager.getInstance(context)
-            val views = buildPreview(context)
-            runCatching {
-                manager.setWidgetPreview(
-                    ComponentName(context, IllustWidgetProvider::class.java),
-                    AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
-                    views,
-                )
-            }
-        }
 
         fun refreshAll(context: Context) {
-            val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(ComponentName(context, IllustWidgetProvider::class.java))
-            ids.forEach { updateWidget(context, manager, it) }
-        }
-
-        suspend fun refreshAllSuspend(context: Context) =
-            withContext(Dispatchers.IO) {
-                refreshAll(context)
-            }
-
-        private fun buildPreview(context: Context): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.illust_widget)
-            if (isPrivacyModeEnabled(context)) {
-                bindEmpty(context, views, 0)
-                return views
-            }
-            val selection = IllustWidgetStore(context).loadAny()
-            if (selection == null) {
-                bindEmpty(context, views, 0)
-            } else {
-                bindSelection(context, views, 0, selection)
-            }
-            return views
-        }
-
-        fun updateWidget(
-            context: Context,
-            manager: AppWidgetManager,
-            appWidgetId: Int,
-        ) {
-            val views = RemoteViews(context.packageName, R.layout.illust_widget)
-            runCatching {
-                if (isPrivacyModeEnabled(context)) {
-                    bindEmpty(context, views, appWidgetId)
-                    return@runCatching
-                }
-                val store = IllustWidgetStore(context)
-                val selection = store.load(appWidgetId)
-                if (selection == null) {
-                    bindEmpty(context, views, appWidgetId)
-                } else {
-                    bindSelection(context, views, appWidgetId, selection)
-                }
-            }.onFailure {
-                bindEmpty(context, views, appWidgetId)
-            }
-            runCatching {
-                manager.updateAppWidget(appWidgetId, views)
-            }.onFailure {
-                val fallback = RemoteViews(context.packageName, R.layout.illust_widget)
-                bindEmpty(context, fallback, appWidgetId)
-                manager.updateAppWidget(appWidgetId, fallback)
+            CoroutineScope(Dispatchers.IO).launch {
+                refreshAllSuspend(context)
             }
         }
 
-        private fun isPrivacyModeEnabled(context: Context): Boolean =
-            runBlocking(Dispatchers.IO) {
-                SettingsStore(context.applicationContext).read().privacyModeEnabled
-            }
-
-        private fun bindEmpty(
-            context: Context,
-            views: RemoteViews,
-            appWidgetId: Int,
-        ) {
-            views.setViewVisibility(R.id.widget_empty_state, View.VISIBLE)
-            views.setTextViewText(R.id.widget_empty_title, context.getString(R.string.widget_illust_pick_prompt))
-            views.setImageViewResource(R.id.widget_empty_button, android.R.drawable.ic_menu_add)
-            views.setOnClickPendingIntent(R.id.widget_empty_button, configurePendingIntent(context, appWidgetId))
-            views.setOnClickPendingIntent(R.id.widget_root, configurePendingIntent(context, appWidgetId))
+        suspend fun refreshAllSuspend(context: Context) {
+            IllustGlanceWidget().updateAll(context)
         }
 
-        private fun bindSelection(
-            context: Context,
-            views: RemoteViews,
-            appWidgetId: Int,
-            selection: IllustWidgetSelection,
-        ) {
-            views.setViewVisibility(R.id.widget_empty_state, View.GONE)
-
-            val imageFile = File(selection.imagePath)
-            if (imageFile.exists()) {
-                val bitmap = decodeWidgetBitmap(imageFile, WIDGET_IMAGE_MAX_DIMENSION)
-                if (bitmap != null) {
-                    views.setImageViewBitmap(R.id.widget_image, bitmap)
-                    val pendingIntent = detailPendingIntent(context, selection.illustId)
-                    if (PlatformCapabilities.supportsRemoteViewsSharedElement()) {
-                        bindSharedElementClick(views, pendingIntent)
-                    } else {
-                        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
-                    }
-                } else {
-                    views.setImageViewResource(R.id.widget_image, R.mipmap.ic_launcher)
-                    views.setOnClickPendingIntent(R.id.widget_root, configurePendingIntent(context, appWidgetId))
-                }
-            } else {
-                views.setImageViewResource(R.id.widget_image, R.mipmap.ic_launcher)
-                views.setViewVisibility(R.id.widget_empty_state, View.VISIBLE)
-                views.setTextViewText(R.id.widget_empty_title, context.getString(R.string.widget_illust_image_missing))
-                views.setImageViewResource(R.id.widget_empty_button, android.R.drawable.ic_menu_add)
-                views.setOnClickPendingIntent(R.id.widget_empty_button, configurePendingIntent(context, appWidgetId))
-                views.setOnClickPendingIntent(R.id.widget_root, configurePendingIntent(context, appWidgetId))
-            }
-        }
-
-        @RequiresApi(Build.VERSION_CODES.Q)
-        private fun bindSharedElementClick(
-            views: RemoteViews,
-            pendingIntent: PendingIntent,
-        ) {
-            views.setOnClickResponse(
-                R.id.widget_root,
-                RemoteResponse
-                    .fromPendingIntent(pendingIntent)
-                    .addSharedElement(R.id.widget_image, "illust_widget_image"),
-            )
-        }
-
-        private fun configurePendingIntent(
-            context: Context,
-            appWidgetId: Int,
-        ): PendingIntent {
-            val intent =
-                Intent(context, IllustWidgetConfigureActivity::class.java).apply {
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            return PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-        }
-
-        private fun detailPendingIntent(
-            context: Context,
-            illustId: Long,
-        ): PendingIntent {
-            val intent =
-                Intent(context, MainActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
-                    data = Uri.parse("pixiv://illusts/$illustId")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                }
-            return PendingIntent.getActivity(
-                context,
-                (illustId xor (illustId ushr 32)).toInt(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-        }
-
-        private fun decodeWidgetBitmap(
-            file: File,
-            maxDimension: Int,
-        ): Bitmap? {
-            val bounds =
-                BitmapFactory.Options().apply {
-                    inJustDecodeBounds = true
-                }
-            BitmapFactory.decodeFile(file.absolutePath, bounds)
-            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-            val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxDimension, maxDimension)
-            val decoded =
-                BitmapFactory.decodeFile(
-                    file.absolutePath,
-                    BitmapFactory.Options().apply {
-                        inSampleSize = sampleSize
-                        inPreferredConfig = Bitmap.Config.RGB_565
-                    },
-                ) ?: return null
-
-            if (decoded.width <= maxDimension && decoded.height <= maxDimension) {
-                return decoded
-            }
-
-            val scale =
-                minOf(
-                    maxDimension.toFloat() / decoded.width.toFloat(),
-                    maxDimension.toFloat() / decoded.height.toFloat(),
-                )
-            val targetWidth = (decoded.width * scale).toInt().coerceAtLeast(1)
-            val targetHeight = (decoded.height * scale).toInt().coerceAtLeast(1)
-            val scaled = Bitmap.createScaledBitmap(decoded, targetWidth, targetHeight, true)
-            if (scaled != decoded) {
-                decoded.recycle()
-            }
-            return roundCorners(scaled)
-        }
-
-        private fun calculateInSampleSize(
-            srcWidth: Int,
-            srcHeight: Int,
-            reqWidth: Int,
-            reqHeight: Int,
-        ): Int {
-            var inSampleSize = 1
-            var halfHeight = srcHeight / 2
-            var halfWidth = srcWidth / 2
-            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
-                inSampleSize *= 2
-            }
-            return inSampleSize.coerceAtLeast(1)
-        }
-
-        private fun roundCorners(source: Bitmap): Bitmap {
-            val radius = (minOf(source.width, source.height) * 0.08f).coerceIn(24f, 72f)
-            val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(output)
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-            val rect = RectF(0f, 0f, source.width.toFloat(), source.height.toFloat())
-
-            canvas.drawRoundRect(rect, radius, radius, paint)
-            paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-            canvas.drawBitmap(source, 0f, 0f, paint)
-
-            if (source != output) {
-                source.recycle()
-            }
-            return output
+        suspend fun publishPreview(context: Context) {
+            IllustGlanceWidget().updateAll(context)
         }
     }
 }

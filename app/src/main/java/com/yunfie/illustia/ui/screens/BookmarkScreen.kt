@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -154,18 +155,19 @@ fun BookmarkScreen(
             largeTitle = stringResource(R.string.nav_bookmarks_full),
             scrollBehavior = scrollBehavior,
             modifier =
-                Modifier.pointerInput(selectedTopTab) {
+                Modifier.pointerInput(Unit) {
                     detectTapGestures {
                         performHaptic(AppHapticEffect.Click)
                         coroutineScope.launch {
-                            scrollBehavior.state.heightOffset = 0f
-                            scrollBehavior.state.contentOffset = 0f
-                            when (selectedTopTab) {
-                                0 -> viewModel.bookmarkTimelineGridState.animateScrollToItem(0)
-                                1 -> viewModel.bookmarkMainGridState.animateScrollToItem(0)
-                                2 -> viewModel.bookmarkWatchlistGridState.animateScrollToItem(0)
-                                3 -> viewModel.bookmarkFollowingGridState.animateScrollToItem(0)
-                            }
+                            val targetState =
+                                when (pagerState.currentPage) {
+                                    0 -> viewModel.bookmarkTimelineGridState
+                                    1 -> viewModel.bookmarkMainGridState
+                                    2 -> viewModel.bookmarkWatchlistGridState
+                                    3 -> viewModel.bookmarkFollowingGridState
+                                    else -> null
+                                }
+                            targetState?.smoothScrollToTop(scrollBehavior)
                         }
                     }
                 },

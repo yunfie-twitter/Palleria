@@ -28,10 +28,15 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Manages Discord Rich Presence via OAuth2-RPC Gateway.
@@ -109,49 +114,22 @@ class DiscordRpcManager(
             }
     }
 
-    private fun buildActivity(
+    private suspend fun buildActivity(
         settings: AppSettings,
         selectedIllust: Illust?,
         appId: String,
     ): Activity {
         val showDetails = settings.discordRpcShowArtworkDetails
         val showButtons = settings.discordRpcShowButtons
-        val (detailText, stateText, startTimestamp) =
-            if (selectedIllust != null) {
-                if (currentArtworkId != selectedIllust.id) {
-                    currentArtworkId = selectedIllust.id
-                    artworkStart = System.currentTimeMillis()
-                }
-                val details = if (showDetails) selectedIllust.title.take(128).ifBlank { "作品を閲覧中" } else "作品を閲覧中"
-                val state = if (showDetails) "by ${selectedIllust.artistName}".take(128).ifBlank { "Palleria" } else "Palleria"
-                Triple(details, state, artworkStart)
+        val (detailText, stateText, startTimestamp) = resolveActivityDetails(selectedIllust, showDetails)
+        val buttons = buildButtons(showButtons, showDetails, selectedIllust)
+        val metadata = buildMetadata(showButtons, showDetails, selectedIllust)
+        val largeImageId = resolveAssetId(appId, "palleria_logo")
+        val largeImageText =
+            if (selectedIllust != null && showDetails) {
+                selectedIllust.title.take(MAX_ACTIVITY_TEXT_LENGTH)
             } else {
-                currentArtworkId = null
-                Triple("イラストを閲覧中", "Palleria", sessionStart)
-            }
-
-        val buttons =
-            if (showButtons) {
-                if (selectedIllust != null && showDetails) {
-                    listOf(BUTTON_PIXIV_LABEL, BUTTON_DOWNLOAD_LABEL)
-                } else {
-                    listOf(BUTTON_DOWNLOAD_LABEL)
-                }
-            } else {
-                null
-            }
-
-        val metadata =
-            if (showButtons) {
-                if (selectedIllust != null && showDetails) {
-                    Metadata(
-                        buttonUrls = listOf("https://www.pixiv.net/artworks/${selectedIllust.id}", DOWNLOAD_URL),
-                    )
-                } else {
-                    Metadata(buttonUrls = listOf(DOWNLOAD_URL))
-                }
-            } else {
-                null
+                "Palleria"
             }
 
         return Activity(
@@ -163,15 +141,68 @@ class DiscordRpcManager(
             timestamps = Timestamps(start = startTimestamp, end = null),
             assets =
                 Assets(
-                    largeImage = "palleria_logo",
-                    largeText = "Palleria",
-                    smallImage = "palleria_logo",
-                    smallText = "palleria_logo",
+                    largeImage = largeImageId,
+                    largeText = largeImageText,
+                    smallImage = null,
+                    smallText = null,
                 ),
             flags = ActivityFlags.INSTANCE,
             buttons = buttons,
             metadata = metadata,
         )
+    }
+
+    private fun resolveActivityDetails(
+        selectedIllust: Illust?,
+        showDetails: Boolean,
+    ): Triple<String, String, Long> {
+        if (selectedIllust == null) {
+            currentArtworkId = null
+            return Triple("イラストを閲覧中", "Palleria", sessionStart)
+        }
+        if (currentArtworkId != selectedIllust.id) {
+            currentArtworkId = selectedIllust.id
+            artworkStart = System.currentTimeMillis()
+        }
+        val details =
+            if (showDetails) {
+                selectedIllust.title.take(MAX_ACTIVITY_TEXT_LENGTH).ifBlank { "作品を閲覧中" }
+            } else {
+                "作品を閲覧中"
+            }
+        val state =
+            if (showDetails) {
+                "by ${selectedIllust.artistName}".take(MAX_ACTIVITY_TEXT_LENGTH).ifBlank { "Palleria" }
+            } else {
+                "Palleria"
+            }
+        return Triple(details, state, artworkStart)
+    }
+
+    private fun buildButtons(
+        showButtons: Boolean,
+        showDetails: Boolean,
+        selectedIllust: Illust?,
+    ): List<String>? {
+        if (!showButtons) return null
+        return if (selectedIllust != null && showDetails) {
+            listOf(BUTTON_PIXIV_LABEL, BUTTON_DOWNLOAD_LABEL)
+        } else {
+            listOf(BUTTON_DOWNLOAD_LABEL)
+        }
+    }
+
+    private fun buildMetadata(
+        showButtons: Boolean,
+        showDetails: Boolean,
+        selectedIllust: Illust?,
+    ): Metadata? {
+        if (!showButtons) return null
+        return if (selectedIllust != null && showDetails) {
+            Metadata(buttonUrls = listOf("https://www.pixiv.net/artworks/${selectedIllust.id}", DOWNLOAD_URL))
+        } else {
+            Metadata(buttonUrls = listOf(DOWNLOAD_URL))
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -259,19 +290,103 @@ class DiscordRpcManager(
     companion object {
         private const val TAG = "DiscordRpcManager"
         const val DEFAULT_APP_ID = "1544652855233744926"
+        const val DEFAULT_ASSET_PALLERIA_LOGO = "1544722572242067458"
+        const val DEFAULT_ASSET_APP_ICON = "1544653988580827199"
+        const val DEFAULT_ASSET_PALLERIA = "1546050034351611904"
+        const val DEFAULT_ASSET_LOGO_LARGE = "1546941143722364939"
         const val DOWNLOAD_URL = "https://yunfi.f5.si/Palleria/user/installation"
         const val BUTTON_PIXIV_LABEL = "Pixivで見る"
         const val BUTTON_DOWNLOAD_LABEL = "Palleriaをダウンロード"
         private const val DEBOUNCE_DELAY_MS = 600L
         private const val CONNECTION_TIMEOUT_MS = 15_000L
+        private const val ASSET_FETCH_TIMEOUT_MS = 3_000
+        private const val MAX_ACTIVITY_TEXT_LENGTH = 128
         private const val MAX_DIAGNOSTIC_ENTRIES = 20
         private const val MAX_ERROR_MESSAGE_LENGTH = 240
         private val DIAGNOSTIC_TIME_FORMAT = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         private val _diagnostics = MutableStateFlow<List<String>>(emptyList())
         val diagnostics: StateFlow<List<String>> = _diagnostics.asStateFlow()
 
+        private val DEFAULT_ASSETS =
+            mapOf(
+                "palleria_logo" to DEFAULT_ASSET_PALLERIA_LOGO,
+                "logo" to DEFAULT_ASSET_PALLERIA_LOGO,
+                "app_icon" to DEFAULT_ASSET_APP_ICON,
+                "icon" to DEFAULT_ASSET_APP_ICON,
+                "palleria" to DEFAULT_ASSET_PALLERIA,
+                "logo_large" to DEFAULT_ASSET_LOGO_LARGE,
+            )
+
+        private val assetCache =
+            ConcurrentHashMap<String, Map<String, String>>().apply {
+                put(DEFAULT_APP_ID, DEFAULT_ASSETS)
+            }
+
         fun clearDiagnostics() {
             _diagnostics.value = emptyList()
+        }
+
+        internal fun clearAssetCache() {
+            assetCache.clear()
+            assetCache[DEFAULT_APP_ID] = DEFAULT_ASSETS
+        }
+
+        suspend fun resolveAssetId(
+            appId: String,
+            assetKey: String,
+        ): String {
+            val trimmed = assetKey.trim()
+            val normalizedKey = trimmed.lowercase(Locale.ROOT)
+            val isDirectIdentifier =
+                normalizedKey.isBlank() ||
+                    normalizedKey.all { it.isDigit() } ||
+                    normalizedKey.startsWith("mp:") ||
+                    normalizedKey.startsWith("http://") ||
+                    normalizedKey.startsWith("https://")
+            if (isDirectIdentifier) {
+                return trimmed
+            }
+
+            return withContext(Dispatchers.IO) {
+                val cachedMap = assetCache[appId] ?: fetchAndCacheAppAssets(appId)
+                cachedMap[normalizedKey] ?: cachedMap.values.firstOrNull() ?: trimmed
+            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        private fun fetchAndCacheAppAssets(appId: String): Map<String, String> {
+            if (appId == DEFAULT_APP_ID) {
+                assetCache[DEFAULT_APP_ID] = DEFAULT_ASSETS
+                return DEFAULT_ASSETS
+            }
+
+            val map = mutableMapOf<String, String>()
+            try {
+                val url = URL("https://discord.com/api/v9/oauth2/applications/$appId/assets")
+                val connection =
+                    (url.openConnection() as HttpURLConnection).apply {
+                        connectTimeout = ASSET_FETCH_TIMEOUT_MS
+                        readTimeout = ASSET_FETCH_TIMEOUT_MS
+                        requestMethod = "GET"
+                        setRequestProperty("User-Agent", "Palleria/1.0 (Android)")
+                    }
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                    val jsonArray = JSONArray(responseText)
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.optJSONObject(i) ?: continue
+                        val id = item.optString("id")
+                        val name = item.optString("name").lowercase(Locale.ROOT)
+                        if (id.isNotBlank() && name.isNotBlank()) {
+                            map[name] = id
+                        }
+                    }
+                    assetCache[appId] = map
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "Failed to fetch assets for Discord appId $appId: ${e.message}")
+            }
+            return map
         }
 
         fun isSupported(context: Context? = null): Boolean {

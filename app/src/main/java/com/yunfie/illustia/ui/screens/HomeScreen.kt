@@ -29,6 +29,7 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -105,16 +106,17 @@ fun HomeScreen(
             largeTitle = stringResource(R.string.nav_home),
             scrollBehavior = scrollBehavior,
             modifier =
-                Modifier.pointerInput(selectedTab) {
+                Modifier.pointerInput(Unit) {
                     detectTapGestures {
                         performHaptic(AppHapticEffect.Click)
                         coroutineScope.launch {
-                            scrollBehavior.state.heightOffset = 0f
-                            scrollBehavior.state.contentOffset = 0f
-                            when (selectedTab) {
-                                HomeTab.Feed -> viewModel.homeFeedGridState.animateScrollToItem(0)
-                                HomeTab.Following -> viewModel.homeTimelineGridState.animateScrollToItem(0)
-                            }
+                            val currentTab = HomeTab.entries[pagerState.currentPage]
+                            val gridState =
+                                when (currentTab) {
+                                    HomeTab.Feed -> viewModel.homeFeedGridState
+                                    HomeTab.Following -> viewModel.homeTimelineGridState
+                                }
+                            gridState.smoothScrollToTop(scrollBehavior)
                         }
                     }
                 },

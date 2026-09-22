@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -400,9 +401,7 @@ fun ViewHistoryScreen(
                         detectTapGestures {
                             performHaptic(AppHapticEffect.Click)
                             coroutineScope.launch {
-                                scrollBehavior.state.heightOffset = 0f
-                                scrollBehavior.state.contentOffset = 0f
-                                gridState.animateScrollToItem(0)
+                                gridState.smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },

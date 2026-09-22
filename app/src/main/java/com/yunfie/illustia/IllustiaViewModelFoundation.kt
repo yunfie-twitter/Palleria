@@ -1,8 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -381,14 +379,7 @@ abstract class IllustiaViewModelFoundation(
     protected suspend fun refreshRankingWidget() {
         runCatching {
             val context = getApplication<Application>().applicationContext
-            val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(ComponentName(context, RankingWidgetProvider::class.java))
-            if (ids.isEmpty()) return
-            val intent =
-                android.content.Intent(context, RankingWidgetProvider::class.java).apply {
-                    action = RankingWidgetProvider.ACTION_REFRESH_RANKING_WIDGET
-                }
-            context.sendBroadcast(intent)
+            RankingWidgetProvider.refreshAllSuspend(context)
         }
     }
 

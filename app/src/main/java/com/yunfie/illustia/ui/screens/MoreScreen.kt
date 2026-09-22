@@ -42,6 +42,7 @@ import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -98,9 +99,7 @@ fun MoreScreen(
                         detectTapGestures {
                             performHaptic(AppHapticEffect.Click)
                             coroutineScope.launch {
-                                scrollBehavior.state.heightOffset = 0f
-                                scrollBehavior.state.contentOffset = 0f
-                                listState.animateScrollToItem(0)
+                                listState.smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },
