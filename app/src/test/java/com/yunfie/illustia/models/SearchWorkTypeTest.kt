@@ -2,6 +2,8 @@ package com.yunfie.illustia.models
 
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class SearchWorkTypeTest {
@@ -34,5 +36,15 @@ class SearchWorkTypeTest {
         SearchWorkType.Novels.isNovel.shouldBeTrue()
         SearchWorkType.Novels.acceptsIllustType("illust").shouldBeFalse()
         SearchWorkType.Artworks.isNovel.shouldBeFalse()
+    }
+
+    @Test
+    fun `apiType mapping matches Pixiv search parameters`() {
+        SearchWorkType.Illustrations.apiType shouldBe "illust"
+        SearchWorkType.Manga.apiType shouldBe "manga"
+        SearchWorkType.Ugoira.apiType shouldBe "ugoira"
+        SearchWorkType.Artworks.apiType.shouldBeNull()
+        SearchWorkType.IllustrationsAndUgoira.apiType.shouldBeNull()
+        SearchWorkType.Novels.apiType.shouldBeNull()
     }
 }

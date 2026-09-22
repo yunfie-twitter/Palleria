@@ -117,6 +117,7 @@ class PixivApiClient(
         bookmarkNum: Pair<Int, Int>? = null,
         startDate: LocalDate? = null,
         endDate: LocalDate? = null,
+        type: String? = null,
     ): PageResult<Illust> {
         val effectiveWord = listOfNotNull(word, bookmarkFilter.keyword).joinToString(" ")
         return getIllustPage(
@@ -136,6 +137,7 @@ class PixivApiClient(
                 "start_date" to startDate?.let { pixivDate(it) },
                 "end_date" to endDate?.let { pixivDate(it) },
                 "r18" to if (includeR18) "true" else null,
+                "type" to type,
             ),
         )
     }

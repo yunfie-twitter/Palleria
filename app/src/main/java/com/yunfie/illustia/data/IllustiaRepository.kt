@@ -270,11 +270,12 @@ class IllustiaRepository(
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        type: String? = null,
         forceRefresh: Boolean = false,
     ): PageResult<Illust> =
-        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
+        withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18:$type", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
-                apiClient.search(session, word, sort, target, duration, bookmarkFilter, includeR18)
+                apiClient.search(session, word, sort, target, duration, bookmarkFilter, includeR18, type = type)
             }
         }
 
