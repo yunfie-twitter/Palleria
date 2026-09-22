@@ -380,7 +380,6 @@ internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun RelatedIllustsList(
     relatedIllusts: List<Illust>,
@@ -399,67 +398,15 @@ internal fun RelatedIllustsList(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 rowItems.forEach { related ->
-                    val ageRestrictionBadgeText =
-                        remember(
-                            related.id,
-                            related.isR18,
-                            related.isR18G,
-                            cardPreferences.showR18Badge,
-                            cardPreferences.showRelatedR18,
-                        ) {
-                            if (cardPreferences.showR18Badge && cardPreferences.showRelatedR18) {
-                                related.ageRestrictionBadgeText
-                            } else {
-                                null
-                            }
-                        }
                     Box(modifier = Modifier.weight(1f)) {
                         key(related.id) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .aspectRatio(1f)
-                                        .combinedClickable(
-                                            onClick = { onOpenIllust(related) },
-                                            onLongClick = { onLongPressIllust(related) },
-                                        ),
-                            ) {
-                                PixivImage(
-                                    url = related.squareImageUrl.ifBlank { related.mediumImageUrl.ifBlank { related.imageUrl } },
-                                    contentDescription = related.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                    thumbnail = true,
-                                )
-                                if (ageRestrictionBadgeText != null) {
-                                    Text(
-                                        text = ageRestrictionBadgeText,
-                                        color = Color.White,
-                                        style = MiuixTheme.textStyles.footnote2,
-                                        fontWeight = FontWeight.Black,
-                                        modifier =
-                                            Modifier
-                                                .align(Alignment.TopStart)
-                                                .padding(8.dp)
-                                                .squircleBackground(Color(0xFFFA383E), 6.dp)
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                }
-                                if (related.pageCount > 1) {
-                                    Text(
-                                        text = "${related.pageCount}P",
-                                        color = Color.White,
-                                        style = MiuixTheme.textStyles.footnote2,
-                                        fontWeight = FontWeight.Black,
-                                        modifier =
-                                            Modifier
-                                                .align(Alignment.TopEnd)
-                                                .padding(8.dp)
-                                                .squircleBackground(Color.Black.copy(alpha = 0.4f), 6.dp)
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                }
-                            }
+                            RelatedIllustCard(
+                                related = related,
+                                showR18Badge = cardPreferences.showR18Badge,
+                                showRelatedR18 = cardPreferences.showRelatedR18,
+                                onOpenIllust = onOpenIllust,
+                                onLongPressIllust = onLongPressIllust,
+                            )
                         }
                     }
                 }
@@ -467,6 +414,70 @@ internal fun RelatedIllustsList(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun RelatedIllustCard(
+    related: Illust,
+    showR18Badge: Boolean,
+    showRelatedR18: Boolean,
+    onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
+) {
+    val ageRestrictionBadgeText =
+        remember(related.id, related.isR18, related.isR18G, showR18Badge, showRelatedR18) {
+            if (showR18Badge && showRelatedR18) {
+                related.ageRestrictionBadgeText
+            } else {
+                null
+            }
+        }
+    Box(
+        modifier =
+            Modifier
+                .aspectRatio(1f)
+                .combinedClickable(
+                    onClick = { onOpenIllust(related) },
+                    onLongClick = { onLongPressIllust(related) },
+                ),
+    ) {
+        PixivImage(
+            url = related.squareImageUrl.ifBlank { related.mediumImageUrl.ifBlank { related.imageUrl } },
+            contentDescription = related.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+            thumbnail = true,
+        )
+        if (ageRestrictionBadgeText != null) {
+            Text(
+                text = ageRestrictionBadgeText,
+                color = Color.White,
+                style = MiuixTheme.textStyles.footnote2,
+                fontWeight = FontWeight.Black,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .squircleBackground(Color(0xFFFA383E), 6.dp)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+        if (related.pageCount > 1) {
+            Text(
+                text = "${related.pageCount}P",
+                color = Color.White,
+                style = MiuixTheme.textStyles.footnote2,
+                fontWeight = FontWeight.Black,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .squircleBackground(Color.Black.copy(alpha = 0.4f), 6.dp)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
         }
     }
 }

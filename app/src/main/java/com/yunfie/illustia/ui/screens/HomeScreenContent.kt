@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,14 +92,25 @@ internal fun FeedTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeFeedGridState
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            items
-                .asSequence()
-                .take(8)
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    val prefetchUrls by remember(items, feedHighQuality, gridState) {
+        derivedStateOf {
+            if (items.isEmpty()) {
+                emptyList()
+            } else {
+                val firstVisible = gridState.firstVisibleItemIndex
+                val visibleCount =
+                    gridState.layoutInfo.visibleItemsInfo.size
+                        .coerceAtLeast(6)
+                val prefetchStart = (firstVisible + visibleCount).coerceAtMost(items.size)
+                val prefetchEnd = (prefetchStart + 12).coerceAtMost(items.size)
+                if (prefetchStart < prefetchEnd) {
+                    items.subList(prefetchStart, prefetchEnd).map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                } else {
+                    emptyList()
+                }
+            }
         }
+    }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
         gridState = gridState,
@@ -187,14 +200,25 @@ internal fun FollowingTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeTimelineGridState
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            items
-                .asSequence()
-                .take(8)
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    val prefetchUrls by remember(items, feedHighQuality, gridState) {
+        derivedStateOf {
+            if (items.isEmpty()) {
+                emptyList()
+            } else {
+                val firstVisible = gridState.firstVisibleItemIndex
+                val visibleCount =
+                    gridState.layoutInfo.visibleItemsInfo.size
+                        .coerceAtLeast(6)
+                val prefetchStart = (firstVisible + visibleCount).coerceAtMost(items.size)
+                val prefetchEnd = (prefetchStart + 12).coerceAtMost(items.size)
+                if (prefetchStart < prefetchEnd) {
+                    items.subList(prefetchStart, prefetchEnd).map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                } else {
+                    emptyList()
+                }
+            }
         }
+    }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
         gridState = gridState,

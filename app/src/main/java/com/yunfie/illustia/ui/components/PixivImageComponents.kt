@@ -41,6 +41,8 @@ fun PixivImage(
     modifier: Modifier = Modifier,
     crossfade: Boolean = false,
     thumbnail: Boolean = false,
+    maxDecodeDimensionPx: Int? = null,
+    allowRgb565: Boolean = false,
     onSuccess: ((Bitmap) -> Unit)? = null,
 ) {
     val context = LocalPlatformContext.current
@@ -50,8 +52,9 @@ fun PixivImage(
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
+    val hasSuccessListener = onSuccess != null
     val imageRequest =
-        remember(effectiveUrl, thumbnail) {
+        remember(effectiveUrl, thumbnail, maxDecodeDimensionPx, allowRgb565, hasSuccessListener) {
             ImageRequest
                 .Builder(context)
                 .data(effectiveUrl)
@@ -59,18 +62,30 @@ fun PixivImage(
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .crossfade(!thumbnail && crossfade)
-                .listener(
-                    onSuccess = { _, result ->
-                        runCatching {
-                            currentOnSuccess?.invoke(result.image.toBitmap())
-                        }
-                    },
-                ).apply {
+                .apply {
+                    if (hasSuccessListener) {
+                        listener(
+                            onSuccess = { _, result ->
+                                runCatching {
+                                    currentOnSuccess?.invoke(result.image.toBitmap())
+                                }
+                            },
+                        )
+                    }
                     if (thumbnail) {
                         size(ThumbnailDecodeSizePx)
                         scale(Scale.FILL)
                         precision(Precision.INEXACT)
                         allowRgb565(true)
+                    } else {
+                        if (maxDecodeDimensionPx != null) {
+                            size(maxDecodeDimensionPx)
+                            scale(Scale.FIT)
+                            precision(Precision.INEXACT)
+                        }
+                        if (allowRgb565) {
+                            allowRgb565(true)
+                        }
                     }
                 }.build()
         }

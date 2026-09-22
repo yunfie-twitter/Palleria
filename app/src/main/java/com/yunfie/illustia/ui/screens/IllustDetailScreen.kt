@@ -211,13 +211,6 @@ fun IllustDetailScreen(
         }
     }
 
-    // 詳細画面を開く際の重さを軽減するために、関連作品だけを遅延レンダリングする
-    var showHeavyContent by remember { mutableStateOf(false) }
-    LaunchedEffect(illust.id) {
-        delay(240) // 遷移アニメーションの完了を待つ
-        showHeavyContent = true
-    }
-
     if (pendingSave != null) {
         val isUgoira = illust.type == "ugoira"
         MiuixConfirmDialog(
@@ -336,7 +329,7 @@ fun IllustDetailScreen(
             onLongPressTag = onLongPressTag,
             sectionOrder = detailSectionOrder,
             relatedContent = {
-                if (showHeavyContent) {
+                if (relatedIllusts.isNotEmpty()) {
                     RelatedIllustsList(
                         relatedIllusts = relatedIllusts,
                         onOpenIllust = onOpenIllust,

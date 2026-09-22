@@ -89,6 +89,10 @@ android {
     }
 }
 
+composeCompiler {
+    stabilityConfigurationFile = rootProject.file("compose_compiler_config.conf")
+}
+
 ktlint {
     version = "1.8.0"
     android = true
@@ -266,7 +270,7 @@ tasks.register("checkQualityBaselineBudgets") {
 }
 
 tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.configureEach {
-    dependsOn(generateUniFfiBindings, buildRustAndroid, buildPallaSyncCoreAndroid)
+    dependsOn(generateUniFfiBindings)
 }
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {

@@ -1078,44 +1078,7 @@ internal class PalleriaSyncCoordinator(
                 response.body?.string()
                     ?: return@execute PallaSyncHttpResult.ProtocolError("Relay page body was empty")
 
-            parseRecordsResponseBody(body, nextSeqHeader, hasMoreHeader, afterSeq)
-        }
-    }
-
-    private fun parseRecordsResponseBody(
-        body: String,
-        nextSeqHeader: Long?,
-        hasMoreHeader: Boolean?,
-        afterSeq: Long,
-    ): PallaSyncHttpResult<PallaSyncRecordsPage> {
-        val fetchResp = runCatching { json.decodeFromString<PallaSyncFetchRecordsResponse>(body) }.getOrNull()
-        if (fetchResp != null && (fetchResp.records.isNotEmpty() || fetchResp.nextCursor != null)) {
-            val parsedRecords =
-                fetchResp.records.map { wire ->
-                    val raw = json.encodeToString(wire)
-                    PallaSyncPageRecord(wire, raw)
-                }
-            val seq = fetchResp.nextCursor?.toLongOrNull() ?: nextSeqHeader ?: afterSeq
-            val more = hasMoreHeader ?: (fetchResp.nextCursor != null)
-            return PallaSyncHttpResult.Success(PallaSyncRecordsPage(parsedRecords, seq, more))
-        }
-
-        val array = runCatching { json.parseToJsonElement(body).jsonArray }.getOrNull()
-        return if (array != null) {
-            val parsedRecords =
-                array.map { element ->
-                    val raw = element.toString()
-                    runCatching { json.decodeFromString<PallaSyncWireRecord>(raw) }
-                        .fold(
-                            onSuccess = { PallaSyncPageRecord(it, raw) },
-                            onFailure = { PallaSyncPageRecord(null, raw, it.message ?: "malformed record") },
-                        )
-                }
-            val seq = nextSeqHeader ?: afterSeq
-            val more = hasMoreHeader ?: false
-            PallaSyncHttpResult.Success(PallaSyncRecordsPage(parsedRecords, seq, more))
-        } else {
-            PallaSyncHttpResult.ProtocolError("Relay page was not valid JSON")
+            parseRecordsResponseBody(json, body, nextSeqHeader, hasMoreHeader, afterSeq)
         }
     }
 

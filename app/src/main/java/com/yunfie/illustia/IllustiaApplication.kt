@@ -166,4 +166,24 @@ class IllustiaApplication : Application() {
     fun setTelemetryEnabled(enabled: Boolean) {
         GlitchTipTelemetry.setEnabled(applicationContext, enabled)
     }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        runCatching {
+            val imageLoader = SingletonImageLoader.get(this)
+            if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+                imageLoader.memoryCache?.clear()
+            } else if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+                val currentSize = imageLoader.memoryCache?.size ?: 0L
+                imageLoader.memoryCache?.trimToSize(currentSize / 2)
+            }
+        }
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        runCatching {
+            SingletonImageLoader.get(this).memoryCache?.clear()
+        }
+    }
 }
