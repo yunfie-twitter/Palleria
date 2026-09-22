@@ -20,6 +20,8 @@ data class CommentState(
     val errorMessage: String? = null,
     val isEmpty: Boolean = false,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val isPaginating: Boolean = false,
 )
 
 class CommentStore(
@@ -32,8 +34,14 @@ class CommentStore(
     private val _state = MutableStateFlow(CommentState())
     val state: StateFlow<CommentState> = _state.asStateFlow()
 
-    suspend fun fetch() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+    suspend fun fetch(forceRefresh: Boolean = false) {
+        _state.update {
+            it.copy(
+                isRefreshing = forceRefresh || it.comments.isNotEmpty(),
+                isLoading = it.comments.isEmpty(),
+                errorMessage = null,
+            )
+        }
         try {
             val response =
                 when {
@@ -57,19 +65,32 @@ class CommentStore(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (expectedFailure: Exception) {
-            _state.update { it.copy(isLoading = false, errorMessage = expectedFailure.toString()) }
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = expectedFailure.toString(),
+                )
+            }
         }
     }
 
     suspend fun next() {
         val nextUrl = _state.value.nextUrl ?: return
+        if (_state.value.isPaginating) return
+        _state.update { it.copy(isPaginating = true, errorMessage = null) }
         try {
             val response = repository.nextCommentPage(nextUrl)
             applyResponse(response, append = true)
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (expectedFailure: Exception) {
-            _state.update { it.copy(isLoading = false, errorMessage = expectedFailure.toString()) }
+            _state.update {
+                it.copy(
+                    isPaginating = false,
+                    errorMessage = expectedFailure.toString(),
+                )
+            }
         }
     }
 

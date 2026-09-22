@@ -49,12 +49,14 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -162,7 +164,7 @@ fun FavoriteTagsScreen(
         },
     ) { scaffoldPadding ->
         PullToRefresh(
-            isRefreshing = state.loadState == LoadState.Loading && state.watchlistItems.isNotEmpty(),
+            isRefreshing = state.isWatchlistRefreshing,
             onRefresh = { selectedTag?.let(viewModel::loadWatchlistTag) },
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -170,7 +172,8 @@ fun FavoriteTagsScreen(
                 gridState = gridState,
                 enabled = state.settings.autoLoadMore,
                 nextUrl = state.watchlistNextUrl,
-                isLoading = state.loadState == LoadState.Loading,
+                isLoading = state.isWatchlistPaginating || state.loadState == LoadState.Loading,
+                buffer = 6,
                 onLoadMore = viewModel::loadMoreWatchlist,
             )
             LazyVerticalGrid(
@@ -239,16 +242,37 @@ fun FavoriteTagsScreen(
                         )
                     }
 
-                    if (!state.settings.autoLoadMore && state.watchlistNextUrl != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                    if (state.settings.autoLoadMore && state.isWatchlistPaginating) {
+                        item(key = "watchlist_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    } else if (!state.settings.autoLoadMore && state.watchlistNextUrl != null) {
+                        item(key = "watchlist_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                             Button(
                                 onClick = viewModel::loadMoreWatchlist,
+                                enabled = !state.isWatchlistPaginating,
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 12.dp),
+                                colors = overlayActionButtonColors(),
                             ) {
-                                Text(stringResource(R.string.action_load_more))
+                                if (state.isWatchlistPaginating) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        LoadingIndicator(modifier = Modifier.size(16.dp))
+                                        Text(stringResource(R.string.action_load_more))
+                                    }
+                                } else {
+                                    Text(stringResource(R.string.action_load_more))
+                                }
                             }
                         }
                     }

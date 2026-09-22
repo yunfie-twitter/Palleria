@@ -3,8 +3,10 @@ package com.yunfie.illustia.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -51,9 +53,11 @@ import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -284,6 +288,9 @@ private fun RankingGridContent(
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
     modifier: Modifier = Modifier,
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isModeRefreshing = state.isRankingRefreshing[mode] == true
+    val isModePaginating = state.isRankingPaginating[mode] == true
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.rankingGridState(mode)
@@ -301,12 +308,13 @@ private fun RankingGridContent(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = loadState == LoadState.Loading,
+        isLoading = isModePaginating || loadState == LoadState.Loading,
+        buffer = 6,
         onLoadMore = { viewModel.loadMoreRanking(mode) },
     )
 
     PullToRefresh(
-        isRefreshing = loadState == com.yunfie.illustia.models.LoadState.Loading && items.isNotEmpty(),
+        isRefreshing = isModeRefreshing,
         onRefresh = { viewModel.refreshRanking(mode, forceRefresh = true) },
         modifier = modifier.fillMaxSize(),
     ) {
@@ -347,16 +355,37 @@ private fun RankingGridContent(
                 )
             }
 
-            if (!settings.autoLoadMore && nextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (settings.autoLoadMore && isModePaginating) {
+                item(key = "ranking_${mode}_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && nextUrl != null) {
+                item(key = "ranking_${mode}_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = { viewModel.loadMoreRanking(mode) },
+                        enabled = !isModePaginating,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 12.dp),
+                        colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.action_load_more))
+                        if (isModePaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
                     }
                 }
             }

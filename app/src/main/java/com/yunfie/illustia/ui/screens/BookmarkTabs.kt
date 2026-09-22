@@ -39,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -92,15 +93,16 @@ internal fun BookmarkWatchlistTab(
     val scope = rememberCoroutineScope()
 
     PullToRefresh(
-        isRefreshing = watchlistState.isLoading && watchlistState.mangaSeries.isNotEmpty(),
-        onRefresh = { scope.launch { watchlistStore.fetch() } },
+        isRefreshing = watchlistState.isRefreshing,
+        onRefresh = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
         modifier = Modifier.fillMaxSize(),
     ) {
         AutoLoadMoreEffect(
             gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = watchlistState.model?.nextUrl,
-            isLoading = watchlistState.isLoading,
+            isLoading = watchlistState.isPaginating || watchlistState.isLoading,
+            buffer = 6,
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
         LazyVerticalGrid(
@@ -141,14 +143,34 @@ internal fun BookmarkWatchlistTab(
                     modifier = Modifier.animateItem(),
                 )
             }
-            if (!settings.autoLoadMore && watchlistState.model?.nextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (settings.autoLoadMore && watchlistState.isPaginating) {
+                item(key = "watchlist_series_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && watchlistState.model?.nextUrl != null) {
+                item(key = "watchlist_series_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = { scope.launch { watchlistStore.loadMore() } },
+                        enabled = !watchlistState.isPaginating,
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.watchlist_series_load_more))
+                        if (watchlistState.isPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.watchlist_series_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.watchlist_series_load_more))
+                        }
                     }
                 }
             }
@@ -346,9 +368,10 @@ internal fun BookmarkMainTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkMainGridState
     PullToRefresh(
-        isRefreshing = loadState == LoadState.Loading && bookmarkItems.isNotEmpty(),
+        isRefreshing = state.isBookmarkRefreshing,
         onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -356,7 +379,8 @@ internal fun BookmarkMainTab(
             gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.bookmarkNextUrl,
-            isLoading = loadState == LoadState.Loading,
+            isLoading = state.isBookmarkPaginating || loadState == LoadState.Loading,
+            buffer = 6,
             onLoadMore = viewModel::loadMoreBookmarks,
         )
         LazyVerticalGrid(
@@ -391,12 +415,35 @@ internal fun BookmarkMainTab(
                     showAiBadge = showAiBadge,
                 )
             }
-            if (!settings.autoLoadMore && chrome.bookmarkNextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (settings.autoLoadMore && state.isBookmarkPaginating) {
+                item(key = "bookmark_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && chrome.bookmarkNextUrl != null) {
+                item(key = "bookmark_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreBookmarks,
+                        enabled = !state.isBookmarkPaginating,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.action_load_more)) }
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (state.isBookmarkPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
+                    }
                 }
             }
         }
@@ -414,9 +461,10 @@ internal fun BookmarkTimelineTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkTimelineGridState
     PullToRefresh(
-        isRefreshing = loadState == LoadState.Loading && timelineItems.isNotEmpty(),
+        isRefreshing = state.isTimelineRefreshing,
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -424,7 +472,8 @@ internal fun BookmarkTimelineTab(
             gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.timelineNextUrl,
-            isLoading = loadState == LoadState.Loading,
+            isLoading = state.isTimelinePaginating || loadState == LoadState.Loading,
+            buffer = 6,
             onLoadMore = viewModel::loadMoreTimeline,
         )
         LazyVerticalGrid(
@@ -459,12 +508,35 @@ internal fun BookmarkTimelineTab(
                     showAiBadge = showAiBadge,
                 )
             }
-            if (!settings.autoLoadMore && chrome.timelineNextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (settings.autoLoadMore && state.isTimelinePaginating) {
+                item(key = "timeline_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && chrome.timelineNextUrl != null) {
+                item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreTimeline,
+                        enabled = !state.isTimelinePaginating,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.action_load_more)) }
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (state.isTimelinePaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
+                    }
                 }
             }
         }

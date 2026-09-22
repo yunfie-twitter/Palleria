@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
@@ -33,10 +36,12 @@ import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -58,20 +63,21 @@ internal fun HomeAccountAvatar(account: UserProfile?) {
                 .background(MiuixTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
-        val avatarUrl = account?.profileImageUrl
-        if (!avatarUrl.isNullOrBlank()) {
+        if (account != null && !account.profileImageUrl.isNullOrBlank()) {
             PixivImage(
-                url = avatarUrl,
+                url = account.profileImageUrl,
                 contentDescription = account.name,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                thumbnail = true,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
             )
         } else {
             Icon(
                 imageVector = MiuixIcons.Contacts,
                 contentDescription = null,
-                tint = MiuixTheme.colorScheme.onSurface,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -87,6 +93,7 @@ internal fun FeedTabContent(
     viewModel: IllustiaViewModel,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeFeedGridState
@@ -103,12 +110,13 @@ internal fun FeedTabContent(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = loadState == LoadState.Loading,
+        isLoading = state.isHomePaginating || loadState == LoadState.Loading,
+        buffer = 6,
         onLoadMore = viewModel::loadMoreHome,
     )
 
     PullToRefresh(
-        isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
+        isRefreshing = state.isHomeRefreshing,
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -158,16 +166,37 @@ internal fun FeedTabContent(
                 )
             }
 
-            if (!settings.autoLoadMore && nextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (settings.autoLoadMore && state.isHomePaginating) {
+                item(key = "home_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && nextUrl != null) {
+                item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreHome,
+                        enabled = !state.isHomePaginating,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 12.dp),
+                        colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.action_load_more))
+                        if (state.isHomePaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
                     }
                 }
             }
@@ -184,6 +213,7 @@ internal fun FollowingTabContent(
     viewModel: IllustiaViewModel,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeTimelineGridState
@@ -200,13 +230,14 @@ internal fun FollowingTabContent(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = loadState == LoadState.Loading,
+        isLoading = state.isTimelinePaginating || loadState == LoadState.Loading,
+        buffer = 6,
         onLoadMore = viewModel::loadMoreTimeline,
     )
 
     PullToRefresh(
-        isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
-        onRefresh = { viewModel.refreshTimeline() },
+        isRefreshing = state.isTimelineRefreshing,
+        onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         LazyVerticalGrid(
@@ -255,16 +286,37 @@ internal fun FollowingTabContent(
                 )
             }
 
-            if (!settings.autoLoadMore && nextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (settings.autoLoadMore && state.isTimelinePaginating) {
+                item(key = "timeline_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && nextUrl != null) {
+                item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreTimeline,
+                        enabled = !state.isTimelinePaginating,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 12.dp),
+                        colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.action_load_more))
+                        if (state.isTimelinePaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
                     }
                 }
             }

@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
@@ -58,6 +59,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.Dispatchers
@@ -127,6 +129,7 @@ fun NovelScreen(
                 }
             }
         }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val prefetchUrls =
         remember(items) {
             items
@@ -140,7 +143,8 @@ fun NovelScreen(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = loadState == LoadState.Loading,
+        isLoading = state.isNovelPaginating || loadState == LoadState.Loading,
+        buffer = 6,
         onLoadMore = viewModel::loadMoreNovels,
     )
 
@@ -180,7 +184,7 @@ fun NovelScreen(
         },
     ) { scaffoldPadding ->
         PullToRefresh(
-            isRefreshing = loadState == LoadState.Loading && items.isNotEmpty(),
+            isRefreshing = state.isNovelRefreshing,
             onRefresh = { viewModel.refreshNovels(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -266,13 +270,34 @@ fun NovelScreen(
                     )
                 }
 
-                if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                if (settings.autoLoadMore && state.isNovelPaginating && selectedFilter == NovelFilterTab.All) {
+                    item(key = "novel_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
+                } else if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
+                    item(key = "novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreNovels,
+                            enabled = !state.isNovelPaginating,
                             modifier = Modifier.fillMaxWidth(),
+                            colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_load_more))
+                            if (state.isNovelPaginating) {
+                                androidx.compose.foundation.layout.Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(R.string.action_load_more))
+                                }
+                            } else {
+                                Text(stringResource(R.string.action_load_more))
+                            }
                         }
                     }
                 }

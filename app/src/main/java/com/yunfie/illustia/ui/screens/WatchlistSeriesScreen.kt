@@ -81,6 +81,7 @@ import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
@@ -220,7 +221,7 @@ fun WatchlistSeriesScreen(
                 .background(backgroundColor),
     ) {
         PullToRefresh(
-            isRefreshing = state.isLoading && state.mangaSeries.isNotEmpty(),
+            isRefreshing = state.isRefreshing,
             onRefresh = { scope.launch { store.fetch() } },
             pullToRefreshState = pullToRefreshState,
             modifier = Modifier.fillMaxSize(),
@@ -229,7 +230,7 @@ fun WatchlistSeriesScreen(
                 gridState = gridState,
                 enabled = settings.autoLoadMore,
                 nextUrl = state.model?.nextUrl,
-                isLoading = state.isLoading,
+                isLoading = state.isLoading || state.isPaginating,
                 onLoadMore = { scope.launch { store.loadMore() } },
             )
 
@@ -333,14 +334,31 @@ fun WatchlistSeriesScreen(
                             modifier = Modifier.animateItem(),
                         )
                     }
-                    if (!settings.autoLoadMore && state.model?.nextUrl != null) {
+                    if (settings.autoLoadMore && state.isPaginating) {
+                        item(
+                            key = "watchlist_series_paginating_footer",
+                            span = { GridItemSpan(maxLineSpan) },
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Button(
                                 onClick = { scope.launch { store.loadMore() } },
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                                 colors = overlayActionButtonColors(),
+                                enabled = !state.isPaginating,
                             ) {
-                                Text(stringResource(R.string.watchlist_series_load_more))
+                                if (state.isPaginating) {
+                                    LoadingIndicator(modifier = Modifier.size(18.dp))
+                                } else {
+                                    Text(stringResource(R.string.watchlist_series_load_more))
+                                }
                             }
                         }
                     }

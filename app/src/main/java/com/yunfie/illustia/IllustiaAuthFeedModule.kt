@@ -148,32 +148,86 @@ abstract class IllustiaAuthFeedModule(
     }
 
     override fun refreshHome(forceRefresh: Boolean) {
-        runLoading {
-            loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update {
+                it.copy(
+                    isHomeRefreshing = forceRefresh,
+                    loadState = if (it.homeItems.isEmpty()) LoadState.Loading else it.loadState,
+                )
+            }
+            try {
+                loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
+                _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded) }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isHomeRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                    )
+                }
+            }
         }
     }
 
     fun refreshNovels(forceRefresh: Boolean = false) {
-        runLoading {
-            val page = repository.loadNovels(forceRefresh = forceRefresh)
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    novelItems = page.items.visibleWithSettings(it.settings),
-                    novelNextUrl = page.nextUrl,
+                    isNovelRefreshing = forceRefresh,
+                    loadState = if (it.novelItems.isEmpty()) LoadState.Loading else it.loadState,
                 )
+            }
+            try {
+                val page = repository.loadNovels(forceRefresh = forceRefresh)
+                _uiState.update {
+                    it.copy(
+                        novelItems = page.items.visibleWithSettings(it.settings),
+                        novelNextUrl = page.nextUrl,
+                        isNovelRefreshing = false,
+                        loadState = LoadState.Loaded,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isNovelRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                    )
+                }
             }
         }
     }
 
     fun loadMoreNovels() {
         val nextUrl = _uiState.value.novelNextUrl ?: return
-        runLoading {
-            val page = repository.nextNovelPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    novelItems = it.novelItems + page.items.visibleWithSettings(it.settings),
-                    novelNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isNovelPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isNovelPaginating = true) }
+            try {
+                val page = repository.nextNovelPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        novelItems = it.novelItems + page.items.visibleWithSettings(it.settings),
+                        novelNextUrl = page.nextUrl,
+                        isNovelPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isNovelPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }
@@ -289,7 +343,17 @@ abstract class IllustiaAuthFeedModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    rankingModeLoadStates = it.rankingModeLoadStates + (mode to LoadState.Loading),
+                    isRankingRefreshing = it.isRankingRefreshing + (mode to forceRefresh),
+                    rankingModeLoadStates =
+                        it.rankingModeLoadStates +
+                            (
+                                mode to
+                                    if (it.rankingModeItems[mode].isNullOrEmpty()) {
+                                        LoadState.Loading
+                                    } else {
+                                        LoadState.Idle
+                                    }
+                            ),
                 )
             }
             try {
@@ -304,6 +368,7 @@ abstract class IllustiaAuthFeedModule(
                     val updatedNextUrls = current.rankingModeNextUrls + (mode to page.nextUrl)
                     val updatedLoadStates = current.rankingModeLoadStates + (mode to LoadState.Idle)
                     current.copy(
+                        isRankingRefreshing = current.isRankingRefreshing + (mode to false),
                         rankingModeItems = updatedItems,
                         rankingModeNextUrls = updatedNextUrls,
                         rankingModeLoadStates = updatedLoadStates,
@@ -317,6 +382,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 _uiState.update { current ->
                     current.copy(
+                        isRankingRefreshing = current.isRankingRefreshing + (mode to false),
                         rankingModeLoadStates = current.rankingModeLoadStates + (mode to LoadState.Error(cleanErrorMessage(error))),
                     )
                 }
@@ -326,11 +392,11 @@ abstract class IllustiaAuthFeedModule(
 
     fun loadMoreRanking(mode: String = _uiState.value.rankingMode) {
         val nextUrl = _uiState.value.rankingModeNextUrls[mode] ?: _uiState.value.rankingNextUrl ?: return
-        if (_uiState.value.rankingModeLoadStates[mode] is LoadState.Loading) return
+        if (_uiState.value.isRankingPaginating[mode] == true) return
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    rankingModeLoadStates = it.rankingModeLoadStates + (mode to LoadState.Loading),
+                    isRankingPaginating = it.isRankingPaginating + (mode to true),
                 )
             }
             try {
@@ -341,11 +407,10 @@ abstract class IllustiaAuthFeedModule(
                     val nextList = currentList.appendIllusts(page.items.visibleWithMutedTagsVisible(settings))
                     val updatedItems = current.rankingModeItems + (mode to nextList)
                     val updatedNextUrls = current.rankingModeNextUrls + (mode to page.nextUrl)
-                    val updatedLoadStates = current.rankingModeLoadStates + (mode to LoadState.Idle)
                     current.copy(
+                        isRankingPaginating = current.isRankingPaginating + (mode to false),
                         rankingModeItems = updatedItems,
                         rankingModeNextUrls = updatedNextUrls,
-                        rankingModeLoadStates = updatedLoadStates,
                         rankingItems = if (current.rankingMode == mode) nextList else current.rankingItems,
                         rankingNextUrl = if (current.rankingMode == mode) page.nextUrl else current.rankingNextUrl,
                     )
@@ -356,7 +421,8 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 _uiState.update { current ->
                     current.copy(
-                        rankingModeLoadStates = current.rankingModeLoadStates + (mode to LoadState.Error(cleanErrorMessage(error))),
+                        isRankingPaginating = current.isRankingPaginating + (mode to false),
+                        message = cleanErrorMessage(error),
                     )
                 }
             }
@@ -365,17 +431,32 @@ abstract class IllustiaAuthFeedModule(
 
     fun loadMoreHome() {
         val nextUrl = _uiState.value.homeNextUrl ?: return
-        runLoading {
-            val page = repository.nextPage(nextUrl)
-            val settings = _uiState.value.settings
-            val additions = page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
-            _uiState.update {
-                it.copy(
-                    homeItems = it.homeItems.appendIllusts(additions),
-                    homeNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isHomePaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isHomePaginating = true) }
+            try {
+                val page = repository.nextPage(nextUrl)
+                val settings = _uiState.value.settings
+                val additions = page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
+                _uiState.update {
+                    it.copy(
+                        homeItems = it.homeItems.appendIllusts(additions),
+                        homeNextUrl = page.nextUrl,
+                        isHomePaginating = false,
+                    )
+                }
+                rememberFeedItems(additions)
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isHomePaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
-            rememberFeedItems(additions)
         }
     }
 
@@ -766,26 +847,61 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun refreshTimeline(forceRefresh: Boolean = false) {
-        runLoading {
-            val page = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    timelineItems = page.items.visibleWithSettings(it.settings),
-                    timelineNextUrl = page.nextUrl,
+                    isTimelineRefreshing = forceRefresh,
+                    loadState = if (it.timelineItems.isEmpty()) LoadState.Loading else it.loadState,
                 )
+            }
+            try {
+                val page = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                _uiState.update {
+                    it.copy(
+                        timelineItems = page.items.visibleWithSettings(it.settings),
+                        timelineNextUrl = page.nextUrl,
+                        isTimelineRefreshing = false,
+                        loadState = LoadState.Loaded,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isTimelineRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                    )
+                }
             }
         }
     }
 
     fun loadMoreTimeline() {
         val nextUrl = _uiState.value.timelineNextUrl ?: return
-        runLoading {
-            val page = repository.nextPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    timelineItems = it.timelineItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
-                    timelineNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isTimelinePaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isTimelinePaginating = true) }
+            try {
+                val page = repository.nextPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        timelineItems = it.timelineItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
+                        timelineNextUrl = page.nextUrl,
+                        isTimelinePaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isTimelinePaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }
@@ -838,35 +954,70 @@ abstract class IllustiaAuthFeedModule(
     fun loadWatchlistTag(tag: String) {
         val normalized = tag.trim().removePrefix("#")
         if (normalized.isBlank()) return
-        runLoading {
-            val page =
-                repository.search(
-                    word = normalized,
-                    sort = _uiState.value.settings.searchSort,
-                    target = _uiState.value.settings.searchTarget,
-                    duration = _uiState.value.settings.searchDuration,
-                    bookmarkFilter = _uiState.value.settings.searchBookmarkFilter,
-                    includeR18 = _uiState.value.settings.allowR18,
-                )
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    activeWatchlistTag = normalized,
-                    watchlistItems = page.items.visibleWithSettings(it.settings),
-                    watchlistNextUrl = page.nextUrl,
+                    isWatchlistRefreshing = true,
+                    loadState = if (it.watchlistItems.isEmpty() || it.activeWatchlistTag != normalized) LoadState.Loading else it.loadState,
                 )
+            }
+            try {
+                val page =
+                    repository.search(
+                        word = normalized,
+                        sort = _uiState.value.settings.searchSort,
+                        target = _uiState.value.settings.searchTarget,
+                        duration = _uiState.value.settings.searchDuration,
+                        bookmarkFilter = _uiState.value.settings.searchBookmarkFilter,
+                        includeR18 = _uiState.value.settings.allowR18,
+                    )
+                _uiState.update {
+                    it.copy(
+                        activeWatchlistTag = normalized,
+                        watchlistItems = page.items.visibleWithSettings(it.settings),
+                        watchlistNextUrl = page.nextUrl,
+                        isWatchlistRefreshing = false,
+                        loadState = LoadState.Loaded,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isWatchlistRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                    )
+                }
             }
         }
     }
 
     fun loadMoreWatchlist() {
         val nextUrl = _uiState.value.watchlistNextUrl ?: return
-        runLoading {
-            val page = repository.nextPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    watchlistItems = it.watchlistItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
-                    watchlistNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isWatchlistPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isWatchlistPaginating = true) }
+            try {
+                val page = repository.nextPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        watchlistItems = it.watchlistItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
+                        watchlistNextUrl = page.nextUrl,
+                        isWatchlistPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isWatchlistPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }

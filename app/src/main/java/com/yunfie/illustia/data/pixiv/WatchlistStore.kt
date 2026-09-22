@@ -16,6 +16,8 @@ data class WatchlistState(
     val model: WatchlistMangaModel? = null,
     val errorMessage: String? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val isPaginating: Boolean = false,
 )
 
 class WatchlistStore(
@@ -24,8 +26,14 @@ class WatchlistStore(
     private val _state = MutableStateFlow(WatchlistState())
     val state: StateFlow<WatchlistState> = _state.asStateFlow()
 
-    suspend fun fetch() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+    suspend fun fetch(forceRefresh: Boolean = false) {
+        _state.update {
+            it.copy(
+                isRefreshing = forceRefresh,
+                isLoading = if (it.mangaSeries.isEmpty()) true else it.isLoading,
+                errorMessage = null,
+            )
+        }
         try {
             val model = repository.watchlistManga().withThumbnails(repository)
             _state.update {
@@ -33,33 +41,46 @@ class WatchlistStore(
                     mangaSeries = model.series,
                     model = model,
                     isLoading = false,
+                    isRefreshing = false,
                     errorMessage = null,
                 )
             }
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (expectedFailure: Exception) {
-            _state.update { it.copy(isLoading = false, errorMessage = expectedFailure.toString()) }
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = expectedFailure.toString(),
+                )
+            }
         }
     }
 
     suspend fun loadMore() {
         val nextUrl = _state.value.model?.nextUrl ?: return
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+        if (_state.value.isPaginating) return
+        _state.update { it.copy(isPaginating = true, errorMessage = null) }
         try {
             val model = repository.nextWatchlistMangaPage(nextUrl).withThumbnails(repository)
             _state.update {
                 it.copy(
                     mangaSeries = it.mangaSeries + model.series,
                     model = model,
-                    isLoading = false,
+                    isPaginating = false,
                     errorMessage = null,
                 )
             }
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (expectedFailure: Exception) {
-            _state.update { it.copy(isLoading = false, errorMessage = expectedFailure.toString()) }
+            _state.update {
+                it.copy(
+                    isPaginating = false,
+                    errorMessage = expectedFailure.toString(),
+                )
+            }
         }
     }
 }

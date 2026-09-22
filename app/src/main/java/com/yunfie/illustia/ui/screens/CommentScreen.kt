@@ -120,7 +120,7 @@ fun CommentScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             PullToRefresh(
-                isRefreshing = state.isLoading && state.comments.isNotEmpty(),
+                isRefreshing = state.isRefreshing,
                 onRefresh = { scope.launch { store.fetch() } },
                 modifier = Modifier.weight(1f),
             ) {
@@ -145,24 +145,38 @@ fun CommentScreen(
                             onOpenUser = comment.user?.id?.let { userId -> { onOpenUser(userId) } },
                         )
                     }
-                    if (!settings.autoLoadMore && state.nextUrl != null) {
+                    if (settings.autoLoadMore && state.isPaginating) {
+                        item(key = "comment_paginating_footer") {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    } else if (!settings.autoLoadMore && state.nextUrl != null) {
                         item {
                             Button(
                                 onClick = { scope.launch { store.next() } },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = overlayActionButtonColors(),
+                                enabled = !state.isPaginating,
                             ) {
-                                Text(stringResource(R.string.action_load_more))
+                                if (state.isPaginating) {
+                                    LoadingIndicator(modifier = Modifier.size(18.dp))
+                                } else {
+                                    Text(stringResource(R.string.action_load_more))
+                                }
                             }
                         }
                     }
                     if (state.isLoading && state.comments.isEmpty()) {
                         item {
-                            androidx.compose.foundation.layout.Box(
+                            Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                LoadingIndicator()
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
                             }
                         }
                     }
