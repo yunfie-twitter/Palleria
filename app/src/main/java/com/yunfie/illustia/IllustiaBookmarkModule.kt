@@ -6,6 +6,7 @@ import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchWorkType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -13,6 +14,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val TARGET_SEARCH_PAGE_BATCH = 20
+private const val MAX_SEARCH_LOAD_MORE_PAGES = 6
 
 /** Pagination for search/profile collections plus bookmark and recommendation behavior. */
 abstract class IllustiaBookmarkModule(
@@ -32,44 +36,105 @@ abstract class IllustiaBookmarkModule(
             } else {
                 _uiState.value.searchNextUrl
             } ?: return
+        if (_uiState.value.isSearchPaginating) return
         searchJob?.cancel()
-        searchJob =
-            runLoading {
-                if (workType.isNovel) {
-                    val page = repository.nextNovelPage(nextUrl)
-                    _uiState.update {
-                        it.copy(
-                            searchNovelItems = it.searchNovelItems + page.items.visibleWithSettings(it.settings),
-                            searchNovelNextUrl = page.nextUrl,
-                        )
+        val job =
+            viewModelScope.launch(Dispatchers.IO) {
+                _uiState.update { it.copy(isSearchPaginating = true) }
+                try {
+                    if (workType.isNovel) {
+                        loadMoreSearchNovelsInternal(nextUrl)
+                    } else {
+                        loadMoreSearchIllustsInternal(nextUrl, workType)
                     }
-                } else {
-                    val page = repository.nextPage(nextUrl)
+                } catch (expectedFailure: Exception) {
+                    val error = expectedFailure
+                    if (isCancellation(error)) throw error
+                    if (handleAuthExpired(error)) return@launch
                     _uiState.update {
-                        val filteredItems =
-                            page.items
-                                .filter { illust -> workType.acceptsIllustType(illust.type) }
-                                .visibleWithMutedTagsVisible(it.settings)
                         it.copy(
-                            searchItems = it.searchItems.appendIllusts(filteredItems),
-                            searchNextUrl = page.nextUrl,
+                            isSearchPaginating = false,
+                            message = cleanErrorMessage(error),
                         )
                     }
                 }
             }
+        searchJob = job
+        job.invokeOnCompletion {
+            if (searchJob === job) searchJob = null
+        }
+    }
+
+    private suspend fun loadMoreSearchNovelsInternal(nextUrl: String) {
+        val page = repository.nextNovelPage(nextUrl)
+        _uiState.update {
+            it.copy(
+                searchNovelItems = it.searchNovelItems + page.items.visibleWithSettings(it.settings),
+                searchNovelNextUrl = page.nextUrl,
+                isSearchPaginating = false,
+            )
+        }
+    }
+
+    private suspend fun loadMoreSearchIllustsInternal(
+        nextUrl: String,
+        workType: SearchWorkType,
+    ) {
+        var currentNextUrl: String? = nextUrl
+        val collectedItems = mutableListOf<Illust>()
+        val settings = _uiState.value.settings
+        var loopCount = 0
+        val targetBatch = if (workType == SearchWorkType.Artworks) 1 else TARGET_SEARCH_PAGE_BATCH
+        while (
+            collectedItems.size < targetBatch &&
+            currentNextUrl != null &&
+            loopCount < MAX_SEARCH_LOAD_MORE_PAGES
+        ) {
+            loopCount++
+            val page = repository.nextPage(currentNextUrl)
+            val filteredItems =
+                page.items
+                    .filter { illust -> workType.acceptsIllustType(illust.type) }
+                    .visibleWithMutedTagsVisible(settings)
+            collectedItems.addAll(filteredItems)
+            currentNextUrl = page.nextUrl
+            if (workType == SearchWorkType.Artworks) break
+        }
+        _uiState.update {
+            it.copy(
+                searchItems = it.searchItems.appendIllusts(collectedItems),
+                searchNextUrl = currentNextUrl,
+                isSearchPaginating = false,
+            )
+        }
     }
 
     fun loadMoreUserSearch() {
         val nextUrl = _uiState.value.userSearchNextUrl ?: return
-        runLoading {
-            val page = repository.nextUserSearchPage(nextUrl)
-            _uiState.update {
-                val mutedUsers = it.mutedUsersSet
-                val filteredItems = page.items.filterNot { item -> item.id in mutedUsers }
-                it.copy(
-                    userSearchItems = it.userSearchItems.appendUserPreviews(filteredItems),
-                    userSearchNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isUserSearchPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isUserSearchPaginating = true) }
+            try {
+                val page = repository.nextUserSearchPage(nextUrl)
+                _uiState.update {
+                    val mutedUsers = it.mutedUsersSet
+                    val filteredItems = page.items.filterNot { item -> item.id in mutedUsers }
+                    it.copy(
+                        userSearchItems = it.userSearchItems.appendUserPreviews(filteredItems),
+                        userSearchNextUrl = page.nextUrl,
+                        isUserSearchPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isUserSearchPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }

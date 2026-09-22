@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -35,6 +36,7 @@ import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
@@ -80,16 +82,18 @@ internal fun SearchResultGrid(
         }
     PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages)
     val gridState = if (page == 0) viewModel.searchResultGridState else viewModel.userSearchResultGridState
+    val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
+    val nextUrl =
+        when {
+            page != 0 -> state.userSearchNextUrl
+            isNovelResult -> state.searchNovelNextUrl
+            else -> state.searchNextUrl
+        }
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = state.settings.autoLoadMore,
-        nextUrl =
-            when {
-                page != 0 -> state.userSearchNextUrl
-                isNovelResult -> state.searchNovelNextUrl
-                else -> state.searchNextUrl
-            },
-        isLoading = state.loadState == LoadState.Loading,
+        nextUrl = nextUrl,
+        isLoading = isPaginating || state.loadState == LoadState.Loading,
         onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
     )
 
@@ -106,14 +110,34 @@ internal fun SearchResultGrid(
                 gridItems(state.searchNovelItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
                     NovelCard(novel = novel, onClick = { viewModel.openNovel(novel) })
                 }
-                if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
+                if (state.settings.autoLoadMore && isPaginating) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
+                } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreSearch,
+                            enabled = !isPaginating,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_load_more))
+                            if (isPaginating) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(R.string.action_load_more))
+                                }
+                            } else {
+                                Text(stringResource(R.string.action_load_more))
+                            }
                         }
                     }
                 }
@@ -146,14 +170,34 @@ internal fun SearchResultGrid(
                         isMutedByTag = illust.isMutedByTags(state.settings),
                     )
                 }
-                if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
+                if (state.settings.autoLoadMore && isPaginating) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
+                } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreSearch,
+                            enabled = !isPaginating,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_load_more))
+                            if (isPaginating) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(R.string.action_load_more))
+                                }
+                            } else {
+                                Text(stringResource(R.string.action_load_more))
+                            }
                         }
                     }
                 }
@@ -176,6 +220,37 @@ internal fun SearchResultGrid(
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
                 UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
+            if (state.settings.autoLoadMore && isPaginating) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Button(
+                        onClick = viewModel::loadMoreUserSearch,
+                        enabled = !isPaginating,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (isPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
+                    }
+                }
+            }
             if (state.userSearchItems.isEmpty()) {
                 if (state.loadState is LoadState.Error) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
@@ -187,17 +262,6 @@ internal fun SearchResultGrid(
                 } else if (state.loadState != LoadState.Loading) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.search_empty_user))
-                    }
-                }
-            }
-            if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Button(
-                        onClick = viewModel::loadMoreUserSearch,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        colors = overlayActionButtonColors(),
-                    ) {
-                        Text(stringResource(R.string.action_load_more))
                     }
                 }
             }

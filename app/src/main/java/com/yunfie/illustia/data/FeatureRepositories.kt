@@ -64,6 +64,7 @@ internal interface SearchRepository {
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        type: String? = null,
         forceRefresh: Boolean = false,
     ): PageResult<Illust>
 
@@ -210,8 +211,9 @@ private class SearchRepositoryAdapter(
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
+        type: String?,
         forceRefresh: Boolean,
-    ) = facade.search(word, sort, target, duration, bookmarkFilter, includeR18, forceRefresh)
+    ) = facade.search(word, sort, target, duration, bookmarkFilter, includeR18, type, forceRefresh)
 
     override suspend fun searchUsers(
         word: String,

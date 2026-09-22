@@ -6,8 +6,10 @@ import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.HomeFeedKind
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
@@ -17,6 +19,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val TARGET_INITIAL_SEARCH_COUNT = 24
+private const val MAX_SEARCH_PAGES_ACCUMULATION = 6
 
 /** Authentication, native intents, search, feeds, timelines, and managed-data transfer. */
 @Suppress("LargeClass", "TooManyFunctions")
@@ -459,7 +464,7 @@ abstract class IllustiaAuthFeedModule(
         forceRefresh: Boolean,
     ): Job =
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+            _uiState.update { it.copy(loadState = LoadState.Loading, isSearchRefreshing = forceRefresh, message = null) }
             try {
                 kotlinx.coroutines.coroutineScope {
                     val currentSettings = _uiState.value.settings
@@ -474,6 +479,7 @@ abstract class IllustiaAuthFeedModule(
                                     duration = currentSettings.searchDuration,
                                     bookmarkFilter = currentSettings.searchBookmarkFilter,
                                     includeR18 = currentSettings.allowR18,
+                                    type = workType.apiType,
                                     forceRefresh = forceRefresh,
                                 )
                             }
@@ -507,15 +513,44 @@ abstract class IllustiaAuthFeedModule(
                     val novelPage = novelPageDeferred?.await()
                     val users = usersDeferred?.await()
 
+                    val initialFiltered =
+                        page
+                            ?.items
+                            ?.filter { illust -> workType.acceptsIllustType(illust.type) }
+                            ?.visibleWithMutedTagsVisible(currentSettings)
+                            .orEmpty()
+
+                    var searchNextUrl = page?.nextUrl
+                    val collectedItems = initialFiltered.toMutableList()
+
+                    if (workType != SearchWorkType.Artworks && !workType.isNovel &&
+                        collectedItems.size < TARGET_INITIAL_SEARCH_COUNT
+                    ) {
+                        var loopCount = 0
+                        while (
+                            collectedItems.size < TARGET_INITIAL_SEARCH_COUNT &&
+                            searchNextUrl != null &&
+                            loopCount < MAX_SEARCH_PAGES_ACCUMULATION
+                        ) {
+                            loopCount++
+                            try {
+                                val nextPage = repository.nextPage(searchNextUrl)
+                                val nextFiltered =
+                                    nextPage.items
+                                        .filter { illust -> workType.acceptsIllustType(illust.type) }
+                                        .visibleWithMutedTagsVisible(currentSettings)
+                                collectedItems.addAll(nextFiltered)
+                                searchNextUrl = nextPage.nextUrl
+                            } catch (_: Exception) {
+                                break
+                            }
+                        }
+                    }
+
                     _uiState.update {
                         it.copy(
-                            searchItems =
-                                page
-                                    ?.items
-                                    ?.filter { illust -> workType.acceptsIllustType(illust.type) }
-                                    ?.visibleWithMutedTagsVisible(it.settings)
-                                    .orEmpty(),
-                            searchNextUrl = page?.nextUrl,
+                            searchItems = collectedItems,
+                            searchNextUrl = searchNextUrl,
                             searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
                             searchNovelNextUrl = novelPage?.nextUrl,
                             userSearchItems =
@@ -525,6 +560,7 @@ abstract class IllustiaAuthFeedModule(
                                     .orEmpty(),
                             userSearchNextUrl = users?.nextUrl,
                             loadState = LoadState.Loaded,
+                            isSearchRefreshing = false,
                         )
                     }
                 }
@@ -546,12 +582,14 @@ abstract class IllustiaAuthFeedModule(
                             userSearchItems = snapshot.userSearchItems,
                             userSearchNextUrl = snapshot.userSearchNextUrl,
                             loadState = LoadState.Error(loadFailureMessage(it, error)),
+                            isSearchRefreshing = false,
                         )
                     }
                 } else {
                     _uiState.update {
                         it.copy(
                             loadState = LoadState.Error(loadFailureMessage(it, error)),
+                            isSearchRefreshing = false,
                         )
                     }
                 }
@@ -571,6 +609,10 @@ abstract class IllustiaAuthFeedModule(
                 searchNovelNextUrl = null,
                 userSearchItems = emptyList(),
                 userSearchNextUrl = null,
+                isSearchRefreshing = false,
+                isSearchPaginating = false,
+                isUserSearchPaginating = false,
+                loadState = LoadState.Idle,
             )
         }
     }

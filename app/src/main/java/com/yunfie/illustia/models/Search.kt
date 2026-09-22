@@ -39,6 +39,15 @@ enum class SearchWorkType(
     val isNovel: Boolean
         get() = this == Novels
 
+    val apiType: String?
+        get() =
+            when (this) {
+                Illustrations -> "illust"
+                Manga -> "manga"
+                Ugoira -> "ugoira"
+                else -> null
+            }
+
     fun acceptsIllustType(type: String): Boolean =
         when (this) {
             Artworks -> type == "illust" || type == "manga" || type == "ugoira"

@@ -443,9 +443,7 @@ private fun SearchResultsArea(
         }
 
         PullToRefresh(
-            isRefreshing =
-                state.loadState == LoadState.Loading &&
-                    (state.searchItems.isNotEmpty() || state.searchNovelItems.isNotEmpty() || state.userSearchItems.isNotEmpty()),
+            isRefreshing = state.isSearchRefreshing,
             onRefresh = { viewModel.submitSearch(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
