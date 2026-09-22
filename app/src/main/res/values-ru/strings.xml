@@ -1018,4 +1018,19 @@
     <string name="experimental_app_icon_desc">Изменить дизайн значка приложения</string>
     <string name="experimental_app_icon_default">По умолчанию</string>
     <string name="experimental_app_icon_cat">Котик (Cat)</string>
+    <string name="notification_channel_app_updates">Обновления приложения</string>
+    <string name="notification_channel_app_updates_desc">Уведомления о новых версиях и обновлениях</string>
+    <string name="update_notification_new_version_title">Доступна новая версия: %1$s</string>
+    <string name="update_notification_new_version_desc">Нажмите, чтобы просмотреть сведения об обновлении</string>
+    <string name="update_notification_downloaded_title">Обновление готово к установке: %1$s</string>
+    <string name="update_notification_downloaded_desc">Нажмите, чтобы начать установку</string>
+    <string name="update_notification_installed_title">Обновление установлено: %1$s</string>
+    <string name="update_notification_installed_desc">Автоматически установлено через Shizuku</string>
+    <string name="update_section_check_and_download">Проверка и загрузка</string>
+    <string name="update_include_prerelease">Включать тестовые сборки</string>
+    <string name="update_include_prerelease_desc">Получать обновления предварительных и тестовых версий</string>
+    <string name="update_notify_new_version">Уведомлять о новых версиях</string>
+    <string name="update_notify_new_version_desc">Показывать системные уведомления при выходе новой версии</string>
+    <string name="update_auto_download">Автозагрузка обновлений</string>
+    <string name="update_auto_download_desc">Автоматически загружать обновления в фоне (автоустановка при включенном Shizuku)</string>
 </resources>

@@ -13,6 +13,8 @@ import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.updater.AppUpdateNotificationHelper
+import com.yunfie.illustia.updater.AppUpdateScheduler
 import com.yunfie.illustia.widget.IllustWidgetProvider
 import com.yunfie.illustia.widget.RankingWidgetProvider
 import io.sentry.ITransaction
@@ -138,6 +140,8 @@ class IllustiaApplication : Application() {
                 setTelemetryEnabled(settings.sendTelemetry)
             }
             PalleriaAccount.reconcile(appContext, settings.accounts)
+            AppUpdateNotificationHelper.createNotificationChannel(appContext)
+            AppUpdateScheduler.schedulePeriodicCheck(appContext)
             launch {
                 delay(WIDGET_PREVIEW_DELAY_MILLIS)
                 RankingWidgetProvider.publishPreview(appContext)
