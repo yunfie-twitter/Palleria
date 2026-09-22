@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val TARGET_INITIAL_SEARCH_COUNT = 24
-private const val MAX_SEARCH_PAGES_ACCUMULATION = 6
+private const val TARGET_INITIAL_SEARCH_COUNT = 30
+private const val MAX_SEARCH_PAGES_ACCUMULATION = 20
 
 /** Authentication, native intents, search, feeds, timelines, and managed-data transfer. */
 @Suppress("LargeClass", "TooManyFunctions")

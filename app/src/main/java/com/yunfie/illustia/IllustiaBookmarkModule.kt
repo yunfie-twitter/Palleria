@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val TARGET_SEARCH_PAGE_BATCH = 20
-private const val MAX_SEARCH_LOAD_MORE_PAGES = 6
+private const val TARGET_SEARCH_PAGE_BATCH = 24
+private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 
 /** Pagination for search/profile collections plus bookmark and recommendation behavior. */
 abstract class IllustiaBookmarkModule(
