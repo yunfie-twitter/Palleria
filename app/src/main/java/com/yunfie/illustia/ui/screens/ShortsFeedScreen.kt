@@ -127,6 +127,8 @@ fun ShortsFeedScreen(
                         contentDescription = illust.title,
                         contentScale = ContentScale.Fit,
                         crossfade = true,
+                        maxDecodeDimensionPx = 1920,
+                        allowRgb565 = true,
                         modifier = Modifier.fillMaxSize(),
                     )
                     Box(

@@ -19,6 +19,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -200,10 +201,6 @@ fun RankingScreen(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
-                val pageOffset =
-                    (
-                        (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                    ).absoluteValue.coerceIn(0f, 1f)
                 val pageMode = modes[page]
                 val pageItems = uiState.rankingModeItems[pageMode] ?: if (pageMode == mode) items else emptyList()
                 val pageLoadState = uiState.rankingModeLoadStates[pageMode] ?: if (pageMode == mode) loadState else LoadState.Idle
@@ -223,6 +220,10 @@ fun RankingScreen(
                     scrollBehavior = scrollBehavior,
                     modifier =
                         Modifier.graphicsLayer {
+                            val pageOffset =
+                                (
+                                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                                ).absoluteValue.coerceIn(0f, 1f)
                             alpha = 1f - (pageOffset * 0.22f)
                             scaleX = 1f - (pageOffset * 0.035f)
                             scaleY = 1f - (pageOffset * 0.035f)
@@ -287,14 +288,25 @@ private fun RankingGridContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.rankingGridState(mode)
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            items
-                .asSequence()
-                .take(16)
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    val prefetchUrls by remember(items, feedHighQuality, gridState) {
+        derivedStateOf {
+            if (items.isEmpty()) {
+                emptyList()
+            } else {
+                val firstVisible = gridState.firstVisibleItemIndex
+                val visibleCount =
+                    gridState.layoutInfo.visibleItemsInfo.size
+                        .coerceAtLeast(6)
+                val prefetchStart = (firstVisible + visibleCount).coerceAtMost(items.size)
+                val prefetchEnd = (prefetchStart + 12).coerceAtMost(items.size)
+                if (prefetchStart < prefetchEnd) {
+                    items.subList(prefetchStart, prefetchEnd).map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                } else {
+                    emptyList()
+                }
+            }
         }
+    }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
 
     AutoLoadMoreEffect(

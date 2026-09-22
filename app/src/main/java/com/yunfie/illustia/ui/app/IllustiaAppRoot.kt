@@ -723,15 +723,26 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 )
             }
 
-            if (state.activeDownloads > 0) {
-                LinearProgressIndicator(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .height(3.dp),
-                )
-            }
+            GlobalDownloadProgressBar(
+                viewModel = viewModel,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
         }
+    }
+}
+
+@Composable
+private fun GlobalDownloadProgressBar(
+    viewModel: IllustiaViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val activeDownloads by viewModel.activeDownloadsState.collectAsStateWithLifecycle()
+    if (activeDownloads > 0) {
+        LinearProgressIndicator(
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .height(3.dp),
+        )
     }
 }

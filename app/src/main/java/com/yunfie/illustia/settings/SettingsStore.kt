@@ -365,42 +365,75 @@ class SettingsStore internal constructor(
             }
         }
 
+        @Volatile
+        private var cachedPrivacyMode: Boolean? = null
+
+        @Volatile
+        private var cachedAppLanguage: String? = null
+
+        @Volatile
+        private var cachedImageCacheSizeMb: Int? = null
+
         fun readStoredAppLanguage(context: Context): String {
+            cachedAppLanguage?.let { return it }
             val appContext = context.applicationContext
-            return appContext
-                .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-                .getString(KEY_APP_LANGUAGE, "system")
-                ?: "system"
+            val lang =
+                appContext
+                    .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+                    .getString(KEY_APP_LANGUAGE, "system")
+                    ?: "system"
+            cachedAppLanguage = lang
+            return lang
         }
 
         fun isPrivacyModeEnabledSync(context: Context): Boolean {
+            cachedPrivacyMode?.let { return it }
             val appContext = context.applicationContext
             val startupPreferences =
                 appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-            if (startupPreferences.contains(KEY_STARTUP_PRIVACY_MODE)) {
-                return startupPreferences.getBoolean(KEY_STARTUP_PRIVACY_MODE, false)
-            }
-
-            // One-time compatibility path for installs created before the startup mirror.
-            // The dummy launcher alias was already the persisted privacy-mode indicator.
             val enabled =
-                runCatching {
-                    appContext.packageManager.getComponentEnabledSetting(
-                        ComponentName(appContext, DUMMY_LAUNCHER_ALIAS),
-                    ) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                }.getOrDefault(false)
-            startupPreferences
-                .edit()
-                .putBoolean(KEY_STARTUP_PRIVACY_MODE, enabled)
-                .apply()
+                if (startupPreferences.contains(KEY_STARTUP_PRIVACY_MODE)) {
+                    startupPreferences.getBoolean(KEY_STARTUP_PRIVACY_MODE, false)
+                } else {
+                    // One-time compatibility path for installs created before the startup mirror.
+                    val legacyEnabled =
+                        runCatching {
+                            appContext.packageManager.getComponentEnabledSetting(
+                                ComponentName(appContext, DUMMY_LAUNCHER_ALIAS),
+                            ) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                        }.getOrDefault(false)
+                    startupPreferences
+                        .edit()
+                        .putBoolean(KEY_STARTUP_PRIVACY_MODE, legacyEnabled)
+                        .apply()
+                    legacyEnabled
+                }
+            cachedPrivacyMode = enabled
             return enabled
         }
 
-        fun readImageCacheSizeMbSync(context: Context): Int =
-            context.applicationContext
-                .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-                .getInt(KEY_IMAGE_CACHE_SIZE_MB, DEFAULT_IMAGE_CACHE_SIZE_MB)
-                .coerceIn(MIN_IMAGE_CACHE_SIZE_MB, MAX_IMAGE_CACHE_SIZE_MB)
+        fun readImageCacheSizeMbSync(context: Context): Int {
+            cachedImageCacheSizeMb?.let { return it }
+            val size =
+                context.applicationContext
+                    .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+                    .getInt(KEY_IMAGE_CACHE_SIZE_MB, DEFAULT_IMAGE_CACHE_SIZE_MB)
+                    .coerceIn(MIN_IMAGE_CACHE_SIZE_MB, MAX_IMAGE_CACHE_SIZE_MB)
+            cachedImageCacheSizeMb = size
+            return size
+        }
+
+        fun updatePrivacyModeCache(enabled: Boolean) {
+            cachedPrivacyMode = enabled
+        }
+
+        fun updateAppLanguageCache(language: String) {
+            cachedAppLanguage = language
+        }
+
+        fun updateImageCacheSizeMbCache(sizeMb: Int) {
+            cachedImageCacheSizeMb = sizeMb
+        }
 
         private const val KEY_IMAGE_CACHE_SIZE_MB = "startup_image_cache_size_mb"
         private const val KEY_STARTUP_PRIVACY_MODE = "startup_privacy_mode_enabled"
