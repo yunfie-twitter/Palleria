@@ -411,23 +411,32 @@ private fun JsonObject.stringArray(key: String): List<String> =
 
 private fun JsonObject.longArray(key: String): List<Long> = stringArray(key).mapNotNull { it.toLongOrNull()?.takeIf { id -> id > 0L } }
 
+private fun JsonObject.optString(
+    key: String,
+    default: String = "",
+): String = this[key]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }?.ifBlank { default } ?: default
+
+private fun JsonObject.optInt(
+    key: String,
+    default: Int = 0,
+): Int = this[key]?.let { runCatching { it.jsonPrimitive.content.toInt() }.getOrNull() } ?: default
+
+private fun JsonObject.optBoolean(
+    key: String,
+    default: Boolean = false,
+): Boolean = this[key]?.let { runCatching { it.jsonPrimitive.content.toBoolean() }.getOrNull() } ?: default
+
 private fun JsonElement.toHistoryIllust(): Illust? {
     val item = this as? JsonObject ?: return null
-    val id =
-        item["id"]
-            ?.let { runCatching { it.jsonPrimitive.content.toLong() }.getOrNull() }
-            ?.takeIf { it > 0L } ?: return null
-    val imageUrl = item["imageUrl"]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }.orEmpty()
+    val id = item["id"]?.let { runCatching { it.jsonPrimitive.content.toLong() }.getOrNull() }?.takeIf { it > 0L } ?: return null
+    val imageUrl = item.optString("imageUrl")
     return Illust(
         id = id,
-        title = item["title"]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }.orEmpty(),
-        type =
-            item["type"]
-                ?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }
-                ?.ifBlank { "illust" } ?: "illust",
+        title = item.optString("title"),
+        type = item.optString("type", "illust"),
         caption = "",
         artistId = 0L,
-        artistName = item["artistName"]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }.orEmpty(),
+        artistName = item.optString("artistName"),
         artistAvatarUrl = null,
         squareImageUrl = "",
         mediumImageUrl = imageUrl,
@@ -436,16 +445,10 @@ private fun JsonElement.toHistoryIllust(): Illust? {
         mediumImagePages = emptyList(),
         imagePages = emptyList(),
         originalImagePages = emptyList(),
-        tags = emptyList(),
-        pageCount =
-            item["pageCount"]
-                ?.let {
-                    runCatching { it.jsonPrimitive.content.toInt() }.getOrNull()
-                }?.coerceAtLeast(1) ?: 1,
-        isBookmarked =
-            item["isBookmarked"]
-                ?.let {
-                    runCatching { it.jsonPrimitive.content.toBoolean() }.getOrNull()
-                } ?: false,
+        tags = item.stringArray("tags"),
+        pageCount = item.optInt("pageCount", 1).coerceAtLeast(1),
+        isBookmarked = item.optBoolean("isBookmarked", false),
+        xRestrict = item.optInt("xRestrict", 0),
+        illustAiType = item.optInt("illustAiType", 0),
     )
 }

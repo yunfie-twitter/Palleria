@@ -281,9 +281,10 @@ fun WatchlistSeriesScreen(
                     )
                 }
 
+                val columns = adaptiveProfileGridColumns()
                 LazyVerticalGrid(
                     state = gridState,
-                    columns = GridCells.Fixed(adaptiveProfileGridColumns()),
+                    columns = GridCells.Fixed(columns),
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -335,16 +336,12 @@ fun WatchlistSeriesScreen(
                         )
                     }
                     if (settings.autoLoadMore && state.isPaginating) {
-                        item(
-                            key = "watchlist_series_paginating_footer",
-                            span = { GridItemSpan(maxLineSpan) },
+                        items(
+                            count = columns,
+                            key = { "watchlist_series_paginating_skeleton_$it" },
+                            contentType = { "watchlist_series_skeleton" },
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(24.dp))
-                            }
+                            WatchlistSeriesCardSkeleton()
                         }
                     } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {

@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
@@ -64,15 +65,17 @@ internal fun SearchResultGrid(
         remember(page, state.searchItems, state.searchNovelItems, feedHighQuality, isNovelResult) {
             if (page == 0) {
                 if (isNovelResult) {
-                    state.searchNovelItems
+                    val novels = state.searchNovelItems
+                    val targets = if (novels.size <= 24) novels else novels.takeLast(24)
+                    targets
                         .asSequence()
-                        .take(8)
                         .map { it.coverUrl }
                         .toList()
                 } else {
-                    state.searchItems
+                    val illusts = state.searchItems
+                    val targets = if (illusts.size <= 24) illusts else illusts.takeLast(24)
+                    targets
                         .asSequence()
-                        .take(16)
                         .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
                         .toList()
                 }
@@ -80,7 +83,7 @@ internal fun SearchResultGrid(
                 emptyList()
             }
         }
-    PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages)
+    PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages, limit = 24)
     val gridState = if (page == 0) viewModel.searchResultGridState else viewModel.userSearchResultGridState
     val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
     val nextUrl =
@@ -89,18 +92,18 @@ internal fun SearchResultGrid(
             isNovelResult -> state.searchNovelNextUrl
             else -> state.searchNextUrl
         }
+    val illustColumns = adaptiveIllustColumns(state.settings)
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = state.settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = isPaginating || state.loadState == LoadState.Loading,
-        buffer = 6,
         onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
     )
 
     LazyVerticalGrid(
         state = gridState,
-        columns = GridCells.Fixed(if (page == 0 && !isNovelResult) adaptiveIllustColumns(state.settings) else 1),
+        columns = GridCells.Fixed(if (page == 0 && !isNovelResult) illustColumns else 1),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = adaptiveMainNavigationContentPadding()),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -114,13 +117,8 @@ internal fun SearchResultGrid(
                     NovelCard(novel = novel, onClick = onClick)
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
-                    item(key = "search_novel_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            LoadingIndicator(modifier = Modifier.size(24.dp))
-                        }
+                    item(key = "search_novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                        NovelCardSkeleton()
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
                     item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -176,13 +174,12 @@ internal fun SearchResultGrid(
                     )
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
-                    item(key = "search_illust_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            LoadingIndicator(modifier = Modifier.size(24.dp))
-                        }
+                    items(
+                        count = illustColumns,
+                        key = { "search_illust_paginating_skeleton_$it" },
+                        contentType = { "illust_skeleton" },
+                    ) {
+                        IllustCardSkeleton()
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
                     item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

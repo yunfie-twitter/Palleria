@@ -79,6 +79,9 @@ internal suspend fun writeRoomSettingsData(
                                 illust.type,
                                 index,
                                 illust.isBookmarked,
+                                illust.xRestrict,
+                                encodeStringList(illust.tags),
+                                illust.illustAiType,
                             )
                         },
                     )
@@ -134,6 +137,9 @@ internal suspend fun writeSyncedRoomSettingsData(
                         illust.type,
                         index,
                         illust.isBookmarked,
+                        illust.xRestrict,
+                        encodeStringList(illust.tags),
+                        illust.illustAiType,
                     )
                 },
             )

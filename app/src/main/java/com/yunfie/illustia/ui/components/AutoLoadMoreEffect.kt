@@ -12,7 +12,8 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
-private const val DEFAULT_BUFFER = 4
+const val DEFAULT_GRID_BUFFER = 16
+const val DEFAULT_LIST_BUFFER = 8
 
 @Composable
 fun AutoLoadMoreEffect(
@@ -20,7 +21,7 @@ fun AutoLoadMoreEffect(
     enabled: Boolean,
     nextUrl: String?,
     isLoading: Boolean,
-    buffer: Int = DEFAULT_BUFFER,
+    buffer: Int = DEFAULT_GRID_BUFFER,
     onLoadMore: () -> Unit,
 ) {
     val currentEnabled by rememberUpdatedState(enabled)
@@ -53,7 +54,7 @@ fun AutoLoadMoreEffect(
     enabled: Boolean,
     nextUrl: String?,
     isLoading: Boolean,
-    buffer: Int = DEFAULT_BUFFER,
+    buffer: Int = DEFAULT_LIST_BUFFER,
     onLoadMore: () -> Unit,
 ) {
     val currentEnabled by rememberUpdatedState(enabled)

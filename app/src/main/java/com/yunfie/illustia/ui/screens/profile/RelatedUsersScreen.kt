@@ -140,7 +140,7 @@ fun RelatedUsersScreen(
 
                 items(
                     items = uiState.selectedRelatedUsers,
-                    key = { "related_user_" },
+                    key = { "related_user_${it.id}" },
                     contentType = { "related_user" },
                 ) { relatedUser ->
                     UserResultCard(

@@ -245,23 +245,23 @@ private fun RankingGridContent(
     val gridState = viewModel.rankingGridState(mode)
     val prefetchUrls =
         remember(items, feedHighQuality) {
-            items
+            val targets = if (items.size <= 24) items else items.takeLast(24)
+            targets
                 .asSequence()
-                .take(16)
                 .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
                 .toList()
         }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
 
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = isModePaginating || loadState == LoadState.Loading,
-        buffer = 6,
         onLoadMore = { viewModel.loadMoreRanking(mode) },
     )
 
+    val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
         isRefreshing = isModeRefreshing,
         onRefresh = { viewModel.refreshRanking(mode, forceRefresh = true) },
@@ -269,7 +269,7 @@ private fun RankingGridContent(
     ) {
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
+            columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
@@ -309,13 +309,12 @@ private fun RankingGridContent(
             }
 
             if (settings.autoLoadMore && isModePaginating) {
-                item(key = "ranking_${mode}_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
-                    }
+                items(
+                    count = columns,
+                    key = { "ranking_${mode}_paginating_skeleton_$it" },
+                    contentType = { "illust_skeleton" },
+                ) {
+                    IllustCardSkeleton()
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "ranking_${mode}_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

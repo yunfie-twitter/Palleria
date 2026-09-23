@@ -132,19 +132,18 @@ fun NovelScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val prefetchUrls =
         remember(items) {
-            items
+            val targets = if (items.size <= 24) items else items.takeLast(24)
+            targets
                 .asSequence()
-                .take(12)
                 .map { it.coverUrl }
                 .toList()
         }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = state.isNovelPaginating || loadState == LoadState.Loading,
-        buffer = 6,
         onLoadMore = viewModel::loadMoreNovels,
     )
 
@@ -271,13 +270,8 @@ fun NovelScreen(
                 }
 
                 if (settings.autoLoadMore && state.isNovelPaginating && selectedFilter == NovelFilterTab.All) {
-                    item(key = "novel_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            LoadingIndicator(modifier = Modifier.size(24.dp))
-                        }
+                    item(key = "novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                        NovelCardSkeleton()
                     }
                 } else if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
                     item(key = "novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

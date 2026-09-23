@@ -199,14 +199,14 @@ fun IllustSeriesScreen(
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val prefetchUrls =
         remember(state.illusts, feedHighQuality) {
-            state.illusts
+            val targets = if (state.illusts.size <= 24) state.illusts else state.illusts.takeLast(24)
+            targets
                 .asSequence()
-                .take(16)
                 .map { if (feedHighQuality) it.imageUrls.medium.ifBlank { it.imageUrls.large } else it.imageUrls.squareMedium }
                 .toList()
         }
 
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -331,9 +331,10 @@ fun IllustSeriesScreen(
                     )
                 }
 
+                val columns = adaptiveProfileGridColumns()
                 LazyVerticalGrid(
                     state = gridState,
-                    columns = GridCells.Fixed(adaptiveProfileGridColumns()),
+                    columns = GridCells.Fixed(columns),
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -395,16 +396,12 @@ fun IllustSeriesScreen(
                         )
                     }
                     if (settings.autoLoadMore && state.isPaginating) {
-                        item(
-                            key = "series_paginating_footer",
-                            span = { GridItemSpan(maxLineSpan) },
+                        items(
+                            count = columns,
+                            key = { "series_paginating_skeleton_$it" },
+                            contentType = { "illust_skeleton" },
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(24.dp))
-                            }
+                            IllustCardSkeleton()
                         }
                     } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
