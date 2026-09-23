@@ -38,8 +38,8 @@ import com.yunfie.illustia.ui.screens.DataSettingsScreen
 import com.yunfie.illustia.ui.screens.DiscordLoginScreen
 import com.yunfie.illustia.ui.screens.DiscordSettingsScreen
 import com.yunfie.illustia.ui.screens.DownloadQueueScreen
-import com.yunfie.illustia.ui.screens.ExperimentalSettingsScreen
 import com.yunfie.illustia.ui.screens.FavoriteTagsScreen
+import com.yunfie.illustia.ui.screens.FeatureFlagsScreen
 import com.yunfie.illustia.ui.screens.GeneralSettingsScreen
 import com.yunfie.illustia.ui.screens.IllustDetailScreen
 import com.yunfie.illustia.ui.screens.IllustSeriesScreen
@@ -368,8 +368,8 @@ internal fun AppNavHost(
             entry(AppRoute.GeneralSettings) {
                 GeneralSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
-            entry(AppRoute.ExperimentalSettings) {
-                ExperimentalSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+            entry(AppRoute.FeatureFlags) {
+                FeatureFlagsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ImageSettings) {
                 ImageSettingsScreen(

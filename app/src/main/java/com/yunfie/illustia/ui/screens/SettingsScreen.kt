@@ -1,16 +1,21 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -19,7 +24,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -38,7 +42,6 @@ import top.yukonga.miuix.kmp.icon.extended.Contacts
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Photos
-import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -67,6 +70,9 @@ fun SettingsScreen(
         }
     val scrollBehavior = MiuixScrollBehavior()
     val mutedTotal = state.settings.mutedIllusts.size + state.settings.mutedUsers.size + state.settings.mutedTags.size
+
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var lastVersionTapTime by remember { mutableLongStateOf(0L) }
 
     val categories =
         remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal) {
@@ -124,11 +130,6 @@ fun SettingsScreen(
                 ) {
                     viewModel.openUpdateSettings()
                 },
-                SettingsCategory(
-                    context.getString(R.string.experimental_settings_title),
-                    context.getString(R.string.settings_experimental_summary),
-                    MiuixIcons.Settings,
-                ) { viewModel.openExperimentalSettings() },
             )
         }
 
@@ -188,6 +189,24 @@ fun SettingsScreen(
                         "${stringResource(R.string.app_name)} v$appVersion",
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
                         style = MiuixTheme.textStyles.footnote1,
+                        modifier =
+                            Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                val now = System.currentTimeMillis()
+                                if (now - lastVersionTapTime > 3000L) {
+                                    versionTapCount = 1
+                                } else {
+                                    versionTapCount++
+                                }
+                                lastVersionTapTime = now
+                                if (versionTapCount >= 5) {
+                                    versionTapCount = 0
+                                    viewModel.showMessage(context.getString(R.string.feature_flags_unlocked))
+                                    viewModel.openFeatureFlags()
+                                }
+                            },
                     )
                     Text(
                         stringResource(R.string.settings_footer),

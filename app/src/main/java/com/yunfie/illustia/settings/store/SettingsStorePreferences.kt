@@ -189,6 +189,7 @@ internal fun readFromDataStore(
         novelLayoutMode = preferences[NOVEL_LAYOUT_MODE] ?: "paged",
         novelProgress = decodeNovelProgress(preferences[NOVEL_PROGRESS_RECORDS]),
         novelFontFamily = preferences[NOVEL_FONT_FAMILY] ?: "system",
+        featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
 
@@ -338,6 +339,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         pallaSyncEnabled = false,
         pallaSyncServerUrl = "https://api.yunfi.f5.si",
         sendTelemetry = false,
+        featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
 internal fun readCollectionsFromDataStore(
@@ -483,6 +485,7 @@ internal fun writeToDataStore(
     preferences[NOVEL_LAYOUT_MODE] = settings.novelLayoutMode
     preferences[NOVEL_PROGRESS_RECORDS] = encodeNovelProgress(settings.novelProgress)
     preferences[NOVEL_FONT_FAMILY] = settings.novelFontFamily
+    preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 
 internal fun writeSensitiveSettings(

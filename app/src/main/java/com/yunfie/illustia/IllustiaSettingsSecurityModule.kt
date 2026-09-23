@@ -13,6 +13,7 @@ import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.settings.AppHapticMode
+import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.ui.screens.CalculatorEngine
@@ -392,6 +393,21 @@ abstract class IllustiaSettingsSecurityModule(
     fun updateHideAiWorks(value: Boolean) {
         updateSettings { it.copy(hideAiWorks = value) }
         refreshActiveSearch()
+    }
+
+    fun updateFeatureFlag(
+        flag: FeatureFlag,
+        enabled: Boolean,
+    ) {
+        updateSettings {
+            it.copy(featureFlags = it.featureFlags + (flag.key to enabled))
+        }
+    }
+
+    fun resetFeatureFlags() {
+        updateSettings {
+            it.copy(featureFlags = emptyMap())
+        }
     }
 
     fun userProfileGridState(userId: Long): LazyGridState = userProfileGridStates.getOrPut(userId) { LazyGridState() }
