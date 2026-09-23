@@ -21,7 +21,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -295,25 +294,14 @@ private fun RankingGridContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.rankingGridState(mode)
-    val prefetchUrls by remember(items, feedHighQuality, gridState) {
-        derivedStateOf {
-            if (items.isEmpty()) {
-                emptyList()
-            } else {
-                val firstVisible = gridState.firstVisibleItemIndex
-                val visibleCount =
-                    gridState.layoutInfo.visibleItemsInfo.size
-                        .coerceAtLeast(6)
-                val prefetchStart = (firstVisible + visibleCount).coerceAtMost(items.size)
-                val prefetchEnd = (prefetchStart + 12).coerceAtMost(items.size)
-                if (prefetchStart < prefetchEnd) {
-                    items.subList(prefetchStart, prefetchEnd).map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                } else {
-                    emptyList()
-                }
-            }
+    val prefetchUrls =
+        remember(items, feedHighQuality) {
+            items
+                .asSequence()
+                .take(16)
+                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                .toList()
         }
-    }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
 
     AutoLoadMoreEffect(
@@ -344,16 +332,20 @@ private fun RankingGridContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (items.isEmpty() && loadState == com.yunfie.illustia.models.LoadState.Loading) {
-                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
-            } else {
-                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+            if (items.isEmpty() && loadState == LoadState.Loading) {
+                items(6, key = { "ranking_${mode}_skeleton_$it" }, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            }
+
+            if (loadState is LoadState.Error) {
+                item(key = "ranking_${mode}_error_banner", span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState)
+                }
             }
 
             gridItems(items, key = { "ranking_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illustId) } }
-                val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
+                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illust) } }
+                val onClick = remember(illustId) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
