@@ -12,6 +12,8 @@ import java.io.StringWriter
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
+private const val CRASH_FLUSH_TIMEOUT_MILLIS = 2000L
+
 class CrashHandler : Thread.UncaughtExceptionHandler {
     private var defaultHandler: Thread.UncaughtExceptionHandler? = null
     private var context: Context? = null
@@ -27,6 +29,12 @@ class CrashHandler : Thread.UncaughtExceptionHandler {
         ex: Throwable,
     ) {
         if (ex.isCancellationFailure()) return
+        GlitchTipTelemetry.recordException(
+            throwable = ex,
+            tag = "uncaught_crash",
+            extras = mapOf("thread_name" to thread.name),
+        )
+        GlitchTipTelemetry.flush(CRASH_FLUSH_TIMEOUT_MILLIS)
         if (!handleException(ex)) {
             defaultHandler?.uncaughtException(thread, ex)
             return

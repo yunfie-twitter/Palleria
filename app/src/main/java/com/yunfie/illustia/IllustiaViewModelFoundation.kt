@@ -289,20 +289,22 @@ abstract class IllustiaViewModelFoundation(
         kind: HomeFeedKind,
         forceRefresh: Boolean = false,
     ) {
-        val page = repository.loadHome(kind, forceRefresh = forceRefresh)
-        val settings = _uiState.value.settings
-        val items =
-            withContext(Dispatchers.Default) {
-                page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
+        GlitchTipTelemetry.traceAsync("feed.home.load", "feed.home") {
+            val page = repository.loadHome(kind, forceRefresh = forceRefresh)
+            val settings = _uiState.value.settings
+            val items =
+                withContext(Dispatchers.Default) {
+                    page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
+                }
+            _uiState.update {
+                it.copy(
+                    sessionReady = true,
+                    homeItems = items,
+                    homeNextUrl = page.nextUrl,
+                )
             }
-        _uiState.update {
-            it.copy(
-                sessionReady = true,
-                homeItems = items,
-                homeNextUrl = page.nextUrl,
-            )
+            rememberFeedItems(items)
         }
-        rememberFeedItems(items)
     }
 
     protected fun List<Illust>.preferUnseenFeedItems(settings: AppSettings): List<Illust> {
@@ -522,6 +524,7 @@ abstract class IllustiaViewModelFoundation(
                         throw error
                     }
                     if (handleAuthExpired(error)) return@launch
+                    GlitchTipTelemetry.recordException(error, tag = "viewmodel_run_loading")
                     _uiState.update {
                         it.copy(loadState = LoadState.Error(loadFailureMessage(it, error)))
                     }

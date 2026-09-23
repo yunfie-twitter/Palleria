@@ -53,7 +53,7 @@
             android:value="https://e1147e3b03704062af11b966d3770267@app.glitchtip.com/26795" />
         <meta-data
             android:name="io.sentry.traces.sample-rate"
-            android:value="0.01" />
+            android:value="1.0" />
         <!-- Telemetry is opt-in. GlitchTipTelemetry initializes the SDK after consent. -->
         <meta-data
             android:name="io.sentry.auto-init"

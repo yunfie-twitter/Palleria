@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.ConnectivityManager
 import androidx.lifecycle.viewModelScope
 import coil3.SingletonImageLoader
+import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.UgoiraMp4Encoder
@@ -50,21 +51,23 @@ abstract class IllustiaLibraryNavigationModule(
             updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
             _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
             try {
-                val currentIllust = resolveDownloadIllust(filename)
-                val targetName = buildDownloadPath(filename, currentIllust)
-                val checkUrl = resolveCheckUrl(url, currentIllust)
-                val (finalName, clearOld) =
-                    resolveDuplicateTarget(targetName, checkUrl, _uiState.value.settings.duplicateSaveMode)
-                        ?: run {
-                            terminalStatus = DownloadQueueStatus.Skipped
-                            _uiState.update {
-                                it.copy(loadState = LoadState.Loaded, message = str(R.string.msg_save_skipped_duplicate))
+                GlitchTipTelemetry.traceAsync("download.artwork", "download") {
+                    val currentIllust = resolveDownloadIllust(filename)
+                    val targetName = buildDownloadPath(filename, currentIllust)
+                    val checkUrl = resolveCheckUrl(url, currentIllust)
+                    val (finalName, clearOld) =
+                        resolveDuplicateTarget(targetName, checkUrl, _uiState.value.settings.duplicateSaveMode)
+                            ?: run {
+                                terminalStatus = DownloadQueueStatus.Skipped
+                                _uiState.update {
+                                    it.copy(loadState = LoadState.Loaded, message = str(R.string.msg_save_skipped_duplicate))
+                                }
+                                return@traceAsync
                             }
-                            return@launch
-                        }
-                executeGalleryDownload(currentIllust, url, finalName, clearOld)
-                terminalStatus = DownloadQueueStatus.Completed
-                _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                    executeGalleryDownload(currentIllust, url, finalName, clearOld)
+                    terminalStatus = DownloadQueueStatus.Completed
+                    _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) {
@@ -72,6 +75,7 @@ abstract class IllustiaLibraryNavigationModule(
                 }
                 terminalStatus = DownloadQueueStatus.Failed
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "download_image", extras = mapOf("url" to url, "filename" to filename))
                 _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
             } finally {
                 terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
@@ -449,22 +453,24 @@ abstract class IllustiaLibraryNavigationModule(
         cacheDir: File,
         clearOld: Boolean = false,
     ) {
-        val tempGif = File.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
-        try {
-            tempGif.outputStream().buffered().use { output ->
-                AnimatedGifEncoder.encode(frames, output)
+        GlitchTipTelemetry.trace("ugoira.convert.gif", "ugoira.convert") {
+            val tempGif = File.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
+            try {
+                tempGif.outputStream().buffered().use { output ->
+                    AnimatedGifEncoder.encode(frames, output)
+                }
+                tempGif.inputStream().buffered().use { input ->
+                    imageStore.save(
+                        input = input,
+                        name = filename,
+                        sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
+                        responseMimeType = "image/gif",
+                        clearOld = clearOld,
+                    )
+                }
+            } finally {
+                tempGif.delete()
             }
-            tempGif.inputStream().buffered().use { input ->
-                imageStore.save(
-                    input = input,
-                    name = filename,
-                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
-                    responseMimeType = "image/gif",
-                    clearOld = clearOld,
-                )
-            }
-        } finally {
-            tempGif.delete()
         }
     }
 
@@ -475,20 +481,22 @@ abstract class IllustiaLibraryNavigationModule(
         cacheDir: File,
         clearOld: Boolean = false,
     ) {
-        val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
-        try {
-            UgoiraMp4Encoder.encode(frames, tempMp4)
-            tempMp4.inputStream().buffered().use { input ->
-                imageStore.save(
-                    input = input,
-                    name = filename,
-                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
-                    responseMimeType = "video/mp4",
-                    clearOld = clearOld,
-                )
+        GlitchTipTelemetry.trace("ugoira.convert.mp4", "ugoira.convert") {
+            val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
+            try {
+                UgoiraMp4Encoder.encode(frames, tempMp4)
+                tempMp4.inputStream().buffered().use { input ->
+                    imageStore.save(
+                        input = input,
+                        name = filename,
+                        sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
+                        responseMimeType = "video/mp4",
+                        clearOld = clearOld,
+                    )
+                }
+            } finally {
+                tempMp4.delete()
             }
-        } finally {
-            tempMp4.delete()
         }
     }
 

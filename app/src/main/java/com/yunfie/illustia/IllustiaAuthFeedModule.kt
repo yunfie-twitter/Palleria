@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
@@ -156,12 +157,15 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
+                GlitchTipTelemetry.traceAsync("feed.home.refresh", "feed.home") {
+                    loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
+                }
                 _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_home_refresh")
                 _uiState.update {
                     it.copy(
                         isHomeRefreshing = false,
@@ -181,7 +185,10 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.loadNovels(forceRefresh = forceRefresh)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.novels.refresh", "feed.novels") {
+                        repository.loadNovels(forceRefresh = forceRefresh)
+                    }
                 _uiState.update {
                     it.copy(
                         novelItems = page.items.visibleWithSettings(it.settings),
@@ -194,6 +201,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_novels_refresh")
                 _uiState.update {
                     it.copy(
                         isNovelRefreshing = false,
@@ -222,6 +230,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_novels_load_more")
                 _uiState.update {
                     it.copy(
                         isNovelPaginating = false,
@@ -357,7 +366,10 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.loadRanking(mode, forceRefresh = forceRefresh)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.ranking.refresh", "feed.ranking") {
+                        repository.loadRanking(mode, forceRefresh = forceRefresh)
+                    }
                 val settings = _uiState.value.settings
                 val items =
                     withContext(Dispatchers.Default) {
@@ -380,6 +392,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_ranking_refresh")
                 _uiState.update { current ->
                     current.copy(
                         isRankingRefreshing = current.isRankingRefreshing + (mode to false),
@@ -400,7 +413,10 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.nextPage(nextUrl)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.ranking.load_more", "feed.ranking") {
+                        repository.nextPage(nextUrl)
+                    }
                 val settings = _uiState.value.settings
                 _uiState.update { current ->
                     val currentList = current.rankingModeItems[mode] ?: current.rankingItems
@@ -419,6 +435,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_ranking_load_more")
                 _uiState.update { current ->
                     current.copy(
                         isRankingPaginating = current.isRankingPaginating + (mode to false),
@@ -435,7 +452,10 @@ abstract class IllustiaAuthFeedModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isHomePaginating = true) }
             try {
-                val page = repository.nextPage(nextUrl)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.home.load_more", "feed.home") {
+                        repository.nextPage(nextUrl)
+                    }
                 val settings = _uiState.value.settings
                 val additions = page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
                 _uiState.update {
@@ -450,6 +470,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_home_load_more")
                 _uiState.update {
                     it.copy(
                         isHomePaginating = false,
@@ -547,102 +568,104 @@ abstract class IllustiaAuthFeedModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(loadState = LoadState.Loading, isSearchRefreshing = forceRefresh, message = null) }
             try {
-                kotlinx.coroutines.coroutineScope {
-                    val currentSettings = _uiState.value.settings
-                    val workType = currentSettings.searchWorkType
-                    val pageDeferred =
-                        if (!workType.isNovel) {
-                            async {
-                                repository.search(
-                                    word = normalized,
-                                    sort = currentSettings.searchSort,
-                                    target = currentSettings.searchTarget,
-                                    duration = currentSettings.searchDuration,
-                                    bookmarkFilter = currentSettings.searchBookmarkFilter,
-                                    includeR18 = currentSettings.allowR18,
-                                    type = workType.apiType,
-                                    forceRefresh = forceRefresh,
-                                )
+                GlitchTipTelemetry.traceAsync("search.query", "search") {
+                    kotlinx.coroutines.coroutineScope {
+                        val currentSettings = _uiState.value.settings
+                        val workType = currentSettings.searchWorkType
+                        val pageDeferred =
+                            if (!workType.isNovel) {
+                                async {
+                                    repository.search(
+                                        word = normalized,
+                                        sort = currentSettings.searchSort,
+                                        target = currentSettings.searchTarget,
+                                        duration = currentSettings.searchDuration,
+                                        bookmarkFilter = currentSettings.searchBookmarkFilter,
+                                        includeR18 = currentSettings.allowR18,
+                                        type = workType.apiType,
+                                        forceRefresh = forceRefresh,
+                                    )
+                                }
+                            } else {
+                                null
                             }
-                        } else {
-                            null
-                        }
-                    val novelPageDeferred =
-                        if (workType.isNovel) {
-                            async {
-                                repository.searchNovels(
-                                    word = normalized,
-                                    sort = currentSettings.searchSort,
-                                    target = currentSettings.searchTarget,
-                                    duration = currentSettings.searchDuration,
-                                    bookmarkFilter = currentSettings.searchBookmarkFilter,
-                                    includeR18 = currentSettings.allowR18,
-                                    forceRefresh = forceRefresh,
-                                )
+                        val novelPageDeferred =
+                            if (workType.isNovel) {
+                                async {
+                                    repository.searchNovels(
+                                        word = normalized,
+                                        sort = currentSettings.searchSort,
+                                        target = currentSettings.searchTarget,
+                                        duration = currentSettings.searchDuration,
+                                        bookmarkFilter = currentSettings.searchBookmarkFilter,
+                                        includeR18 = currentSettings.allowR18,
+                                        forceRefresh = forceRefresh,
+                                    )
+                                }
+                            } else {
+                                null
                             }
-                        } else {
-                            null
-                        }
-                    val usersDeferred =
-                        if (currentSettings.searchUsersEnabled) {
-                            async { repository.searchUsers(normalized, forceRefresh = forceRefresh) }
-                        } else {
-                            null
-                        }
+                        val usersDeferred =
+                            if (currentSettings.searchUsersEnabled) {
+                                async { repository.searchUsers(normalized, forceRefresh = forceRefresh) }
+                            } else {
+                                null
+                            }
 
-                    val page = pageDeferred?.await()
-                    val novelPage = novelPageDeferred?.await()
-                    val users = usersDeferred?.await()
+                        val page = pageDeferred?.await()
+                        val novelPage = novelPageDeferred?.await()
+                        val users = usersDeferred?.await()
 
-                    val initialFiltered =
-                        page
-                            ?.items
-                            ?.filter { illust -> workType.acceptsIllustType(illust.type) }
-                            ?.visibleWithMutedTagsVisible(currentSettings)
-                            .orEmpty()
+                        val initialFiltered =
+                            page
+                                ?.items
+                                ?.filter { illust -> workType.acceptsIllustType(illust.type) }
+                                ?.visibleWithMutedTagsVisible(currentSettings)
+                                .orEmpty()
 
-                    var searchNextUrl = page?.nextUrl
-                    val collectedItems = initialFiltered.toMutableList()
+                        var searchNextUrl = page?.nextUrl
+                        val collectedItems = initialFiltered.toMutableList()
 
-                    if (workType != SearchWorkType.Artworks && !workType.isNovel &&
-                        collectedItems.size < TARGET_INITIAL_SEARCH_COUNT
-                    ) {
-                        var loopCount = 0
-                        while (
-                            collectedItems.size < TARGET_INITIAL_SEARCH_COUNT &&
-                            searchNextUrl != null &&
-                            loopCount < MAX_SEARCH_PAGES_ACCUMULATION
+                        if (workType != SearchWorkType.Artworks && !workType.isNovel &&
+                            collectedItems.size < TARGET_INITIAL_SEARCH_COUNT
                         ) {
-                            loopCount++
-                            try {
-                                val nextPage = repository.nextPage(searchNextUrl)
-                                val nextFiltered =
-                                    nextPage.items
-                                        .filter { illust -> workType.acceptsIllustType(illust.type) }
-                                        .visibleWithMutedTagsVisible(currentSettings)
-                                collectedItems.addAll(nextFiltered)
-                                searchNextUrl = nextPage.nextUrl
-                            } catch (_: Exception) {
-                                break
+                            var loopCount = 0
+                            while (
+                                collectedItems.size < TARGET_INITIAL_SEARCH_COUNT &&
+                                searchNextUrl != null &&
+                                loopCount < MAX_SEARCH_PAGES_ACCUMULATION
+                            ) {
+                                loopCount++
+                                try {
+                                    val nextPage = repository.nextPage(searchNextUrl)
+                                    val nextFiltered =
+                                        nextPage.items
+                                            .filter { illust -> workType.acceptsIllustType(illust.type) }
+                                            .visibleWithMutedTagsVisible(currentSettings)
+                                    collectedItems.addAll(nextFiltered)
+                                    searchNextUrl = nextPage.nextUrl
+                                } catch (_: Exception) {
+                                    break
+                                }
                             }
                         }
-                    }
 
-                    _uiState.update {
-                        it.copy(
-                            searchItems = collectedItems,
-                            searchNextUrl = searchNextUrl,
-                            searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
-                            searchNovelNextUrl = novelPage?.nextUrl,
-                            userSearchItems =
-                                users
-                                    ?.items
-                                    ?.filterNot { user -> user.id in it.mutedUsersSet }
-                                    .orEmpty(),
-                            userSearchNextUrl = users?.nextUrl,
-                            loadState = LoadState.Loaded,
-                            isSearchRefreshing = false,
-                        )
+                        _uiState.update {
+                            it.copy(
+                                searchItems = collectedItems,
+                                searchNextUrl = searchNextUrl,
+                                searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
+                                searchNovelNextUrl = novelPage?.nextUrl,
+                                userSearchItems =
+                                    users
+                                        ?.items
+                                        ?.filterNot { user -> user.id in it.mutedUsersSet }
+                                        .orEmpty(),
+                                userSearchNextUrl = users?.nextUrl,
+                                loadState = LoadState.Loaded,
+                                isSearchRefreshing = false,
+                            )
+                        }
                     }
                 }
                 searchSnapshot = null
@@ -650,6 +673,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "search_query", extras = mapOf("query" to normalized))
                 val snapshot = searchSnapshot
                 if (snapshot != null) {
                     _uiState.update {
@@ -855,7 +879,10 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.timeline.refresh", "feed.timeline") {
+                        repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                    }
                 _uiState.update {
                     it.copy(
                         timelineItems = page.items.visibleWithSettings(it.settings),
@@ -868,6 +895,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_timeline_refresh")
                 _uiState.update {
                     it.copy(
                         isTimelineRefreshing = false,
@@ -884,7 +912,10 @@ abstract class IllustiaAuthFeedModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isTimelinePaginating = true) }
             try {
-                val page = repository.nextPage(nextUrl)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.timeline.load_more", "feed.timeline") {
+                        repository.nextPage(nextUrl)
+                    }
                 _uiState.update {
                     it.copy(
                         timelineItems = it.timelineItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
@@ -896,6 +927,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_timeline_load_more")
                 _uiState.update {
                     it.copy(
                         isTimelinePaginating = false,
@@ -963,14 +995,16 @@ abstract class IllustiaAuthFeedModule(
             }
             try {
                 val page =
-                    repository.search(
-                        word = normalized,
-                        sort = _uiState.value.settings.searchSort,
-                        target = _uiState.value.settings.searchTarget,
-                        duration = _uiState.value.settings.searchDuration,
-                        bookmarkFilter = _uiState.value.settings.searchBookmarkFilter,
-                        includeR18 = _uiState.value.settings.allowR18,
-                    )
+                    GlitchTipTelemetry.traceAsync("feed.watchlist.refresh", "feed.watchlist") {
+                        repository.search(
+                            word = normalized,
+                            sort = _uiState.value.settings.searchSort,
+                            target = _uiState.value.settings.searchTarget,
+                            duration = _uiState.value.settings.searchDuration,
+                            bookmarkFilter = _uiState.value.settings.searchBookmarkFilter,
+                            includeR18 = _uiState.value.settings.allowR18,
+                        )
+                    }
                 _uiState.update {
                     it.copy(
                         activeWatchlistTag = normalized,
@@ -984,6 +1018,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_watchlist_refresh")
                 _uiState.update {
                     it.copy(
                         isWatchlistRefreshing = false,
@@ -1000,7 +1035,10 @@ abstract class IllustiaAuthFeedModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isWatchlistPaginating = true) }
             try {
-                val page = repository.nextPage(nextUrl)
+                val page =
+                    GlitchTipTelemetry.traceAsync("feed.watchlist.load_more", "feed.watchlist") {
+                        repository.nextPage(nextUrl)
+                    }
                 _uiState.update {
                     it.copy(
                         watchlistItems = it.watchlistItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
@@ -1012,6 +1050,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_watchlist_load_more")
                 _uiState.update {
                     it.copy(
                         isWatchlistPaginating = false,
