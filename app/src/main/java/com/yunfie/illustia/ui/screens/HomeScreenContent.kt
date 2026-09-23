@@ -97,14 +97,25 @@ internal fun FeedTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeFeedGridState
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            items
-                .asSequence()
-                .take(8)
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    val prefetchUrls by remember(items, feedHighQuality, gridState) {
+        derivedStateOf {
+            if (items.isEmpty()) {
+                emptyList()
+            } else {
+                val firstVisible = gridState.firstVisibleItemIndex
+                val visibleCount =
+                    gridState.layoutInfo.visibleItemsInfo.size
+                        .coerceAtLeast(6)
+                val prefetchStart = (firstVisible + visibleCount).coerceAtMost(items.size)
+                val prefetchEnd = (prefetchStart + 12).coerceAtMost(items.size)
+                if (prefetchStart < prefetchEnd) {
+                    items.subList(prefetchStart, prefetchEnd).map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                } else {
+                    emptyList()
+                }
+            }
         }
+    }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
         gridState = gridState,
@@ -217,14 +228,25 @@ internal fun FollowingTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeTimelineGridState
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            items
-                .asSequence()
-                .take(8)
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    val prefetchUrls by remember(items, feedHighQuality, gridState) {
+        derivedStateOf {
+            if (items.isEmpty()) {
+                emptyList()
+            } else {
+                val firstVisible = gridState.firstVisibleItemIndex
+                val visibleCount =
+                    gridState.layoutInfo.visibleItemsInfo.size
+                        .coerceAtLeast(6)
+                val prefetchStart = (firstVisible + visibleCount).coerceAtMost(items.size)
+                val prefetchEnd = (prefetchStart + 12).coerceAtMost(items.size)
+                if (prefetchStart < prefetchEnd) {
+                    items.subList(prefetchStart, prefetchEnd).map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
+                } else {
+                    emptyList()
+                }
+            }
         }
+    }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
     AutoLoadMoreEffect(
         gridState = gridState,

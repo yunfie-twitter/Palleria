@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 36
-        versionCode = 108
-        versionName = "6.2.0-beta.1"
+        versionCode = 109
+        versionName = "6.2.0-beta.2"
     }
 
     signingConfigs {
@@ -87,6 +87,10 @@ android {
             useJUnitPlatform()
         }
     }
+}
+
+composeCompiler {
+    stabilityConfigurationFile = rootProject.file("compose_compiler_config.conf")
 }
 
 ktlint {
@@ -266,7 +270,7 @@ tasks.register("checkQualityBaselineBudgets") {
 }
 
 tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.configureEach {
-    dependsOn(generateUniFfiBindings, buildRustAndroid, buildPallaSyncCoreAndroid)
+    dependsOn(generateUniFfiBindings)
 }
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
