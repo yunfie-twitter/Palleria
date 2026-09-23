@@ -53,6 +53,12 @@ internal data class PallaSyncWireDevice(
 )
 
 @Serializable
+internal data class PallaSyncFetchDevicesResponse(
+    val devices: List<PallaSyncWireDevice> = emptyList(),
+    @SerialName("next_cursor") val nextCursor: String? = null,
+)
+
+@Serializable
 internal data class PallaSyncFetchRecordsResponse(
     val records: List<PallaSyncWireRecord> = emptyList(),
     @SerialName("next_cursor") val nextCursor: String? = null,
