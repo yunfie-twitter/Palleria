@@ -184,6 +184,16 @@ internal sealed interface AppRoute : NavKey {
     data object DiscordLogin : AppRoute
 
     data object WallpaperPlaylistSettings : AppRoute
+
+    data object NavigationSettings : AppRoute
+
+    data object CardCustomizationSettings : AppRoute
+
+    data object DetailSectionSettings : AppRoute
+
+    data object DownloadSettings : AppRoute
+
+    data object NetworkSettings : AppRoute
 }
 
 internal data class DetailEntrySnapshot(

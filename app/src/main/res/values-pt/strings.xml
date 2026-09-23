@@ -246,6 +246,26 @@
 
     <!-- General settings screen -->
     <string name="general_settings_title">Configurações Gerais</string>
+    <string name="navigation_settings_title">Configurações de Navegação</string>
+    <string name="navigation_settings_summary">Estilo, guia inicial e ordem</string>
+    <string name="navigation_section_tabs">Reordenar e visibilidade das guias</string>
+    <string name="card_customization_settings_title">Personalização de Cartões</string>
+    <string name="card_customization_settings_summary">Elementos do cartão, emblemas e ações</string>
+    <string name="card_customization_section_elements">Elementos visíveis</string>
+    <string name="card_customization_section_actions">Ações do cartão</string>
+    <string name="card_customization_section_related">Trabalhos relacionados</string>
+    <string name="detail_section_settings_title">Layout de Detalhes da Obra</string>
+    <string name="detail_section_settings_summary">Ordem das seções na página de detalhes</string>
+    <string name="download_settings_title">Configurações de Download e Armazenamento</string>
+    <string name="download_settings_summary">Local de salvamento, duplicados e formato</string>
+    <string name="download_section_storage">Armazenamento e pastas</string>
+    <string name="download_section_rules">Comportamento de download</string>
+    <string name="network_settings_title">Configurações de Rede e Proxy</string>
+    <string name="network_settings_summary">Modo de rede Pixiv e proxy de imagem</string>
+    <string name="general_section_gestures">Operações e gestos</string>
+    <string name="general_section_feedback">Renderização e feedback tátil</string>
+    <string name="general_section_filter">Filtro de conteúdo</string>
+    <string name="image_section_customization">Personalização de exibição</string>
     <string name="experimental_settings_title">Recursos experimentais</string>
     <string name="experimental_customize_title">Faça da Palleria a sua</string>
     <string name="experimental_customize_summary">Experimente novas maneiras de personalizar a navegação, os cartões de arte, as páginas de detalhes e as cores. Você pode alterar essas configurações a qualquer momento.</string>

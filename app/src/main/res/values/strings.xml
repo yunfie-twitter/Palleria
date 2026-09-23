@@ -250,6 +250,26 @@
 
     <!-- General settings screen -->
     <string name="general_settings_title">一般設定</string>
+    <string name="navigation_settings_title">ナビゲーション設定</string>
+    <string name="navigation_settings_summary">形状・初期タブ・並び順</string>
+    <string name="navigation_section_tabs">タブの並び替え・表示設定</string>
+    <string name="card_customization_settings_title">作品カード表示設定</string>
+    <string name="card_customization_settings_summary">カード要素・バッジ・操作</string>
+    <string name="card_customization_section_elements">表示項目</string>
+    <string name="card_customization_section_actions">カード操作</string>
+    <string name="card_customization_section_related">関連作品</string>
+    <string name="detail_section_settings_title">作品詳細レイアウト設定</string>
+    <string name="detail_section_settings_summary">詳細画面のセクション表示順</string>
+    <string name="download_settings_title">ダウンロード・保存設定</string>
+    <string name="download_settings_summary">保存先・重複動作・うごイラ形式</string>
+    <string name="download_section_storage">保存先とフォルダ構成</string>
+    <string name="download_section_rules">ダウンロード挙動</string>
+    <string name="network_settings_title">ネットワーク・プロキシ設定</string>
+    <string name="network_settings_summary">Pixiv接続方式・画像プロキシ</string>
+    <string name="general_section_gestures">操作とジェスチャー</string>
+    <string name="general_section_feedback">描画とフィードバック</string>
+    <string name="general_section_filter">コンテンツフィルター</string>
+    <string name="image_section_customization">表示カスタマイズ</string>
     <string name="experimental_settings_title">実験的機能</string>
     <string name="experimental_customize_title">Palleriaを自分仕様に</string>
     <string name="experimental_customize_summary">画面構成や作品カード、テーマの新しいカスタマイズを試せます。設定はいつでも元に戻せます。</string>

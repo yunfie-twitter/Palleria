@@ -245,6 +245,26 @@
 
     <!-- General settings screen -->
     <string name="general_settings_title">General Settings</string>
+    <string name="navigation_settings_title">Navigation Settings</string>
+    <string name="navigation_settings_summary">Style, start tab, and tab order</string>
+    <string name="navigation_section_tabs">Reorder &amp; Visibility</string>
+    <string name="card_customization_settings_title">Artwork Card Settings</string>
+    <string name="card_customization_settings_summary">Card elements, badges, and gestures</string>
+    <string name="card_customization_section_elements">Visible Elements</string>
+    <string name="card_customization_section_actions">Card Actions</string>
+    <string name="card_customization_section_related">Related Works</string>
+    <string name="detail_section_settings_title">Artwork Detail Layout</string>
+    <string name="detail_section_settings_summary">Section order on artwork detail page</string>
+    <string name="download_settings_title">Download &amp; Storage Settings</string>
+    <string name="download_settings_summary">Save directory, duplicates, and format</string>
+    <string name="download_section_storage">Storage &amp; Folders</string>
+    <string name="download_section_rules">Download Rules</string>
+    <string name="network_settings_title">Network &amp; Proxy Settings</string>
+    <string name="network_settings_summary">Pixiv network mode and image proxy</string>
+    <string name="general_section_gestures">Operations &amp; Gestures</string>
+    <string name="general_section_feedback">Display &amp; Feedback</string>
+    <string name="general_section_filter">Content Filter</string>
+    <string name="image_section_customization">Display Customization</string>
     <string name="experimental_settings_title">Experimental Features</string>
     <string name="experimental_customize_title">Make Palleria yours</string>
     <string name="experimental_customize_summary">Try new ways to customize navigation, artwork cards, detail pages, and color. You can change these settings at any time.</string>

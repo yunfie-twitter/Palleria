@@ -584,6 +584,26 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.WallpaperPlaylistSettings)
     }
 
+    fun openNavigationSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.NavigationSettings)
+    }
+
+    fun openCardCustomizationSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.CardCustomizationSettings)
+    }
+
+    fun openDetailSectionSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DetailSectionSettings)
+    }
+
+    fun openDownloadSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DownloadSettings)
+    }
+
+    fun openNetworkSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.NetworkSettings)
+    }
+
     fun openPallaSyncDevices() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.PallaSyncDevices)
     }
