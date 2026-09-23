@@ -29,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -89,10 +88,6 @@ fun PredictiveBackGestureHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 ) {
-    if (PlatformCapabilities.supportsPredictiveBack()) {
-        return
-    }
-
     BackHandler(enabled = enabled) {
         onBack()
     }
