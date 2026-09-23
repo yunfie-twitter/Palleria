@@ -23,23 +23,23 @@ class FeatureFlagTest {
             AppSettings(
                 featureFlags =
                     mapOf(
-                        FeatureFlag.AmoledTheme.key to true,
                         FeatureFlag.ShortsFeed.key to true,
-                        FeatureFlag.CardCustomization.key to false,
+                        FeatureFlag.HideHomeNovelButton.key to false,
+                        FeatureFlag.CustomAppIcon.key to true,
                     ),
             )
-        settings.isFeatureEnabled(FeatureFlag.AmoledTheme) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.ShortsFeed) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.CardCustomization) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.CustomAppIcon) shouldBe false
+        settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton) shouldBe false
+        settings.isFeatureEnabled(FeatureFlag.CustomAppIcon) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.ArtworkDynamicTheme) shouldBe false
     }
 
     @Test
     fun `encode and decode feature flags roundtrip correctly`() {
         val flags =
             mapOf(
-                FeatureFlag.AmoledTheme.key to true,
-                FeatureFlag.UserProfileBottomSheet.key to true,
+                FeatureFlag.ShortsFeed.key to true,
+                FeatureFlag.ArtworkDynamicTheme.key to true,
                 FeatureFlag.NavigationCustomization.key to false,
             )
         val json = encodeFeatureFlags(flags)

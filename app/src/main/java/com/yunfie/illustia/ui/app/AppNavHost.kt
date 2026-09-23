@@ -561,12 +561,8 @@ internal fun AppNavHost(
                         hasMore = appState.state.selectedUserNextUrl != null,
                         bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
                         onBack = {
-                            if (appState.state.userPageFromSheet) {
-                                viewModel.collapseUserPageToSheet()
-                            } else {
-                                viewModel.hideUserPage()
-                                onPopRoute()
-                            }
+                            viewModel.hideUserPage()
+                            onPopRoute()
                         },
                         onOpenIllust = { illust ->
                             viewModel.openIllust(illust)
@@ -595,12 +591,8 @@ internal fun AppNavHost(
                     }
                     UserProfileSkeletonScreen(
                         onBack = {
-                            if (appState.state.userPageFromSheet) {
-                                viewModel.collapseUserPageToSheet()
-                            } else {
-                                viewModel.hideUserPage()
-                                onPopRoute()
-                            }
+                            viewModel.hideUserPage()
+                            onPopRoute()
                         },
                     )
                 }
@@ -666,7 +658,6 @@ internal fun AppNavHost(
         selectedCommentTarget = selectedCommentTarget,
         onDismissComments = { onSelectedCommentTargetChange(null) },
         onSearchTag = onSearchTag,
-        onNavigate = onNavigate,
     )
 }
 
