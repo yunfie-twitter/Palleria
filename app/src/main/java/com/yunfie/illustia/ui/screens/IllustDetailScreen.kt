@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -139,6 +140,7 @@ fun IllustDetailScreen(
     skipConfirmOnDetailSave: Boolean,
     detailSectionOrder: List<String>,
     relatedIllustColumnCount: Int = 3,
+    listState: LazyListState = rememberLazyListState(),
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -168,7 +170,7 @@ fun IllustDetailScreen(
             }
         }
     val pullToRefreshState = rememberPullToRefreshState()
-    val detailListState = rememberLazyListState()
+    val detailListState = listState
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
     val isArtworkOffScreen by remember {
         derivedStateOf {
@@ -441,6 +443,7 @@ fun IllustDetailScreen(
                             Row(modifier = Modifier.fillMaxSize()) {
                                 detailHeaderContent(true, Modifier.weight(1.1f).fillMaxHeight())
                                 LazyColumn(
+                                    state = detailListState,
                                     modifier =
                                         Modifier
                                             .weight(0.9f)

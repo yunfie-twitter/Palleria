@@ -128,27 +128,25 @@ internal fun AppOverlayHost(
                         ),
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            viewModel.closeIllustOptions()
-                            viewModel.muteIllust(illust.id)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = overlayActionButtonColors(),
-                    ) {
-                        Text(stringResource(R.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
-                    }
-                    Button(
-                        onClick = {
-                            viewModel.closeIllustOptions()
-                            viewModel.muteUser(illust.artistId)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = overlayActionButtonColors(),
-                    ) {
-                        Text(stringResource(R.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
-                    }
+                Button(
+                    onClick = {
+                        viewModel.closeIllustOptions()
+                        viewModel.muteIllust(illust.id)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = overlayActionButtonColors(),
+                ) {
+                    Text(stringResource(R.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
+                }
+                Button(
+                    onClick = {
+                        viewModel.closeIllustOptions()
+                        viewModel.muteUser(illust.artistId)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = overlayActionButtonColors(),
+                ) {
+                    Text(stringResource(R.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
                 }
             }
         }
