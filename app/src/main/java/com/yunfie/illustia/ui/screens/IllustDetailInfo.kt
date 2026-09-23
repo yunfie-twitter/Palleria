@@ -92,6 +92,10 @@ internal fun IllustDetailInfo(
                             onOpenUserById(event.id)
                         }
 
+                        is NativeIntentEvent.Tag -> {
+                            onSearchTag(event.tag)
+                        }
+
                         else -> {
                             try {
                                 uriHandler.openUri(uri)

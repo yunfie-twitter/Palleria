@@ -504,6 +504,12 @@ abstract class IllustiaAuthFeedModule(
                 true
             }
 
+            is NativeIntentEvent.Tag -> {
+                _uiState.update { it.copy(searchDraft = event.tag) }
+                submitSearch(event.tag)
+                true
+            }
+
             else -> {
                 false
             }
@@ -783,14 +789,19 @@ abstract class IllustiaAuthFeedModule(
         parsedEvent?.let(::dispatchNativeIntentEvent)
     }
 
+    private fun isIntentReadyToDispatch(
+        event: NativeIntentEvent,
+        state: IllustiaUiState,
+    ): Boolean {
+        val requiresAuth = event is NativeIntentEvent.Text || event is NativeIntentEvent.Tag
+        val unauthenticated = requiresAuth && state.settings.refreshToken.isBlank()
+        val locked = state.appLocked || state.privacyLocked
+        return state.settingsLoaded && !locked && !unauthenticated
+    }
+
     private fun dispatchNativeIntentEvent(event: NativeIntentEvent) {
         val state = _uiState.value
-        if (
-            !state.settingsLoaded ||
-            state.appLocked ||
-            state.privacyLocked ||
-            (event is NativeIntentEvent.Text && state.settings.refreshToken.isBlank())
-        ) {
+        if (!isIntentReadyToDispatch(event, state)) {
             pendingNativeIntentEvent = event
             return
         }
@@ -802,6 +813,10 @@ abstract class IllustiaAuthFeedModule(
 
             is NativeIntentEvent.User -> {
                 openUserPage(event.id)
+            }
+
+            is NativeIntentEvent.Tag -> {
+                submitSearch(event.tag)
             }
 
             is NativeIntentEvent.Text -> {
@@ -826,6 +841,7 @@ abstract class IllustiaAuthFeedModule(
         when (val event = NativeIntentRouter.parseText(value)) {
             is NativeIntentEvent.Artwork -> openIllust(event.id)
             is NativeIntentEvent.User -> openUserPage(event.id)
+            is NativeIntentEvent.Tag -> submitSearch(event.tag)
             else -> Unit
         }
     }

@@ -708,6 +708,7 @@ abstract class IllustiaLibraryNavigationModule(
         when (val event = NativeIntentRouter.parseText(targetUrl)) {
             is NativeIntentEvent.Artwork -> openIllust(event.id)
             is NativeIntentEvent.User -> openUserPage(event.id)
+            is NativeIntentEvent.Tag -> submitSearch(event.tag)
             else -> showMessage(str(R.string.notifications_target_unsupported))
         }
     }

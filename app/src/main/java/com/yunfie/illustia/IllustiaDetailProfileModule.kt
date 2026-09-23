@@ -114,16 +114,34 @@ abstract class IllustiaDetailProfileModule(
     }
 
     override fun openIllust(illustId: Long) {
+        if (illustId <= 0L) return
+        _detailNavigationRequests.tryEmit(illustId)
         findIllustById(illustId)?.let { illust ->
             if (illust.artistId > 0L) {
                 openIllust(illust)
                 return
             }
         }
-        runLoading {
-            val illust = repository.illustDetail(illustId)
-            openIllust(illust)
-        }
+        detailExtrasJob?.cancel()
+        detailExtrasJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
+                        val illust = repository.illustDetail(illustId)
+                        withContext(Dispatchers.Main) {
+                            openIllust(illust)
+                        }
+                    }
+                } catch (expectedFailure: Exception) {
+                    val error = expectedFailure
+                    if (isCancellation(error)) throw error
+                    if (handleAuthExpired(error)) return@launch
+                    GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illustId))
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed))) }
+                    }
+                }
+            }
     }
 
     suspend fun getIllustPreviewUrl(illustId: Long): String? =
