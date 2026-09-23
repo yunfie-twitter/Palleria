@@ -162,7 +162,7 @@ internal sealed interface AppRoute : NavKey {
 
     data object PrivacyModeSettings : AppRoute
 
-    data object ExperimentalSettings : AppRoute
+    data object FeatureFlags : AppRoute
 
     data object IllustSeries : AppRoute
 

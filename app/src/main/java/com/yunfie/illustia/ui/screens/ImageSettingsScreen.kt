@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.yunfie.illustia.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -9,15 +11,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -28,6 +29,9 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
 import com.yunfie.illustia.ui.components.DividerLine
@@ -39,7 +43,10 @@ import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -47,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -75,6 +83,10 @@ fun ImageSettingsScreen(
                 saveLocation = imageStore.currentPathLabel()
             }
         }
+
+    val cardCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.CardCustomization)
+    val detailSectionOrderFlag = state.settings.isFeatureEnabled(FeatureFlag.DetailSectionOrder)
+
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -150,9 +162,7 @@ fun ImageSettingsScreen(
                             values = listOf("paged", "vertical"),
                             selected = state.settings.mangaReaderMode,
                             label = {
-                                if (it ==
-                                    "vertical"
-                                ) {
+                                if (it == "vertical") {
                                     stringResource(R.string.viewer_comic_mode)
                                 } else {
                                     stringResource(R.string.viewer_page_mode)
@@ -160,6 +170,96 @@ fun ImageSettingsScreen(
                             },
                             onSelect = viewModel::updateMangaReaderMode,
                         )
+                    }
+                }
+            }
+
+            if (cardCustomizationFlag) {
+                item {
+                    Section(stringResource(R.string.experimental_card_section)) {
+                        ElevatedPanel {
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_title),
+                                checked = state.settings.showCardTitle,
+                                onCheckedChange = viewModel::updateShowCardTitle,
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_artist),
+                                checked = state.settings.showCardArtist,
+                                onCheckedChange = viewModel::updateShowCardArtist,
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_tags),
+                                checked = state.settings.showCardTags,
+                                onCheckedChange = viewModel::updateShowCardTags,
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_rating),
+                                checked = state.settings.showCardBookmarkCount,
+                                onCheckedChange = viewModel::updateShowCardBookmarkCount,
+                                summary = stringResource(R.string.experimental_card_rating_desc),
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_ai),
+                                checked = state.settings.showAiBadge,
+                                onCheckedChange = viewModel::updateShowAiBadge,
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_r18),
+                                checked = state.settings.showR18Badge,
+                                onCheckedChange = viewModel::updateShowR18Badge,
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_bookmark_button),
+                                checked = state.settings.showCardBookmarkButton,
+                                onCheckedChange = viewModel::updateShowCardBookmarkButton,
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_double_tap_to_bookmark),
+                                checked = state.settings.doubleTapToBookmark,
+                                onCheckedChange = viewModel::updateDoubleTapToBookmark,
+                                summary = stringResource(R.string.experimental_card_double_tap_to_bookmark_desc),
+                            )
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.experimental_card_related_r18),
+                                checked = state.settings.showRelatedR18,
+                                onCheckedChange = viewModel::updateShowRelatedR18,
+                                summary = stringResource(R.string.experimental_card_related_r18_desc),
+                                enabled = state.settings.showR18Badge,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (detailSectionOrderFlag) {
+                item {
+                    val orderedSections = normalizeDetailOrder(state.settings.detailSectionOrder)
+                    Section(stringResource(R.string.experimental_detail_section)) {
+                        ElevatedPanel {
+                            orderedSections.forEachIndexed { index, id ->
+                                OrderEditorRow(
+                                    title = detailSectionLabel(id),
+                                    canMoveUp = index > 0,
+                                    canMoveDown = index < orderedSections.lastIndex,
+                                    onMoveUp = {
+                                        viewModel.updateDetailSectionOrder(orderedSections.moved(index, index - 1))
+                                    },
+                                    onMoveDown = {
+                                        viewModel.updateDetailSectionOrder(orderedSections.moved(index, index + 1))
+                                    },
+                                )
+                                if (index < orderedSections.lastIndex) DividerLine()
+                            }
+                        }
                     }
                 }
             }
@@ -335,7 +435,7 @@ fun ImageSettingsScreen(
                             title = stringResource(R.string.image_proxy_title),
                             summary = stringResource(R.string.image_proxy_desc),
                             values = proxyOptions,
-                            selected = if (isCustomActive) currentProxy else currentProxy, // just to trigger recomposition if needed
+                            selected = if (isCustomActive) currentProxy else currentProxy,
                             label = { pixivImageProxyLabel(it) },
                             onSelect = { selectedValue ->
                                 if (selectedValue == "custom") {
@@ -393,6 +493,67 @@ fun ImageSettingsScreen(
         }
     }
 }
+
+@Composable
+private fun OrderEditorRow(
+    title: String,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    BasicComponent(
+        title = title,
+        modifier = Modifier.fillMaxWidth(),
+        endActions = { MoveButtons(canMoveUp, canMoveDown, onMoveUp, onMoveDown) },
+    )
+}
+
+@Composable
+private fun MoveButtons(
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    IconButton(onClick = onMoveUp, enabled = canMoveUp) {
+        Icon(
+            imageVector = MiuixIcons.ChevronForward,
+            contentDescription = stringResource(R.string.action_move_up),
+            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            modifier = Modifier.rotate(-90f),
+        )
+    }
+    IconButton(onClick = onMoveDown, enabled = canMoveDown) {
+        Icon(
+            imageVector = MiuixIcons.ChevronForward,
+            contentDescription = stringResource(R.string.action_move_down),
+            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            modifier = Modifier.rotate(90f),
+        )
+    }
+}
+
+private fun normalizeDetailOrder(order: List<String>): List<String> =
+    order.filter { it in DEFAULT_DETAIL_SECTION_ORDER }.distinct() +
+        DEFAULT_DETAIL_SECTION_ORDER.filterNot { it in order }
+
+private fun <T> List<T>.moved(
+    from: Int,
+    to: Int,
+): List<T> =
+    toMutableList().apply {
+        add(to, removeAt(from))
+    }
+
+@Composable
+private fun detailSectionLabel(id: String): String =
+    when (id) {
+        "tags" -> stringResource(R.string.experimental_detail_tags)
+        "description" -> stringResource(R.string.experimental_detail_description)
+        "related" -> stringResource(R.string.experimental_detail_related)
+        else -> stringResource(R.string.experimental_detail_artist)
+    }
 
 @Composable
 private fun qualityLabel(value: String): String =

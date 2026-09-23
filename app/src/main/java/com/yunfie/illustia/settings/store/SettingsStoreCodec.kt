@@ -251,3 +251,25 @@ internal fun decodeNovelProgress(value: String?): Map<Long, com.yunfie.illustia.
             }.toMap()
     }.getOrDefault(emptyMap())
 }
+
+internal fun encodeFeatureFlags(flags: Map<String, Boolean>): String {
+    val obj = JSONObject()
+    flags.forEach { (key, value) ->
+        obj.put(key, value)
+    }
+    return obj.toString()
+}
+
+internal fun decodeFeatureFlags(value: String?): Map<String, Boolean> {
+    if (value.isNullOrBlank()) return emptyMap()
+    return runCatching {
+        val obj = JSONObject(value)
+        val result = mutableMapOf<String, Boolean>()
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            result[key] = obj.optBoolean(key, false)
+        }
+        result
+    }.getOrDefault(emptyMap())
+}

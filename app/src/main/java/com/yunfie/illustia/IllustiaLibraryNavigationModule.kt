@@ -716,8 +716,8 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.PrivacyModeSettings)
     }
 
-    fun openExperimentalSettings() {
-        _navigationRequests.tryEmit(IllustiaNavigationRequest.ExperimentalSettings)
+    fun openFeatureFlags() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.FeatureFlags)
     }
 
     fun openAccountSwitcher() {
