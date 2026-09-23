@@ -34,10 +34,13 @@ import com.yunfie.illustia.ui.screens.AccountSettingsScreen
 import com.yunfie.illustia.ui.screens.AppDataScreen
 import com.yunfie.illustia.ui.screens.AppLockSetupScreen
 import com.yunfie.illustia.ui.screens.BookmarkSettingsScreen
+import com.yunfie.illustia.ui.screens.CardCustomizationSettingsScreen
 import com.yunfie.illustia.ui.screens.DataSettingsScreen
+import com.yunfie.illustia.ui.screens.DetailSectionSettingsScreen
 import com.yunfie.illustia.ui.screens.DiscordLoginScreen
 import com.yunfie.illustia.ui.screens.DiscordSettingsScreen
 import com.yunfie.illustia.ui.screens.DownloadQueueScreen
+import com.yunfie.illustia.ui.screens.DownloadSettingsScreen
 import com.yunfie.illustia.ui.screens.FavoriteTagsScreen
 import com.yunfie.illustia.ui.screens.FeatureFlagsScreen
 import com.yunfie.illustia.ui.screens.GeneralSettingsScreen
@@ -46,6 +49,8 @@ import com.yunfie.illustia.ui.screens.IllustSeriesScreen
 import com.yunfie.illustia.ui.screens.ImageSettingsScreen
 import com.yunfie.illustia.ui.screens.ImageViewerScreen
 import com.yunfie.illustia.ui.screens.MuteSettingsScreen
+import com.yunfie.illustia.ui.screens.NavigationSettingsScreen
+import com.yunfie.illustia.ui.screens.NetworkSettingsScreen
 import com.yunfie.illustia.ui.screens.NotificationScreen
 import com.yunfie.illustia.ui.screens.NovelReaderScreen
 import com.yunfie.illustia.ui.screens.NovelScreen
@@ -366,7 +371,15 @@ internal fun AppNavHost(
                 SettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.GeneralSettings) {
-                GeneralSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                GeneralSettingsScreen(
+                    state = appState.state,
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                    onOpenNavigationSettings = { onNavigate(AppRoute.NavigationSettings) },
+                )
+            }
+            entry(AppRoute.NavigationSettings) {
+                NavigationSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.FeatureFlags) {
                 FeatureFlagsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
@@ -377,7 +390,23 @@ internal fun AppNavHost(
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenWallpaperPlaylistSettings = { onNavigate(AppRoute.WallpaperPlaylistSettings) },
+                    onOpenCardCustomizationSettings = { onNavigate(AppRoute.CardCustomizationSettings) },
+                    onOpenDetailSectionSettings = { onNavigate(AppRoute.DetailSectionSettings) },
+                    onOpenDownloadSettings = { onNavigate(AppRoute.DownloadSettings) },
+                    onOpenNetworkSettings = { onNavigate(AppRoute.NetworkSettings) },
                 )
+            }
+            entry(AppRoute.CardCustomizationSettings) {
+                CardCustomizationSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+            }
+            entry(AppRoute.DetailSectionSettings) {
+                DetailSectionSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+            }
+            entry(AppRoute.DownloadSettings) {
+                DownloadSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+            }
+            entry(AppRoute.NetworkSettings) {
+                NetworkSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.WallpaperPlaylistSettings) {
                 WallpaperPlaylistSettingsScreen(

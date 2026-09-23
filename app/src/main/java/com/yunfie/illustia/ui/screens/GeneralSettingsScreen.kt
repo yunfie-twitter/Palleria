@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -42,16 +40,11 @@ import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.ThemeSwitchSettingRow
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -59,6 +52,7 @@ fun GeneralSettingsScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
+    onOpenNavigationSettings: () -> Unit = { viewModel.openNavigationSettings() },
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
@@ -76,6 +70,8 @@ fun GeneralSettingsScreen(
     val navigationCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
     val shortsFeedFlag = state.settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
     val hideHomeNovelButtonFlag = state.settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton)
+
+    val hasNavigationSettings = navigationCustomizationFlag || shortsFeedFlag || hideHomeNovelButtonFlag
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -189,6 +185,35 @@ fun GeneralSettingsScreen(
                             dialogButtonString = stringResource(R.string.action_cancel),
                         )
                         DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.general_font),
+                            summary = stringResource(R.string.general_font_desc),
+                            values = appFontOptions(),
+                            selected = state.settings.appFont,
+                            label = { stringResource(appFontLabelRes(it)) },
+                            onSelect = viewModel::updateAppFont,
+                        )
+                    }
+                }
+            }
+
+            if (hasNavigationSettings) {
+                item {
+                    Section(stringResource(R.string.experimental_navigation_section)) {
+                        ElevatedPanel {
+                            SettingLinkRow(
+                                title = stringResource(R.string.navigation_settings_title),
+                                summary = stringResource(R.string.navigation_settings_summary),
+                                onClick = onOpenNavigationSettings,
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Section(stringResource(R.string.general_section_filter)) {
+                    ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.general_r18),
                             checked = state.settings.allowR18,
@@ -204,117 +229,53 @@ fun GeneralSettingsScreen(
                                 summary = stringResource(R.string.general_r18g_desc),
                             )
                         }
-                    }
-                }
-            }
-
-            if (navigationCustomizationFlag || shortsFeedFlag || hideHomeNovelButtonFlag) {
-                item {
-                    val activeIds = activeNavigationIds(state.settings.shortsFeedEnabled)
-                    val orderedIds = normalizeNavigationOrder(state.settings.navigationOrder, activeIds)
-                    val hiddenIds =
-                        state.settings.hiddenNavigationTabs.mapTo(mutableSetOf()) { id ->
-                            when {
-                                state.settings.shortsFeedEnabled && id == "search" -> "shorts"
-                                !state.settings.shortsFeedEnabled && id == "shorts" -> "search"
-                                else -> id
-                            }
-                        }
-                    val visibleIds = orderedIds.filterNot(hiddenIds::contains)
-                    val selectableStartIds = visibleIds.ifEmpty { orderedIds.take(2) }
-                    val activeStartId =
-                        when {
-                            state.settings.shortsFeedEnabled && state.settings.startupScreen == "search" -> "shorts"
-                            !state.settings.shortsFeedEnabled && state.settings.startupScreen == "shorts" -> "search"
-                            else -> state.settings.startupScreen
-                        }
-
-                    Section(stringResource(R.string.experimental_navigation_section)) {
-                        ElevatedPanel {
-                            var hasItemAbove = false
-                            if (navigationCustomizationFlag) {
-                                SettingDropdownRow(
-                                    title = stringResource(R.string.experimental_navigation_style),
-                                    summary = stringResource(R.string.experimental_navigation_style_desc),
-                                    selected = state.settings.navigationStyle,
-                                    values = listOf("standard", "floating", "auto"),
-                                    label = { navigationStyleLabel(it) },
-                                    onSelect = viewModel::updateNavigationStyle,
-                                )
-                                DividerLine()
-                                SettingDropdownRow(
-                                    title = stringResource(R.string.experimental_start_tab),
-                                    summary = stringResource(R.string.experimental_start_tab_desc),
-                                    selected = activeStartId.takeIf { it in selectableStartIds } ?: selectableStartIds.first(),
-                                    values = selectableStartIds,
-                                    label = { navigationLabel(it) },
-                                    onSelect = viewModel::updateStartupScreen,
-                                )
-                                hasItemAbove = true
-                            }
-
-                            if (shortsFeedFlag) {
-                                if (hasItemAbove) DividerLine()
-                                SettingSwitchRow(
-                                    title = stringResource(R.string.general_shorts_feed),
-                                    checked = state.settings.shortsFeedEnabled,
-                                    onCheckedChange = viewModel::updateShortsFeedEnabled,
-                                    summary = stringResource(R.string.general_shorts_feed_desc),
-                                )
-                                if (state.settings.shortsFeedEnabled) {
-                                    DividerLine()
-                                    SettingSwitchRow(
-                                        title = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe),
-                                        checked = state.settings.disableHorizontalSwipeInShortsFeed,
-                                        onCheckedChange = viewModel::updateDisableHorizontalSwipeInShortsFeed,
-                                        summary = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe_desc),
-                                    )
-                                }
-                                hasItemAbove = true
-                            }
-
-                            if (hideHomeNovelButtonFlag) {
-                                if (hasItemAbove) DividerLine()
-                                SettingSwitchRow(
-                                    title = stringResource(R.string.experimental_hide_home_novel_button),
-                                    checked = state.settings.hideHomeNovelButton,
-                                    onCheckedChange = viewModel::updateHideHomeNovelButton,
-                                    summary = stringResource(R.string.experimental_hide_home_novel_button_desc),
-                                )
-                            }
-                        }
-
-                        if (navigationCustomizationFlag) {
-                            ElevatedPanel {
-                                orderedIds.forEachIndexed { index, id ->
-                                    NavigationEditorRow(
-                                        title = navigationLabel(id),
-                                        visible = id !in hiddenIds,
-                                        canMoveUp = index > 0,
-                                        canMoveDown = index < orderedIds.lastIndex,
-                                        canHide = visibleIds.size > 2 && activeStartId != id,
-                                        onMoveUp = {
-                                            viewModel.updateNavigationOrder(orderedIds.moved(index, index - 1))
-                                        },
-                                        onMoveDown = {
-                                            viewModel.updateNavigationOrder(orderedIds.moved(index, index + 1))
-                                        },
-                                        onVisibleChange = { visible ->
-                                            viewModel.updateHiddenNavigationTabs(
-                                                (if (visible) hiddenIds - id else hiddenIds + id).toList(),
-                                            )
-                                        },
-                                    )
-                                    if (index < orderedIds.lastIndex) DividerLine()
-                                }
-                            }
-                        }
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.settings_hide_ai_works),
+                            checked = state.settings.hideAiWorks,
+                            onCheckedChange = viewModel::updateHideAiWorks,
+                            summary = stringResource(R.string.settings_hide_ai_works_desc),
+                        )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.general_section_interaction)) {
+                Section(stringResource(R.string.general_section_gestures)) {
+                    ElevatedPanel {
+                        SettingSwitchRow(
+                            title = stringResource(R.string.general_swipe),
+                            checked = state.settings.swipeToSwitchWorks,
+                            onCheckedChange = viewModel::updateSwipeToSwitchWorks,
+                            summary = stringResource(R.string.general_swipe_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.general_auto_load_more),
+                            checked = state.settings.autoLoadMore,
+                            onCheckedChange = viewModel::updateAutoLoadMore,
+                            summary = stringResource(R.string.general_auto_load_more_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.general_double_back),
+                            checked = state.settings.doubleBackToExit,
+                            onCheckedChange = viewModel::updateDoubleBackToExit,
+                            summary = stringResource(R.string.general_double_back_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.general_clipboard_auto_detect),
+                            checked = state.settings.autoDetectClipboard,
+                            onCheckedChange = viewModel::updateClipboardAutoDetect,
+                            summary = stringResource(R.string.general_clipboard_auto_detect_desc),
+                        )
+                    }
+                }
+            }
+
+            item {
+                Section(stringResource(R.string.general_section_feedback)) {
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.general_smooth),
@@ -357,48 +318,6 @@ fun GeneralSettingsScreen(
                             onCheckedChange = viewModel::updateNotchOptimization,
                             summary = stringResource(R.string.general_notch_desc),
                         )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.general_swipe),
-                            checked = state.settings.swipeToSwitchWorks,
-                            onCheckedChange = viewModel::updateSwipeToSwitchWorks,
-                            summary = stringResource(R.string.general_swipe_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.general_auto_load_more),
-                            checked = state.settings.autoLoadMore,
-                            onCheckedChange = viewModel::updateAutoLoadMore,
-                            summary = stringResource(R.string.general_auto_load_more_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.general_double_back),
-                            checked = state.settings.doubleBackToExit,
-                            onCheckedChange = viewModel::updateDoubleBackToExit,
-                            summary = stringResource(R.string.general_double_back_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.general_clipboard_auto_detect),
-                            checked = state.settings.autoDetectClipboard,
-                            onCheckedChange = viewModel::updateClipboardAutoDetect,
-                            summary = stringResource(R.string.general_clipboard_auto_detect_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.general_secure),
-                            checked = state.settings.secureWindow,
-                            onCheckedChange = viewModel::updateSecureWindow,
-                            summary = stringResource(R.string.general_secure_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
-                            title = stringResource(R.string.settings_hide_ai_works),
-                            checked = state.settings.hideAiWorks,
-                            onCheckedChange = viewModel::updateHideAiWorks,
-                            summary = stringResource(R.string.settings_hide_ai_works_desc),
-                        )
                     }
                 }
             }
@@ -427,20 +346,12 @@ fun GeneralSettingsScreen(
                                     stringResource(R.string.privacy_settings_disabled)
                                 },
                         )
-                    }
-                }
-            }
-
-            item {
-                Section(stringResource(R.string.general_section_font)) {
-                    ElevatedPanel {
-                        SettingDropdownRow(
-                            title = stringResource(R.string.general_font),
-                            summary = stringResource(R.string.general_font_desc),
-                            values = appFontOptions(),
-                            selected = state.settings.appFont,
-                            label = { stringResource(appFontLabelRes(it)) },
-                            onSelect = viewModel::updateAppFont,
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.general_secure),
+                            checked = state.settings.secureWindow,
+                            onCheckedChange = viewModel::updateSecureWindow,
+                            summary = stringResource(R.string.general_secure_desc),
                         )
                     }
                 }
@@ -453,112 +364,12 @@ fun GeneralSettingsScreen(
             summary = stringResource(R.string.general_amoled_warning_desc),
             confirmText = stringResource(R.string.action_enable),
             onConfirm = {
+                showAmoledWarningDialog = false
                 viewModel.updateAmoledMode(true)
+            },
+            onDismiss = {
                 showAmoledWarningDialog = false
             },
-            onDismiss = { showAmoledWarningDialog = false },
         )
     }
 }
-
-@Composable
-private fun NavigationEditorRow(
-    title: String,
-    visible: Boolean,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    canHide: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onVisibleChange: (Boolean) -> Unit,
-) {
-    BasicComponent(
-        title = title,
-        summary = stringResource(if (visible) R.string.experimental_tab_visible else R.string.experimental_tab_hidden),
-        modifier = Modifier.fillMaxWidth(),
-        endActions = {
-            MoveButtons(canMoveUp, canMoveDown, onMoveUp, onMoveDown)
-            Switch(
-                checked = visible,
-                onCheckedChange = onVisibleChange,
-                enabled = visible.not() || canHide,
-            )
-        },
-    )
-}
-
-@Composable
-private fun MoveButtons(
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-) {
-    IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-        Icon(
-            imageVector = MiuixIcons.ChevronForward,
-            contentDescription = stringResource(R.string.action_move_up),
-            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-            modifier = Modifier.rotate(-90f),
-        )
-    }
-    IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-        Icon(
-            imageVector = MiuixIcons.ChevronForward,
-            contentDescription = stringResource(R.string.action_move_down),
-            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-            modifier = Modifier.rotate(90f),
-        )
-    }
-}
-
-private fun activeNavigationIds(shortsEnabled: Boolean): List<String> =
-    listOf(
-        "home",
-        if (shortsEnabled) "shorts" else "search",
-        "bookmarks",
-        "ranking",
-        "more",
-    )
-
-private fun normalizeNavigationOrder(
-    order: List<String>,
-    active: List<String>,
-): List<String> {
-    val translated =
-        order.map { id ->
-            when {
-                "shorts" in active && id == "search" -> "shorts"
-                "search" in active && id == "shorts" -> "search"
-                else -> id
-            }
-        }
-    return translated.filter { it in active }.distinct() + active.filterNot { it in translated }
-}
-
-private fun <T> List<T>.moved(
-    from: Int,
-    to: Int,
-): List<T> =
-    toMutableList().apply {
-        add(to, removeAt(from))
-    }
-
-@Composable
-private fun navigationLabel(id: String): String =
-    when (id) {
-        "ranking" -> stringResource(R.string.nav_ranking)
-        "bookmarks" -> stringResource(R.string.nav_bookmarks_full)
-        "search" -> stringResource(R.string.nav_search)
-        "shorts" -> stringResource(R.string.nav_shorts_feed)
-        "more" -> stringResource(R.string.nav_more)
-        else -> stringResource(R.string.nav_home)
-    }
-
-@Composable
-private fun navigationStyleLabel(value: String): String =
-    when (value) {
-        "floating" -> stringResource(R.string.experimental_navigation_floating)
-        "auto" -> stringResource(R.string.experimental_navigation_auto)
-        else -> stringResource(R.string.experimental_navigation_standard)
-    }

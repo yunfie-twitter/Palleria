@@ -438,6 +438,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.DiscordSettings -> AppRoute.DiscordSettings
                     IllustiaNavigationRequest.DiscordLogin -> AppRoute.DiscordLogin
                     IllustiaNavigationRequest.WallpaperPlaylistSettings -> AppRoute.WallpaperPlaylistSettings
+                    IllustiaNavigationRequest.NavigationSettings -> AppRoute.NavigationSettings
+                    IllustiaNavigationRequest.CardCustomizationSettings -> AppRoute.CardCustomizationSettings
+                    IllustiaNavigationRequest.DetailSectionSettings -> AppRoute.DetailSectionSettings
+                    IllustiaNavigationRequest.DownloadSettings -> AppRoute.DownloadSettings
+                    IllustiaNavigationRequest.NetworkSettings -> AppRoute.NetworkSettings
                     IllustiaNavigationRequest.Novels -> AppRoute.NovelList
                 },
             )
