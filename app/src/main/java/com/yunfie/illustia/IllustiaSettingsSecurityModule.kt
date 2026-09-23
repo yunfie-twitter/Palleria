@@ -1,6 +1,7 @@
 package com.yunfie.illustia
 
 import android.app.Application
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.DummyAppIconSwitcher
@@ -403,6 +404,8 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     fun userProfileGridState(userId: Long): LazyGridState = userProfileGridStates.getOrPut(userId) { LazyGridState() }
+
+    fun illustDetailListState(illustId: Long): LazyListState = illustDetailListStates.getOrPut(illustId) { LazyListState() }
 
     fun rankingGridState(mode: String): LazyGridState = rankingGridStates.getOrPut(mode) { LazyGridState() }
 
