@@ -27,6 +27,8 @@ import java.security.MessageDigest
 import kotlin.coroutines.resume
 
 private const val HTTP_NOT_FOUND = 404
+private const val HTTP_NOT_MODIFIED = 304
+private const val HTTP_FORBIDDEN = 403
 private const val SHIZUKU_MIN_API_VERSION = 11
 private const val SHIZUKU_DEFAULT_REQUEST_CODE = 1001
 private const val THREAD_JOIN_TIMEOUT_MS = 5000L
@@ -42,11 +44,21 @@ class AppUpdaterRepository(
     private val updatesDir: File
         get() = File(context.cacheDir, "updates").apply { if (!exists()) mkdirs() }
 
+    private var activeDownloadCall: okhttp3.Call? = null
+    private val downloadLock = Any()
+
     fun getCurrentVersionName(): String =
         runCatching {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName.orEmpty()
         }.getOrNull()?.ifBlank { "5.5.24" } ?: "5.5.24"
+
+    fun cancelDownload() {
+        synchronized(downloadLock) {
+            activeDownloadCall?.cancel()
+            activeDownloadCall = null
+        }
+    }
 
     suspend fun fetchLatestRelease(includePrerelease: Boolean = false): Result<AppReleaseInfo?> =
         withContext(Dispatchers.IO) {
@@ -57,40 +69,76 @@ class AppUpdaterRepository(
                     } else {
                         "https://api.github.com/repos/yunfie-twitter/Palleria/releases/latest"
                     }
-                val request =
+                val prefs = context.getSharedPreferences("app_updater_cache", Context.MODE_PRIVATE)
+                val etagKey = if (includePrerelease) "etag_prerelease" else "etag_latest"
+                val bodyKey = if (includePrerelease) "body_prerelease" else "body_latest"
+                val cachedEtag = prefs.getString(etagKey, null)
+
+                val requestBuilder =
                     Request
                         .Builder()
                         .url(url)
                         .header("Accept", "application/vnd.github+json")
-                        .build()
+
+                if (!cachedEtag.isNullOrBlank()) {
+                    requestBuilder.header("If-None-Match", cachedEtag)
+                }
+
+                val request = requestBuilder.build()
 
                 httpClient.newCall(request).execute().use { response ->
+                    if (response.code == HTTP_NOT_MODIFIED) {
+                        val cachedBody = prefs.getString(bodyKey, null)
+                        if (!cachedBody.isNullOrBlank()) {
+                            return@runCatching parseResponseBody(cachedBody)
+                        }
+                    }
+
                     if (!response.isSuccessful) {
                         val body = response.body.string()
                         if (response.code == HTTP_NOT_FOUND) return@runCatching null
-                        throw IllegalStateException("GitHub API error (${response.code}): $body")
-                    }
-                    val bodyString = response.body.string()
-                    val element = json.parseToJsonElement(bodyString)
-                    when (element) {
-                        is JsonArray -> {
-                            element.firstNotNullOfOrNull { item ->
-                                val obj = runCatching { item.jsonObject }.getOrNull() ?: return@firstNotNullOfOrNull null
-                                parseReleaseObject(obj)
+                        if (response.code == HTTP_FORBIDDEN) {
+                            val cachedBody = prefs.getString(bodyKey, null)
+                            if (!cachedBody.isNullOrBlank()) {
+                                return@runCatching parseResponseBody(cachedBody)
                             }
                         }
-
-                        is JsonObject -> {
-                            parseReleaseObject(element)
-                        }
-
-                        else -> {
-                            null
-                        }
+                        throw IllegalStateException("GitHub API error (${response.code}): $body")
                     }
+
+                    val bodyString = response.body.string()
+                    val newEtag = response.header("ETag")
+                    prefs
+                        .edit()
+                        .apply {
+                            if (!newEtag.isNullOrBlank()) putString(etagKey, newEtag)
+                            putString(bodyKey, bodyString)
+                        }.apply()
+
+                    parseResponseBody(bodyString)
                 }
             }
         }
+
+    private fun parseResponseBody(bodyString: String): AppReleaseInfo? {
+        val element = json.parseToJsonElement(bodyString)
+        return when (element) {
+            is JsonArray -> {
+                element.firstNotNullOfOrNull { item ->
+                    val obj = runCatching { item.jsonObject }.getOrNull() ?: return@firstNotNullOfOrNull null
+                    parseReleaseObject(obj)
+                }
+            }
+
+            is JsonObject -> {
+                parseReleaseObject(element)
+            }
+
+            else -> {
+                null
+            }
+        }
+    }
 
     private fun parseReleaseObject(jsonObject: JsonObject): AppReleaseInfo? {
         val tagName = jsonObject["tag_name"]?.jsonPrimitive?.content.orEmpty()
@@ -170,56 +218,68 @@ class AppUpdaterRepository(
                 }
 
                 val request = Request.Builder().url(release.apkDownloadUrl).build()
-                httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IllegalStateException("Download failed (${response.code})")
-                    }
-                    val body = response.body
-                    val totalBytes = if (release.apkSize > 0) release.apkSize else body.contentLength()
-                    val tempFile = File(updatesDir, "$sanitizedFileName.tmp")
-                    val messageDigest = MessageDigest.getInstance("SHA-256")
-                    body.byteStream().use { input ->
-                        FileOutputStream(tempFile).use { output ->
-                            val buffer = ByteArray(8192)
-                            var readBytes: Int
-                            var totalRead = 0L
-                            var lastProgressTime = 0L
-                            var lastReportedProgress = -1f
-                            while (input.read(buffer).also { readBytes = it } != -1) {
-                                output.write(buffer, 0, readBytes)
-                                messageDigest.update(buffer, 0, readBytes)
-                                totalRead += readBytes
-                                val progress = if (totalBytes > 0) (totalRead.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
-                                val now = System.currentTimeMillis()
-                                if (
-                                    now - lastProgressTime >= PROGRESS_THROTTLE_INTERVAL_MS ||
-                                    progress - lastReportedProgress >= PROGRESS_THROTTLE_DELTA ||
-                                    totalRead == totalBytes
-                                ) {
-                                    lastProgressTime = now
-                                    lastReportedProgress = progress
-                                    onProgress(progress, totalRead, totalBytes)
+                val call = httpClient.newCall(request)
+                synchronized(downloadLock) {
+                    activeDownloadCall = call
+                }
+                try {
+                    call.execute().use { response ->
+                        if (!response.isSuccessful) {
+                            throw IllegalStateException("Download failed (${response.code})")
+                        }
+                        val body = response.body
+                        val totalBytes = if (release.apkSize > 0) release.apkSize else body.contentLength()
+                        val tempFile = File(updatesDir, "$sanitizedFileName.tmp")
+                        val messageDigest = MessageDigest.getInstance("SHA-256")
+                        body.byteStream().use { input ->
+                            FileOutputStream(tempFile).use { output ->
+                                val buffer = ByteArray(8192)
+                                var readBytes: Int
+                                var totalRead = 0L
+                                var lastProgressTime = 0L
+                                var lastReportedProgress = -1f
+                                while (input.read(buffer).also { readBytes = it } != -1) {
+                                    output.write(buffer, 0, readBytes)
+                                    messageDigest.update(buffer, 0, readBytes)
+                                    totalRead += readBytes
+                                    val progress = if (totalBytes > 0) (totalRead.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
+                                    val now = System.currentTimeMillis()
+                                    if (
+                                        now - lastProgressTime >= PROGRESS_THROTTLE_INTERVAL_MS ||
+                                        progress - lastReportedProgress >= PROGRESS_THROTTLE_DELTA ||
+                                        totalRead == totalBytes
+                                    ) {
+                                        lastProgressTime = now
+                                        lastReportedProgress = progress
+                                        onProgress(progress, totalRead, totalBytes)
+                                    }
                                 }
+                                output.flush()
                             }
-                            output.flush()
+                        }
+
+                        val computedSha256 = messageDigest.digest().joinToString("") { "%02x".format(it) }
+                        val expectedSha256 = release.sha256Checksum?.trim()?.lowercase()
+                        if (!expectedSha256.isNullOrBlank() && !computedSha256.equals(expectedSha256, ignoreCase = true)) {
+                            if (tempFile.exists()) tempFile.delete()
+                            throw SecurityException(
+                                "APK checksum verification failed. Expected: $expectedSha256, Calculated: $computedSha256",
+                            )
+                        }
+
+                        if (targetFile.exists()) targetFile.delete()
+                        if (!tempFile.renameTo(targetFile)) {
+                            tempFile.copyTo(targetFile, overwrite = true)
+                            tempFile.delete()
+                        }
+                        targetFile
+                    }
+                } finally {
+                    synchronized(downloadLock) {
+                        if (activeDownloadCall === call) {
+                            activeDownloadCall = null
                         }
                     }
-
-                    val computedSha256 = messageDigest.digest().joinToString("") { "%02x".format(it) }
-                    val expectedSha256 = release.sha256Checksum?.trim()?.lowercase()
-                    if (!expectedSha256.isNullOrBlank() && !computedSha256.equals(expectedSha256, ignoreCase = true)) {
-                        if (tempFile.exists()) tempFile.delete()
-                        throw SecurityException(
-                            "APK checksum verification failed. Expected: $expectedSha256, Calculated: $computedSha256",
-                        )
-                    }
-
-                    if (targetFile.exists()) targetFile.delete()
-                    if (!tempFile.renameTo(targetFile)) {
-                        tempFile.copyTo(targetFile, overwrite = true)
-                        tempFile.delete()
-                    }
-                    targetFile
                 }
             }
         }
@@ -357,9 +417,10 @@ class AppUpdaterRepository(
                             }
 
                         if (hasPermission) {
-                            installViaShizuku(apkFile)
-                        } else if (isShizukuAvailable()) {
-                            throw IllegalStateException("Shizuku permission was not granted")
+                            val shizukuSuccess = runCatching { installViaShizuku(apkFile) }.isSuccess
+                            if (!shizukuSuccess) {
+                                installViaStandardIntent(apkFile)
+                            }
                         } else {
                             installViaStandardIntent(apkFile)
                         }

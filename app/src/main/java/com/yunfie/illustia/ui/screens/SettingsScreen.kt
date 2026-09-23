@@ -44,6 +44,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
+import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private data class SettingsCategory(
@@ -74,63 +75,88 @@ fun SettingsScreen(
     var versionTapCount by remember { mutableIntStateOf(0) }
     var lastVersionTapTime by remember { mutableLongStateOf(0L) }
 
+    val hasActiveFeatureFlags = state.settings.featureFlags.any { it.value }
+
     val categories =
-        remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal) {
-            listOf(
-                SettingsCategory(
-                    context.getString(R.string.settings_general),
-                    context.getString(R.string.settings_general_summary),
-                    MiuixIcons.More,
-                ) {
-                    viewModel.openGeneralSettings()
-                },
-                SettingsCategory(
-                    context.getString(R.string.settings_image),
-                    context.getString(R.string.settings_image_summary),
-                    MiuixIcons.Photos,
-                ) {
-                    viewModel.openImageSettings()
-                },
-                SettingsCategory(
-                    context.getString(R.string.settings_bookmark),
-                    context.getString(R.string.settings_bookmark_summary),
-                    MiuixIcons.FavoritesFill,
-                ) {
-                    viewModel.openBookmarkSettings()
-                },
-                SettingsCategory(
-                    context.getString(R.string.settings_account),
-                    if (state.settings.refreshToken.isNotBlank()) {
-                        context.getString(
-                            R.string.settings_logged_in,
-                        )
-                    } else {
-                        context.getString(R.string.settings_not_logged_in)
+        remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal, hasActiveFeatureFlags) {
+            buildList {
+                add(
+                    SettingsCategory(
+                        context.getString(R.string.settings_general),
+                        context.getString(R.string.settings_general_summary),
+                        MiuixIcons.More,
+                    ) {
+                        viewModel.openGeneralSettings()
                     },
-                    MiuixIcons.Contacts,
-                ) {
-                    viewModel.openAccountSettings()
-                },
-                SettingsCategory(
-                    context.getString(R.string.settings_data),
-                    "${context.getString(
-                        R.string.more_view_history,
-                    )} ${context.getString(
-                        R.string.data_items_count,
-                        state.settings.viewHistory.size,
-                    )} / ${context.getString(R.string.more_mute_settings)} ${context.getString(R.string.data_items_count, mutedTotal)}",
-                    MiuixIcons.Timer,
-                ) {
-                    viewModel.openDataSettings()
-                },
-                SettingsCategory(
-                    context.getString(R.string.update_settings_title),
-                    context.getString(R.string.update_settings_summary),
-                    MiuixIcons.TopDownloads,
-                ) {
-                    viewModel.openUpdateSettings()
-                },
-            )
+                )
+                add(
+                    SettingsCategory(
+                        context.getString(R.string.settings_image),
+                        context.getString(R.string.settings_image_summary),
+                        MiuixIcons.Photos,
+                    ) {
+                        viewModel.openImageSettings()
+                    },
+                )
+                add(
+                    SettingsCategory(
+                        context.getString(R.string.settings_bookmark),
+                        context.getString(R.string.settings_bookmark_summary),
+                        MiuixIcons.FavoritesFill,
+                    ) {
+                        viewModel.openBookmarkSettings()
+                    },
+                )
+                add(
+                    SettingsCategory(
+                        context.getString(R.string.settings_account),
+                        if (state.settings.refreshToken.isNotBlank()) {
+                            context.getString(
+                                R.string.settings_logged_in,
+                            )
+                        } else {
+                            context.getString(R.string.settings_not_logged_in)
+                        },
+                        MiuixIcons.Contacts,
+                    ) {
+                        viewModel.openAccountSettings()
+                    },
+                )
+                add(
+                    SettingsCategory(
+                        context.getString(R.string.settings_data),
+                        "${context.getString(
+                            R.string.more_view_history,
+                        )} ${context.getString(
+                            R.string.data_items_count,
+                            state.settings.viewHistory.size,
+                        )} / ${context.getString(R.string.more_mute_settings)} ${context.getString(R.string.data_items_count, mutedTotal)}",
+                        MiuixIcons.Timer,
+                    ) {
+                        viewModel.openDataSettings()
+                    },
+                )
+                add(
+                    SettingsCategory(
+                        context.getString(R.string.update_settings_title),
+                        context.getString(R.string.update_settings_summary),
+                        MiuixIcons.TopDownloads,
+                    ) {
+                        viewModel.openUpdateSettings()
+                    },
+                )
+                if (hasActiveFeatureFlags) {
+                    add(
+                        SettingsCategory(
+                            context.getString(R.string.feature_flags_title),
+                            context.getString(R.string.feature_flags_summary),
+                            MiuixIcons.Tune,
+                        ) {
+                            viewModel.openFeatureFlags()
+                        },
+                    )
+                }
+            }
         }
 
     Scaffold(

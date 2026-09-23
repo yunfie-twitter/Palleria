@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 36
-        versionCode = 112
-        versionName = "6.2.0-beta.5"
+        versionCode = 113
+        versionName = "6.2.0-beta.6"
     }
 
     signingConfigs {
@@ -368,6 +368,7 @@ dependencies {
     implementation 'com.github.woheller69:FreeDroidWarn:V1.14'
     implementation libs.glance.appwidget
     implementation libs.glance.material3
+    implementation libs.work.runtime.ktx
 
     // Test dependencies
     testImplementation libs.kotest.runner

@@ -22,6 +22,8 @@ object AppUpdateNotificationHelper {
     private const val NOTIFICATION_ID_NEW_VERSION = 8101
     private const val NOTIFICATION_ID_DOWNLOADED = 8102
     private const val NOTIFICATION_ID_INSTALLED = 8103
+    private const val NOTIFICATION_ID_PROGRESS = 8104
+    private const val NOTIFICATION_ID_FAILED = 8105
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -164,6 +166,85 @@ object AppUpdateNotificationHelper {
 
         runCatching {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_INSTALLED, notification)
+        }
+    }
+
+    fun showDownloadProgress(
+        context: Context,
+        release: AppReleaseInfo,
+        progress: Int,
+        downloadedBytes: Long,
+        totalBytes: Long,
+        cancelPendingIntent: PendingIntent? = null,
+    ) {
+        if (!hasNotificationPermission(context)) return
+        createNotificationChannel(context)
+
+        val downloadedMb = String.format(java.util.Locale.US, "%.1f", downloadedBytes / (1024f * 1024f))
+        val totalMb = String.format(java.util.Locale.US, "%.1f", totalBytes / (1024f * 1024f))
+        val text = "$downloadedMb MB / $totalMb MB ($progress%)"
+
+        val builder =
+            NotificationCompat
+                .Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.update_download_progress_title, release.versionName))
+                .setContentText(text)
+                .setProgress(100, progress, false)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        if (cancelPendingIntent != null) {
+            builder.addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                context.getString(R.string.update_cancel_download),
+                cancelPendingIntent,
+            )
+        }
+
+        runCatching {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_PROGRESS, builder.build())
+        }
+    }
+
+    fun cancelDownloadProgress(context: Context) {
+        runCatching {
+            NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID_PROGRESS)
+        }
+    }
+
+    fun showDownloadFailed(
+        context: Context,
+        release: AppReleaseInfo,
+        retryPendingIntent: PendingIntent? = null,
+    ) {
+        cancelDownloadProgress(context)
+        if (!hasNotificationPermission(context)) return
+        createNotificationChannel(context)
+
+        val title = context.getString(R.string.update_download_failed)
+        val text = release.versionName
+
+        val builder =
+            NotificationCompat
+                .Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+
+        if (retryPendingIntent != null) {
+            builder.addAction(
+                android.R.drawable.ic_menu_rotate,
+                context.getString(R.string.update_retry_download),
+                retryPendingIntent,
+            )
+        }
+
+        runCatching {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_FAILED, builder.build())
         }
     }
 }

@@ -910,4 +910,10 @@
     <string name="flag_artwork_dynamic_theme_desc">在常规设置中启用根据当前作品色彩自动调整主题强调色的选项</string>
     <string name="flag_detail_section_order_title">详情画面区块顺序</string>
     <string name="flag_detail_section_order_desc">在图片与显示设置中启用作品详情画面区块顺序调整项</string>
+    <string name="update_auto_download_wifi_only">仅在 Wi-Fi 下自动获取</string>
+    <string name="update_auto_download_wifi_only_desc">使用移动数据时不在后台自动下载更新</string>
+    <string name="update_download_progress_title">正在下载更新: %1$s</string>
+    <string name="update_cancel_download">取消下载</string>
+    <string name="update_retry_download">重试</string>
+    <string name="post_update_notice">已更新至 Palleria %1$s</string>
 </resources>

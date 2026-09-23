@@ -891,9 +891,18 @@ internal class PalleriaSyncCoordinator(
                     response.body?.string()
                         ?: return@execute PallaSyncHttpResult.ProtocolError("Device response body was empty")
                 val array =
-                    runCatching { json.parseToJsonElement(body).jsonArray }.getOrElse {
-                        return@execute PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
-                    }
+                    runCatching {
+                        val parsed = json.parseToJsonElement(body)
+                        if (parsed is JsonObject && parsed.containsKey("devices")) {
+                            parsed["devices"]?.jsonArray
+                        } else {
+                            parsed.jsonArray
+                        }
+                    }.getOrNull()
+                        ?: return@execute PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
+                if (array == null) {
+                    return@execute PallaSyncHttpResult.ProtocolError("Device response devices field was missing")
+                }
                 PallaSyncHttpResult.Success(array.map { it.toString() })
             }
         val rawDevices =
