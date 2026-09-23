@@ -313,18 +313,40 @@ abstract class IllustiaViewModelFoundation(
         return sortedBy { it.id in seen }
     }
 
+    protected fun queueSettingsPersistence(
+        next: AppSettings,
+        previous: AppSettings,
+    ) {
+        if (next != previous) {
+            settingsPersistenceRequests.trySend(
+                SettingsPersistenceRequest(
+                    settings = next,
+                    baseSettings = previous,
+                    notifyLiveWallpaper = false,
+                ),
+            )
+        }
+    }
+
     protected fun rememberFeedItems(items: List<Illust>) {
         if (items.isEmpty()) return
         warmSmartCache(items)
         val shownIds = items.map { it.id }
-        updateSettings { settings ->
-            // LinkedHashSet で挿入順を保持しながら O(N) で重複排除する。
-            val merged = LinkedHashSet<Long>(shownIds.size + settings.seenFeedIllusts.size)
+        synchronized(settingsUpdateLock) {
+            val previous = _uiState.value.settings
+            val merged = LinkedHashSet<Long>(shownIds.size + previous.seenFeedIllusts.size)
             merged.addAll(shownIds)
-            merged.addAll(settings.seenFeedIllusts)
-            settings.copy(
-                seenFeedIllusts = merged.take(MAX_SEEN_FEED_ILLUSTS),
-            )
+            merged.addAll(previous.seenFeedIllusts)
+            val next =
+                previous.copy(
+                    seenFeedIllusts = merged.take(MAX_SEEN_FEED_ILLUSTS),
+                )
+            if (next != previous) {
+                _uiState.update { state ->
+                    if (state.settings == previous) state.copy(settings = next) else state
+                }
+                queueSettingsPersistence(next, previous)
+            }
         }
     }
 

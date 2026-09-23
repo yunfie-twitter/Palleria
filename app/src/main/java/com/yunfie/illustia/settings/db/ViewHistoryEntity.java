@@ -19,6 +19,10 @@ public class ViewHistoryEntity {
     public String type;
     public int position;
     public boolean isBookmarked;
+    public int xRestrict;
+    @NonNull
+    public String tagsJson;
+    public int illustAiType;
 
     public ViewHistoryEntity(
             long id,
@@ -28,7 +32,10 @@ public class ViewHistoryEntity {
             int pageCount,
             @NonNull String type,
             int position,
-            boolean isBookmarked
+            boolean isBookmarked,
+            int xRestrict,
+            @NonNull String tagsJson,
+            int illustAiType
     ) {
         this.id = id;
         this.title = title;
@@ -38,5 +45,8 @@ public class ViewHistoryEntity {
         this.type = type;
         this.position = position;
         this.isBookmarked = isBookmarked;
+        this.xRestrict = xRestrict;
+        this.tagsJson = tagsJson;
+        this.illustAiType = illustAiType;
     }
 }

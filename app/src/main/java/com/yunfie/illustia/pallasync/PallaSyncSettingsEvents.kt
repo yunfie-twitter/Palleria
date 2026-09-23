@@ -220,5 +220,13 @@ private fun viewedIllustEvent(
                 put("pageCount", illust.pageCount)
                 put("type", illust.type)
                 put("isBookmarked", illust.isBookmarked)
+                put("xRestrict", illust.xRestrict)
+                put("illustAiType", illust.illustAiType)
+                put(
+                    "tags",
+                    kotlinx.serialization.json.buildJsonArray {
+                        illust.tags.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                    },
+                )
             },
     )

@@ -102,7 +102,6 @@ internal fun BookmarkWatchlistTab(
             enabled = settings.autoLoadMore,
             nextUrl = watchlistState.model?.nextUrl,
             isLoading = watchlistState.isPaginating || watchlistState.isLoading,
-            buffer = 6,
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
         LazyVerticalGrid(
@@ -370,6 +369,7 @@ internal fun BookmarkMainTab(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkMainGridState
+    val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
         isRefreshing = state.isBookmarkRefreshing,
         onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
@@ -380,12 +380,11 @@ internal fun BookmarkMainTab(
             enabled = settings.autoLoadMore,
             nextUrl = chrome.bookmarkNextUrl,
             isLoading = state.isBookmarkPaginating || loadState == LoadState.Loading,
-            buffer = 6,
             onLoadMore = viewModel::loadMoreBookmarks,
         )
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
+            columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -416,13 +415,12 @@ internal fun BookmarkMainTab(
                 )
             }
             if (settings.autoLoadMore && state.isBookmarkPaginating) {
-                item(key = "bookmark_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
-                    }
+                items(
+                    count = columns,
+                    key = { "bookmark_paginating_skeleton_$it" },
+                    contentType = { "illust_skeleton" },
+                ) {
+                    IllustCardSkeleton()
                 }
             } else if (!settings.autoLoadMore && chrome.bookmarkNextUrl != null) {
                 item(key = "bookmark_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -463,6 +461,7 @@ internal fun BookmarkTimelineTab(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkTimelineGridState
+    val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
         isRefreshing = state.isTimelineRefreshing,
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
@@ -473,12 +472,11 @@ internal fun BookmarkTimelineTab(
             enabled = settings.autoLoadMore,
             nextUrl = chrome.timelineNextUrl,
             isLoading = state.isTimelinePaginating || loadState == LoadState.Loading,
-            buffer = 6,
             onLoadMore = viewModel::loadMoreTimeline,
         )
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(adaptiveIllustColumns(settings)),
+            columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -509,13 +507,12 @@ internal fun BookmarkTimelineTab(
                 )
             }
             if (settings.autoLoadMore && state.isTimelinePaginating) {
-                item(key = "timeline_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
-                    }
+                items(
+                    count = columns,
+                    key = { "timeline_paginating_skeleton_$it" },
+                    contentType = { "illust_skeleton" },
+                ) {
+                    IllustCardSkeleton()
                 }
             } else if (!settings.autoLoadMore && chrome.timelineNextUrl != null) {
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

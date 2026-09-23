@@ -153,20 +153,26 @@ internal fun illustFromEntity(entity: ViewHistoryEntity): Illust =
         mediumImagePages = emptyList(),
         imagePages = emptyList(),
         originalImagePages = emptyList(),
-        tags = emptyList(),
+        tags = decodeStringList(entity.tagsJson),
         pageCount = entity.pageCount,
         isBookmarked = entity.isBookmarked,
+        xRestrict = entity.xRestrict,
+        illustAiType = entity.illustAiType,
     )
 
 internal fun historyIllustFromJson(item: JSONObject): Illust? {
     val id = item.optLong("id", 0L).takeIf { it > 0L } ?: return null
     val imageUrl = item.optString("imageUrl")
+    val tags =
+        item.optJSONArray("tags")?.let { array ->
+            List(array.length()) { index -> array.optString(index) }.filter { it.isNotBlank() }
+        } ?: emptyList()
     return Illust(
         id = id,
         title = item.optString("title"),
         type = item.optString("type").ifBlank { "illust" },
         caption = "",
-        artistId = 0L,
+        artistId = item.optLong("artistId", 0L),
         artistName = item.optString("artistName"),
         artistAvatarUrl = null,
         squareImageUrl = "",
@@ -176,9 +182,11 @@ internal fun historyIllustFromJson(item: JSONObject): Illust? {
         mediumImagePages = emptyList(),
         imagePages = emptyList(),
         originalImagePages = emptyList(),
-        tags = emptyList(),
+        tags = tags,
         pageCount = item.optInt("pageCount", 1),
         isBookmarked = item.optBoolean("isBookmarked", false),
+        xRestrict = item.optInt("xRestrict", 0),
+        illustAiType = item.optInt("illustAiType", 0),
     )
 }
 

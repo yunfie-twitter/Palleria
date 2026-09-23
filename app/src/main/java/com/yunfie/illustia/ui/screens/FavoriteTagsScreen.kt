@@ -134,6 +134,7 @@ fun FavoriteTagsScreen(
     val performHaptic = rememberHapticFeedbackAction()
 
     val scrollBehavior = MiuixScrollBehavior()
+    val columns = adaptiveIllustColumns(state.settings)
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -173,12 +174,11 @@ fun FavoriteTagsScreen(
                 enabled = state.settings.autoLoadMore,
                 nextUrl = state.watchlistNextUrl,
                 isLoading = state.isWatchlistPaginating || state.loadState == LoadState.Loading,
-                buffer = 6,
                 onLoadMore = viewModel::loadMoreWatchlist,
             )
             LazyVerticalGrid(
                 state = gridState,
-                columns = GridCells.Fixed(adaptiveIllustColumns(state.settings)),
+                columns = GridCells.Fixed(columns),
                 modifier =
                     Modifier
                         .fillMaxSize()
@@ -243,13 +243,12 @@ fun FavoriteTagsScreen(
                     }
 
                     if (state.settings.autoLoadMore && state.isWatchlistPaginating) {
-                        item(key = "watchlist_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(24.dp))
-                            }
+                        items(
+                            count = columns,
+                            key = { "fav_paginating_skeleton_$it" },
+                            contentType = { "illust_skeleton" },
+                        ) {
+                            IllustCardSkeleton()
                         }
                     } else if (!state.settings.autoLoadMore && state.watchlistNextUrl != null) {
                         item(key = "watchlist_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

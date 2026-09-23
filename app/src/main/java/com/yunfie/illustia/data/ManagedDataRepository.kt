@@ -84,11 +84,18 @@ class ManagedDataRepository(
             put("imageUrl", imageUrl)
             put("pageCount", pageCount)
             put("isBookmarked", isBookmarked)
+            put("xRestrict", xRestrict)
+            put("illustAiType", illustAiType)
+            put("tags", JSONArray(tags))
         }
 
     private fun JSONObject.toHistoryIllust(): Illust? {
         val illustId = optLong("id", 0L).takeIf { it > 0L } ?: return null
         val backupImageUrl = optString("imageUrl")
+        val tags =
+            optJSONArray("tags")?.let { array ->
+                List(array.length()) { index -> array.optString(index) }.filter { it.isNotBlank() }
+            } ?: emptyList()
         return Illust(
             id = illustId,
             title = optString("title"),
@@ -101,9 +108,11 @@ class ManagedDataRepository(
             mediumImageUrl = backupImageUrl,
             imageUrl = backupImageUrl,
             originalImageUrl = null,
-            tags = emptyList(),
+            tags = tags,
             pageCount = optInt("pageCount", 1).coerceAtLeast(1),
             isBookmarked = optBoolean("isBookmarked", false),
+            xRestrict = optInt("xRestrict", 0),
+            illustAiType = optInt("illustAiType", 0),
         )
     }
 

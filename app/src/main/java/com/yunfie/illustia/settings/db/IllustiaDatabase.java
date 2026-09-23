@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
                 SavedIllustEntity.class,
                 SavedIllustPageEntity.class
         },
-        version = 5,
+        version = 6,
         exportSchema = false
 )
 public abstract class IllustiaDatabase extends RoomDatabase {
@@ -42,6 +42,14 @@ public abstract class IllustiaDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE view_history ADD COLUMN isBookmarked INTEGER NOT NULL DEFAULT 0");
         }
     };
+    private static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE view_history ADD COLUMN xRestrict INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE view_history ADD COLUMN tagsJson TEXT NOT NULL DEFAULT '[]'");
+            database.execSQL("ALTER TABLE view_history ADD COLUMN illustAiType INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 
     public static IllustiaDatabase getInstance(Context context) {
         IllustiaDatabase current = INSTANCE;
@@ -56,7 +64,7 @@ public abstract class IllustiaDatabase extends RoomDatabase {
                                 IllustiaDatabase.class,
                                 "illustia.db"
                         )
-                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                         .fallbackToDestructiveMigration()
                         .build();
                 INSTANCE = current;

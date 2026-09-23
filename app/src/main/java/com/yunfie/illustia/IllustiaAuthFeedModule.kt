@@ -456,16 +456,24 @@ abstract class IllustiaAuthFeedModule(
                     GlitchTipTelemetry.traceAsync("feed.home.load_more", "feed.home") {
                         repository.nextPage(nextUrl)
                     }
-                val settings = _uiState.value.settings
-                val additions = page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
+                val currentSettings = _uiState.value.settings
+                val additions = page.items.visibleWithSettings(currentSettings).preferUnseenFeedItems(currentSettings)
+                val shownIds = additions.map { it.id }
+                val merged = LinkedHashSet<Long>(shownIds.size + currentSettings.seenFeedIllusts.size)
+                merged.addAll(shownIds)
+                merged.addAll(currentSettings.seenFeedIllusts)
+                val updatedSettings = currentSettings.copy(seenFeedIllusts = merged.take(MAX_SEEN_FEED_ILLUSTS))
+
                 _uiState.update {
                     it.copy(
                         homeItems = it.homeItems.appendIllusts(additions),
                         homeNextUrl = page.nextUrl,
                         isHomePaginating = false,
+                        settings = updatedSettings,
                     )
                 }
-                rememberFeedItems(additions)
+                queueSettingsPersistence(updatedSettings, currentSettings)
+                warmSmartCache(additions)
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
