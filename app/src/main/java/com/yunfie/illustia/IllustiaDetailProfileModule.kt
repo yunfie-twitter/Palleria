@@ -3,6 +3,7 @@ package com.yunfie.illustia
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
@@ -47,56 +48,60 @@ abstract class IllustiaDetailProfileModule(
         }
     }
 
+    @Suppress("LongMethod")
     private fun launchDetailExtras(illust: Illust) {
         detailExtrasJob?.cancel()
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    val fullIllust =
-                        if (illust.artistId <= 0L) {
-                            runCatching { repository.illustDetail(illust.id) }.getOrNull() ?: illust
-                        } else {
-                            illust
-                        }
-                    kotlinx.coroutines.coroutineScope {
-                        val relatedDeferred = async { repository.relatedIllusts(illust.id) }
-                        val firstCommentDeferred =
-                            async {
-                                runCatching {
-                                    repository.illustComments(illust.id).comments.firstOrNull()
-                                }.getOrNull()
-                            }
-                        val userDeferred =
-                            fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
-                                async { repository.userDetail(artistId) }
-                            }
-                        val related = relatedDeferred.await()
-                        val firstComment = firstCommentDeferred.await()
-                        val user = userDeferred?.await()
-                        _uiState.update {
-                            if (it.selectedIllust?.id != illust.id) {
-                                it
+                    GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
+                        val fullIllust =
+                            if (illust.artistId <= 0L) {
+                                runCatching { repository.illustDetail(illust.id) }.getOrNull() ?: illust
                             } else {
-                                it.copy(
-                                    selectedIllust = fullIllust,
-                                    relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
-                                    selectedIllustUser = user,
-                                    selectedIllustFirstComment = firstComment,
-                                )
+                                illust
                             }
-                        }
-                        if (fullIllust !== illust && fullIllust.artistId > 0L) {
-                            val updatedHistory =
-                                _uiState.value.settings.viewHistory.map {
-                                    if (it.id == illust.id) fullIllust else it
+                        kotlinx.coroutines.coroutineScope {
+                            val relatedDeferred = async { repository.relatedIllusts(illust.id) }
+                            val firstCommentDeferred =
+                                async {
+                                    runCatching {
+                                        repository.illustComments(illust.id).comments.firstOrNull()
+                                    }.getOrNull()
                                 }
-                            updateSettings { it.copy(viewHistory = updatedHistory) }
+                            val userDeferred =
+                                fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
+                                    async { repository.userDetail(artistId) }
+                                }
+                            val related = relatedDeferred.await()
+                            val firstComment = firstCommentDeferred.await()
+                            val user = userDeferred?.await()
+                            _uiState.update {
+                                if (it.selectedIllust?.id != illust.id) {
+                                    it
+                                } else {
+                                    it.copy(
+                                        selectedIllust = fullIllust,
+                                        relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
+                                        selectedIllustUser = user,
+                                        selectedIllustFirstComment = firstComment,
+                                    )
+                                }
+                            }
+                            if (fullIllust !== illust && fullIllust.artistId > 0L) {
+                                val updatedHistory =
+                                    _uiState.value.settings.viewHistory.map {
+                                        if (it.id == illust.id) fullIllust else it
+                                    }
+                                updateSettings { it.copy(viewHistory = updatedHistory) }
+                            }
                         }
                     }
                 } catch (expectedFailure: Exception) {
                     val error = expectedFailure
                     if (isCancellation(error)) throw error
                     if (handleAuthExpired(error)) return@launch
+                    GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illust.id))
                     _uiState.update {
                         if (it.selectedIllust?.id == illust.id) {
                             it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)))
@@ -337,29 +342,32 @@ abstract class IllustiaDetailProfileModule(
         val job =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    val profileDeferred = async { repository.userDetail(userId) }
-                    val pageDeferred = async { repository.userIllusts(userId) }
-                    val profile = profileDeferred.await()
-                    val page = pageDeferred.await()
-                    _uiState.update { state ->
-                        if (state.selectedUserId != userId) return@update state
-                        state.copy(
-                            selectedUser = profile,
-                            selectedUserIllusts = page.items.visibleWithSettings(state.settings),
-                            selectedUserNextUrl = page.nextUrl,
-                            selectedUserBookmarks = emptyList(),
-                            selectedUserBookmarksNextUrl = null,
-                            selectedRelatedUsers = emptyList(),
-                            selectedRelatedUsersNextUrl = null,
-                            selectedRelatedUsersLoading = false,
-                            loadState = LoadState.Loaded,
-                        )
+                    GlitchTipTelemetry.traceAsync("user.profile.load", "user.profile") {
+                        val profileDeferred = async { repository.userDetail(userId) }
+                        val pageDeferred = async { repository.userIllusts(userId) }
+                        val profile = profileDeferred.await()
+                        val page = pageDeferred.await()
+                        _uiState.update { state ->
+                            if (state.selectedUserId != userId) return@update state
+                            state.copy(
+                                selectedUser = profile,
+                                selectedUserIllusts = page.items.visibleWithSettings(state.settings),
+                                selectedUserNextUrl = page.nextUrl,
+                                selectedUserBookmarks = emptyList(),
+                                selectedUserBookmarksNextUrl = null,
+                                selectedRelatedUsers = emptyList(),
+                                selectedRelatedUsersNextUrl = null,
+                                selectedRelatedUsersLoading = false,
+                                loadState = LoadState.Loaded,
+                            )
+                        }
                     }
                     userPageSnapshot = null
                 } catch (expectedFailure: Exception) {
                     val error = expectedFailure
                     if (isCancellation(error)) throw error
                     if (handleAuthExpired(error)) return@launch
+                    GlitchTipTelemetry.recordException(error, tag = "user_profile", extras = mapOf("userId" to userId))
                     restoreUserPageSnapshot()
                     val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
                     _uiState.update {

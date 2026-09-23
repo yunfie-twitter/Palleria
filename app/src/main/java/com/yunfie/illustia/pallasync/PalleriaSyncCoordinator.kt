@@ -2,6 +2,8 @@ package com.yunfie.illustia.pallasync
 
 import android.content.Context
 import android.os.Build
+import com.yunfie.illustia.GlitchTipTelemetry
+import com.yunfie.illustia.GlitchTipTelemetry.span
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
@@ -681,80 +683,98 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
-    private suspend fun synchronizeOnceLocked(baseUrlOverride: HttpUrl? = null): SyncCycleOutcome {
-        val dao = db.pallaSyncDao()
-        val chainState =
-            activeChainStateLocked() ?: run {
-                keystore.clearPendingChainKeys()
-                disableOrphanedEnabledFlag()
-                return SyncCycleOutcome.Idle
-            }
-        val baseUrl =
-            baseUrlOverride ?: when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
-                is PallaSyncHttpResult.Success -> {
-                    normalized.value
+    private suspend fun synchronizeOnceLocked(baseUrlOverride: HttpUrl? = null): SyncCycleOutcome =
+        GlitchTipTelemetry.traceAsync("pallasync.sync", "sync.operation") { tx ->
+            val dao = db.pallaSyncDao()
+            val chainState =
+                activeChainStateLocked() ?: run {
+                    keystore.clearPendingChainKeys()
+                    disableOrphanedEnabledFlag()
+                    return@traceAsync SyncCycleOutcome.Idle
                 }
+            val baseUrl =
+                baseUrlOverride ?: when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                    is PallaSyncHttpResult.Success -> {
+                        normalized.value
+                    }
 
-                is PallaSyncHttpResult.ProtocolError -> {
-                    log(normalized.message)
-                    return SyncCycleOutcome.ProtocolError
+                    is PallaSyncHttpResult.ProtocolError -> {
+                        log(normalized.message)
+                        return@traceAsync SyncCycleOutcome.ProtocolError
+                    }
+
+                    else -> {
+                        return@traceAsync SyncCycleOutcome.ProtocolError
+                    }
                 }
-
-                else -> {
-                    return SyncCycleOutcome.ProtocolError
-                }
+            if (keysForChainLocked(chainState.chainId) == null) {
+                log("Active PallaSync keys do not match the Room chain state")
+                return@traceAsync SyncCycleOutcome.ProtocolError
             }
-        if (keysForChainLocked(chainState.chainId) == null) {
-            log("Active PallaSync keys do not match the Room chain state")
-            return SyncCycleOutcome.ProtocolError
-        }
 
-        // Device validation/self-heal must happen before old queued records are
-        // uploaded, otherwise a missing relay-side device can block forever on 400.
-        when (val devices = fetchDevicesLocked(baseUrl, chainState.chainId)) {
-            is PallaSyncHttpResult.Success -> Unit
-            PallaSyncHttpResult.Gone -> return goneLocked()
-            is PallaSyncHttpResult.Retryable -> return SyncCycleOutcome.Retryable.also { log(devices.message) }
-            is PallaSyncHttpResult.ProtocolError -> return SyncCycleOutcome.ProtocolError.also { log(devices.message) }
-        }
-        when (val pushed = processOutboxLocked(baseUrl, chainState.chainId)) {
-            is PallaSyncHttpResult.Success -> Unit
-            PallaSyncHttpResult.Gone -> return goneLocked()
-            is PallaSyncHttpResult.Retryable -> return SyncCycleOutcome.Retryable.also { log(pushed.message) }
-            is PallaSyncHttpResult.ProtocolError -> return SyncCycleOutcome.ProtocolError.also { log(pushed.message) }
-        }
-        when (val pulled = pullRecordPagesLocked(baseUrl, chainState.chainId)) {
-            is PallaSyncHttpResult.Success -> Unit
-            PallaSyncHttpResult.Gone -> return goneLocked()
-            is PallaSyncHttpResult.Retryable -> return SyncCycleOutcome.Retryable.also { log(pulled.message) }
-            is PallaSyncHttpResult.ProtocolError -> return SyncCycleOutcome.ProtocolError.also { log(pulled.message) }
-        }
-
-        val activatedInitialEvents =
-            if (chainState.initialPullCompleted) {
-                0
-            } else {
-                dao.completeInitialPullAndQueueEvents(chainState.chainId)
-            }
-        if (!chainState.initialPullCompleted) {
-            log("Queued $activatedInitialEvents local item(s) after the first successful pull")
-            when (val pushed = processOutboxLocked(baseUrl, chainState.chainId)) {
+            // Device validation/self-heal must happen before old queued records are
+            // uploaded, otherwise a missing relay-side device can block forever on 400.
+            val devices = tx.span("sync.fetch_devices") { fetchDevicesLocked(baseUrl, chainState.chainId) }
+            when (devices) {
                 is PallaSyncHttpResult.Success -> Unit
-                PallaSyncHttpResult.Gone -> return goneLocked()
-                is PallaSyncHttpResult.Retryable -> return SyncCycleOutcome.Retryable.also { log(pushed.message) }
-                is PallaSyncHttpResult.ProtocolError -> return SyncCycleOutcome.ProtocolError.also { log(pushed.message) }
+                PallaSyncHttpResult.Gone -> return@traceAsync goneLocked()
+                is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(devices.message) }
+                is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also { log(devices.message) }
             }
-            // Apply the just-merged local items immediately so the UI does not
-            // temporarily show only the remote pre-join snapshot.
-            when (val pulled = pullRecordPagesLocked(baseUrl, chainState.chainId)) {
+            val pushed = tx.span("sync.process_outbox") { processOutboxLocked(baseUrl, chainState.chainId) }
+            when (pushed) {
                 is PallaSyncHttpResult.Success -> Unit
-                PallaSyncHttpResult.Gone -> return goneLocked()
-                is PallaSyncHttpResult.Retryable -> return SyncCycleOutcome.Retryable.also { log(pulled.message) }
-                is PallaSyncHttpResult.ProtocolError -> return SyncCycleOutcome.ProtocolError.also { log(pulled.message) }
+                PallaSyncHttpResult.Gone -> return@traceAsync goneLocked()
+                is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(pushed.message) }
+                is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also { log(pushed.message) }
             }
+            val pulled = tx.span("sync.pull_records") { pullRecordPagesLocked(baseUrl, chainState.chainId) }
+            when (pulled) {
+                is PallaSyncHttpResult.Success -> Unit
+                PallaSyncHttpResult.Gone -> return@traceAsync goneLocked()
+                is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(pulled.message) }
+                is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also { log(pulled.message) }
+            }
+
+            val activatedInitialEvents =
+                if (chainState.initialPullCompleted) {
+                    0
+                } else {
+                    dao.completeInitialPullAndQueueEvents(chainState.chainId)
+                }
+            if (!chainState.initialPullCompleted) {
+                log("Queued $activatedInitialEvents local item(s) after the first successful pull")
+                when (val pushedAfterInit = processOutboxLocked(baseUrl, chainState.chainId)) {
+                    is PallaSyncHttpResult.Success -> Unit
+
+                    PallaSyncHttpResult.Gone -> return@traceAsync goneLocked()
+
+                    is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(pushedAfterInit.message) }
+
+                    is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also {
+                        log(
+                            pushedAfterInit.message,
+                        )
+                    }
+                }
+                // Apply the just-merged local items immediately so the UI does not
+                // temporarily show only the remote pre-join snapshot.
+                when (val pulledAfterInit = pullRecordPagesLocked(baseUrl, chainState.chainId)) {
+                    is PallaSyncHttpResult.Success -> Unit
+
+                    PallaSyncHttpResult.Gone -> return@traceAsync goneLocked()
+
+                    is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(pulledAfterInit.message) }
+
+                    is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also {
+                        log(
+                            pulledAfterInit.message,
+                        )
+                    }
+                }
+            }
+            SyncCycleOutcome.Success
         }
-        return SyncCycleOutcome.Success
-    }
 
     private fun makeCapabilityToken(
         chainId: String,
@@ -964,11 +984,18 @@ internal class PalleriaSyncCoordinator(
             val decryptedName =
                 runCatching {
                     crypto.decryptDeviceRecord(
-                        encryptedDeviceName = device.encryptedDeviceName,
+                        encryptedDeviceName = rawDevice,
                         deviceId = device.deviceId,
                         encryptionKeyBase64 = keys.encryptionKeyBase64Url,
                     )
                 }.getOrNull()
+                    ?: runCatching {
+                        crypto.decryptDeviceRecord(
+                            encryptedDeviceName = device.encryptedDeviceName,
+                            deviceId = device.deviceId,
+                            encryptionKeyBase64 = keys.encryptionKeyBase64Url,
+                        )
+                    }.getOrNull()
             if (decryptedName.isNullOrBlank() && device.deviceId == myDeviceId) {
                 shouldSelfHeal = true
             }

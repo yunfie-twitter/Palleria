@@ -2,7 +2,7 @@ package com.yunfie.illustia
 
 import java.util.concurrent.CancellationException
 
-internal fun Throwable.isCancellationFailure(): Boolean {
+fun Throwable.isCancellationFailure(): Boolean {
     var current: Throwable? = this
     while (current != null) {
         if (current is CancellationException) return true

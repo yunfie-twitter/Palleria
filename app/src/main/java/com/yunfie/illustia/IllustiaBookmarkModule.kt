@@ -2,6 +2,7 @@ package com.yunfie.illustia
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -263,7 +264,10 @@ abstract class IllustiaBookmarkModule(
                 )
             }
             try {
-                val page = repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                val page =
+                    GlitchTipTelemetry.traceAsync("bookmarks.refresh", "bookmarks") {
+                        repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                    }
                 _uiState.update {
                     it.copy(
                         bookmarkItems = page.items.visibleWithSettings(it.settings),
@@ -276,6 +280,7 @@ abstract class IllustiaBookmarkModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "bookmarks_refresh")
                 _uiState.update {
                     it.copy(
                         isBookmarkRefreshing = false,
@@ -348,7 +353,10 @@ abstract class IllustiaBookmarkModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isBookmarkPaginating = true) }
             try {
-                val page = repository.nextPage(nextUrl)
+                val page =
+                    GlitchTipTelemetry.traceAsync("bookmarks.load_more", "bookmarks") {
+                        repository.nextPage(nextUrl)
+                    }
                 _uiState.update {
                     it.copy(
                         bookmarkItems = it.bookmarkItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
@@ -360,6 +368,7 @@ abstract class IllustiaBookmarkModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "bookmarks_load_more")
                 _uiState.update {
                     it.copy(
                         isBookmarkPaginating = false,
@@ -421,6 +430,7 @@ abstract class IllustiaBookmarkModule(
                     throw error
                 }
                 if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "bookmark_toggle", extras = mapOf("illustId" to illust.id))
                 _uiState.update { it.copy(message = cleanErrorMessage(error, str(R.string.error_bookmark_failed))) }
             }
         }
