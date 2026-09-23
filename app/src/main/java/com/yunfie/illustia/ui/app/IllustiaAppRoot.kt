@@ -134,9 +134,14 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     }
 
     fun popRoute() {
-        if (backStack.size <= 1) return
         if (selectedCommentTarget != null) {
             selectedCommentTarget = null
+            return
+        }
+        if (backStack.size <= 1) {
+            if (state.selectedIllust != null) {
+                viewModel.closeIllust()
+            }
             return
         }
         val removed = backStack.removeAt(backStack.lastIndex)
