@@ -98,7 +98,6 @@ internal fun readFromDataStore(
         doubleBackToExit = preferences[DOUBLE_BACK_TO_EXIT] ?: false,
         swipeToSwitchWorks = preferences[SWIPE_TO_SWITCH_WORKS] ?: true,
         secureWindow = preferences[SECURE_WINDOW] ?: false,
-        amoledMode = preferences[AMOLED_MODE] ?: false,
         appIconVariant = preferences[APP_ICON_VARIANT] ?: "default",
         navigationOrder = decodeStringList(preferences[NAVIGATION_ORDER_JSON]).ifEmpty { DEFAULT_NAVIGATION_ORDER },
         hiddenNavigationTabs = decodeStringList(preferences[HIDDEN_NAVIGATION_TABS_JSON]),
@@ -138,7 +137,6 @@ internal fun readFromDataStore(
         smartCacheItemCount = preferences[SMART_CACHE_ITEM_COUNT] ?: 12,
         imageCacheSizeMb = preferences[IMAGE_CACHE_SIZE_MB] ?: 300,
         startupScreen = preferences[STARTUP_SCREEN] ?: "home",
-        userProfileBottomSheetEnabled = preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] ?: false,
         shortsFeedEnabled = preferences[SHORTS_FEED_ENABLED] ?: false,
         disableHorizontalSwipeInShortsFeed = preferences[DISABLE_HORIZONTAL_SWIPE_IN_SHORTS_FEED] ?: false,
         hideHomeNovelButton = preferences[HIDE_HOME_NOVEL_BUTTON] ?: true,
@@ -282,7 +280,6 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         doubleBackToExit = preferences.getBoolean("doubleBackToExit", false),
         swipeToSwitchWorks = preferences.getBoolean("swipeToSwitchWorks", true),
         secureWindow = preferences.getBoolean("secureWindow", false),
-        amoledMode = preferences.getBoolean("amoledMode", false),
         appIconVariant = preferences.getSafeString("appIconVariant", "default"),
         navigationOrder = decodeStringList(preferences.getString("navigationOrder", null)).ifEmpty { DEFAULT_NAVIGATION_ORDER },
         hiddenNavigationTabs = decodeStringList(preferences.getString("hiddenNavigationTabs", null)),
@@ -317,7 +314,6 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         mangaDetailQuality = preferences.getSafeString("mangaDetailQuality", "low"),
         fullscreenQuality = preferences.getSafeString("fullscreenQuality", "high"),
         startupScreen = preferences.getSafeString("startupScreen", "home"),
-        userProfileBottomSheetEnabled = preferences.getBoolean("userProfileBottomSheetEnabled", false),
         shortsFeedEnabled = preferences.getBoolean("shortsFeedEnabled", false),
         disableHorizontalSwipeInShortsFeed = preferences.getBoolean("disableHorizontalSwipeInShortsFeed", false),
         hideHomeNovelButton = preferences.getBoolean(KEY_HIDE_HOME_NOVEL_BUTTON, true),
@@ -397,7 +393,6 @@ internal fun writeToDataStore(
     preferences[DOUBLE_BACK_TO_EXIT] = settings.doubleBackToExit
     preferences[SWIPE_TO_SWITCH_WORKS] = settings.swipeToSwitchWorks
     preferences[SECURE_WINDOW] = settings.secureWindow
-    preferences[AMOLED_MODE] = settings.amoledMode
     preferences[APP_ICON_VARIANT] = settings.appIconVariant
     preferences[NAVIGATION_ORDER_JSON] = encodeStringList(settings.navigationOrder)
     preferences[HIDDEN_NAVIGATION_TABS_JSON] = encodeStringList(settings.hiddenNavigationTabs)
@@ -437,7 +432,6 @@ internal fun writeToDataStore(
     preferences[SMART_CACHE_ITEM_COUNT] = settings.smartCacheItemCount
     preferences[IMAGE_CACHE_SIZE_MB] = settings.imageCacheSizeMb
     preferences[STARTUP_SCREEN] = settings.startupScreen
-    preferences[USER_PROFILE_BOTTOM_SHEET_ENABLED] = settings.userProfileBottomSheetEnabled
     preferences[SHORTS_FEED_ENABLED] = settings.shortsFeedEnabled
     preferences[DISABLE_HORIZONTAL_SWIPE_IN_SHORTS_FEED] = settings.disableHorizontalSwipeInShortsFeed
     preferences[HIDE_HOME_NOVEL_BUTTON] = settings.hideHomeNovelButton

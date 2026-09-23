@@ -11,18 +11,6 @@ enum class FeatureFlag(
     @StringRes val descRes: Int,
     val defaultEnabled: Boolean = false,
 ) {
-    AmoledTheme(
-        key = "flag_amoled_theme",
-        titleRes = R.string.flag_amoled_theme_title,
-        descRes = R.string.flag_amoled_theme_desc,
-        defaultEnabled = false,
-    ),
-    UserProfileBottomSheet(
-        key = "flag_user_profile_bottom_sheet",
-        titleRes = R.string.flag_user_profile_bottom_sheet_title,
-        descRes = R.string.flag_user_profile_bottom_sheet_desc,
-        defaultEnabled = false,
-    ),
     CustomAppIcon(
         key = "flag_custom_app_icon",
         titleRes = R.string.flag_custom_app_icon_title,
@@ -45,12 +33,6 @@ enum class FeatureFlag(
         key = "flag_hide_home_novel_button",
         titleRes = R.string.flag_hide_home_novel_button_title,
         descRes = R.string.flag_hide_home_novel_button_desc,
-        defaultEnabled = false,
-    ),
-    CardCustomization(
-        key = "flag_card_customization",
-        titleRes = R.string.flag_card_customization_title,
-        descRes = R.string.flag_card_customization_desc,
         defaultEnabled = false,
     ),
     ArtworkDynamicTheme(

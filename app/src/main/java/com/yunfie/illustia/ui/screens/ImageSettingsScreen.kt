@@ -15,8 +15,6 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -51,8 +49,6 @@ fun ImageSettingsScreen(
             com.yunfie.illustia.platform.DesktopEnvironment
                 .isDesktop(context)
         }
-
-    val cardCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.CardCustomization)
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -180,16 +176,12 @@ fun ImageSettingsScreen(
             item {
                 Section(stringResource(R.string.image_section_customization)) {
                     ElevatedPanel {
-                        var hasItemAbove = false
-                        if (cardCustomizationFlag) {
-                            SettingLinkRow(
-                                title = stringResource(R.string.card_customization_settings_title),
-                                summary = stringResource(R.string.card_customization_settings_summary),
-                                onClick = onOpenCardCustomizationSettings,
-                            )
-                            hasItemAbove = true
-                        }
-                        if (hasItemAbove) DividerLine()
+                        SettingLinkRow(
+                            title = stringResource(R.string.card_customization_settings_title),
+                            summary = stringResource(R.string.card_customization_settings_summary),
+                            onClick = onOpenCardCustomizationSettings,
+                        )
+                        DividerLine()
                         SettingLinkRow(
                             title = stringResource(R.string.detail_section_settings_title),
                             summary = stringResource(R.string.detail_section_settings_summary),

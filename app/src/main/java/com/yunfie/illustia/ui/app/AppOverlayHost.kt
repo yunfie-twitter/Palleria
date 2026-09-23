@@ -1,7 +1,6 @@
 package com.yunfie.illustia.ui.app
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +28,6 @@ import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
-import com.yunfie.illustia.ui.screens.UserProfileScreen
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -40,13 +37,10 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.icon.extended.TopDownloads
-import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
 internal fun AppOverlayHost(
@@ -57,9 +51,7 @@ internal fun AppOverlayHost(
     selectedCommentTarget: Pair<Long, com.yunfie.illustia.data.pixiv.CommentArtworkType>?,
     onDismissComments: () -> Unit,
     onSearchTag: (String) -> Unit,
-    onNavigate: ((AppRoute) -> Unit)? = null,
 ) {
-    val configuration = LocalConfiguration.current
     val context = LocalContext.current
 
     selectedCommentTarget?.let { target ->
@@ -193,122 +185,6 @@ internal fun AppOverlayHost(
                 }
             },
         )
-    }
-
-    appState.state.selectedUser?.let { user ->
-        if (!appState.state.showUserPage && !appState.state.userPageDismissed) {
-            val userSheetBackground = LocalBottomSheetBackgroundColor.current
-            val userSheetHeight = minOf(configuration.screenHeightDp.dp * 0.68f, 560.dp)
-            val shareLabel = stringResource(R.string.detail_share)
-            val shareFailedMessage = stringResource(R.string.error_share_failed)
-            val shareTitle = user.name.ifBlank { "@${user.account}" }
-            val profileUrl = remember(user.id) { "https://www.pixiv.net/users/${user.id}" }
-            WindowBottomSheet(
-                show = true,
-                modifier = Modifier.scrollEndHaptic(),
-                title = user.name.ifBlank { "@${user.account}" },
-                backgroundColor = userSheetBackground,
-                startAction = {
-                    IconButton(onClick = viewModel::closeUser) {
-                        Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
-                    }
-                },
-                endAction = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = viewModel::expandUserSheetToPage) {
-                            Icon(
-                                imageVector = MiuixIcons.TopDownloads,
-                                contentDescription = stringResource(R.string.user_open_full_page),
-                            )
-                        }
-                        WindowIconDropdownMenu(
-                            entry =
-                                DropdownEntry(
-                                    items =
-                                        listOf(
-                                            DropdownItem(
-                                                text = shareLabel,
-                                                onClick = {
-                                                    runCatching {
-                                                        val intent =
-                                                            Intent(Intent.ACTION_SEND).apply {
-                                                                type = "text/plain"
-                                                                putExtra(Intent.EXTRA_TEXT, "$shareTitle\n$profileUrl")
-                                                            }
-                                                        context.startActivity(Intent.createChooser(intent, shareLabel))
-                                                    }.onFailure { viewModel.showMessage(shareFailedMessage) }
-                                                },
-                                            ),
-                                            DropdownItem(
-                                                text = stringResource(R.string.user_tab_related),
-                                                onClick = {
-                                                    viewModel.closeUser()
-                                                    onNavigate?.invoke(AppRoute.RelatedUsers(user.id, user.name))
-                                                },
-                                            ),
-                                            DropdownItem(
-                                                text = stringResource(R.string.dialog_mute),
-                                                onClick = {
-                                                    viewModel.muteUser(user.id)
-                                                    viewModel.closeUser()
-                                                },
-                                            ),
-                                            DropdownItem(
-                                                text = stringResource(R.string.action_report_problem),
-                                                onClick = {
-                                                    runCatching {
-                                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(profileUrl)))
-                                                    }.onFailure { viewModel.showMessage(shareFailedMessage) }
-                                                },
-                                            ),
-                                        ),
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.More,
-                                contentDescription = stringResource(R.string.detail_more),
-                            )
-                        }
-                    }
-                },
-                onDismissRequest = viewModel::closeUser,
-                insideMargin = BottomSheetInsideMargin,
-            ) {
-                UserProfileScreen(
-                    user = user,
-                    settings = appState.state.settings,
-                    illusts = appState.state.selectedUserIllusts,
-                    bookmarks = appState.state.selectedUserBookmarks,
-                    hasMore = appState.state.selectedUserNextUrl != null,
-                    bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
-                    onBack = viewModel::closeUser,
-                    onOpenIllust = { illust ->
-                        viewModel.closeUser()
-                        viewModel.openIllust(illust)
-                    },
-                    onBookmark = viewModel::toggleBookmark,
-                    onLoadMore = viewModel::loadMoreUserIllusts,
-                    onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
-                    onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
-                    onOpenRelatedUsers = {
-                        viewModel.closeUser()
-                        onNavigate?.invoke(AppRoute.RelatedUsers(user.id, user.name))
-                    },
-                    onToggleFollow = { viewModel.toggleFollow(user) },
-                    onMuteUser = { viewModel.muteUser(user.id) },
-                    onMessage = viewModel::showMessage,
-                    isMuted =
-                        appState.state.settings.mutedUsers
-                            .contains(user.id),
-                    onUnmuteUser = { viewModel.unmuteUser(user.id) },
-                    gridState = viewModel.userProfileGridState(user.id),
-                    onIllustLongClick = viewModel::onIllustLongPress,
-                    showHeaderControls = false,
-                    backgroundColor = userSheetBackground,
-                    contentHeight = userSheetHeight,
-                )
-            }
-        }
     }
 
     if (showTokenLogin) {
