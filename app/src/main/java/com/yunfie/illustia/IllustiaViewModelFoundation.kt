@@ -251,13 +251,28 @@ abstract class IllustiaViewModelFoundation(
                     startupSettings
                 }
             val shouldLock = normalizedStartupSettings.appLockEnabled && settingsStore.hasPinSet()
+            val currentVersionCode = 113
+            val lastSeenVersionCode = normalizedStartupSettings.lastSeenAppVersionCode
+            val isUpdated = lastSeenVersionCode in 1 until currentVersionCode
+            val postUpdateMsg =
+                if (isUpdated) {
+                    val currentVersionName = appUpdaterRepository.getCurrentVersionName()
+                    str(R.string.post_update_notice, currentVersionName)
+                } else {
+                    null
+                }
+
             _uiState.update {
                 it.withSettings(normalizedStartupSettings).copy(
                     settingsLoaded = true,
                     appLocked = shouldLock,
                     privacyLocked = normalizedStartupSettings.privacyModeEnabled,
                     showLockRecoveryDialog = normalizedStartupSettings.appLockFailCount >= 12,
+                    message = postUpdateMsg ?: it.message,
                 )
+            }
+            if (lastSeenVersionCode != currentVersionCode) {
+                updateSettings { it.copy(lastSeenAppVersionCode = currentVersionCode) }
             }
             resumePendingNativeIntentIfReady()
         }
@@ -817,11 +832,36 @@ abstract class IllustiaViewModelFoundation(
         updateSettings { it.copy(includePrereleaseUpdates = enabled) }
     }
 
+    fun cancelDownloadUpdate() {
+        appUpdaterRepository.cancelDownload()
+        _updateCheckState.value = UpdateCheckState.Idle
+    }
+
     fun updateNotifyNewVersion(enabled: Boolean) {
         updateSettings { it.copy(notifyNewVersion = enabled) }
+        val context = getApplication<Application>().applicationContext
+        if (enabled || _uiState.value.settings.autoDownloadUpdates) {
+            com.yunfie.illustia.updater.AppUpdateScheduler
+                .schedulePeriodicCheck(context)
+        } else {
+            com.yunfie.illustia.updater.AppUpdateScheduler
+                .cancelPeriodicCheck(context)
+        }
     }
 
     fun updateAutoDownloadUpdates(enabled: Boolean) {
         updateSettings { it.copy(autoDownloadUpdates = enabled) }
+        val context = getApplication<Application>().applicationContext
+        if (enabled || _uiState.value.settings.notifyNewVersion) {
+            com.yunfie.illustia.updater.AppUpdateScheduler
+                .schedulePeriodicCheck(context)
+        } else {
+            com.yunfie.illustia.updater.AppUpdateScheduler
+                .cancelPeriodicCheck(context)
+        }
+    }
+
+    fun updateAutoDownloadWifiOnly(enabled: Boolean) {
+        updateSettings { it.copy(autoDownloadWifiOnly = enabled) }
     }
 }

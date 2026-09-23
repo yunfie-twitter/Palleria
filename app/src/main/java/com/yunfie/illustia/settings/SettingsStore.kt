@@ -17,11 +17,14 @@ import com.yunfie.illustia.pallasync.PallaSyncEventWriter
 import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.buildSettingsSyncEvents
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.db.IllustiaDatabase
 import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import com.yunfie.illustia.settings.db.SavedIllustWithPages
 import com.yunfie.illustia.settings.db.SettingsDao
+import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE
+import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE_SPEC_MIGRATED
 import com.yunfie.illustia.settings.store.DATASTORE_NAME
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
@@ -33,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -293,6 +297,16 @@ class SettingsStore internal constructor(
             if (migrationCompleted) return@withLock
             withContext(Dispatchers.IO) {
                 migrateSettingsIfNeededImpl(dataStore, encryptedPreferences, legacyPreferences, database, dao)
+                val current = dataStore.data.first()
+                if (current[AUTO_LOAD_MORE_SPEC_MIGRATED] != true) {
+                    val isNormalOrHigher = !PlatformCapabilities.isLowSpecDevice(appContext)
+                    dataStore.edit { prefs ->
+                        if (isNormalOrHigher) {
+                            prefs[AUTO_LOAD_MORE] = true
+                        }
+                        prefs[AUTO_LOAD_MORE_SPEC_MIGRATED] = true
+                    }
+                }
             }
             migrationCompleted = true
         }

@@ -1076,4 +1076,10 @@
     <string name="flag_artwork_dynamic_theme_desc">一般設定に閲覧中の作品からアクセントカラーを抽出する設定項目を追加します</string>
     <string name="flag_detail_section_order_title">詳細画面セクション順序の変更</string>
     <string name="flag_detail_section_order_desc">画像・表示設定に作品詳細画面のセクション表示順序を変更する項目を追加します</string>
+    <string name="update_auto_download_wifi_only">Wi-Fi 接続時のみ自動取得</string>
+    <string name="update_auto_download_wifi_only_desc">モバイルデータ通信使用時はバックグラウンドでの自動取得を行いません</string>
+    <string name="update_download_progress_title">アップデートをダウンロード中: %1$s</string>
+    <string name="update_cancel_download">ダウンロードをキャンセル</string>
+    <string name="update_retry_download">再試行</string>
+    <string name="post_update_notice">Palleria %1$s に更新されました</string>
 </resources>

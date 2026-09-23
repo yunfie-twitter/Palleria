@@ -230,10 +230,8 @@ fun AboutScreen(
                                                     .background(MiuixTheme.colorScheme.surfaceContainer)
                                                     .padding(10.dp),
                                         ) {
-                                            Text(
-                                                release.releaseNotes,
-                                                color = MiuixTheme.colorScheme.onSurface,
-                                                style = MiuixTheme.textStyles.footnote1,
+                                            com.yunfie.illustia.ui.components.MarkdownText(
+                                                markdown = release.releaseNotes,
                                             )
                                         }
                                     }
@@ -269,8 +267,9 @@ fun AboutScreen(
                                             "%.1f",
                                             currentUpdate.totalBytes / (1024f * 1024f),
                                         )
+                                    val percent = (currentUpdate.progress * 100).toInt()
                                     Text(
-                                        stringResource(R.string.update_downloading, "MB", "MB"),
+                                        "$downloadedMb MB / $totalMb MB ($percent%)",
                                         color = MiuixTheme.colorScheme.onBackground,
                                         style = MiuixTheme.textStyles.body2,
                                     )
@@ -278,6 +277,15 @@ fun AboutScreen(
                                         progress = currentUpdate.progress,
                                         modifier = Modifier.fillMaxWidth(),
                                     )
+                                    Button(
+                                        onClick = { viewModel.cancelDownloadUpdate() },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.update_cancel_download),
+                                            style = MiuixTheme.textStyles.footnote1,
+                                        )
+                                    }
                                 }
                             }
 
@@ -334,6 +342,18 @@ fun AboutScreen(
                                         color = MiuixTheme.colorScheme.error,
                                         style = MiuixTheme.textStyles.footnote1,
                                     )
+                                    Button(
+                                        onClick = { viewModel.checkForUpdates(silent = false) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColorsPrimary(),
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.update_retry_download),
+                                            color = MiuixTheme.colorScheme.onPrimary,
+                                            style = MiuixTheme.textStyles.footnote1,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                    }
                                 }
                             }
 

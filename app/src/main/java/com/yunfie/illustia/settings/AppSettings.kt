@@ -134,6 +134,8 @@ data class AppSettings(
     val includePrereleaseUpdates: Boolean = false,
     val notifyNewVersion: Boolean = true,
     val autoDownloadUpdates: Boolean = false,
+    val autoDownloadWifiOnly: Boolean = true,
+    val lastSeenAppVersionCode: Int = 0,
     val discordRpcEnabled: Boolean = false,
     val discordToken: String = "",
     val discordApplicationId: String = "1544652855233744926",

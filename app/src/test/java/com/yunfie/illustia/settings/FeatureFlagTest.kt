@@ -39,7 +39,7 @@ class FeatureFlagTest {
         val flags =
             mapOf(
                 FeatureFlag.AmoledTheme.key to true,
-                FeatureFlag.DetailSectionOrder.key to true,
+                FeatureFlag.UserProfileBottomSheet.key to true,
                 FeatureFlag.NavigationCustomization.key to false,
             )
         val json = encodeFeatureFlags(flags)

@@ -237,6 +237,15 @@ fun UpdateSettingsScreen(
                             checked = state.settings.autoDownloadUpdates,
                             onCheckedChange = viewModel::updateAutoDownloadUpdates,
                         )
+                        if (state.settings.autoDownloadUpdates) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.update_auto_download_wifi_only),
+                                summary = stringResource(R.string.update_auto_download_wifi_only_desc),
+                                checked = state.settings.autoDownloadWifiOnly,
+                                onCheckedChange = viewModel::updateAutoDownloadWifiOnly,
+                            )
+                        }
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.update_auto_check_startup),

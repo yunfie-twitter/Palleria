@@ -1077,4 +1077,10 @@
     <string name="flag_artwork_dynamic_theme_desc">Adiciona a opção de extrair a cor de destaque da obra visualizada às Configurações Gerais</string>
     <string name="flag_detail_section_order_title">Ordem das Seções da Tela de Detalhes</string>
     <string name="flag_detail_section_order_desc">Adiciona a opção de reordenar seções na tela de detalhes às Configurações de Imagem</string>
+    <string name="update_auto_download_wifi_only">Baixar automaticamente apenas via Wi-Fi</string>
+    <string name="update_auto_download_wifi_only_desc">Não baixa atualizações automaticamente em segundo plano ao usar dados móveis</string>
+    <string name="update_download_progress_title">Baixando atualização: %1$s</string>
+    <string name="update_cancel_download">Cancelar download</string>
+    <string name="update_retry_download">Tentar novamente</string>
+    <string name="post_update_notice">Atualizado para Palleria %1$s</string>
 </resources>

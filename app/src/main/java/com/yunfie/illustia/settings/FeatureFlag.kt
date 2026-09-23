@@ -59,12 +59,6 @@ enum class FeatureFlag(
         descRes = R.string.flag_artwork_dynamic_theme_desc,
         defaultEnabled = false,
     ),
-    DetailSectionOrder(
-        key = "flag_detail_section_order",
-        titleRes = R.string.flag_detail_section_order_title,
-        descRes = R.string.flag_detail_section_order_desc,
-        defaultEnabled = false,
-    ),
     ;
 
     companion object {

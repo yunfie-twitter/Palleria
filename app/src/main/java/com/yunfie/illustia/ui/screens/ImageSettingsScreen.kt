@@ -53,8 +53,6 @@ fun ImageSettingsScreen(
         }
 
     val cardCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.CardCustomization)
-    val detailSectionOrderFlag = state.settings.isFeatureEnabled(FeatureFlag.DetailSectionOrder)
-    val hasCustomizationSection = cardCustomizationFlag || detailSectionOrderFlag || !isDesktop
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -179,36 +177,31 @@ fun ImageSettingsScreen(
                 }
             }
 
-            if (hasCustomizationSection) {
-                item {
-                    Section(stringResource(R.string.image_section_customization)) {
-                        ElevatedPanel {
-                            var hasItemAbove = false
-                            if (cardCustomizationFlag) {
-                                SettingLinkRow(
-                                    title = stringResource(R.string.card_customization_settings_title),
-                                    summary = stringResource(R.string.card_customization_settings_summary),
-                                    onClick = onOpenCardCustomizationSettings,
-                                )
-                                hasItemAbove = true
-                            }
-                            if (detailSectionOrderFlag) {
-                                if (hasItemAbove) DividerLine()
-                                SettingLinkRow(
-                                    title = stringResource(R.string.detail_section_settings_title),
-                                    summary = stringResource(R.string.detail_section_settings_summary),
-                                    onClick = onOpenDetailSectionSettings,
-                                )
-                                hasItemAbove = true
-                            }
-                            if (!isDesktop) {
-                                if (hasItemAbove) DividerLine()
-                                SettingLinkRow(
-                                    title = stringResource(R.string.wallpaper_playlist),
-                                    summary = stringResource(R.string.wallpaper_playlist_desc),
-                                    onClick = onOpenWallpaperPlaylistSettings,
-                                )
-                            }
+            item {
+                Section(stringResource(R.string.image_section_customization)) {
+                    ElevatedPanel {
+                        var hasItemAbove = false
+                        if (cardCustomizationFlag) {
+                            SettingLinkRow(
+                                title = stringResource(R.string.card_customization_settings_title),
+                                summary = stringResource(R.string.card_customization_settings_summary),
+                                onClick = onOpenCardCustomizationSettings,
+                            )
+                            hasItemAbove = true
+                        }
+                        if (hasItemAbove) DividerLine()
+                        SettingLinkRow(
+                            title = stringResource(R.string.detail_section_settings_title),
+                            summary = stringResource(R.string.detail_section_settings_summary),
+                            onClick = onOpenDetailSectionSettings,
+                        )
+                        if (!isDesktop) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.wallpaper_playlist),
+                                summary = stringResource(R.string.wallpaper_playlist_desc),
+                                onClick = onOpenWallpaperPlaylistSettings,
+                            )
                         }
                     }
                 }

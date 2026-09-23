@@ -178,6 +178,8 @@ internal fun readFromDataStore(
         includePrereleaseUpdates = preferences[INCLUDE_PRERELEASE_UPDATES] ?: false,
         notifyNewVersion = preferences[NOTIFY_NEW_VERSION] ?: true,
         autoDownloadUpdates = preferences[AUTO_DOWNLOAD_UPDATES] ?: false,
+        autoDownloadWifiOnly = preferences[AUTO_DOWNLOAD_WIFI_ONLY] ?: true,
+        lastSeenAppVersionCode = preferences[LAST_SEEN_APP_VERSION_CODE] ?: 0,
         discordRpcEnabled = preferences[DISCORD_RPC_ENABLED] ?: false,
         discordApplicationId = preferences[DISCORD_APPLICATION_ID] ?: "1544652855233744926",
         discordRpcShowArtworkDetails = preferences[DISCORD_RPC_SHOW_ARTWORK_DETAILS] ?: false,
@@ -474,6 +476,8 @@ internal fun writeToDataStore(
     preferences[INCLUDE_PRERELEASE_UPDATES] = settings.includePrereleaseUpdates
     preferences[NOTIFY_NEW_VERSION] = settings.notifyNewVersion
     preferences[AUTO_DOWNLOAD_UPDATES] = settings.autoDownloadUpdates
+    preferences[AUTO_DOWNLOAD_WIFI_ONLY] = settings.autoDownloadWifiOnly
+    preferences[LAST_SEEN_APP_VERSION_CODE] = settings.lastSeenAppVersionCode
     preferences[DISCORD_RPC_ENABLED] = settings.discordRpcEnabled
     preferences[DISCORD_APPLICATION_ID] = settings.discordApplicationId
     preferences[DISCORD_RPC_SHOW_ARTWORK_DETAILS] = settings.discordRpcShowArtworkDetails
