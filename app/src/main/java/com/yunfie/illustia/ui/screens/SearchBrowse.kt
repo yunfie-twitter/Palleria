@@ -32,6 +32,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.RecommendedTagsSkeleton
 import com.yunfie.illustia.ui.components.SectionHeader
 import com.yunfie.illustia.ui.components.TagTile
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -158,31 +159,35 @@ internal fun BrowseArea(
                         state.recommendedTags.map { RecommendedTagTile(tag = it) }
                     }
                 }
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                recommendedTags.chunked(tagColumns).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        row.forEach { tag ->
-                            TagTile(
-                                tag = tag.tag,
-                                imageUrl = tag.imageUrl,
-                                onClick = {
-                                    val query =
-                                        tag.tag
-                                            .removePrefix("#")
-                                            .removePrefix("＃")
-                                            .trim()
-                                    onSearch?.invoke(query) ?: viewModel.submitSearch(query)
-                                },
-                                onLongClick = {
-                                    viewModel.openTagOptions(
-                                        rawTag = tag.tag,
-                                        imageUrl = tag.imageUrl,
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
+            if (recommendedTags.isEmpty()) {
+                RecommendedTagsSkeleton(tagColumns = tagColumns)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    recommendedTags.chunked(tagColumns).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            row.forEach { tag ->
+                                TagTile(
+                                    tag = tag.tag,
+                                    imageUrl = tag.imageUrl,
+                                    onClick = {
+                                        val query =
+                                            tag.tag
+                                                .removePrefix("#")
+                                                .removePrefix("＃")
+                                                .trim()
+                                        onSearch?.invoke(query) ?: viewModel.submitSearch(query)
+                                    },
+                                    onLongClick = {
+                                        viewModel.openTagOptions(
+                                            rawTag = tag.tag,
+                                            imageUrl = tag.imageUrl,
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            repeat(tagColumns - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                         }
-                        repeat(tagColumns - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                     }
                 }
             }
