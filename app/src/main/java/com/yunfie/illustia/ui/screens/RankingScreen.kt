@@ -162,38 +162,27 @@ fun RankingScreen(
                 }
             },
             bottomContent = {
-                if (settings.amoledMode) {
-                    RankingModeTabs(
-                        currentMode = modes[pagerState.targetPage],
-                        onSelectMode = { newMode ->
-                            val index = modes.indexOf(newMode).coerceAtLeast(0)
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        modes = modes,
-                    )
-                } else {
-                    TabRow(
-                        tabs =
-                            listOf(
-                                stringResource(R.string.ranking_day),
-                                stringResource(R.string.ranking_day_male),
-                                stringResource(R.string.ranking_day_female),
-                                stringResource(R.string.ranking_week),
-                                stringResource(R.string.ranking_month),
-                                stringResource(R.string.ranking_week_rookie),
-                                stringResource(R.string.ranking_day_ai),
-                            ),
-                        selectedTabIndex = modes.indexOf(modes[pagerState.targetPage]).coerceAtLeast(0),
-                        onTabSelected = { index ->
-                            if (modes.getOrNull(index) == null) return@TabRow
-                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-                        minWidth = 92.dp,
-                        maxWidth = 148.dp,
-                    )
-                }
+                TabRow(
+                    tabs =
+                        listOf(
+                            stringResource(R.string.ranking_day),
+                            stringResource(R.string.ranking_day_male),
+                            stringResource(R.string.ranking_day_female),
+                            stringResource(R.string.ranking_week),
+                            stringResource(R.string.ranking_month),
+                            stringResource(R.string.ranking_week_rookie),
+                            stringResource(R.string.ranking_day_ai),
+                        ),
+                    selectedTabIndex = modes.indexOf(modes[pagerState.targetPage]).coerceAtLeast(0),
+                    onTabSelected = { index ->
+                        if (modes.getOrNull(index) == null) return@TabRow
+                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                    minWidth = 92.dp,
+                    maxWidth = 148.dp,
+                )
             },
         )
         Surface(
@@ -235,46 +224,6 @@ fun RankingScreen(
             }
         }
     }
-}
-
-@Composable
-private fun RankingModeTabs(
-    currentMode: String,
-    onSelectMode: (String) -> Unit,
-    modes: List<String>,
-) {
-    val scheme = MiuixTheme.colorScheme
-    val tabLabels =
-        listOf(
-            stringResource(R.string.ranking_day),
-            stringResource(R.string.ranking_day_male),
-            stringResource(R.string.ranking_day_female),
-            stringResource(R.string.ranking_week),
-            stringResource(R.string.ranking_month),
-            stringResource(R.string.ranking_week_rookie),
-            stringResource(R.string.ranking_day_ai),
-        )
-    val performHaptic = rememberHapticFeedbackAction()
-    TabRow(
-        tabs = tabLabels,
-        selectedTabIndex = modes.indexOf(currentMode).coerceAtLeast(0),
-        onTabSelected = { index ->
-            modes.getOrNull(index)?.let {
-                performHaptic(AppHapticEffect.Toggle)
-                onSelectMode(it)
-            }
-        },
-        colors =
-            TabRowDefaults.tabRowColors(
-                backgroundColor = scheme.surfaceContainer.copy(alpha = 0.88f),
-                contentColor = scheme.onSurfaceVariantSummary,
-                selectedBackgroundColor = scheme.surfaceContainerHigh,
-                selectedContentColor = scheme.onBackground,
-            ),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-        minWidth = 92.dp,
-        maxWidth = 148.dp,
-    )
 }
 
 @Composable

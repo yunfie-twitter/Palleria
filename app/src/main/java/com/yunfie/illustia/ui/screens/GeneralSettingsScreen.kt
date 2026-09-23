@@ -61,10 +61,7 @@ fun GeneralSettingsScreen(
     val hapticsSupported = remember(context) { isAppHapticsSupported(context) }
     val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
     val hapticsEnabled = effectiveHapticMode != AppHapticMode.Off
-    var showAmoledWarningDialog by remember { mutableStateOf(false) }
 
-    val amoledFlag = state.settings.isFeatureEnabled(FeatureFlag.AmoledTheme)
-    val userProfileBottomSheetFlag = state.settings.isFeatureEnabled(FeatureFlag.UserProfileBottomSheet)
     val customAppIconFlag = state.settings.isFeatureEnabled(FeatureFlag.CustomAppIcon)
     val artworkDynamicThemeFlag = state.settings.isFeatureEnabled(FeatureFlag.ArtworkDynamicTheme)
     val navigationCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
@@ -112,21 +109,6 @@ fun GeneralSettingsScreen(
                             label = { appThemeLabel(it) },
                             onSelect = viewModel::updateThemeMode,
                         )
-                        if (amoledFlag) {
-                            DividerLine()
-                            ThemeSwitchSettingRow(
-                                title = stringResource(R.string.general_amoled),
-                                checked = state.settings.amoledMode,
-                                onCheckedChange = { enabled ->
-                                    if (enabled) {
-                                        showAmoledWarningDialog = true
-                                    } else {
-                                        viewModel.updateAmoledMode(false)
-                                    }
-                                },
-                                summary = stringResource(R.string.general_amoled_desc),
-                            )
-                        }
                         DividerLine()
                         ThemeSwitchSettingRow(
                             title = stringResource(R.string.general_dynamic_color),
@@ -147,15 +129,6 @@ fun GeneralSettingsScreen(
                                 checked = state.settings.artworkThemeEnabled,
                                 onCheckedChange = viewModel::updateArtworkThemeEnabled,
                                 summary = stringResource(R.string.experimental_artwork_theme_desc),
-                            )
-                        }
-                        if (userProfileBottomSheetFlag) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.general_user_profile_bottom_sheet),
-                                checked = state.settings.userProfileBottomSheetEnabled,
-                                onCheckedChange = viewModel::updateUserProfileBottomSheetEnabled,
-                                summary = stringResource(R.string.general_user_profile_bottom_sheet_desc),
                             )
                         }
                         if (customAppIconFlag) {
@@ -357,19 +330,5 @@ fun GeneralSettingsScreen(
                 }
             }
         }
-
-        MiuixConfirmDialog(
-            show = showAmoledWarningDialog,
-            title = stringResource(R.string.general_experimental_feature),
-            summary = stringResource(R.string.general_amoled_warning_desc),
-            confirmText = stringResource(R.string.action_enable),
-            onConfirm = {
-                showAmoledWarningDialog = false
-                viewModel.updateAmoledMode(true)
-            },
-            onDismiss = {
-                showAmoledWarningDialog = false
-            },
-        )
     }
 }

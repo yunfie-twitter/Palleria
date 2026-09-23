@@ -291,106 +291,15 @@ abstract class IllustiaDetailProfileModule(
     }
 
     fun openUser(user: UserPreview) {
-        openUser(user.id)
+        openUserPage(user.id)
     }
 
     fun openUser(userId: Long) {
-        closeUserPageJob?.cancel()
-        closeUserPageJob = null
-        userPageLoadJob?.cancel()
-        userPageLoadJob = null
-        if (userId <= 0L) {
-            _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
-            return
-        }
-        userPageSnapshot = snapshotUserPageState()
-        if (!_uiState.value.settings.userProfileBottomSheetEnabled) {
-            openUserPage(userId)
-            return
-        }
-        _uiState.update {
-            if (it.selectedUser?.id != userId) {
-                it.copy(
-                    selectedUserId = userId,
-                    selectedUser = null,
-                    selectedUserIllusts = emptyList(),
-                    selectedUserNextUrl = null,
-                    selectedUserBookmarks = emptyList(),
-                    selectedUserBookmarksNextUrl = null,
-                    selectedRelatedUsers = emptyList(),
-                    selectedRelatedUsersNextUrl = null,
-                    selectedRelatedUsersLoading = false,
-                    showUserPage = false,
-                    userPageDismissed = false,
-                    userPageFromSheet = false,
-                )
-            } else {
-                it.copy(
-                    selectedUserId = userId,
-                    showUserPage = false,
-                    userPageDismissed = false,
-                    userPageFromSheet = false,
-                )
-            }
-        }
-        val job =
-            viewModelScope.launch(Dispatchers.IO) {
-                _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
-                try {
-                    val profileDeferred = async { repository.userDetail(userId) }
-                    val pageDeferred = async { repository.userIllusts(userId) }
-                    val profile = profileDeferred.await()
-                    val page = pageDeferred.await()
-                    _uiState.update { state ->
-                        if (state.selectedUserId != userId) return@update state
-                        state.copy(
-                            selectedUser = profile,
-                            selectedUserIllusts = page.items.visibleWithSettings(state.settings),
-                            selectedUserNextUrl = page.nextUrl,
-                            selectedUserBookmarks = emptyList(),
-                            selectedUserBookmarksNextUrl = null,
-                            selectedRelatedUsers = emptyList(),
-                            selectedRelatedUsersNextUrl = null,
-                            selectedRelatedUsersLoading = false,
-                            showUserPage = false,
-                            userPageFromSheet = false,
-                            userPageDismissed = false,
-                            loadState = LoadState.Loaded,
-                        )
-                    }
-                    userPageSnapshot = null
-                } catch (expectedFailure: Exception) {
-                    val error = expectedFailure
-                    if (isCancellation(error)) throw error
-                    if (handleAuthExpired(error)) return@launch
-                    restoreUserPageSnapshot()
-                    val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
-                    _uiState.update {
-                        it.copy(
-                            message = message,
-                            loadState = LoadState.Error(message),
-                        )
-                    }
-                }
-            }
-        userPageLoadJob = job
-        job.invokeOnCompletion {
-            if (userPageLoadJob === job) userPageLoadJob = null
-        }
+        openUserPage(userId)
     }
 
     fun closeUser() {
-        closeUserPageJob?.cancel()
-        closeUserPageJob = null
-        userPageLoadJob?.cancel()
-        userPageLoadJob = null
-        _uiState.update {
-            it.copy(
-                showUserPage = false,
-                userPageFromSheet = false,
-                userPageDismissed = true,
-            )
-        }
+        closeUserPage()
     }
 
     fun openUserPage(user: UserPreview) {
@@ -421,7 +330,6 @@ abstract class IllustiaDetailProfileModule(
                 selectedRelatedUsersNextUrl = null,
                 selectedRelatedUsersLoading = false,
                 showUserPage = true,
-                userPageFromSheet = false,
                 userPageDismissed = false,
                 message = null,
             )
@@ -484,7 +392,6 @@ abstract class IllustiaDetailProfileModule(
         _uiState.update {
             it.copy(
                 showUserPage = false,
-                userPageFromSheet = false,
                 userPageDismissed = true,
             )
         }
@@ -503,30 +410,10 @@ abstract class IllustiaDetailProfileModule(
                         selectedRelatedUsersNextUrl = null,
                         selectedRelatedUsersLoading = false,
                         userPageDismissed = false,
-                        userPageFromSheet = false,
                     )
                 }
                 closeUserPageJob = null
             }
-    }
-
-    fun collapseUserPageToSheet() {
-        if (_uiState.value.settings.userProfileBottomSheetEnabled && _uiState.value.userPageFromSheet) {
-            _uiState.update { it.copy(showUserPage = false) }
-        } else {
-            closeUserPage()
-        }
-    }
-
-    fun expandUserSheetToPage() {
-        captureProfileReturnDetail()
-        closeUserPageJob?.cancel()
-        closeUserPageJob = null
-        val activeUserId = _uiState.value.selectedUser?.id
-        if (activeUserId != null) {
-            _userNavigationRequests.tryEmit(activeUserId)
-        }
-        _uiState.update { it.copy(showUserPage = true, userPageFromSheet = true) }
     }
 
     fun restoreProfileReturnDetail(): Boolean {

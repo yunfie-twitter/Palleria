@@ -35,7 +35,6 @@ internal data class UserPageSnapshot(
     val selectedRelatedUsersNextUrl: String?,
     val selectedRelatedUsersLoading: Boolean,
     val showUserPage: Boolean,
-    val userPageFromSheet: Boolean,
     val userPageDismissed: Boolean,
 )
 
@@ -63,7 +62,6 @@ internal fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
         selectedRelatedUsersNextUrl = selectedRelatedUsersNextUrl,
         selectedRelatedUsersLoading = selectedRelatedUsersLoading,
         showUserPage = showUserPage,
-        userPageFromSheet = userPageFromSheet,
         userPageDismissed = userPageDismissed,
     )
 
@@ -79,6 +77,5 @@ internal fun IllustiaUiState.restore(snapshot: UserPageSnapshot): IllustiaUiStat
         selectedRelatedUsersNextUrl = snapshot.selectedRelatedUsersNextUrl,
         selectedRelatedUsersLoading = snapshot.selectedRelatedUsersLoading,
         showUserPage = snapshot.showUserPage,
-        userPageFromSheet = snapshot.userPageFromSheet,
         userPageDismissed = snapshot.userPageDismissed,
     )

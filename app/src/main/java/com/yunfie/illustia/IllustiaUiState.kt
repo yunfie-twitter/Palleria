@@ -91,7 +91,6 @@ data class IllustiaUiState(
     val selectedRelatedUsersNextUrl: String? = null,
     val selectedRelatedUsersLoading: Boolean = false,
     val showUserPage: Boolean = false,
-    val userPageFromSheet: Boolean = false,
     val userPageDismissed: Boolean = false,
     val imageViewerIllust: Illust? = null,
     val imageViewerStartPage: Int = 0,

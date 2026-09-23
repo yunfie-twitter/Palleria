@@ -305,10 +305,6 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(appIconVariant = value) }
     }
 
-    fun updateAmoledMode(value: Boolean) {
-        updateSettings { it.copy(amoledMode = value) }
-    }
-
     fun updateNavigationOrder(value: List<String>) {
         val allowed = setOf("home", "search", "shorts", "bookmarks", "ranking", "more")
         val normalized = value.filter { it in allowed }.distinct()
@@ -356,10 +352,6 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateSkipConfirmOnDetailSave(value: Boolean) {
         updateSettings { it.copy(skipConfirmOnDetailSave = value) }
-    }
-
-    fun updateUserProfileBottomSheetEnabled(value: Boolean) {
-        updateSettings { it.copy(userProfileBottomSheetEnabled = value) }
     }
 
     fun updateShortsFeedEnabled(value: Boolean) {
