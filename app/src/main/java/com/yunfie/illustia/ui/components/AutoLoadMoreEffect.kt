@@ -5,7 +5,9 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -21,10 +23,15 @@ fun AutoLoadMoreEffect(
     buffer: Int = DEFAULT_BUFFER,
     onLoadMore: () -> Unit,
 ) {
+    val currentEnabled by rememberUpdatedState(enabled)
+    val currentNextUrl by rememberUpdatedState(nextUrl)
+    val currentIsLoading by rememberUpdatedState(isLoading)
+    val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+
     val shouldLoadMore =
-        remember(gridState, enabled, nextUrl, isLoading, buffer) {
+        remember(gridState, buffer) {
             derivedStateOf {
-                if (!enabled || nextUrl == null || isLoading) return@derivedStateOf false
+                if (!currentEnabled || currentNextUrl == null || currentIsLoading) return@derivedStateOf false
                 val layoutInfo = gridState.layoutInfo
                 val totalItems = layoutInfo.totalItemsCount
                 val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -36,7 +43,7 @@ fun AutoLoadMoreEffect(
         snapshotFlow { shouldLoadMore.value }
             .distinctUntilChanged()
             .filter { it }
-            .collect { onLoadMore() }
+            .collect { currentOnLoadMore() }
     }
 }
 
@@ -49,10 +56,15 @@ fun AutoLoadMoreEffect(
     buffer: Int = DEFAULT_BUFFER,
     onLoadMore: () -> Unit,
 ) {
+    val currentEnabled by rememberUpdatedState(enabled)
+    val currentNextUrl by rememberUpdatedState(nextUrl)
+    val currentIsLoading by rememberUpdatedState(isLoading)
+    val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+
     val shouldLoadMore =
-        remember(listState, enabled, nextUrl, isLoading, buffer) {
+        remember(listState, buffer) {
             derivedStateOf {
-                if (!enabled || nextUrl == null || isLoading) return@derivedStateOf false
+                if (!currentEnabled || currentNextUrl == null || currentIsLoading) return@derivedStateOf false
                 val layoutInfo = listState.layoutInfo
                 val totalItems = layoutInfo.totalItemsCount
                 val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -64,7 +76,7 @@ fun AutoLoadMoreEffect(
         snapshotFlow { shouldLoadMore.value }
             .distinctUntilChanged()
             .filter { it }
-            .collect { onLoadMore() }
+            .collect { currentOnLoadMore() }
     }
 }
 

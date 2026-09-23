@@ -76,6 +76,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
@@ -265,7 +266,7 @@ fun IllustSeriesScreen(
         }
 
         PullToRefresh(
-            isRefreshing = state.isLoading && state.illusts.isNotEmpty(),
+            isRefreshing = state.isRefreshing,
             onRefresh = { scope.launch { store.fetch() } },
             pullToRefreshState = pullToRefreshState,
             modifier = Modifier.fillMaxSize(),
@@ -393,14 +394,31 @@ fun IllustSeriesScreen(
                             showAiBadge = showAiBadge,
                         )
                     }
-                    if (!settings.autoLoadMore && state.model?.nextUrl != null) {
+                    if (settings.autoLoadMore && state.isPaginating) {
+                        item(
+                            key = "series_paginating_footer",
+                            span = { GridItemSpan(maxLineSpan) },
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Button(
                                 onClick = { scope.launch { store.loadMore() } },
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                                 colors = overlayActionButtonColors(),
+                                enabled = !state.isPaginating,
                             ) {
-                                Text(stringResource(R.string.action_load_more))
+                                if (state.isPaginating) {
+                                    LoadingIndicator(modifier = Modifier.size(18.dp))
+                                } else {
+                                    Text(stringResource(R.string.action_load_more))
+                                }
                             }
                         }
                     }

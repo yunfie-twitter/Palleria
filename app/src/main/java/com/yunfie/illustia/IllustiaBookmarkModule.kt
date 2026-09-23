@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val TARGET_SEARCH_PAGE_BATCH = 20
-private const val MAX_SEARCH_LOAD_MORE_PAGES = 6
+private const val TARGET_SEARCH_PAGE_BATCH = 24
+private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 
 /** Pagination for search/profile collections plus bookmark and recommendation behavior. */
 abstract class IllustiaBookmarkModule(
@@ -255,13 +255,33 @@ abstract class IllustiaBookmarkModule(
             }
             return
         }
-        runLoading {
-            val page = repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    bookmarkItems = page.items.visibleWithSettings(it.settings),
-                    bookmarkNextUrl = page.nextUrl,
+                    isBookmarkRefreshing = forceRefresh,
+                    loadState = if (it.bookmarkItems.isEmpty()) LoadState.Loading else it.loadState,
                 )
+            }
+            try {
+                val page = repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                _uiState.update {
+                    it.copy(
+                        bookmarkItems = page.items.visibleWithSettings(it.settings),
+                        bookmarkNextUrl = page.nextUrl,
+                        isBookmarkRefreshing = false,
+                        loadState = LoadState.Loaded,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isBookmarkRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                    )
+                }
             }
         }
     }
@@ -324,13 +344,28 @@ abstract class IllustiaBookmarkModule(
 
     fun loadMoreBookmarks() {
         val nextUrl = _uiState.value.bookmarkNextUrl ?: return
-        runLoading {
-            val page = repository.nextPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    bookmarkItems = it.bookmarkItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
-                    bookmarkNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isBookmarkPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isBookmarkPaginating = true) }
+            try {
+                val page = repository.nextPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        bookmarkItems = it.bookmarkItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
+                        bookmarkNextUrl = page.nextUrl,
+                        isBookmarkPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                _uiState.update {
+                    it.copy(
+                        isBookmarkPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }

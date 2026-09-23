@@ -94,6 +94,7 @@ internal fun SearchResultGrid(
         enabled = state.settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = isPaginating || state.loadState == LoadState.Loading,
+        buffer = 6,
         onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
     )
 
@@ -108,10 +109,12 @@ internal fun SearchResultGrid(
         if (page == 0) {
             if (isNovelResult) {
                 gridItems(state.searchNovelItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
-                    NovelCard(novel = novel, onClick = { viewModel.openNovel(novel) })
+                    val novelId = novel.id
+                    val onClick = remember(novelId) { { viewModel.openNovel(novel) } }
+                    NovelCard(novel = novel, onClick = onClick)
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_novel_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
                         Box(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center,
@@ -120,7 +123,7 @@ internal fun SearchResultGrid(
                         }
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreSearch,
                             enabled = !isPaginating,
@@ -143,14 +146,14 @@ internal fun SearchResultGrid(
                 }
                 if (state.searchNovelItems.isEmpty()) {
                     if (state.loadState is LoadState.Error) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_novel_error_state", span = { GridItemSpan(maxLineSpan) }) {
                             SearchErrorState(
                                 message = state.loadState.message,
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
                             )
                         }
                     } else if (state.loadState != LoadState.Loading) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }) {
                             EmptyState(stringResource(R.string.search_empty_novel))
                         }
                     }
@@ -158,12 +161,14 @@ internal fun SearchResultGrid(
             } else {
                 gridItems(state.searchItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     val illustId = illust.id
+                    val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illust) } }
+                    val onClick = remember(illustId) { { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) } }
                     val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                     IllustCard(
                         illust = illust,
-                        onBookmark = { viewModel.toggleBookmark(illust) },
-                        onClick = { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) },
+                        onBookmark = onBookmark,
+                        onClick = onClick,
                         onLongClick = onLongClick,
                         highQualityImages = feedHighQuality,
                         showAiBadge = showAiBadge,
@@ -171,7 +176,7 @@ internal fun SearchResultGrid(
                     )
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_illust_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
                         Box(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center,
@@ -180,7 +185,7 @@ internal fun SearchResultGrid(
                         }
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreSearch,
                             enabled = !isPaginating,
@@ -203,14 +208,14 @@ internal fun SearchResultGrid(
                 }
                 if (state.searchItems.isEmpty()) {
                     if (state.loadState is LoadState.Error) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_illust_error_state", span = { GridItemSpan(maxLineSpan) }) {
                             SearchErrorState(
                                 message = state.loadState.message,
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
                             )
                         }
                     } else if (state.loadState != LoadState.Loading) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }) {
                             EmptyState(stringResource(R.string.search_empty_illust))
                         }
                     }
@@ -218,10 +223,12 @@ internal fun SearchResultGrid(
             }
         } else {
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
-                UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
+                val userId = user.id
+                val onClick = remember(userId) { { viewModel.openUserPage(user) } }
+                UserResultCard(user = user, onClick = onClick)
             }
             if (state.settings.autoLoadMore && isPaginating) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(key = "search_user_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center,
@@ -230,7 +237,7 @@ internal fun SearchResultGrid(
                     }
                 }
             } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreUserSearch,
                         enabled = !isPaginating,
@@ -253,14 +260,14 @@ internal fun SearchResultGrid(
             }
             if (state.userSearchItems.isEmpty()) {
                 if (state.loadState is LoadState.Error) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_user_error_state", span = { GridItemSpan(maxLineSpan) }) {
                         SearchErrorState(
                             message = state.loadState.message,
                             onRetry = { viewModel.submitSearch(forceRefresh = true) },
                         )
                     }
                 } else if (state.loadState != LoadState.Loading) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.search_empty_user))
                     }
                 }

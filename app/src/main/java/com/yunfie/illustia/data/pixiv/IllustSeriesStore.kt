@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.update
 
 data class IllustSeriesState(
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val isPaginating: Boolean = false,
     val model: IllustSeriesWithIdModel? = null,
     val illusts: List<Illusts> = emptyList(),
     val watchlistAdded: Boolean = false,
@@ -24,13 +26,20 @@ class IllustSeriesStore(
     private val _state = MutableStateFlow(IllustSeriesState())
     val state: StateFlow<IllustSeriesState> = _state.asStateFlow()
 
-    suspend fun fetch() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+    suspend fun fetch(forceRefresh: Boolean = false) {
+        _state.update {
+            it.copy(
+                isRefreshing = forceRefresh || it.illusts.isNotEmpty(),
+                isLoading = it.illusts.isEmpty(),
+                errorMessage = null,
+            )
+        }
         try {
             val model = repository.illustSeries(illustSeriesId)
             _state.update {
                 it.copy(
                     isLoading = false,
+                    isRefreshing = false,
                     model = model,
                     watchlistAdded = model.illustSeriesDetail?.watchlistAdded ?: false,
                     illusts = model.illusts.orEmpty(),
@@ -40,25 +49,40 @@ class IllustSeriesStore(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (expectedFailure: Exception) {
-            _state.update { it.copy(isLoading = false, errorMessage = expectedFailure.toString(), watchlistAdded = false) }
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = expectedFailure.toString(),
+                    watchlistAdded = false,
+                )
+            }
         }
     }
 
     suspend fun loadMore() {
         val nextUrl = _state.value.model?.nextUrl ?: return
+        if (_state.value.isPaginating) return
+        _state.update { it.copy(isPaginating = true, errorMessage = null) }
         try {
             val model = repository.nextIllustSeriesPage(nextUrl)
             _state.update {
                 it.copy(
                     model = model,
                     illusts = it.illusts + model.illusts.orEmpty(),
+                    isPaginating = false,
                     errorMessage = null,
                 )
             }
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (expectedFailure: Exception) {
-            _state.update { it.copy(errorMessage = expectedFailure.toString()) }
+            _state.update {
+                it.copy(
+                    isPaginating = false,
+                    errorMessage = expectedFailure.toString(),
+                )
+            }
         }
     }
 
