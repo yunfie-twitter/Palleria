@@ -888,12 +888,17 @@ internal fun RelatedCreatorsSheetContent(
 @Composable
 private fun UserDetailsCard(user: UserProfile) {
     ElevatedPanel {
+        if (user.comment.isNotBlank()) {
+            Text(
+                user.comment,
+                color = MiuixTheme.colorScheme.onBackground,
+                style = MiuixTheme.textStyles.body1,
+                lineHeight = 23.sp,
+            )
+            DividerLine()
+        }
         SettingRow(stringResource(R.string.user_id_label), user.id.toString()) {}
         DividerLine()
         SettingRow(stringResource(R.string.settings_account), "@${user.account}") {}
-        if (user.comment.isNotBlank()) {
-            DividerLine()
-            Text(user.comment, color = MiuixTheme.colorScheme.onBackground, style = MiuixTheme.textStyles.body1, lineHeight = 23.sp)
-        }
     }
 }
