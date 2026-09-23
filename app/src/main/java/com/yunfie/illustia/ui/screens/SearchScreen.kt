@@ -167,7 +167,7 @@ fun SearchScreen(
             onClearResults()
         } else {
             val nativeEvent = NativeIntentRouter.parseText(trimmed)
-            if (nativeEvent is NativeIntentEvent.Artwork || nativeEvent is NativeIntentEvent.User) {
+            if (nativeEvent is NativeIntentEvent.Artwork || nativeEvent is NativeIntentEvent.User || nativeEvent is NativeIntentEvent.Tag) {
                 viewModel.submitSearch(trimmed)
             } else if (onNavigateToResults != null) {
                 onNavigateToResults.invoke(trimmed)

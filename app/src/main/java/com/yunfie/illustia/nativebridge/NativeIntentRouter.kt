@@ -14,6 +14,10 @@ sealed interface NativeIntentEvent {
         val id: Long,
     ) : NativeIntentEvent
 
+    data class Tag(
+        val tag: String,
+    ) : NativeIntentEvent
+
     data class Text(
         val value: String,
     ) : NativeIntentEvent
@@ -26,7 +30,7 @@ sealed interface NativeIntentEvent {
 object NativeIntentRouter {
     private val WEB_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net")
     private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "palleria")
-    private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts")
+    private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts", "tags")
     private val ROUTE_CANDIDATE_PATTERN = Regex("""(?i)\b(?:https?://|pixiv://|palleria://)\S+""")
     private val ROUTE_TRAILING_PUNCTUATION =
         charArrayOf(
@@ -125,34 +129,71 @@ object NativeIntentRouter {
     }
 
     private fun parseUri(value: String?): NativeIntentEvent? {
-        val uri = runCatching { URI(value) }.getOrNull() ?: return null
-        val normalizedScheme = uri.scheme?.lowercase() ?: return null
-        val normalizedHost = uri.host?.lowercase() ?: return null
+        if (value.isNullOrBlank()) return null
+        val match = Regex("""^(?i)(https?|pixiv|palleria)://([^/?#]+)(?:/(.*))?$""").find(value.trim()) ?: return null
+        val normalizedScheme = match.groupValues[1].lowercase()
+        val normalizedHost = match.groupValues[2].lowercase()
         if (!isTrustedPixivRoute(normalizedScheme, normalizedHost)) return null
+        val rawPath = match.groupValues[3]
         val segments =
-            uri.rawPath
-                .orEmpty()
+            rawPath
+                .split('?')[0]
+                .split('#')[0]
                 .split('/')
                 .filter(String::isNotEmpty)
+        return parseArtworkEvent(normalizedHost, segments)
+            ?: parseUserEvent(normalizedHost, segments)
+            ?: parseTagEvent(normalizedHost, segments)
+    }
+
+    private fun parseArtworkEvent(
+        normalizedHost: String,
+        segments: List<String>,
+    ): NativeIntentEvent.Artwork? {
         val artworkIndex = segments.indexOfFirst { it == "artworks" || it == "illusts" }
-        if (artworkIndex >= 0) {
-            segments.getOrNull(artworkIndex + 1)?.toLongOrNull()?.let {
-                return NativeIntentEvent.Artwork(it)
+        val id =
+            if (artworkIndex >= 0) {
+                segments.getOrNull(artworkIndex + 1)?.toLongOrNull()
+            } else if (normalizedHost == "illusts") {
+                segments.firstOrNull()?.toLongOrNull()
+            } else {
+                null
             }
-        }
-        if (normalizedHost == "illusts") {
-            segments.firstOrNull()?.toLongOrNull()?.let { return NativeIntentEvent.Artwork(it) }
-        }
+        return id?.let(NativeIntentEvent::Artwork)
+    }
+
+    private fun parseUserEvent(
+        normalizedHost: String,
+        segments: List<String>,
+    ): NativeIntentEvent.User? {
         val userIndex = segments.indexOfFirst { it == "users" }
-        if (userIndex >= 0) {
-            segments.getOrNull(userIndex + 1)?.toLongOrNull()?.let {
-                return NativeIntentEvent.User(it)
+        val id =
+            if (userIndex >= 0) {
+                segments.getOrNull(userIndex + 1)?.toLongOrNull()
+            } else if (normalizedHost == "users") {
+                segments.firstOrNull()?.toLongOrNull()
+            } else {
+                null
             }
-        }
-        if (normalizedHost == "users") {
-            segments.firstOrNull()?.toLongOrNull()?.let { return NativeIntentEvent.User(it) }
-        }
-        return null
+        return id?.let(NativeIntentEvent::User)
+    }
+
+    private fun parseTagEvent(
+        normalizedHost: String,
+        segments: List<String>,
+    ): NativeIntentEvent.Tag? {
+        val tagIndex = segments.indexOfFirst { it == "tags" }
+        val rawTag =
+            if (tagIndex >= 0) {
+                segments.getOrNull(tagIndex + 1)
+            } else if (normalizedHost == "tags") {
+                segments.firstOrNull()
+            } else {
+                null
+            }
+        val decodedTag =
+            rawTag?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrDefault(it) }?.trim()
+        return decodedTag?.takeIf(String::isNotBlank)?.let(NativeIntentEvent::Tag)
     }
 
     private fun isTrustedPixivRoute(

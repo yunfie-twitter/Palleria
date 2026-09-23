@@ -5,7 +5,7 @@ import io.kotest.matchers.shouldBe
 
 class NativeIntentRouterTest :
     FunSpec({
-        test("parses trusted Pixiv artwork and user routes") {
+        test("parses trusted Pixiv artwork, user, and tag routes") {
             NativeIntentRouter.parseText("https://www.pixiv.net/artworks/123") shouldBe
                 NativeIntentEvent.Artwork(123)
             NativeIntentRouter.parseText("http://pixiv.net/users/456") shouldBe
@@ -14,12 +14,24 @@ class NativeIntentRouterTest :
                 NativeIntentEvent.Artwork(789)
             NativeIntentRouter.parseText("palleria://users/987") shouldBe
                 NativeIntentEvent.User(987)
+            NativeIntentRouter.parseText("https://www.pixiv.net/tags/初音ミク") shouldBe
+                NativeIntentEvent.Tag("初音ミク")
+            NativeIntentRouter.parseText("https://www.pixiv.net/tags/%E5%88%9D%E9%9F%B3%E3%83%9F%E3%82%AF") shouldBe
+                NativeIntentEvent.Tag("初音ミク")
+            NativeIntentRouter.parseText("https://www.pixiv.net/tags/Touhou/artworks") shouldBe
+                NativeIntentEvent.Tag("Touhou")
+            NativeIntentRouter.parseText("pixiv://tags/Genshin") shouldBe
+                NativeIntentEvent.Tag("Genshin")
+            NativeIntentRouter.parseText("palleria://tags/%E6%9D%B1%E6%96%B9") shouldBe
+                NativeIntentEvent.Tag("東方")
         }
 
         test("rejects Pixiv-looking paths from untrusted origins") {
             NativeIntentRouter.parseText("https://attacker.example/artworks/123") shouldBe null
             NativeIntentRouter.parseText("https://pixiv.net.attacker.example/users/456") shouldBe null
+            NativeIntentRouter.parseText("https://attacker.example/tags/初音ミク") shouldBe null
             NativeIntentRouter.parseText("evil://illusts/789") shouldBe null
+            NativeIntentRouter.parseText("evil://tags/Touhou") shouldBe null
         }
 
         test("extracts trusted Pixiv routes from shared text") {
@@ -27,6 +39,8 @@ class NativeIntentRouterTest :
                 NativeIntentEvent.Artwork(123)
             NativeIntentRouter.parseText("Profile: https://www.pixiv.net/users/456)") shouldBe
                 NativeIntentEvent.User(456)
+            NativeIntentRouter.parseText("タグ検索: https://www.pixiv.net/tags/%E5%88%9D%E9%9F%B3%E3%83%9F%E3%82%AF/artworks を見てね") shouldBe
+                NativeIntentEvent.Tag("初音ミク")
         }
 
         test("does not extract untrusted routes from shared text") {

@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.screens.FavoriteTagsScreen
 import com.yunfie.illustia.ui.screens.FeatureFlagsScreen
 import com.yunfie.illustia.ui.screens.GeneralSettingsScreen
 import com.yunfie.illustia.ui.screens.IllustDetailScreen
+import com.yunfie.illustia.ui.screens.IllustDetailSkeletonScreen
 import com.yunfie.illustia.ui.screens.IllustSeriesScreen
 import com.yunfie.illustia.ui.screens.ImageSettingsScreen
 import com.yunfie.illustia.ui.screens.ImageViewerScreen
@@ -255,12 +256,12 @@ internal fun AppNavHost(
                     } else {
                         detailSnapshots[route.illustId]
                     }
-                snapshot?.let { detail ->
-                    val illust = detail.illust
+                if (snapshot != null) {
+                    val illust = snapshot.illust
                     IllustDetailScreen(
                         illust = illust,
-                        relatedIllusts = detail.relatedIllusts,
-                        firstComment = detail.firstComment,
+                        relatedIllusts = snapshot.relatedIllusts,
+                        firstComment = snapshot.firstComment,
                         onBack = onPopRoute,
                         onBookmark = { viewModel.toggleBookmark(illust) },
                         onRefresh = { viewModel.refreshIllustDetail(illust.id) },
@@ -286,13 +287,13 @@ internal fun AppNavHost(
                                     },
                             )
                         },
-                        isArtistFollowed = detail.user?.isFollowed == true,
+                        isArtistFollowed = snapshot.user?.isFollowed == true,
                         isArtistMuted =
                             appState.state.settings.mutedUsers
                                 .contains(illust.artistId),
                         isTagMuted = illust.isMutedByTags(appState.state.settings),
                         onToggleFollow = {
-                            detail.user?.let { viewModel.toggleFollow(it) }
+                            snapshot.user?.let { viewModel.toggleFollow(it) }
                                 ?: viewModel.openUser(illust.artistId)
                         },
                         onUnmuteUser = { viewModel.unmuteUser(illust.artistId) },
@@ -319,10 +320,14 @@ internal fun AppNavHost(
                         detailSectionOrder = appState.state.settings.detailSectionOrder,
                         relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
                     )
-                } ?: Box(
-                    modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center,
-                ) { LoadingIndicator() }
+                } else {
+                    LaunchedEffect(route.illustId) {
+                        viewModel.openIllust(route.illustId)
+                    }
+                    IllustDetailSkeletonScreen(
+                        onBack = onPopRoute,
+                    )
+                }
             }
             entry(
                 AppRoute.ImageViewer,
