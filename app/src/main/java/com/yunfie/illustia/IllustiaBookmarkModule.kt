@@ -142,40 +142,87 @@ abstract class IllustiaBookmarkModule(
 
     fun loadMoreUserIllusts() {
         val nextUrl = _uiState.value.selectedUserNextUrl ?: return
-        runLoading {
-            val page = repository.nextPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    selectedUserIllusts = it.selectedUserIllusts.appendIllusts(page.items.visibleWithSettings(it.settings)),
-                    selectedUserNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isSelectedUserIllustsPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isSelectedUserIllustsPaginating = true) }
+            try {
+                val page = repository.nextPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        selectedUserIllusts = it.selectedUserIllusts.appendIllusts(page.items.visibleWithSettings(it.settings)),
+                        selectedUserNextUrl = page.nextUrl,
+                        isSelectedUserIllustsPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "user_illusts_load_more")
+                _uiState.update {
+                    it.copy(
+                        isSelectedUserIllustsPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }
 
     fun loadSelectedUserBookmarks() {
         val user = _uiState.value.selectedUser ?: return
-        if (_uiState.value.selectedUserBookmarks.isNotEmpty()) return
-        runLoading {
-            val page = repository.bookmarks(user.id, Restrict.Public)
-            _uiState.update {
-                it.copy(
-                    selectedUserBookmarks = page.items.visibleWithSettings(it.settings),
-                    selectedUserBookmarksNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.selectedUserBookmarks.isNotEmpty() || _uiState.value.isSelectedUserBookmarksPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isSelectedUserBookmarksPaginating = true) }
+            try {
+                val page = repository.bookmarks(user.id, Restrict.Public)
+                _uiState.update {
+                    it.copy(
+                        selectedUserBookmarks = page.items.visibleWithSettings(it.settings),
+                        selectedUserBookmarksNextUrl = page.nextUrl,
+                        isSelectedUserBookmarksPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "user_bookmarks_initial")
+                _uiState.update {
+                    it.copy(
+                        isSelectedUserBookmarksPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }
 
     fun loadMoreSelectedUserBookmarks() {
         val nextUrl = _uiState.value.selectedUserBookmarksNextUrl ?: return
-        runLoading {
-            val page = repository.nextPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    selectedUserBookmarks = it.selectedUserBookmarks.appendIllusts(page.items.visibleWithSettings(it.settings)),
-                    selectedUserBookmarksNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isSelectedUserBookmarksPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isSelectedUserBookmarksPaginating = true) }
+            try {
+                val page = repository.nextPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        selectedUserBookmarks = it.selectedUserBookmarks.appendIllusts(page.items.visibleWithSettings(it.settings)),
+                        selectedUserBookmarksNextUrl = page.nextUrl,
+                        isSelectedUserBookmarksPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "user_bookmarks_load_more")
+                _uiState.update {
+                    it.copy(
+                        isSelectedUserBookmarksPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }

@@ -573,6 +573,10 @@ internal fun AppNavHost(
                         bookmarks = appState.state.selectedUserBookmarks,
                         hasMore = appState.state.selectedUserNextUrl != null,
                         bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
+                        nextUrl = appState.state.selectedUserNextUrl,
+                        bookmarkNextUrl = appState.state.selectedUserBookmarksNextUrl,
+                        isPaginating = appState.state.isSelectedUserIllustsPaginating,
+                        isBookmarkPaginating = appState.state.isSelectedUserBookmarksPaginating,
                         onBack = {
                             viewModel.hideUserPage()
                             onPopRoute()
