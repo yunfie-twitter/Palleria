@@ -34,6 +34,7 @@ import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
+import com.yunfie.illustia.ui.components.CommentItemSkeleton
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -146,13 +147,8 @@ fun CommentScreen(
                         )
                     }
                     if (settings.autoLoadMore && state.isPaginating) {
-                        item(key = "comment_paginating_footer") {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(24.dp))
-                            }
+                        item(key = "comment_paginating_skeleton") {
+                            CommentItemSkeleton()
                         }
                     } else if (!settings.autoLoadMore && state.nextUrl != null) {
                         item {
@@ -171,13 +167,8 @@ fun CommentScreen(
                         }
                     }
                     if (state.isLoading && state.comments.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(24.dp))
-                            }
+                        items(4, key = { "comment_skeleton_$it" }) {
+                            CommentItemSkeleton()
                         }
                     }
                 }

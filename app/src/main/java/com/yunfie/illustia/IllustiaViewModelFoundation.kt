@@ -17,6 +17,7 @@ import com.yunfie.illustia.data.FeatureRepositories
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.PixivApiException
+import com.yunfie.illustia.data.isPixivRateLimited
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
@@ -597,10 +598,11 @@ abstract class IllustiaViewModelFoundation(
         fallback: String = str(R.string.error_generic),
     ): String {
         val message = e.message
-        if (message.isNullOrBlank() || message.contains("CancellationException")) {
-            return fallback
+        return when {
+            message.isNullOrBlank() || message.contains("CancellationException") -> fallback
+            e.isPixivRateLimited() -> str(R.string.error_rate_limited)
+            else -> message
         }
-        return message
     }
 
     protected fun loadFailureMessage(

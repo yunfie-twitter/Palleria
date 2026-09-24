@@ -38,6 +38,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.NotificationCardSkeleton
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -106,7 +107,9 @@ fun NotificationScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (state.notifications.isEmpty() && state.notificationsLoading) {
-                item { Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) { LoadingIndicator() } }
+                items(6, key = { "notification_skeleton_$it" }) {
+                    NotificationCardSkeleton()
+                }
             } else if (state.notifications.isEmpty()) {
                 item { EmptyState(stringResource(R.string.notifications_empty)) }
             }

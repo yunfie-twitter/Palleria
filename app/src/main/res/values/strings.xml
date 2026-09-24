@@ -660,6 +660,7 @@
     <string name="error_save_failed">保存に失敗しました。</string>
     <string name="error_pixiv_user_id_not_set">自分の Pixiv User ID を設定してください。</string>
     <string name="error_generic">処理に失敗しました。</string>
+    <string name="error_rate_limited">リクエストが一時的に制限されています（429）。少し待ってから再度お試しください。</string>
     <string name="error_cache_delete_failed">キャッシュ削除に失敗しました。</string>
     <string name="error_bookmark_failed">ブックマーク操作に失敗しました。</string>
     <string name="error_browser_failed">ブラウザを開けませんでした。</string>
