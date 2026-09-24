@@ -32,4 +32,17 @@ class ViewModelSnapshotsTest :
             restored.selectedRelatedUsersNextUrl shouldBe source.selectedRelatedUsersNextUrl
             restored.selectedRelatedUsersLoading shouldBe true
         }
+
+        "captures search selected tab in search snapshot" {
+            val source =
+                IllustiaUiState(
+                    activeSearchWord = "miku",
+                    searchSelectedTab = 1,
+                )
+
+            val snapshot = source.toSearchSnapshot()
+
+            snapshot.activeSearchWord shouldBe "miku"
+            snapshot.searchSelectedTab shouldBe 1
+        }
     })

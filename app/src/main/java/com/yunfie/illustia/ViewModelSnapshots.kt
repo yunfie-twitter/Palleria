@@ -22,6 +22,7 @@ internal data class SearchSnapshot(
     val searchNovelNextUrl: String?,
     val userSearchItems: List<UserPreview>,
     val userSearchNextUrl: String?,
+    val searchSelectedTab: Int = 0,
 )
 
 internal data class UserPageSnapshot(
@@ -48,6 +49,7 @@ internal fun IllustiaUiState.toSearchSnapshot(): SearchSnapshot =
         searchNovelNextUrl = searchNovelNextUrl,
         userSearchItems = userSearchItems,
         userSearchNextUrl = userSearchNextUrl,
+        searchSelectedTab = searchSelectedTab,
     )
 
 internal fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
