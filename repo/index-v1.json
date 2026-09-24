@@ -1,6 +1,6 @@
 {
   "repo": {
-    "timestamp": 1790202158000,
+    "timestamp": 1790235854000,
     "version": 20002,
     "name": "Palleria Repository",
     "icon": "icon.png",
@@ -57,7 +57,7 @@
       {
         "added": 1790202150000,
         "apkName": "Palleria-v6.2.0-beta.8-release-arm64-v8a.apk",
-        "hash": "30336741078d4974b84334ef1334c8dad7e97e3a08de7ec5cdba43b38f2fdd99",
+        "hash": "1b835c20c2f0ecf68b66685e2b67a557e8416749e5fdf49ffe68798e163aa913",
         "hashType": "sha256",
         "minSdkVersion": 24,
         "nativecode": [
@@ -152,7 +152,7 @@
       {
         "added": 1790202151000,
         "apkName": "Palleria-v6.2.0-beta.8-release-armeabi-v7a.apk",
-        "hash": "4d8706b8cce033d3a034a93bae8599775ef35edb94b4fa2db9f88ed42472f042",
+        "hash": "da93768b9700ce948a7f1141aa10fde164118bb0eb938f9bbd5578e4c4fc06a0",
         "hashType": "sha256",
         "minSdkVersion": 24,
         "nativecode": [
@@ -247,7 +247,7 @@
       {
         "added": 1790202152000,
         "apkName": "Palleria-v6.2.0-beta.8-release-universal.apk",
-        "hash": "11251fea036019da0304905eed989c8a4b6ee01132ddddd7146a28c27979e80f",
+        "hash": "ebb5cd0fc53b684de7eef7eb6f1d89160e0876f016553f00f7c482849840471a",
         "hashType": "sha256",
         "minSdkVersion": 24,
         "nativecode": [
@@ -348,7 +348,7 @@
       {
         "added": 1790202153000,
         "apkName": "Palleria-v6.2.0-beta.8-release-x86_64.apk",
-        "hash": "1331c9a84506838e1b837767480b1deba3160de535d79d56d9ba183c87702c84",
+        "hash": "d61c207bfd47868119982f43158aefb3d0b4bb26331fbbda65826d5706151817",
         "hashType": "sha256",
         "minSdkVersion": 24,
         "nativecode": [

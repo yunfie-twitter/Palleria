@@ -1,6 +1,6 @@
 {
   "repo": {
-    "timestamp": 1790202158000
+    "timestamp": 1790235854000
   },
   "packages": {
     "com.yunfie.illustia": {
@@ -8,11 +8,11 @@
         "lastUpdated": 1790202153000
       },
       "versions": {
-        "30336741078d4974b84334ef1334c8dad7e97e3a08de7ec5cdba43b38f2fdd99": {
+        "1b835c20c2f0ecf68b66685e2b67a557e8416749e5fdf49ffe68798e163aa913": {
           "added": 1790202150000,
           "file": {
             "name": "/Palleria-v6.2.0-beta.8-release-arm64-v8a.apk",
-            "sha256": "30336741078d4974b84334ef1334c8dad7e97e3a08de7ec5cdba43b38f2fdd99",
+            "sha256": "1b835c20c2f0ecf68b66685e2b67a557e8416749e5fdf49ffe68798e163aa913",
             "size": 58090877
           },
           "manifest": {
@@ -102,11 +102,11 @@
             "Beta"
           ]
         },
-        "4d8706b8cce033d3a034a93bae8599775ef35edb94b4fa2db9f88ed42472f042": {
+        "da93768b9700ce948a7f1141aa10fde164118bb0eb938f9bbd5578e4c4fc06a0": {
           "added": 1790202151000,
           "file": {
             "name": "/Palleria-v6.2.0-beta.8-release-armeabi-v7a.apk",
-            "sha256": "4d8706b8cce033d3a034a93bae8599775ef35edb94b4fa2db9f88ed42472f042",
+            "sha256": "da93768b9700ce948a7f1141aa10fde164118bb0eb938f9bbd5578e4c4fc06a0",
             "size": 56077903
           },
           "manifest": {
@@ -196,11 +196,11 @@
             "Beta"
           ]
         },
-        "11251fea036019da0304905eed989c8a4b6ee01132ddddd7146a28c27979e80f": {
+        "ebb5cd0fc53b684de7eef7eb6f1d89160e0876f016553f00f7c482849840471a": {
           "added": 1790202152000,
           "file": {
             "name": "/Palleria-v6.2.0-beta.8-release-universal.apk",
-            "sha256": "11251fea036019da0304905eed989c8a4b6ee01132ddddd7146a28c27979e80f",
+            "sha256": "ebb5cd0fc53b684de7eef7eb6f1d89160e0876f016553f00f7c482849840471a",
             "size": 70512506
           },
           "manifest": {
@@ -296,11 +296,11 @@
             "Beta"
           ]
         },
-        "1331c9a84506838e1b837767480b1deba3160de535d79d56d9ba183c87702c84": {
+        "d61c207bfd47868119982f43158aefb3d0b4bb26331fbbda65826d5706151817": {
           "added": 1790202153000,
           "file": {
             "name": "/Palleria-v6.2.0-beta.8-release-x86_64.apk",
-            "sha256": "1331c9a84506838e1b837767480b1deba3160de535d79d56d9ba183c87702c84",
+            "sha256": "d61c207bfd47868119982f43158aefb3d0b4bb26331fbbda65826d5706151817",
             "size": 58697888
           },
           "manifest": {
