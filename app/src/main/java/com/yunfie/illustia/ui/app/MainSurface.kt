@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.app
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,7 +43,6 @@ import androidx.core.view.WindowCompat
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.screens.AccountSwitchSheet
 import com.yunfie.illustia.ui.screens.AppLockScreen
@@ -121,7 +121,7 @@ internal fun MainSurface(
         }
     }
 
-    PredictiveBackGestureHandler(enabled = appState.settings.doubleBackToExit) {
+    BackHandler(enabled = appState.settings.doubleBackToExit) {
         val now = android.os.SystemClock.elapsedRealtime()
         if (now - lastBackAt < 1800L) {
             (context as? Activity)?.finish()

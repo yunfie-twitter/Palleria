@@ -2,8 +2,7 @@ package com.yunfie.illustia.ui.components
 
 import android.content.Context
 import android.net.ConnectivityManager
-import androidx.activity.ExperimentalActivityApi
-import androidx.activity.compose.PredictiveBackHandler
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -30,8 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
-import kotlinx.coroutines.CancellationException
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
@@ -85,20 +84,17 @@ fun NonAmoledDarkTheme(content: @Composable () -> Unit) {
     }
 }
 
-@Suppress("SwallowedException")
-@OptIn(ExperimentalActivityApi::class)
 @Composable
 fun PredictiveBackGestureHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 ) {
-    PredictiveBackHandler(enabled = enabled) { progress ->
-        try {
-            progress.collect { }
-            onBack()
-        } catch (_: CancellationException) {
-            // Back gesture cancelled by user
-        }
+    if (PlatformCapabilities.supportsPredictiveBack()) {
+        return
+    }
+
+    BackHandler(enabled = enabled) {
+        onBack()
     }
 }
 
