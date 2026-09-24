@@ -908,6 +908,10 @@ abstract class IllustiaSettingsSecurityModule(
         _uiState.update { it.copy(bookmarkSelectedTab = index) }
     }
 
+    fun updateSearchSelectedTab(index: Int) {
+        _uiState.update { it.copy(searchSelectedTab = index) }
+    }
+
     fun updateSearchSort(value: SearchSort) {
         updateSettings { it.copy(searchSort = value) }
         refreshActiveSearch()

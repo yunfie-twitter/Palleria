@@ -195,7 +195,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.UserProfile -> {
-                viewModel.hideUserPage()
+                viewModel.closeUserPage()
             }
 
             else -> {
@@ -514,6 +514,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         state.searchNovelNextUrl,
         state.userSearchItems,
         state.userSearchNextUrl,
+        state.searchSelectedTab,
     ) {
         if (state.activeSearchWord.isNotBlank()) {
             searchSnapshots[state.activeSearchWord] =
@@ -525,6 +526,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     searchNovelNextUrl = state.searchNovelNextUrl,
                     userSearchItems = state.userSearchItems,
                     userSearchNextUrl = state.userSearchNextUrl,
+                    selectedTab = state.searchSelectedTab,
                 )
         }
     }

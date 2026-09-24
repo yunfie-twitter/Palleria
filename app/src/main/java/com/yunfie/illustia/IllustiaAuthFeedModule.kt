@@ -732,6 +732,7 @@ abstract class IllustiaAuthFeedModule(
                 isSearchPaginating = false,
                 isUserSearchPaginating = false,
                 loadState = LoadState.Idle,
+                searchSelectedTab = 0,
             )
         }
     }
@@ -750,6 +751,7 @@ abstract class IllustiaAuthFeedModule(
                 userSearchItems = snapshot.userSearchItems,
                 userSearchNextUrl = snapshot.userSearchNextUrl,
                 loadState = LoadState.Loaded,
+                searchSelectedTab = snapshot.selectedTab,
             )
         }
     }

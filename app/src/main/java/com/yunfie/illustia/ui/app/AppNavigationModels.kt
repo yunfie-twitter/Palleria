@@ -211,4 +211,5 @@ internal data class SearchEntrySnapshot(
     val searchNovelNextUrl: String? = null,
     val userSearchItems: List<UserPreview> = emptyList(),
     val userSearchNextUrl: String? = null,
+    val selectedTab: Int = 0,
 )

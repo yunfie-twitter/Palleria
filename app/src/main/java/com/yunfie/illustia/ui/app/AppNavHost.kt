@@ -161,6 +161,7 @@ internal fun AppNavHost(
                             searchNovelNextUrl = appState.state.searchNovelNextUrl,
                             userSearchItems = appState.state.userSearchItems,
                             userSearchNextUrl = appState.state.userSearchNextUrl,
+                            selectedTab = appState.state.searchSelectedTab,
                         )
                     } else {
                         searchSnapshots[query]
@@ -178,6 +179,7 @@ internal fun AppNavHost(
                             searchNovelNextUrl = snapshot?.searchNovelNextUrl,
                             userSearchItems = snapshot?.userSearchItems.orEmpty(),
                             userSearchNextUrl = snapshot?.userSearchNextUrl,
+                            searchSelectedTab = snapshot?.selectedTab ?: 0,
                         )
                     }
                 SearchScreen(
@@ -206,6 +208,7 @@ internal fun AppNavHost(
                             searchNovelNextUrl = appState.state.searchNovelNextUrl,
                             userSearchItems = appState.state.userSearchItems,
                             userSearchNextUrl = appState.state.userSearchNextUrl,
+                            selectedTab = appState.state.searchSelectedTab,
                         )
                     } else {
                         searchSnapshots[query]
@@ -223,6 +226,7 @@ internal fun AppNavHost(
                             searchNovelNextUrl = snapshot?.searchNovelNextUrl,
                             userSearchItems = snapshot?.userSearchItems.orEmpty(),
                             userSearchNextUrl = snapshot?.userSearchNextUrl,
+                            searchSelectedTab = snapshot?.selectedTab ?: 0,
                         )
                     }
                 SearchScreen(
@@ -573,8 +577,11 @@ internal fun AppNavHost(
                         bookmarks = appState.state.selectedUserBookmarks,
                         hasMore = appState.state.selectedUserNextUrl != null,
                         bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
+                        nextUrl = appState.state.selectedUserNextUrl,
+                        bookmarkNextUrl = appState.state.selectedUserBookmarksNextUrl,
+                        isPaginating = appState.state.isSelectedUserIllustsPaginating,
+                        isBookmarkPaginating = appState.state.isSelectedUserBookmarksPaginating,
                         onBack = {
-                            viewModel.hideUserPage()
                             onPopRoute()
                         },
                         onOpenIllust = { illust ->
@@ -604,7 +611,6 @@ internal fun AppNavHost(
                     }
                     UserProfileSkeletonScreen(
                         onBack = {
-                            viewModel.hideUserPage()
                             onPopRoute()
                         },
                     )
