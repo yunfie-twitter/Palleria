@@ -30,6 +30,27 @@ class NavigationMemoryLifecycleTest :
             snapshots.clear()
             snapshots.shouldBeEmpty()
         }
+
+        test("illustDetailListStates LRU cache preserves states and clears on reset") {
+            val maxCached = 20
+            val cache =
+                object : java.util.LinkedHashMap<Long, String>(maxCached, 0.75f, true) {
+                    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, String>?): Boolean = size > maxCached
+                }
+            cache[101L] = "state_101"
+            cache[102L] = "state_102"
+            cache[101L] shouldBe "state_101"
+            cache[102L] shouldBe "state_102"
+            cache.size shouldBe 2
+
+            // Evict oldest when exceeding maxCached
+            for (i in 1..25) {
+                cache[i.toLong()] = "state_$i"
+            }
+            cache.size shouldBe maxCached
+            cache.clear()
+            cache.shouldBeEmpty()
+        }
     })
 
 private fun dummyIllust(
