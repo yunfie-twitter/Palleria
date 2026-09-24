@@ -22,7 +22,7 @@ android {
         minSdk = androidMinSdk
         targetSdk = 36
         versionCode = 116
-        versionName = "6.2.0-beta.9"
+        versionName = "6.2.0-pre.1"
     }
 
     signingConfigs {
