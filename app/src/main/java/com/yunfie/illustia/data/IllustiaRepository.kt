@@ -689,22 +689,4 @@ class IllustiaRepository(
         }
         return false
     }
-
-    private fun Throwable.isPixivRateLimited(): Boolean {
-        var current: Throwable? = this
-        while (current != null) {
-            val isRateLimited =
-                (current is PixivApiException && current.statusCode == HTTP_TOO_MANY_REQUESTS) ||
-                    current.message.orEmpty().let { msg ->
-                        msg.contains("429") ||
-                            msg.contains("rate limit", ignoreCase = true) ||
-                            msg.contains("Too Many Requests", ignoreCase = true)
-                    }
-            if (isRateLimited) {
-                return true
-            }
-            current = current.cause
-        }
-        return false
-    }
 }
