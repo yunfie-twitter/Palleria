@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.app
 
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -93,6 +94,10 @@ internal fun AppNavHost(
     onSearchTag: (String) -> Unit,
     onTabSelected: (Int, AppTab) -> Unit,
 ) {
+    val artworkMetadata =
+        remember(appState.settings.smoothTransitions) {
+            artworkPageTransitionMetadata(appState.settings.smoothTransitions)
+        }
     val entryProvider =
         entryProvider<NavKey> {
             entry(AppRoute.Main) {
@@ -128,7 +133,7 @@ internal fun AppNavHost(
             }
             entry(
                 AppRoute.Search,
-                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
+                metadata = artworkMetadata,
             ) {
                 SearchScreen(
                     state = appState.state,
@@ -142,7 +147,7 @@ internal fun AppNavHost(
                 )
             }
             entry<AppRoute.TagSearch>(
-                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
+                metadata = artworkMetadata,
             ) { route ->
                 val query = route.word
                 val isCurrentActive = appState.state.activeSearchWord == query
@@ -187,7 +192,7 @@ internal fun AppNavHost(
                 )
             }
             entry<AppRoute.SearchResults>(
-                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
+                metadata = artworkMetadata,
             ) { route ->
                 val query = route.query
                 val isCurrentActive = appState.state.activeSearchWord == query
@@ -242,7 +247,7 @@ internal fun AppNavHost(
                 )
             }
             entry<AppRoute.Detail>(
-                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
+                metadata = artworkMetadata,
             ) { route ->
                 val selectedIllust = appState.state.selectedIllust
                 val snapshot =
@@ -322,8 +327,10 @@ internal fun AppNavHost(
                         listState = viewModel.illustDetailListState(illust.id),
                     )
                 } else {
-                    LaunchedEffect(route.illustId) {
-                        viewModel.openIllust(route.illustId)
+                    if (backStack.lastOrNull() == route) {
+                        LaunchedEffect(route.illustId) {
+                            viewModel.openIllust(route.illustId)
+                        }
                     }
                     IllustDetailSkeletonScreen(
                         onBack = onPopRoute,
@@ -332,7 +339,7 @@ internal fun AppNavHost(
             }
             entry(
                 AppRoute.ImageViewer,
-                metadata = artworkPageTransitionMetadata(appState.settings.smoothTransitions),
+                metadata = artworkMetadata,
             ) {
                 appState.state.imageViewerIllust?.let { illust ->
                     ImageViewerScreen(
@@ -667,9 +674,14 @@ internal fun AppNavHost(
     )
 }
 
+private const val ARTWORK_TRANSITION_DURATION = 320
+private const val ARTWORK_POP_TRANSITION_DURATION = 280
+private const val ARTWORK_PREDICTIVE_POP_DURATION = 550
+
 private fun artworkPageTransitionMetadata(smoothTransitions: Boolean = true): Map<String, Any> {
-    val duration = if (smoothTransitions) 320 else 0
-    val popDuration = if (smoothTransitions) 280 else 0
+    val duration = if (smoothTransitions) ARTWORK_TRANSITION_DURATION else 0
+    val popDuration = if (smoothTransitions) ARTWORK_POP_TRANSITION_DURATION else 0
+    val predictivePopDuration = if (smoothTransitions) ARTWORK_PREDICTIVE_POP_DURATION else 0
     return transitionSpec {
         ContentTransform(
             slideInHorizontally(
@@ -698,11 +710,11 @@ private fun artworkPageTransitionMetadata(smoothTransitions: Boolean = true): Ma
             ContentTransform(
                 slideInHorizontally(
                     initialOffsetX = { fullWidth -> -fullWidth / 4 },
-                    animationSpec = tween(popDuration),
+                    animationSpec = tween(predictivePopDuration, easing = LinearEasing),
                 ),
                 slideOutHorizontally(
                     targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(popDuration),
+                    animationSpec = tween(predictivePopDuration, easing = LinearEasing),
                 ),
             )
         }

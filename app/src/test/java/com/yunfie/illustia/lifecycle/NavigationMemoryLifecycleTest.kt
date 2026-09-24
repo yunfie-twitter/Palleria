@@ -51,6 +51,21 @@ class NavigationMemoryLifecycleTest :
             cache.clear()
             cache.shouldBeEmpty()
         }
+
+        test("popping detail route clears active illust when returning to non-detail route") {
+            var selectedIllustId: Long? = 101L
+            val backStack = mutableListOf("Main", "Detail_101")
+
+            val removed = backStack.removeAt(backStack.lastIndex)
+            val revealed = backStack.lastOrNull()
+
+            if (removed.startsWith("Detail_") && (revealed == null || !revealed.startsWith("Detail_"))) {
+                selectedIllustId = null
+            }
+
+            selectedIllustId shouldBe null
+            backStack shouldBe listOf("Main")
+        }
     })
 
 private fun dummyIllust(

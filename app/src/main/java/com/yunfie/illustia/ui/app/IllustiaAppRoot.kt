@@ -151,6 +151,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 if (backStack.none { it == removed }) {
                     detailSnapshots.remove(removed.illustId)
                 }
+                if (revealed !is AppRoute.Detail) {
+                    viewModel.closeIllust()
+                }
             }
 
             AppRoute.ImageViewer -> {
