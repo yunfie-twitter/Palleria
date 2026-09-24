@@ -319,7 +319,6 @@ internal fun AppNavHost(
                         skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
                         detailSectionOrder = appState.state.settings.detailSectionOrder,
                         relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
-                        listState = viewModel.illustDetailListState(illust.id),
                     )
                 } else {
                     LaunchedEffect(route.illustId) {

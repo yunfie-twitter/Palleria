@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -167,7 +166,6 @@ abstract class IllustiaViewModelFoundation(
     fun clearScrollStates() {
         rankingGridStates.clear()
         userProfileGridStates.clear()
-        illustDetailListStates.clear()
     }
 
     protected val rankingGridStates: MutableMap<String, LazyGridState> =
@@ -177,10 +175,6 @@ abstract class IllustiaViewModelFoundation(
     protected val userProfileGridStates: MutableMap<Long, LazyGridState> =
         object : java.util.LinkedHashMap<Long, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
-        }
-    protected val illustDetailListStates: MutableMap<Long, LazyListState> =
-        object : java.util.LinkedHashMap<Long, LazyListState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyListState>?): Boolean = size > MAX_CACHED_GRID_STATES
         }
     protected val downloadClient: OkHttpClient by lazy {
         (getApplication<Application>() as IllustiaApplication)
