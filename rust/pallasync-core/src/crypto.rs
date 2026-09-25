@@ -7,7 +7,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305, KeyInit, Nonce, XChaCha20Poly1305, XNonce,
     aead::{Aead as AeadTrait, Payload},
 };
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use hkdf::Hkdf;
 use hmac::Hmac;
 use rand::RngCore;
@@ -159,17 +159,17 @@ pub fn verify_with_context(
     msg.extend_from_slice(context);
     msg.extend_from_slice(canonical_jcs);
 
-    if public_key.verify(&msg, &signature).is_ok() {
+    if public_key.verify_strict(&msg, &signature).is_ok() {
         return Ok(true);
     }
 
     // 2.0 fallback: SHA-256 pre-hash verification without context
     let hash = sha256_hash(canonical_jcs);
-    if public_key.verify(&hash, &signature).is_ok() {
+    if public_key.verify_strict(&hash, &signature).is_ok() {
         return Ok(true);
     }
     // Also try direct without context
-    if public_key.verify(canonical_jcs, &signature).is_ok() {
+    if public_key.verify_strict(canonical_jcs, &signature).is_ok() {
         return Ok(true);
     }
 

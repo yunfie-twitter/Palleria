@@ -224,6 +224,7 @@ private fun SharedPreferences.getNonEmptyStringList(key: String): List<String> =
 internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSettings =
     AppSettings(
         refreshToken = preferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
+        discordToken = preferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences.getLong(KEY_BOOKMARK_USER_ID, 0L).takeIf { it > 0L },
         appLanguage = preferences.getSafeString(KEY_APP_LANGUAGE, "system"),
         appFont = preferences.getSafeString(KEY_APP_FONT, "system"),
@@ -489,12 +490,18 @@ internal fun writeToDataStore(
 internal fun writeSensitiveSettings(
     sensitivePreferences: SharedPreferences,
     settings: AppSettings,
+    commit: Boolean = false,
 ) {
-    sensitivePreferences
-        .edit()
-        .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
-        .putString(KEY_DISCORD_TOKEN, settings.discordToken)
-        .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
-        .remove(KEY_ACCOUNTS)
-        .apply()
+    val editor =
+        sensitivePreferences
+            .edit()
+            .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
+            .putString(KEY_DISCORD_TOKEN, settings.discordToken)
+            .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
+            .remove(KEY_ACCOUNTS)
+    if (commit) {
+        if (!editor.commit()) throw IOException("Unable to persist migrated credentials")
+    } else {
+        editor.apply()
+    }
 }

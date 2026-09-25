@@ -222,4 +222,33 @@ class SettingsContentFilterRegressionTest :
             (secondApply.homeItems === firstApply.homeItems) shouldBe true
             (secondApply.novelItems === firstApply.novelItems) shouldBe true
         }
+
+        test("related-content controls remove loaded adult works when global filters allow them") {
+            val settings =
+                AppSettings(
+                    allowR18 = true,
+                    allowR18G = true,
+                    hideAiWorks = false,
+                    showR18Badge = true,
+                    showRelatedR18 = true,
+                )
+            val allIllusts = listOf(normalIllust, r18Illust, r18Illust.copy(id = 5L, xRestrict = 2))
+            val state =
+                IllustiaUiState(
+                    settings = settings,
+                    homeItems = allIllusts,
+                    relatedIllusts = allIllusts,
+                )
+
+            listOf(
+                settings.copy(showRelatedR18 = false),
+                settings.copy(showR18Badge = false),
+            ).forEach { restrictedSettings ->
+                val updated = state.withSettings(restrictedSettings)
+                updated.relatedIllusts.shouldContainExactly(normalIllust)
+                (updated.homeItems === allIllusts) shouldBe true
+            }
+
+            (state.withSettings(settings).relatedIllusts === allIllusts) shouldBe true
+        }
     })

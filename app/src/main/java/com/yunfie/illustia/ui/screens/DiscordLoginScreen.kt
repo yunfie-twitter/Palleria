@@ -2,10 +2,7 @@ package com.yunfie.illustia.ui.screens
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.view.View
 import android.view.ViewGroup
-import android.webkit.JsResult
-import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -13,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,10 +22,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.isDiscordAppUrl
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONTokener
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -36,7 +36,8 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val JS_SNIPPET =
-    "javascript:(function()%7Bvar%20i%3Ddocument.createElement('iframe')%3Bdocument.body.appendChild(i)%3Balert(i.contentWindow.localStorage.token.slice(1,-1))%7D)()"
+    "(function(){var i=document.createElement('iframe');document.body.appendChild(i);" +
+        "try{return JSON.parse(i.contentWindow.localStorage.getItem('token'));}finally{i.remove();}})()"
 
 private const val MOTOROLA = "motorola"
 private const val SAMSUNG_USER_AGENT =
@@ -52,6 +53,16 @@ fun DiscordLoginScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
+    var completed by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            completed = true
+            webViewInstance?.stopLoading()
+            webViewInstance?.destroy()
+            webViewInstance = null
+        }
+    }
 
     PredictiveBackGestureHandler(onBack = {
         if (webViewInstance?.canGoBack() == true) {
@@ -104,48 +115,39 @@ fun DiscordLoginScreen(
 
                     webViewClient =
                         object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView,
-                                url: String,
-                            ): Boolean {
-                                if (url.endsWith("/app") || url.contains("discord.com/channels/@me") || url.contains("discord.com/app")) {
-                                    view.stopLoading()
-                                    view.loadUrl(JS_SNIPPET)
-                                    view.visibility = View.GONE
-                                    return true
-                                }
-                                return false
-                            }
-
                             override fun onPageFinished(
                                 view: WebView,
                                 url: String?,
                             ) {
                                 super.onPageFinished(view, url)
-                                if (isDiscordAppUrl(url)) {
-                                    view.loadUrl(JS_SNIPPET)
-                                }
+                                captureToken(view, url)
                             }
-                        }
 
-                    webChromeClient =
-                        object : WebChromeClient() {
-                            override fun onJsAlert(
+                            override fun doUpdateVisitedHistory(
                                 view: WebView,
-                                url: String,
-                                message: String,
-                                result: JsResult,
-                            ): Boolean {
-                                if (message.isNotBlank() && message != "null" && message != "undefined") {
-                                    viewModel.updateDiscordToken(message)
-                                    Toast.makeText(context, R.string.discord_login_success, Toast.LENGTH_SHORT).show()
-                                    scope.launch(Dispatchers.Main) {
-                                        onBack()
+                                url: String?,
+                                isReload: Boolean,
+                            ) {
+                                super.doUpdateVisitedHistory(view, url, isReload)
+                                captureToken(view, url)
+                            }
+
+                            private fun captureToken(
+                                view: WebView,
+                                url: String?,
+                            ) {
+                                if (!completed && isDiscordAppUrl(url) && isDiscordAppUrl(view.url)) {
+                                    view.evaluateJavascript(JS_SNIPPET) { encodedToken ->
+                                        if (completed || !isDiscordAppUrl(view.url)) return@evaluateJavascript
+                                        val token = runCatching { JSONTokener(encodedToken).nextValue() as? String }.getOrNull()
+                                        if (!token.isNullOrBlank() && token != "null" && token != "undefined") {
+                                            completed = true
+                                            viewModel.updateDiscordToken(token)
+                                            Toast.makeText(context, R.string.discord_login_success, Toast.LENGTH_SHORT).show()
+                                            scope.launch(Dispatchers.Main) { onBack() }
+                                        }
                                     }
                                 }
-                                view.visibility = View.GONE
-                                result.confirm()
-                                return true
                             }
                         }
 
@@ -155,9 +157,4 @@ fun DiscordLoginScreen(
             },
         )
     }
-}
-
-private fun isDiscordAppUrl(url: String?): Boolean {
-    if (url == null) return false
-    return url.endsWith("/app") || url.contains("discord.com/channels/@me") || url.contains("discord.com/app")
 }

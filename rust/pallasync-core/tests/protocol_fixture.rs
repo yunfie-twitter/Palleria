@@ -1,4 +1,5 @@
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use pallasync_core::{crypto, models};
 
 const SEED_PHRASE: &str =
@@ -125,4 +126,44 @@ fn device_record_v2_1_self_signed_and_encrypted() {
     let mut tampered = record;
     tampered.created_at_ms += 1;
     assert!(!crypto::verify_device_record(&tampered).expect("tampered record fails verification"));
+}
+
+#[test]
+fn rejects_weak_ed25519_public_keys() {
+    let mut identity = [0_u8; 32];
+    identity[0] = 1;
+    let public_key = VerifyingKey::from_bytes(&identity).expect("encoded identity point");
+    assert!(public_key.is_weak());
+    let mut signature = [0_u8; 64];
+    signature[..32].copy_from_slice(&identity);
+
+    assert!(
+        !crypto::verify_with_context(
+            &public_key,
+            crypto::CTX_SYNC_RECORD,
+            b"{}",
+            &URL_SAFE_NO_PAD.encode(signature),
+        )
+        .expect("signature encoding is well formed")
+    );
+}
+
+#[test]
+fn strict_verification_preserves_legacy_signatures_from_valid_keys() {
+    let key = SigningKey::from_bytes(&[42_u8; 32]);
+    let canonical = b"{\"legacy\":true}";
+    for signature in [
+        key.sign(canonical),
+        key.sign(&crypto::sha256_hash(canonical)),
+    ] {
+        assert!(
+            crypto::verify_with_context(
+                &key.verifying_key(),
+                crypto::CTX_SYNC_RECORD,
+                canonical,
+                &URL_SAFE_NO_PAD.encode(signature.to_bytes()),
+            )
+            .expect("legacy signature is well formed")
+        );
+    }
 }

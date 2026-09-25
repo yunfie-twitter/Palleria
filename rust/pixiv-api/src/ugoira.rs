@@ -39,7 +39,7 @@ pub(crate) async fn prepare(
     fs::create_dir_all(staging.path())
         .map_err(|error| io_error("create ugoira staging directory", error))?;
 
-    extract_required(zip_path, staging.path(), &frames).await?;
+    let staging = extract_required(zip_path, staging, &frames).await?;
     File::create(staging.path().join(COMPLETE_MARKER))
         .map_err(|error| io_error("create ugoira completion marker", error))?;
     remove_if_exists(cache_dir)?;
@@ -51,14 +51,15 @@ pub(crate) async fn prepare(
 
 async fn extract_required(
     zip_path: &Path,
-    staging: &Path,
+    staging: TempPath,
     frames: &[UgoiraFrame],
-) -> Result<(), ApiError> {
+) -> Result<TempPath, ApiError> {
     let zip_path = zip_path.to_owned();
-    let staging = staging.to_owned();
     let frames = frames.to_vec();
 
-    let write_tasks = tokio::task::spawn_blocking(move || {
+    // Keep the staging guard inside the worker so cancellation cannot remove it
+    // while extraction is still writing files.
+    tokio::task::spawn_blocking(move || {
         let file = File::open(&zip_path).map_err(|error| io_error("open ugoira archive", error))?;
         let mut archive = ZipArchive::new(file).map_err(zip_error)?;
         if archive.len() > MAX_ENTRIES {
@@ -68,7 +69,6 @@ async fn extract_required(
         let required: HashSet<&str> = frames.iter().map(|frame| frame.file.as_str()).collect();
         let mut extracted = HashSet::with_capacity(required.len());
         let mut total_bytes = 0_u64;
-        let mut write_tasks = Vec::new();
 
         for index in 0..archive.len() {
             let mut entry = archive.by_index(index).map_err(zip_error)?;
@@ -83,6 +83,9 @@ async fn extract_required(
             if entry.is_dir() || !required.contains(name.as_str()) {
                 continue;
             }
+            if !extracted.insert(name.clone()) {
+                return Err(invalid("ugoira archive contains duplicate frame entries"));
+            }
             if entry.size() > MAX_ENTRY_BYTES {
                 return Err(invalid("ugoira frame exceeds the size limit"));
             }
@@ -93,10 +96,15 @@ async fn extract_required(
                 return Err(invalid("ugoira archive exceeds the total size limit"));
             }
 
-            let target = staging.join(&name);
+            let target = staging.path().join(&name);
+            if let Some(parent) = target.parent() {
+                fs::create_dir_all(parent)
+                    .map_err(|error| io_error("create ugoira frame directory", error))?;
+            }
+            let mut output =
+                File::create(&target).map_err(|error| io_error("create ugoira frame", error))?;
             let expected_size = entry.size();
-            let mut buf = Vec::with_capacity(expected_size as usize);
-            let copied = io::copy(&mut entry.by_ref().take(MAX_ENTRY_BYTES + 1), &mut buf)
+            let copied = io::copy(&mut entry.by_ref().take(MAX_ENTRY_BYTES + 1), &mut output)
                 .map_err(|error| io_error("extract ugoira frame", error))?;
             if copied > MAX_ENTRY_BYTES {
                 return Err(invalid("ugoira frame exceeds the size limit"));
@@ -104,33 +112,15 @@ async fn extract_required(
             if copied != expected_size {
                 return Err(invalid("ugoira frame size does not match its ZIP metadata"));
             }
-            extracted.insert(name);
-
-            write_tasks.push(tokio::spawn(async move {
-                if let Some(parent) = target.parent() {
-                    tokio::fs::create_dir_all(parent)
-                        .await
-                        .map_err(|error| io_error("create ugoira frame directory", error))?;
-                }
-                tokio::fs::write(&target, buf)
-                    .await
-                    .map_err(|error| io_error("create ugoira frame", error))
-            }));
         }
 
         if required.iter().any(|name| !extracted.contains(*name)) {
             return Err(invalid("ugoira archive is missing required frames"));
         }
-        Ok(write_tasks)
+        Ok(staging)
     })
     .await
-    .map_err(|_| invalid("ugoira extraction panicked"))??;
-
-    for task in write_tasks {
-        task.await.map_err(|_| invalid("ugoira write panicked"))??;
-    }
-
-    Ok(())
+    .map_err(|_| invalid("ugoira extraction panicked"))?
 }
 
 fn validate_frame_names(frames: &[UgoiraFrame]) -> Result<(), ApiError> {
@@ -314,6 +304,71 @@ mod tests {
             .await
         });
         assert!(matches!(result, Err(ApiError::InvalidRequest { .. })));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn rejects_duplicate_normalized_archive_entries() {
+        let root = temp_dir("duplicate-archive");
+        let zip_path = root.join("frames.zip");
+        zip_with(
+            &zip_path,
+            &[("nested/000.jpg", b"first"), ("nested\\000.jpg", b"second")],
+        );
+        let cache = root.join("cache");
+        let error = prepare(
+            &zip_path,
+            &cache,
+            vec![UgoiraFrame {
+                file: "nested/000.jpg".into(),
+                delay_millis: 20,
+            }],
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            ApiError::InvalidRequest { detail }
+                if detail == "ugoira archive contains duplicate frame entries"
+        ));
+        assert!(!cache.exists());
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn removes_partially_extracted_frames_and_preserves_existing_cache_on_failure() {
+        let root = temp_dir("partial-extract");
+        let zip_path = root.join("frames.zip");
+        zip_with(&zip_path, &[("nested/000.jpg", b"first")]);
+        let cache = root.join("cache");
+        fs::create_dir_all(&cache).unwrap();
+        fs::write(cache.join("old.jpg"), b"cached").unwrap();
+
+        let error = prepare(
+            &zip_path,
+            &cache,
+            vec![
+                UgoiraFrame {
+                    file: "nested/000.jpg".into(),
+                    delay_millis: 20,
+                },
+                UgoiraFrame {
+                    file: "nested/001.jpg".into(),
+                    delay_millis: 20,
+                },
+            ],
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            ApiError::InvalidRequest { detail }
+                if detail == "ugoira archive is missing required frames"
+        ));
+        assert_eq!(fs::read(cache.join("old.jpg")).unwrap(), b"cached");
+        assert!(!cache.join(COMPLETE_MARKER).exists());
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
         fs::remove_dir_all(root).unwrap();
     }
 

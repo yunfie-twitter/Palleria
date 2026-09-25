@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
+import com.yunfie.illustia.data.pixivLoginCodeOrNull
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -650,6 +651,9 @@ abstract class IllustiaAuthFeedModule(
                                 loopCount < MAX_SEARCH_PAGES_ACCUMULATION
                             ) {
                                 loopCount++
+                                // Additional pages are optional: keep partial results on failure,
+                                // but propagate cancellation even when a repository wraps it.
+                                @Suppress("TooGenericExceptionCaught")
                                 try {
                                     val nextPage = repository.nextPage(searchNextUrl)
                                     val nextFiltered =
@@ -658,7 +662,8 @@ abstract class IllustiaAuthFeedModule(
                                             .visibleWithMutedTagsVisible(currentSettings)
                                     collectedItems.addAll(nextFiltered)
                                     searchNextUrl = nextPage.nextUrl
-                                } catch (_: Exception) {
+                                } catch (error: Exception) {
+                                    if (isCancellation(error)) throw error
                                     break
                                 }
                             }
@@ -763,15 +768,10 @@ abstract class IllustiaAuthFeedModule(
     fun handleIncomingIntent(intent: Intent?) {
         if (intent == null) return
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
-        intent.data?.let { uri ->
-            // Always allow Pixiv OAuth callback (needed for recovery web login)
-            if (uri.scheme == "pixiv" && uri.host == "account" && uri.path == "/login") {
-                uri
-                    .getQueryParameter("code")
-                    ?.takeIf(String::isNotBlank)
-                    ?.let(::completeWebLogin)
-                return
-            }
+        intent.dataString?.let(::pixivLoginCodeOrNull)?.let { code ->
+            // Always allow validated Pixiv OAuth callbacks (needed for recovery web login).
+            completeWebLogin(code)
+            return
         }
         val parsedEvent = NativeIntentRouter.parse(intent)
         // Keep the request pending while either lock screen is active. It is dispatched only
