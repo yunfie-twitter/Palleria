@@ -565,10 +565,7 @@ internal fun AppNavHost(
                         bookmarks = appState.state.selectedUserBookmarks,
                         hasMore = appState.state.selectedUserNextUrl != null,
                         bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
-                        onBack = {
-                            viewModel.hideUserPage()
-                            onPopRoute()
-                        },
+                        onBack = onPopRoute,
                         onOpenIllust = { illust ->
                             viewModel.openIllust(illust)
                         },
@@ -591,14 +588,16 @@ internal fun AppNavHost(
                         showHeaderControls = true,
                     )
                 } else {
-                    LaunchedEffect(route.userId) {
-                        viewModel.openUserPage(route.userId)
+                    val isActive = backStack.lastOrNull() == route
+                    LaunchedEffect(route.userId, isActive, appState.state.selectedUserId) {
+                        // Popped entries can remain composed during their exit animation.
+                        // Clearing their data must not emit a new navigation request.
+                        if (shouldLoadUserProfile(route, backStack.lastOrNull(), appState.state.selectedUserId)) {
+                            viewModel.openUserPage(route.userId)
+                        }
                     }
                     UserProfileSkeletonScreen(
-                        onBack = {
-                            viewModel.hideUserPage()
-                            onPopRoute()
-                        },
+                        onBack = onPopRoute,
                     )
                 }
             }
