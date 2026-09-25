@@ -349,9 +349,6 @@ abstract class IllustiaDetailProfileModule(
                 selectedUserNextUrl = null,
                 selectedUserBookmarks = emptyList(),
                 selectedUserBookmarksNextUrl = null,
-                selectedRelatedUsers = emptyList(),
-                selectedRelatedUsersNextUrl = null,
-                selectedRelatedUsersLoading = false,
                 showUserPage = true,
                 userPageDismissed = false,
                 message = null,
@@ -373,9 +370,6 @@ abstract class IllustiaDetailProfileModule(
                                 selectedUserNextUrl = page.nextUrl,
                                 selectedUserBookmarks = emptyList(),
                                 selectedUserBookmarksNextUrl = null,
-                                selectedRelatedUsers = emptyList(),
-                                selectedRelatedUsersNextUrl = null,
-                                selectedRelatedUsersLoading = false,
                                 loadState = LoadState.Loaded,
                             )
                         }

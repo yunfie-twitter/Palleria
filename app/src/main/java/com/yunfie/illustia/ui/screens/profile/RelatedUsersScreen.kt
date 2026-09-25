@@ -65,7 +65,7 @@ fun RelatedUsersScreen(
     val coroutineScope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
 
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, uiState.selectedRelatedUsersUserId) {
         viewModel.loadSelectedRelatedUsers(targetUserId = userId)
     }
 
