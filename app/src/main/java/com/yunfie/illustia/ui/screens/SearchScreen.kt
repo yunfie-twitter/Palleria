@@ -381,13 +381,28 @@ private fun SearchResultsArea(
                 listOf(workTab)
             }
         }
-    val resultPagerState = rememberPagerState(pageCount = { tabs.size })
+    val initialPage =
+        remember(state.activeSearchWord) {
+            state.searchSelectedTab.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+        }
+    val resultPagerState =
+        rememberPagerState(
+            initialPage = initialPage,
+            pageCount = { tabs.size },
+        )
     val coroutineScope = rememberCoroutineScope()
     val selectedResultTab = resultPagerState.currentPage
 
-    LaunchedEffect(tabs.size) {
-        if (selectedResultTab >= tabs.size) {
-            resultPagerState.scrollToPage(0)
+    LaunchedEffect(selectedResultTab) {
+        if (state.searchSelectedTab != selectedResultTab) {
+            viewModel.updateSearchSelectedTab(selectedResultTab)
+        }
+    }
+
+    LaunchedEffect(state.searchSelectedTab, tabs.size) {
+        val targetPage = state.searchSelectedTab.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+        if (resultPagerState.currentPage != targetPage) {
+            resultPagerState.scrollToPage(targetPage)
         }
     }
 
@@ -413,6 +428,7 @@ private fun SearchResultsArea(
                     if (index != selectedResultTab) {
                         performHaptic(AppHapticEffect.Toggle)
                     }
+                    viewModel.updateSearchSelectedTab(index)
                     coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
                 },
                 modifier = Modifier.weight(1f),

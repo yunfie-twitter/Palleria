@@ -151,6 +151,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 if (backStack.none { it == removed }) {
                     detailSnapshots.remove(removed.illustId)
                 }
+                if (revealed !is AppRoute.Detail) {
+                    viewModel.closeIllust()
+                }
             }
 
             AppRoute.ImageViewer -> {
@@ -192,7 +195,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.UserProfile -> {
-                viewModel.hideUserPage()
+                viewModel.closeUserPage()
             }
 
             else -> {
@@ -215,7 +218,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.UserProfile -> {
-                viewModel.openUserPage(revealed.userId)
+                if (state.selectedUserId != revealed.userId) {
+                    viewModel.openUserPage(revealed.userId)
+                }
             }
 
             is AppRoute.SearchResults -> {
@@ -511,6 +516,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         state.searchNovelNextUrl,
         state.userSearchItems,
         state.userSearchNextUrl,
+        state.searchSelectedTab,
     ) {
         if (state.activeSearchWord.isNotBlank()) {
             searchSnapshots[state.activeSearchWord] =
@@ -522,6 +528,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     searchNovelNextUrl = state.searchNovelNextUrl,
                     userSearchItems = state.userSearchItems,
                     userSearchNextUrl = state.userSearchNextUrl,
+                    selectedTab = state.searchSelectedTab,
                 )
         }
     }
@@ -529,12 +536,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     LaunchedEffect(viewModel) {
         viewModel.detailNavigationRequests.collect { illustId ->
             navigate(AppRoute.Detail(illustId))
-        }
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.userNavigationRequests.collect { userId ->
-            navigate(AppRoute.UserProfile(userId))
         }
     }
 

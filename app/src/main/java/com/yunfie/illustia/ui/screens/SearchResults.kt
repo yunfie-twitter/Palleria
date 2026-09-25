@@ -40,6 +40,7 @@ import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
@@ -150,7 +151,16 @@ internal fun SearchResultGrid(
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
                             )
                         }
-                    } else if (state.loadState != LoadState.Loading) {
+                    } else if (state.loadState == LoadState.Loading) {
+                        items(
+                            count = 4,
+                            key = { "search_novel_initial_skeleton_$it" },
+                            span = { GridItemSpan(maxLineSpan) },
+                            contentType = { "novel_skeleton" },
+                        ) {
+                            NovelCardSkeleton()
+                        }
+                    } else {
                         item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }) {
                             EmptyState(stringResource(R.string.search_empty_novel))
                         }
@@ -211,7 +221,15 @@ internal fun SearchResultGrid(
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
                             )
                         }
-                    } else if (state.loadState != LoadState.Loading) {
+                    } else if (state.loadState == LoadState.Loading) {
+                        items(
+                            count = illustColumns * 3,
+                            key = { "search_illust_initial_skeleton_$it" },
+                            contentType = { "illust_skeleton" },
+                        ) {
+                            IllustCardSkeleton()
+                        }
+                    } else {
                         item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }) {
                             EmptyState(stringResource(R.string.search_empty_illust))
                         }
@@ -225,13 +243,8 @@ internal fun SearchResultGrid(
                 UserResultCard(user = user, onClick = onClick)
             }
             if (state.settings.autoLoadMore && isPaginating) {
-                item(key = "search_user_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
-                    }
+                item(key = "search_user_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                    UserResultCardSkeleton()
                 }
             } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
                 item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -263,7 +276,15 @@ internal fun SearchResultGrid(
                             onRetry = { viewModel.submitSearch(forceRefresh = true) },
                         )
                     }
-                } else if (state.loadState != LoadState.Loading) {
+                } else if (state.loadState == LoadState.Loading) {
+                    items(
+                        count = 4,
+                        key = { "search_user_initial_skeleton_$it" },
+                        span = { GridItemSpan(maxLineSpan) },
+                    ) {
+                        UserResultCardSkeleton()
+                    }
+                } else {
                     item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.search_empty_user))
                     }
@@ -318,14 +339,18 @@ internal fun UserResultCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (user.previewIllusts.isNotEmpty()) {
+                val previews = user.previewIllusts.take(3)
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    user.previewIllusts.take(3).forEach { illust ->
+                    previews.forEach { illust ->
                         PixivImage(
                             url = illust.squareImageUrl.ifBlank { illust.mediumImageUrl.ifBlank { illust.imageUrl } },
                             contentDescription = illust.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.weight(1f).height(118.dp),
                         )
+                    }
+                    repeat(3 - previews.size) {
+                        Spacer(modifier = Modifier.weight(1f).height(118.dp))
                     }
                 }
             }

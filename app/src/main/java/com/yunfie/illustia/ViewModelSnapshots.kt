@@ -22,6 +22,7 @@ internal data class SearchSnapshot(
     val searchNovelNextUrl: String?,
     val userSearchItems: List<UserPreview>,
     val userSearchNextUrl: String?,
+    val searchSelectedTab: Int = 0,
 )
 
 internal data class UserPageSnapshot(
@@ -33,6 +34,7 @@ internal data class UserPageSnapshot(
     val selectedUserBookmarksNextUrl: String?,
     val selectedRelatedUsers: List<UserPreview>,
     val selectedRelatedUsersNextUrl: String?,
+    val selectedRelatedUsersUserId: Long?,
     val selectedRelatedUsersLoading: Boolean,
     val showUserPage: Boolean,
     val userPageDismissed: Boolean,
@@ -48,6 +50,7 @@ internal fun IllustiaUiState.toSearchSnapshot(): SearchSnapshot =
         searchNovelNextUrl = searchNovelNextUrl,
         userSearchItems = userSearchItems,
         userSearchNextUrl = userSearchNextUrl,
+        searchSelectedTab = searchSelectedTab,
     )
 
 internal fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
@@ -60,6 +63,7 @@ internal fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
         selectedUserBookmarksNextUrl = selectedUserBookmarksNextUrl,
         selectedRelatedUsers = selectedRelatedUsers,
         selectedRelatedUsersNextUrl = selectedRelatedUsersNextUrl,
+        selectedRelatedUsersUserId = selectedRelatedUsersUserId,
         selectedRelatedUsersLoading = selectedRelatedUsersLoading,
         showUserPage = showUserPage,
         userPageDismissed = userPageDismissed,
@@ -75,6 +79,7 @@ internal fun IllustiaUiState.restore(snapshot: UserPageSnapshot): IllustiaUiStat
         selectedUserBookmarksNextUrl = snapshot.selectedUserBookmarksNextUrl,
         selectedRelatedUsers = snapshot.selectedRelatedUsers,
         selectedRelatedUsersNextUrl = snapshot.selectedRelatedUsersNextUrl,
+        selectedRelatedUsersUserId = snapshot.selectedRelatedUsersUserId,
         selectedRelatedUsersLoading = snapshot.selectedRelatedUsersLoading,
         showUserPage = snapshot.showUserPage,
         userPageDismissed = snapshot.userPageDismissed,

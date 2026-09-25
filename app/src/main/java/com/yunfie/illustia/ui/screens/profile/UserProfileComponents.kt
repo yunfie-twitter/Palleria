@@ -69,6 +69,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -76,6 +77,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
@@ -121,6 +123,10 @@ internal fun UserProfilePagerContent(
     bookmarks: List<Illust>,
     hasMore: Boolean,
     bookmarkHasMore: Boolean,
+    nextUrl: String? = null,
+    bookmarkNextUrl: String? = null,
+    isPaginating: Boolean = false,
+    isBookmarkPaginating: Boolean = false,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
     onLoadMore: () -> Unit,
@@ -243,6 +249,8 @@ internal fun UserProfilePagerContent(
                         illusts = illusts,
                         settings = settings,
                         hasMore = hasMore,
+                        nextUrl = nextUrl,
+                        isPaginating = isPaginating,
                         onOpenIllust = onOpenIllust,
                         onBookmark = onBookmark,
                         onLoadMore = onLoadMore,
@@ -260,6 +268,8 @@ internal fun UserProfilePagerContent(
                             illusts = bookmarks,
                             settings = settings,
                             hasMore = bookmarkHasMore,
+                            nextUrl = bookmarkNextUrl,
+                            isPaginating = isBookmarkPaginating,
                             onOpenIllust = onOpenIllust,
                             onBookmark = onBookmark,
                             onLoadMore = onLoadMoreBookmarks,
@@ -759,6 +769,8 @@ private fun UserIllustGridPage(
     illusts: List<Illust>,
     settings: AppSettings,
     hasMore: Boolean,
+    nextUrl: String?,
+    isPaginating: Boolean,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
     onLoadMore: () -> Unit,
@@ -768,9 +780,19 @@ private fun UserIllustGridPage(
     keyPrefix: String = "user_illust",
     onIllustLongClick: ((Illust) -> Unit)? = null,
 ) {
+    val columns = adaptiveProfileGridColumns()
+
+    AutoLoadMoreEffect(
+        gridState = gridState,
+        enabled = settings.autoLoadMore,
+        nextUrl = nextUrl,
+        isLoading = isPaginating,
+        onLoadMore = onLoadMore,
+    )
+
     LazyVerticalGrid(
         state = gridState,
-        columns = GridCells.Fixed(adaptiveProfileGridColumns()),
+        columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize().background(backgroundColor),
         contentPadding = profileGridContentPadding(),
         horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
@@ -787,11 +809,45 @@ private fun UserIllustGridPage(
                 showAiBadge = settings.showAiBadge,
             )
         }
-        if (illusts.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
-        if (hasMore) {
+        if (illusts.isEmpty()) {
+            if (isPaginating) {
+                items(
+                    count = columns * 2,
+                    key = { "${keyPrefix}_initial_skeleton_$it" },
+                    contentType = { "illust_skeleton" },
+                ) {
+                    IllustCardSkeleton()
+                }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
+            }
+        }
+        if (settings.autoLoadMore && isPaginating && illusts.isNotEmpty()) {
+            items(
+                count = columns,
+                key = { "${keyPrefix}_paginating_skeleton_$it" },
+                contentType = { "illust_skeleton" },
+            ) {
+                IllustCardSkeleton()
+            }
+        } else if (!settings.autoLoadMore && hasMore) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Button(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                    Text(stringResource(R.string.action_load_more))
+                Button(
+                    onClick = onLoadMore,
+                    enabled = !isPaginating,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                ) {
+                    if (isPaginating) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            LoadingIndicator(modifier = Modifier.size(16.dp))
+                            Text(stringResource(R.string.action_load_more))
+                        }
+                    } else {
+                        Text(stringResource(R.string.action_load_more))
+                    }
                 }
             }
         }

@@ -33,6 +33,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
@@ -64,7 +65,7 @@ fun RelatedUsersScreen(
     val coroutineScope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
 
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, uiState.selectedRelatedUsersUserId) {
         viewModel.loadSelectedRelatedUsers(targetUserId = userId)
     }
 
@@ -149,14 +150,19 @@ fun RelatedUsersScreen(
                     )
                 }
 
+                if (settings.autoLoadMore && uiState.selectedRelatedUsersLoading && uiState.selectedRelatedUsers.isNotEmpty()) {
+                    item(key = "related_user_paginating_skeleton", contentType = "related_paginating_skeleton") {
+                        UserResultCardSkeleton()
+                    }
+                }
+
                 if (uiState.selectedRelatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading) {
-                    item(contentType = "related_loading") {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            LoadingIndicator()
-                        }
+                    items(
+                        count = 4,
+                        key = { "related_user_skeleton_$it" },
+                        contentType = { "related_loading" },
+                    ) {
+                        UserResultCardSkeleton()
                     }
                 } else if (uiState.selectedRelatedUsers.isEmpty()) {
                     item(contentType = "related_empty") {
