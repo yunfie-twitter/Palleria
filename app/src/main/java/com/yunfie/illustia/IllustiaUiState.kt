@@ -92,6 +92,7 @@ data class IllustiaUiState(
     val isSelectedUserBookmarksPaginating: Boolean = false,
     val selectedRelatedUsers: List<UserPreview> = emptyList(),
     val selectedRelatedUsersNextUrl: String? = null,
+    val selectedRelatedUsersUserId: Long? = null,
     val selectedRelatedUsersLoading: Boolean = false,
     val showUserPage: Boolean = false,
     val userPageDismissed: Boolean = false,

@@ -339,14 +339,18 @@ internal fun UserResultCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (user.previewIllusts.isNotEmpty()) {
+                val previews = user.previewIllusts.take(3)
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    user.previewIllusts.take(3).forEach { illust ->
+                    previews.forEach { illust ->
                         PixivImage(
                             url = illust.squareImageUrl.ifBlank { illust.mediumImageUrl.ifBlank { illust.imageUrl } },
                             contentDescription = illust.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.weight(1f).height(118.dp),
                         )
+                    }
+                    repeat(3 - previews.size) {
+                        Spacer(modifier = Modifier.weight(1f).height(118.dp))
                     }
                 }
             }

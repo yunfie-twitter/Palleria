@@ -232,9 +232,12 @@ abstract class IllustiaBookmarkModule(
         force: Boolean = false,
     ) {
         val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
+        val cachedForSameUser =
+            _uiState.value.selectedRelatedUsers.isNotEmpty() &&
+                _uiState.value.selectedRelatedUsersUserId == userId
         val shouldSkip =
             (!force && _uiState.value.selectedRelatedUsersLoading) ||
-                (!force && _uiState.value.selectedRelatedUsers.isNotEmpty() && _uiState.value.selectedUser?.id == userId)
+                (!force && cachedForSameUser)
         if (shouldSkip) return
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(selectedRelatedUsersLoading = true) }
@@ -244,6 +247,7 @@ abstract class IllustiaBookmarkModule(
                     state.copy(
                         selectedRelatedUsers = page.users.filterNot { it.id == userId },
                         selectedRelatedUsersNextUrl = page.nextUrl,
+                        selectedRelatedUsersUserId = userId,
                         selectedRelatedUsersLoading = false,
                     )
                 }
