@@ -196,6 +196,12 @@ internal sealed interface AppRoute : NavKey {
     data object NetworkSettings : AppRoute
 }
 
+internal fun shouldLoadUserProfile(
+    route: AppRoute.UserProfile,
+    activeRoute: NavKey?,
+    selectedUserId: Long?,
+): Boolean = activeRoute == route && selectedUserId != route.userId
+
 internal data class DetailEntrySnapshot(
     val illust: Illust,
     val relatedIllusts: List<Illust> = emptyList(),
