@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
+import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
@@ -128,6 +129,12 @@ internal fun AppOverlayHost(
                         ),
                     )
                 }
+                DividerLine()
+                Text(
+                    text = stringResource(R.string.dialog_mute),
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.footnote1,
+                )
                 Button(
                     onClick = {
                         viewModel.closeIllustOptions()
