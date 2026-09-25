@@ -218,7 +218,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             is AppRoute.UserProfile -> {
-                viewModel.openUserPage(revealed.userId)
+                if (state.selectedUserId != revealed.userId) {
+                    viewModel.openUserPage(revealed.userId)
+                }
             }
 
             is AppRoute.SearchResults -> {
@@ -534,12 +536,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     LaunchedEffect(viewModel) {
         viewModel.detailNavigationRequests.collect { illustId ->
             navigate(AppRoute.Detail(illustId))
-        }
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.userNavigationRequests.collect { userId ->
-            navigate(AppRoute.UserProfile(userId))
         }
     }
 
