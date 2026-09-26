@@ -1,7 +1,6 @@
 package com.yunfie.illustia.ui.screens
 
 import android.graphics.Bitmap
-import android.net.Uri
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -37,6 +36,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PixivWebLoginRequest
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.pixivLoginCodeOrNull
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -173,7 +173,7 @@ fun PixivWebLoginScreen(
                                 override fun shouldOverrideUrlLoading(
                                     view: WebView,
                                     request: WebResourceRequest,
-                                ): Boolean = completeWithUrl(request.url.toString())
+                                ): Boolean = request.isForMainFrame && completeWithUrl(request.url.toString())
 
                                 override fun onPageStarted(
                                     view: WebView,
@@ -253,18 +253,6 @@ fun PixivWebLoginScreen(
             }
         }
     }
-}
-
-private fun pixivLoginCodeOrNull(url: String): String? {
-    val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return null
-    val code = uri.getQueryParameter("code") ?: return null
-    val isPixivLoginRedirect = uri.scheme == "pixiv" && uri.host == "account" && uri.path == "/login"
-    val isPixivCallback =
-        uri.scheme == "https" &&
-            uri.host == "app-api.pixiv.net" &&
-            uri.path == "/web/v1/users/auth/pixiv/callback"
-    val isPixivCodeUrl = uri.host?.contains("pixiv", ignoreCase = true) == true && code.isNotBlank()
-    return if (isPixivLoginRedirect || isPixivCallback || isPixivCodeUrl) code else null
 }
 
 @Composable

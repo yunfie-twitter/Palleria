@@ -2,6 +2,7 @@ package com.yunfie.illustia.settings.store
 
 import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
+import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -18,13 +19,21 @@ import java.io.IOException
 
 private const val DEFAULT_RELATED_ILLUST_COLUMN_COUNT = 3
 
+private fun requireEncryptedSharedPreferences(preferences: SharedPreferences): SharedPreferences {
+    check(preferences is EncryptedSharedPreferences) {
+        "Sensitive settings must be stored using EncryptedSharedPreferences"
+    }
+    return preferences
+}
+
 internal fun readFromDataStore(
     preferences: Preferences,
     roomData: RoomSettingsData,
     sensitivePreferences: SharedPreferences,
 ): AppSettings {
-    val tokenByUserId = decodeAccountTokens(sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
-    val fallbackAccounts = decodeAccounts(sensitivePreferences.getString(KEY_ACCOUNTS, "").orEmpty())
+    val encryptedPreferences = requireEncryptedSharedPreferences(sensitivePreferences)
+    val tokenByUserId = decodeAccountTokens(encryptedPreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
+    val fallbackAccounts = decodeAccounts(encryptedPreferences.getString(KEY_ACCOUNTS, "").orEmpty())
     val fallbackTokenByUserId = fallbackAccounts.associate { it.userId to it.refreshToken }
     val accounts =
         if (roomData.accounts.isNotEmpty()) {
@@ -43,8 +52,8 @@ internal fun readFromDataStore(
             fallbackAccounts
         }
     return AppSettings(
-        refreshToken = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
-        discordToken = sensitivePreferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
+        refreshToken = encryptedPreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
+        discordToken = encryptedPreferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences[BOOKMARK_USER_ID].takeIf { it != null && it > 0L },
         appLanguage = preferences[APP_LANGUAGE] ?: "system",
         appFont = preferences[APP_FONT] ?: "system",
@@ -224,6 +233,7 @@ private fun SharedPreferences.getNonEmptyStringList(key: String): List<String> =
 internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSettings =
     AppSettings(
         refreshToken = preferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
+        discordToken = preferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences.getLong(KEY_BOOKMARK_USER_ID, 0L).takeIf { it > 0L },
         appLanguage = preferences.getSafeString(KEY_APP_LANGUAGE, "system"),
         appFont = preferences.getSafeString(KEY_APP_FONT, "system"),
@@ -489,12 +499,19 @@ internal fun writeToDataStore(
 internal fun writeSensitiveSettings(
     sensitivePreferences: SharedPreferences,
     settings: AppSettings,
+    commit: Boolean = false,
 ) {
-    sensitivePreferences
-        .edit()
-        .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
-        .putString(KEY_DISCORD_TOKEN, settings.discordToken)
-        .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
-        .remove(KEY_ACCOUNTS)
-        .apply()
+    val encryptedPreferences = requireEncryptedSharedPreferences(sensitivePreferences)
+    val editor =
+        encryptedPreferences
+            .edit()
+            .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
+            .putString(KEY_DISCORD_TOKEN, settings.discordToken)
+            .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
+            .remove(KEY_ACCOUNTS)
+    if (commit) {
+        if (!editor.commit()) throw IOException("Unable to persist migrated credentials")
+    } else {
+        editor.apply()
+    }
 }

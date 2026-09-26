@@ -92,7 +92,9 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
     val filterR18 = !settings.allowR18
     val filterR18G = settings.allowR18 && !settings.allowR18G
     val filterAi = settings.hideAiWorks
-    val hasFilter = filterR18 || filterR18G || filterAi
+    val filterRelatedR18 = filterR18 || !settings.showR18Badge || !settings.showRelatedR18
+    val filterRelatedR18G = filterR18G || filterRelatedR18
+    val hasFilter = filterR18 || filterR18G || filterAi || filterRelatedR18
     if (!hasFilter) return updated
 
     val updatedRankingMode =
@@ -103,9 +105,6 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
                 list.filterRestricted(filterR18, filterR18G, filterAi)
             }
         }
-
-    val filterRelatedR18 = filterR18 || !settings.showR18Badge || !settings.showRelatedR18
-    val filterRelatedR18G = filterR18G || filterRelatedR18
 
     return updated.copy(
         homeItems = updated.homeItems.filterRestricted(filterR18, filterR18G, filterAi),

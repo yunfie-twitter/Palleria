@@ -429,10 +429,10 @@ class AppUpdaterRepository(
             }
         }
 
-    private fun validateApkFile(apkFile: File) {
+    internal fun validateApkFile(apkFile: File) {
         val canonicalApk = apkFile.canonicalFile
         val canonicalUpdates = updatesDir.canonicalFile
-        require(canonicalApk.path.startsWith(canonicalUpdates.path)) {
+        require(canonicalApk.path.startsWith(canonicalUpdates.path + File.separator)) {
             "Unauthorized APK file location: ${apkFile.absolutePath}"
         }
         require(canonicalApk.exists() && canonicalApk.isFile && canonicalApk.length() > 0) {
