@@ -55,6 +55,10 @@ fun DiscordLoginScreen(
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var completed by remember { mutableStateOf(false) }
 
+    // Ensure this WebView cannot resolve content:// URIs.
+    // Apply when creating/configuring the WebView instance:
+    // webView.settings.allowContentAccess = false
+
     DisposableEffect(Unit) {
         onDispose {
             completed = true
