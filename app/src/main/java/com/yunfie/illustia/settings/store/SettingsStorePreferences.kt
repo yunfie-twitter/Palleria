@@ -2,7 +2,6 @@ package com.yunfie.illustia.settings.store
 
 import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
-import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -19,21 +18,14 @@ import java.io.IOException
 
 private const val DEFAULT_RELATED_ILLUST_COLUMN_COUNT = 3
 
-private fun requireEncryptedSharedPreferences(preferences: SharedPreferences): SharedPreferences {
-    check(preferences is EncryptedSharedPreferences) {
-        "Sensitive settings must be stored using EncryptedSharedPreferences"
-    }
-    return preferences
-}
-
 internal fun readFromDataStore(
     preferences: Preferences,
     roomData: RoomSettingsData,
     sensitivePreferences: SharedPreferences,
 ): AppSettings {
-    val encryptedPreferences = requireEncryptedSharedPreferences(sensitivePreferences)
-    val tokenByUserId = decodeAccountTokens(encryptedPreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
-    val fallbackAccounts = decodeAccounts(encryptedPreferences.getString(KEY_ACCOUNTS, "").orEmpty())
+    // Storage selection belongs to SettingsStore; migrations also read legacy preferences.
+    val tokenByUserId = decodeAccountTokens(sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
+    val fallbackAccounts = decodeAccounts(sensitivePreferences.getString(KEY_ACCOUNTS, "").orEmpty())
     val fallbackTokenByUserId = fallbackAccounts.associate { it.userId to it.refreshToken }
     val accounts =
         if (roomData.accounts.isNotEmpty()) {
@@ -52,8 +44,8 @@ internal fun readFromDataStore(
             fallbackAccounts
         }
     return AppSettings(
-        refreshToken = encryptedPreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
-        discordToken = encryptedPreferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
+        refreshToken = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
+        discordToken = sensitivePreferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences[BOOKMARK_USER_ID].takeIf { it != null && it > 0L },
         appLanguage = preferences[APP_LANGUAGE] ?: "system",
         appFont = preferences[APP_FONT] ?: "system",
@@ -501,9 +493,10 @@ internal fun writeSensitiveSettings(
     settings: AppSettings,
     commit: Boolean = false,
 ) {
-    val encryptedPreferences = requireEncryptedSharedPreferences(sensitivePreferences)
+    // Preserve the caller's storage policy, including retryable legacy migration when
+    // the keystore is unavailable. A concrete-class check would break that path.
     val editor =
-        encryptedPreferences
+        sensitivePreferences
             .edit()
             .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
             .putString(KEY_DISCORD_TOKEN, settings.discordToken)
