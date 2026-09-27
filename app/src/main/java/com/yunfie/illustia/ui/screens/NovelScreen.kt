@@ -49,6 +49,15 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import android.view.KeyEvent as AndroidKeyEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
@@ -441,7 +450,54 @@ fun NovelReaderScreen(
         }
     }
 
+    val isVolumeTurnerEnabled = settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner)
+    val isTtsEnabled = settings.isFeatureEnabled(FeatureFlag.NovelTtsAudiobook)
+    val ttsPlayer = remember(context, isTtsEnabled) { if (isTtsEnabled) NovelTtsPlayer(context) else null }
+
+    DisposableEffect(ttsPlayer) {
+        onDispose {
+            ttsPlayer?.shutdown()
+        }
+    }
+
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     Scaffold(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onKeyEvent { keyEvent ->
+                    if (isVolumeTurnerEnabled && keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.nativeKeyEvent.keyCode) {
+                            AndroidKeyEvent.KEYCODE_VOLUME_DOWN,
+                            AndroidKeyEvent.KEYCODE_PAGE_DOWN,
+                            AndroidKeyEvent.KEYCODE_DPAD_DOWN,
+                            AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
+                            AndroidKeyEvent.KEYCODE_MEDIA_NEXT -> {
+                                jumpToPage((currentPage + 1).coerceAtMost(pages.size - 1))
+                                true
+                            }
+
+                            AndroidKeyEvent.KEYCODE_VOLUME_UP,
+                            AndroidKeyEvent.KEYCODE_PAGE_UP,
+                            AndroidKeyEvent.KEYCODE_DPAD_UP,
+                            AndroidKeyEvent.KEYCODE_DPAD_LEFT,
+                            AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                                jumpToPage((currentPage - 1).coerceAtLeast(0))
+                                true
+                            }
+
+                            else -> false
+                        }
+                    } else {
+                        false
+                    }
+                },
         containerColor = backgroundColor,
         topBar = {
             AnimatedVisibility(
@@ -487,6 +543,23 @@ fun NovelReaderScreen(
                     onPageChange = ::jumpToPage,
                     onOpenToc = { showTocSheet = true },
                     onOpenSettings = { showSettingsSheet = true },
+                    ttsPlayer = ttsPlayer,
+                    onToggleTts =
+                        if (isTtsEnabled && ttsPlayer != null && text != null) {
+                            {
+                                if (ttsPlayer.isPlaying) {
+                                    ttsPlayer.pause()
+                                } else {
+                                    if (ttsPlayer.currentParagraphIndex > 0) {
+                                        ttsPlayer.resume()
+                                    } else {
+                                        ttsPlayer.startReading(text.text)
+                                    }
+                                }
+                            }
+                        } else {
+                            null
+                        },
                 )
             }
         },

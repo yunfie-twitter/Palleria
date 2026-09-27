@@ -1053,4 +1053,19 @@
     <string name="update_notify_new_version_desc">Show system notifications when a new version is released</string>
     <string name="update_auto_download">Auto-download updates</string>
     <string name="update_auto_download_desc">Automatically download updates in the background (auto-installs if Shizuku is enabled)</string>
+    <string name="flag_embed_metadata_title">Embed Image EXIF / Metadata</string>
+    <string name="flag_embed_metadata_desc">Automatically embed artwork ID, artist, title, and Pixiv URL metadata into saved image files</string>
+    <string name="flag_custom_download_path_title">Flexible Custom Save Path</string>
+    <string name="flag_custom_download_path_desc">Enable dynamic subfolder organization based on artist, tags, and artwork ID placeholders</string>
+    <string name="flag_dynamic_ambient_viewer_title">Ambient Light Viewer Mode</string>
+    <string name="flag_dynamic_ambient_viewer_desc">Render dynamic ambient blurred backlight matching artwork colors in the image viewer</string>
+    <string name="flag_volume_key_page_turner_title">Volume Key / Remote Page Turner</string>
+    <string name="flag_volume_key_page_turner_desc">Use volume hardware keys or Bluetooth remote controllers to turn pages in manga and novel readers</string>
+    <string name="flag_novel_tts_audiobook_title">Novel Text-to-Speech (TTS)</string>
+    <string name="flag_novel_tts_audiobook_desc">Enable Text-to-Speech audiobook playback with background listening in Pixiv novel reader</string>
+    <string name="tts_play">Read Aloud</string>
+    <string name="tts_pause">Pause</string>
+    <string name="tts_stop">Stop</string>
+    <string name="tts_speed">Speed: %1$.1fx</string>
+    <string name="tts_reading_novel">Reading novel: %1$s</string>
 </resources>

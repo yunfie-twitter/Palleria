@@ -17,6 +17,9 @@ import java.util.ArrayDeque
 import java.util.Collections
 import java.util.Locale
 
+import com.yunfie.illustia.data.ImageMetadataWriter
+import com.yunfie.illustia.models.Illust
+
 class NativeImageStore(
     private val context: Context,
 ) {
@@ -30,16 +33,28 @@ class NativeImageStore(
         sourceUrl: String,
         responseMimeType: String?,
         clearOld: Boolean = false,
+        illust: Illust? = null,
+        embedMetadata: Boolean = false,
     ): Boolean {
         val displayName = name.withImageExtension(sourceUrl, imageMimeType(responseMimeType, sourceUrl))
         if (!savingNames.add(displayName)) return false
+        val ext = displayName.substringAfterLast('.', "jpg")
+        val tempFile = if (embedMetadata && illust != null) {
+            ImageMetadataWriter.embedMetadataToStream(input, context.cacheDir, ext, illust)
+        } else {
+            null
+        }
+        val effectiveInput = tempFile?.inputStream() ?: input
         return try {
-            when (saveMode()) {
-                SAVE_MODE_SAF -> saveToTree(input, displayName, sourceUrl, responseMimeType, clearOld)
-                SAVE_MODE_DIRECT -> saveToPath(input, displayName, sourceUrl, responseMimeType, clearOld)
-                else -> saveToMediaStore(input, displayName, sourceUrl, responseMimeType, clearOld)
+            effectiveInput.use { stream ->
+                when (saveMode()) {
+                    SAVE_MODE_SAF -> saveToTree(stream, displayName, sourceUrl, responseMimeType, clearOld)
+                    SAVE_MODE_DIRECT -> saveToPath(stream, displayName, sourceUrl, responseMimeType, clearOld)
+                    else -> saveToMediaStore(stream, displayName, sourceUrl, responseMimeType, clearOld)
+                }
             }
         } finally {
+            tempFile?.delete()
             savingNames.remove(displayName)
         }
     }

@@ -59,11 +59,15 @@ fun HomeScreen(
 ) {
     val pagerState =
         rememberPagerState(
-            initialPage = HomeTab.Feed.ordinal,
+            initialPage = viewModel.uiState.value.homeSelectedTab.coerceIn(0, (HomeTab.entries.size - 1).coerceAtLeast(0)),
             pageCount = { HomeTab.entries.size },
         )
     val coroutineScope = rememberCoroutineScope()
     val selectedTab = HomeTab.entries[pagerState.currentPage]
+
+    LaunchedEffect(pagerState.currentPage) {
+        viewModel.updateHomeSelectedTab(pagerState.currentPage)
+    }
 
     LaunchedEffect(selectedTab) {
         when (selectedTab) {

@@ -16,6 +16,8 @@ import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import kotlinx.coroutines.Dispatchers
@@ -368,11 +370,17 @@ abstract class IllustiaLibraryNavigationModule(
         illust: Illust?,
     ): String {
         val settings = _uiState.value.settings
+        val customTemplate = if (settings.isFeatureEnabled(FeatureFlag.CustomDownloadPath)) {
+            "{artist}/{tag}/{filename}"
+        } else {
+            null
+        }
         return buildDownloadPath(
             filename = filename,
             illust = illust,
             groupByArtist = settings.downloadFolderByArtist,
             groupByWork = settings.downloadFolderByWork,
+            customPathTemplate = customTemplate,
         )
     }
 
@@ -419,12 +427,16 @@ abstract class IllustiaLibraryNavigationModule(
                 throw Exception(str(R.string.error_save_failed) + " (${response.code})")
             }
             val body = response.body
+            val illust = resolveDownloadIllust(filename)
+            val embedMeta = _uiState.value.settings.isFeatureEnabled(FeatureFlag.EmbedMetadata)
             imageStore.save(
                 input = body.byteStream(),
                 name = filename,
                 sourceUrl = requestUrl,
                 responseMimeType = body.contentType()?.toString(),
                 clearOld = clearOld,
+                illust = illust,
+                embedMetadata = embedMeta,
             )
         }
     }

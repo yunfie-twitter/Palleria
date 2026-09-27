@@ -41,6 +41,36 @@ enum class FeatureFlag(
         descRes = R.string.flag_artwork_dynamic_theme_desc,
         defaultEnabled = false,
     ),
+    EmbedMetadata(
+        key = "flag_embed_metadata",
+        titleRes = R.string.flag_embed_metadata_title,
+        descRes = R.string.flag_embed_metadata_desc,
+        defaultEnabled = false,
+    ),
+    CustomDownloadPath(
+        key = "flag_custom_download_path",
+        titleRes = R.string.flag_custom_download_path_title,
+        descRes = R.string.flag_custom_download_path_desc,
+        defaultEnabled = false,
+    ),
+    DynamicAmbientViewer(
+        key = "flag_dynamic_ambient_viewer",
+        titleRes = R.string.flag_dynamic_ambient_viewer_title,
+        descRes = R.string.flag_dynamic_ambient_viewer_desc,
+        defaultEnabled = false,
+    ),
+    VolumeKeyPageTurner(
+        key = "flag_volume_key_page_turner",
+        titleRes = R.string.flag_volume_key_page_turner_title,
+        descRes = R.string.flag_volume_key_page_turner_desc,
+        defaultEnabled = false,
+    ),
+    NovelTtsAudiobook(
+        key = "flag_novel_tts_audiobook",
+        titleRes = R.string.flag_novel_tts_audiobook_title,
+        descRes = R.string.flag_novel_tts_audiobook_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {

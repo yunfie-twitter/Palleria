@@ -82,6 +82,14 @@ import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Import
+import android.view.KeyEvent as AndroidKeyEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Theme
@@ -101,6 +109,8 @@ fun ImageViewerScreen(
     mangaReaderMode: String,
     onPageChanged: (Int) -> Unit,
     loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
+    ambientLightEnabled: Boolean = false,
+    volumeKeyPageTurnerEnabled: Boolean = false,
 ) {
     val context = LocalContext.current
     val shareFailedMessage = stringResource(R.string.viewer_share_failed)
@@ -195,8 +205,42 @@ fun ImageViewerScreen(
     PredictiveBackGestureHandler(onBack = onBack)
 
     val performHaptic = rememberHapticFeedbackAction()
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onKeyEvent { keyEvent ->
+                if (volumeKeyPageTurnerEnabled && keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        AndroidKeyEvent.KEYCODE_VOLUME_DOWN,
+                        AndroidKeyEvent.KEYCODE_PAGE_DOWN,
+                        AndroidKeyEvent.KEYCODE_DPAD_DOWN,
+                        AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
+                        AndroidKeyEvent.KEYCODE_MEDIA_NEXT -> {
+                            movePage(1)
+                            true
+                        }
+                        AndroidKeyEvent.KEYCODE_VOLUME_UP,
+                        AndroidKeyEvent.KEYCODE_PAGE_UP,
+                        AndroidKeyEvent.KEYCODE_DPAD_UP,
+                        AndroidKeyEvent.KEYCODE_DPAD_LEFT,
+                        AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                            movePage(-1)
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            },
         containerColor = Color.Black,
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -381,6 +425,29 @@ fun ImageViewerScreen(
                     .fillMaxSize()
                     .background(Color.Black),
         ) {
+            if (ambientLightEnabled && imageUrls.isNotEmpty()) {
+                val currentUrl = imageUrls.getOrNull(pagerState.currentPage) ?: imageUrls.first()
+                PixivImage(
+                    url = currentUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                alpha = 0.40f
+                                scaleX = 1.35f
+                                scaleY = 1.35f
+                            }
+                            .blur(48.dp),
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.30f)),
+                )
+            }
             if (illust.type == "ugoira") {
                 UgoiraArtwork(
                     previewUrl = imageUrls.firstOrNull().orEmpty(),
