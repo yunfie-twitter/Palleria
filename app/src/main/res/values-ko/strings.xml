@@ -923,4 +923,6 @@
     <string name="update_notify_new_version_desc">새 버전이 출시되면 시스템 알림을 표시합니다</string>
     <string name="update_auto_download">업데이트 자동 다운로드</string>
     <string name="update_auto_download_desc">백그라운드에서 업데이트를 자동 다운로드합니다 (Shizuku 선택 시 자동 설치)</string>
+    <string name="search_age_restriction">연령 제한</string>
+    <string name="search_age_all">전체</string>
 </resources>

@@ -1033,4 +1033,6 @@
     <string name="update_notify_new_version_desc">Hiển thị thông báo hệ thống khi có phiên bản mới</string>
     <string name="update_auto_download">Tự động tải bản cập nhật</string>
     <string name="update_auto_download_desc">Tự động tải về trong nền (tự động cài đặt nếu bật Shizuku)</string>
+    <string name="search_age_restriction">Giới hạn độ tuổi</string>
+    <string name="search_age_all">Tất cả</string>
 </resources>

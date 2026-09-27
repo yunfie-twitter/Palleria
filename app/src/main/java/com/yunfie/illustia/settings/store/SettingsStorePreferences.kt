@@ -66,6 +66,11 @@ internal fun readFromDataStore(
                 preferences[SEARCH_BOOKMARK_FILTER],
                 com.yunfie.illustia.models.SearchBookmarkFilter.None,
             ),
+        searchAgeRestriction =
+            enumValueOrDefault(
+                preferences[SEARCH_AGE_RESTRICTION],
+                com.yunfie.illustia.models.SearchAgeRestriction.All,
+            ),
         searchUsersEnabled = preferences[SEARCH_USERS_ENABLED] ?: true,
         searchHistory =
             roomData.searchHistory
@@ -262,6 +267,11 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
                 preferences.getString(KEY_SEARCH_BOOKMARK_FILTER, null),
                 com.yunfie.illustia.models.SearchBookmarkFilter.None,
             ),
+        searchAgeRestriction =
+            enumValueOrDefault(
+                preferences.getString(KEY_SEARCH_AGE_RESTRICTION, null),
+                com.yunfie.illustia.models.SearchAgeRestriction.All,
+            ),
         searchUsersEnabled = preferences.getBoolean(KEY_SEARCH_USERS_ENABLED, true),
         searchHistory = decodeLegacyStringList(preferences.getString(KEY_SEARCH_HISTORY, "")).take(MAX_SEARCH_HISTORY),
         favoriteTags = decodeLegacyStringList(preferences.getString(KEY_FAVORITE_TAGS, "")),
@@ -375,6 +385,7 @@ internal fun writeToDataStore(
     preferences[SEARCH_WORK_TYPE] = settings.searchWorkType.name
     preferences[SEARCH_DURATION] = settings.searchDuration.name
     preferences[SEARCH_BOOKMARK_FILTER] = settings.searchBookmarkFilter.name
+    preferences[SEARCH_AGE_RESTRICTION] = settings.searchAgeRestriction.name
     preferences[SEARCH_USERS_ENABLED] = settings.searchUsersEnabled
     preferences[SAVE_VIEW_HISTORY] = settings.saveViewHistory
     preferences[SAVE_SEARCH_HISTORY] = settings.saveSearchHistory

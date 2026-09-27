@@ -1086,4 +1086,8 @@
     <string name="report_dialog_summary">「%1$s」を Pixiv に報告します。問題の内容を確認してから送信してください。</string>
     <string name="report_submitting">報告を送信しています…</string>
     <string name="report_browser_fallback">送信できませんでした。再試行するか、Pixiv の公式サイトで対象のメニューから「問題を報告」を選んでください。ブラウザーでログインが必要な場合があります。</string>
+    <string name="search_age_restriction">年齢制限</string>
+    <string name="search_age_all">すべて</string>
+    <string name="search_age_r18" translatable="false">R-18</string>
+    <string name="search_age_r18g" translatable="false">R-18G</string>
 </resources>

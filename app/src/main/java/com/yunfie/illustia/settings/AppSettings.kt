@@ -3,6 +3,7 @@ package com.yunfie.illustia.settings
 import androidx.compose.runtime.Immutable
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
@@ -34,6 +35,7 @@ data class AppSettings(
     val searchWorkType: SearchWorkType = SearchWorkType.Artworks,
     val searchDuration: SearchDuration = SearchDuration.All,
     val searchBookmarkFilter: SearchBookmarkFilter = SearchBookmarkFilter.None,
+    val searchAgeRestriction: SearchAgeRestriction = SearchAgeRestriction.All,
     val searchUsersEnabled: Boolean = true,
     val searchHistory: List<String> = emptyList(),
     val favoriteTags: List<String> = emptyList(),
