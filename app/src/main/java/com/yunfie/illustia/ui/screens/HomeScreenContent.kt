@@ -105,11 +105,10 @@ internal fun FeedTabContent(
         enabled = settings.prefetchImages,
         highQualityImages = feedHighQuality,
     )
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && state.isHomePaginating
     val shimmer =
-        if (
-            (items.isEmpty() && loadState == LoadState.Loading) ||
-            (settings.autoLoadMore && state.isHomePaginating)
-        ) {
+        if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
         } else {
             null
@@ -146,7 +145,7 @@ internal fun FeedTabContent(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (items.isEmpty() && loadState == LoadState.Loading) {
+            if (showInitialSkeletons) {
                 items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
                     IllustCardSkeleton(shimmerValue = shimmer)
                 }
@@ -181,7 +180,7 @@ internal fun FeedTabContent(
                 )
             }
 
-            if (settings.autoLoadMore && state.isHomePaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "home_paginating_skeleton_$it" },
@@ -238,11 +237,10 @@ internal fun FollowingTabContent(
         highQualityImages = feedHighQuality,
         keyPrefix = "tl_",
     )
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && state.isTimelinePaginating
     val shimmer =
-        if (
-            (items.isEmpty() && loadState == LoadState.Loading) ||
-            (settings.autoLoadMore && state.isTimelinePaginating)
-        ) {
+        if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
         } else {
             null
@@ -279,7 +277,7 @@ internal fun FollowingTabContent(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (items.isEmpty() && loadState == LoadState.Loading) {
+            if (showInitialSkeletons) {
                 items(6, key = { "home_following_skeleton_$it" }, contentType = { "illust_skeleton" }) {
                     IllustCardSkeleton(shimmerValue = shimmer)
                 }
@@ -314,7 +312,7 @@ internal fun FollowingTabContent(
                 )
             }
 
-            if (settings.autoLoadMore && state.isTimelinePaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "timeline_paginating_skeleton_$it" },

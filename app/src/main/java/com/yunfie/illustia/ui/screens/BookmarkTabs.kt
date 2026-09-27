@@ -370,11 +370,10 @@ internal fun BookmarkMainTab(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkMainGridState
+    val showInitialSkeletons = bookmarkItems.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && state.isBookmarkPaginating
     val shimmer =
-        if (
-            (bookmarkItems.isEmpty() && loadState == LoadState.Loading) ||
-            (settings.autoLoadMore && state.isBookmarkPaginating)
-        ) {
+        if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
         } else {
             null
@@ -400,7 +399,7 @@ internal fun BookmarkMainTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (bookmarkItems.isEmpty() && loadState == LoadState.Loading) {
+            if (showInitialSkeletons) {
                 items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
@@ -424,7 +423,7 @@ internal fun BookmarkMainTab(
                     showAiBadge = showAiBadge,
                 )
             }
-            if (settings.autoLoadMore && state.isBookmarkPaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "bookmark_paginating_skeleton_$it" },
@@ -471,11 +470,10 @@ internal fun BookmarkTimelineTab(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkTimelineGridState
+    val showInitialSkeletons = timelineItems.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && state.isTimelinePaginating
     val shimmer =
-        if (
-            (timelineItems.isEmpty() && loadState == LoadState.Loading) ||
-            (settings.autoLoadMore && state.isTimelinePaginating)
-        ) {
+        if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
         } else {
             null
@@ -501,7 +499,7 @@ internal fun BookmarkTimelineTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (timelineItems.isEmpty() && loadState == LoadState.Loading) {
+            if (showInitialSkeletons) {
                 items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
@@ -525,7 +523,7 @@ internal fun BookmarkTimelineTab(
                     showAiBadge = showAiBadge,
                 )
             }
-            if (settings.autoLoadMore && state.isTimelinePaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "timeline_paginating_skeleton_$it" },
