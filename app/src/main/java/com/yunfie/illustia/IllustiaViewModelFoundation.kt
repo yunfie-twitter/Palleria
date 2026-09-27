@@ -123,7 +123,15 @@ abstract class IllustiaViewModelFoundation(
     protected var searchJob: Job? = null
     protected var detailExtrasJob: Job? = null
     protected var loadingJob: Job? = null
-    protected var userPageLoadJob: Job? = null
+    internal val userProfileRequests = UserProfileRequests(viewModelScope)
+    internal val userProfileCache = UserProfileCache()
+
+    internal fun isCurrentProfileRequest(session: UserProfileRequests.Session): Boolean =
+        userProfileRequests.isCurrent(session) &&
+            _uiState.value.selectedUserId == session.userId &&
+            _uiState.value.settings.refreshToken == session.accountKey &&
+            !_uiState.value.userPageDismissed
+
     protected var closeUserPageJob: Job? = null
     protected var privacyUnlockJob: Job? = null
     protected var autoLockJob: Job? = null
@@ -160,6 +168,8 @@ abstract class IllustiaViewModelFoundation(
     internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
     fun clearDetailSnapshots() {
+        userProfileRequests.close()
+        userProfileCache.clear()
         detailSnapshots.clear()
         searchSnapshots.clear()
         clearScrollStates()
@@ -586,7 +596,7 @@ abstract class IllustiaViewModelFoundation(
         searchJob?.cancel()
         detailExtrasJob?.cancel()
         loadingJob?.cancel()
-        userPageLoadJob?.cancel()
+        userProfileRequests.close()
         recommendedTagsJob?.cancel()
         recommendedTagsExpiryJob?.cancel()
     }
@@ -722,6 +732,7 @@ abstract class IllustiaViewModelFoundation(
 
     protected fun updateIllustEverywhere(updated: Illust) {
         viewModelScope.launch(Dispatchers.Default) {
+            userProfileCache.updateIllust(updated)
             _uiState.update { it.withUpdatedIllust(updated) }
         }
     }

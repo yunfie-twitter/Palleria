@@ -330,76 +330,110 @@ abstract class IllustiaDetailProfileModule(
     }
 
     override fun openUserPage(userId: Long) {
-        closeUserPageJob?.cancel()
-        closeUserPageJob = null
-        userPageLoadJob?.cancel()
-        userPageLoadJob = null
         if (userId <= 0L) {
             _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
             return
         }
+        closeUserPageJob?.cancel()
+        closeUserPageJob = null
+        val session = userProfileRequests.open(userId, _uiState.value.settings.refreshToken)
         userPageSnapshot = snapshotUserPageState()
         captureProfileReturnDetail()
+        val cached = userProfileCache.get(userId, _uiState.value.settings)
         _userNavigationRequests.tryEmit(userId)
-        _uiState.update {
-            it.copy(
-                selectedUserId = userId,
-                selectedUser = null,
-                selectedUserIllusts = emptyList(),
-                selectedUserNextUrl = null,
-                selectedUserBookmarks = emptyList(),
-                selectedUserBookmarksNextUrl = null,
-                showUserPage = true,
-                userPageDismissed = false,
-                message = null,
-            )
+        _uiState.update { state ->
+            val empty =
+                state.clearClosedUserPage().copy(
+                    selectedUserId = userId,
+                    showUserPage = true,
+                    message = null,
+                )
+            cached?.restore(empty) ?: empty
         }
-        val job =
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    GlitchTipTelemetry.traceAsync("user.profile.load", "user.profile") {
-                        val profileDeferred = async { repository.userDetail(userId) }
-                        val pageDeferred = async { repository.userIllusts(userId) }
-                        val profile = profileDeferred.await()
-                        val page = pageDeferred.await()
-                        _uiState.update { state ->
-                            if (state.selectedUserId != userId) return@update state
-                            state.copy(
-                                selectedUser = profile,
-                                selectedUserIllusts = page.items.visibleWithSettings(state.settings),
-                                selectedUserNextUrl = page.nextUrl,
-                                selectedUserBookmarks = emptyList(),
-                                selectedUserBookmarksNextUrl = null,
-                                loadState = LoadState.Loaded,
-                            )
-                        }
-                    }
-                    userPageSnapshot = null
-                } catch (expectedFailure: Exception) {
-                    val error = expectedFailure
-                    if (isCancellation(error)) throw error
-                    if (handleAuthExpired(error)) return@launch
-                    GlitchTipTelemetry.recordException(error, tag = "user_profile", extras = mapOf("userId" to userId))
-                    restoreUserPageSnapshot()
-                    val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
-                    _uiState.update {
-                        it.copy(
-                            message = message,
-                            loadState = LoadState.Error(message),
-                        )
-                    }
-                }
+        if (cached != null) {
+            userPageSnapshot = null
+            return
+        }
+        session.scope.launch {
+            try {
+                val profile = withContext(Dispatchers.IO) { repository.userDetail(userId) }
+                if (!isCurrentProfileRequest(session)) return@launch
+                _uiState.update { it.copy(selectedUser = profile, loadState = LoadState.Loaded) }
+                userPageSnapshot = null
+                userProfileCache.put(_uiState.value)
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (!isCurrentProfileRequest(session)) return@launch
+                if (handleAuthExpired(error)) return@launch
+                userProfileRequests.close()
+                restoreUserPageSnapshot()
+                val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
+                _uiState.update { it.copy(message = message, loadState = LoadState.Error(message)) }
             }
-        userPageLoadJob = job
-        job.invokeOnCompletion {
-            if (userPageLoadJob === job) userPageLoadJob = null
+        }
+        loadProfileWorks(session)
+    }
+
+    internal fun loadProfileWorks(
+        session: UserProfileRequests.Session,
+        nextUrl: String? = null,
+    ) {
+        if (!isCurrentProfileRequest(session) || _uiState.value.isSelectedUserIllustsPaginating) return
+        _uiState.update { it.copy(isSelectedUserIllustsPaginating = true) }
+        session.scope.launch {
+            try {
+                val page =
+                    withContext(Dispatchers.IO) {
+                        if (nextUrl == null) repository.userIllusts(session.userId) else repository.nextPage(nextUrl)
+                    }
+                if (!isCurrentProfileRequest(session)) return@launch
+                val items = withContext(Dispatchers.Default) { page.items.visibleWithSettings(_uiState.value.settings) }
+                if (!isCurrentProfileRequest(session)) return@launch
+                _uiState.update { state ->
+                    state.copy(
+                        selectedUserIllusts = if (nextUrl == null) items else state.selectedUserIllusts.appendIllusts(items),
+                        selectedUserNextUrl = page.nextUrl,
+                        selectedUserIllustsLoaded = true,
+                        isSelectedUserIllustsPaginating = false,
+                    )
+                }
+                userProfileCache.put(_uiState.value)
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (!isCurrentProfileRequest(session)) return@launch
+                _uiState.update { it.copy(isSelectedUserIllustsPaginating = false) }
+                if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "user_illusts_load")
+                _uiState.update { it.copy(message = cleanErrorMessage(error)) }
+            }
+        }
+    }
+
+    fun setActiveUserProfile(userId: Long?) {
+        if (userId == null) {
+            userProfileRequests.close()
+            _uiState.update { it.copy(isSelectedUserIllustsPaginating = false, isSelectedUserBookmarksPaginating = false) }
+            return
+        }
+        val current = userProfileRequests.current()
+        if (current != null && current.userId == userId && isCurrentProfileRequest(current)) return
+        val state = _uiState.value
+        if (state.selectedUserId == userId && !state.userPageDismissed) {
+            if (state.selectedUser == null) {
+                openUserPage(userId)
+            } else {
+                val session = userProfileRequests.open(userId, state.settings.refreshToken)
+                if (!state.selectedUserIllustsLoaded) loadProfileWorks(session)
+            }
         }
     }
 
     fun hideUserPage() {
         closeUserPageJob?.cancel()
-        userPageLoadJob?.cancel()
-        userPageLoadJob = null
+        userProfileRequests.close()
+        _uiState.update { it.copy(isSelectedUserIllustsPaginating = false, isSelectedUserBookmarksPaginating = false) }
         _uiState.update {
             it.copy(userPageDismissed = true)
         }
@@ -407,8 +441,8 @@ abstract class IllustiaDetailProfileModule(
 
     fun closeUserPage() {
         closeUserPageJob?.cancel()
-        userPageLoadJob?.cancel()
-        userPageLoadJob = null
+        userProfileRequests.close()
+        _uiState.update { it.copy(isSelectedUserIllustsPaginating = false, isSelectedUserBookmarksPaginating = false) }
         _uiState.update {
             it.copy(
                 showUserPage = false,
@@ -448,6 +482,7 @@ abstract class IllustiaDetailProfileModule(
                 repository.followUser(user.id, _uiState.value.settings.bookmarkRestrict)
             }
             val updated = repository.userDetail(user.id)
+            userProfileCache.updateUser(updated)
             _uiState.update { state ->
                 state.copy(
                     selectedUser = if (state.selectedUser?.id == user.id) updated else state.selectedUser,

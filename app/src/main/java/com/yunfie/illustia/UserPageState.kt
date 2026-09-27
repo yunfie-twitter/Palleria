@@ -10,5 +10,9 @@ internal fun IllustiaUiState.clearClosedUserPage(): IllustiaUiState =
         selectedUserNextUrl = null,
         selectedUserBookmarks = emptyList(),
         selectedUserBookmarksNextUrl = null,
+        selectedUserIllustsLoaded = false,
+        selectedUserBookmarksLoaded = false,
+        isSelectedUserIllustsPaginating = false,
+        isSelectedUserBookmarksPaginating = false,
         userPageDismissed = false,
     )
