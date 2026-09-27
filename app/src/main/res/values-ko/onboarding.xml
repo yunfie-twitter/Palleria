@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. 언어 선택</string>
+    <string name="setup_network_title">2. 네트워크 및 미러</string>
+    <string name="setup_welcome">%1$s에 오신 것을 환영합니다</string>
+    <string name="setup_intro">언어와 네트워크 환경에 맞게 초기 설정을 진행하세요.</string>
+    <string name="setup_official_images">공식 이미지 서버</string>
+    <string name="setup_standard">직접 연결 / 외부 프록시</string>
+    <string name="setup_standard_desc">VPN 또는 외부 프록시와 함께 사용할 수 있는 표준 연결입니다.</string>
+    <string name="setup_compat">호환 연결</string>
+    <string name="setup_compat_desc">표준 연결이 작동하지 않을 때 사용해 보세요.</string>
+    <string name="setup_ech">ECH 연결</string>
+    <string name="setup_ech_desc">앱에 설정된 대체 엔드포인트를 사용합니다.</string>
+    <string name="setup_help_title">로그인 페이지가 열리지 않나요?</string>
+    <string name="setup_help">연결 방식을 변경하거나 VPN 및 프록시 설정을 확인하세요. 이미지 미러는 이미지 로딩에만 적용됩니다.</string>
+    <string name="setup_previous">이전</string>
+    <string name="setup_next">다음</string>
+    <string name="setup_progress">%2$d페이지 중 %1$d페이지</string>
+</resources>

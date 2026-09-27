@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. Scegli la lingua</string>
+    <string name="setup_network_title">2. Rete e mirror</string>
+    <string name="setup_welcome">Ti diamo il benvenuto in %1$s</string>
+    <string name="setup_intro">Scegli la lingua e le impostazioni di rete.</string>
+    <string name="setup_official_images">Server immagini ufficiale</string>
+    <string name="setup_standard">Connessione diretta / proxy esterno</string>
+    <string name="setup_standard_desc">Connessione standard, anche con VPN o proxy esterno.</string>
+    <string name="setup_compat">Connessione compatibile</string>
+    <string name="setup_compat_desc">Prova questa opzione se la connessione standard non funziona.</string>
+    <string name="setup_ech">Connessione ECH</string>
+    <string name="setup_ech_desc">Usa gli endpoint alternativi configurati nell’app.</string>
+    <string name="setup_help_title">La pagina di accesso non si apre?</string>
+    <string name="setup_help">Prova un’altra modalità o controlla VPN e proxy. I mirror si applicano solo alle immagini.</string>
+    <string name="setup_previous">Indietro</string>
+    <string name="setup_next">Avanti</string>
+    <string name="setup_progress">Pagina %1$d di %2$d</string>
+</resources>

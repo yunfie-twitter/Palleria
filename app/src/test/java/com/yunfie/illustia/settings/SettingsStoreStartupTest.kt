@@ -25,17 +25,28 @@ class SettingsStoreStartupTest {
             val marker = "startup-room-marker"
 
             try {
+                val incomplete = original.copy(onboardingSetupCompleted = false)
+                store.write(incomplete, original)
+                store.readStartup().onboardingSetupCompleted shouldBe false
                 val updated =
                     original.copy(
+                        onboardingSetupCompleted = true,
+                        appLanguage = "en",
+                        pixivNetworkMode = "compat",
+                        pixivImageProxyBaseUrl = "https://i.pixiv.re/",
                         privacyModeEnabled = true,
                         searchAgeRestriction = SearchAgeRestriction.R18G,
                         searchHistory = listOf(marker),
                         favoriteTags = listOf(marker),
                     )
-                store.write(updated, original)
+                store.write(updated, incomplete)
 
                 SettingsStore.isPrivacyModeEnabledSync(context).shouldBeTrue()
                 store.readStartup().apply {
+                    onboardingSetupCompleted shouldBe true
+                    appLanguage shouldBe "en"
+                    pixivNetworkMode shouldBe "compat"
+                    pixivImageProxyBaseUrl shouldBe "https://i.pixiv.re/"
                     searchAgeRestriction shouldBe SearchAgeRestriction.R18G
                     privacyModeEnabled.shouldBeTrue()
                     searchHistory.shouldBeEmpty()
