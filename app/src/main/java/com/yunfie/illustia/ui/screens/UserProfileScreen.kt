@@ -41,6 +41,7 @@ import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
 import com.yunfie.illustia.ui.screens.profile.UserProfileSmallTopAppBar
 import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
 import com.yunfie.illustia.ui.screens.profile.UserWorkTypeFilter
+import com.yunfie.illustia.ui.screens.profile.rememberUserWorks
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -56,6 +57,8 @@ fun UserProfileScreen(
     bookmarkNextUrl: String? = null,
     isPaginating: Boolean = false,
     isBookmarkPaginating: Boolean = false,
+    worksLoaded: Boolean = true,
+    bookmarksLoaded: Boolean = true,
     onBack: () -> Unit,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
@@ -86,41 +89,13 @@ fun UserProfileScreen(
     var sortOrder by remember(user.id) { mutableStateOf(UserWorkSortOrder.Newest) }
     var typeFilter by remember(user.id) { mutableStateOf(UserWorkTypeFilter.All) }
 
-    val processedIllusts =
-        remember(illusts, sortOrder, typeFilter) {
-            val filtered =
-                when (typeFilter) {
-                    UserWorkTypeFilter.All -> illusts
-                    UserWorkTypeFilter.IllustOnly -> illusts.filter { it.type != "manga" }
-                    UserWorkTypeFilter.MangaOnly -> illusts.filter { it.type == "manga" }
-                }
-            when (sortOrder) {
-                UserWorkSortOrder.Newest -> filtered.sortedByDescending { it.id }
-                UserWorkSortOrder.Oldest -> filtered.sortedBy { it.id }
-                UserWorkSortOrder.MostBookmarks -> filtered.sortedByDescending { it.totalBookmarks }
-            }
-        }
-
-    val processedBookmarks =
-        remember(bookmarks, sortOrder, typeFilter) {
-            val filtered =
-                when (typeFilter) {
-                    UserWorkTypeFilter.All -> bookmarks
-                    UserWorkTypeFilter.IllustOnly -> bookmarks.filter { it.type != "manga" }
-                    UserWorkTypeFilter.MangaOnly -> bookmarks.filter { it.type == "manga" }
-                }
-            when (sortOrder) {
-                UserWorkSortOrder.Newest -> filtered.sortedByDescending { it.id }
-                UserWorkSortOrder.Oldest -> filtered.sortedBy { it.id }
-                UserWorkSortOrder.MostBookmarks -> filtered.sortedByDescending { it.totalBookmarks }
-            }
-        }
-
     val bookmarkGridState = remember(user.id) { LazyGridState() }
     val infoListState = remember(user.id) { LazyListState() }
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val selectedTab = pagerState.currentPage
+    val processedIllusts = rememberUserWorks(user.id, illusts, sortOrder, typeFilter, selectedTab == 0)
+    val processedBookmarks = rememberUserWorks(user.id, bookmarks, sortOrder, typeFilter, selectedTab == 1)
     var isHeaderCollapsed by remember(user.id) { mutableStateOf(false) }
 
     val activeIsAtTop by remember(selectedTab, gridState, bookmarkGridState, infoListState) {
@@ -243,14 +218,17 @@ fun UserProfileScreen(
         UserProfilePagerContent(
             user = user,
             settings = settings,
-            illusts = processedIllusts,
-            bookmarks = processedBookmarks,
+            illusts = processedIllusts.items,
+            bookmarks = processedBookmarks.items,
             hasMore = hasMore,
             bookmarkHasMore = bookmarkHasMore,
             nextUrl = nextUrl,
             bookmarkNextUrl = bookmarkNextUrl,
-            isPaginating = isPaginating,
-            isBookmarkPaginating = isBookmarkPaginating,
+            isPaginating = isPaginating || processedIllusts.processing,
+            worksLoaded = worksLoaded,
+            bookmarksLoaded = bookmarksLoaded,
+            allowAutoLoadMore = typeFilter == UserWorkTypeFilter.All && sortOrder == UserWorkSortOrder.Newest,
+            isBookmarkPaginating = isBookmarkPaginating || processedBookmarks.processing,
             onOpenIllust = onOpenIllust,
             onBookmark = onBookmark,
             onLoadMore = onLoadMore,

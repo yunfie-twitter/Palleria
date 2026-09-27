@@ -574,6 +574,10 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
+    LaunchedEffect(backStack.lastOrNull()) {
+        viewModel.setActiveUserProfile((backStack.lastOrNull() as? AppRoute.UserProfile)?.userId)
+    }
+
     LaunchedEffect(Unit) {
         snapshotFlow { backStack.any { it is AppRoute.UserProfile } }
             .collect { hasUserProfile ->

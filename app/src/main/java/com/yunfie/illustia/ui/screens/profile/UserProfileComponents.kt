@@ -127,6 +127,9 @@ internal fun UserProfilePagerContent(
     bookmarkNextUrl: String? = null,
     isPaginating: Boolean = false,
     isBookmarkPaginating: Boolean = false,
+    worksLoaded: Boolean = true,
+    bookmarksLoaded: Boolean = true,
+    allowAutoLoadMore: Boolean = true,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
     onLoadMore: () -> Unit,
@@ -249,6 +252,9 @@ internal fun UserProfilePagerContent(
                         illusts = illusts,
                         settings = settings,
                         hasMore = hasMore,
+                        loaded = worksLoaded,
+                        autoLoadMore = settings.autoLoadMore && allowAutoLoadMore,
+                        active = pagerState.settledPage == 0 && !pagerState.isScrollInProgress,
                         nextUrl = nextUrl,
                         isPaginating = isPaginating,
                         onOpenIllust = onOpenIllust,
@@ -268,6 +274,9 @@ internal fun UserProfilePagerContent(
                             illusts = bookmarks,
                             settings = settings,
                             hasMore = bookmarkHasMore,
+                            loaded = bookmarksLoaded,
+                            autoLoadMore = settings.autoLoadMore && allowAutoLoadMore,
+                            active = pagerState.settledPage == 1 && !pagerState.isScrollInProgress,
                             nextUrl = bookmarkNextUrl,
                             isPaginating = isBookmarkPaginating,
                             onOpenIllust = onOpenIllust,
@@ -785,18 +794,22 @@ private fun UserIllustGridPage(
     backgroundColor: Color,
     emptyLabel: String = stringResource(R.string.search_empty_illust),
     keyPrefix: String = "user_illust",
+    loaded: Boolean = true,
+    autoLoadMore: Boolean = settings.autoLoadMore,
+    active: Boolean = true,
     onIllustLongClick: ((Illust) -> Unit)? = null,
 ) {
     val columns = adaptiveProfileGridColumns()
 
     AutoLoadMoreEffect(
         gridState = gridState,
-        enabled = settings.autoLoadMore,
+        enabled = autoLoadMore && active && loaded,
         nextUrl = nextUrl,
         isLoading = isPaginating,
         onLoadMore = onLoadMore,
     )
 
+    val showRetry = !loaded && !isPaginating
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
@@ -829,7 +842,7 @@ private fun UserIllustGridPage(
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
             }
         }
-        if (settings.autoLoadMore && isPaginating && illusts.isNotEmpty()) {
+        if (autoLoadMore && isPaginating && illusts.isNotEmpty()) {
             items(
                 count = columns,
                 key = { "${keyPrefix}_paginating_skeleton_$it" },
@@ -837,7 +850,7 @@ private fun UserIllustGridPage(
             ) {
                 IllustCardSkeleton()
             }
-        } else if (!settings.autoLoadMore && hasMore) {
+        } else if ((!autoLoadMore && hasMore) || showRetry) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Button(
                     onClick = onLoadMore,
