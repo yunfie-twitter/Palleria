@@ -19,6 +19,34 @@ GlitchTipTelemetry.setEnabled(applicationContext, settings.sendTelemetry)
 
 GlitchTip の DSN は `AndroidManifest.xml` に設定し、パフォーマンストレースはオプトイン時に 100%（`1.0`）サンプリングされます。GlitchTip が非対応の自動セッション追跡、既定 PII、Frame Metrics エンベロープは無効化されています。
 
+### 送信先
+
+Android SDK は次の DSN を使用します。
+
+```text
+https://b2607da9caa6433b8e0718ebb46d3a2f@glitchtip.yunfi.f5.si/1
+```
+
+ホストは `glitchtip.yunfi.f5.si`、プロジェクト ID は `1` です。送信は従来どおりユーザーがテレメトリを有効化した場合に限ります。
+
+### Web のセキュリティレポート送信先
+
+以下はブラウザーの CSP 違反レポート用の Security Endpoint です。Android SDK の DSN としては使用しません。
+
+```text
+https://glitchtip.yunfi.f5.si/api/1/security/?glitchtip_key=b2607da9caa6433b8e0718ebb46d3a2f
+```
+
+Web サイトで利用する際は、配信サーバーの `Content-Security-Policy` または `Content-Security-Policy-Report-Only` HTTP ヘッダーの既存ポリシーに、次のディレクティブを追加します。
+
+```text
+report-uri https://glitchtip.yunfi.f5.si/api/1/security/?glitchtip_key=b2607da9caa6433b8e0718ebb46d3a2f
+```
+
+このリポジトリのドキュメント配信は静的ファイルを `gh-pages` に公開しており、HTTP レスポンスヘッダーの設定を管理していません。この URL の記載だけでブラウザーのレポート送信は有効になりません。配信サーバー側での設定が別途必要です。
+
+参考: [GlitchTip の CSP レポート設定](https://glitchtip.com/blog/2022-05-26-csp/)
+
 ---
 
 ## ローカルクラッシュハンドラー & 未捕獲例外送信 (`CrashHandler`)

@@ -1,7 +1,6 @@
 package com.yunfie.illustia.ui.screens.profile
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -80,6 +79,7 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.SettingRow
@@ -357,6 +357,7 @@ internal fun UserProfileSmallTopAppBar(
     onTypeFilterChange: (UserWorkTypeFilter) -> Unit,
     onBack: () -> Unit,
     onMuteUser: () -> Unit,
+    onReport: (String?, (Boolean) -> Unit) -> Unit,
     onMessage: (String) -> Unit,
     onOpenRelatedUsers: () -> Unit,
     onTitleClick: () -> Unit = {},
@@ -376,8 +377,18 @@ internal fun UserProfileSmallTopAppBar(
     val relatedLabel = stringResource(R.string.user_tab_related)
     val muteLabel = stringResource(R.string.dialog_mute)
     val reportProblemLabel = stringResource(R.string.action_report_problem)
+    var showReportDialog by remember(user.id) { mutableStateOf(false) }
     val shareTitle = user.name.ifBlank { "@${user.account}" }
     val profileUrl = remember(user.id) { "https://www.pixiv.net/users/${user.id}" }
+    if (showReportDialog) {
+        PixivReportDialog(
+            target = user.name,
+            targetUrl = profileUrl,
+            onSubmit = onReport,
+            onDismiss = { showReportDialog = false },
+            onMessage = onMessage,
+        )
+    }
     var showMoreMenu by remember { mutableStateOf(false) }
 
     val performHaptic =
@@ -499,11 +510,7 @@ internal fun UserProfileSmallTopAppBar(
                             ),
                             DropdownItem(
                                 text = reportProblemLabel,
-                                onClick = {
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(profileUrl)))
-                                    }.onFailure { onMessage(shareFailedMessage) }
-                                },
+                                onClick = { showReportDialog = true },
                             ),
                         ),
                 ),

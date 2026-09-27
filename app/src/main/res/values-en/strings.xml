@@ -1053,4 +1053,7 @@
     <string name="update_notify_new_version_desc">Show system notifications when a new version is released</string>
     <string name="update_auto_download">Auto-download updates</string>
     <string name="update_auto_download_desc">Automatically download updates in the background (auto-installs if Shizuku is enabled)</string>
+    <string name="report_dialog_summary">Report “%1$s” to Pixiv. Review the problem before submitting.</string>
+    <string name="report_submitting">Submitting report…</string>
+    <string name="report_browser_fallback">The report could not be submitted. Retry, or open the official Pixiv website and select Report a problem from the target’s menu. You may need to sign in in your browser.</string>
 </resources>
