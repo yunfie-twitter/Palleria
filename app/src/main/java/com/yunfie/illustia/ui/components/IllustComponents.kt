@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -62,31 +63,20 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
-/** shimmerValue: -1f → 2f の範囲でシマー位置を表す。省略時は内部で独自 Transition を生成する（後方互換）。 */
+/** Read the shared animation only during drawing, not during composition. */
 @Composable
 fun IllustCardSkeleton(
     modifier: Modifier = Modifier,
-    shimmerValue: Float? = null,
+    shimmerValue: State<Float>? = null,
 ) {
-    val defaultTransition = rememberInfiniteTransition(label = "illustSkeleton")
-    val defaultAnim by defaultTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "illustSkeletonShimmer",
-    )
-    val shimmerFloat = shimmerValue ?: defaultAnim
+    val shimmer = shimmerValue ?: rememberIllustSkeletonShimmer()
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
     val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }
     val shimmerModifier =
         Modifier.drawWithCache {
             onDrawBehind {
-                val startX = shimmerFloat * size.width
+                val startX = shimmer.value * size.width
                 drawRect(
                     brush =
                         Brush.linearGradient(
@@ -139,6 +129,21 @@ fun IllustCardSkeleton(
 }
 
 @Composable
+fun rememberIllustSkeletonShimmer(): State<Float> {
+    val transition = rememberInfiniteTransition(label = "illustSkeleton")
+    return transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "illustSkeletonShimmer",
+    )
+}
+
+@Composable
 fun IllustGridSkeleton(
     columns: Int,
     modifier: Modifier = Modifier,
@@ -147,17 +152,7 @@ fun IllustGridSkeleton(
 ) {
     // 1つの InfiniteTransition をすべてのスケルトンで共有することで、
     // 複数スケルトン同時表示時のアニメーション計算コストを削減する。
-    val sharedTransition = rememberInfiniteTransition(label = "gridSkeleton")
-    val shimmerValue by sharedTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "gridSkeletonShimmer",
-    )
+    val shimmerValue = rememberIllustSkeletonShimmer()
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns.coerceAtLeast(1)),
         modifier = modifier.fillMaxSize(),
