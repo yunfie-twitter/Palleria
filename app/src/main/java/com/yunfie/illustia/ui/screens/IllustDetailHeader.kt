@@ -53,6 +53,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -84,6 +85,7 @@ internal fun IllustDetailHeader(
     onSaveAllImages: (List<String>, String) -> Unit,
     onMuteIllust: () -> Unit,
     onMuteUser: () -> Unit,
+    onReport: (String?, (Boolean) -> Unit) -> Unit,
     onMessage: (String) -> Unit,
     loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
     showImage: Boolean,
@@ -117,6 +119,16 @@ internal fun IllustDetailHeader(
     val muteWorkLabel = stringResource(R.string.detail_mute_work)
     val muteArtistLabel = stringResource(R.string.detail_mute_artist)
     val reportProblemLabel = stringResource(R.string.action_report_problem)
+    var showReportDialog by remember(illust.id) { mutableStateOf(false) }
+    if (showReportDialog) {
+        PixivReportDialog(
+            target = illust.title,
+            targetUrl = pixivUrl,
+            onSubmit = onReport,
+            onDismiss = { showReportDialog = false },
+            onMessage = onMessage,
+        )
+    }
     val moreLabel = stringResource(R.string.detail_more)
     val browserFailedMessage = stringResource(R.string.error_browser_failed)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
@@ -462,11 +474,7 @@ internal fun IllustDetailHeader(
                                     ),
                                     DropdownItem(
                                         text = reportProblemLabel,
-                                        onClick = {
-                                            runCatching {
-                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pixivUrl)))
-                                            }.onFailure { onMessage(browserFailedMessage) }
-                                        },
+                                        onClick = { showReportDialog = true },
                                     ),
                                 ),
                         ),

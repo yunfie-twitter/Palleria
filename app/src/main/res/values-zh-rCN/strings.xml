@@ -916,4 +916,6 @@
     <string name="update_cancel_download">取消下载</string>
     <string name="update_retry_download">重试</string>
     <string name="post_update_notice">已更新至 Palleria %1$s</string>
+    <string name="search_age_restriction">年龄限制</string>
+    <string name="search_age_all">全部</string>
 </resources>

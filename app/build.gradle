@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 36
-        versionCode = 120
-        versionName = "6.2.1-pre.2"
+        versionCode = 126
+        versionName = "6.3.2"
     }
 
     signingConfigs {
@@ -374,6 +374,7 @@ dependencies {
     testImplementation libs.kotest.runner
     testImplementation libs.kotest.assertions
     testImplementation libs.kotest.property
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.coroutines.get()}"
     testImplementation libs.junit4
     testImplementation libs.androidx.test.core
     testImplementation libs.robolectric

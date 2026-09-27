@@ -44,6 +44,15 @@ baselineProfile {
 }
 
 dependencies {
+    constraints {
+        def wireVersion = "6.4.5"
+        implementation("com.squareup.wire:wire-runtime:${wireVersion}") {
+            because "GHSA-9rm7-3qhh-h2mc: validate protobuf lengths before advancing decoder cursors"
+        }
+        implementation("com.squareup.wire:wire-runtime-jvm:${wireVersion}") {
+            because "Keep the JVM implementation aligned with the patched Wire runtime"
+        }
+    }
     implementation libs.androidx.test.junit
     implementation libs.androidx.test.runner
     implementation libs.uiautomator

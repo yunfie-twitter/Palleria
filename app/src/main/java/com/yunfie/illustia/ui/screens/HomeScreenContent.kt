@@ -39,10 +39,11 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
-import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -98,15 +99,20 @@ internal fun FeedTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeFeedGridState
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            val targets = if (items.size <= 24) items else items.takeLast(24)
-            targets
-                .asSequence()
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    PrefetchIllustGridImages(
+        items = items,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+    )
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && state.isHomePaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
         }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -139,8 +145,10 @@ internal fun FeedTabContent(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (items.isEmpty() && loadState == LoadState.Loading) {
-                items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            if (showInitialSkeletons) {
+                items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
+                    IllustCardSkeleton(shimmerValue = shimmer)
+                }
             }
 
             if (loadState is LoadState.Error) {
@@ -172,13 +180,13 @@ internal fun FeedTabContent(
                 )
             }
 
-            if (settings.autoLoadMore && state.isHomePaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "home_paginating_skeleton_$it" },
                     contentType = { "illust_skeleton" },
                 ) {
-                    IllustCardSkeleton()
+                    IllustCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -222,15 +230,21 @@ internal fun FollowingTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeTimelineGridState
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            val targets = if (items.size <= 24) items else items.takeLast(24)
-            targets
-                .asSequence()
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    PrefetchIllustGridImages(
+        items = items,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "tl_",
+    )
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && state.isTimelinePaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
         }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -263,8 +277,10 @@ internal fun FollowingTabContent(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (items.isEmpty() && loadState == LoadState.Loading) {
-                items(6, key = { "home_following_skeleton_$it" }, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            if (showInitialSkeletons) {
+                items(6, key = { "home_following_skeleton_$it" }, contentType = { "illust_skeleton" }) {
+                    IllustCardSkeleton(shimmerValue = shimmer)
+                }
             }
 
             if (loadState is LoadState.Error) {
@@ -296,13 +312,13 @@ internal fun FollowingTabContent(
                 )
             }
 
-            if (settings.autoLoadMore && state.isTimelinePaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "timeline_paginating_skeleton_$it" },
                     contentType = { "illust_skeleton" },
                 ) {
-                    IllustCardSkeleton()
+                    IllustCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

@@ -37,3 +37,31 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
 }
+
+// Lint tools resolve separate classpaths, so buildscript pins do not protect them.
+def lintSecurityVersions = [
+    "org.bouncycastle:bcpkix-jdk18on": providers.gradleProperty("security.bouncycastleVersion").get(),
+    "org.bouncycastle:bcprov-jdk18on": providers.gradleProperty("security.bouncycastleVersion").get(),
+    "org.bouncycastle:bcutil-jdk18on": providers.gradleProperty("security.bouncycastleVersion").get(),
+    "org.apache.httpcomponents:httpclient": providers.gradleProperty("security.httpClientVersion").get(),
+    "org.apache.commons:commons-lang3": providers.gradleProperty("security.commonsLangVersion").get(),
+]
+def ktlintSecurityVersions = [
+    "ch.qos.logback:logback-core": providers.gradleProperty("security.logbackVersion").get(),
+    "ch.qos.logback:logback-classic": providers.gradleProperty("security.logbackVersion").get(),
+]
+subprojects {
+    configurations.configureEach {
+        def securityVersions = name == "androidLintTool" ? lintSecurityVersions :
+            (name == "ktlint" ? ktlintSecurityVersions : [:])
+        if (!securityVersions.isEmpty()) {
+            resolutionStrategy.eachDependency { details ->
+                def patchedVersion = securityVersions["${details.requested.group}:${details.requested.name}".toString()]
+                if (patchedVersion != null) {
+                    details.useVersion(patchedVersion)
+                    details.because("Use the shared security-patched version in this isolated lint tool classpath")
+                }
+            }
+        }
+    }
+}

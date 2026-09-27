@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
@@ -148,6 +149,19 @@ internal fun SearchOptionsContent(
             selected = state.settings.searchBookmarkFilter,
             label = { stringResource(it.labelResId) },
             onSelect = viewModel::updateSearchBookmarkFilter,
+        )
+        Text(
+            stringResource(R.string.search_age_restriction),
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            style = MiuixTheme.textStyles.footnote1,
+            fontWeight = FontWeight.Bold,
+        )
+        ChoiceRow(
+            values = SearchAgeRestriction.entries,
+            selected = state.settings.searchAgeRestriction,
+            label = { stringResource(it.labelResId) },
+            onSelect = viewModel::updateSearchAgeRestriction,
+            columns = 3,
         )
         SettingSwitchRow(
             title = stringResource(R.string.settings_hide_ai_works),

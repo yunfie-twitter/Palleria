@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. Elige tu idioma</string>
+    <string name="setup_network_title">2. Red y servidores espejo</string>
+    <string name="setup_welcome">Te damos la bienvenida a %1$s</string>
+    <string name="setup_intro">Elige tu idioma y configura la red para empezar.</string>
+    <string name="setup_official_images">Servidor oficial de imágenes</string>
+    <string name="setup_standard">Conexión directa / proxy externo</string>
+    <string name="setup_standard_desc">Conexión estándar, también con VPN o proxy externo.</string>
+    <string name="setup_compat">Conexión compatible</string>
+    <string name="setup_compat_desc">Prueba esta opción si la conexión estándar falla.</string>
+    <string name="setup_ech">Conexión ECH</string>
+    <string name="setup_ech_desc">Usa los servidores alternativos configurados en la aplicación.</string>
+    <string name="setup_help_title">¿No se abre la página de acceso?</string>
+    <string name="setup_help">Prueba otro modo de conexión o revisa la VPN y el proxy. Los servidores espejo solo afectan a las imágenes.</string>
+    <string name="setup_previous">Atrás</string>
+    <string name="setup_next">Siguiente</string>
+    <string name="setup_progress">Página %1$d de %2$d</string>
+</resources>

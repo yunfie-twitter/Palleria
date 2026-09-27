@@ -32,20 +32,26 @@ suspend fun Call.awaitBody(): String =
                     call: Call,
                     response: Response,
                 ) {
-                    response.use {
-                        val body = it.body.string()
-                        if (it.isSuccessful) {
-                            continuation.resume(body)
-                        } else {
-                            val pixivMessage =
-                                body
-                                    .lineSequence()
-                                    .joinToString(" ")
-                                    .take(240)
-                                    .ifBlank { it.message }
-                            continuation.resumeWithException(PixivApiException(it.code, pixivMessage))
+                    val body =
+                        try {
+                            response.use {
+                                val text = it.body.string()
+                                if (!it.isSuccessful) {
+                                    val pixivMessage =
+                                        text
+                                            .lineSequence()
+                                            .joinToString(" ")
+                                            .take(240)
+                                            .ifBlank { it.message }
+                                    throw PixivApiException(it.code, pixivMessage)
+                                }
+                                text
+                            }
+                        } catch (error: IOException) {
+                            continuation.resumeWithException(error)
+                            return
                         }
-                    }
+                    continuation.resume(body)
                 }
             },
         )

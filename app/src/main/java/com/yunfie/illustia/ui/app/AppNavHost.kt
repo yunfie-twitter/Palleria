@@ -310,6 +310,9 @@ internal fun AppNavHost(
                         onUnmuteUser = { viewModel.unmuteUser(illust.artistId) },
                         onMuteIllust = { viewModel.muteIllust(illust.id) },
                         onMuteUser = { viewModel.muteUser(illust.artistId) },
+                        onReport = { message, onComplete ->
+                            viewModel.reportIllust(illust.id, null, message, onComplete)
+                        },
                         onMuteTag = { tag -> viewModel.muteTag(tag) },
                         onOpenIllust = viewModel::openIllust,
                         onLongPressIllust = viewModel::onIllustLongPress,
@@ -581,6 +584,12 @@ internal fun AppNavHost(
                         bookmarks = appState.state.selectedUserBookmarks,
                         hasMore = appState.state.selectedUserNextUrl != null,
                         bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
+                        nextUrl = appState.state.selectedUserNextUrl,
+                        bookmarkNextUrl = appState.state.selectedUserBookmarksNextUrl,
+                        isPaginating = appState.state.isSelectedUserIllustsPaginating,
+                        isBookmarkPaginating = appState.state.isSelectedUserBookmarksPaginating,
+                        worksLoaded = appState.state.selectedUserIllustsLoaded,
+                        bookmarksLoaded = appState.state.selectedUserBookmarksLoaded,
                         onBack = onPopRoute,
                         onOpenIllust = { illust ->
                             viewModel.openIllust(illust)
@@ -594,6 +603,9 @@ internal fun AppNavHost(
                         },
                         onToggleFollow = { viewModel.toggleFollow(user) },
                         onMuteUser = { viewModel.muteUser(user.id) },
+                        onReport = { message, onComplete ->
+                            viewModel.reportUser(user.id, null, message, onComplete)
+                        },
                         onMessage = viewModel::showMessage,
                         isMuted =
                             appState.state.settings.mutedUsers

@@ -12,6 +12,10 @@ class PixivApiCache(
     private val defaultTtlMillis: Long = DEFAULT_TTL_MILLIS,
     private val maxEntries: Int = DEFAULT_MAX_ENTRIES,
 ) {
+    init {
+        require(maxEntries > 0) { "maxEntries must be positive" }
+    }
+
     data class CacheEntry<T>(
         val data: T,
         val timestamp: Long,
@@ -40,22 +44,27 @@ class PixivApiCache(
         return entry.data as? T
     }
 
+    @Synchronized
     fun <T : Any> put(
         key: String,
         data: T,
         ttlMillis: Long = defaultTtlMillis,
         now: Long = System.currentTimeMillis(),
     ) {
-        if (cache.size >= maxEntries) {
+        // Capacity checking and insertion must be atomic across concurrent requests.
+        // Refreshing an existing key does not consume another cache slot.
+        if (!cache.containsKey(key) && cache.size >= maxEntries) {
             evictOldest(now)
         }
         cache[key] = CacheEntry(data, now, ttlMillis)
     }
 
+    @Synchronized
     fun remove(key: String) {
         cache.remove(key)
     }
 
+    @Synchronized
     fun removeByPrefix(prefix: String) {
         val iterator = cache.keys.iterator()
         while (iterator.hasNext()) {
@@ -65,6 +74,7 @@ class PixivApiCache(
         }
     }
 
+    @Synchronized
     fun clear() {
         cache.clear()
     }

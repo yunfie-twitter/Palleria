@@ -8,6 +8,7 @@ import com.yunfie.illustia.DummyAppIconSwitcher
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
@@ -136,6 +137,10 @@ abstract class IllustiaSettingsSecurityModule(
         viewModelScope.launch(Dispatchers.IO) {
             refreshCurrentAccountProfile(_uiState.value.settings)
         }
+    }
+
+    fun completeOnboardingSetup() {
+        updateSettings { it.copy(onboardingSetupCompleted = true) }
     }
 
     fun updateAppLanguage(value: String) {
@@ -941,6 +946,11 @@ abstract class IllustiaSettingsSecurityModule(
         refreshActiveSearch()
     }
 
+    fun updateSearchAgeRestriction(value: SearchAgeRestriction) {
+        updateSettings { it.copy(searchAgeRestriction = value) }
+        refreshActiveSearch()
+    }
+
     fun updateSearchUsersEnabled(value: Boolean) {
         updateSettings { it.copy(searchUsersEnabled = value) }
         refreshActiveSearch()
@@ -954,6 +964,7 @@ abstract class IllustiaSettingsSecurityModule(
                 searchWorkType = SearchWorkType.Artworks,
                 searchDuration = SearchDuration.All,
                 searchBookmarkFilter = SearchBookmarkFilter.None,
+                searchAgeRestriction = SearchAgeRestriction.All,
                 hideAiWorks = false,
             )
         }

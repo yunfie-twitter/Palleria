@@ -1,7 +1,6 @@
 package com.yunfie.illustia.ui.screens.profile
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -80,6 +79,7 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.SettingRow
@@ -127,6 +127,9 @@ internal fun UserProfilePagerContent(
     bookmarkNextUrl: String? = null,
     isPaginating: Boolean = false,
     isBookmarkPaginating: Boolean = false,
+    worksLoaded: Boolean = true,
+    bookmarksLoaded: Boolean = true,
+    allowAutoLoadMore: Boolean = true,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
     onLoadMore: () -> Unit,
@@ -249,6 +252,9 @@ internal fun UserProfilePagerContent(
                         illusts = illusts,
                         settings = settings,
                         hasMore = hasMore,
+                        loaded = worksLoaded,
+                        autoLoadMore = settings.autoLoadMore && allowAutoLoadMore,
+                        active = pagerState.settledPage == 0 && !pagerState.isScrollInProgress,
                         nextUrl = nextUrl,
                         isPaginating = isPaginating,
                         onOpenIllust = onOpenIllust,
@@ -268,6 +274,9 @@ internal fun UserProfilePagerContent(
                             illusts = bookmarks,
                             settings = settings,
                             hasMore = bookmarkHasMore,
+                            loaded = bookmarksLoaded,
+                            autoLoadMore = settings.autoLoadMore && allowAutoLoadMore,
+                            active = pagerState.settledPage == 1 && !pagerState.isScrollInProgress,
                             nextUrl = bookmarkNextUrl,
                             isPaginating = isBookmarkPaginating,
                             onOpenIllust = onOpenIllust,
@@ -357,6 +366,7 @@ internal fun UserProfileSmallTopAppBar(
     onTypeFilterChange: (UserWorkTypeFilter) -> Unit,
     onBack: () -> Unit,
     onMuteUser: () -> Unit,
+    onReport: (String?, (Boolean) -> Unit) -> Unit,
     onMessage: (String) -> Unit,
     onOpenRelatedUsers: () -> Unit,
     onTitleClick: () -> Unit = {},
@@ -376,8 +386,18 @@ internal fun UserProfileSmallTopAppBar(
     val relatedLabel = stringResource(R.string.user_tab_related)
     val muteLabel = stringResource(R.string.dialog_mute)
     val reportProblemLabel = stringResource(R.string.action_report_problem)
+    var showReportDialog by remember(user.id) { mutableStateOf(false) }
     val shareTitle = user.name.ifBlank { "@${user.account}" }
     val profileUrl = remember(user.id) { "https://www.pixiv.net/users/${user.id}" }
+    if (showReportDialog) {
+        PixivReportDialog(
+            target = user.name,
+            targetUrl = profileUrl,
+            onSubmit = onReport,
+            onDismiss = { showReportDialog = false },
+            onMessage = onMessage,
+        )
+    }
     var showMoreMenu by remember { mutableStateOf(false) }
 
     val performHaptic =
@@ -499,11 +519,7 @@ internal fun UserProfileSmallTopAppBar(
                             ),
                             DropdownItem(
                                 text = reportProblemLabel,
-                                onClick = {
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(profileUrl)))
-                                    }.onFailure { onMessage(shareFailedMessage) }
-                                },
+                                onClick = { showReportDialog = true },
                             ),
                         ),
                 ),
@@ -778,18 +794,22 @@ private fun UserIllustGridPage(
     backgroundColor: Color,
     emptyLabel: String = stringResource(R.string.search_empty_illust),
     keyPrefix: String = "user_illust",
+    loaded: Boolean = true,
+    autoLoadMore: Boolean = settings.autoLoadMore,
+    active: Boolean = true,
     onIllustLongClick: ((Illust) -> Unit)? = null,
 ) {
     val columns = adaptiveProfileGridColumns()
 
     AutoLoadMoreEffect(
         gridState = gridState,
-        enabled = settings.autoLoadMore,
+        enabled = autoLoadMore && active && loaded,
         nextUrl = nextUrl,
         isLoading = isPaginating,
         onLoadMore = onLoadMore,
     )
 
+    val showRetry = !loaded && !isPaginating
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
@@ -822,7 +842,7 @@ private fun UserIllustGridPage(
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
             }
         }
-        if (settings.autoLoadMore && isPaginating && illusts.isNotEmpty()) {
+        if (autoLoadMore && isPaginating && illusts.isNotEmpty()) {
             items(
                 count = columns,
                 key = { "${keyPrefix}_paginating_skeleton_$it" },
@@ -830,7 +850,7 @@ private fun UserIllustGridPage(
             ) {
                 IllustCardSkeleton()
             }
-        } else if (!settings.autoLoadMore && hasMore) {
+        } else if ((!autoLoadMore && hasMore) || showRetry) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Button(
                     onClick = onLoadMore,

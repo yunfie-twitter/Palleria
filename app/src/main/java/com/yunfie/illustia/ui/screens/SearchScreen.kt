@@ -53,6 +53,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.SuggestionStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
@@ -413,6 +414,7 @@ private fun SearchResultsArea(
             state.settings.searchWorkType != SearchWorkType.Artworks ||
             state.settings.searchDuration != SearchDuration.All ||
             state.settings.searchBookmarkFilter != SearchBookmarkFilter.None ||
+            state.settings.searchAgeRestriction != SearchAgeRestriction.All ||
             state.settings.hideAiWorks
 
     Column(modifier = Modifier.fillMaxSize()) {

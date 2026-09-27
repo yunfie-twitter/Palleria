@@ -1,5 +1,6 @@
 package com.yunfie.illustia.settings
 
+import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
@@ -12,6 +13,7 @@ internal data class SearchSettings(
     val workType: SearchWorkType,
     val duration: SearchDuration,
     val bookmarkFilter: SearchBookmarkFilter,
+    val ageRestriction: SearchAgeRestriction,
     val usersEnabled: Boolean,
     val allowR18: Boolean,
     val allowR18G: Boolean,
@@ -67,6 +69,7 @@ internal fun AppSettings.searchProjection() =
         searchWorkType,
         searchDuration,
         searchBookmarkFilter,
+        searchAgeRestriction,
         searchUsersEnabled,
         allowR18,
         allowR18G,

@@ -123,10 +123,10 @@ fun RelatedUsersScreen(
                         .background(MiuixTheme.colorScheme.surface),
                 contentPadding =
                     PaddingValues(
-                        start = adaptivePadding + 16.dp,
-                        end = adaptivePadding + 16.dp,
+                        start = 16.dp,
+                        end = 16.dp,
                         top = scaffoldPadding.calculateTopPadding() + 8.dp,
-                        bottom = 24.dp,
+                        bottom = adaptivePadding + scaffoldPadding.calculateBottomPadding(),
                     ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

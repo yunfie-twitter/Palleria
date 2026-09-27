@@ -34,7 +34,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
-import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -116,21 +116,26 @@ fun BookmarkScreen(
                 BookmarkSort.Title -> bookmarkItems.sortedBy { it.title }
             }
         }
-    val activeItems =
-        when (selectedTopTab) {
-            0 -> timelineItems
-            1 -> sortedBookmarkItems
-            else -> emptyList()
+    when (selectedTopTab) {
+        0 -> {
+            PrefetchIllustGridImages(
+                items = timelineItems,
+                gridState = viewModel.bookmarkTimelineGridState,
+                enabled = settings.prefetchImages,
+                highQualityImages = feedHighQuality,
+                keyPrefix = "timeline_",
+            )
         }
-    val prefetchUrls =
-        remember(activeItems, feedHighQuality) {
-            activeItems
-                .asSequence()
-                .take(16)
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+
+        1 -> {
+            PrefetchIllustGridImages(
+                items = sortedBookmarkItems,
+                gridState = viewModel.bookmarkMainGridState,
+                enabled = settings.prefetchImages,
+                highQualityImages = feedHighQuality,
+            )
         }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages)
+    }
 
     LaunchedEffect(selectedTopTab) {
         when (selectedTopTab) {

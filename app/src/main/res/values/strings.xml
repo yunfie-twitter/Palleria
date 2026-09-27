@@ -1098,4 +1098,27 @@
     <string name="update_cancel_download">ダウンロードをキャンセル</string>
     <string name="update_retry_download">再試行</string>
     <string name="post_update_notice">Palleria %1$s に更新されました</string>
+    <string name="report_dialog_summary">「%1$s」を Pixiv に報告します。問題の内容を確認してから送信してください。</string>
+    <string name="report_submitting">報告を送信しています…</string>
+    <string name="report_browser_fallback">送信できませんでした。再試行するか、Pixiv の公式サイトで対象のメニューから「問題を報告」を選んでください。ブラウザーでログインが必要な場合があります。</string>
+    <string name="search_age_restriction">年齢制限</string>
+    <string name="search_age_all">すべて</string>
+    <string name="search_age_r18" translatable="false">R-18</string>
+    <string name="search_age_r18g" translatable="false">R-18G</string>
+    <string name="setup_language_title">1. 言語の選択</string>
+    <string name="setup_network_title">2. ネットワークとミラー</string>
+    <string name="setup_welcome">%1$s へようこそ</string>
+    <string name="setup_intro">お使いの言語とネットワークに合わせて初期設定を行いましょう。</string>
+    <string name="setup_official_images">公式画像サーバー</string>
+    <string name="setup_standard">直接接続 / 外部プロキシ</string>
+    <string name="setup_standard_desc">標準の接続方式です。VPNや外部プロキシを利用する場合も選択できます。</string>
+    <string name="setup_compat">互換接続</string>
+    <string name="setup_compat_desc">標準の方式で接続できない場合にお試しください。</string>
+    <string name="setup_ech">ECH 接続</string>
+    <string name="setup_ech_desc">アプリに設定された代替エンドポイントを使用します。</string>
+    <string name="setup_help_title">ログインページが開けませんか？</string>
+    <string name="setup_help">接続方式を変更するか、端末のVPN・プロキシ設定をご確認ください。画像ミラーの選択は画像の読み込みに適用されます。</string>
+    <string name="setup_previous">前へ</string>
+    <string name="setup_next">次へ</string>
+    <string name="setup_progress">%2$d ページ中 %1$d ページ目</string>
 </resources>

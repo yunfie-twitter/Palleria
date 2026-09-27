@@ -1033,4 +1033,6 @@
     <string name="update_notify_new_version_desc">Tampilkan notifikasi sistem saat versi baru dirilis</string>
     <string name="update_auto_download">Unduh otomatis pembaruan</string>
     <string name="update_auto_download_desc">Unduh pembaruan secara otomatis di latar belakang (pasang otomatis jika Shizuku aktif)</string>
+    <string name="search_age_restriction">Batasan usia</string>
+    <string name="search_age_all">Semua</string>
 </resources>

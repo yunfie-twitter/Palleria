@@ -23,6 +23,7 @@ internal fun readFromDataStore(
     roomData: RoomSettingsData,
     sensitivePreferences: SharedPreferences,
 ): AppSettings {
+    // Storage selection belongs to SettingsStore; migrations also read legacy preferences.
     val tokenByUserId = decodeAccountTokens(sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
     val fallbackAccounts = decodeAccounts(sensitivePreferences.getString(KEY_ACCOUNTS, "").orEmpty())
     val fallbackTokenByUserId = fallbackAccounts.associate { it.userId to it.refreshToken }
@@ -64,6 +65,11 @@ internal fun readFromDataStore(
             enumValueOrDefault(
                 preferences[SEARCH_BOOKMARK_FILTER],
                 com.yunfie.illustia.models.SearchBookmarkFilter.None,
+            ),
+        searchAgeRestriction =
+            enumValueOrDefault(
+                preferences[SEARCH_AGE_RESTRICTION],
+                com.yunfie.illustia.models.SearchAgeRestriction.All,
             ),
         searchUsersEnabled = preferences[SEARCH_USERS_ENABLED] ?: true,
         searchHistory =
@@ -224,6 +230,7 @@ private fun SharedPreferences.getNonEmptyStringList(key: String): List<String> =
 internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSettings =
     AppSettings(
         refreshToken = preferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
+        discordToken = preferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences.getLong(KEY_BOOKMARK_USER_ID, 0L).takeIf { it > 0L },
         appLanguage = preferences.getSafeString(KEY_APP_LANGUAGE, "system"),
         appFont = preferences.getSafeString(KEY_APP_FONT, "system"),
@@ -259,6 +266,11 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
             enumValueOrDefault(
                 preferences.getString(KEY_SEARCH_BOOKMARK_FILTER, null),
                 com.yunfie.illustia.models.SearchBookmarkFilter.None,
+            ),
+        searchAgeRestriction =
+            enumValueOrDefault(
+                preferences.getString(KEY_SEARCH_AGE_RESTRICTION, null),
+                com.yunfie.illustia.models.SearchAgeRestriction.All,
             ),
         searchUsersEnabled = preferences.getBoolean(KEY_SEARCH_USERS_ENABLED, true),
         searchHistory = decodeLegacyStringList(preferences.getString(KEY_SEARCH_HISTORY, "")).take(MAX_SEARCH_HISTORY),
@@ -373,6 +385,7 @@ internal fun writeToDataStore(
     preferences[SEARCH_WORK_TYPE] = settings.searchWorkType.name
     preferences[SEARCH_DURATION] = settings.searchDuration.name
     preferences[SEARCH_BOOKMARK_FILTER] = settings.searchBookmarkFilter.name
+    preferences[SEARCH_AGE_RESTRICTION] = settings.searchAgeRestriction.name
     preferences[SEARCH_USERS_ENABLED] = settings.searchUsersEnabled
     preferences[SAVE_VIEW_HISTORY] = settings.saveViewHistory
     preferences[SAVE_SEARCH_HISTORY] = settings.saveSearchHistory
@@ -489,12 +502,20 @@ internal fun writeToDataStore(
 internal fun writeSensitiveSettings(
     sensitivePreferences: SharedPreferences,
     settings: AppSettings,
+    commit: Boolean = false,
 ) {
-    sensitivePreferences
-        .edit()
-        .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
-        .putString(KEY_DISCORD_TOKEN, settings.discordToken)
-        .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
-        .remove(KEY_ACCOUNTS)
-        .apply()
+    // Preserve the caller's storage policy, including retryable legacy migration when
+    // the keystore is unavailable. A concrete-class check would break that path.
+    val editor =
+        sensitivePreferences
+            .edit()
+            .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
+            .putString(KEY_DISCORD_TOKEN, settings.discordToken)
+            .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
+            .remove(KEY_ACCOUNTS)
+    if (commit) {
+        if (!editor.commit()) throw IOException("Unable to persist migrated credentials")
+    } else {
+        editor.apply()
+    }
 }

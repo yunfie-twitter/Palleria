@@ -89,6 +89,8 @@ data class IllustiaUiState(
     val selectedUserNextUrl: String? = null,
     val selectedUserBookmarks: List<Illust> = emptyList(),
     val selectedUserBookmarksNextUrl: String? = null,
+    val selectedUserIllustsLoaded: Boolean = false,
+    val selectedUserBookmarksLoaded: Boolean = false,
     val isSelectedUserIllustsPaginating: Boolean = false,
     val isSelectedUserBookmarksPaginating: Boolean = false,
     val selectedRelatedUsers: List<UserPreview> = emptyList(),
