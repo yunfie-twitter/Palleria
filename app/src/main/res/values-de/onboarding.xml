@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. Sprache wählen</string>
+    <string name="setup_network_title">2. Netzwerk und Spiegelserver</string>
+    <string name="setup_welcome">Willkommen bei %1$s</string>
+    <string name="setup_intro">Wähle deine Sprache und Netzwerkeinstellungen.</string>
+    <string name="setup_official_images">Offizieller Bildserver</string>
+    <string name="setup_standard">Direkte Verbindung / externer Proxy</string>
+    <string name="setup_standard_desc">Standardverbindung, auch mit VPN oder externem Proxy.</string>
+    <string name="setup_compat">Kompatibilitätsverbindung</string>
+    <string name="setup_compat_desc">Probiere dies, wenn die Standardverbindung nicht funktioniert.</string>
+    <string name="setup_ech">ECH-Verbindung</string>
+    <string name="setup_ech_desc">Verwendet die in der App konfigurierten alternativen Endpunkte.</string>
+    <string name="setup_help_title">Anmeldeseite nicht erreichbar?</string>
+    <string name="setup_help">Versuche einen anderen Verbindungsmodus oder prüfe VPN und Proxy. Bildspiegel betreffen nur das Laden von Bildern.</string>
+    <string name="setup_previous">Zurück</string>
+    <string name="setup_next">Weiter</string>
+    <string name="setup_progress">Seite %1$d von %2$d</string>
+</resources>

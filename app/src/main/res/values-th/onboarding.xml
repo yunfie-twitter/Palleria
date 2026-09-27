@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. เลือกภาษา</string>
+    <string name="setup_network_title">2. เครือข่ายและมิเรอร์</string>
+    <string name="setup_welcome">ยินดีต้อนรับสู่ %1$s</string>
+    <string name="setup_intro">เลือกภาษาและตั้งค่าเครือข่ายเพื่อเริ่มต้น</string>
+    <string name="setup_official_images">เซิร์ฟเวอร์รูปภาพอย่างเป็นทางการ</string>
+    <string name="setup_standard">เชื่อมต่อโดยตรง / พร็อกซีภายนอก</string>
+    <string name="setup_standard_desc">การเชื่อมต่อมาตรฐาน รวมถึงเมื่อใช้ VPN หรือพร็อกซีภายนอก</string>
+    <string name="setup_compat">การเชื่อมต่อที่เข้ากันได้</string>
+    <string name="setup_compat_desc">ลองใช้เมื่อการเชื่อมต่อมาตรฐานไม่ทำงาน</string>
+    <string name="setup_ech">การเชื่อมต่อ ECH</string>
+    <string name="setup_ech_desc">ใช้ปลายทางสำรองที่กำหนดไว้ในแอป</string>
+    <string name="setup_help_title">เปิดหน้าเข้าสู่ระบบไม่ได้ใช่ไหม?</string>
+    <string name="setup_help">ลองเปลี่ยนโหมดหรือตรวจสอบ VPN และพร็อกซี มิเรอร์รูปภาพมีผลต่อการโหลดรูปภาพเท่านั้น</string>
+    <string name="setup_previous">ก่อนหน้า</string>
+    <string name="setup_next">ถัดไป</string>
+    <string name="setup_progress">หน้า %1$d จาก %2$d</string>
+</resources>

@@ -139,6 +139,10 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
+    fun completeOnboardingSetup() {
+        updateSettings { it.copy(onboardingSetupCompleted = true) }
+    }
+
     fun updateAppLanguage(value: String) {
         updateSettings { it.copy(appLanguage = value) }
     }

@@ -38,7 +38,7 @@ import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun OnboardingScreen(
+internal fun OnboardingLoginScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     onRefreshTokenLogin: () -> Unit,

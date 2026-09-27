@@ -17,6 +17,36 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class SettingsStoreStartupTest {
     @Test
+    fun `setup completion and choices survive the startup settings read`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val store = SettingsStore(context)
+            val original = store.read()
+            try {
+                val incomplete = original.copy(onboardingSetupCompleted = false)
+                store.write(incomplete, original)
+                store.readStartup().onboardingSetupCompleted shouldBe false
+                val completed =
+                    incomplete.copy(
+                        onboardingSetupCompleted = true,
+                        appLanguage = "en",
+                        pixivNetworkMode = "compat",
+                        pixivImageProxyBaseUrl = "https://i.pixiv.re/",
+                    )
+                store.write(completed, incomplete)
+                store.readStartup().apply {
+                    onboardingSetupCompleted shouldBe true
+                    appLanguage shouldBe "en"
+                    pixivNetworkMode shouldBe "compat"
+                    pixivImageProxyBaseUrl shouldBe "https://i.pixiv.re/"
+                }
+            } finally {
+                store.write(original, store.read())
+            }
+        }
+    }
+
+    @Test
     fun `startup read skips Room collections and uses the privacy mirror`() {
         runBlocking {
             val context = ApplicationProvider.getApplicationContext<Context>()

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. Pilih bahasa</string>
+    <string name="setup_network_title">2. Jaringan dan mirror</string>
+    <string name="setup_welcome">Selamat datang di %1$s</string>
+    <string name="setup_intro">Pilih bahasa dan pengaturan jaringan untuk memulai.</string>
+    <string name="setup_official_images">Server gambar resmi</string>
+    <string name="setup_standard">Koneksi langsung / proxy eksternal</string>
+    <string name="setup_standard_desc">Koneksi standar, termasuk dengan VPN atau proxy eksternal.</string>
+    <string name="setup_compat">Koneksi kompatibel</string>
+    <string name="setup_compat_desc">Coba jika koneksi standar tidak berfungsi.</string>
+    <string name="setup_ech">Koneksi ECH</string>
+    <string name="setup_ech_desc">Menggunakan endpoint alternatif yang dikonfigurasi dalam aplikasi.</string>
+    <string name="setup_help_title">Halaman masuk tidak terbuka?</string>
+    <string name="setup_help">Coba mode lain atau periksa VPN dan proxy. Mirror hanya memengaruhi pemuatan gambar.</string>
+    <string name="setup_previous">Kembali</string>
+    <string name="setup_next">Lanjut</string>
+    <string name="setup_progress">Halaman %1$d dari %2$d</string>
+</resources>

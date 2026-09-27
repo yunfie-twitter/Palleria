@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. 選擇語言</string>
+    <string name="setup_network_title">2. 網路與鏡像</string>
+    <string name="setup_welcome">歡迎使用 %1$s</string>
+    <string name="setup_intro">依照您的語言與網路環境進行初始設定。</string>
+    <string name="setup_official_images">官方圖片伺服器</string>
+    <string name="setup_standard">直接連線 / 外部代理</string>
+    <string name="setup_standard_desc">標準連線方式，也可搭配 VPN 或外部代理使用。</string>
+    <string name="setup_compat">相容連線</string>
+    <string name="setup_compat_desc">標準連線無法使用時，請嘗試此方式。</string>
+    <string name="setup_ech">ECH 連線</string>
+    <string name="setup_ech_desc">使用應用程式中設定的備用端點。</string>
+    <string name="setup_help_title">無法開啟登入頁面？</string>
+    <string name="setup_help">請嘗試其他連線方式或檢查 VPN 與代理設定。圖片鏡像僅影響圖片載入。</string>
+    <string name="setup_previous">上一步</string>
+    <string name="setup_next">下一步</string>
+    <string name="setup_progress">第 %1$d 頁，共 %2$d 頁</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. Выбор языка</string>
+    <string name="setup_network_title">2. Сеть и зеркала</string>
+    <string name="setup_welcome">Добро пожаловать в %1$s</string>
+    <string name="setup_intro">Выберите язык и настройки сети.</string>
+    <string name="setup_official_images">Официальный сервер изображений</string>
+    <string name="setup_standard">Прямое подключение / внешний прокси</string>
+    <string name="setup_standard_desc">Стандартное подключение, в том числе через VPN или внешний прокси.</string>
+    <string name="setup_compat">Совместимое подключение</string>
+    <string name="setup_compat_desc">Попробуйте, если стандартное подключение не работает.</string>
+    <string name="setup_ech">Подключение ECH</string>
+    <string name="setup_ech_desc">Использует альтернативные адреса, настроенные в приложении.</string>
+    <string name="setup_help_title">Страница входа не открывается?</string>
+    <string name="setup_help">Попробуйте другой режим или проверьте VPN и прокси. Зеркала влияют только на загрузку изображений.</string>
+    <string name="setup_previous">Назад</string>
+    <string name="setup_next">Далее</string>
+    <string name="setup_progress">Страница %1$d из %2$d</string>
+</resources>

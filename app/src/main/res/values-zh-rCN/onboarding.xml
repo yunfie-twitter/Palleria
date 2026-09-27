@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. 选择语言</string>
+    <string name="setup_network_title">2. 网络与镜像</string>
+    <string name="setup_welcome">欢迎使用 %1$s</string>
+    <string name="setup_intro">根据您的语言和网络环境进行初始设置。</string>
+    <string name="setup_official_images">官方图片服务器</string>
+    <string name="setup_standard">直接连接 / 外部代理</string>
+    <string name="setup_standard_desc">标准连接方式，也可配合 VPN 或外部代理使用。</string>
+    <string name="setup_compat">兼容连接</string>
+    <string name="setup_compat_desc">标准连接无法使用时，请尝试此方式。</string>
+    <string name="setup_ech">ECH 连接</string>
+    <string name="setup_ech_desc">使用应用中配置的备用端点。</string>
+    <string name="setup_help_title">无法打开登录页面？</string>
+    <string name="setup_help">请尝试其他连接方式或检查 VPN 和代理设置。图片镜像仅影响图片加载。</string>
+    <string name="setup_previous">上一步</string>
+    <string name="setup_next">下一步</string>
+    <string name="setup_progress">第 %1$d 页，共 %2$d 页</string>
+</resources>

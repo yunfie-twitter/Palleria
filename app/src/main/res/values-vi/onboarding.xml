@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_language_title">1. Chọn ngôn ngữ</string>
+    <string name="setup_network_title">2. Mạng và máy chủ ảnh</string>
+    <string name="setup_welcome">Chào mừng đến với %1$s</string>
+    <string name="setup_intro">Chọn ngôn ngữ và cài đặt mạng để bắt đầu.</string>
+    <string name="setup_official_images">Máy chủ ảnh chính thức</string>
+    <string name="setup_standard">Kết nối trực tiếp / proxy bên ngoài</string>
+    <string name="setup_standard_desc">Kết nối tiêu chuẩn, kể cả khi dùng VPN hoặc proxy bên ngoài.</string>
+    <string name="setup_compat">Kết nối tương thích</string>
+    <string name="setup_compat_desc">Thử tùy chọn này nếu kết nối tiêu chuẩn không hoạt động.</string>
+    <string name="setup_ech">Kết nối ECH</string>
+    <string name="setup_ech_desc">Dùng các điểm kết nối thay thế được cấu hình trong ứng dụng.</string>
+    <string name="setup_help_title">Không mở được trang đăng nhập?</string>
+    <string name="setup_help">Thử chế độ khác hoặc kiểm tra VPN và proxy. Máy chủ ảnh thay thế chỉ ảnh hưởng đến việc tải ảnh.</string>
+    <string name="setup_previous">Trước</string>
+    <string name="setup_next">Tiếp</string>
+    <string name="setup_progress">Trang %1$d trên %2$d</string>
+</resources>
