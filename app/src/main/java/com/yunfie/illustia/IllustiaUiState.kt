@@ -56,6 +56,7 @@ data class IllustiaUiState(
     val isSearchPaginating: Boolean = false,
     val isUserSearchPaginating: Boolean = false,
     val searchSelectedTab: Int = 0,
+    val homeSelectedTab: Int = 0,
     val timelineItems: List<Illust> = emptyList(),
     val timelineNextUrl: String? = null,
     val shortsFeedItems: List<Illust> = emptyList(),

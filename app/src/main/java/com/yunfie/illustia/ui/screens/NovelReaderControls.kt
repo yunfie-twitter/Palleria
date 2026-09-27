@@ -58,6 +58,8 @@ internal fun NovelBottomControlBar(
     onPageChange: (Int) -> Unit,
     onOpenToc: () -> Unit,
     onOpenSettings: () -> Unit,
+    ttsPlayer: NovelTtsPlayer? = null,
+    onToggleTts: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
@@ -175,6 +177,22 @@ internal fun NovelBottomControlBar(
                                 modifier = Modifier.size(16.dp),
                             )
                             Text(stringResource(R.string.novel_display_settings))
+                        }
+                    }
+
+                    if (onToggleTts != null && ttsPlayer != null) {
+                        Button(
+                            onClick = {
+                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                                onToggleTts()
+                            },
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    color = if (ttsPlayer.isPlaying) MiuixTheme.colorScheme.primaryContainer else MiuixTheme.colorScheme.surfaceContainerHighest,
+                                    contentColor = if (ttsPlayer.isPlaying) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                                ),
+                        ) {
+                            Text(stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play))
                         }
                     }
 

@@ -8,7 +8,11 @@ internal fun buildDownloadPath(
     illust: Illust?,
     groupByArtist: Boolean,
     groupByWork: Boolean,
+    customPathTemplate: String? = null,
 ): String {
+    if (!customPathTemplate.isNullOrBlank()) {
+        return buildCustomDownloadPath(filename, illust, customPathTemplate)
+    }
     val folders =
         buildList {
             if (groupByArtist) {
@@ -19,6 +23,41 @@ internal fun buildDownloadPath(
             }
         }
     return (folders + filename.sanitizeDownloadSegment()).joinToString("/")
+}
+
+internal fun buildCustomDownloadPath(
+    filename: String,
+    illust: Illust?,
+    template: String = "{artist}/{tag}/{filename}",
+): String {
+    if (illust == null) return filename.sanitizeDownloadSegment()
+    val artist = illust.artistName.sanitizeOptionalDownloadSegment() ?: "artist_${illust.artistId}"
+    val title = illust.title.sanitizeOptionalDownloadSegment() ?: "work_${illust.id}"
+    val primaryTag = illust.tags.firstOrNull()?.sanitizeOptionalDownloadSegment() ?: "general"
+    val illustId = illust.id.toString()
+    val artistId = illust.artistId.toString()
+    val type = illust.type.ifBlank { "illust" }
+
+    val baseFilename = filename.substringAfterLast('/').substringBeforeLast('.')
+    val ext = filename.substringAfterLast('.', "").takeIf { it.isNotEmpty() }?.let { ".$it" } ?: ""
+
+    val resolved = template
+        .replace("{artist_name}", artist, ignoreCase = true)
+        .replace("{artist}", artist, ignoreCase = true)
+        .replace("{artist_id}", artistId, ignoreCase = true)
+        .replace("{work_title}", title, ignoreCase = true)
+        .replace("{work}", title, ignoreCase = true)
+        .replace("{title}", title, ignoreCase = true)
+        .replace("{illust_id}", illustId, ignoreCase = true)
+        .replace("{id}", illustId, ignoreCase = true)
+        .replace("{tag_primary}", primaryTag, ignoreCase = true)
+        .replace("{tag}", primaryTag, ignoreCase = true)
+        .replace("{type}", type, ignoreCase = true)
+        .replace("{filename}", baseFilename, ignoreCase = true)
+
+    val segments = resolved.split('/', '\\').filter { it.isNotBlank() }.map { it.sanitizeDownloadSegment() }
+    val joined = segments.joinToString("/")
+    return if (joined.endsWith(ext) || ext.isEmpty()) joined else "$joined$ext"
 }
 
 internal fun String.withImageExtension(

@@ -28,6 +28,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.isMutedByTags
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.screens.AboutScreen
 import com.yunfie.illustia.ui.screens.AccountLoginMethodScreen
@@ -361,6 +363,8 @@ internal fun AppNavHost(
                         mangaReaderMode = appState.state.settings.mangaReaderMode,
                         onPageChanged = viewModel::updateImageViewerPage,
                         loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
+                        ambientLightEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.DynamicAmbientViewer),
+                        volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
                     )
                 }
             }
