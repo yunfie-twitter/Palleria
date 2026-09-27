@@ -591,7 +591,7 @@ abstract class IllustiaAuthFeedModule(
                             if (!workType.isNovel) {
                                 async {
                                     repository.search(
-                                        word = normalized,
+                                        word = currentSettings.searchAgeRestriction.applyToQuery(normalized),
                                         sort = currentSettings.searchSort,
                                         target = currentSettings.searchTarget,
                                         duration = currentSettings.searchDuration,
@@ -608,7 +608,7 @@ abstract class IllustiaAuthFeedModule(
                             if (workType.isNovel) {
                                 async {
                                     repository.searchNovels(
-                                        word = normalized,
+                                        word = currentSettings.searchAgeRestriction.applyToQuery(normalized),
                                         sort = currentSettings.searchSort,
                                         target = currentSettings.searchTarget,
                                         duration = currentSettings.searchDuration,

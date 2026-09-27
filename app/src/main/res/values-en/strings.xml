@@ -1056,4 +1056,6 @@
     <string name="report_dialog_summary">Report “%1$s” to Pixiv. Review the problem before submitting.</string>
     <string name="report_submitting">Submitting report…</string>
     <string name="report_browser_fallback">The report could not be submitted. Retry, or open the official Pixiv website and select Report a problem from the target’s menu. You may need to sign in in your browser.</string>
+    <string name="search_age_restriction">Age restriction</string>
+    <string name="search_age_all">All</string>
 </resources>

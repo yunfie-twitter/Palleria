@@ -1083,4 +1083,6 @@
     <string name="update_cancel_download">Cancelar download</string>
     <string name="update_retry_download">Tentar novamente</string>
     <string name="post_update_notice">Atualizado para Palleria %1$s</string>
+    <string name="search_age_restriction">Restrição de idade</string>
+    <string name="search_age_all">Todos</string>
 </resources>

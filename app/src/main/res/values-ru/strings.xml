@@ -1033,4 +1033,6 @@
     <string name="update_notify_new_version_desc">Показывать системные уведомления при выходе новой версии</string>
     <string name="update_auto_download">Автозагрузка обновлений</string>
     <string name="update_auto_download_desc">Автоматически загружать обновления в фоне (автоустановка при включенном Shizuku)</string>
+    <string name="search_age_restriction">Возрастное ограничение</string>
+    <string name="search_age_all">Все</string>
 </resources>

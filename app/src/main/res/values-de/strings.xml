@@ -1033,4 +1033,6 @@
     <string name="update_notify_new_version_desc">Systembenachrichtigung anzeigen, wenn eine neue Version verfügbar ist</string>
     <string name="update_auto_download">Updates automatisch herunterladen</string>
     <string name="update_auto_download_desc">Updates automatisch im Hintergrund herunterladen (automatische Installation mit Shizuku)</string>
+    <string name="search_age_restriction">Altersbeschränkung</string>
+    <string name="search_age_all">Alle</string>
 </resources>
