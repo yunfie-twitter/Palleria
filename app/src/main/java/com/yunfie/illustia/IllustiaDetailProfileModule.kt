@@ -419,18 +419,7 @@ abstract class IllustiaDetailProfileModule(
             viewModelScope.launch {
                 delay(350)
                 _uiState.update {
-                    it.copy(
-                        selectedUserId = null,
-                        selectedUser = null,
-                        selectedUserIllusts = emptyList(),
-                        selectedUserNextUrl = null,
-                        selectedUserBookmarks = emptyList(),
-                        selectedUserBookmarksNextUrl = null,
-                        selectedRelatedUsers = emptyList(),
-                        selectedRelatedUsersNextUrl = null,
-                        selectedRelatedUsersLoading = false,
-                        userPageDismissed = false,
-                    )
+                    it.clearClosedUserPage()
                 }
                 closeUserPageJob = null
             }
