@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.referentialEqualityPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.yunfie.illustia.models.Illust
@@ -70,7 +71,7 @@ internal fun rememberUserWorks(
     typeFilter: UserWorkTypeFilter,
     active: Boolean,
 ): UserWorkList {
-    var result by remember(userId) { mutableStateOf<ProcessedWorks?>(null) }
+    var result by remember(userId) { mutableStateOf<ProcessedWorks?>(null, referentialEqualityPolicy()) }
     LaunchedEffect(userId, WorkSourceIdentity(items), sortOrder, typeFilter, active) {
         val current = result
         val upToDate = current != null && current.source === items && current.sortOrder == sortOrder && current.typeFilter == typeFilter
