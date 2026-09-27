@@ -65,6 +65,7 @@ import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.profileGridContentPadding
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -369,6 +370,15 @@ internal fun BookmarkMainTab(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkMainGridState
+    val shimmer =
+        if (
+            (bookmarkItems.isEmpty() && loadState == LoadState.Loading) ||
+            (settings.autoLoadMore && state.isBookmarkPaginating)
+        ) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
     val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
         isRefreshing = state.isBookmarkRefreshing,
@@ -391,7 +401,7 @@ internal fun BookmarkMainTab(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (bookmarkItems.isEmpty() && loadState == LoadState.Loading) {
-                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
@@ -420,7 +430,7 @@ internal fun BookmarkMainTab(
                     key = { "bookmark_paginating_skeleton_$it" },
                     contentType = { "illust_skeleton" },
                 ) {
-                    IllustCardSkeleton()
+                    IllustCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!settings.autoLoadMore && chrome.bookmarkNextUrl != null) {
                 item(key = "bookmark_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -461,6 +471,15 @@ internal fun BookmarkTimelineTab(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkTimelineGridState
+    val shimmer =
+        if (
+            (timelineItems.isEmpty() && loadState == LoadState.Loading) ||
+            (settings.autoLoadMore && state.isTimelinePaginating)
+        ) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
     val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
         isRefreshing = state.isTimelineRefreshing,
@@ -483,7 +502,7 @@ internal fun BookmarkTimelineTab(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (timelineItems.isEmpty() && loadState == LoadState.Loading) {
-                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
             }
@@ -512,7 +531,7 @@ internal fun BookmarkTimelineTab(
                     key = { "timeline_paginating_skeleton_$it" },
                     contentType = { "illust_skeleton" },
                 ) {
-                    IllustCardSkeleton()
+                    IllustCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!settings.autoLoadMore && chrome.timelineNextUrl != null) {
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
