@@ -1,6 +1,16 @@
 package com.yunfie.illustia.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,12 +30,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -47,6 +58,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private const val SETUP_TRANSITION_MILLIS = 300
+
 @Composable
 fun OnboardingScreen(
     state: IllustiaUiState,
@@ -55,38 +68,68 @@ fun OnboardingScreen(
     showTokenLogin: Boolean = false,
     onTokenLoginDismiss: () -> Unit = {},
 ) {
-    var page by rememberSaveable { mutableIntStateOf(if (state.settings.onboardingSetupCompleted) 2 else 0) }
-    BackHandler(enabled = page > 0 && !showTokenLogin) { page-- }
+    // Start each new onboarding visit at language selection, even after settings migration.
+    // Save only the current visit so rotation and language changes do not reset progress.
+    var page by rememberSaveable { mutableIntStateOf(0) }
+    val transition = updateTransition(page, label = "onboarding-page")
+    val pageState = rememberSaveableStateHolder()
+    val canNavigate = transition.currentState == page && !transition.isRunning
+    val goBack: () -> Unit = {
+        if (transition.currentState == page && !transition.isRunning) page = (page - 1).coerceAtLeast(0)
+    }
+    BackHandler(enabled = page > 0 && !showTokenLogin, onBack = goBack)
     Column(Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
-        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-            if (page == 2) {
-                OnboardingLoginScreen(state, viewModel, onRefreshTokenLogin, showTokenLogin, onTokenLoginDismiss)
-            } else {
-                key(page) {
-                    Column(
-                        Modifier
-                            .widthIn(max = 680.dp)
-                            .fillMaxSize()
-                            .statusBarsPadding()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp, vertical = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                    ) {
-                        Text(
-                            stringResource(if (page == 0) R.string.setup_language_title else R.string.setup_network_title),
-                            fontSize = 32.sp,
-                            lineHeight = 40.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MiuixTheme.colorScheme.onBackground,
-                        )
-                        if (page == 0) LanguageSetup(state, viewModel) else NetworkSetup(state, viewModel)
+        transition.AnimatedContent(
+            modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            transitionSpec = {
+                val direction =
+                    if (targetState > initialState) {
+                        AnimatedContentTransitionScope.SlideDirection.Start
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.End
+                    }
+                (
+                    slideIntoContainer(direction, tween(SETUP_TRANSITION_MILLIS, easing = FastOutSlowInEasing)) +
+                        fadeIn(tween(SETUP_TRANSITION_MILLIS))
+                ) togetherWith
+                    (
+                        slideOutOfContainer(direction, tween(SETUP_TRANSITION_MILLIS, easing = FastOutSlowInEasing)) +
+                            fadeOut(tween(SETUP_TRANSITION_MILLIS))
+                    )
+            },
+        ) { displayedPage ->
+            pageState.SaveableStateProvider(displayedPage) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    if (displayedPage == 2) {
+                        OnboardingLoginScreen(state, viewModel, onRefreshTokenLogin, showTokenLogin, onTokenLoginDismiss)
+                    } else {
+                        Column(
+                            Modifier
+                                .widthIn(max = 680.dp)
+                                .fillMaxSize()
+                                .statusBarsPadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            Text(
+                                stringResource(if (displayedPage == 0) R.string.setup_language_title else R.string.setup_network_title),
+                                fontSize = 32.sp,
+                                lineHeight = 40.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MiuixTheme.colorScheme.onBackground,
+                            )
+                            if (displayedPage == 0) LanguageSetup(state, viewModel) else NetworkSetup(state, viewModel)
+                        }
                     }
                 }
             }
         }
-        SetupNavigation(page, onBack = { page-- }, onNext = {
-            if (page == 1) viewModel.completeOnboardingSetup()
-            page++
+        SetupNavigation(page, enabled = canNavigate, onBack = goBack, onNext = {
+            if (transition.currentState == page && !transition.isRunning && page < 2) {
+                if (page == 1) viewModel.completeOnboardingSetup()
+                page++
+            }
         })
     }
 }
@@ -196,6 +239,7 @@ private fun SetupSectionLabel(title: String) {
 @Composable
 private fun SetupNavigation(
     page: Int,
+    enabled: Boolean,
     onBack: () -> Unit,
     onNext: () -> Unit,
 ) {
@@ -206,29 +250,31 @@ private fun SetupNavigation(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.weight(1f)) {
-            if (page > 0) Button(onClick = onBack) { Text(stringResource(R.string.setup_previous)) }
+            if (page > 0) Button(onClick = onBack, enabled = enabled) { Text(stringResource(R.string.setup_previous)) }
         }
         Row(Modifier.semantics { contentDescription = progress }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(3) { index ->
-                Box(
-                    Modifier
-                        .size(width = if (page == index) 24.dp else 8.dp, height = 8.dp)
-                        .background(
-                            if (page ==
-                                index
-                            ) {
-                                MiuixTheme.colorScheme.primary
-                            } else {
-                                MiuixTheme.colorScheme.surfaceContainerHighest
-                            },
-                            CircleShape,
-                        ),
+                val indicatorWidth by animateDpAsState(
+                    targetValue = if (page == index) 24.dp else 8.dp,
+                    animationSpec = tween(SETUP_TRANSITION_MILLIS),
+                    label = "onboarding-indicator-width",
                 )
+                val indicatorColor by animateColorAsState(
+                    targetValue =
+                        if (page == index) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.surfaceContainerHighest
+                        },
+                    animationSpec = tween(SETUP_TRANSITION_MILLIS),
+                    label = "onboarding-indicator-color",
+                )
+                Box(Modifier.size(width = indicatorWidth, height = 8.dp).background(indicatorColor, CircleShape))
             }
         }
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             if (page < 2) {
-                Button(onClick = onNext, colors = ButtonDefaults.buttonColorsPrimary()) {
+                Button(onClick = onNext, enabled = enabled, colors = ButtonDefaults.buttonColorsPrimary()) {
                     Text(stringResource(R.string.setup_next))
                 }
             }

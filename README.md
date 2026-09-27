@@ -140,7 +140,7 @@ You can also download the latest APK directly from GitHub Releases.
 
 ## Login
 
-On first launch, choose your language, then the image server and network connection mode. The third page offers the existing login methods; a Pixiv account is required. Setup choices are saved immediately and remain editable in Settings.
+On first launch, choose your language, then the image server and network connection mode. The third page offers the existing login methods; a Pixiv account is required. Each new onboarding visit starts with language selection. Forward and back navigation animate between pages, while rotation and language changes preserve the current step. Setup choices are saved immediately and remain editable in Settings.
 
 Palleria supports two authentication methods.
 
