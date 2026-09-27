@@ -50,7 +50,7 @@
 
         <meta-data
             android:name="io.sentry.dsn"
-            android:value="https://e1147e3b03704062af11b966d3770267@app.glitchtip.com/26795" />
+            android:value="https://b2607da9caa6433b8e0718ebb46d3a2f@glitchtip.yunfi.f5.si/1" />
         <meta-data
             android:name="io.sentry.traces.sample-rate"
             android:value="1.0" />
