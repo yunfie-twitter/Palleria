@@ -56,8 +56,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -72,6 +74,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
+private const val SETTINGS_DEBOUNCE_MS = 500L
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -547,7 +550,7 @@ abstract class IllustiaViewModelFoundation(
     }
 
     protected suspend fun persistSettingsUpdates() {
-        for (request in settingsPersistenceRequests) {
+        settingsPersistenceRequests.receiveAsFlow().debounce(SETTINGS_DEBOUNCE_MS).collect { request ->
             try {
                 if (request.fromSync) {
                     repository.saveSettingsFromSync(request.settings)
