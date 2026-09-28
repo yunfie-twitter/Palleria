@@ -1,4 +1,4 @@
-﻿package com.yunfie.illustia.updater
+package com.yunfie.illustia.updater
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -45,25 +45,7 @@ class AppUpdateReceiver : BroadcastReceiver() {
         release: AppReleaseInfo,
     ) {
         if (settings.autoDownloadUpdates) {
-            val downloadResult = updater.downloadApk(release) { _, _, _ -> }
-            val file = downloadResult.getOrNull() ?: return
-
-            val method = UpdateInstallMethod.fromValue(settings.updateInstallMethod)
-            if (method == UpdateInstallMethod.SHIZUKU &&
-                updater.isShizukuAvailable() &&
-                updater.isShizukuPermissionGranted()
-            ) {
-                val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
-                if (installResult.isSuccess) {
-                    if (settings.notifyNewVersion) {
-                        AppUpdateNotificationHelper.showUpdateInstalled(context, release)
-                    }
-                } else if (settings.notifyNewVersion) {
-                    AppUpdateNotificationHelper.showUpdateDownloaded(context, release, file)
-                }
-            } else if (settings.notifyNewVersion) {
-                AppUpdateNotificationHelper.showUpdateDownloaded(context, release, file)
-            }
+            AppUpdateDownloadService.start(context, release)
         } else if (settings.notifyNewVersion) {
             AppUpdateNotificationHelper.showNewVersionAvailable(context, release)
         }

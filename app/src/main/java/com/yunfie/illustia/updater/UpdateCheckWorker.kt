@@ -46,13 +46,7 @@ class UpdateCheckWorker(
             return
         }
 
-        val downloadResult = updater.downloadApk(release) { _, _, _ -> }
-        val file = downloadResult.getOrNull()
-        if (file != null) {
-            installDownloadedUpdate(context, settings, updater, release, file)
-        } else if (settings.notifyNewVersion) {
-            AppUpdateNotificationHelper.showNewVersionAvailable(context, release)
-        }
+        AppUpdateDownloadService.start(context, release)
     }
 
     private suspend fun installDownloadedUpdate(

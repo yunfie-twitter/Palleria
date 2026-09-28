@@ -42,6 +42,7 @@ import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.updater.AppReleaseInfo
+import com.yunfie.illustia.updater.AppUpdateDownloadService
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
@@ -842,24 +843,9 @@ abstract class IllustiaViewModelFoundation(
 
     fun downloadUpdate(release: AppReleaseInfo) {
         if (_updateCheckState.value is UpdateCheckState.Downloading) return
-        viewModelScope.launch(Dispatchers.IO) {
-            _updateCheckState.value = UpdateCheckState.Downloading(0f, 0L, release.apkSize)
-            appUpdaterRepository
-                .downloadApk(release) { progress, downloaded, total ->
-                    _updateCheckState.value = UpdateCheckState.Downloading(progress, downloaded, total)
-                }.onSuccess { file ->
-                    _updateCheckState.value = UpdateCheckState.ReadyToInstall(file, release)
-                }.onFailure { error ->
-                    _updateCheckState.value = UpdateCheckState.Error(error.message ?: "Download failed")
-                    val msgRes =
-                        if (error is SecurityException) {
-                            R.string.update_checksum_failed
-                        } else {
-                            R.string.update_download_failed
-                        }
-                    _uiState.update { it.copy(message = str(msgRes)) }
-                }
-        }
+        _updateCheckState.value = UpdateCheckState.Downloading(0f, 0L, release.apkSize)
+        AppUpdateDownloadService.start(application, release)
+        _uiState.update { it.copy(message = str(R.string.update_notification_downloaded_desc)) } // Using a placeholder for started download
     }
 
     fun installUpdate(apkFile: File) {
