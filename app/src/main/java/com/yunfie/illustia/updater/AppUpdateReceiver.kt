@@ -1,4 +1,4 @@
-﻿package com.yunfie.illustia.updater
+package com.yunfie.illustia.updater
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -31,39 +31,20 @@ class AppUpdateReceiver : BroadcastReceiver() {
 
                 if (!updater.isNewerVersion(release.versionName)) return@launch
 
-                processUpdate(appContext, settings, updater, release)
+                processUpdate(appContext, settings, release)
             } finally {
                 pending.finish()
             }
         }
     }
 
-    private suspend fun processUpdate(
+    private fun processUpdate(
         context: Context,
         settings: AppSettings,
-        updater: AppUpdaterRepository,
         release: AppReleaseInfo,
     ) {
         if (settings.autoDownloadUpdates) {
-            val downloadResult = updater.downloadApk(release) { _, _, _ -> }
-            val file = downloadResult.getOrNull() ?: return
-
-            val method = UpdateInstallMethod.fromValue(settings.updateInstallMethod)
-            if (method == UpdateInstallMethod.SHIZUKU &&
-                updater.isShizukuAvailable() &&
-                updater.isShizukuPermissionGranted()
-            ) {
-                val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
-                if (installResult.isSuccess) {
-                    if (settings.notifyNewVersion) {
-                        AppUpdateNotificationHelper.showUpdateInstalled(context, release)
-                    }
-                } else if (settings.notifyNewVersion) {
-                    AppUpdateNotificationHelper.showUpdateDownloaded(context, release, file)
-                }
-            } else if (settings.notifyNewVersion) {
-                AppUpdateNotificationHelper.showUpdateDownloaded(context, release, file)
-            }
+            AppUpdateDownloadWorker.start(context, release)
         } else if (settings.notifyNewVersion) {
             AppUpdateNotificationHelper.showNewVersionAvailable(context, release)
         }

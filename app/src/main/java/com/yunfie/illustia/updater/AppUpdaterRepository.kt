@@ -419,12 +419,9 @@ class AppUpdaterRepository(
                             }
 
                         if (hasPermission) {
-                            val shizukuSuccess = runCatching { installViaShizuku(apkFile) }.isSuccess
-                            if (!shizukuSuccess) {
-                                installViaStandardIntent(apkFile)
-                            }
+                            installViaShizuku(apkFile)
                         } else {
-                            installViaStandardIntent(apkFile)
+                            throw IllegalStateException("Shizuku permission denied")
                         }
                     }
                 }
