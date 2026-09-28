@@ -89,8 +89,7 @@ fun PixivImage(
                         isLoading = false
                         currentOnLoadingStateChanged?.invoke(false)
                     },
-                )
-                .apply {
+                ).apply {
                     if (thumbnail) {
                         size(ThumbnailDecodeSizePx)
                         scale(Scale.FILL)
