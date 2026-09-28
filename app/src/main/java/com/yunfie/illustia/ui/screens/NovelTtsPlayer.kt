@@ -14,7 +14,6 @@ class NovelTtsPlayer(
     private val context: Context,
     private val onPageAdvance: ((Int) -> Unit)? = null,
 ) : TextToSpeech.OnInitListener {
-
     private var tts: TextToSpeech? = null
     private var isInitialized = false
 
@@ -42,37 +41,43 @@ class NovelTtsPlayer(
                     engine.setLanguage(Locale.getDefault())
                 }
                 engine.setSpeechRate(speechRate)
-                engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        isPlaying = true
-                    }
+                engine.setOnUtteranceProgressListener(
+                    object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {
+                            isPlaying = true
+                        }
 
-                    override fun onDone(utteranceId: String?) {
-                        val nextIndex = currentParagraphIndex + 1
-                        if (nextIndex < paragraphs.size) {
-                            currentParagraphIndex = nextIndex
-                            speakParagraph(nextIndex)
-                        } else {
+                        override fun onDone(utteranceId: String?) {
+                            val nextIndex = currentParagraphIndex + 1
+                            if (nextIndex < paragraphs.size) {
+                                currentParagraphIndex = nextIndex
+                                speakParagraph(nextIndex)
+                            } else {
+                                isPlaying = false
+                            }
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) {
                             isPlaying = false
                         }
-                    }
-
-                    @Deprecated("Deprecated in Java")
-                    override fun onError(utteranceId: String?) {
-                        isPlaying = false
-                    }
-                })
+                    },
+                )
             }
         }
     }
 
-    fun startReading(rawText: String, startIndex: Int = 0) {
-        val cleaned = rawText
-            .replace(Regex("""\[\[rb:[^>]*>(.*?)\]\]"""), "$1")
-            .replace(Regex("""\[jump:\d+\]"""), "")
-            .replace(Regex("""\[newpage\]"""), "\n\n")
-            .replace(Regex("""\[pixivimage:\d+\]"""), "")
-            .replace(Regex("""\[chapter:(.*?)\]"""), "$1")
+    fun startReading(
+        rawText: String,
+        startIndex: Int = 0,
+    ) {
+        val cleaned =
+            rawText
+                .replace(Regex("""\[\[rb:[^>]*>(.*?)\]\]"""), "$1")
+                .replace(Regex("""\[jump:\d+\]"""), "")
+                .replace(Regex("""\[newpage\]"""), "\n\n")
+                .replace(Regex("""\[pixivimage:\d+\]"""), "")
+                .replace(Regex("""\[chapter:(.*?)\]"""), "$1")
 
         paragraphs = cleaned.split("\n").map { it.trim() }.filter { it.isNotBlank() }
         if (paragraphs.isEmpty()) return
@@ -111,7 +116,7 @@ class NovelTtsPlayer(
     }
 
     fun setRate(rate: Float) {
-        speechRate = rate.coerceIn(0.5f, 2.5f)
+        speechRate = rate.coerceIn(MIN_SPEECH_RATE, MAX_SPEECH_RATE)
         tts?.setSpeechRate(speechRate)
     }
 
@@ -121,5 +126,10 @@ class NovelTtsPlayer(
         tts = null
         isInitialized = false
         isPlaying = false
+    }
+
+    companion object {
+        private const val MIN_SPEECH_RATE = 0.5f
+        private const val MAX_SPEECH_RATE = 2.5f
     }
 }

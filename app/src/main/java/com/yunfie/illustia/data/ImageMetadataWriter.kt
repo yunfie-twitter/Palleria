@@ -7,7 +7,6 @@ import java.io.InputStream
 import java.util.Locale
 
 object ImageMetadataWriter {
-
     fun embedMetadata(
         file: File,
         illust: Illust?,

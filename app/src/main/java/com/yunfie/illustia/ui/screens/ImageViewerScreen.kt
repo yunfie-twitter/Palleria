@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,11 +41,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -82,18 +89,11 @@ import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Import
-import android.view.KeyEvent as AndroidKeyEvent
-import androidx.compose.foundation.focusable
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import android.view.KeyEvent as AndroidKeyEvent
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -212,35 +212,42 @@ fun ImageViewerScreen(
     }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .focusRequester(focusRequester)
-            .focusable()
-            .onKeyEvent { keyEvent ->
-                if (volumeKeyPageTurnerEnabled && keyEvent.type == KeyEventType.KeyDown) {
-                    when (keyEvent.nativeKeyEvent.keyCode) {
-                        AndroidKeyEvent.KEYCODE_VOLUME_DOWN,
-                        AndroidKeyEvent.KEYCODE_PAGE_DOWN,
-                        AndroidKeyEvent.KEYCODE_DPAD_DOWN,
-                        AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
-                        AndroidKeyEvent.KEYCODE_MEDIA_NEXT -> {
-                            movePage(1)
-                            true
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onKeyEvent { keyEvent ->
+                    if (volumeKeyPageTurnerEnabled && keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.nativeKeyEvent.keyCode) {
+                            AndroidKeyEvent.KEYCODE_VOLUME_DOWN,
+                            AndroidKeyEvent.KEYCODE_PAGE_DOWN,
+                            AndroidKeyEvent.KEYCODE_DPAD_DOWN,
+                            AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
+                            AndroidKeyEvent.KEYCODE_MEDIA_NEXT,
+                            -> {
+                                movePage(1)
+                                true
+                            }
+
+                            AndroidKeyEvent.KEYCODE_VOLUME_UP,
+                            AndroidKeyEvent.KEYCODE_PAGE_UP,
+                            AndroidKeyEvent.KEYCODE_DPAD_UP,
+                            AndroidKeyEvent.KEYCODE_DPAD_LEFT,
+                            AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS,
+                            -> {
+                                movePage(-1)
+                                true
+                            }
+
+                            else -> {
+                                false
+                            }
                         }
-                        AndroidKeyEvent.KEYCODE_VOLUME_UP,
-                        AndroidKeyEvent.KEYCODE_PAGE_UP,
-                        AndroidKeyEvent.KEYCODE_DPAD_UP,
-                        AndroidKeyEvent.KEYCODE_DPAD_LEFT,
-                        AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                            movePage(-1)
-                            true
-                        }
-                        else -> false
+                    } else {
+                        false
                     }
-                } else {
-                    false
-                }
-            },
+                },
         containerColor = Color.Black,
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -438,8 +445,7 @@ fun ImageViewerScreen(
                                 alpha = 0.40f
                                 scaleX = 1.35f
                                 scaleY = 1.35f
-                            }
-                            .blur(48.dp),
+                            }.blur(48.dp),
                 )
                 Box(
                     modifier =

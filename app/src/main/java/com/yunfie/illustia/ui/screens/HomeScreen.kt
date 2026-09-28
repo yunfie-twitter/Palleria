@@ -59,7 +59,9 @@ fun HomeScreen(
 ) {
     val pagerState =
         rememberPagerState(
-            initialPage = viewModel.uiState.value.homeSelectedTab.coerceIn(0, (HomeTab.entries.size - 1).coerceAtLeast(0)),
+            initialPage =
+                viewModel.uiState.value.homeSelectedTab
+                    .coerceIn(0, (HomeTab.entries.size - 1).coerceAtLeast(0)),
             pageCount = { HomeTab.entries.size },
         )
     val coroutineScope = rememberCoroutineScope()

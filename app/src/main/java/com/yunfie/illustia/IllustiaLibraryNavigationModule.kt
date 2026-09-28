@@ -17,9 +17,9 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
+import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -370,11 +370,12 @@ abstract class IllustiaLibraryNavigationModule(
         illust: Illust?,
     ): String {
         val settings = _uiState.value.settings
-        val customTemplate = if (settings.isFeatureEnabled(FeatureFlag.CustomDownloadPath)) {
-            "{artist}/{tag}/{filename}"
-        } else {
-            null
-        }
+        val customTemplate =
+            if (settings.isFeatureEnabled(FeatureFlag.CustomDownloadPath)) {
+                "{artist}/{tag}/{filename}"
+            } else {
+                null
+            }
         return buildDownloadPath(
             filename = filename,
             illust = illust,
