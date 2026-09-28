@@ -83,7 +83,11 @@ abstract class IllustiaDetailProfileModule(
                                     val currentIllust = it.selectedIllust
                                     val mergedIllust =
                                         if (currentIllust != null) {
-                                            fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
+                                            if (fullIllust === illust) {
+                                                currentIllust
+                                            } else {
+                                                fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
+                                            }
                                         } else {
                                             fullIllust
                                         }
@@ -134,14 +138,8 @@ abstract class IllustiaDetailProfileModule(
                 try {
                     GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
                         val illust = repository.illustDetail(illustId)
-                        val finalIllust =
-                            if (localIllust != null) {
-                                illust.copy(isBookmarked = localIllust.isBookmarked)
-                            } else {
-                                illust
-                            }
                         withContext(Dispatchers.Main) {
-                            openIllust(finalIllust)
+                            openIllust(illust)
                         }
                     }
                 } catch (expectedFailure: Exception) {
@@ -187,15 +185,8 @@ abstract class IllustiaDetailProfileModule(
                             if (it.selectedIllust?.id != illustId) {
                                 it
                             } else {
-                                val currentIllust = it.selectedIllust
-                                val mergedIllust =
-                                    if (currentIllust != null) {
-                                        fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
-                                    } else {
-                                        fullIllust
-                                    }
                                 it.copy(
-                                    selectedIllust = mergedIllust,
+                                    selectedIllust = fullIllust,
                                     relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = firstComment,
