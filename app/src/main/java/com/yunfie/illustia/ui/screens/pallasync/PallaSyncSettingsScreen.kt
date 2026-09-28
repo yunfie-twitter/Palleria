@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +26,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -330,7 +330,7 @@ fun PallaSyncSettingsScreen(
                 }
 
                 item {
-                    val logs by PalleriaSyncManager.syncLogs.collectAsState()
+                    val logs by PalleriaSyncManager.syncLogs.collectAsStateWithLifecycle()
                     Section(stringResource(R.string.pallasync_sync_logs)) {
                         ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
                             if (logs.isEmpty()) {

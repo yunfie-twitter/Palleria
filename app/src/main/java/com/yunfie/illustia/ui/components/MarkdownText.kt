@@ -33,6 +33,7 @@ private val MARKDOWN_LINK_REGEX = Regex("""\[([^\]]+)\]\((https?://[^\s)]+)\)"""
 private val BOLD_REGEX = Regex("""\*\*(.*?)\*\*""")
 private val ITALIC_REGEX = Regex("""\*(.*?)\*""")
 private val CODE_REGEX = Regex("""`([^`]+)`""")
+private val ORDERED_LIST_REGEX = Regex("""^\d+\.\s+.*""")
 
 private const val HEADER_LEVEL_1 = 1
 private const val HEADER_LEVEL_2 = 2
@@ -207,7 +208,7 @@ private fun parseMarkdownBlocks(rawText: String): List<MarkdownBlock> {
                 blocks.add(MarkdownBlock.ListItem("•", trimmed.substring(2).trim()))
             }
 
-            trimmed.matches(Regex("""^\d+\.\s+.*""")) -> {
+            trimmed.matches(ORDERED_LIST_REGEX) -> {
                 val num = trimmed.substringBefore(".")
                 val rest = trimmed.substringAfter(".").trim()
                 blocks.add(MarkdownBlock.ListItem("$num.", rest))

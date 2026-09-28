@@ -10,6 +10,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.util.Locale
 
+private val RUBY_REGEX = Regex("""\[\[rb:[^>]*>(.*?)\]\]""")
+private val JUMP_REGEX = Regex("""\[jump:\d+\]""")
+private val NEWPAGE_REGEX = Regex("""\[newpage\]""")
+private val PIXIV_IMAGE_REGEX = Regex("""\[pixivimage:\d+\]""")
+private val CHAPTER_REGEX = Regex("""\[chapter:(.*?)\]""")
+
 class NovelTtsPlayer(
     private val context: Context,
     private val onPageAdvance: ((Int) -> Unit)? = null,
@@ -73,11 +79,11 @@ class NovelTtsPlayer(
     ) {
         val cleaned =
             rawText
-                .replace(Regex("""\[\[rb:[^>]*>(.*?)\]\]"""), "$1")
-                .replace(Regex("""\[jump:\d+\]"""), "")
-                .replace(Regex("""\[newpage\]"""), "\n\n")
-                .replace(Regex("""\[pixivimage:\d+\]"""), "")
-                .replace(Regex("""\[chapter:(.*?)\]"""), "$1")
+                .replace(RUBY_REGEX, "$1")
+                .replace(JUMP_REGEX, "")
+                .replace(NEWPAGE_REGEX, "\n\n")
+                .replace(PIXIV_IMAGE_REGEX, "")
+                .replace(CHAPTER_REGEX, "$1")
 
         paragraphs = cleaned.split("\n").map { it.trim() }.filter { it.isNotBlank() }
         if (paragraphs.isEmpty()) return

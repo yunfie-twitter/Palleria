@@ -11,11 +11,18 @@ import com.yunfie.illustia.models.Illust
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
 internal fun upcomingArtworkIndices(
     indexByKey: Map<Any, Int>,
-    visibleKeys: List<Any>,
+    visibleKeys: Iterable<Any>,
     itemCount: Int,
     limit: Int,
 ): IntRange {
-    val lastVisible = visibleKeys.mapNotNull(indexByKey::get).maxOrNull() ?: return IntRange.EMPTY
+    var lastVisible = -1
+    for (key in visibleKeys) {
+        val index = indexByKey[key] ?: continue
+        if (index > lastVisible) {
+            lastVisible = index
+        }
+    }
+    if (lastVisible < 0) return IntRange.EMPTY
     val start = (lastVisible + 1).coerceAtMost(itemCount)
     return start until (start + limit.coerceAtLeast(0)).coerceAtMost(itemCount)
 }
@@ -39,17 +46,28 @@ fun PrefetchIllustGridImages(
         }
     val urls by remember(items, gridState, indexByKey, enabled, highQualityImages, preferLowDataImages, limit) {
         derivedStateOf(structuralEqualityPolicy()) {
-            if (!enabled) {
+            if (!enabled || items.isEmpty()) {
                 emptyList()
             } else {
-                upcomingArtworkIndices(
-                    indexByKey = indexByKey,
-                    visibleKeys = gridState.layoutInfo.visibleItemsInfo.map { it.key },
-                    itemCount = items.size,
-                    limit = limit,
-                ).map { index ->
-                    val illust = items[index]
-                    if (highQualityImages && !preferLowDataImages) illust.previewUrl else illust.thumbnailUrl
+                val visibleItems = gridState.layoutInfo.visibleItemsInfo
+                var lastVisible = -1
+                for (i in visibleItems.indices) {
+                    val index = indexByKey[visibleItems[i].key] ?: continue
+                    if (index > lastVisible) {
+                        lastVisible = index
+                    }
+                }
+                if (lastVisible < 0) {
+                    emptyList()
+                } else {
+                    val start = (lastVisible + 1).coerceAtMost(items.size)
+                    val end = (start + limit.coerceAtLeast(0)).coerceAtMost(items.size)
+                    val result = ArrayList<String>(end - start)
+                    for (index in start until end) {
+                        val illust = items[index]
+                        result.add(if (highQualityImages && !preferLowDataImages) illust.previewUrl else illust.thumbnailUrl)
+                    }
+                    result
                 }
             }
         }

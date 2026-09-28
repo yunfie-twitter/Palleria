@@ -16,7 +16,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,11 +83,13 @@ fun ShortsFeedScreen(
             }
     }
 
+    val currentItems by rememberUpdatedState(items)
     val nearEnd =
-        remember(pagerState, items) {
+        remember(pagerState) {
             derivedStateOf {
                 val page = pagerState.currentPage
-                items.isNotEmpty() && page >= items.lastIndex - 1
+                val latest = currentItems
+                latest.isNotEmpty() && page >= latest.lastIndex - 1
             }
         }
     LaunchedEffect(nearEnd) {

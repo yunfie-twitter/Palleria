@@ -223,8 +223,10 @@ fun CommentScreen(
     }
 }
 
+private val WHITESPACE_REGEX = Regex("\\s+")
+
 private fun Comment.isPixivCommentDisabledNotice(): Boolean {
-    val message = comment.orEmpty().replace(Regex("\\s+"), "")
+    val message = comment.orEmpty().replace(WHITESPACE_REGEX, "")
     return message.contains("コメントがオフにされています")
 }
 
