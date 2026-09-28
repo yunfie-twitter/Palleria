@@ -44,31 +44,33 @@ fun PrefetchIllustGridImages(
                 key to index
             }
         }
-    val urls by remember(items, gridState, indexByKey, enabled, highQualityImages, preferLowDataImages, limit) {
+    val lastVisibleIndex by remember(gridState, indexByKey) {
+        derivedStateOf {
+            val visibleItems = gridState.layoutInfo.visibleItemsInfo
+            var last = -1
+            for (i in visibleItems.indices) {
+                val index = indexByKey[visibleItems[i].key] ?: continue
+                if (index > last) {
+                    last = index
+                }
+            }
+            last
+        }
+    }
+
+    val urls by remember(items, lastVisibleIndex, enabled, highQualityImages, preferLowDataImages, limit) {
         derivedStateOf(structuralEqualityPolicy()) {
-            if (!enabled || items.isEmpty()) {
+            if (!enabled || items.isEmpty() || lastVisibleIndex < 0) {
                 emptyList()
             } else {
-                val visibleItems = gridState.layoutInfo.visibleItemsInfo
-                var lastVisible = -1
-                for (i in visibleItems.indices) {
-                    val index = indexByKey[visibleItems[i].key] ?: continue
-                    if (index > lastVisible) {
-                        lastVisible = index
-                    }
+                val start = (lastVisibleIndex + 1).coerceAtMost(items.size)
+                val end = (start + limit.coerceAtLeast(0)).coerceAtMost(items.size)
+                val result = ArrayList<String>(end - start)
+                for (index in start until end) {
+                    val illust = items[index]
+                    result.add(if (highQualityImages && !preferLowDataImages) illust.previewUrl else illust.thumbnailUrl)
                 }
-                if (lastVisible < 0) {
-                    emptyList()
-                } else {
-                    val start = (lastVisible + 1).coerceAtMost(items.size)
-                    val end = (start + limit.coerceAtLeast(0)).coerceAtMost(items.size)
-                    val result = ArrayList<String>(end - start)
-                    for (index in start until end) {
-                        val illust = items[index]
-                        result.add(if (highQualityImages && !preferLowDataImages) illust.previewUrl else illust.thumbnailUrl)
-                    }
-                    result
-                }
+                result
             }
         }
     }

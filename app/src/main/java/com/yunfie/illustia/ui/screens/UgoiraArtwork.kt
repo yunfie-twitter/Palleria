@@ -1,5 +1,6 @@
 package com.yunfie.illustia.ui.screens
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
@@ -31,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -152,6 +154,7 @@ internal fun UgoiraArtwork(
         }
     }
 
+    val bitmapPool = remember(playback) { java.util.concurrent.ConcurrentLinkedQueue<Bitmap>() }
     // フレームのデコードは ConcurrentHashMap に書き込む。
     // メモリ上限を超えないよう、フレーム数が多い場合は再生位置前後のスライディングウィンドウで管理する。
     LaunchedEffect(playback) {
@@ -179,16 +182,52 @@ internal fun UgoiraArtwork(
                             .map {
                                 (current + it + frames.size) % frames.size
                             }.toSet()
-                    decodedBitmaps.keys.retainAll(needed)
+
+                    val removedKeys = decodedBitmaps.keys - needed
+                    for (k in removedKeys) {
+                        decodedBitmaps.remove(k)?.let { bmp ->
+                            val androidBmp = bmp.asAndroidBitmap()
+                            if (androidBmp.isMutable && !androidBmp.isRecycled) {
+                                bitmapPool.add(androidBmp)
+                            }
+                        }
+                    }
 
                     for (step in 0..PREFETCH_AHEAD) {
                         if (!isActive) break
                         val targetIdx = (current + step) % frames.size
                         if (!decodedBitmaps.containsKey(targetIdx)) {
-                            val bitmap =
+                            val pooled = bitmapPool.poll()
+                            val options =
+                                if (pooled != null && pooled.isMutable && !pooled.isRecycled) {
+                                    BitmapFactory.Options().apply {
+                                        inBitmap = pooled
+                                        inMutable = true
+                                    }
+                                } else {
+                                    BitmapFactory.Options().apply { inMutable = true }
+                                }
+
+                            var androidBitmap =
                                 runCatching {
-                                    BitmapFactory.decodeFile(frames[targetIdx].filePath)?.asImageBitmap()
+                                    BitmapFactory.decodeFile(frames[targetIdx].filePath, options)
                                 }.getOrNull()
+
+                            if (androidBitmap == null && pooled != null) {
+                                // Fallback
+                                androidBitmap =
+                                    runCatching {
+                                        BitmapFactory.decodeFile(
+                                            frames[targetIdx].filePath,
+                                            BitmapFactory.Options().apply {
+                                                inMutable =
+                                                    true
+                                            },
+                                        )
+                                    }.getOrNull()
+                            }
+
+                            val bitmap = androidBitmap?.asImageBitmap()
                             if (bitmap != null) {
                                 decodedBitmaps[targetIdx] = bitmap
                                 if (targetIdx == currentFrameIndex && currentBitmap == null) {
@@ -218,9 +257,30 @@ internal fun UgoiraArtwork(
             if (bitmap == null) {
                 bitmap =
                     withContext(Dispatchers.IO) {
-                        runCatching {
-                            BitmapFactory.decodeFile(frame.filePath)?.asImageBitmap()
-                        }.getOrNull()
+                        val pooled = bitmapPool.poll()
+                        val options =
+                            if (pooled != null && pooled.isMutable && !pooled.isRecycled) {
+                                BitmapFactory.Options().apply {
+                                    inBitmap = pooled
+                                    inMutable = true
+                                }
+                            } else {
+                                BitmapFactory.Options().apply { inMutable = true }
+                            }
+
+                        var androidBitmap =
+                            runCatching {
+                                BitmapFactory.decodeFile(frame.filePath, options)
+                            }.getOrNull()
+
+                        if (androidBitmap == null && pooled != null) {
+                            androidBitmap =
+                                runCatching {
+                                    val fbOptions = BitmapFactory.Options().apply { inMutable = true }
+                                    BitmapFactory.decodeFile(frame.filePath, fbOptions)
+                                }.getOrNull()
+                        }
+                        androidBitmap?.asImageBitmap()
                     }
                 if (bitmap != null) {
                     decodedBitmaps[index] = bitmap
