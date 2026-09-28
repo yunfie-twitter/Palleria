@@ -1,9 +1,10 @@
 package com.yunfie.illustia.settings.db;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "saved_illusts")
+@Entity(tableName = "saved_illusts", indices = {@Index("savedAt")})
 public class SavedIllustEntity {
     @PrimaryKey
     public long illustId;

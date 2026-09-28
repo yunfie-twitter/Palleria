@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::fs::{self, File};
-use std::io::{self, Read};
+use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Component, Path};
 
 use zip::ZipArchive;
@@ -61,7 +61,8 @@ async fn extract_required(
     // while extraction is still writing files.
     tokio::task::spawn_blocking(move || {
         let file = File::open(&zip_path).map_err(|error| io_error("open ugoira archive", error))?;
-        let mut archive = ZipArchive::new(file).map_err(zip_error)?;
+        let reader = BufReader::new(file);
+        let mut archive = ZipArchive::new(reader).map_err(zip_error)?;
         if archive.len() > MAX_ENTRIES {
             return Err(invalid("ugoira archive contains too many entries"));
         }
@@ -101,11 +102,13 @@ async fn extract_required(
                 fs::create_dir_all(parent)
                     .map_err(|error| io_error("create ugoira frame directory", error))?;
             }
-            let mut output =
+            let output =
                 File::create(&target).map_err(|error| io_error("create ugoira frame", error))?;
+            let mut output = BufWriter::new(output);
             let expected_size = entry.size();
             let copied = io::copy(&mut entry.by_ref().take(MAX_ENTRY_BYTES + 1), &mut output)
                 .map_err(|error| io_error("extract ugoira frame", error))?;
+            output.flush().map_err(|error| io_error("flush ugoira frame", error))?;
             if copied > MAX_ENTRY_BYTES {
                 return Err(invalid("ugoira frame exceeds the size limit"));
             }

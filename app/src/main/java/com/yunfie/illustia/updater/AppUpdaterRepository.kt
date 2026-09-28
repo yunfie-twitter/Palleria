@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.FileProvider
+import com.yunfie.illustia.IllustiaApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -38,7 +39,8 @@ private const val PROGRESS_THROTTLE_DELTA = 0.01f
 @Suppress("TooManyFunctions")
 class AppUpdaterRepository(
     private val context: Context,
-    private val httpClient: OkHttpClient = OkHttpClient(),
+    private val httpClient: OkHttpClient =
+        (context.applicationContext as? IllustiaApplication)?.sharedHttpClient ?: OkHttpClient(),
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val updatesDir: File
