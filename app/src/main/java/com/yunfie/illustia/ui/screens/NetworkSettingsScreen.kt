@@ -22,6 +22,8 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
 import com.yunfie.illustia.ui.components.DividerLine
@@ -30,6 +32,7 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
+import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -47,6 +50,7 @@ fun NetworkSettingsScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
+    onOpenInternalProxySettings: () -> Unit = { viewModel.openInternalProxySettings() },
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
@@ -121,6 +125,14 @@ fun NetworkSettingsScreen(
                                 }
                             },
                         )
+                        if (state.settings.isFeatureEnabled(FeatureFlag.InternalProxy)) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.internal_proxy_entry_title),
+                                summary = stringResource(R.string.internal_proxy_entry_desc),
+                                onClick = onOpenInternalProxySettings,
+                            )
+                        }
                     }
                 }
             }

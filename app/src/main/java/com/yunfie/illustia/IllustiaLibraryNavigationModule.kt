@@ -625,6 +625,10 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.NetworkSettings)
     }
 
+    fun openInternalProxySettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.InternalProxySettings)
+    }
+
     fun openPallaSyncDevices() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.PallaSyncDevices)
     }

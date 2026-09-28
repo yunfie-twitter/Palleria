@@ -194,6 +194,8 @@ internal sealed interface AppRoute : NavKey {
     data object DownloadSettings : AppRoute
 
     data object NetworkSettings : AppRoute
+
+    data object InternalProxySettings : AppRoute
 }
 
 internal fun shouldLoadUserProfile(
