@@ -27,8 +27,10 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.RecommendedTagTile
+import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
@@ -46,7 +48,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun BrowseArea(
-    state: IllustiaUiState,
+    state: SearchUiState,
     viewModel: IllustiaViewModel,
     showHeader: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
@@ -193,4 +195,21 @@ internal fun BrowseArea(
             }
         }
     }
+}
+
+@Composable
+internal fun BrowseArea(
+    state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
+    showHeader: Boolean = false,
+    onIllustSelected: ((Illust) -> Unit)? = null,
+    onSearch: ((String) -> Unit)? = null,
+) {
+    BrowseArea(
+        state = state.searchUiState,
+        viewModel = viewModel,
+        showHeader = showHeader,
+        onIllustSelected = onIllustSelected,
+        onSearch = onSearch,
+    )
 }
