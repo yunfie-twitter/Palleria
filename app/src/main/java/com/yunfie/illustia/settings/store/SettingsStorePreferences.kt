@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import com.yunfie.illustia.data.normalizePixivImageProxyBaseUrl
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
@@ -150,7 +151,7 @@ internal fun readFromDataStore(
         horizontalColumnCount = preferences[HORIZONTAL_COLUMN_COUNT] ?: 4,
         relatedIllustColumnCount = preferences[RELATED_ILLUST_COLUMN_COUNT] ?: 3,
         pixivNetworkMode = preferences[PIXIV_NETWORK_MODE] ?: "standard",
-        pixivImageProxyBaseUrl = preferences[PIXIV_IMAGE_PROXY_BASE_URL].orEmpty(),
+        pixivImageProxyBaseUrl = normalizePixivImageProxyBaseUrl(preferences[PIXIV_IMAGE_PROXY_BASE_URL].orEmpty()),
         mutedIllusts = decodeLongList(preferences[MUTED_ILLUSTS_JSON]),
         mutedUsers = decodeLongList(preferences[MUTED_USERS_JSON]),
         mutedTags = decodeStringList(preferences[MUTED_TAGS_JSON]),
@@ -340,7 +341,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         horizontalColumnCount = preferences.getInt("horizontalColumnCount", 4),
         relatedIllustColumnCount = preferences.getInt("relatedIllustColumnCount", DEFAULT_RELATED_ILLUST_COLUMN_COUNT),
         pixivNetworkMode = preferences.getSafeString(KEY_PIXIV_NETWORK_MODE, "standard"),
-        pixivImageProxyBaseUrl = preferences.getString(KEY_PIXIV_IMAGE_PROXY_BASE_URL, "").orEmpty(),
+        pixivImageProxyBaseUrl = normalizePixivImageProxyBaseUrl(preferences.getString(KEY_PIXIV_IMAGE_PROXY_BASE_URL, "").orEmpty()),
         mutedIllusts = preferences.getLongList("mutedIllusts"),
         mutedUsers = preferences.getLongList("mutedUsers"),
         mutedTags = preferences.getNonEmptyStringList("mutedTags"),
