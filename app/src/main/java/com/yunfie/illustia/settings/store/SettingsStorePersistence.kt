@@ -29,7 +29,7 @@ internal suspend fun readStartupAppSettings(
     sensitivePreferences: SharedPreferences,
 ): AppSettings {
     val preferences = readDataStorePreferences(dataStore)
-    return readFromDataStore(preferences, RoomSettingsData(), sensitivePreferences)
+    return readFromDataStore(preferences, RoomSettingsData(), sensitivePreferences, isStartup = true)
 }
 
 internal suspend fun writeAppSettings(

@@ -51,6 +51,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import coil3.SingletonImageLoader
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
@@ -68,6 +69,7 @@ import com.yunfie.illustia.settings.rememberAppThemeColors
 import com.yunfie.illustia.ui.IllustiaApp
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -77,6 +79,7 @@ import top.yukonga.miuix.kmp.theme.defaultTextStyles
 class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
+        const val STARTUP_POST_WORK_DELAY_MS = 400L
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -144,17 +147,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         requestLegacyStoragePermissionIfNeeded()
         applyAppLanguage(SettingsStore.readStoredAppLanguage(applicationContext))
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        lastHandledClipboardText =
-            runCatching {
-                clipboard
-                    ?.primaryClip
-                    ?.takeIf { it.itemCount > 0 }
-                    ?.getItemAt(0)
-                    ?.coerceToText(this)
-                    ?.toString()
-                    ?.trim()
-            }.getOrNull()
+        lastHandledClipboardText = null
 
         // Observe app lifecycle for lock-on-return
         val lifecycleObserver =
@@ -325,7 +318,8 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(settingsLoaded) {
                 if (!settingsLoaded) return@LaunchedEffect
                 androidx.compose.runtime.withFrameNanos { }
-                window.decorView.post {
+                this@MainActivity.lifecycleScope.launch {
+                    kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()
                     (application as IllustiaApplication).startPostStartupWork()
                     reportFullyDrawn()
