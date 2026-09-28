@@ -206,6 +206,26 @@ abstract class IllustiaViewModelFoundation(
     internal val _uiState: AppStateStore = appStateStore
     val uiState: StateFlow<IllustiaUiState> = appStateStore.state
 
+    val searchState: StateFlow<SearchUiState> =
+        uiState
+            .map { it.searchUiState }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = uiState.value.searchUiState,
+            )
+
+    val rankingState: StateFlow<RankingUiState> =
+        uiState
+            .map { it.rankingUiState }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = uiState.value.rankingUiState,
+            )
+
     @Suppress("VariableNaming")
     internal val _calculatorState = MutableStateFlow(CalculatorUiState())
     val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()

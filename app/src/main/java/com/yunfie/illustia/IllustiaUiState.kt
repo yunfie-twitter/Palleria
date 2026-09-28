@@ -140,6 +140,82 @@ data class CalculatorUiState(
 )
 
 @Immutable
+data class SearchUiState(
+    val searchDraft: String = "",
+    val activeSearchWord: String = "",
+    val searchSelectedTab: Int = 0,
+    val searchItems: List<Illust> = emptyList(),
+    val searchNextUrl: String? = null,
+    val searchNovelItems: List<NovelPreview> = emptyList(),
+    val searchNovelNextUrl: String? = null,
+    val userSearchItems: List<UserPreview> = emptyList(),
+    val userSearchNextUrl: String? = null,
+    val homeItems: List<Illust> = emptyList(),
+    val recommendedTags: List<String> = emptyList(),
+    val recommendedTagTiles: List<RecommendedTagTile> = emptyList(),
+    val recommendedTagsFetchedAtMillis: Long = 0L,
+    val isSearchRefreshing: Boolean = false,
+    val isSearchPaginating: Boolean = false,
+    val isUserSearchPaginating: Boolean = false,
+    val loadState: LoadState = LoadState.Idle,
+    val sessionReady: Boolean = false,
+    val settings: AppSettings = AppSettings(),
+)
+
+@Immutable
+data class RankingUiState(
+    val rankingMode: String = "day",
+    val rankingItems: List<Illust> = emptyList(),
+    val rankingNextUrl: String? = null,
+    val rankingModeItems: Map<String, List<Illust>> = emptyMap(),
+    val rankingModeNextUrls: Map<String, String?> = emptyMap(),
+    val rankingModeLoadStates: Map<String, LoadState> = emptyMap(),
+    val isRankingRefreshing: Map<String, Boolean> = emptyMap(),
+    val isRankingPaginating: Map<String, Boolean> = emptyMap(),
+    val loadState: LoadState = LoadState.Idle,
+    val settings: AppSettings = AppSettings(),
+)
+
+val IllustiaUiState.searchUiState: SearchUiState
+    get() =
+        SearchUiState(
+            searchDraft = searchDraft,
+            activeSearchWord = activeSearchWord,
+            searchSelectedTab = searchSelectedTab,
+            searchItems = searchItems,
+            searchNextUrl = searchNextUrl,
+            searchNovelItems = searchNovelItems,
+            searchNovelNextUrl = searchNovelNextUrl,
+            userSearchItems = userSearchItems,
+            userSearchNextUrl = userSearchNextUrl,
+            homeItems = homeItems,
+            recommendedTags = recommendedTags,
+            recommendedTagTiles = recommendedTagTiles,
+            recommendedTagsFetchedAtMillis = recommendedTagsFetchedAtMillis,
+            isSearchRefreshing = isSearchRefreshing,
+            isSearchPaginating = isSearchPaginating,
+            isUserSearchPaginating = isUserSearchPaginating,
+            loadState = loadState,
+            sessionReady = sessionReady,
+            settings = settings,
+        )
+
+val IllustiaUiState.rankingUiState: RankingUiState
+    get() =
+        RankingUiState(
+            rankingMode = rankingMode,
+            rankingItems = rankingItems,
+            rankingNextUrl = rankingNextUrl,
+            rankingModeItems = rankingModeItems,
+            rankingModeNextUrls = rankingModeNextUrls,
+            rankingModeLoadStates = rankingModeLoadStates,
+            isRankingRefreshing = isRankingRefreshing,
+            isRankingPaginating = isRankingPaginating,
+            loadState = loadState,
+            settings = settings,
+        )
+
+@Immutable
 data class RecommendedTagTile(
     val tag: String,
     val imageUrl: String? = null,

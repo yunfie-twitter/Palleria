@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -138,12 +139,13 @@ internal fun AppNavHost(
                 AppRoute.Search,
                 metadata = artworkMetadata,
             ) {
+                val searchState by viewModel.searchState.collectAsStateWithLifecycle()
                 SearchScreen(
-                    state = appState.state,
+                    state = searchState,
                     viewModel = viewModel,
                     isResultRoute = false,
                     onBack = onPopRoute,
-                    onNavigateToResults = { query ->
+                    onNavigateToResults = { query: String ->
                         viewModel.submitSearch(query)
                         onNavigate(AppRoute.SearchResults(query))
                     },

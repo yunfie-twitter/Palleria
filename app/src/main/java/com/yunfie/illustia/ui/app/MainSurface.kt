@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -237,10 +238,8 @@ internal fun MainSurface(
                         }
 
                         AppTab.Search -> {
-                            SearchScreen(
-                                state = appState.state,
+                            SearchTabContent(
                                 viewModel = viewModel,
-                                isResultRoute = false,
                                 onNavigateToResults = onNavigateToResults,
                             )
                         }
@@ -309,4 +308,18 @@ internal fun MainSurface(
             )
         }
     }
+}
+
+@Composable
+private fun SearchTabContent(
+    viewModel: IllustiaViewModel,
+    onNavigateToResults: (String) -> Unit,
+) {
+    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
+    SearchScreen(
+        state = searchState,
+        viewModel = viewModel,
+        isResultRoute = false,
+        onNavigateToResults = onNavigateToResults,
+    )
 }

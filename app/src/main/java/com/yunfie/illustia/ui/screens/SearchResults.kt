@@ -27,10 +27,12 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
@@ -55,7 +57,7 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 @Composable
 internal fun SearchResultGrid(
     page: Int,
-    state: IllustiaUiState,
+    state: SearchUiState,
     viewModel: IllustiaViewModel,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
@@ -381,4 +383,19 @@ internal fun UserResultCard(
             }
         }
     }
+}
+
+@Composable
+internal fun SearchResultGrid(
+    page: Int,
+    state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
+    onIllustSelected: ((Illust) -> Unit)? = null,
+) {
+    SearchResultGrid(
+        page = page,
+        state = state.searchUiState,
+        viewModel = viewModel,
+        onIllustSelected = onIllustSelected,
+    )
 }

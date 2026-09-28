@@ -14,12 +14,14 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.SearchWorkType
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
@@ -44,7 +46,7 @@ private val SearchBookmarkFilterOptions = SearchBookmarkFilter.entries.toList()
 @Composable
 internal fun SearchOptionsSheet(
     show: Boolean,
-    state: IllustiaUiState,
+    state: SearchUiState,
     viewModel: IllustiaViewModel,
     onDismiss: () -> Unit,
 ) {
@@ -80,8 +82,23 @@ internal fun SearchOptionsSheet(
 }
 
 @Composable
-internal fun SearchOptionsContent(
+internal fun SearchOptionsSheet(
+    show: Boolean,
     state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
+    onDismiss: () -> Unit,
+) {
+    SearchOptionsSheet(
+        show = show,
+        state = state.searchUiState,
+        viewModel = viewModel,
+        onDismiss = onDismiss,
+    )
+}
+
+@Composable
+internal fun SearchOptionsContent(
+    state: SearchUiState,
     viewModel: IllustiaViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -176,4 +193,17 @@ internal fun SearchOptionsContent(
             Text(stringResource(R.string.search_reset_filters))
         }
     }
+}
+
+@Composable
+internal fun SearchOptionsContent(
+    state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
+    modifier: Modifier = Modifier,
+) {
+    SearchOptionsContent(
+        state = state.searchUiState,
+        viewModel = viewModel,
+        modifier = modifier,
+    )
 }

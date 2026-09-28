@@ -50,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.data.pixiv.SuggestionStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -62,6 +63,7 @@ import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGridSkeleton
@@ -100,7 +102,7 @@ private val SearchBookmarkFilterOptions = SearchBookmarkFilter.entries.toList()
 
 @Composable
 fun SearchScreen(
-    state: IllustiaUiState,
+    state: SearchUiState,
     viewModel: IllustiaViewModel,
     widgetSelectionMode: Boolean = false,
     isResultRoute: Boolean = false,
@@ -145,39 +147,52 @@ fun SearchScreen(
         }
     }
 
-    val onClearResults = {
-        if (isResultRoute) {
-            onBackFromResults?.invoke() ?: viewModel.clearSearchResults()
-        } else {
-            viewModel.clearSearchResults()
-        }
-    }
-    val onExpandedChange: (Boolean) -> Unit = { expanded ->
-        searchExpanded = expanded
-        if (!expanded) {
-            viewModel.updateSearchDraft(state.activeSearchWord)
-            if (state.activeSearchWord.isBlank()) {
-                onClearResults()
+    val onClearResults =
+        remember(isResultRoute, onBackFromResults, viewModel) {
+            {
+                if (isResultRoute) {
+                    onBackFromResults?.invoke() ?: viewModel.clearSearchResults()
+                } else {
+                    viewModel.clearSearchResults()
+                }
             }
         }
-    }
-    val onUpdateDraft: (String) -> Unit = { viewModel.updateSearchDraft(it) }
-    val onSubmit: (String) -> Unit = { word ->
-        val trimmed = word.trim()
-        if (trimmed.isBlank()) {
-            onClearResults()
-        } else {
-            val nativeEvent = NativeIntentRouter.parseText(trimmed)
-            if (nativeEvent is NativeIntentEvent.Artwork || nativeEvent is NativeIntentEvent.User || nativeEvent is NativeIntentEvent.Tag) {
-                viewModel.submitSearch(trimmed)
-            } else if (onNavigateToResults != null) {
-                onNavigateToResults.invoke(trimmed)
-            } else {
-                viewModel.submitSearch(trimmed)
+    val onExpandedChange: (Boolean) -> Unit =
+        remember(state.activeSearchWord, onClearResults, viewModel) {
+            { expanded ->
+                searchExpanded = expanded
+                if (!expanded) {
+                    viewModel.updateSearchDraft(state.activeSearchWord)
+                    if (state.activeSearchWord.isBlank()) {
+                        onClearResults()
+                    }
+                }
             }
         }
-        searchExpanded = false
-    }
+    val onUpdateDraft: (String) -> Unit = remember(viewModel) { { viewModel.updateSearchDraft(it) } }
+    val onSubmit: (String) -> Unit =
+        remember(onClearResults, onNavigateToResults, viewModel) {
+            { word ->
+                val trimmed = word.trim()
+                if (trimmed.isBlank()) {
+                    onClearResults()
+                } else {
+                    val nativeEvent = NativeIntentRouter.parseText(trimmed)
+                    val isDirectSearchEvent =
+                        nativeEvent is NativeIntentEvent.Artwork ||
+                            nativeEvent is NativeIntentEvent.User ||
+                            nativeEvent is NativeIntentEvent.Tag
+                    if (isDirectSearchEvent) {
+                        viewModel.submitSearch(trimmed)
+                    } else if (onNavigateToResults != null) {
+                        onNavigateToResults.invoke(trimmed)
+                    } else {
+                        viewModel.submitSearch(trimmed)
+                    }
+                }
+                searchExpanded = false
+            }
+        }
     var lastAutoOpenedArtworkUrl by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.searchDraft) {
@@ -362,7 +377,7 @@ fun SearchScreen(
 
 @Composable
 private fun SearchResultsArea(
-    state: IllustiaUiState,
+    state: SearchUiState,
     viewModel: IllustiaViewModel,
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
@@ -496,5 +511,28 @@ private fun SearchResultsArea(
         state = state,
         viewModel = viewModel,
         onDismiss = { showOptionsSheet = false },
+    )
+}
+
+@Composable
+fun SearchScreen(
+    state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
+    widgetSelectionMode: Boolean = false,
+    isResultRoute: Boolean = false,
+    onIllustSelected: ((Illust) -> Unit)? = null,
+    onBack: (() -> Unit)? = null,
+    onBackFromResults: (() -> Unit)? = null,
+    onNavigateToResults: ((String) -> Unit)? = null,
+) {
+    SearchScreen(
+        state = state.searchUiState,
+        viewModel = viewModel,
+        widgetSelectionMode = widgetSelectionMode,
+        isResultRoute = isResultRoute,
+        onIllustSelected = onIllustSelected,
+        onBack = onBack,
+        onBackFromResults = onBackFromResults,
+        onNavigateToResults = onNavigateToResults,
     )
 }
