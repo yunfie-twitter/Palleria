@@ -105,17 +105,16 @@ fun RankingScreen(
             pageCount = { modes.size },
         )
     val latestMode by rememberUpdatedState(mode)
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val rankingState by viewModel.rankingState.collectAsStateWithLifecycle()
 
     // Commit a ranking change only after the swipe/scroll animation settles. This
     // avoids loading every intermediate tab when jumping across several modes.
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.isScrollInProgress to pagerState.settledPage }
-            .filter { (isScrolling, _) -> !isScrolling }
-            .map { (_, page) -> page }
+        snapshotFlow { if (pagerState.isScrollInProgress) -1 else pagerState.settledPage }
+            .filter { it >= 0 }
             .distinctUntilChanged()
             .collect { page ->
-                val newMode = modes[page]
+                val newMode = modes.getOrNull(page) ?: return@collect
                 if (newMode != latestMode) viewModel.selectRankingMode(newMode)
             }
     }
@@ -194,9 +193,11 @@ fun RankingScreen(
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
                 val pageMode = modes[page]
-                val pageItems = uiState.rankingModeItems[pageMode] ?: if (pageMode == mode) items else emptyList()
-                val pageLoadState = uiState.rankingModeLoadStates[pageMode] ?: if (pageMode == mode) loadState else LoadState.Idle
-                val pageNextUrl = uiState.rankingModeNextUrls[pageMode] ?: if (pageMode == mode) nextUrl else null
+                val pageItems = rankingState.rankingModeItems[pageMode] ?: if (pageMode == mode) items else emptyList()
+                val pageLoadState = rankingState.rankingModeLoadStates[pageMode] ?: if (pageMode == mode) loadState else LoadState.Idle
+                val pageNextUrl = rankingState.rankingModeNextUrls[pageMode] ?: if (pageMode == mode) nextUrl else null
+                val isModeRefreshing = rankingState.isRankingRefreshing[pageMode] == true
+                val isModePaginating = rankingState.isRankingPaginating[pageMode] == true
 
                 LaunchedEffect(pageMode) {
                     viewModel.loadRankingModeIfNeeded(pageMode)
@@ -209,6 +210,8 @@ fun RankingScreen(
                     mode = pageMode,
                     settings = settings,
                     viewModel = viewModel,
+                    isRefreshing = isModeRefreshing,
+                    isPaginating = isModePaginating,
                     scrollBehavior = scrollBehavior,
                     modifier =
                         Modifier.graphicsLayer {
@@ -234,12 +237,13 @@ private fun RankingGridContent(
     mode: String,
     settings: com.yunfie.illustia.settings.AppSettings,
     viewModel: IllustiaViewModel,
+    isRefreshing: Boolean = false,
+    isPaginating: Boolean = false,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
     modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val isModeRefreshing = state.isRankingRefreshing[mode] == true
-    val isModePaginating = state.isRankingPaginating[mode] == true
+    val isModeRefreshing = isRefreshing
+    val isModePaginating = isPaginating
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.rankingGridState(mode)
