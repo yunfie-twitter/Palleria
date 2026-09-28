@@ -319,10 +319,10 @@ class MainActivity : FragmentActivity() {
                 if (!settingsLoaded) return@LaunchedEffect
                 androidx.compose.runtime.withFrameNanos { }
                 this@MainActivity.lifecycleScope.launch {
+                    reportFullyDrawn()
                     kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()
                     (application as IllustiaApplication).startPostStartupWork()
-                    reportFullyDrawn()
                 }
             }
 
