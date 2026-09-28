@@ -195,6 +195,13 @@ internal fun readFromDataStore(
         novelLayoutMode = preferences[NOVEL_LAYOUT_MODE] ?: "paged",
         novelProgress = decodeNovelProgress(preferences[NOVEL_PROGRESS_RECORDS]),
         novelFontFamily = preferences[NOVEL_FONT_FAMILY] ?: "system",
+        internalProxyEnabled = preferences[INTERNAL_PROXY_ENABLED] ?: false,
+        internalProxyType = preferences[INTERNAL_PROXY_TYPE] ?: "HTTP",
+        internalProxyHost = preferences[INTERNAL_PROXY_HOST].orEmpty(),
+        internalProxyPort = preferences[INTERNAL_PROXY_PORT] ?: 8080,
+        internalProxyBypassHosts = preferences[INTERNAL_PROXY_BYPASS_HOSTS] ?: "localhost, 127.0.0.1",
+        dohProvider = preferences[DOH_PROVIDER] ?: "system",
+        dohCustomUrl = preferences[DOH_CUSTOM_URL].orEmpty(),
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -349,6 +356,13 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         pallaSyncEnabled = false,
         pallaSyncServerUrl = "https://api.yunfi.f5.si",
         sendTelemetry = false,
+        internalProxyEnabled = preferences.getBoolean(KEY_INTERNAL_PROXY_ENABLED, false),
+        internalProxyType = preferences.getSafeString(KEY_INTERNAL_PROXY_TYPE, "HTTP"),
+        internalProxyHost = preferences.getString(KEY_INTERNAL_PROXY_HOST, "").orEmpty(),
+        internalProxyPort = preferences.getInt(KEY_INTERNAL_PROXY_PORT, DEFAULT_INTERNAL_PROXY_PORT),
+        internalProxyBypassHosts = preferences.getString(KEY_INTERNAL_PROXY_BYPASS_HOSTS, "localhost, 127.0.0.1").orEmpty(),
+        dohProvider = preferences.getSafeString(KEY_DOH_PROVIDER, "system"),
+        dohCustomUrl = preferences.getString(KEY_DOH_CUSTOM_URL, "").orEmpty(),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -496,6 +510,13 @@ internal fun writeToDataStore(
     preferences[NOVEL_LAYOUT_MODE] = settings.novelLayoutMode
     preferences[NOVEL_PROGRESS_RECORDS] = encodeNovelProgress(settings.novelProgress)
     preferences[NOVEL_FONT_FAMILY] = settings.novelFontFamily
+    preferences[INTERNAL_PROXY_ENABLED] = settings.internalProxyEnabled
+    preferences[INTERNAL_PROXY_TYPE] = settings.internalProxyType
+    preferences[INTERNAL_PROXY_HOST] = settings.internalProxyHost
+    preferences[INTERNAL_PROXY_PORT] = settings.internalProxyPort
+    preferences[INTERNAL_PROXY_BYPASS_HOSTS] = settings.internalProxyBypassHosts
+    preferences[DOH_PROVIDER] = settings.dohProvider
+    preferences[DOH_CUSTOM_URL] = settings.dohCustomUrl
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

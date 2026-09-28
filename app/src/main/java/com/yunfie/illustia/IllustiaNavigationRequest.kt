@@ -35,5 +35,6 @@ enum class IllustiaNavigationRequest {
     DetailSectionSettings,
     DownloadSettings,
     NetworkSettings,
+    InternalProxySettings,
     Novels,
 }

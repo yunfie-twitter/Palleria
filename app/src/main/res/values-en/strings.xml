@@ -1068,4 +1068,30 @@
     <string name="tts_stop">Stop</string>
     <string name="tts_speed">Speed: %1$.1fx</string>
     <string name="tts_reading_novel">Reading novel: %1$s</string>
+
+    <!-- Internal Proxy & DoH -->
+    <string name="flag_internal_proxy_title">Internal Proxy &amp; DoH (DNS over HTTPS)</string>
+    <string name="flag_internal_proxy_desc">Enable DNS over HTTPS and in-app proxy/bypass routing configuration</string>
+    <string name="internal_proxy_settings_title">Internal Proxy Settings</string>
+    <string name="internal_proxy_section_doh">DNS over HTTPS (DoH)</string>
+    <string name="internal_proxy_doh_provider">DoH Provider</string>
+    <string name="internal_proxy_doh_provider_desc">Select provider for encrypted DNS queries</string>
+    <string name="internal_proxy_doh_system">Disabled (System DNS)</string>
+    <string name="internal_proxy_doh_cloudflare">Cloudflare (1.1.1.1)</string>
+    <string name="internal_proxy_doh_google">Google (8.8.8.8)</string>
+    <string name="internal_proxy_doh_quad9">Quad9 (9.9.9.9)</string>
+    <string name="internal_proxy_doh_adguard">AdGuard DNS</string>
+    <string name="internal_proxy_doh_custom">Custom URL</string>
+    <string name="internal_proxy_doh_custom_url">Custom DoH Server URL</string>
+    <string name="internal_proxy_doh_custom_url_hint">https://example.com/dns-query</string>
+    <string name="internal_proxy_section_proxy">Internal Proxy &amp; Bypass</string>
+    <string name="internal_proxy_enable">Use Internal Proxy</string>
+    <string name="internal_proxy_enable_desc">Route app network traffic through a local or remote proxy</string>
+    <string name="internal_proxy_type">Proxy Type</string>
+    <string name="internal_proxy_host">Host / IP Address</string>
+    <string name="internal_proxy_port">Port Number</string>
+    <string name="internal_proxy_bypass_hosts">Bypass Hosts</string>
+    <string name="internal_proxy_bypass_hosts_desc">Comma-separated list of hosts to connect directly without proxy</string>
+    <string name="internal_proxy_entry_title">Internal Proxy</string>
+    <string name="internal_proxy_entry_desc">Configure DoH (Encrypted DNS), local proxy, and bypass rules</string>
 </resources>

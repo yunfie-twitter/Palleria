@@ -453,6 +453,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.DetailSectionSettings -> AppRoute.DetailSectionSettings
                     IllustiaNavigationRequest.DownloadSettings -> AppRoute.DownloadSettings
                     IllustiaNavigationRequest.NetworkSettings -> AppRoute.NetworkSettings
+                    IllustiaNavigationRequest.InternalProxySettings -> AppRoute.InternalProxySettings
                     IllustiaNavigationRequest.Novels -> AppRoute.NovelList
                 },
             )

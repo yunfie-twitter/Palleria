@@ -71,6 +71,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_novel_tts_audiobook_desc,
         defaultEnabled = false,
     ),
+    InternalProxy(
+        key = "flag_internal_proxy",
+        titleRes = R.string.flag_internal_proxy_title,
+        descRes = R.string.flag_internal_proxy_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {

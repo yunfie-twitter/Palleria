@@ -905,6 +905,34 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(pixivNetworkMode = value) }
     }
 
+    fun updateInternalProxyEnabled(value: Boolean) {
+        updateSettings { it.copy(internalProxyEnabled = value) }
+    }
+
+    fun updateInternalProxyType(value: String) {
+        updateSettings { it.copy(internalProxyType = value) }
+    }
+
+    fun updateInternalProxyHost(value: String) {
+        updateSettings { it.copy(internalProxyHost = value) }
+    }
+
+    fun updateInternalProxyPort(value: Int) {
+        updateSettings { it.copy(internalProxyPort = value) }
+    }
+
+    fun updateInternalProxyBypassHosts(value: String) {
+        updateSettings { it.copy(internalProxyBypassHosts = value) }
+    }
+
+    fun updateDohProvider(value: String) {
+        updateSettings { it.copy(dohProvider = value) }
+    }
+
+    fun updateDohCustomUrl(value: String) {
+        updateSettings { it.copy(dohCustomUrl = value) }
+    }
+
     fun updateRestrict(value: Restrict) {
         updateSettings { it.copy(bookmarkRestrict = value) }
     }

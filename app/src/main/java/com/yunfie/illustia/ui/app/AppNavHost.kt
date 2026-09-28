@@ -53,6 +53,7 @@ import com.yunfie.illustia.ui.screens.IllustDetailSkeletonScreen
 import com.yunfie.illustia.ui.screens.IllustSeriesScreen
 import com.yunfie.illustia.ui.screens.ImageSettingsScreen
 import com.yunfie.illustia.ui.screens.ImageViewerScreen
+import com.yunfie.illustia.ui.screens.InternalProxySettingsScreen
 import com.yunfie.illustia.ui.screens.MuteSettingsScreen
 import com.yunfie.illustia.ui.screens.NavigationSettingsScreen
 import com.yunfie.illustia.ui.screens.NetworkSettingsScreen
@@ -432,7 +433,15 @@ internal fun AppNavHost(
                 DownloadSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.NetworkSettings) {
-                NetworkSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                NetworkSettingsScreen(
+                    state = appState.state,
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                    onOpenInternalProxySettings = { onNavigate(AppRoute.InternalProxySettings) },
+                )
+            }
+            entry(AppRoute.InternalProxySettings) {
+                InternalProxySettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.WallpaperPlaylistSettings) {
                 WallpaperPlaylistSettingsScreen(

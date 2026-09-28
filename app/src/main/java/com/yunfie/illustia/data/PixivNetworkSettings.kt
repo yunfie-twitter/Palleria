@@ -1,6 +1,9 @@
 package com.yunfie.illustia.data
 
 import com.yunfie.illustia.models.NetworkMode
+import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.Dns
@@ -26,7 +29,11 @@ internal object PixivNetworkSettings {
         )
 
     @JvmStatic
-    fun createPixivHttpClient(mode: NetworkMode = NetworkMode.Standard): OkHttpClient {
+    fun createPixivHttpClient(
+        mode: NetworkMode = NetworkMode.Standard,
+        dohUrl: String? = null,
+        proxySelector: InternalProxySelector? = null,
+    ): OkHttpClient {
         val builder =
             OkHttpClient
                 .Builder()
@@ -41,8 +48,14 @@ internal object PixivNetworkSettings {
                 .writeTimeout(20, TimeUnit.SECONDS)
                 .callTimeout(30, TimeUnit.SECONDS)
 
+        if (proxySelector != null) {
+            builder.proxySelector(proxySelector)
+        }
+
         if (mode != NetworkMode.Standard) {
             builder.configureCompatibleConnection(mode)
+        } else if (!dohUrl.isNullOrBlank()) {
+            builder.dns(DohDns(dohUrl))
         }
 
         return builder.build()
@@ -68,3 +81,31 @@ private class StaticDns(
 
 internal fun createPixivHttpClient(mode: NetworkMode = NetworkMode.Standard): OkHttpClient =
     PixivNetworkSettings.createPixivHttpClient(mode)
+
+internal fun createPixivHttpClient(settings: AppSettings): OkHttpClient {
+    val mode =
+        when (settings.pixivNetworkMode.lowercase()) {
+            "compat" -> NetworkMode.Compat
+            "ech" -> NetworkMode.Ech
+            else -> NetworkMode.Standard
+        }
+    val dohUrl =
+        if (settings.isFeatureEnabled(FeatureFlag.InternalProxy)) {
+            DohDns.resolveUrl(settings.dohProvider, settings.dohCustomUrl)
+        } else {
+            null
+        }
+    val proxySelector =
+        if (settings.isFeatureEnabled(FeatureFlag.InternalProxy)) {
+            InternalProxySelector.create(
+                enabled = settings.internalProxyEnabled,
+                type = settings.internalProxyType,
+                host = settings.internalProxyHost,
+                port = settings.internalProxyPort,
+                bypassHostsStr = settings.internalProxyBypassHosts,
+            )
+        } else {
+            null
+        }
+    return PixivNetworkSettings.createPixivHttpClient(mode, dohUrl, proxySelector)
+}

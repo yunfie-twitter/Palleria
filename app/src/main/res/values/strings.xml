@@ -1121,4 +1121,30 @@
     <string name="setup_previous">前へ</string>
     <string name="setup_next">次へ</string>
     <string name="setup_progress">%2$d ページ中 %1$d ページ目</string>
+
+    <!-- Internal Proxy & DoH -->
+    <string name="flag_internal_proxy_title">内部プロキシ &amp; DoH (DNS over HTTPS)</string>
+    <string name="flag_internal_proxy_desc">DNS over HTTPSとアプリ内部プロキシ・バイパスルーティング設定を有効にします</string>
+    <string name="internal_proxy_settings_title">内部プロキシ設定</string>
+    <string name="internal_proxy_section_doh">DNS over HTTPS (DoH)</string>
+    <string name="internal_proxy_doh_provider">DoH プロバイダー</string>
+    <string name="internal_proxy_doh_provider_desc">暗号化DNSクエリの送信先を選択します</string>
+    <string name="internal_proxy_doh_system">無効 (システム DNS)</string>
+    <string name="internal_proxy_doh_cloudflare">Cloudflare (1.1.1.1)</string>
+    <string name="internal_proxy_doh_google">Google (8.8.8.8)</string>
+    <string name="internal_proxy_doh_quad9">Quad9 (9.9.9.9)</string>
+    <string name="internal_proxy_doh_adguard">AdGuard DNS</string>
+    <string name="internal_proxy_doh_custom">カスタム URL</string>
+    <string name="internal_proxy_doh_custom_url">カスタム DoH サーバー URL</string>
+    <string name="internal_proxy_doh_custom_url_hint">https://example.com/dns-query</string>
+    <string name="internal_proxy_section_proxy">内部プロキシ &amp; バイパス</string>
+    <string name="internal_proxy_enable">内部プロキシを使用</string>
+    <string name="internal_proxy_enable_desc">アプリ内の通信を指定したローカル/リモートプロキシ経由で行います</string>
+    <string name="internal_proxy_type">プロキシ種別</string>
+    <string name="internal_proxy_host">ホスト名 / IPアドレス</string>
+    <string name="internal_proxy_port">ポート番号</string>
+    <string name="internal_proxy_bypass_hosts">バイパス対象ホスト</string>
+    <string name="internal_proxy_bypass_hosts_desc">プロキシを経由せず直接接続するホスト名（カンマ区切り）</string>
+    <string name="internal_proxy_entry_title">内部プロキシ</string>
+    <string name="internal_proxy_entry_desc">DoH (暗号化DNS) やローカルプロキシ、バイパスルールを設定します</string>
 </resources>

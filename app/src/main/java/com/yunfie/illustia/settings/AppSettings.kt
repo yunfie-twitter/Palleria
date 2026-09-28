@@ -148,6 +148,13 @@ data class AppSettings(
     val novelLayoutMode: String = "paged",
     val novelProgress: Map<Long, com.yunfie.illustia.models.NovelReadingProgress> = emptyMap(),
     val novelFontFamily: String = "system",
+    val internalProxyEnabled: Boolean = false,
+    val internalProxyType: String = "HTTP",
+    val internalProxyHost: String = "",
+    val internalProxyPort: Int = 8080,
+    val internalProxyBypassHosts: String = "localhost, 127.0.0.1",
+    val dohProvider: String = "system",
+    val dohCustomUrl: String = "",
     val featureFlags: Map<String, Boolean> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean
