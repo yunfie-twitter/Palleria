@@ -128,7 +128,10 @@
             android:name=".updater.AppUpdateReceiver"
             android:exported="false" />
 
-
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <service
             android:name=".wallpaper.PalleriaLiveWallpaperService"
