@@ -31,21 +31,20 @@ class AppUpdateReceiver : BroadcastReceiver() {
 
                 if (!updater.isNewerVersion(release.versionName)) return@launch
 
-                processUpdate(appContext, settings, updater, release)
+                processUpdate(appContext, settings, release)
             } finally {
                 pending.finish()
             }
         }
     }
 
-    private suspend fun processUpdate(
+    private fun processUpdate(
         context: Context,
         settings: AppSettings,
-        updater: AppUpdaterRepository,
         release: AppReleaseInfo,
     ) {
         if (settings.autoDownloadUpdates) {
-            AppUpdateDownloadService.start(context, release)
+            AppUpdateDownloadWorker.start(context, release)
         } else if (settings.notifyNewVersion) {
             AppUpdateNotificationHelper.showNewVersionAvailable(context, release)
         }

@@ -7,7 +7,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
-import java.io.File
 
 class UpdateCheckWorker(
     private val context: Context,
@@ -24,16 +23,15 @@ class UpdateCheckWorker(
             val release = releaseResult.getOrNull() ?: return Result.retry()
 
             if (updater.isNewerVersion(release.versionName)) {
-                processUpdate(appContext, settings, updater, release)
+                processUpdate(appContext, settings, release)
             }
         }
         return Result.success()
     }
 
-    private suspend fun processUpdate(
+    private fun processUpdate(
         context: Context,
         settings: AppSettings,
-        updater: AppUpdaterRepository,
         release: AppReleaseInfo,
     ) {
         val isWifi = isConnectedToWifi(context)
@@ -46,34 +44,7 @@ class UpdateCheckWorker(
             return
         }
 
-        AppUpdateDownloadService.start(context, release)
-    }
-
-    private suspend fun installDownloadedUpdate(
-        context: Context,
-        settings: AppSettings,
-        updater: AppUpdaterRepository,
-        release: AppReleaseInfo,
-        file: File,
-    ) {
-        val method = UpdateInstallMethod.fromValue(settings.updateInstallMethod)
-        val shouldInstallViaShizuku =
-            method == UpdateInstallMethod.SHIZUKU &&
-                updater.isShizukuAvailable() &&
-                updater.isShizukuPermissionGranted()
-
-        if (shouldInstallViaShizuku) {
-            val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
-            if (installResult.isSuccess) {
-                if (settings.notifyNewVersion) {
-                    AppUpdateNotificationHelper.showUpdateInstalled(context, release)
-                }
-                return
-            }
-        }
-        if (settings.notifyNewVersion) {
-            AppUpdateNotificationHelper.showUpdateDownloaded(context, release, file)
-        }
+        AppUpdateDownloadWorker.start(context, release)
     }
 
     private fun isConnectedToWifi(context: Context): Boolean {

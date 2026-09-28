@@ -42,7 +42,7 @@ import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.updater.AppReleaseInfo
-import com.yunfie.illustia.updater.AppUpdateDownloadService
+import com.yunfie.illustia.updater.AppUpdateDownloadWorker
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
@@ -844,7 +844,7 @@ abstract class IllustiaViewModelFoundation(
     fun downloadUpdate(release: AppReleaseInfo) {
         if (_updateCheckState.value is UpdateCheckState.Downloading) return
         _updateCheckState.value = UpdateCheckState.Downloading(0f, 0L, release.apkSize)
-        AppUpdateDownloadService.start(application, release)
+        AppUpdateDownloadWorker.start(getApplication(), release)
         _uiState.update { it.copy(message = str(R.string.update_notification_downloaded_desc)) } // Using a placeholder for started download
     }
 
