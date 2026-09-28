@@ -153,15 +153,15 @@ abstract class IllustiaViewModelFoundation(
         const val MAX_CACHED_GRID_STATES = 16
     }
 
-    val bookmarkTimelineGridState = LazyGridState()
-    val bookmarkMainGridState = LazyGridState()
-    val bookmarkWatchlistGridState = LazyGridState()
-    val bookmarkFollowingGridState = LazyGridState()
-    val homeFeedGridState = LazyGridState()
-    val homeTimelineGridState = LazyGridState()
-    val searchResultGridState = LazyGridState()
-    val userSearchResultGridState = LazyGridState()
-    val searchBrowseGridState = LazyGridState()
+    val bookmarkTimelineGridState by lazy { LazyGridState() }
+    val bookmarkMainGridState by lazy { LazyGridState() }
+    val bookmarkWatchlistGridState by lazy { LazyGridState() }
+    val bookmarkFollowingGridState by lazy { LazyGridState() }
+    val homeFeedGridState by lazy { LazyGridState() }
+    val homeTimelineGridState by lazy { LazyGridState() }
+    val searchResultGridState by lazy { LazyGridState() }
+    val userSearchResultGridState by lazy { LazyGridState() }
+    val searchBrowseGridState by lazy { LazyGridState() }
     internal var activeTab: AppTab? = null
     internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
     internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()

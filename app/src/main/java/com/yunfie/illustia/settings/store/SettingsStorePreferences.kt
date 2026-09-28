@@ -23,6 +23,7 @@ internal fun readFromDataStore(
     preferences: Preferences,
     roomData: RoomSettingsData,
     sensitivePreferences: SharedPreferences,
+    isStartup: Boolean = false,
 ): AppSettings {
     // Storage selection belongs to SettingsStore; migrations also read legacy preferences.
     val tokenByUserId = decodeAccountTokens(sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
@@ -77,11 +78,11 @@ internal fun readFromDataStore(
             roomData.searchHistory
                 .map { it.query }
                 .ifEmpty {
-                    decodeStringList(preferences[SEARCH_HISTORY_JSON])
+                    if (isStartup) emptyList() else decodeStringList(preferences[SEARCH_HISTORY_JSON])
                 }.take(MAX_SEARCH_HISTORY),
         favoriteTags =
             roomData.favoriteTags.map { it.tag }.ifEmpty {
-                decodeStringList(preferences[FAVORITE_TAGS_JSON])
+                if (isStartup) emptyList() else decodeStringList(preferences[FAVORITE_TAGS_JSON])
             },
         saveViewHistory = preferences[SAVE_VIEW_HISTORY] ?: true,
         saveSearchHistory = preferences[SAVE_SEARCH_HISTORY] ?: true,
@@ -94,7 +95,7 @@ internal fun readFromDataStore(
             roomData.viewHistory
                 .map(::illustFromEntity)
                 .ifEmpty {
-                    decodeHistoryIllusts(preferences[VIEW_HISTORY_JSON])
+                    if (isStartup) emptyList() else decodeHistoryIllusts(preferences[VIEW_HISTORY_JSON])
                 }.take(MAX_VIEW_HISTORY),
         smoothTransitions = preferences[SMOOTH_TRANSITIONS] ?: true,
         hapticMode = preferences[HAPTIC_MODE] ?: "rich",
