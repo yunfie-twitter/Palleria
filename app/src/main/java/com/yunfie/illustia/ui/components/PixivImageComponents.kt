@@ -162,14 +162,19 @@ fun PrefetchPixivImages(
             return@LaunchedEffect
         }
 
-        val newUrls = prefetchUrls.toSet()
-        activeRequests.keys
-            .filterNotTo(mutableListOf()) { it in newUrls }
-            .forEach { url -> activeRequests.remove(url)?.invoke() }
+        val iterator = activeRequests.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (entry.key !in prefetchUrls) {
+                entry.value.invoke()
+                iterator.remove()
+            }
+        }
 
         val imageLoader = SingletonImageLoader.get(context)
-        newUrls.forEach { url ->
-            if (url !in activeRequests) {
+        for (i in prefetchUrls.indices) {
+            val url = prefetchUrls[i]
+            if (!activeRequests.containsKey(url)) {
                 val request =
                     ImageRequest
                         .Builder(context)

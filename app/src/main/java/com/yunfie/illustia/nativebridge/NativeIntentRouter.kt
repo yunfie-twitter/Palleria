@@ -32,6 +32,7 @@ object NativeIntentRouter {
     private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "palleria")
     private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts", "tags")
     private val ROUTE_CANDIDATE_PATTERN = Regex("""(?i)\b(?:https?://|pixiv://|palleria://)\S+""")
+    private val URI_PATTERN = Regex("""^(?i)(https?|pixiv|palleria)://([^/?#]+)(?:/(.*))?$""")
     private val ROUTE_TRAILING_PUNCTUATION =
         charArrayOf(
             '.',
@@ -130,7 +131,7 @@ object NativeIntentRouter {
 
     private fun parseUri(value: String?): NativeIntentEvent? {
         if (value.isNullOrBlank()) return null
-        val match = Regex("""^(?i)(https?|pixiv|palleria)://([^/?#]+)(?:/(.*))?$""").find(value.trim()) ?: return null
+        val match = URI_PATTERN.find(value.trim()) ?: return null
         val normalizedScheme = match.groupValues[1].lowercase()
         val normalizedHost = match.groupValues[2].lowercase()
         if (!isTrustedPixivRoute(normalizedScheme, normalizedHost)) return null

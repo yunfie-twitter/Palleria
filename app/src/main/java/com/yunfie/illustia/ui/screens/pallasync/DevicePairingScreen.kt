@@ -56,6 +56,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private val WHITESPACE_REGEX = Regex("\\s+")
+
 @Composable
 fun DevicePairingScreen(
     serverUrl: String,
@@ -176,7 +178,7 @@ fun DevicePairingScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     if (seedPhrase.isNotEmpty()) {
-                        val words = seedPhrase.trim().split("\\s+".toRegex())
+                        val words = seedPhrase.trim().split(WHITESPACE_REGEX)
                         if (words.size == 24) {
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(3),
@@ -268,7 +270,7 @@ fun DevicePairingScreen(
 
                     Button(
                         onClick = {
-                            if (enteredSeedPhrase.trim().split("\\s+".toRegex()).size == 24) {
+                            if (enteredSeedPhrase.trim().split(WHITESPACE_REGEX).size == 24) {
                                 isJoining = true
                                 scope.launch {
                                     val success =
