@@ -80,8 +80,15 @@ abstract class IllustiaDetailProfileModule(
                                 if (it.selectedIllust?.id != illust.id) {
                                     it
                                 } else {
+                                    val currentIllust = it.selectedIllust
+                                    val mergedIllust =
+                                        if (currentIllust != null) {
+                                            fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
+                                        } else {
+                                            fullIllust
+                                        }
                                     it.copy(
-                                        selectedIllust = fullIllust,
+                                        selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                         selectedIllustUser = user,
                                         selectedIllustFirstComment = firstComment,
@@ -91,7 +98,7 @@ abstract class IllustiaDetailProfileModule(
                             if (fullIllust !== illust && fullIllust.artistId > 0L) {
                                 val updatedHistory =
                                     _uiState.value.settings.viewHistory.map {
-                                        if (it.id == illust.id) fullIllust else it
+                                        if (it.id == illust.id) fullIllust.copy(isBookmarked = it.isBookmarked) else it
                                     }
                                 updateSettings { it.copy(viewHistory = updatedHistory) }
                             }
@@ -116,11 +123,10 @@ abstract class IllustiaDetailProfileModule(
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
         _detailNavigationRequests.tryEmit(illustId)
-        findIllustById(illustId)?.let { illust ->
-            if (illust.artistId > 0L) {
-                openIllust(illust)
-                return
-            }
+        val localIllust = findIllustById(illustId)
+        if (localIllust != null && localIllust.artistId > 0L) {
+            openIllust(localIllust)
+            return
         }
         detailExtrasJob?.cancel()
         detailExtrasJob =
@@ -128,8 +134,14 @@ abstract class IllustiaDetailProfileModule(
                 try {
                     GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
                         val illust = repository.illustDetail(illustId)
+                        val finalIllust =
+                            if (localIllust != null) {
+                                illust.copy(isBookmarked = localIllust.isBookmarked)
+                            } else {
+                                illust
+                            }
                         withContext(Dispatchers.Main) {
-                            openIllust(illust)
+                            openIllust(finalIllust)
                         }
                     }
                 } catch (expectedFailure: Exception) {
@@ -175,8 +187,15 @@ abstract class IllustiaDetailProfileModule(
                             if (it.selectedIllust?.id != illustId) {
                                 it
                             } else {
+                                val currentIllust = it.selectedIllust
+                                val mergedIllust =
+                                    if (currentIllust != null) {
+                                        fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
+                                    } else {
+                                        fullIllust
+                                    }
                                 it.copy(
-                                    selectedIllust = fullIllust,
+                                    selectedIllust = mergedIllust,
                                     relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = firstComment,
@@ -210,7 +229,7 @@ abstract class IllustiaDetailProfileModule(
                 updateSettings { current ->
                     val updatedHistory =
                         current.viewHistory.map {
-                            if (it.id == illustId) fullIllust else it
+                            if (it.id == illustId) fullIllust.copy(isBookmarked = it.isBookmarked) else it
                         }
                     current.copy(viewHistory = updatedHistory)
                 }
