@@ -475,6 +475,7 @@ fun ImageViewerScreen(
                             url = url,
                             contentDescription = "${illust.title} ${page + 1}",
                             contentScale = ContentScale.FillWidth,
+                            showLoadingSpinner = true,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
