@@ -20,25 +20,25 @@ internal suspend fun processUserWorks(
 ): List<Illust> =
     withContext(Dispatchers.Default) {
         val context = currentCoroutineContext()
-        val filtered =
-            items.filter {
-                context.ensureActive()
-                when (typeFilter) {
-                    UserWorkTypeFilter.All -> true
-                    UserWorkTypeFilter.IllustOnly -> it.type != "manga"
-                    UserWorkTypeFilter.MangaOnly -> it.type == "manga"
-                }
-            }
         val comparator =
             when (sortOrder) {
                 UserWorkSortOrder.Newest -> compareByDescending<Illust> { it.id }
                 UserWorkSortOrder.Oldest -> compareBy<Illust> { it.id }
                 UserWorkSortOrder.MostBookmarks -> compareByDescending<Illust> { it.totalBookmarks }
             }
-        filtered.sortedWith { first, second ->
-            context.ensureActive()
-            comparator.compare(first, second)
-        }
+        items
+            .asSequence()
+            .filter {
+                context.ensureActive()
+                when (typeFilter) {
+                    UserWorkTypeFilter.All -> true
+                    UserWorkTypeFilter.IllustOnly -> it.type != "manga"
+                    UserWorkTypeFilter.MangaOnly -> it.type == "manga"
+                }
+            }.sortedWith { first, second ->
+                context.ensureActive()
+                comparator.compare(first, second)
+            }.toList()
     }
 
 internal data class UserWorkList(

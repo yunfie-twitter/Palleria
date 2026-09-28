@@ -214,6 +214,81 @@ class NativeImageStore(
     }
 
     private fun listDocumentImages(root: DocumentFile): List<NativeSavedImage> {
+        val rootUri = root.uri
+        val treeDocumentId =
+            runCatching {
+                if (DocumentsContract.isDocumentUri(context, rootUri)) {
+                    DocumentsContract.getDocumentId(rootUri)
+                } else {
+                    DocumentsContract.getTreeDocumentId(rootUri)
+                }
+            }.getOrNull()
+
+        if (treeDocumentId == null) return fallbackListDocumentImages(root)
+
+        val result = mutableListOf<NativeSavedImage>()
+        val queue = ArrayDeque<String>().apply { add(treeDocumentId) }
+
+        while (queue.isNotEmpty() && result.size < MAX_LISTED_IMAGES) {
+            val docId = queue.removeFirst()
+            queryDocumentChildren(rootUri, docId, queue, result)
+        }
+
+        return if (result.isEmpty()) fallbackListDocumentImages(root) else result.sortedByDescending(NativeSavedImage::modifiedAtMillis)
+    }
+
+    private fun queryDocumentChildren(
+        rootUri: Uri,
+        docId: String,
+        queue: ArrayDeque<String>,
+        result: MutableList<NativeSavedImage>,
+    ) {
+        val childrenUri =
+            runCatching {
+                DocumentsContract.buildChildDocumentsUriUsingTree(rootUri, docId)
+            }.getOrNull() ?: return
+
+        runCatching {
+            context.contentResolver
+                .query(
+                    childrenUri,
+                    DOCUMENT_PROJECTION,
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    val idCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                    val nameCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                    val mimeCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+                    val modCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+
+                    while (cursor.moveToNext() && result.size < MAX_LISTED_IMAGES) {
+                        val childId = cursor.getString(idCol) ?: continue
+                        val displayName = cursor.getString(nameCol).orEmpty()
+                        val mimeType = cursor.getString(mimeCol).orEmpty()
+                        val lastModified = cursor.getLong(modCol)
+
+                        if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+                            queue.add(childId)
+                        } else {
+                            val ext = displayName.substringAfterLast('.', "").lowercase(Locale.ROOT)
+                            if (mimeType.startsWith("image/") || ext in SUPPORTED_EXTENSIONS) {
+                                val itemUri = DocumentsContract.buildDocumentUriUsingTree(rootUri, childId)
+                                result.add(
+                                    NativeSavedImage(
+                                        uri = itemUri.toString(),
+                                        name = displayName,
+                                        modifiedAtMillis = lastModified,
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun fallbackListDocumentImages(root: DocumentFile): List<NativeSavedImage> {
         val result = mutableListOf<NativeSavedImage>()
         val queue = ArrayDeque<DocumentFile>()
         queue.add(root)
@@ -495,6 +570,13 @@ class NativeImageStore(
         private const val MAX_LISTED_IMAGES = 2_000
         private val SUPPORTED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif", "mp4")
         private val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4")
+        private val DOCUMENT_PROJECTION =
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE,
+                DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+            )
     }
 }
 

@@ -2,9 +2,10 @@ package com.yunfie.illustia.settings.db;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "view_history")
+@Entity(tableName = "view_history", indices = {@Index("position")})
 public class ViewHistoryEntity {
     @PrimaryKey
     public long id;

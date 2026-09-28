@@ -2,9 +2,10 @@ package com.yunfie.illustia.settings.db;
 
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "accounts")
+@Entity(tableName = "accounts", indices = {@Index("position")})
 public class AccountEntity {
     @PrimaryKey
     public long userId;

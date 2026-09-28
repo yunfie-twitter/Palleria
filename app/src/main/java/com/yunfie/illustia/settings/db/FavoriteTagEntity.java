@@ -2,9 +2,10 @@ package com.yunfie.illustia.settings.db;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "favorite_tags")
+@Entity(tableName = "favorite_tags", indices = {@Index("position")})
 public class FavoriteTagEntity {
     @PrimaryKey
     @NonNull

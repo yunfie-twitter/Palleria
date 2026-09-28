@@ -61,7 +61,7 @@ class IllustiaApplication : Application() {
                     maxRequests = 64
                     maxRequestsPerHost = 16
                 },
-            ).connectionPool(okhttp3.ConnectionPool(4, 5, TimeUnit.MINUTES))
+            ).connectionPool(okhttp3.ConnectionPool(16, 5, TimeUnit.MINUTES))
             .connectTimeout(12, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .writeTimeout(20, TimeUnit.SECONDS)

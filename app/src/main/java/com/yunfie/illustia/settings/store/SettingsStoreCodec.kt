@@ -48,20 +48,21 @@ internal fun decodeLegacyStringList(value: String?): List<String> =
         .split(HISTORY_SEPARATOR)
         .filter { it.isNotBlank() }
 
-internal fun encodeLongList(values: List<Long>): String =
-    JSONArray()
-        .apply {
-            values.forEach { put(it) }
-        }.toString()
+internal fun encodeLongList(values: List<Long>): String = values.joinToString(separator = ",", prefix = "[", postfix = "]")
 
 internal fun decodeLongList(value: String?): List<Long> {
     if (value.isNullOrBlank()) return emptyList()
-    return runCatching {
-        val array = JSONArray(value)
-        List(array.length()) { index -> array.optLong(index, 0L) }
-            .filter { it > 0L }
-    }.getOrElse {
-        value.split(",").mapNotNull { it.toLongOrNull() }
+    val trimmed = value.trim()
+    val content =
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+            trimmed.substring(1, trimmed.length - 1)
+        } else {
+            trimmed
+        }
+    return if (content.isBlank()) {
+        emptyList()
+    } else {
+        content.split(',').mapNotNull { it.trim().toLongOrNull()?.takeIf { id -> id > 0L } }
     }
 }
 
