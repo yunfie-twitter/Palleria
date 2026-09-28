@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PallaSyncDeviceEntity::class,
         PallaSyncInboxEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -32,7 +32,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             context.applicationContext,
                             PallaSyncDatabase::class.java,
                             "pallasync_database",
-                        ).addMigrations(MIGRATION_3_4, MIGRATION_4_5)
+                        ).addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                         .fallbackToDestructiveMigrationFrom(1, 2)
                         .build()
                 INSTANCE = instance
@@ -105,6 +105,21 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                         """
                         CREATE INDEX IF NOT EXISTS index_pallasync_outbox_chain_id_status
                         ON pallasync_outbox(chain_id, status)
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+        /**
+         * v6 adds an index on chainId for faster device lookup.
+         */
+        val MIGRATION_5_6 =
+            object : Migration(5, 6) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE INDEX IF NOT EXISTS index_pallasync_devices_chainId
+                        ON pallasync_devices(chainId)
                         """.trimIndent(),
                     )
                 }

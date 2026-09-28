@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
@@ -112,17 +113,19 @@ fun HomeScreen(
             largeTitle = stringResource(R.string.nav_home),
             scrollBehavior = scrollBehavior,
             modifier =
-                Modifier.pointerInput(Unit) {
-                    detectTapGestures {
-                        performHaptic(AppHapticEffect.Click)
-                        coroutineScope.launch {
-                            val currentTab = HomeTab.entries[pagerState.currentPage]
-                            val gridState =
-                                when (currentTab) {
-                                    HomeTab.Feed -> viewModel.homeFeedGridState
-                                    HomeTab.Following -> viewModel.homeTimelineGridState
-                                }
-                            gridState.smoothScrollToTop(scrollBehavior)
+                remember {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                val currentTab = HomeTab.entries[pagerState.currentPage]
+                                val gridState =
+                                    when (currentTab) {
+                                        HomeTab.Feed -> viewModel.homeFeedGridState
+                                        HomeTab.Following -> viewModel.homeTimelineGridState
+                                    }
+                                gridState.smoothScrollToTop(scrollBehavior)
+                            }
                         }
                     }
                 },

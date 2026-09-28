@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,11 +82,13 @@ fun NotificationScreen(
                 largeTitle = stringResource(R.string.more_notifications),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                listState.smoothScrollToTop(scrollBehavior)
+                    remember {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures {
+                                performHaptic(AppHapticEffect.Click)
+                                coroutineScope.launch {
+                                    listState.smoothScrollToTop(scrollBehavior)
+                                }
                             }
                         }
                     },
@@ -114,7 +117,7 @@ fun NotificationScreen(
                 item { EmptyState(stringResource(R.string.notifications_empty)) }
             }
 
-            items(state.notifications, key = { it.id }) { notification ->
+            items(state.notifications, key = { it.id }, contentType = { "notification_item" }) { notification ->
                 NotificationCard(notification, onClick = { viewModel.openNotificationTarget(notification.targetUrl) })
                 val expanded = state.expandedNotifications[notification.id]
                 if (expanded != null) {
