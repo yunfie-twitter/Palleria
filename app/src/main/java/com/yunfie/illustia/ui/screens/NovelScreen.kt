@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +38,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -49,19 +55,12 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
-import android.view.KeyEvent as AndroidKeyEvent
-import androidx.compose.foundation.focusable
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
@@ -87,6 +86,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
 private enum class NovelFilterTab(
@@ -478,7 +478,8 @@ fun NovelReaderScreen(
                             AndroidKeyEvent.KEYCODE_PAGE_DOWN,
                             AndroidKeyEvent.KEYCODE_DPAD_DOWN,
                             AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
-                            AndroidKeyEvent.KEYCODE_MEDIA_NEXT -> {
+                            AndroidKeyEvent.KEYCODE_MEDIA_NEXT,
+                            -> {
                                 jumpToPage((currentPage + 1).coerceAtMost(pages.size - 1))
                                 true
                             }
@@ -487,12 +488,15 @@ fun NovelReaderScreen(
                             AndroidKeyEvent.KEYCODE_PAGE_UP,
                             AndroidKeyEvent.KEYCODE_DPAD_UP,
                             AndroidKeyEvent.KEYCODE_DPAD_LEFT,
-                            AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                            AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS,
+                            -> {
                                 jumpToPage((currentPage - 1).coerceAtLeast(0))
                                 true
                             }
 
-                            else -> false
+                            else -> {
+                                false
+                            }
                         }
                     } else {
                         false

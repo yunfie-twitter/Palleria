@@ -41,19 +41,20 @@ internal fun buildCustomDownloadPath(
     val baseFilename = filename.substringAfterLast('/').substringBeforeLast('.')
     val ext = filename.substringAfterLast('.', "").takeIf { it.isNotEmpty() }?.let { ".$it" } ?: ""
 
-    val resolved = template
-        .replace("{artist_name}", artist, ignoreCase = true)
-        .replace("{artist}", artist, ignoreCase = true)
-        .replace("{artist_id}", artistId, ignoreCase = true)
-        .replace("{work_title}", title, ignoreCase = true)
-        .replace("{work}", title, ignoreCase = true)
-        .replace("{title}", title, ignoreCase = true)
-        .replace("{illust_id}", illustId, ignoreCase = true)
-        .replace("{id}", illustId, ignoreCase = true)
-        .replace("{tag_primary}", primaryTag, ignoreCase = true)
-        .replace("{tag}", primaryTag, ignoreCase = true)
-        .replace("{type}", type, ignoreCase = true)
-        .replace("{filename}", baseFilename, ignoreCase = true)
+    val resolved =
+        template
+            .replace("{artist_name}", artist, ignoreCase = true)
+            .replace("{artist}", artist, ignoreCase = true)
+            .replace("{artist_id}", artistId, ignoreCase = true)
+            .replace("{work_title}", title, ignoreCase = true)
+            .replace("{work}", title, ignoreCase = true)
+            .replace("{title}", title, ignoreCase = true)
+            .replace("{illust_id}", illustId, ignoreCase = true)
+            .replace("{id}", illustId, ignoreCase = true)
+            .replace("{tag_primary}", primaryTag, ignoreCase = true)
+            .replace("{tag}", primaryTag, ignoreCase = true)
+            .replace("{type}", type, ignoreCase = true)
+            .replace("{filename}", baseFilename, ignoreCase = true)
 
     val segments = resolved.split('/', '\\').filter { it.isNotBlank() }.map { it.sanitizeDownloadSegment() }
     val joined = segments.joinToString("/")

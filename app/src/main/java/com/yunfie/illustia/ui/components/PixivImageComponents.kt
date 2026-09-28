@@ -1,14 +1,20 @@
 package com.yunfie.illustia.ui.components
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -43,7 +49,9 @@ fun PixivImage(
     thumbnail: Boolean = false,
     maxDecodeDimensionPx: Int? = null,
     allowRgb565: Boolean = false,
+    showLoadingSpinner: Boolean = false,
     onSuccess: ((Bitmap) -> Unit)? = null,
+    onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 ) {
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
@@ -51,10 +59,13 @@ fun PixivImage(
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
+    var isLoading by remember(effectiveUrl) { mutableStateOf(true) }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
+    val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
     val hasSuccessListener = onSuccess != null
+    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
     val imageRequest =
-        remember(effectiveUrl, thumbnail, maxDecodeDimensionPx, allowRgb565, hasSuccessListener) {
+        remember(effectiveUrl, thumbnail, maxDecodeDimensionPx, allowRgb565, hasSuccessListener, hasLoadingListener) {
             ImageRequest
                 .Builder(context)
                 .data(effectiveUrl)
@@ -62,16 +73,23 @@ fun PixivImage(
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .crossfade(!thumbnail && crossfade)
-                .apply {
-                    if (hasSuccessListener) {
-                        listener(
-                            onSuccess = { _, result ->
-                                runCatching {
-                                    currentOnSuccess?.invoke(result.image.toBitmap())
-                                }
-                            },
-                        )
-                    }
+                .listener(
+                    onStart = {
+                        isLoading = true
+                        currentOnLoadingStateChanged?.invoke(true)
+                    },
+                    onSuccess = { _, result ->
+                        isLoading = false
+                        currentOnLoadingStateChanged?.invoke(false)
+                        runCatching {
+                            currentOnSuccess?.invoke(result.image.toBitmap())
+                        }
+                    },
+                    onError = { _, _ ->
+                        isLoading = false
+                        currentOnLoadingStateChanged?.invoke(false)
+                    },
+                ).apply {
                     if (thumbnail) {
                         size(ThumbnailDecodeSizePx)
                         scale(Scale.FILL)
@@ -89,12 +107,31 @@ fun PixivImage(
                     }
                 }.build()
         }
-    AsyncImage(
-        model = imageRequest,
-        contentDescription = contentDescription,
-        contentScale = contentScale,
-        modifier = modifier,
-    )
+    if (showLoadingSpinner) {
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = contentDescription,
+                contentScale = contentScale,
+                modifier = Modifier.matchParentSize(),
+            )
+            if (isLoading) {
+                LoadingIndicator(
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+        }
+    } else {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = contentDescription,
+            contentScale = contentScale,
+            modifier = modifier,
+        )
+    }
 }
 
 @Composable

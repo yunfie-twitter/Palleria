@@ -188,8 +188,18 @@ internal fun NovelBottomControlBar(
                             },
                             colors =
                                 ButtonDefaults.buttonColors(
-                                    color = if (ttsPlayer.isPlaying) MiuixTheme.colorScheme.primaryContainer else MiuixTheme.colorScheme.surfaceContainerHighest,
-                                    contentColor = if (ttsPlayer.isPlaying) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                                    color =
+                                        if (ttsPlayer.isPlaying) {
+                                            MiuixTheme.colorScheme.primaryContainer
+                                        } else {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest
+                                        },
+                                    contentColor =
+                                        if (ttsPlayer.isPlaying) {
+                                            MiuixTheme.colorScheme.primary
+                                        } else {
+                                            MiuixTheme.colorScheme.onSurface
+                                        },
                                 ),
                         ) {
                             Text(stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play))

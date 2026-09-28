@@ -10,15 +10,14 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.documentfile.provider.DocumentFile
+import com.yunfie.illustia.data.ImageMetadataWriter
+import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.platform.PlatformCapabilities
 import java.io.File
 import java.io.InputStream
 import java.util.ArrayDeque
 import java.util.Collections
 import java.util.Locale
-
-import com.yunfie.illustia.data.ImageMetadataWriter
-import com.yunfie.illustia.models.Illust
 
 class NativeImageStore(
     private val context: Context,
@@ -39,11 +38,12 @@ class NativeImageStore(
         val displayName = name.withImageExtension(sourceUrl, imageMimeType(responseMimeType, sourceUrl))
         if (!savingNames.add(displayName)) return false
         val ext = displayName.substringAfterLast('.', "jpg")
-        val tempFile = if (embedMetadata && illust != null) {
-            ImageMetadataWriter.embedMetadataToStream(input, context.cacheDir, ext, illust)
-        } else {
-            null
-        }
+        val tempFile =
+            if (embedMetadata && illust != null) {
+                ImageMetadataWriter.embedMetadataToStream(input, context.cacheDir, ext, illust)
+            } else {
+                null
+            }
         val effectiveInput = tempFile?.inputStream() ?: input
         return try {
             effectiveInput.use { stream ->

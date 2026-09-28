@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -32,7 +34,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
@@ -92,6 +96,7 @@ internal fun ZoomablePixivImage(
     var scale by remember(url) { mutableFloatStateOf(1f) }
     var offset by remember(url) { mutableStateOf(Offset.Zero) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
+    var isLoading by remember(url) { mutableStateOf(true) }
     val animationScope = rememberCoroutineScope()
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
     val performHaptic = rememberHapticFeedbackAction()
@@ -224,6 +229,15 @@ internal fun ZoomablePixivImage(
                         translationY = offset.y
                     },
             crossfade = false,
+            onLoadingStateChanged = { loading -> isLoading = loading },
         )
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingIndicator(modifier = Modifier.size(40.dp))
+            }
+        }
     }
 }
