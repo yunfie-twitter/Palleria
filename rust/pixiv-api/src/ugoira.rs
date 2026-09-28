@@ -100,9 +100,10 @@ async fn extract_required(
 
             let target = staging.path().join(&name);
             if let Some(parent) = target.parent() {
-                if created_dirs.insert(parent.to_path_buf()) {
+                if !created_dirs.contains(parent) {
                     fs::create_dir_all(parent)
                         .map_err(|error| io_error("create ugoira frame directory", error))?;
+                    created_dirs.insert(parent.to_path_buf());
                 }
             }
             let output =
