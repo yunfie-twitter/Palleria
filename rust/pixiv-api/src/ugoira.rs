@@ -70,6 +70,7 @@ async fn extract_required(
         let required: HashSet<&str> = frames.iter().map(|frame| frame.file.as_str()).collect();
         let mut extracted = HashSet::with_capacity(required.len());
         let mut total_bytes = 0_u64;
+        let mut created_dirs = HashSet::new();
 
         for index in 0..archive.len() {
             let mut entry = archive.by_index(index).map_err(zip_error)?;
@@ -98,9 +99,10 @@ async fn extract_required(
             }
 
             let target = staging.path().join(&name);
-            if let Some(parent) = target.parent() {
+            if let Some(parent) = target.parent().filter(|p| !created_dirs.contains(*p)) {
                 fs::create_dir_all(parent)
                     .map_err(|error| io_error("create ugoira frame directory", error))?;
+                created_dirs.insert(parent.to_path_buf());
             }
             let output =
                 File::create(&target).map_err(|error| io_error("create ugoira frame", error))?;
@@ -108,7 +110,9 @@ async fn extract_required(
             let expected_size = entry.size();
             let copied = io::copy(&mut entry.by_ref().take(MAX_ENTRY_BYTES + 1), &mut output)
                 .map_err(|error| io_error("extract ugoira frame", error))?;
-            output.flush().map_err(|error| io_error("flush ugoira frame", error))?;
+            output
+                .flush()
+                .map_err(|error| io_error("flush ugoira frame", error))?;
             if copied > MAX_ENTRY_BYTES {
                 return Err(invalid("ugoira frame exceeds the size limit"));
             }
