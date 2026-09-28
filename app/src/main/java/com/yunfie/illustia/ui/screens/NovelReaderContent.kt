@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -248,6 +249,7 @@ internal fun NovelReaderPage(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    val currentOnToggleControls by rememberUpdatedState(onToggleControls)
     LazyColumn(
         modifier =
             modifier
@@ -256,7 +258,7 @@ internal fun NovelReaderPage(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = onToggleControls,
+                    onClick = { currentOnToggleControls() },
                 ),
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -344,6 +346,7 @@ internal fun NovelReaderContinuousContent(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    val currentOnToggleControls by rememberUpdatedState(onToggleControls)
     LazyColumn(
         state = lazyListState,
         modifier =
@@ -353,7 +356,7 @@ internal fun NovelReaderContinuousContent(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = onToggleControls,
+                    onClick = { currentOnToggleControls() },
                 ),
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -650,6 +653,8 @@ private fun NovelParagraph(
             color = textColor,
         )
 
+    val currentOnToggleControls by rememberUpdatedState(onToggleControls)
+
     val urlAnnotations = remember(block.text) { block.text.getStringAnnotations("URL", 0, block.text.length) }
     if (urlAnnotations.isNotEmpty()) {
         var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -667,7 +672,7 @@ private fun NovelParagraph(
                         if (annotation != null) {
                             runCatching { uriHandler.openUri(annotation.item) }
                         } else {
-                            onToggleControls()
+                            currentOnToggleControls()
                         }
                     }
                 },

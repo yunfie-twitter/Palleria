@@ -56,8 +56,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -72,6 +74,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
+private const val SETTINGS_DEBOUNCE_MS = 500L
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -153,15 +156,15 @@ abstract class IllustiaViewModelFoundation(
         const val MAX_CACHED_GRID_STATES = 16
     }
 
-    val bookmarkTimelineGridState = LazyGridState()
-    val bookmarkMainGridState = LazyGridState()
-    val bookmarkWatchlistGridState = LazyGridState()
-    val bookmarkFollowingGridState = LazyGridState()
-    val homeFeedGridState = LazyGridState()
-    val homeTimelineGridState = LazyGridState()
-    val searchResultGridState = LazyGridState()
-    val userSearchResultGridState = LazyGridState()
-    val searchBrowseGridState = LazyGridState()
+    val bookmarkTimelineGridState by lazy { LazyGridState() }
+    val bookmarkMainGridState by lazy { LazyGridState() }
+    val bookmarkWatchlistGridState by lazy { LazyGridState() }
+    val bookmarkFollowingGridState by lazy { LazyGridState() }
+    val homeFeedGridState by lazy { LazyGridState() }
+    val homeTimelineGridState by lazy { LazyGridState() }
+    val searchResultGridState by lazy { LazyGridState() }
+    val userSearchResultGridState by lazy { LazyGridState() }
+    val searchBrowseGridState by lazy { LazyGridState() }
     internal var activeTab: AppTab? = null
     internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
     internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
@@ -547,15 +550,31 @@ abstract class IllustiaViewModelFoundation(
     }
 
     protected suspend fun persistSettingsUpdates() {
-        for (request in settingsPersistenceRequests) {
+        while (true) {
+            var request = settingsPersistenceRequests.receive()
+            var baseSettings = request.baseSettings
+            var notifyLiveWallpaper = request.notifyLiveWallpaper
+            var fromSync = request.fromSync
+
+            while (true) {
+                val next =
+                    kotlinx.coroutines.withTimeoutOrNull(SETTINGS_DEBOUNCE_MS) {
+                        settingsPersistenceRequests.receive()
+                    }
+                if (next == null) break
+                notifyLiveWallpaper = notifyLiveWallpaper || next.notifyLiveWallpaper
+                fromSync = fromSync || next.fromSync
+                request = next
+            }
+
             try {
-                if (request.fromSync) {
+                if (fromSync) {
                     repository.saveSettingsFromSync(request.settings)
                 } else {
-                    repository.saveSettings(request.settings, request.baseSettings)
+                    repository.saveSettings(request.settings, baseSettings)
                 }
                 PalleriaAccount.reconcile(getApplication(), request.settings.accounts)
-                if (request.notifyLiveWallpaper) {
+                if (notifyLiveWallpaper) {
                     val application = getApplication<Application>()
                     application.sendBroadcast(
                         Intent(com.yunfie.illustia.wallpaper.PalleriaLiveWallpaperService.ACTION_SETTINGS_CHANGED)
