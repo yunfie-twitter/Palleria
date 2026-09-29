@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -109,19 +110,24 @@ fun DownloadQueueScreen(
     val groups =
         remember(state.downloadQueue) {
             val sorted = state.downloadQueue.sortedByDescending(DownloadQueueEntry::timestampMillis)
-            QueueGroups(
-                active =
-                    sorted.filter {
-                        it.status == DownloadQueueStatus.Waiting ||
-                            it.status == DownloadQueueStatus.Downloading
-                    },
-                completed =
-                    sorted.filter {
-                        it.status == DownloadQueueStatus.Completed ||
-                            it.status == DownloadQueueStatus.Skipped
-                    },
-                failed = sorted.filter { it.status == DownloadQueueStatus.Failed },
-            )
+            val active = ArrayList<DownloadQueueEntry>()
+            val completed = ArrayList<DownloadQueueEntry>()
+            val failed = ArrayList<DownloadQueueEntry>()
+            for (i in sorted.indices) {
+                val entry = sorted[i]
+                when (entry.status) {
+                    DownloadQueueStatus.Waiting,
+                    DownloadQueueStatus.Downloading,
+                    -> active.add(entry)
+
+                    DownloadQueueStatus.Completed,
+                    DownloadQueueStatus.Skipped,
+                    -> completed.add(entry)
+
+                    DownloadQueueStatus.Failed -> failed.add(entry)
+                }
+            }
+            QueueGroups(active = active, completed = completed, failed = failed)
         }
     val selected = QueueTab.entries[selectedTab.coerceIn(0, QueueTab.entries.lastIndex)]
     val hasFinishedItems = groups.completed.isNotEmpty() || groups.failed.isNotEmpty()
@@ -312,7 +318,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.queueSection(
     item(key = "section_$titleRes") {
         QueueSectionHeader(titleRes = titleRes, count = items.size)
     }
-    items(items, key = { it.id }) { entry ->
+    items(items, key = { it.id }, contentType = { "download_queue_card" }) { entry ->
         DownloadQueueCard(entry)
     }
 }
@@ -324,7 +330,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.queueTabContent(
     if (items.isEmpty()) {
         item { QueueEmptyState(tab) }
     } else {
-        items(items, key = { it.id }) { entry ->
+        items(items, key = { it.id }, contentType = { "download_queue_card" }) { entry ->
             DownloadQueueCard(entry)
         }
     }
@@ -424,10 +430,10 @@ private fun DownloadStatusGlyph(
     status: DownloadQueueStatus,
     accent: Color,
 ) {
-    val alpha =
+    val pulse =
         if (status == DownloadQueueStatus.Downloading) {
             val transition = rememberInfiniteTransition(label = "status-downloading")
-            val pulse by transition.animateFloat(
+            transition.animateFloat(
                 initialValue = 0.45f,
                 targetValue = 1f,
                 animationSpec =
@@ -437,16 +443,21 @@ private fun DownloadStatusGlyph(
                     ),
                 label = "status-pulse",
             )
-            pulse
         } else {
-            1f
+            null
         }
     Box(
         modifier =
             Modifier
                 .size(46.dp)
                 .clip(RoundedCornerShape(15.dp))
-                .background(accent.copy(alpha = 0.14f * alpha)),
+                .then(
+                    if (pulse != null) {
+                        Modifier.graphicsLayer { alpha = pulse.value }
+                    } else {
+                        Modifier
+                    },
+                ).background(accent.copy(alpha = 0.14f)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -458,7 +469,7 @@ private fun DownloadStatusGlyph(
                     DownloadQueueStatus.Skipped -> "⏭"
                     DownloadQueueStatus.Failed -> "!"
                 },
-            color = accent.copy(alpha = alpha),
+            color = accent,
             style = MiuixTheme.textStyles.title3,
             fontWeight = FontWeight.Black,
         )

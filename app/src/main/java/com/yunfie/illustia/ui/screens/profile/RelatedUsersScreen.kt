@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.ui.screens.UserResultCard
 import kotlinx.coroutines.launch
@@ -107,6 +108,7 @@ fun RelatedUsersScreen(
         },
     ) { scaffoldPadding ->
         val adaptivePadding = adaptiveMainNavigationContentPadding()
+        val shimmer = if (uiState.selectedRelatedUsersLoading) rememberIllustSkeletonShimmer() else null
         PullToRefresh(
             isRefreshing = uiState.selectedRelatedUsersLoading && uiState.selectedRelatedUsers.isNotEmpty(),
             onRefresh = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
@@ -152,7 +154,7 @@ fun RelatedUsersScreen(
 
                 if (settings.autoLoadMore && uiState.selectedRelatedUsersLoading && uiState.selectedRelatedUsers.isNotEmpty()) {
                     item(key = "related_user_paginating_skeleton", contentType = "related_paginating_skeleton") {
-                        UserResultCardSkeleton()
+                        UserResultCardSkeleton(shimmerValue = shimmer)
                     }
                 }
 
@@ -162,7 +164,7 @@ fun RelatedUsersScreen(
                         key = { "related_user_skeleton_$it" },
                         contentType = { "related_loading" },
                     ) {
-                        UserResultCardSkeleton()
+                        UserResultCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (uiState.selectedRelatedUsers.isEmpty()) {
                     item(contentType = "related_empty") {

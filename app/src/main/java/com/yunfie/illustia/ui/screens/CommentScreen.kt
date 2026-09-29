@@ -41,6 +41,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -120,6 +121,9 @@ fun CommentScreen(
                     .padding(horizontal = 4.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            val showInitialSkeletons = state.isLoading && state.comments.isEmpty()
+            val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
+            val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
             PullToRefresh(
                 isRefreshing = state.isRefreshing,
                 onRefresh = { scope.launch { store.fetch() } },
@@ -140,15 +144,16 @@ fun CommentScreen(
                     itemsIndexed(
                         items = state.comments,
                         key = { index, comment -> comment.id ?: "comment_$index" },
+                        contentType = { _, _ -> "comment_item" },
                     ) { _, comment ->
                         CommentRow(
                             comment = comment,
                             onOpenUser = comment.user?.id?.let { userId -> { onOpenUser(userId) } },
                         )
                     }
-                    if (settings.autoLoadMore && state.isPaginating) {
-                        item(key = "comment_paginating_skeleton") {
-                            CommentItemSkeleton()
+                    if (showPaginationSkeletons) {
+                        item(key = "comment_paginating_skeleton", contentType = "comment_skeleton") {
+                            CommentItemSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!settings.autoLoadMore && state.nextUrl != null) {
                         item {
@@ -166,9 +171,9 @@ fun CommentScreen(
                             }
                         }
                     }
-                    if (state.isLoading && state.comments.isEmpty()) {
-                        items(4, key = { "comment_skeleton_$it" }) {
-                            CommentItemSkeleton()
+                    if (showInitialSkeletons) {
+                        items(4, key = { "comment_skeleton_$it" }, contentType = { "comment_skeleton" }) {
+                            CommentItemSkeleton(shimmerValue = shimmer)
                         }
                     }
                 }
@@ -251,8 +256,8 @@ private fun CommentRow(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val user = comment.user
                 val avatarUrl = user?.profileImageUrls?.medium
-                if (!avatarUrl.isNullOrBlank()) {
-                    AvatarImage(url = avatarUrl, name = user?.name.orEmpty(), size = 38.dp)
+                if (user != null && !avatarUrl.isNullOrBlank()) {
+                    AvatarImage(url = avatarUrl, name = user.name, size = 38.dp)
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
