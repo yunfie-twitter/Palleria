@@ -342,19 +342,19 @@ private fun LazyListScope.renderVerticalBlock(
 ) {
     when (block) {
         NovelSpacerBlock -> {
-            item(key = "spacer_$blockIndex") {
+            item(key = "spacer_$blockIndex", contentType = "vertical_spacer") {
                 Spacer(modifier = Modifier.width((fontSize * VERTICAL_SPACER_WIDTH_FACTOR).dp))
             }
         }
 
         is NovelChapterBlock -> {
-            item(key = "chapter_${blockIndex}_${block.title}") {
+            item(key = "chapter_${blockIndex}_${block.title}", contentType = "vertical_chapter") {
                 NovelVerticalChapterItem(title = block.title, textColor = textColor, fontFamily = fontFamily)
             }
         }
 
         is NovelPixivImageBlock -> {
-            item(key = "image_${blockIndex}_${block.illustId}") {
+            item(key = "image_${blockIndex}_${block.illustId}", contentType = "vertical_image") {
                 NovelVerticalArtworkCard(
                     illustId = block.illustId,
                     textColor = textColor,
@@ -365,7 +365,7 @@ private fun LazyListScope.renderVerticalBlock(
         }
 
         is NovelJumpBlock -> {
-            item(key = "jump_${blockIndex}_${block.pageNumber}") {
+            item(key = "jump_${blockIndex}_${block.pageNumber}", contentType = "vertical_jump") {
                 NovelJumpButton(pageNumber = block.pageNumber, onJumpPage = onJumpPage)
             }
         }
@@ -375,6 +375,7 @@ private fun LazyListScope.renderVerticalBlock(
             itemsIndexed(
                 items = cols,
                 key = { colIndex, _ -> "para_${blockIndex}_col_$colIndex" },
+                contentType = { _, _ -> "vertical_column" },
             ) { _, columnTokens ->
                 NovelVerticalColumn(
                     tokens = columnTokens,

@@ -44,6 +44,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -97,6 +98,8 @@ fun NotificationScreen(
             )
         },
     ) { padding ->
+        val showSkeletons = state.notifications.isEmpty() && state.notificationsLoading
+        val shimmer = if (showSkeletons) rememberIllustSkeletonShimmer() else null
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -109,12 +112,16 @@ fun NotificationScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (state.notifications.isEmpty() && state.notificationsLoading) {
-                items(6, key = { "notification_skeleton_$it" }) {
-                    NotificationCardSkeleton()
+            if (showSkeletons) {
+                items(
+                    count = 6,
+                    key = { "notification_skeleton_$it" },
+                    contentType = { "notification_skeleton" },
+                ) {
+                    NotificationCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (state.notifications.isEmpty()) {
-                item { EmptyState(stringResource(R.string.notifications_empty)) }
+                item(contentType = "notification_empty") { EmptyState(stringResource(R.string.notifications_empty)) }
             }
 
             items(state.notifications, key = { it.id }, contentType = { "notification_item" }) { notification ->

@@ -156,7 +156,17 @@ enum class NovelLayoutMode(
     }
 }
 
-internal sealed interface NovelBlock
+internal sealed interface NovelBlock {
+    val contentType: String
+        get() =
+            when (this) {
+                is NovelParagraphBlock -> "paragraph"
+                is NovelChapterBlock -> "chapter"
+                is NovelPixivImageBlock -> "image"
+                is NovelJumpBlock -> "jump"
+                NovelSpacerBlock -> "spacer"
+            }
+}
 
 internal data class NovelPage(
     val blocks: List<NovelBlock>,
@@ -269,7 +279,7 @@ internal fun NovelReaderPage(
         itemsIndexed(
             items = page.blocks,
             key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
-            contentType = { _, block -> block::class.java.simpleName },
+            contentType = { _, block -> block.contentType },
         ) { _, block ->
             NovelBlockItem(
                 block = block,
@@ -374,7 +384,7 @@ internal fun NovelReaderContinuousContent(
             itemsIndexed(
                 items = page.blocks,
                 key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
-                contentType = { _, block -> block::class.java.simpleName },
+                contentType = { _, block -> block.contentType },
             ) { _, block ->
                 NovelBlockItem(
                     block = block,

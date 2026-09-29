@@ -83,7 +83,11 @@ fun AccountSwitchSheet(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            itemsIndexed(accounts, key = { index, account -> account.refreshToken }) { index, account ->
+            itemsIndexed(
+                items = accounts,
+                key = { _, account -> account.refreshToken },
+                contentType = { _, _ -> "account_row" },
+            ) { index, account ->
                 AccountRow(
                     account = account,
                     isActive = index == activeAccountIndex,
@@ -91,7 +95,7 @@ fun AccountSwitchSheet(
                     onRemove = { pendingRemoval = index },
                 )
             }
-            item {
+            item(contentType = "add_account") {
                 AddAccountRow(onClick = onAddAccount)
             }
         }
