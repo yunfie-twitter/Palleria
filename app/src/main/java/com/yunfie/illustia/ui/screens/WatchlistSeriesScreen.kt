@@ -47,6 +47,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,6 +92,8 @@ import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.profileGridContentPadding
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -282,6 +285,9 @@ fun WatchlistSeriesScreen(
                 }
 
                 val columns = adaptiveProfileGridColumns()
+                val showInitialLoading = state.isLoading && state.mangaSeries.isEmpty()
+                val showPaginating = settings.autoLoadMore && state.isPaginating
+                val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),
@@ -298,9 +304,9 @@ fun WatchlistSeriesScreen(
                     horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
                     verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
                 ) {
-                    if (state.isLoading && state.mangaSeries.isEmpty()) {
+                    if (showInitialLoading) {
                         gridItems(List(6) { it }, contentType = { "watchlist_series_skeleton" }) {
-                            WatchlistSeriesCardSkeleton()
+                            WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                         }
                     }
                     if (state.errorMessage != null && state.mangaSeries.isEmpty()) {
@@ -335,13 +341,13 @@ fun WatchlistSeriesScreen(
                             modifier = Modifier.animateItem(),
                         )
                     }
-                    if (settings.autoLoadMore && state.isPaginating) {
+                    if (showPaginating) {
                         items(
                             count = columns,
                             key = { "watchlist_series_paginating_skeleton_$it" },
                             contentType = { "watchlist_series_skeleton" },
                         ) {
-                            WatchlistSeriesCardSkeleton()
+                            WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -793,34 +799,15 @@ private fun WatchlistSeriesCard(
 }
 
 @Composable
-private fun WatchlistSeriesCardSkeleton() {
-    val transition = rememberInfiniteTransition(label = "watchlistSeriesSkeleton")
-    val shimmer by transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation =
-                    tween(
-                        durationMillis = 1250,
-                        easing = FastOutSlowInEasing,
-                    ),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "watchlistSeriesSkeletonShimmer",
-    )
-    val base = MiuixTheme.colorScheme.surfaceContainer
-    val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
-    val shimmerBrush =
-        Brush.linearGradient(
-            colors = listOf(base, highlight, base),
-            start = Offset(shimmer * 500f, 0f),
-            end = Offset(shimmer * 500f + 260f, 500f),
-        )
+private fun WatchlistSeriesCardSkeleton(
+    modifier: Modifier = Modifier,
+    shimmerValue: State<Float>? = null,
+) {
+    val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
 
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .heightIn(min = 180.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -831,7 +818,7 @@ private fun WatchlistSeriesCardSkeleton() {
                     .fillMaxWidth()
                     .aspectRatio(1.15f)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(shimmerBrush),
+                    .then(shimmerModifier),
         )
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(
@@ -840,7 +827,7 @@ private fun WatchlistSeriesCardSkeleton() {
                         .fillMaxWidth(0.82f)
                         .height(14.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(shimmerBrush),
+                        .then(shimmerModifier),
             )
             Box(
                 modifier =
@@ -848,7 +835,7 @@ private fun WatchlistSeriesCardSkeleton() {
                         .fillMaxWidth(0.58f)
                         .height(10.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(shimmerBrush),
+                        .then(shimmerModifier),
             )
             Box(
                 modifier =
@@ -856,7 +843,7 @@ private fun WatchlistSeriesCardSkeleton() {
                         .fillMaxWidth(0.34f)
                         .height(9.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(shimmerBrush),
+                        .then(shimmerModifier),
             )
         }
     }

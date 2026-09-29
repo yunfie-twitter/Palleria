@@ -13,8 +13,23 @@ internal fun List<Illust>.replaceIllustIfPresent(updated: Illust): List<Illust> 
 }
 
 internal fun List<Illust>.replaceOrAppend(updated: Illust): List<Illust> {
-    val replaced = replaceIllustIfPresent(updated)
-    return if (replaced === this && none { it.id == updated.id }) listOf(updated) + this else replaced
+    val index = indexOfFirst { it.id == updated.id }
+    return when {
+        index < 0 -> {
+            buildList(size + 1) {
+                add(updated)
+                addAll(this@replaceOrAppend)
+            }
+        }
+
+        this[index] == updated -> {
+            this
+        }
+
+        else -> {
+            toMutableList().also { it[index] = updated }
+        }
+    }
 }
 
 internal fun List<Illust>.removeIllustIfPresent(id: Long): List<Illust> {

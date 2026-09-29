@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -225,17 +226,22 @@ fun AppLockScreen(
         }
     }
 
-    val unlockAlpha by animateFloatAsState(
-        targetValue = if (unlocking) 0f else 1f,
-        animationSpec = tween(durationMillis = 400),
-    )
-    val unlockScale by animateFloatAsState(
-        targetValue = if (unlocking) 1.1f else 1f,
-        animationSpec = tween(durationMillis = 400),
-    )
+    val unlockAlpha =
+        animateFloatAsState(
+            targetValue = if (unlocking) 0f else 1f,
+            animationSpec = tween(durationMillis = 400),
+            label = "unlock-alpha",
+        )
+    val unlockScale =
+        animateFloatAsState(
+            targetValue = if (unlocking) 1.1f else 1f,
+            animationSpec = tween(durationMillis = 400),
+            label = "unlock-scale",
+        )
     val flashAlpha by animateFloatAsState(
         targetValue = errorFlash,
         animationSpec = tween(durationMillis = 600),
+        label = "flash-alpha",
     )
 
     BoxWithConstraints(
@@ -256,7 +262,12 @@ fun AppLockScreen(
         )
 
         val useWideLayout = maxWidth >= 600.dp && maxWidth > maxHeight
-        val unlockModifier = Modifier.alpha(unlockAlpha).scale(unlockScale)
+        val unlockModifier =
+            Modifier.graphicsLayer {
+                alpha = unlockAlpha.value
+                scaleX = unlockScale.value
+                scaleY = unlockScale.value
+            }
         val biometricAction = if (showBiometric && !unlocking && !isCooldownActive) ::triggerBiometric else null
 
         if (useWideLayout) {

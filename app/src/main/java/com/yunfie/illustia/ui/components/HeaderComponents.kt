@@ -60,23 +60,25 @@ fun CollapsingHeader(
         }
 
     // 大ヘッダーの透明度 (スクロールに応じて 1f → 0f)
-    val expandAlpha by animateFloatAsState(
-        targetValue =
-            if (isCollapsed) {
-                0f
-            } else {
-                (1f - scrollOffset.toFloat() / collapseThresholdPx.toFloat()).coerceIn(0f, 1f)
-            },
-        animationSpec = tween(durationMillis = 160),
-        label = "collapsingHeader-expandAlpha",
-    )
+    val expandAlpha =
+        animateFloatAsState(
+            targetValue =
+                if (isCollapsed) {
+                    0f
+                } else {
+                    (1f - scrollOffset.toFloat() / collapseThresholdPx.toFloat()).coerceIn(0f, 1f)
+                },
+            animationSpec = tween(durationMillis = 160),
+            label = "collapsingHeader-expandAlpha",
+        )
 
     // ミニヘッダーの透明度 (逆方向)
-    val miniAlpha by animateFloatAsState(
-        targetValue = if (isCollapsed) 1f else 0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "collapsingHeader-miniAlpha",
-    )
+    val miniAlpha =
+        animateFloatAsState(
+            targetValue = if (isCollapsed) 1f else 0f,
+            animationSpec = tween(durationMillis = 200),
+            label = "collapsingHeader-miniAlpha",
+        )
 
     val scheme = MiuixTheme.colorScheme
     Box(modifier = modifier.fillMaxWidth()) {
@@ -85,7 +87,7 @@ fun CollapsingHeader(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .graphicsLayer { alpha = expandAlpha }
+                    .graphicsLayer { alpha = expandAlpha.value }
                     .padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -113,7 +115,7 @@ fun CollapsingHeader(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .graphicsLayer { alpha = miniAlpha }
+                    .graphicsLayer { alpha = miniAlpha.value }
                     .background(scheme.background.copy(alpha = 0.9f))
                     .then(
                         if (onTitleClick != null) Modifier.miuixClickable(onClick = onTitleClick) else Modifier,
