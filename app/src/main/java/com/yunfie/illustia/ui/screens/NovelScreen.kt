@@ -148,6 +148,14 @@ fun NovelScreen(
                 .toList()
         }
     PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
+    val showPaginationSkeletons = settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All
+    val shimmer =
+        if (showPaginationSkeletons) {
+            com.yunfie.illustia.ui.components
+                .rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -278,9 +286,9 @@ fun NovelScreen(
                     )
                 }
 
-                if (settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All) {
+                if (showPaginationSkeletons) {
                     item(key = "novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
-                        NovelCardSkeleton()
+                        NovelCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
                     item(key = "novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

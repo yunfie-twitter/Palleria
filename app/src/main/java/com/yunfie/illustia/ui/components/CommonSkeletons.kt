@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,25 +34,14 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun rememberSkeletonShimmer(externalValue: Float? = null): Modifier {
-    val defaultTransition = rememberInfiniteTransition(label = "skeletonTransition")
-    val defaultAnim by defaultTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "skeletonShimmer",
-    )
-    val shimmerFloat = externalValue ?: defaultAnim
+internal fun rememberSkeletonShimmer(externalValue: State<Float>? = null): Modifier {
+    val shimmer = externalValue ?: rememberIllustSkeletonShimmer()
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
     val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }
     return Modifier.drawWithCache {
         onDrawBehind {
-            val startX = shimmerFloat * size.width
+            val startX = shimmer.value * size.width
             drawRect(
                 brush =
                     Brush.linearGradient(
@@ -67,7 +57,7 @@ internal fun rememberSkeletonShimmer(externalValue: Float? = null): Modifier {
 @Composable
 fun UserResultCardSkeleton(
     modifier: Modifier = Modifier,
-    shimmerValue: Float? = null,
+    shimmerValue: State<Float>? = null,
 ) {
     val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
     Card(
@@ -140,7 +130,7 @@ fun UserResultCardSkeleton(
 @Composable
 fun CommentItemSkeleton(
     modifier: Modifier = Modifier,
-    shimmerValue: Float? = null,
+    shimmerValue: State<Float>? = null,
 ) {
     val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
     ElevatedPanel(
@@ -207,7 +197,7 @@ fun CommentItemSkeleton(
 fun NotificationCardSkeleton(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
-    shimmerValue: Float? = null,
+    shimmerValue: State<Float>? = null,
 ) {
     val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
     Card(

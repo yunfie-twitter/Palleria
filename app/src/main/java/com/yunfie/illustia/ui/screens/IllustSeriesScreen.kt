@@ -242,6 +242,9 @@ fun IllustSeriesScreen(
             PixivImage(
                 url = coverUrl,
                 contentDescription = null,
+                thumbnail = true,
+                maxDecodeDimensionPx = 128,
+                allowRgb565 = true,
                 contentScale = ContentScale.Crop,
                 modifier =
                     Modifier
@@ -469,6 +472,8 @@ private fun SeriesProfileHeader(
                 PixivImage(
                     url = coverUrl,
                     contentDescription = null,
+                    maxDecodeDimensionPx = 1080,
+                    allowRgb565 = true,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -704,6 +709,9 @@ private fun SeriesSmallTopAppBar(
             PixivImage(
                 url = coverUrl,
                 contentDescription = null,
+                thumbnail = true,
+                maxDecodeDimensionPx = 128,
+                allowRgb565 = true,
                 contentScale = ContentScale.Crop,
                 modifier =
                     Modifier

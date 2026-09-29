@@ -395,6 +395,9 @@ private fun WatchlistHeader(
                 PixivImage(
                     url = bannerUrl,
                     contentDescription = null,
+                    thumbnail = true,
+                    maxDecodeDimensionPx = 256,
+                    allowRgb565 = true,
                     contentScale = ContentScale.Crop,
                     modifier =
                         Modifier
@@ -618,6 +621,9 @@ private fun WatchlistSmallTopAppBar(
             PixivImage(
                 url = bannerUrl,
                 contentDescription = null,
+                thumbnail = true,
+                maxDecodeDimensionPx = 128,
+                allowRgb565 = true,
                 contentScale = ContentScale.Crop,
                 modifier =
                     Modifier
