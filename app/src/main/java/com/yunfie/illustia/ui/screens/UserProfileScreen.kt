@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -108,9 +109,11 @@ fun UserProfileScreen(
         }
     }
 
+    val currentActiveIsAtTop by rememberUpdatedState(activeIsAtTop)
+
     // Coordinate collapsing/expanding across all tabs and short content lists without flapping
     val profileScrollConnection =
-        remember(activeIsAtTop) {
+        remember {
             object : NestedScrollConnection {
                 override fun onPreScroll(
                     available: Offset,
@@ -118,7 +121,7 @@ fun UserProfileScreen(
                 ): Offset {
                     if (available.y < -10f) {
                         isHeaderCollapsed = true
-                    } else if (available.y > 8f && activeIsAtTop) {
+                    } else if (available.y > 8f && currentActiveIsAtTop) {
                         isHeaderCollapsed = false
                     }
                     return Offset.Zero
@@ -129,7 +132,7 @@ fun UserProfileScreen(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (available.y > 8f && activeIsAtTop) {
+                    if (available.y > 8f && currentActiveIsAtTop) {
                         isHeaderCollapsed = false
                     }
                     return Offset.Zero

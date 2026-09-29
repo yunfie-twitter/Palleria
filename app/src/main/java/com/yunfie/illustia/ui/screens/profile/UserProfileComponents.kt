@@ -80,12 +80,14 @@ import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.profileGridContentPadding
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.screens.UserResultCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -806,6 +808,14 @@ private fun UserIllustGridPage(
 ) {
     val columns = adaptiveProfileGridColumns()
 
+    PrefetchIllustGridImages(
+        items = illusts,
+        gridState = gridState,
+        enabled = settings.prefetchImages && active,
+        highQualityImages = settings.useHighQualityFeedImages,
+        keyPrefix = "${keyPrefix}_",
+    )
+
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = autoLoadMore && active && loaded,
@@ -814,6 +824,7 @@ private fun UserIllustGridPage(
         onLoadMore = onLoadMore,
     )
 
+    val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
     val showRetry = !loaded && !isPaginating
     LazyVerticalGrid(
         state = gridState,
@@ -841,7 +852,7 @@ private fun UserIllustGridPage(
                     key = { "${keyPrefix}_initial_skeleton_$it" },
                     contentType = { "illust_skeleton" },
                 ) {
-                    IllustCardSkeleton()
+                    IllustCardSkeleton(shimmerValue = shimmer)
                 }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
@@ -853,7 +864,7 @@ private fun UserIllustGridPage(
                 key = { "${keyPrefix}_paginating_skeleton_$it" },
                 contentType = { "illust_skeleton" },
             ) {
-                IllustCardSkeleton()
+                IllustCardSkeleton(shimmerValue = shimmer)
             }
         } else if ((!autoLoadMore && hasMore) || showRetry) {
             item(span = { GridItemSpan(maxLineSpan) }) {

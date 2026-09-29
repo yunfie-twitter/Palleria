@@ -34,6 +34,7 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
@@ -102,14 +103,28 @@ fun ViewHistoryScreen(
 
     val bookmarkedIds =
         remember(state.bookmarkItems) {
-            state.bookmarkItems
-                .asSequence()
-                .map { it.id }
-                .toSet()
+            val items = state.bookmarkItems
+            val set = HashSet<Long>(items.size)
+            for (i in items.indices) {
+                set.add(items[i].id)
+            }
+            set
         }
 
     val visibleHistory =
-        remember(state.settings.viewHistory, state.settings, searchQuery, sortOrder, filterType, bookmarkedIds) {
+        remember(
+            state.settings.viewHistory,
+            state.settings.mutedTags,
+            state.settings.mutedUsers,
+            state.settings.mutedIllusts,
+            state.settings.allowR18,
+            state.settings.allowR18G,
+            state.settings.hideAiWorks,
+            searchQuery,
+            sortOrder,
+            filterType,
+            bookmarkedIds,
+        ) {
             val history =
                 state.settings.viewHistory.visibleWithSettings(state.settings).map { illust ->
                     if (illust.id in bookmarkedIds && !illust.isBookmarked) {
@@ -125,6 +140,14 @@ fun ViewHistoryScreen(
                 sortOrder = sortOrder,
             )
         }
+
+    PrefetchIllustGridImages(
+        items = visibleHistory,
+        gridState = gridState,
+        enabled = state.settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "history_",
+    )
 
     LaunchedEffect(visibleHistory) {
         val availableIds = visibleHistory.asSequence().map { it.id }.toSet()
@@ -540,27 +563,25 @@ private fun filterAndSortHistory(
     filterType: ViewHistoryTypeFilter,
     sortOrder: ViewHistorySortOrder,
 ): List<Illust> {
-    val searched =
-        if (query.isEmpty()) {
-            history
-        } else {
-            history.filter { illust ->
+    var seq = history.asSequence()
+    if (query.isNotEmpty()) {
+        seq =
+            seq.filter { illust ->
                 illust.title.contains(query, ignoreCase = true) ||
                     illust.artistName.contains(query, ignoreCase = true) ||
                     illust.tags.any { it.contains(query, ignoreCase = true) }
             }
-        }
-    val filtered =
-        when (filterType) {
-            ViewHistoryTypeFilter.All -> searched
-            ViewHistoryTypeFilter.Illust -> searched.filter { it.type.equals("illust", ignoreCase = true) || it.type.isBlank() }
-            ViewHistoryTypeFilter.Manga -> searched.filter { it.type.equals("manga", ignoreCase = true) }
-            ViewHistoryTypeFilter.Ugoira -> searched.filter { it.type.equals("ugoira", ignoreCase = true) }
-        }
+    }
+    when (filterType) {
+        ViewHistoryTypeFilter.All -> Unit
+        ViewHistoryTypeFilter.Illust -> seq = seq.filter { it.type.equals("illust", ignoreCase = true) || it.type.isBlank() }
+        ViewHistoryTypeFilter.Manga -> seq = seq.filter { it.type.equals("manga", ignoreCase = true) }
+        ViewHistoryTypeFilter.Ugoira -> seq = seq.filter { it.type.equals("ugoira", ignoreCase = true) }
+    }
     return when (sortOrder) {
-        ViewHistorySortOrder.Newest -> filtered
-        ViewHistorySortOrder.Oldest -> filtered.reversed()
-        ViewHistorySortOrder.Title -> filtered.sortedBy { it.title.lowercase() }
-        ViewHistorySortOrder.Artist -> filtered.sortedBy { it.artistName.lowercase() }
+        ViewHistorySortOrder.Newest -> seq.toList()
+        ViewHistorySortOrder.Oldest -> seq.toList().reversed()
+        ViewHistorySortOrder.Title -> seq.sortedBy { it.title.lowercase() }.toList()
+        ViewHistorySortOrder.Artist -> seq.sortedBy { it.artistName.lowercase() }.toList()
     }
 }
