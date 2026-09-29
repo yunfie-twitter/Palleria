@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -25,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -456,34 +459,41 @@ private fun HeartBurst(
     modifier: Modifier = Modifier,
     color: Color = MiuixTheme.colorScheme.error,
 ) {
-    val burstProgress by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = if (visible) tween(450) else snap(),
-        label = "burstProgress",
-    )
+    val burstProgress =
+        animateFloatAsState(
+            targetValue = if (visible) 1f else 0f,
+            animationSpec = if (visible) tween(450) else snap(),
+            label = "burstProgress",
+        )
 
-    if (burstProgress > 0f && burstProgress < 1f) {
-        Box(modifier = modifier) {
-            repeat(8) { i ->
-                val angle = i * 45f
-                val distance = 16.dp + (14.dp * burstProgress)
-                val size = 4.dp * (1f - burstProgress)
+    if (visible || (burstProgress.value > 0f && burstProgress.value < 1f)) {
+        Spacer(
+            modifier =
+                modifier.drawBehind {
+                    val progress = burstProgress.value
+                    if (progress in 0.001f..0.999f) {
+                        val baseDistance = 16.dp.toPx()
+                        val addDistance = 14.dp.toPx() * progress
+                        val distance = baseDistance + addDistance
+                        val radius = (2.dp * (1f - progress)).toPx()
+                        val alpha = ((1f - progress) * 1.5f).coerceIn(0f, 1f)
+                        val burstColor = color.copy(alpha = color.alpha * alpha)
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
 
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.Center)
-                            .graphicsLayer {
-                                val rad = Math.toRadians(angle.toDouble())
-                                translationX = (distance.toPx() * kotlin.math.cos(rad)).toFloat()
-                                translationY = (distance.toPx() * kotlin.math.sin(rad)).toFloat()
-                                alpha = (1f - burstProgress) * 1.5f
-                                scaleX = 1f - burstProgress
-                                scaleY = 1f - burstProgress
-                            }.size(size)
-                            .background(color, androidx.compose.foundation.shape.CircleShape),
-                )
-            }
-        }
+                        for (i in 0 until 8) {
+                            val angle = i * 45f
+                            val rad = Math.toRadians(angle.toDouble())
+                            val cx = centerX + (distance * kotlin.math.cos(rad)).toFloat()
+                            val cy = centerY + (distance * kotlin.math.sin(rad)).toFloat()
+                            drawCircle(
+                                color = burstColor,
+                                radius = radius,
+                                center = Offset(cx, cy),
+                            )
+                        }
+                    }
+                },
+        )
     }
 }
