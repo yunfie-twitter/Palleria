@@ -454,6 +454,7 @@ private fun RelatedIllustCard(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
             thumbnail = true,
+            maxDecodeDimensionPx = 384,
         )
         if (ageRestrictionBadgeText != null) {
             Text(

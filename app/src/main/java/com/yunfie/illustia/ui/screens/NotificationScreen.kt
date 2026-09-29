@@ -146,7 +146,7 @@ fun NotificationScreen(
             }
 
             if (state.notificationNextUrl != null) {
-                item {
+                item(key = "notification_view_more", contentType = "notification_view_more") {
                     ViewMoreRow(
                         title = stringResource(R.string.notifications_load_more),
                         unread = false,
@@ -155,7 +155,9 @@ fun NotificationScreen(
                 }
             }
             if (state.notifications.isNotEmpty() && state.notificationsLoading) {
-                item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { LoadingIndicator() } }
+                item(key = "notification_loading", contentType = "notification_loading") {
+                    Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
+                }
             }
         }
     }
