@@ -6,10 +6,17 @@ data class HomeChromeState(
     val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
     val homeNextUrl: String? = null,
     val timelineNextUrl: String? = null,
+    val isHomeRefreshing: Boolean = false,
+    val isHomePaginating: Boolean = false,
+    val isTimelineRefreshing: Boolean = false,
+    val isTimelinePaginating: Boolean = false,
+    val selectedTab: Int = 0,
 )
 
 data class NovelChromeState(
     val novelNextUrl: String? = null,
+    val isNovelRefreshing: Boolean = false,
+    val isNovelPaginating: Boolean = false,
 )
 
 data class RankingChromeState(
@@ -24,6 +31,10 @@ data class BookmarkChromeState(
     val activeWatchlistTag: String? = null,
     val followingUsersNextUrl: String? = null,
     val selectedTab: Int = 1,
+    val isBookmarkRefreshing: Boolean = false,
+    val isBookmarkPaginating: Boolean = false,
+    val isTimelineRefreshing: Boolean = false,
+    val isTimelinePaginating: Boolean = false,
 )
 
 data class PixivWebLoginRequest(

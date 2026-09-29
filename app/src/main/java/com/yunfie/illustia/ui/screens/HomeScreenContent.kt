@@ -25,7 +25,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.isMutedByTags
@@ -93,9 +92,10 @@ internal fun FeedTabContent(
     nextUrl: String?,
     settings: AppSettings,
     viewModel: IllustiaViewModel,
+    isRefreshing: Boolean = false,
+    isPaginating: Boolean = false,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeFeedGridState
@@ -106,7 +106,7 @@ internal fun FeedTabContent(
         highQualityImages = feedHighQuality,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && state.isHomePaginating
+    val showPaginationSkeletons = settings.autoLoadMore && isPaginating
     val shimmer =
         if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
@@ -117,13 +117,13 @@ internal fun FeedTabContent(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = state.isHomePaginating || loadState == LoadState.Loading,
+        isLoading = isPaginating || loadState == LoadState.Loading,
         onLoadMore = viewModel::loadMoreHome,
     )
 
     val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
-        isRefreshing = state.isHomeRefreshing,
+        isRefreshing = isRefreshing,
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -192,14 +192,14 @@ internal fun FeedTabContent(
                 item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreHome,
-                        enabled = !state.isHomePaginating,
+                        enabled = !isPaginating,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 12.dp),
                         colors = overlayActionButtonColors(),
                     ) {
-                        if (state.isHomePaginating) {
+                        if (isPaginating) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -224,9 +224,10 @@ internal fun FollowingTabContent(
     nextUrl: String?,
     settings: AppSettings,
     viewModel: IllustiaViewModel,
+    isRefreshing: Boolean = false,
+    isPaginating: Boolean = false,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.homeTimelineGridState
@@ -238,7 +239,7 @@ internal fun FollowingTabContent(
         keyPrefix = "tl_",
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && state.isTimelinePaginating
+    val showPaginationSkeletons = settings.autoLoadMore && isPaginating
     val shimmer =
         if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
@@ -249,13 +250,13 @@ internal fun FollowingTabContent(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = state.isTimelinePaginating || loadState == LoadState.Loading,
+        isLoading = isPaginating || loadState == LoadState.Loading,
         onLoadMore = viewModel::loadMoreTimeline,
     )
 
     val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
-        isRefreshing = state.isTimelineRefreshing,
+        isRefreshing = isRefreshing,
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -324,14 +325,14 @@ internal fun FollowingTabContent(
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreTimeline,
-                        enabled = !state.isTimelinePaginating,
+                        enabled = !isPaginating,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 12.dp),
                         colors = overlayActionButtonColors(),
                     ) {
-                        if (state.isTimelinePaginating) {
+                        if (isPaginating) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,

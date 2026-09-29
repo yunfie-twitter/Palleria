@@ -206,6 +206,11 @@ internal fun MainSurface(
                                 scrollBehavior = homeScrollBehavior,
                                 onSearch = onSearch,
                                 onOpenNovels = onOpenNovels,
+                                isHomeRefreshing = appState.homeChrome.isHomeRefreshing,
+                                isHomePaginating = appState.homeChrome.isHomePaginating,
+                                isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
+                                isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
+                                initialTab = appState.homeChrome.selectedTab,
                             )
                         }
 

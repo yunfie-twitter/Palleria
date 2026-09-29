@@ -379,6 +379,8 @@ internal fun AppNavHost(
                     settings = appState.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
+                    isNovelRefreshing = appState.novelChrome.isNovelRefreshing,
+                    isNovelPaginating = appState.novelChrome.isNovelPaginating,
                 )
             }
             entry(AppRoute.NovelReader) {

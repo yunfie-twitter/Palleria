@@ -52,7 +52,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
@@ -106,6 +105,8 @@ fun NovelScreen(
     settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
+    isNovelRefreshing: Boolean = false,
+    isNovelPaginating: Boolean = false,
 ) {
     val gridState = remember { LazyGridState() }
     val scrollBehavior = MiuixScrollBehavior()
@@ -138,7 +139,6 @@ fun NovelScreen(
                 }
             }
         }
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val prefetchUrls =
         remember(items) {
             val targets = if (items.size <= 24) items else items.takeLast(24)
@@ -152,7 +152,7 @@ fun NovelScreen(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
-        isLoading = state.isNovelPaginating || loadState == LoadState.Loading,
+        isLoading = isNovelPaginating || loadState == LoadState.Loading,
         onLoadMore = viewModel::loadMoreNovels,
     )
 
@@ -192,7 +192,7 @@ fun NovelScreen(
         },
     ) { scaffoldPadding ->
         PullToRefresh(
-            isRefreshing = state.isNovelRefreshing,
+            isRefreshing = isNovelRefreshing,
             onRefresh = { viewModel.refreshNovels(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -278,7 +278,7 @@ fun NovelScreen(
                     )
                 }
 
-                if (settings.autoLoadMore && state.isNovelPaginating && selectedFilter == NovelFilterTab.All) {
+                if (settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All) {
                     item(key = "novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
                         NovelCardSkeleton()
                     }
@@ -286,11 +286,11 @@ fun NovelScreen(
                     item(key = "novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                         Button(
                             onClick = viewModel::loadMoreNovels,
-                            enabled = !state.isNovelPaginating,
+                            enabled = !isNovelPaginating,
                             modifier = Modifier.fillMaxWidth(),
                             colors = overlayActionButtonColors(),
                         ) {
-                            if (state.isNovelPaginating) {
+                            if (isNovelPaginating) {
                                 androidx.compose.foundation.layout.Row(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically,

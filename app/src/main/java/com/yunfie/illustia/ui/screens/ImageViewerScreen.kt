@@ -438,6 +438,9 @@ fun ImageViewerScreen(
                     url = currentUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    thumbnail = true,
+                    maxDecodeDimensionPx = 128,
+                    allowRgb565 = true,
                     modifier =
                         Modifier
                             .fillMaxSize()
@@ -476,6 +479,7 @@ fun ImageViewerScreen(
                             contentDescription = "${illust.title} ${page + 1}",
                             contentScale = ContentScale.FillWidth,
                             showLoadingSpinner = true,
+                            maxDecodeDimensionPx = 1920,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
