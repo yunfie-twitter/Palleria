@@ -56,6 +56,7 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.StateBanner
@@ -368,6 +369,12 @@ internal fun BookmarkMainTab(
     scrollBehavior: ScrollBehavior,
 ) {
     val gridState = viewModel.bookmarkMainGridState
+    PrefetchIllustGridImages(
+        items = bookmarkItems,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+    )
     val showInitialSkeletons = bookmarkItems.isEmpty() && loadState == LoadState.Loading
     val showPaginationSkeletons = settings.autoLoadMore && chrome.isBookmarkPaginating
     val shimmer =
@@ -467,6 +474,13 @@ internal fun BookmarkTimelineTab(
     scrollBehavior: ScrollBehavior,
 ) {
     val gridState = viewModel.bookmarkTimelineGridState
+    PrefetchIllustGridImages(
+        items = timelineItems,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "timeline_",
+    )
     val showInitialSkeletons = timelineItems.isEmpty() && loadState == LoadState.Loading
     val showPaginationSkeletons = settings.autoLoadMore && chrome.isTimelinePaginating
     val shimmer =

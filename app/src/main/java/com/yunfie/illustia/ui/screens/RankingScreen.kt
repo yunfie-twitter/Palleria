@@ -54,11 +54,12 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -247,15 +248,21 @@ private fun RankingGridContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val gridState = viewModel.rankingGridState(mode)
-    val prefetchUrls =
-        remember(items, feedHighQuality) {
-            val targets = if (items.size <= 24) items else items.takeLast(24)
-            targets
-                .asSequence()
-                .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                .toList()
+    PrefetchIllustGridImages(
+        items = items,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "ranking_${mode}_",
+    )
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && isModePaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
         }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
 
     AutoLoadMoreEffect(
         gridState = gridState,
@@ -285,8 +292,10 @@ private fun RankingGridContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (items.isEmpty() && loadState == LoadState.Loading) {
-                items(6, key = { "ranking_${mode}_skeleton_$it" }, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+            if (showInitialSkeletons) {
+                items(6, key = { "ranking_${mode}_skeleton_$it" }, contentType = { "illust_skeleton" }) {
+                    IllustCardSkeleton(shimmerValue = shimmer)
+                }
             }
 
             if (loadState is LoadState.Error) {
@@ -312,13 +321,13 @@ private fun RankingGridContent(
                 )
             }
 
-            if (settings.autoLoadMore && isModePaginating) {
+            if (showPaginationSkeletons) {
                 items(
                     count = columns,
                     key = { "ranking_${mode}_paginating_skeleton_$it" },
                     contentType = { "illust_skeleton" },
                 ) {
-                    IllustCardSkeleton()
+                    IllustCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "ranking_${mode}_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

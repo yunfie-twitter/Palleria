@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,6 +41,7 @@ import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -47,27 +49,16 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun NovelCardSkeleton(
     modifier: Modifier = Modifier,
-    shimmerValue: Float? = null,
+    shimmerValue: State<Float>? = null,
 ) {
-    val defaultTransition = rememberInfiniteTransition(label = "novelSkeleton")
-    val defaultAnim by defaultTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "novelSkeletonShimmer",
-    )
-    val shimmerFloat = shimmerValue ?: defaultAnim
+    val shimmer = shimmerValue ?: rememberIllustSkeletonShimmer()
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
     val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }
     val shimmerModifier =
         Modifier.drawWithCache {
             onDrawBehind {
-                val startX = shimmerFloat * size.width
+                val startX = shimmer.value * size.width
                 drawRect(
                     brush =
                         Brush.linearGradient(

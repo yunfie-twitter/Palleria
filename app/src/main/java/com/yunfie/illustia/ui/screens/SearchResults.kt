@@ -41,11 +41,13 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -64,31 +66,32 @@ internal fun SearchResultGrid(
     val feedHighQuality = state.settings.useHighQualityFeedImages
     val showAiBadge = remember(state.settings.showAiBadge) { state.settings.showAiBadge }
     val isNovelResult = page == 0 && state.settings.searchWorkType.isNovel
-    val prefetchUrls =
-        remember(page, state.searchItems, state.searchNovelItems, feedHighQuality, isNovelResult) {
-            if (page == 0) {
-                if (isNovelResult) {
-                    val novels = state.searchNovelItems
-                    val targets = if (novels.size <= 24) novels else novels.takeLast(24)
-                    targets
-                        .asSequence()
-                        .map { it.coverUrl }
-                        .toList()
-                } else {
-                    val illusts = state.searchItems
-                    val targets = if (illusts.size <= 24) illusts else illusts.takeLast(24)
-                    targets
-                        .asSequence()
-                        .map { if (feedHighQuality) it.previewUrl else it.thumbnailUrl }
-                        .toList()
-                }
-            } else {
-                emptyList()
-            }
-        }
-    PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages, limit = 24)
     val gridState = if (page == 0) viewModel.searchResultGridState else viewModel.userSearchResultGridState
     val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
+
+    val isIllustResult = page == 0 && !isNovelResult
+    if (isIllustResult) {
+        PrefetchIllustGridImages(
+            items = state.searchItems,
+            gridState = gridState,
+            enabled = state.settings.prefetchImages,
+            highQualityImages = feedHighQuality,
+        )
+    } else if (page == 0 && isNovelResult) {
+        val prefetchUrls =
+            remember(state.searchNovelItems) {
+                val targets = if (state.searchNovelItems.size <= 24) state.searchNovelItems else state.searchNovelItems.takeLast(24)
+                targets
+                    .asSequence()
+                    .map { it.coverUrl }
+                    .toList()
+            }
+        PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages, limit = 24)
+    }
+
+    val isAnyLoading = state.loadState == LoadState.Loading || isPaginating
+    val shimmer = if (isAnyLoading) rememberIllustSkeletonShimmer() else null
+
     val nextUrl =
         when {
             page != 0 -> state.userSearchNextUrl
@@ -121,7 +124,7 @@ internal fun SearchResultGrid(
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
                     item(key = "search_novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
-                        NovelCardSkeleton()
+                        NovelCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
                     item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -160,7 +163,7 @@ internal fun SearchResultGrid(
                             span = { GridItemSpan(maxLineSpan) },
                             contentType = { "novel_skeleton" },
                         ) {
-                            NovelCardSkeleton()
+                            NovelCardSkeleton(shimmerValue = shimmer)
                         }
                     } else {
                         item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }) {
@@ -191,7 +194,7 @@ internal fun SearchResultGrid(
                         key = { "search_illust_paginating_skeleton_$it" },
                         contentType = { "illust_skeleton" },
                     ) {
-                        IllustCardSkeleton()
+                        IllustCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
                     item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -229,7 +232,7 @@ internal fun SearchResultGrid(
                             key = { "search_illust_initial_skeleton_$it" },
                             contentType = { "illust_skeleton" },
                         ) {
-                            IllustCardSkeleton()
+                            IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     } else {
                         item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }) {
@@ -246,7 +249,7 @@ internal fun SearchResultGrid(
             }
             if (state.settings.autoLoadMore && isPaginating) {
                 item(key = "search_user_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
-                    UserResultCardSkeleton()
+                    UserResultCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
                 item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -284,7 +287,7 @@ internal fun SearchResultGrid(
                         key = { "search_user_initial_skeleton_$it" },
                         span = { GridItemSpan(maxLineSpan) },
                     ) {
-                        UserResultCardSkeleton()
+                        UserResultCardSkeleton(shimmerValue = shimmer)
                     }
                 } else {
                     item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }) {
@@ -348,6 +351,7 @@ internal fun UserResultCard(
                             url = illust.squareImageUrl.ifBlank { illust.mediumImageUrl.ifBlank { illust.imageUrl } },
                             contentDescription = illust.title,
                             contentScale = ContentScale.Crop,
+                            thumbnail = true,
                             modifier = Modifier.weight(1f).height(118.dp),
                         )
                     }
