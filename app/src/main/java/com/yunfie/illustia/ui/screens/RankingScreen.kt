@@ -145,13 +145,15 @@ fun RankingScreen(
             largeTitle = stringResource(R.string.nav_ranking),
             scrollBehavior = scrollBehavior,
             modifier =
-                Modifier.pointerInput(pagerState.currentPage) {
-                    detectTapGestures {
-                        performHaptic(AppHapticEffect.Click)
-                        coroutineScope.launch {
-                            val currentMode = modes.getOrNull(pagerState.currentPage)
-                            if (currentMode != null) {
-                                viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+                remember {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                val currentMode = modes.getOrNull(pagerState.currentPage)
+                                if (currentMode != null) {
+                                    viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+                                }
                             }
                         }
                     }
@@ -306,8 +308,8 @@ private fun RankingGridContent(
 
             gridItems(items, key = { "ranking_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illust) } }
-                val onClick = remember(illustId) { { viewModel.openIllust(illust) } }
+                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onClick = remember(illust) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(

@@ -165,8 +165,8 @@ internal fun FeedTabContent(
 
             gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illust) } }
-                val onClick = remember(illustId) { { viewModel.openIllust(illust) } }
+                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onClick = remember(illust) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
@@ -298,8 +298,8 @@ internal fun FollowingTabContent(
 
             gridItems(items, key = { "tl_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illust) } }
-                val onClick = remember(illustId) { { viewModel.openIllust(illust) } }
+                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onClick = remember(illust) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
