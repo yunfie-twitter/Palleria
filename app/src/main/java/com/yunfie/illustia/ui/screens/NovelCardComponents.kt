@@ -169,6 +169,7 @@ internal fun NovelCard(
                     modifier = Modifier.fillMaxSize(),
                     crossfade = true,
                     thumbnail = true,
+                    maxDecodeDimensionPx = 384,
                 )
                 Box(
                     modifier =
