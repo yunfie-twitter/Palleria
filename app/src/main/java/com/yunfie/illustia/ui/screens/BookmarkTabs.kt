@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,14 +23,13 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -66,6 +64,7 @@ import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -105,6 +104,7 @@ internal fun BookmarkWatchlistTab(
             isLoading = watchlistState.isPaginating || watchlistState.isLoading,
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
+        val shimmer = if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) rememberIllustSkeletonShimmer() else null
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(adaptiveProfileGridColumns()),
@@ -122,7 +122,7 @@ internal fun BookmarkWatchlistTab(
         ) {
             if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) {
                 gridItems(List(6) { it }, key = { "watchlist_skeleton_$it" }, contentType = { "watchlist_series_skeleton" }) {
-                    WatchlistSeriesCardSkeleton()
+                    WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                 }
             }
             if (watchlistState.errorMessage != null) {
@@ -286,36 +286,15 @@ private fun WatchlistSeriesCard(
 }
 
 @Composable
-private fun WatchlistSeriesCardSkeleton() {
-    val transition =
-        androidx.compose.animation.core
-            .rememberInfiniteTransition(label = "watchlistSeriesSkeleton")
-    val shimmer by transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            androidx.compose.animation.core.infiniteRepeatable(
-                animation =
-                    androidx.compose.animation.core.tween(
-                        durationMillis = 1250,
-                        easing = androidx.compose.animation.core.FastOutSlowInEasing,
-                    ),
-                repeatMode = androidx.compose.animation.core.RepeatMode.Restart,
-            ),
-        label = "watchlistSeriesSkeletonShimmer",
-    )
-    val base = MiuixTheme.colorScheme.surfaceContainer
-    val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
-    val shimmerBrush =
-        Brush.linearGradient(
-            colors = listOf(base, highlight, base),
-            start = Offset(shimmer * 500f, 0f),
-            end = Offset(shimmer * 500f + 260f, 500f),
-        )
+private fun WatchlistSeriesCardSkeleton(
+    modifier: Modifier = Modifier,
+    shimmerValue: State<Float>? = null,
+) {
+    val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
 
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .heightIn(min = 180.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -326,7 +305,7 @@ private fun WatchlistSeriesCardSkeleton() {
                     .fillMaxWidth()
                     .aspectRatio(1.15f)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(shimmerBrush),
+                    .then(shimmerModifier),
         )
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(
@@ -335,7 +314,7 @@ private fun WatchlistSeriesCardSkeleton() {
                         .fillMaxWidth(0.82f)
                         .height(14.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(shimmerBrush),
+                        .then(shimmerModifier),
             )
             Box(
                 modifier =
@@ -343,7 +322,7 @@ private fun WatchlistSeriesCardSkeleton() {
                         .fillMaxWidth(0.58f)
                         .height(10.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(shimmerBrush),
+                        .then(shimmerModifier),
             )
             Box(
                 modifier =
@@ -351,7 +330,7 @@ private fun WatchlistSeriesCardSkeleton() {
                         .fillMaxWidth(0.34f)
                         .height(9.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(shimmerBrush),
+                        .then(shimmerModifier),
             )
         }
     }

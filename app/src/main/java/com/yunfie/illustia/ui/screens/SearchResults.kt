@@ -174,8 +174,8 @@ internal fun SearchResultGrid(
             } else {
                 gridItems(state.searchItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     val illustId = illust.id
-                    val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illust) } }
-                    val onClick = remember(illustId) { { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) } }
+                    val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                    val onClick = remember(illust) { { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) } }
                     val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                     IllustCard(

@@ -1,11 +1,5 @@
 package com.yunfie.illustia.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -21,14 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -107,37 +98,9 @@ fun TagTile(
 @Composable
 fun TagTileSkeleton(
     modifier: Modifier = Modifier,
-    shimmerValue: Float? = null,
+    shimmerValue: State<Float>? = null,
 ) {
-    val defaultTransition = rememberInfiniteTransition(label = "tagTileSkeleton")
-    val defaultAnim by defaultTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "tagTileSkeletonShimmer",
-    )
-    val shimmerFloat = shimmerValue ?: defaultAnim
-    val base = MiuixTheme.colorScheme.surfaceContainer
-    val highlight = MiuixTheme.colorScheme.surfaceContainerHigh
-    val shimmerColors = remember(base, highlight) { listOf(base, highlight, base) }
-    val shimmerModifier =
-        Modifier.drawWithCache {
-            onDrawBehind {
-                val startX = shimmerFloat * size.width
-                drawRect(
-                    brush =
-                        Brush.linearGradient(
-                            colors = shimmerColors,
-                            start = Offset(startX, 0f),
-                            end = Offset(startX + size.width * 0.52f, size.height),
-                        ),
-                )
-            }
-        }
+    val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
 
     Box(
         modifier =
@@ -164,18 +127,9 @@ fun RecommendedTagsSkeleton(
     tagColumns: Int,
     modifier: Modifier = Modifier,
     itemCount: Int = RECOMMENDED_TAGS_SKELETON_ITEM_COUNT,
+    shimmerValue: State<Float>? = null,
 ) {
-    val transition = rememberInfiniteTransition(label = "recommendedTagsSkeleton")
-    val shimmerValue by transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "recommendedTagsSkeletonShimmer",
-    )
+    val shimmer = shimmerValue ?: rememberIllustSkeletonShimmer()
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -189,7 +143,7 @@ fun RecommendedTagsSkeleton(
             ) {
                 repeat(tagColumns) {
                     TagTileSkeleton(
-                        shimmerValue = shimmerValue,
+                        shimmerValue = shimmer,
                         modifier = Modifier.weight(1f),
                     )
                 }

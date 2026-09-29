@@ -14,6 +14,9 @@ import androidx.work.workDataOf
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.SettingsStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -36,26 +39,42 @@ class AppUpdateDownloadWorker(
 
             setForeground(createForegroundInfo(release))
 
-            val downloadResult =
-                updater.downloadApk(release) { progress, downloaded, total ->
-                    AppUpdateNotificationHelper.showDownloadProgress(
-                        context = context,
-                        release = release,
-                        progress = (progress * 100).toInt(),
-                        downloadedBytes = downloaded,
-                        totalBytes = total,
-                        cancelPendingIntent = WorkManager.getInstance(context).createCancelPendingIntent(id),
-                    )
-                }
+            try {
+                _progressFlow.value = DownloadProgressEvent.Progress(0f, 0L, release.apkSize)
+                val downloadResult =
+                    updater.downloadApk(release) { progress, downloaded, total ->
+                        _progressFlow.value = DownloadProgressEvent.Progress(progress, downloaded, total)
+                        AppUpdateNotificationHelper.showDownloadProgress(
+                            context = context,
+                            release = release,
+                            progress = (progress * 100).toInt(),
+                            downloadedBytes = downloaded,
+                            totalBytes = total,
+                            cancelPendingIntent = WorkManager.getInstance(context).createCancelPendingIntent(id),
+                        )
+                    }
 
-            val file = downloadResult.getOrNull()
-            if (file != null) {
-                AppUpdateNotificationHelper.cancelDownloadProgress(context)
-                installDownloadedUpdate(updater, release, file)
-                Result.success()
-            } else {
-                AppUpdateNotificationHelper.showDownloadFailed(context, release)
-                Result.failure()
+                val file = downloadResult.getOrNull()
+                if (file != null) {
+                    _progressFlow.value = DownloadProgressEvent.Completed(file, release)
+                    AppUpdateNotificationHelper.cancelDownloadProgress(context)
+                    installDownloadedUpdate(updater, release, file)
+                    Result.success()
+                } else {
+                    val errorMsg = downloadResult.exceptionOrNull()?.message ?: "Download failed"
+                    _progressFlow.value = DownloadProgressEvent.Failed(errorMsg, release)
+                    AppUpdateNotificationHelper.showDownloadFailed(context, release)
+                    Result.failure()
+                }
+            } catch (cancellation: kotlinx.coroutines.CancellationException) {
+                updater.cancelDownload()
+                _progressFlow.value = null
+                throw cancellation
+            } finally {
+                if (isStopped) {
+                    updater.cancelDownload()
+                    _progressFlow.value = null
+                }
             }
         }
 
@@ -110,10 +129,14 @@ class AppUpdateDownloadWorker(
         private const val NOTIFICATION_ID_PROGRESS = 8104
         const val WORK_NAME = "AppUpdateDownload"
 
+        private val _progressFlow = MutableStateFlow<DownloadProgressEvent?>(null)
+        val progressFlow: StateFlow<DownloadProgressEvent?> = _progressFlow.asStateFlow()
+
         fun start(
             context: Context,
             release: AppReleaseInfo,
         ) {
+            _progressFlow.value = DownloadProgressEvent.Progress(0f, 0L, release.apkSize)
             val workRequest =
                 OneTimeWorkRequestBuilder<AppUpdateDownloadWorker>()
                     .setInputData(workDataOf(EXTRA_RELEASE_INFO to Json.encodeToString(release)))
@@ -126,5 +149,28 @@ class AppUpdateDownloadWorker(
                 workRequest,
             )
         }
+
+        fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            _progressFlow.value = null
+        }
+    }
+
+    sealed interface DownloadProgressEvent {
+        data class Progress(
+            val progress: Float,
+            val downloadedBytes: Long,
+            val totalBytes: Long,
+        ) : DownloadProgressEvent
+
+        data class Completed(
+            val file: File,
+            val release: AppReleaseInfo,
+        ) : DownloadProgressEvent
+
+        data class Failed(
+            val error: String,
+            val release: AppReleaseInfo,
+        ) : DownloadProgressEvent
     }
 }
