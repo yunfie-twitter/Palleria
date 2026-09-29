@@ -164,26 +164,33 @@ fun RankingScreen(
                 }
             },
             bottomContent = {
-                TabRow(
-                    tabs =
+                val tabs =
+                    remember {
                         listOf(
-                            stringResource(R.string.ranking_day),
-                            stringResource(R.string.ranking_day_male),
-                            stringResource(R.string.ranking_day_female),
-                            stringResource(R.string.ranking_week),
-                            stringResource(R.string.ranking_month),
-                            stringResource(R.string.ranking_week_rookie),
-                            stringResource(R.string.ranking_day_ai),
-                        ),
-                    selectedTabIndex = modes.indexOf(modes[pagerState.targetPage]).coerceAtLeast(0),
-                    onTabSelected = { index ->
-                        if (modes.getOrNull(index) == null) return@TabRow
-                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
-                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                    },
+                            R.string.ranking_day,
+                            R.string.ranking_day_male,
+                            R.string.ranking_day_female,
+                            R.string.ranking_week,
+                            R.string.ranking_month,
+                            R.string.ranking_week_rookie,
+                            R.string.ranking_day_ai,
+                        )
+                    }
+                val tabTitles = tabs.map { stringResource(it) }
+                val onTabSelected: (Int) -> Unit =
+                    remember(modes) {
+                        { index ->
+                            if (modes.getOrNull(index) != null) {
+                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            }
+                        }
+                    }
+                RankingTabRow(
+                    pagerState = pagerState,
+                    tabs = tabTitles,
+                    onTabSelected = onTabSelected,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-                    minWidth = 92.dp,
-                    maxWidth = 148.dp,
                 )
             },
         )
@@ -358,4 +365,21 @@ private fun RankingGridContent(
             }
         }
     }
+}
+
+@Composable
+private fun RankingTabRow(
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    tabs: List<String>,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    TabRow(
+        tabs = tabs,
+        selectedTabIndex = pagerState.targetPage.coerceIn(0, (tabs.size - 1).coerceAtLeast(0)),
+        onTabSelected = onTabSelected,
+        modifier = modifier,
+        minWidth = 92.dp,
+        maxWidth = 148.dp,
+    )
 }
