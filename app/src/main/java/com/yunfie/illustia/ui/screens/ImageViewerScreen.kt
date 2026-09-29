@@ -473,7 +473,11 @@ fun ImageViewerScreen(
                     contentPadding = PaddingValues(vertical = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    itemsIndexed(imageUrls, key = { index, _ -> index }) { page, url ->
+                    itemsIndexed(
+                        imageUrls,
+                        key = { index, _ -> index },
+                        contentType = { _, _ -> "comic_page" },
+                    ) { page, url ->
                         PixivImage(
                             url = url,
                             contentDescription = "${illust.title} ${page + 1}",

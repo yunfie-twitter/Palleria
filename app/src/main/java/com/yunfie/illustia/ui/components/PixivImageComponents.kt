@@ -60,11 +60,11 @@ fun PixivImage(
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
-    var isLoading by remember(effectiveUrl) { mutableStateOf(true) }
-    val currentOnSuccess by rememberUpdatedState(onSuccess)
-    val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
     val hasSuccessListener = onSuccess != null
     val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
+    var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
+    val currentOnSuccess by rememberUpdatedState(onSuccess)
+    val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
     val defaultMaxDimension =
         remember(context) {
             val displayMetrics = context.resources.displayMetrics
@@ -82,30 +82,45 @@ fun PixivImage(
             hasSuccessListener,
             hasLoadingListener,
         ) {
-            ImageRequest
-                .Builder(context)
-                .data(effectiveUrl)
-                .httpHeaders(PixivImageHeaders)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .crossfade(!thumbnail && crossfade)
-                .listener(
+            val builder =
+                ImageRequest
+                    .Builder(context)
+                    .data(effectiveUrl)
+                    .httpHeaders(PixivImageHeaders)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .crossfade(!thumbnail && crossfade)
+
+            if (hasLoadingListener || hasSuccessListener) {
+                builder.listener(
                     onStart = {
-                        isLoading = true
-                        currentOnLoadingStateChanged?.invoke(true)
+                        if (hasLoadingListener) {
+                            isLoading = true
+                            currentOnLoadingStateChanged?.invoke(true)
+                        }
                     },
                     onSuccess = { _, result ->
-                        isLoading = false
-                        currentOnLoadingStateChanged?.invoke(false)
-                        runCatching {
-                            currentOnSuccess?.invoke(result.image.toBitmap())
+                        if (hasLoadingListener) {
+                            isLoading = false
+                            currentOnLoadingStateChanged?.invoke(false)
+                        }
+                        if (hasSuccessListener) {
+                            runCatching {
+                                currentOnSuccess?.invoke(result.image.toBitmap())
+                            }
                         }
                     },
                     onError = { _, _ ->
-                        isLoading = false
-                        currentOnLoadingStateChanged?.invoke(false)
+                        if (hasLoadingListener) {
+                            isLoading = false
+                            currentOnLoadingStateChanged?.invoke(false)
+                        }
                     },
-                ).apply {
+                )
+            }
+
+            builder
+                .apply {
                     if (thumbnail) {
                         size(ThumbnailDecodeSizePx)
                         scale(Scale.FILL)
