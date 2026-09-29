@@ -122,7 +122,13 @@ fun PixivImage(
             builder
                 .apply {
                     if (thumbnail) {
-                        size(ThumbnailDecodeSizePx)
+                        val thumbSize =
+                            if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
+                                maxDecodeDimensionPx
+                            } else {
+                                ThumbnailDecodeSizePx
+                            }
+                        size(thumbSize)
                         scale(Scale.FILL)
                         precision(Precision.INEXACT)
                         allowRgb565(true)

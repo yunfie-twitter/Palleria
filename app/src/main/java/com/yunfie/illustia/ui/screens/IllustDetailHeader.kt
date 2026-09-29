@@ -296,24 +296,11 @@ internal fun IllustDetailHeader(
                 }
 
                 if (imageUrls.size > 1) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(14.dp)
-                                .clip(
-                                    androidx.compose.foundation.shape
-                                        .RoundedCornerShape(8.dp),
-                                ).background(Color.Black.copy(alpha = 0.4f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                    ) {
-                        Text(
-                            "${pagerState.currentPage + 1} / ${imageUrls.size}",
-                            color = MiuixTheme.colorScheme.onSurface,
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
+                    HeaderPageIndicator(
+                        pagerState = pagerState,
+                        pageCount = imageUrls.size,
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    )
                 }
             }
         } else {
@@ -371,8 +358,27 @@ internal fun IllustDetailHeader(
                 backgroundColor = headerIconBackground,
                 contentColor = headerIconTint,
             )
-            OverlayIconCascadingDropdownMenu(
-                entries =
+            val menuEntries =
+                remember(
+                    illust.id,
+                    illust.title,
+                    illust.artistName,
+                    illust.originalImageUrl,
+                    illust.imageUrl,
+                    pixivUrl,
+                    imageUrls,
+                    skipConfirmOnDetailSave,
+                    openInBrowserLabel,
+                    shareLabel,
+                    saveActionLabel,
+                    saveThisPageLabel,
+                    saveAllPagesLabel,
+                    copyUrlLabel,
+                    muteLabel,
+                    muteWorkLabel,
+                    muteArtistLabel,
+                    reportProblemLabel,
+                ) {
                     listOf(
                         DropdownEntry(
                             items =
@@ -478,7 +484,10 @@ internal fun IllustDetailHeader(
                                     ),
                                 ),
                         ),
-                    ),
+                    )
+                }
+            OverlayIconCascadingDropdownMenu(
+                entries = menuEntries,
                 icon = MiuixIcons.More,
                 backgroundColor = headerIconBackground,
                 contentColor = headerIconTint,
@@ -531,5 +540,30 @@ internal fun MutedArtworkOverlay(
         ) {
             Text(stringResource(R.string.action_show), color = Color.White, fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+@Composable
+private fun HeaderPageIndicator(
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    pageCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .padding(14.dp)
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(8.dp),
+                ).background(Color.Black.copy(alpha = 0.4f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            "${pagerState.currentPage + 1} / $pageCount",
+            color = MiuixTheme.colorScheme.onSurface,
+            style = MiuixTheme.textStyles.footnote1,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
