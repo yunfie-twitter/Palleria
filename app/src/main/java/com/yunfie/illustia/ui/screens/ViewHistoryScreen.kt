@@ -251,7 +251,7 @@ fun ViewHistoryScreen(
                                     text = selectAllLabel,
                                     onClick = {
                                         performHaptic(AppHapticEffect.Click)
-                                        selectedIds = visibleHistory.map { it.id }.toSet()
+                                        selectedIds = visibleHistory.mapTo(HashSet(visibleHistory.size)) { it.id }
                                     },
                                 )
                             } else {
@@ -523,7 +523,7 @@ fun ViewHistoryScreen(
             }
 
             if (visibleHistory.isEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_empty") {
                     EmptyState(stringResource(R.string.search_empty_illust))
                 }
             }
@@ -580,7 +580,7 @@ private fun filterAndSortHistory(
     }
     return when (sortOrder) {
         ViewHistorySortOrder.Newest -> seq.toList()
-        ViewHistorySortOrder.Oldest -> seq.toList().reversed()
+        ViewHistorySortOrder.Oldest -> seq.toMutableList().apply { reverse() }
         ViewHistorySortOrder.Title -> seq.sortedBy { it.title.lowercase() }.toList()
         ViewHistorySortOrder.Artist -> seq.sortedBy { it.artistName.lowercase() }.toList()
     }
