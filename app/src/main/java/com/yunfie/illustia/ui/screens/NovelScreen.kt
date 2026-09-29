@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -71,6 +72,7 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
@@ -401,9 +403,13 @@ fun NovelReaderScreen(
     val backgroundColor = theme.backgroundColor()
     val textColor = theme.textColor()
 
-    val currentScrollPage by
-        remember(continuousListState, pages) {
-            derivedStateOf {
+    fun currentNovelPage(): Int =
+        when (layoutMode) {
+            NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
+                pagerState.currentPage
+            }
+
+            NovelLayoutMode.Scroll -> {
                 val firstVisible = continuousListState.firstVisibleItemIndex
                 var count = 0
                 var pageIdx = 0
@@ -419,20 +425,38 @@ fun NovelReaderScreen(
             }
         }
 
-    val currentPage =
-        when (layoutMode) {
-            NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> pagerState.currentPage
-            NovelLayoutMode.Scroll -> currentScrollPage
-        }
+    LaunchedEffect(pagerState, continuousListState, layoutMode, pages.size, currentNovel.id) {
+        snapshotFlow {
+            when (layoutMode) {
+                NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
+                    pagerState.currentPage
+                }
 
-    LaunchedEffect(currentPage, pages.size) {
-        if (pages.isNotEmpty() && currentPage in pages.indices) {
-            viewModel.updateNovelProgress(
-                novelId = currentNovel.id,
-                page = currentPage,
-                totalPages = pages.size,
-            )
-        }
+                NovelLayoutMode.Scroll -> {
+                    val firstVisible = continuousListState.firstVisibleItemIndex
+                    var count = 0
+                    var pageIdx = 0
+                    for (i in pages.indices) {
+                        val pageItems = 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
+                        if (firstVisible < count + pageItems) {
+                            pageIdx = i
+                            break
+                        }
+                        count += pageItems
+                    }
+                    pageIdx.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+                }
+            }
+        }.distinctUntilChanged()
+            .collect { page ->
+                if (pages.isNotEmpty() && page in pages.indices) {
+                    viewModel.updateNovelProgress(
+                        novelId = currentNovel.id,
+                        page = page,
+                        totalPages = pages.size,
+                    )
+                }
+            }
     }
 
     fun jumpToPage(targetPage: Int) {
@@ -485,7 +509,7 @@ fun NovelReaderScreen(
                             AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
                             AndroidKeyEvent.KEYCODE_MEDIA_NEXT,
                             -> {
-                                jumpToPage((currentPage + 1).coerceAtMost(pages.size - 1))
+                                jumpToPage((currentNovelPage() + 1).coerceAtMost(pages.size - 1))
                                 true
                             }
 
@@ -495,7 +519,7 @@ fun NovelReaderScreen(
                             AndroidKeyEvent.KEYCODE_DPAD_LEFT,
                             AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS,
                             -> {
-                                jumpToPage((currentPage - 1).coerceAtLeast(0))
+                                jumpToPage((currentNovelPage() - 1).coerceAtLeast(0))
                                 true
                             }
 
@@ -547,7 +571,7 @@ fun NovelReaderScreen(
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 NovelBottomControlBar(
-                    currentPage = currentPage,
+                    currentPage = currentNovelPage(),
                     pageCount = pages.size,
                     onPageChange = ::jumpToPage,
                     onOpenToc = { showTocSheet = true },
@@ -686,22 +710,24 @@ fun NovelReaderScreen(
         }
     }
 
-    NovelTocBottomSheet(
-        show = showTocSheet,
-        currentPage = currentPage,
-        pageCount = pages.size,
-        chapters = chapters,
-        seriesPrevId = text?.seriesPrevId,
-        seriesPrevTitle = text?.seriesPrevTitle,
-        seriesNextId = text?.seriesNextId,
-        seriesNextTitle = text?.seriesNextTitle,
-        onJumpPage = ::jumpToPage,
-        onOpenSeriesEpisode = { id, title ->
-            viewModel.openNovelById(id, title)
-            showTocSheet = false
-        },
-        onDismiss = { showTocSheet = false },
-    )
+    if (showTocSheet) {
+        NovelTocBottomSheet(
+            show = true,
+            currentPage = currentNovelPage(),
+            pageCount = pages.size,
+            chapters = chapters,
+            seriesPrevId = text?.seriesPrevId,
+            seriesPrevTitle = text?.seriesPrevTitle,
+            seriesNextId = text?.seriesNextId,
+            seriesNextTitle = text?.seriesNextTitle,
+            onJumpPage = ::jumpToPage,
+            onOpenSeriesEpisode = { id, title ->
+                viewModel.openNovelById(id, title)
+                showTocSheet = false
+            },
+            onDismiss = { showTocSheet = false },
+        )
+    }
 
     NovelSettingsBottomSheet(
         show = showSettingsSheet,
@@ -713,7 +739,7 @@ fun NovelReaderScreen(
         onThemeChange = { viewModel.updateNovelTheme(it.id) },
         layoutMode = layoutMode,
         onLayoutModeChange = { newMode ->
-            val current = currentPage
+            val current = currentNovelPage()
             viewModel.updateNovelLayoutMode(newMode.id)
             jumpToPage(current)
         },

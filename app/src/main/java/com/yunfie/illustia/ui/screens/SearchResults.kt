@@ -80,11 +80,16 @@ internal fun SearchResultGrid(
     } else if (page == 0 && isNovelResult) {
         val prefetchUrls =
             remember(state.searchNovelItems) {
-                val targets = if (state.searchNovelItems.size <= 24) state.searchNovelItems else state.searchNovelItems.takeLast(24)
-                targets
-                    .asSequence()
-                    .map { it.coverUrl }
-                    .toList()
+                val items = state.searchNovelItems
+                val startIndex = (items.size - 24).coerceAtLeast(0)
+                val result = ArrayList<String>(items.size - startIndex)
+                for (i in startIndex until items.size) {
+                    val cover = items[i].coverUrl
+                    if (cover.isNotBlank()) {
+                        result.add(cover)
+                    }
+                }
+                result
             }
         PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages, limit = 24)
     }
@@ -123,11 +128,11 @@ internal fun SearchResultGrid(
                     NovelCard(novel = novel, onClick = onClick)
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
-                    item(key = "search_novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }, contentType = "novel_skeleton") {
                         NovelCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
-                    item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
                         Button(
                             onClick = viewModel::loadMoreSearch,
                             enabled = !isPaginating,
@@ -150,7 +155,7 @@ internal fun SearchResultGrid(
                 }
                 if (state.searchNovelItems.isEmpty()) {
                     if (state.loadState is LoadState.Error) {
-                        item(key = "search_novel_error_state", span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_novel_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                             SearchErrorState(
                                 message = state.loadState.message,
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
@@ -166,7 +171,7 @@ internal fun SearchResultGrid(
                             NovelCardSkeleton(shimmerValue = shimmer)
                         }
                     } else {
-                        item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
                             EmptyState(stringResource(R.string.search_empty_novel))
                         }
                     }
@@ -197,7 +202,7 @@ internal fun SearchResultGrid(
                         IllustCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
-                    item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
                         Button(
                             onClick = viewModel::loadMoreSearch,
                             enabled = !isPaginating,
@@ -220,7 +225,7 @@ internal fun SearchResultGrid(
                 }
                 if (state.searchItems.isEmpty()) {
                     if (state.loadState is LoadState.Error) {
-                        item(key = "search_illust_error_state", span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_illust_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                             SearchErrorState(
                                 message = state.loadState.message,
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
@@ -235,7 +240,7 @@ internal fun SearchResultGrid(
                             IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     } else {
-                        item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
                             EmptyState(stringResource(R.string.search_empty_illust))
                         }
                     }
@@ -248,11 +253,11 @@ internal fun SearchResultGrid(
                 UserResultCard(user = user, onClick = onClick)
             }
             if (state.settings.autoLoadMore && isPaginating) {
-                item(key = "search_user_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                item(key = "search_user_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }, contentType = "user_skeleton") {
                     UserResultCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
-                item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
                     Button(
                         onClick = viewModel::loadMoreUserSearch,
                         enabled = !isPaginating,
@@ -275,7 +280,7 @@ internal fun SearchResultGrid(
             }
             if (state.userSearchItems.isEmpty()) {
                 if (state.loadState is LoadState.Error) {
-                    item(key = "search_user_error_state", span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_user_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                         SearchErrorState(
                             message = state.loadState.message,
                             onRetry = { viewModel.submitSearch(forceRefresh = true) },
@@ -286,11 +291,12 @@ internal fun SearchResultGrid(
                         count = 4,
                         key = { "search_user_initial_skeleton_$it" },
                         span = { GridItemSpan(maxLineSpan) },
+                        contentType = { "user_skeleton" },
                     ) {
                         UserResultCardSkeleton(shimmerValue = shimmer)
                     }
                 } else {
-                    item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }) {
+                    item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
                         EmptyState(stringResource(R.string.search_empty_user))
                     }
                 }
@@ -344,18 +350,20 @@ internal fun UserResultCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (user.previewIllusts.isNotEmpty()) {
-                val previews = user.previewIllusts.take(3)
+                val previewCount = minOf(3, user.previewIllusts.size)
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    previews.forEach { illust ->
+                    for (i in 0 until previewCount) {
+                        val illust = user.previewIllusts[i]
                         PixivImage(
                             url = illust.squareImageUrl.ifBlank { illust.mediumImageUrl.ifBlank { illust.imageUrl } },
                             contentDescription = illust.title,
                             contentScale = ContentScale.Crop,
                             thumbnail = true,
+                            maxDecodeDimensionPx = 384,
                             modifier = Modifier.weight(1f).height(118.dp),
                         )
                     }
-                    repeat(3 - previews.size) {
+                    repeat(3 - previewCount) {
                         Spacer(modifier = Modifier.weight(1f).height(118.dp))
                     }
                 }
