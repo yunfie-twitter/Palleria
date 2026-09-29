@@ -352,13 +352,8 @@ fun IllustDetailScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    if (illust.isBookmarked) {
-                        performAppHapticFeedback(context, haptic, hapticMode)
-                        onBookmark()
-                    } else {
-                        performAppHapticFeedback(context, haptic, hapticMode)
-                        onBookmark()
-                    }
+                    performAppHapticFeedback(context, haptic, hapticMode)
+                    onBookmark()
                 },
                 shape = RoundedCornerShape(18.dp),
                 containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
@@ -453,7 +448,7 @@ fun IllustDetailScreen(
                                             .background(MiuixTheme.colorScheme.surface),
                                     contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
                                 ) {
-                                    item { detailInfoContent() }
+                                    item(key = "detail_info", contentType = "detail_info") { detailInfoContent() }
                                 }
                             }
                         } else {
@@ -465,8 +460,8 @@ fun IllustDetailScreen(
                                         .background(MiuixTheme.colorScheme.surface),
                                 contentPadding = PaddingValues(bottom = 96.dp),
                             ) {
-                                item { detailHeaderContent(false, Modifier) }
-                                item { detailInfoContent() }
+                                item(key = "detail_header", contentType = "detail_header") { detailHeaderContent(false, Modifier) }
+                                item(key = "detail_info", contentType = "detail_info") { detailInfoContent() }
                             }
                         }
                     }
