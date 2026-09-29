@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -116,15 +115,14 @@ fun SearchScreen(
     val suggestionStore = remember(repository) { SuggestionStore(repository) }
     val autocompleteSuggestions by suggestionStore.autoWords.collectAsStateWithLifecycle()
 
-    val isResultMode by remember(state.activeSearchWord, isResultRoute, widgetSelectionMode) {
-        derivedStateOf {
+    val isResultMode =
+        remember(state.activeSearchWord, isResultRoute, widgetSelectionMode) {
             if (widgetSelectionMode) {
                 state.activeSearchWord.isNotBlank()
             } else {
                 isResultRoute
             }
         }
-    }
 
     val liveQuery = (if (searchExpanded) state.searchDraft else state.activeSearchWord).trim()
     LaunchedEffect(liveQuery, searchExpanded) {
@@ -138,7 +136,21 @@ fun SearchScreen(
 
     val suggestions =
         remember(state.settings.searchHistory, state.recommendedTags, autocompleteSuggestions) {
-            (state.settings.searchHistory.take(6) + state.recommendedTags + autocompleteSuggestions).distinct().take(18)
+            val result = LinkedHashSet<String>(18)
+            val history = state.settings.searchHistory
+            val historyLimit = minOf(6, history.size)
+            for (i in 0 until historyLimit) {
+                result.add(history[i])
+            }
+            for (tag in state.recommendedTags) {
+                if (result.size >= 18) break
+                result.add(tag)
+            }
+            for (word in autocompleteSuggestions) {
+                if (result.size >= 18) break
+                result.add(word)
+            }
+            result.toList()
         }
 
     LaunchedEffect(state.sessionReady, state.settings.refreshToken, state.recommendedTagsFetchedAtMillis) {

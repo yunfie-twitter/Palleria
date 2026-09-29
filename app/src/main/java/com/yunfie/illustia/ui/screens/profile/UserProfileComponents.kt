@@ -51,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -535,11 +536,12 @@ internal fun UserProfileSmallTopAppBar(
         animationSpec = tween(280),
         label = "profile-top-bar-color",
     )
-    val blurAlpha by animateFloatAsState(
-        targetValue = if (compact) 1f else 0f,
-        animationSpec = tween(280),
-        label = "profile-blur-alpha",
-    )
+    val blurAlpha =
+        animateFloatAsState(
+            targetValue = if (compact) 1f else 0f,
+            animationSpec = tween(280),
+            label = "profile-blur-alpha",
+        )
     val buttonBgColor by animateColorAsState(
         targetValue = if (compact) Color.Transparent else Color.White.copy(alpha = 0.92f),
         animationSpec = tween(240),
@@ -550,13 +552,14 @@ internal fun UserProfileSmallTopAppBar(
         animationSpec = tween(240),
         label = "profile-btn-content",
     )
-    val borderAlpha by animateFloatAsState(
-        targetValue = if (compact) 0.12f else 0f,
-        animationSpec = tween(240),
-        label = "profile-border-alpha",
-    )
+    val borderAlpha =
+        animateFloatAsState(
+            targetValue = if (compact) 0.12f else 0f,
+            animationSpec = tween(240),
+            label = "profile-border-alpha",
+        )
     Box(Modifier.fillMaxWidth()) {
-        if (blurAlpha > 0.005f && user.backgroundImageUrl != null) {
+        if (user.backgroundImageUrl != null) {
             PixivImage(
                 url = user.backgroundImageUrl,
                 contentDescription = null,
@@ -567,20 +570,23 @@ internal fun UserProfileSmallTopAppBar(
                 modifier =
                     Modifier
                         .matchParentSize()
-                        .graphicsLayer { alpha = blurAlpha }
+                        .graphicsLayer { alpha = blurAlpha.value }
                         .blur(24.dp),
             )
         }
-        Box(Modifier.matchParentSize().background(barScrimColor))
-        if (borderAlpha > 0.005f) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(0.5.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(MiuixTheme.colorScheme.outline.copy(alpha = borderAlpha)),
-            )
-        }
+        Box(
+            Modifier
+                .matchParentSize()
+                .drawBehind { drawRect(barScrimColor) },
+        )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .align(Alignment.BottomCenter)
+                .graphicsLayer { alpha = borderAlpha.value }
+                .background(MiuixTheme.colorScheme.outline),
+        )
         Row(
             modifier =
                 Modifier

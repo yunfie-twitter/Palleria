@@ -13,8 +13,6 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,22 +99,19 @@ fun PredictiveBackGestureHandler(
 @Composable
 fun adaptiveIllustColumns(settings: AppSettings): Int {
     val configuration = LocalConfiguration.current
-    val columns by remember(
+    return remember(
         configuration.screenWidthDp,
         configuration.screenHeightDp,
         settings.horizontalColumnCount,
         settings.verticalColumnCount,
     ) {
-        derivedStateOf {
-            val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
-            if (isLandscape) {
-                settings.horizontalColumnCount.coerceIn(3, 6)
-            } else {
-                settings.verticalColumnCount.coerceIn(2, 4)
-            }
+        val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+        if (isLandscape) {
+            settings.horizontalColumnCount.coerceIn(3, 6)
+        } else {
+            settings.verticalColumnCount.coerceIn(2, 4)
         }
     }
-    return columns
 }
 
 fun Modifier.horizontalPadding(padding: Dp): Modifier =

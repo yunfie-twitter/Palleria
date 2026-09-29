@@ -357,6 +357,7 @@ internal fun NovelReaderContinuousContent(
     modifier: Modifier = Modifier,
 ) {
     val currentOnToggleControls by rememberUpdatedState(onToggleControls)
+    val toggleControlsAction = remember { { currentOnToggleControls() } }
     LazyColumn(
         state = lazyListState,
         modifier =
@@ -366,7 +367,7 @@ internal fun NovelReaderContinuousContent(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = { currentOnToggleControls() },
+                    onClick = toggleControlsAction,
                 ),
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -395,7 +396,7 @@ internal fun NovelReaderContinuousContent(
                     viewModel = viewModel,
                     uriHandler = uriHandler,
                     onJumpPage = onJumpPage,
-                    onToggleControls = onToggleControls,
+                    onToggleControls = toggleControlsAction,
                 )
             }
             if (pageIndex < pages.size - 1) {
@@ -655,13 +656,16 @@ private fun NovelParagraph(
             createInlineRubyContent(block.rubyItems, fontSize, textColor, fontFamily)
         }
 
+    val baseStyle = MiuixTheme.textStyles.body1
     val textStyle =
-        MiuixTheme.textStyles.body1.copy(
-            fontSize = fontSize.sp,
-            lineHeight = (fontSize * lineHeightMultiplier).sp,
-            fontFamily = fontFamily,
-            color = textColor,
-        )
+        remember(baseStyle, fontSize, lineHeightMultiplier, fontFamily, textColor) {
+            baseStyle.copy(
+                fontSize = fontSize.sp,
+                lineHeight = (fontSize * lineHeightMultiplier).sp,
+                fontFamily = fontFamily,
+                color = textColor,
+            )
+        }
 
     val currentOnToggleControls by rememberUpdatedState(onToggleControls)
 

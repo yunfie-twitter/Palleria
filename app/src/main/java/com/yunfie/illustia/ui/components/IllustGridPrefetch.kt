@@ -44,22 +44,24 @@ fun PrefetchIllustGridImages(
                 key to index
             }
         }
-    val lastVisibleIndex by remember(gridState, indexByKey) {
-        derivedStateOf {
-            val visibleItems = gridState.layoutInfo.visibleItemsInfo
-            var last = -1
-            for (i in visibleItems.indices) {
-                val index = indexByKey[visibleItems[i].key] ?: continue
-                if (index > last) {
-                    last = index
+    val lastVisibleIndexState =
+        remember(gridState, indexByKey) {
+            derivedStateOf {
+                val visibleItems = gridState.layoutInfo.visibleItemsInfo
+                var last = -1
+                for (i in visibleItems.indices) {
+                    val index = indexByKey[visibleItems[i].key] ?: continue
+                    if (index > last) {
+                        last = index
+                    }
                 }
+                last
             }
-            last
         }
-    }
 
-    val urls by remember(items, lastVisibleIndex, enabled, highQualityImages, preferLowDataImages, limit) {
+    val urls by remember(items, enabled, highQualityImages, preferLowDataImages, limit) {
         derivedStateOf(structuralEqualityPolicy()) {
+            val lastVisibleIndex = lastVisibleIndexState.value
             if (!enabled || items.isEmpty() || lastVisibleIndex < 0) {
                 emptyList()
             } else {
@@ -90,22 +92,24 @@ fun PrefetchNovelGridImages(
                 novel.id to index
             }
         }
-    val lastVisibleIndex by remember(gridState, indexByKey) {
-        derivedStateOf {
-            val visibleItems = gridState.layoutInfo.visibleItemsInfo
-            var last = -1
-            for (i in visibleItems.indices) {
-                val index = indexByKey[visibleItems[i].key] ?: continue
-                if (index > last) {
-                    last = index
+    val lastVisibleIndexState =
+        remember(gridState, indexByKey) {
+            derivedStateOf {
+                val visibleItems = gridState.layoutInfo.visibleItemsInfo
+                var last = -1
+                for (i in visibleItems.indices) {
+                    val index = indexByKey[visibleItems[i].key] ?: continue
+                    if (index > last) {
+                        last = index
+                    }
                 }
+                last
             }
-            last
         }
-    }
 
-    val urls by remember(items, lastVisibleIndex, enabled, limit) {
+    val urls by remember(items, enabled, limit) {
         derivedStateOf(structuralEqualityPolicy()) {
+            val lastVisibleIndex = lastVisibleIndexState.value
             if (!enabled || items.isEmpty() || lastVisibleIndex < 0) {
                 emptyList()
             } else {
