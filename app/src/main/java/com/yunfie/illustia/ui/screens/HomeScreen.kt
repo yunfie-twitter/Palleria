@@ -57,11 +57,16 @@ fun HomeScreen(
     scrollBehavior: ScrollBehavior,
     onSearch: () -> Unit,
     onOpenNovels: () -> Unit,
+    isHomeRefreshing: Boolean = false,
+    isHomePaginating: Boolean = false,
+    isTimelineRefreshing: Boolean = false,
+    isTimelinePaginating: Boolean = false,
+    initialTab: Int = 0,
 ) {
     val pagerState =
         rememberPagerState(
             initialPage =
-                viewModel.uiState.value.homeSelectedTab
+                initialTab
                     .coerceIn(0, (HomeTab.entries.size - 1).coerceAtLeast(0)),
             pageCount = { HomeTab.entries.size },
         )
@@ -214,6 +219,8 @@ fun HomeScreen(
                             nextUrl = nextUrl,
                             settings = settings,
                             viewModel = viewModel,
+                            isRefreshing = isHomeRefreshing,
+                            isPaginating = isHomePaginating,
                             scrollBehavior = scrollBehavior,
                         )
                     }
@@ -225,6 +232,8 @@ fun HomeScreen(
                             nextUrl = timelineNextUrl,
                             settings = settings,
                             viewModel = viewModel,
+                            isRefreshing = isTimelineRefreshing,
+                            isPaginating = isTimelinePaginating,
                             scrollBehavior = scrollBehavior,
                         )
                     }

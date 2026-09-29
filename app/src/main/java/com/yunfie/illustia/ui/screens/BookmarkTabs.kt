@@ -39,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -368,10 +367,9 @@ internal fun BookmarkMainTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkMainGridState
     val showInitialSkeletons = bookmarkItems.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && state.isBookmarkPaginating
+    val showPaginationSkeletons = settings.autoLoadMore && chrome.isBookmarkPaginating
     val shimmer =
         if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
@@ -380,7 +378,7 @@ internal fun BookmarkMainTab(
         }
     val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
-        isRefreshing = state.isBookmarkRefreshing,
+        isRefreshing = chrome.isBookmarkRefreshing,
         onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -388,7 +386,7 @@ internal fun BookmarkMainTab(
             gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.bookmarkNextUrl,
-            isLoading = state.isBookmarkPaginating || loadState == LoadState.Loading,
+            isLoading = chrome.isBookmarkPaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreBookmarks,
         )
         LazyVerticalGrid(
@@ -435,11 +433,11 @@ internal fun BookmarkMainTab(
                 item(key = "bookmark_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreBookmarks,
-                        enabled = !state.isBookmarkPaginating,
+                        enabled = !chrome.isBookmarkPaginating,
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        if (state.isBookmarkPaginating) {
+                        if (chrome.isBookmarkPaginating) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -468,10 +466,9 @@ internal fun BookmarkTimelineTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = viewModel.bookmarkTimelineGridState
     val showInitialSkeletons = timelineItems.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && state.isTimelinePaginating
+    val showPaginationSkeletons = settings.autoLoadMore && chrome.isTimelinePaginating
     val shimmer =
         if (showInitialSkeletons || showPaginationSkeletons) {
             rememberIllustSkeletonShimmer()
@@ -480,7 +477,7 @@ internal fun BookmarkTimelineTab(
         }
     val columns = adaptiveIllustColumns(settings)
     PullToRefresh(
-        isRefreshing = state.isTimelineRefreshing,
+        isRefreshing = chrome.isTimelineRefreshing,
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -488,7 +485,7 @@ internal fun BookmarkTimelineTab(
             gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.timelineNextUrl,
-            isLoading = state.isTimelinePaginating || loadState == LoadState.Loading,
+            isLoading = chrome.isTimelinePaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreTimeline,
         )
         LazyVerticalGrid(
@@ -535,11 +532,11 @@ internal fun BookmarkTimelineTab(
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreTimeline,
-                        enabled = !state.isTimelinePaginating,
+                        enabled = !chrome.isTimelinePaginating,
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        if (state.isTimelinePaginating) {
+                        if (chrome.isTimelinePaginating) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,

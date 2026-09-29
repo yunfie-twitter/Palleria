@@ -26,10 +26,17 @@ internal class IllustiaAppStateBundle(
             homeKind = state.homeKind,
             homeNextUrl = state.homeNextUrl,
             timelineNextUrl = state.timelineNextUrl,
+            isHomeRefreshing = state.isHomeRefreshing,
+            isHomePaginating = state.isHomePaginating,
+            isTimelineRefreshing = state.isTimelineRefreshing,
+            isTimelinePaginating = state.isTimelinePaginating,
+            selectedTab = state.homeSelectedTab,
         )
     val novelChrome =
         NovelChromeState(
             novelNextUrl = state.novelNextUrl,
+            isNovelRefreshing = state.isNovelRefreshing,
+            isNovelPaginating = state.isNovelPaginating,
         )
     val rankingChrome =
         RankingChromeState(
@@ -44,5 +51,9 @@ internal class IllustiaAppStateBundle(
             activeWatchlistTag = state.activeWatchlistTag,
             followingUsersNextUrl = state.followingUsersNextUrl,
             selectedTab = state.bookmarkSelectedTab,
+            isBookmarkRefreshing = state.isBookmarkRefreshing,
+            isBookmarkPaginating = state.isBookmarkPaginating,
+            isTimelineRefreshing = state.isTimelineRefreshing,
+            isTimelinePaginating = state.isTimelinePaginating,
         )
 }

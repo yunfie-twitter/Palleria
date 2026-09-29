@@ -28,6 +28,7 @@ import coil3.size.Precision
 import coil3.size.Scale
 import coil3.toBitmap
 import com.yunfie.illustia.data.proxyPixivImageUrl
+import com.yunfie.illustia.platform.PlatformCapabilities
 
 val PixivImageHeaders =
     NetworkHeaders
@@ -64,8 +65,23 @@ fun PixivImage(
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
     val hasSuccessListener = onSuccess != null
     val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
+    val defaultMaxDimension =
+        remember(context) {
+            val displayMetrics = context.resources.displayMetrics
+            val screenMaxDim = maxOf(displayMetrics.widthPixels, displayMetrics.heightPixels)
+            val maxCap = if (PlatformCapabilities.isLowRamDevice(context)) 1536 else 2560
+            (screenMaxDim * 1.25f).toInt().coerceIn(1280, maxCap)
+        }
     val imageRequest =
-        remember(effectiveUrl, thumbnail, maxDecodeDimensionPx, allowRgb565, hasSuccessListener, hasLoadingListener) {
+        remember(
+            effectiveUrl,
+            thumbnail,
+            maxDecodeDimensionPx,
+            defaultMaxDimension,
+            allowRgb565,
+            hasSuccessListener,
+            hasLoadingListener,
+        ) {
             ImageRequest
                 .Builder(context)
                 .data(effectiveUrl)
@@ -96,8 +112,16 @@ fun PixivImage(
                         precision(Precision.INEXACT)
                         allowRgb565(true)
                     } else {
-                        if (maxDecodeDimensionPx != null) {
-                            size(maxDecodeDimensionPx)
+                        val targetSize =
+                            if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
+                                maxDecodeDimensionPx
+                            } else if (maxDecodeDimensionPx == null) {
+                                defaultMaxDimension
+                            } else {
+                                null
+                            }
+                        if (targetSize != null) {
+                            size(targetSize)
                             scale(Scale.FIT)
                             precision(Precision.INEXACT)
                         }
