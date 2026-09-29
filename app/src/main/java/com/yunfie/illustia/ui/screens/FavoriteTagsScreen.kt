@@ -52,12 +52,14 @@ import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
@@ -97,6 +99,14 @@ fun FavoriteTagsScreen(
     var selectedTag by remember(state.settings.favoriteTags) {
         mutableStateOf(state.settings.favoriteTags.firstOrNull())
     }
+
+    PrefetchIllustGridImages(
+        items = state.watchlistItems,
+        gridState = gridState,
+        enabled = state.settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "fav_",
+    )
 
     // タグが選択されたら自動ロード
     LaunchedEffect(selectedTag) {
@@ -176,6 +186,9 @@ fun FavoriteTagsScreen(
                 isLoading = state.isWatchlistPaginating || state.loadState == LoadState.Loading,
                 onLoadMore = viewModel::loadMoreWatchlist,
             )
+            val showInitialLoading = state.watchlistItems.isEmpty() && state.loadState == LoadState.Loading
+            val showPaginating = state.settings.autoLoadMore && state.isWatchlistPaginating
+            val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(columns),
@@ -212,8 +225,8 @@ fun FavoriteTagsScreen(
 
                 // ── 検索結果 ──────────────────────────────────
                 if (selectedTag != null) {
-                    if (state.watchlistItems.isEmpty() && state.loadState == LoadState.Loading) {
-                        items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton() }
+                    if (showInitialLoading) {
+                        items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
                     } else {
                         item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(state.loadState) }
                     }
@@ -248,7 +261,7 @@ fun FavoriteTagsScreen(
                             key = { "fav_paginating_skeleton_$it" },
                             contentType = { "illust_skeleton" },
                         ) {
-                            IllustCardSkeleton()
+                            IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!state.settings.autoLoadMore && state.watchlistNextUrl != null) {
                         item(key = "watchlist_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -292,8 +305,9 @@ private fun TagChipRow(
     onDeleteTag: (String) -> Unit,
 ) {
     // タグが多い場合は折り返しレイアウト
+    val chunkedTags = remember(tags) { tags.chunked(4) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        tags.chunked(4).forEach { rowTags ->
+        chunkedTags.forEach { rowTags ->
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),

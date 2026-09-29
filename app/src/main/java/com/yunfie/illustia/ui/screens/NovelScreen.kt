@@ -64,6 +64,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.PrefetchNovelGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
@@ -139,15 +140,11 @@ fun NovelScreen(
                 }
             }
         }
-    val prefetchUrls =
-        remember(items) {
-            val targets = if (items.size <= 24) items else items.takeLast(24)
-            targets
-                .asSequence()
-                .map { it.coverUrl }
-                .toList()
-        }
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
+    PrefetchNovelGridImages(
+        items = items,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+    )
     val showPaginationSkeletons = settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All
     val shimmer =
         if (showPaginationSkeletons) {

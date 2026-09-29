@@ -73,6 +73,7 @@ internal fun BrowseArea(
                     .toList()
             historyUrls + tagUrls
         }
+    PrefetchPixivImages(browsePrefetchUrls, enabled = state.settings.prefetchImages)
     val recentIllusts =
         remember(state.settings.viewHistory, state.settings.mutedTags) {
             state.settings.viewHistory

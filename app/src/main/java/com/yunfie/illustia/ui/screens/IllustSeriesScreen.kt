@@ -79,6 +79,7 @@ import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
@@ -88,6 +89,7 @@ import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.profileGridContentPadding
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -197,16 +199,14 @@ fun IllustSeriesScreen(
 
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
-    val prefetchUrls =
-        remember(state.illusts, feedHighQuality) {
-            val targets = if (state.illusts.size <= 24) state.illusts else state.illusts.takeLast(24)
-            targets
-                .asSequence()
-                .map { if (feedHighQuality) it.imageUrls.medium.ifBlank { it.imageUrls.large } else it.imageUrls.squareMedium }
-                .toList()
-        }
-
-    PrefetchPixivImages(prefetchUrls, enabled = settings.prefetchImages, limit = 24)
+    val illustItems = remember(processedIllusts) { processedIllusts.map { it.toIllust() } }
+    PrefetchIllustGridImages(
+        items = illustItems,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "series_",
+    )
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -335,6 +335,9 @@ fun IllustSeriesScreen(
                 }
 
                 val columns = adaptiveProfileGridColumns()
+                val showInitialSkeletons = state.isLoading && state.illusts.isEmpty()
+                val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
+                val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),
@@ -353,7 +356,7 @@ fun IllustSeriesScreen(
                 ) {
                     if (state.isLoading && state.illusts.isEmpty()) {
                         gridItems(List(6) { it }, contentType = { "illust_skeleton" }) {
-                            IllustCardSkeleton()
+                            IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     }
                     if (state.errorMessage != null && state.illusts.isEmpty()) {
@@ -404,7 +407,7 @@ fun IllustSeriesScreen(
                             key = { "series_paginating_skeleton_$it" },
                             contentType = { "illust_skeleton" },
                         ) {
-                            IllustCardSkeleton()
+                            IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {

@@ -76,3 +76,51 @@ fun PrefetchIllustGridImages(
     }
     PrefetchPixivImages(urls, enabled = enabled, limit = limit)
 }
+
+@Composable
+fun PrefetchNovelGridImages(
+    items: List<com.yunfie.illustia.models.NovelPreview>,
+    gridState: LazyGridState,
+    enabled: Boolean,
+    limit: Int = 12,
+) {
+    val indexByKey =
+        remember(items) {
+            items.withIndex().associate { (index, novel) ->
+                novel.id to index
+            }
+        }
+    val lastVisibleIndex by remember(gridState, indexByKey) {
+        derivedStateOf {
+            val visibleItems = gridState.layoutInfo.visibleItemsInfo
+            var last = -1
+            for (i in visibleItems.indices) {
+                val index = indexByKey[visibleItems[i].key] ?: continue
+                if (index > last) {
+                    last = index
+                }
+            }
+            last
+        }
+    }
+
+    val urls by remember(items, lastVisibleIndex, enabled, limit) {
+        derivedStateOf(structuralEqualityPolicy()) {
+            if (!enabled || items.isEmpty() || lastVisibleIndex < 0) {
+                emptyList()
+            } else {
+                val start = (lastVisibleIndex + 1).coerceAtMost(items.size)
+                val end = (start + limit.coerceAtLeast(0)).coerceAtMost(items.size)
+                val result = ArrayList<String>(end - start)
+                for (index in start until end) {
+                    val novel = items[index]
+                    if (novel.coverUrl.isNotBlank()) {
+                        result.add(novel.coverUrl)
+                    }
+                }
+                result
+            }
+        }
+    }
+    PrefetchPixivImages(urls, enabled = enabled, limit = limit)
+}

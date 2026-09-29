@@ -32,6 +32,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -75,6 +76,36 @@ fun DeviceViewHistoryScreen(
         isLoading = false
     }
 
+    val bookmarkedIds =
+        remember(state.bookmarkItems) {
+            val items = state.bookmarkItems
+            val set = HashSet<Long>(items.size)
+            for (i in items.indices) {
+                set.add(items[i].id)
+            }
+            set
+        }
+
+    val historyList =
+        remember(viewHistory, bookmarkedIds) {
+            val list = viewHistory ?: return@remember emptyList()
+            list.map { illust ->
+                if (illust.id in bookmarkedIds && !illust.isBookmarked) {
+                    illust.copy(isBookmarked = true)
+                } else {
+                    illust
+                }
+            }
+        }
+
+    PrefetchIllustGridImages(
+        items = historyList,
+        gridState = gridState,
+        enabled = state.settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "device_history_",
+    )
+
     val scrollBehavior = MiuixScrollBehavior()
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -112,24 +143,11 @@ fun DeviceViewHistoryScreen(
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     CircularProgressIndicator(modifier = Modifier.padding(32.dp).fillMaxWidth())
                 }
-            } else if (viewHistory.isNullOrEmpty()) {
+            } else if (historyList.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.search_empty_illust))
                 }
             } else {
-                val bookmarkedIds =
-                    state.bookmarkItems
-                        .asSequence()
-                        .map { it.id }
-                        .toSet()
-                val historyList =
-                    (viewHistory ?: emptyList()).map { illust ->
-                        if (illust.id in bookmarkedIds && !illust.isBookmarked) {
-                            illust.copy(isBookmarked = true)
-                        } else {
-                            illust
-                        }
-                    }
                 gridItems(historyList, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     IllustCard(
                         illust = illust,
