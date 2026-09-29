@@ -166,6 +166,8 @@ fun AvatarImage(
             contentDescription = name,
             contentScale = ContentScale.Crop,
             modifier = commonModifier,
+            thumbnail = true,
+            maxDecodeDimensionPx = 192,
         )
     } else {
         Box(

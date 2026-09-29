@@ -223,6 +223,7 @@ private fun WatchlistSeriesCard(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         thumbnail = true,
+                        maxDecodeDimensionPx = 384,
                     )
                 } else {
                     Icon(
