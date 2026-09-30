@@ -2,8 +2,18 @@ package com.yunfie.illustia.platform
 
 import android.app.ActivityManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
+
+/**
+ * Coarse device performance tier used for dynamic hardware adaptation.
+ */
+internal enum class DevicePerformanceTier {
+    LOW,
+    MEDIUM,
+    HIGH,
+}
 
 /**
  * Centralized Android feature gates.
@@ -15,22 +25,111 @@ import androidx.annotation.ChecksSdkIntAtLeast
 internal object PlatformCapabilities {
     const val HANDOFF_API = 37
     const val LOW_RAM_THRESHOLD_BYTES = 3_758_096_384L // 3.5 GB
+    const val MEDIUM_RAM_THRESHOLD_BYTES = 6_442_450_944L // 6.0 GB
+    const val LOW_MEMORY_CLASS_THRESHOLD_MB = 192
 
-    fun isLowRamDevice(context: Context): Boolean {
-        val activityManager =
-            context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-                ?: return false
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        return activityManager.isLowRamDevice || memoryInfo.totalMem <= LOW_RAM_THRESHOLD_BYTES
+    private const val LOW_TIER_MAX_CORES = 4
+    private const val MEDIUM_TIER_MAX_CORES = 6
+
+    private const val MAX_DECODE_DIMENSION_LOW = 1080
+    private const val MAX_DECODE_DIMENSION_MEDIUM = 1536
+    private const val MAX_DECODE_DIMENSION_HIGH = 2560
+
+    private const val PREFETCH_COUNT_LOW = 2
+    private const val PREFETCH_COUNT_MEDIUM = 4
+    private const val PREFETCH_COUNT_HIGH = 6
+
+    private const val DATASTORE_DEBOUNCE_LOW_MS = 1200L
+    private const val DATASTORE_DEBOUNCE_DEFAULT_MS = 500L
+
+    @Volatile
+    private var cachedPerformanceTier: DevicePerformanceTier? = null
+    private val tierLock = Any()
+
+    fun devicePerformanceTier(context: Context): DevicePerformanceTier {
+        cachedPerformanceTier?.let { return it }
+        return synchronized(tierLock) {
+            cachedPerformanceTier ?: resolvePerformanceTier(context.applicationContext).also {
+                cachedPerformanceTier = it
+            }
+        }
     }
 
-    fun isLowSpecDevice(context: Context): Boolean {
-        if (isLowRamDevice(context)) {
-            return true
+    internal fun resolvePerformanceTier(context: Context): DevicePerformanceTier {
+        val activityManager =
+            context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager?.getMemoryInfo(memoryInfo)
+
+        return resolvePerformanceTier(
+            totalMemBytes = memoryInfo.totalMem,
+            isLowRamDevice = activityManager?.isLowRamDevice == true,
+            memoryClassMb = activityManager?.memoryClass ?: 0,
+            cores = Runtime.getRuntime().availableProcessors(),
+        )
+    }
+
+    internal fun resolvePerformanceTier(
+        totalMemBytes: Long,
+        isLowRamDevice: Boolean,
+        memoryClassMb: Int,
+        cores: Int,
+    ): DevicePerformanceTier {
+        val isRamConstrained = isLowRamDevice || totalMemBytes in 1..LOW_RAM_THRESHOLD_BYTES
+        val isHardwareConstrained = memoryClassMb in 1..LOW_MEMORY_CLASS_THRESHOLD_MB || cores <= LOW_TIER_MAX_CORES
+        val isLowTier = isRamConstrained || isHardwareConstrained
+
+        val isMediumTier = totalMemBytes in 1..MEDIUM_RAM_THRESHOLD_BYTES || cores <= MEDIUM_TIER_MAX_CORES
+
+        return when {
+            isLowTier -> DevicePerformanceTier.LOW
+            isMediumTier -> DevicePerformanceTier.MEDIUM
+            else -> DevicePerformanceTier.HIGH
         }
-        val cores = Runtime.getRuntime().availableProcessors()
-        return cores <= 2
+    }
+
+    fun isLowRamDevice(context: Context): Boolean = devicePerformanceTier(context) == DevicePerformanceTier.LOW
+
+    fun isLowSpecDevice(context: Context): Boolean = devicePerformanceTier(context) == DevicePerformanceTier.LOW
+
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.S)
+    fun supportsHardwareBlur(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && devicePerformanceTier(context) != DevicePerformanceTier.LOW
+
+    fun recommendedBitmapConfig(context: Context): Bitmap.Config =
+        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
+            Bitmap.Config.RGB_565
+        } else {
+            Bitmap.Config.ARGB_8888
+        }
+
+    fun maxImageDecodeDimension(context: Context): Int =
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> MAX_DECODE_DIMENSION_LOW
+            DevicePerformanceTier.MEDIUM -> MAX_DECODE_DIMENSION_MEDIUM
+            DevicePerformanceTier.HIGH -> MAX_DECODE_DIMENSION_HIGH
+        }
+
+    fun recommendedPrefetchItemCount(context: Context): Int =
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> PREFETCH_COUNT_LOW
+            DevicePerformanceTier.MEDIUM -> PREFETCH_COUNT_MEDIUM
+            DevicePerformanceTier.HIGH -> PREFETCH_COUNT_HIGH
+        }
+
+    fun supportsRichAnimations(context: Context): Boolean = devicePerformanceTier(context) != DevicePerformanceTier.LOW
+
+    fun recommendedDataStoreDebounceMs(context: Context): Long =
+        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
+            DATASTORE_DEBOUNCE_LOW_MS
+        } else {
+            DATASTORE_DEBOUNCE_DEFAULT_MS
+        }
+
+    internal fun setPerformanceTierForTesting(tier: DevicePerformanceTier?) {
+        synchronized(tierLock) {
+            cachedPerformanceTier = tier
+        }
     }
 
     private val currentSnapshot by lazy(LazyThreadSafetyMode.PUBLICATION) {
