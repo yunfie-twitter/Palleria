@@ -4,9 +4,17 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -158,6 +166,42 @@ fun ImageViewerScreen(
     var showControls by remember { mutableStateOf(true) }
     var showSeekSlider by remember { mutableStateOf(false) }
     val comicMode = illust.type == "manga" && imageUrls.size > 1 && mangaReaderMode == "vertical"
+
+    var localBookmarked by remember(illust.id, isBookmarked) { mutableStateOf(isBookmarked) }
+    LaunchedEffect(isBookmarked) {
+        localBookmarked = isBookmarked
+    }
+    var triggerPop by remember { mutableStateOf(false) }
+    val popScale by animateFloatAsState(
+        targetValue = if (triggerPop) 1.25f else 1.0f,
+        animationSpec =
+            spring(
+                dampingRatio = 0.4f,
+                stiffness = 400f,
+            ),
+        finishedListener = { triggerPop = false },
+        label = "bookmark-button-pop",
+    )
+    val buttonBgColor by animateColorAsState(
+        targetValue =
+            if (localBookmarked) {
+                MiuixTheme.colorScheme.primaryContainer
+            } else {
+                MiuixTheme.colorScheme.surfaceContainerHighest
+            },
+        animationSpec = tween(200),
+        label = "bookmark-button-bg",
+    )
+    val iconColor by animateColorAsState(
+        targetValue =
+            if (localBookmarked) {
+                MiuixTheme.colorScheme.primary
+            } else {
+                MiuixTheme.colorScheme.onSurface
+            },
+        animationSpec = tween(200),
+        label = "bookmark-button-icon",
+    )
 
     LaunchedEffect(showControls) {
         if (showControls) {
@@ -392,25 +436,38 @@ fun ImageViewerScreen(
                                 modifier =
                                     Modifier
                                         .size(46.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            if (isBookmarked) {
-                                                MiuixTheme.colorScheme.primaryContainer
-                                            } else {
-                                                MiuixTheme.colorScheme.surfaceContainerHighest
-                                            },
-                                        ),
+                                        .graphicsLayer {
+                                            scaleX = popScale
+                                            scaleY = popScale
+                                        }.clip(RoundedCornerShape(16.dp))
+                                        .background(buttonBgColor),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 IconButton(onClick = {
                                     performHaptic(AppHapticEffect.Toggle)
+                                    triggerPop = true
+                                    localBookmarked = !localBookmarked
                                     onBookmark()
                                 }) {
-                                    Icon(
-                                        imageVector = if (isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                        contentDescription = stringResource(R.string.action_bookmark),
-                                        tint = if (isBookmarked) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-                                    )
+                                    AnimatedContent(
+                                        targetState = localBookmarked,
+                                        transitionSpec = {
+                                            (
+                                                scaleIn(spring(dampingRatio = 0.4f, stiffness = 400f), initialScale = 0.4f) +
+                                                    fadeIn(tween(150))
+                                            ).togetherWith(
+                                                scaleOut(tween(100), targetScale = 0.4f) +
+                                                    fadeOut(tween(100)),
+                                            )
+                                        },
+                                        label = "bookmark-icon-switch",
+                                    ) { isLiked ->
+                                        Icon(
+                                            imageVector = if (isLiked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
+                                            contentDescription = stringResource(R.string.action_bookmark),
+                                            tint = iconColor,
+                                        )
+                                    }
                                 }
                             }
                             Box(

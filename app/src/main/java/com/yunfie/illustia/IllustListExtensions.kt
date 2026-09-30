@@ -172,6 +172,7 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
     val updatedUserIllusts = selectedUserIllusts.replaceIllustIfPresent(updated)
     val updatedUserBookmarks = selectedUserBookmarks.replaceIllustIfPresent(updated)
     val updatedSelected = if (selectedIllust?.id == updated.id) updated else selectedIllust
+    val updatedImageViewer = if (imageViewerIllust?.id == updated.id) updated else imageViewerIllust
 
     val unchanged =
         updatedHome === homeItems &&
@@ -186,7 +187,8 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
             updatedBookmarks === bookmarkItems &&
             updatedUserIllusts === selectedUserIllusts &&
             updatedUserBookmarks === selectedUserBookmarks &&
-            updatedSelected === selectedIllust
+            updatedSelected === selectedIllust &&
+            updatedImageViewer === imageViewerIllust
 
     if (unchanged) {
         return this
@@ -206,6 +208,7 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
         selectedUserIllusts = updatedUserIllusts,
         selectedUserBookmarks = updatedUserBookmarks,
         selectedIllust = updatedSelected,
+        imageViewerIllust = updatedImageViewer,
     )
 }
 
