@@ -83,8 +83,9 @@ internal fun MainSurface(
     onNavigateToResults: (String) -> Unit,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
-    val tabs = mainTabs(appState.settings)
-    val navigationTabs = visibleTabs(appState.settings)
+    val tabs = remember(appState.settings.shortsFeedEnabled, appState.settings.navigationOrder) { mainTabs(appState.settings) }
+    val navigationTabs =
+        remember(appState.settings.shortsFeedEnabled, appState.settings.navigationOrder) { visibleTabs(appState.settings) }
     val context = LocalContext.current
     val surfaceColor = MiuixTheme.colorScheme.surface
     val isDarkTheme = surfaceColor.luminance() < 0.5f

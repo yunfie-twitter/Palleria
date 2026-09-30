@@ -22,14 +22,20 @@ internal suspend fun readAppSettings(
 
 /**
  * Reads only the settings required to build the first app frame.
- * Room-backed collections are hydrated separately after startup.
+ * Keystore-backed secrets and Room-backed collections are hydrated separately after startup.
  */
 internal suspend fun readStartupAppSettings(
     dataStore: DataStore<Preferences>,
-    sensitivePreferences: SharedPreferences,
+    isLoggedIn: Boolean = false,
 ): AppSettings {
     val preferences = readDataStorePreferences(dataStore)
-    return readFromDataStore(preferences, RoomSettingsData(), sensitivePreferences, isStartup = true)
+    return readFromDataStore(
+        preferences = preferences,
+        roomData = RoomSettingsData(),
+        sensitivePreferences = null,
+        isStartup = true,
+        isStartupLoggedIn = isLoggedIn,
+    )
 }
 
 internal suspend fun writeAppSettings(
@@ -78,6 +84,8 @@ internal suspend fun clearSensitiveSettings(
         .remove(KEY_REFRESH_TOKEN)
         .remove(KEY_ACCOUNTS)
         .remove(KEY_ACCOUNT_TOKENS)
+        .putBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
+        .putBoolean(KEY_STARTUP_HAS_PIN, false)
         .apply()
     database.runInTransaction {
         dao.clearAccounts()

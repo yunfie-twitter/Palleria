@@ -27,6 +27,9 @@ import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE_SPEC_MIGRATED
 import com.yunfie.illustia.settings.store.DATASTORE_NAME
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
+import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
+import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
+import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
 import com.yunfie.illustia.settings.store.PALLA_SYNC_ENABLED
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
@@ -107,10 +110,20 @@ class SettingsStore internal constructor(
         cachedStartupSettings?.let { return it }
         return startupCacheMutex.withLock {
             cachedStartupSettings?.let { return@withLock it }
-            val result = readStartupAppSettingsImpl(dataStore, sensitivePreferences)
+            val isLoggedIn = isStartupLoggedIn()
+            val result = readStartupAppSettingsImpl(dataStore, isLoggedIn = isLoggedIn)
             cachedStartupSettings = result
             result
         }
+    }
+
+    private fun isStartupLoggedIn(): Boolean {
+        if (legacyPreferences.contains(KEY_STARTUP_IS_LOGGED_IN)) {
+            return legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
+        }
+        val loggedIn = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty().isNotBlank()
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, loggedIn).apply()
+        return loggedIn
     }
 
     suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings {
@@ -175,6 +188,8 @@ class SettingsStore internal constructor(
                     .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
                     .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
                     .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
+                    .putBoolean(KEY_STARTUP_IS_LOGGED_IN, rebased.refreshToken.isNotBlank())
+                    .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
                     .apply()
 
                 rebased
@@ -274,14 +289,23 @@ class SettingsStore internal constructor(
 
     fun savePinHash(pin: String) {
         savePinHashImpl(sensitivePreferences, pin)
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, true).apply()
     }
 
     suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
 
-    fun hasPinSet(): Boolean = hasPinSetImpl(sensitivePreferences)
+    fun hasPinSet(): Boolean {
+        if (legacyPreferences.contains(KEY_STARTUP_HAS_PIN)) {
+            return legacyPreferences.getBoolean(KEY_STARTUP_HAS_PIN, false)
+        }
+        val hasPin = hasPinSetImpl(sensitivePreferences)
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, hasPin).apply()
+        return hasPin
+    }
 
     fun clearPinHash() {
         clearPinHashImpl(sensitivePreferences)
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, false).apply()
     }
 
     fun saveUnlockCodeHash(code: String) {
