@@ -37,6 +37,16 @@ class AppUpdateDownloadWorker(
 
             val updater = AppUpdaterRepository(context)
 
+            // Guard against infinite update loop: If the app is already on this version or newer
+            // (e.g. WorkManager resumed worker after Shizuku killed process during installation), exit immediately.
+            val currentVersion = updater.getCurrentVersionName()
+            if (!updater.isNewerVersion(release.versionName, currentVersion)) {
+                updater.cleanUpdateApks()
+                AppUpdateNotificationHelper.cancelDownloadProgress(context)
+                _progressFlow.value = null
+                return@withContext Result.success()
+            }
+
             setForeground(createForegroundInfo(release))
 
             try {
@@ -83,6 +93,12 @@ class AppUpdateDownloadWorker(
         release: AppReleaseInfo,
         file: File,
     ) {
+        val currentVersion = updater.getCurrentVersionName()
+        if (!updater.isNewerVersion(release.versionName, currentVersion)) {
+            updater.cleanUpdateApks()
+            return
+        }
+
         val store = SettingsStore(context)
         val settings = store.read()
         val method = UpdateInstallMethod.fromValue(settings.updateInstallMethod)
@@ -92,9 +108,13 @@ class AppUpdateDownloadWorker(
                 updater.isShizukuPermissionGranted()
 
         if (shouldInstallViaShizuku) {
+            // Cancel unique work so that if the process is killed by Shizuku installation,
+            // WorkManager will not re-trigger this worker indefinitely.
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
             val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
             if (installResult.isSuccess) {
                 AppUpdateNotificationHelper.showUpdateInstalled(context, release)
+                updater.cleanUpdateApks()
                 return
             }
         }

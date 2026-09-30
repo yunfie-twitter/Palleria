@@ -545,15 +545,18 @@ internal fun writeSensitiveSettings(
     settings: AppSettings,
     commit: Boolean = false,
 ) {
+    // Startup placeholder token must never overwrite real stored credentials.
+    if (settings.refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+        return
+    }
+
     // Preserve the caller's storage policy, including retryable legacy migration when
     // the keystore is unavailable. A concrete-class check would break that path.
-    val editor =
-        sensitivePreferences
-            .edit()
-            .putString(KEY_REFRESH_TOKEN, settings.refreshToken)
-            .putString(KEY_DISCORD_TOKEN, settings.discordToken)
-            .putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
-            .remove(KEY_ACCOUNTS)
+    val editor = sensitivePreferences.edit()
+    editor.putString(KEY_REFRESH_TOKEN, settings.refreshToken)
+    editor.putString(KEY_DISCORD_TOKEN, settings.discordToken)
+    editor.putString(KEY_ACCOUNT_TOKENS, encodeAccountTokens(settings.accounts))
+    editor.remove(KEY_ACCOUNTS)
     if (commit) {
         if (!editor.commit()) throw IOException("Unable to persist migrated credentials")
     } else {

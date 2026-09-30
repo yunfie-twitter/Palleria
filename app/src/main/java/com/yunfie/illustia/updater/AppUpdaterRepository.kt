@@ -53,7 +53,17 @@ class AppUpdaterRepository(
         runCatching {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName.orEmpty()
-        }.getOrNull()?.ifBlank { "5.5.24" } ?: "5.5.24"
+        }.getOrNull()?.ifBlank { "6.5.0-beta.6" } ?: "6.5.0-beta.6"
+
+    fun cleanUpdateApks() {
+        runCatching {
+            updatesDir.listFiles()?.forEach { file ->
+                if (file.name.endsWith(".apk", ignoreCase = true) || file.name.endsWith(".tmp", ignoreCase = true)) {
+                    file.delete()
+                }
+            }
+        }
+    }
 
     fun cancelDownload() {
         synchronized(downloadLock) {
@@ -464,6 +474,9 @@ class AppUpdaterRepository(
             writeApkToSession(sessionId, fileSize, apkFile)
             commitInstallSession(sessionId)
             committed = true
+            // If the commit command succeeded and we reached here (before process was killed),
+            // clean up the APK file to prevent duplicate installations on next boot.
+            apkFile.delete()
         } finally {
             if (!committed) {
                 abandonInstallSession(sessionId)
@@ -730,9 +743,11 @@ class AppUpdaterRepository(
             v1: String,
             v2: String,
         ): Int {
-            if (v1 == v2) return 0
-            val core1 = v1.substringBefore("-").trim()
-            val core2 = v2.substringBefore("-").trim()
+            val cleanV1 = v1.trim().removePrefix("v").removePrefix("V")
+            val cleanV2 = v2.trim().removePrefix("v").removePrefix("V")
+            if (cleanV1 == cleanV2) return 0
+            val core1 = cleanV1.substringBefore("-").trim()
+            val core2 = cleanV2.substringBefore("-").trim()
 
             val parts1 = core1.split(".").mapNotNull { it.toIntOrNull() }
             val parts2 = core2.split(".").mapNotNull { it.toIntOrNull() }
@@ -743,14 +758,14 @@ class AppUpdaterRepository(
                 if (num1 != num2) return num1.compareTo(num2)
             }
 
-            val hasPre1 = v1.contains("-")
-            val hasPre2 = v2.contains("-")
+            val hasPre1 = cleanV1.contains("-")
+            val hasPre2 = cleanV2.contains("-")
             if (!hasPre1 && hasPre2) return 1
             if (hasPre1 && !hasPre2) return -1
             if (!hasPre1 && !hasPre2) return 0
 
-            val pre1 = v1.substringAfter("-").trim()
-            val pre2 = v2.substringAfter("-").trim()
+            val pre1 = cleanV1.substringAfter("-").trim()
+            val pre2 = cleanV2.substringAfter("-").trim()
             val segs1 = pre1.split(".")
             val segs2 = pre2.split(".")
             val maxPreLen = maxOf(segs1.size, segs2.size)

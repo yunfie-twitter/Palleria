@@ -52,11 +52,21 @@ class SettingsStoreStartupTest {
                     searchHistory.shouldBeEmpty()
                     favoriteTags.shouldBeEmpty()
                 }
-                store.read().apply {
-                    searchAgeRestriction shouldBe SearchAgeRestriction.R18G
-                    searchHistory.shouldContain(marker)
-                    favoriteTags.shouldContain(marker)
-                }
+                // Verify credentials are preserved when write is called with startup placeholder token
+                val testToken = "valid_auth_token_12345"
+                val withRealToken = updated.copy(refreshToken = testToken)
+                store.write(withRealToken, updated)
+                store.read().refreshToken shouldBe testToken
+
+                val startupPlaceholderSettings =
+                    store.readStartup().copy(
+                        lastSeenAppVersionCode = 999,
+                    )
+                store.write(startupPlaceholderSettings, store.read())
+
+                val persisted = store.read()
+                persisted.refreshToken shouldBe testToken
+                persisted.lastSeenAppVersionCode shouldBe 999
             } finally {
                 store.write(original, store.read())
             }

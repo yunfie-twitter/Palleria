@@ -20,6 +20,11 @@ class AppUpdaterRepositoryTest :
             AppUpdaterRepository.compareVersions("6.1.0-beta.10", "6.1.0") shouldBe -1
             AppUpdaterRepository.compareVersions("6.2.0-beta.1", "6.1.0") shouldBe 1
             AppUpdaterRepository.compareVersions("6.1.0-rc.1", "6.1.0-beta.2") shouldBe 1
+            // Version prefix 'v' handling
+            AppUpdaterRepository.compareVersions("v6.5.0-beta.6", "6.5.0-beta.6") shouldBe 0
+            AppUpdaterRepository.compareVersions("6.5.0-beta.6", "v6.5.0-beta.6") shouldBe 0
+            AppUpdaterRepository.compareVersions("v6.5.0-beta.6", "v6.5.0-beta.5") shouldBe 1
+            AppUpdaterRepository.compareVersions("v6.5.0-beta.5", "6.5.0-beta.6") shouldBe -1
         }
 
         "parses UpdateInstallMethod values correctly" {
