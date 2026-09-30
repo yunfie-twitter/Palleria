@@ -33,6 +33,7 @@ import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
 import com.yunfie.illustia.settings.store.PALLA_SYNC_ENABLED
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
+import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.settings.store.illustFromEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -119,7 +120,8 @@ class SettingsStore internal constructor(
 
     private fun isStartupLoggedIn(): Boolean {
         if (legacyPreferences.contains(KEY_STARTUP_IS_LOGGED_IN)) {
-            return legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
+            val isLogged = legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
+            if (isLogged) return true
         }
         val loggedIn = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty().isNotBlank()
         legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, loggedIn).apply()
@@ -160,38 +162,9 @@ class SettingsStore internal constructor(
                         intended = settings.syncedCollections(),
                         persisted = persisted.syncedCollections(),
                     )
-                // A queued unrelated settings write must not re-enable a chain that
-                // the coordinator disabled after an authoritative 410 response.
-                val enabled =
-                    if (base.pallaSyncEnabled == settings.pallaSyncEnabled) {
-                        persisted.pallaSyncEnabled
-                    } else {
-                        settings.pallaSyncEnabled
-                    }
-                val serverUrl =
-                    if (base.pallaSyncServerUrl == settings.pallaSyncServerUrl) {
-                        persisted.pallaSyncServerUrl
-                    } else {
-                        settings.pallaSyncServerUrl
-                    }
-                val rebased =
-                    settings
-                        .copy(
-                            pallaSyncEnabled = enabled,
-                            pallaSyncServerUrl = serverUrl,
-                        ).withSyncedCollections(rebasedCollections)
+                val rebased = resolveRebasedSettings(settings, base, persisted, rebasedCollections)
                 writeAppSettingsImpl(dataStore, sensitivePreferences, database, dao, rebased, baseSettings = base)
-                // These non-sensitive values are needed before the asynchronous authoritative
-                // settings load completes. Keep a lightweight startup mirror off the DataStore path.
-                legacyPreferences
-                    .edit()
-                    .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
-                    .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
-                    .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
-                    .putBoolean(KEY_STARTUP_IS_LOGGED_IN, rebased.refreshToken.isNotBlank())
-                    .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
-                    .apply()
-
+                writeStartupMirror(rebased, persisted)
                 rebased
             }
 
@@ -207,6 +180,69 @@ class SettingsStore internal constructor(
             PalleriaSyncManager.log("Failed to durably enqueue local settings changes: ${expectedFailure.message}")
             throw expectedFailure
         }
+    }
+
+    private fun resolveRebasedSettings(
+        settings: AppSettings,
+        base: AppSettings,
+        persisted: AppSettings,
+        rebasedCollections: SyncedCollectionsSnapshot,
+    ): AppSettings {
+        val enabled =
+            if (base.pallaSyncEnabled == settings.pallaSyncEnabled) {
+                persisted.pallaSyncEnabled
+            } else {
+                settings.pallaSyncEnabled
+            }
+        val serverUrl =
+            if (base.pallaSyncServerUrl == settings.pallaSyncServerUrl) {
+                persisted.pallaSyncServerUrl
+            } else {
+                settings.pallaSyncServerUrl
+            }
+        val resolvedRefreshToken =
+            if (settings.refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+                persisted.refreshToken
+            } else {
+                settings.refreshToken
+            }
+        val resolvedDiscordToken =
+            if (settings.discordToken.isBlank() && persisted.discordToken.isNotBlank()) {
+                persisted.discordToken
+            } else {
+                settings.discordToken
+            }
+        val resolvedAccounts =
+            if (settings.accounts.isEmpty() && persisted.accounts.isNotEmpty()) {
+                persisted.accounts
+            } else {
+                settings.accounts
+            }
+        return settings
+            .copy(
+                refreshToken = resolvedRefreshToken,
+                discordToken = resolvedDiscordToken,
+                accounts = resolvedAccounts,
+                pallaSyncEnabled = enabled,
+                pallaSyncServerUrl = serverUrl,
+            ).withSyncedCollections(rebasedCollections)
+    }
+
+    private fun writeStartupMirror(
+        rebased: AppSettings,
+        persisted: AppSettings,
+    ) {
+        val isLoggedIn =
+            (rebased.refreshToken.isNotBlank() && rebased.refreshToken != STARTUP_LOGGED_IN_TOKEN) ||
+                persisted.refreshToken.isNotBlank()
+        legacyPreferences
+            .edit()
+            .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
+            .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
+            .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
+            .putBoolean(KEY_STARTUP_IS_LOGGED_IN, isLoggedIn)
+            .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
+            .apply()
     }
 
     suspend fun writeFromSync(settings: AppSettings) {

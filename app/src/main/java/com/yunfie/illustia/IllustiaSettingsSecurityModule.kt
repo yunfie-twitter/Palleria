@@ -18,6 +18,7 @@ import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
+import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.widget.IllustWidgetProvider
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,14 @@ import kotlinx.coroutines.withContext
 
 private const val MIN_NOVEL_FONT_SIZE = 12f
 private const val MAX_NOVEL_FONT_SIZE = 32f
+
+private fun canRefreshProfileOnStartup(
+    settings: com.yunfie.illustia.settings.AppSettings,
+    isLocked: Boolean,
+): Boolean {
+    val hasValidToken = settings.refreshToken.isNotBlank() && settings.refreshToken != STARTUP_LOGGED_IN_TOKEN
+    return hasValidToken && !isLocked && !settings.privacyModeEnabled
+}
 
 /** Settings mutations, app/privacy locking, and calculator-backed unlock behavior. */
 @Suppress("LargeClass")
@@ -66,7 +75,7 @@ abstract class IllustiaSettingsSecurityModule(
             }
 
             val activeSettings = _uiState.value.settings
-            if (activeSettings.refreshToken.isNotBlank() && !_uiState.value.appLocked && !activeSettings.privacyModeEnabled) {
+            if (canRefreshProfileOnStartup(activeSettings, _uiState.value.appLocked)) {
                 launch {
                     refreshCurrentAccountProfile(activeSettings)
                 }

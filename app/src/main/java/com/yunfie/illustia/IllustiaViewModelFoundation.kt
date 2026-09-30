@@ -6,9 +6,11 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavKey
+import androidx.work.WorkManager
 import coil3.SingletonImageLoader
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
@@ -36,6 +38,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
 import com.yunfie.illustia.settings.isDynamicColorAvailable
+import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.settings.withSyncedCollections
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
@@ -98,10 +101,17 @@ internal fun AppSettings.replaceSyncedCollections(synced: SyncedCollectionsSnaps
 
 internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSettings =
     copy(
+        refreshToken =
+            if (full.refreshToken.isNotBlank() && full.refreshToken != STARTUP_LOGGED_IN_TOKEN) {
+                full.refreshToken
+            } else {
+                refreshToken
+            },
+        discordToken = if (full.discordToken.isNotBlank()) full.discordToken else discordToken,
         searchHistory = full.searchHistory,
         favoriteTags = full.favoriteTags,
         viewHistory = full.viewHistory,
-        accounts = full.accounts,
+        accounts = if (full.accounts.isNotEmpty()) full.accounts else accounts,
     )
 
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */
@@ -292,9 +302,20 @@ abstract class IllustiaViewModelFoundation(
                     startupSettings
                 }
             val shouldLock = normalizedStartupSettings.appLockEnabled && settingsStore.hasPinSet()
-            val currentVersionCode = 113
+            val currentVersionCode =
+                runCatching {
+                    val pInfo =
+                        getApplication<Application>().packageManager.getPackageInfo(
+                            getApplication<Application>().packageName,
+                            0,
+                        )
+                    PackageInfoCompat.getLongVersionCode(pInfo).toInt()
+                }.getOrDefault(133)
             val lastSeenVersionCode = normalizedStartupSettings.lastSeenAppVersionCode
             val isUpdated = lastSeenVersionCode in 1 until currentVersionCode
+            if (isUpdated) {
+                appUpdaterRepository.cleanUpdateApks()
+            }
             val postUpdateMsg =
                 if (isUpdated) {
                     val currentVersionName = appUpdaterRepository.getCurrentVersionName()
@@ -913,9 +934,17 @@ abstract class IllustiaViewModelFoundation(
         viewModelScope.launch(Dispatchers.IO) {
             _updateCheckState.value = UpdateCheckState.Installing
             val method = UpdateInstallMethod.fromValue(_uiState.value.settings.updateInstallMethod)
+            if (method == UpdateInstallMethod.SHIZUKU) {
+                WorkManager
+                    .getInstance(getApplication())
+                    .cancelUniqueWork(com.yunfie.illustia.updater.AppUpdateDownloadWorker.WORK_NAME)
+            }
             appUpdaterRepository
                 .installApk(apkFile, method)
                 .onSuccess {
+                    if (method == UpdateInstallMethod.SHIZUKU) {
+                        appUpdaterRepository.cleanUpdateApks()
+                    }
                     _updateCheckState.value = UpdateCheckState.Idle
                 }.onFailure { error ->
                     _updateCheckState.value = UpdateCheckState.Error(error.message ?: "Installation failed")

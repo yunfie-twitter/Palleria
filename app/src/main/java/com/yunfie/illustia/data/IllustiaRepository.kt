@@ -35,6 +35,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
 import com.yunfie.illustia.settings.rebaseSyncedCollections
+import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.settings.syncedCollections
 import com.yunfie.illustia.settings.withSyncedCollections
 import kotlinx.coroutines.sync.Mutex
@@ -606,8 +607,13 @@ class IllustiaRepository(
 
     private suspend fun requireSession(): PixivSession {
         session?.let { return it }
-        val refreshToken = readSettings().refreshToken
-        require(refreshToken.isNotBlank()) { "Pixiv refresh token が未設定です。" }
+        var refreshToken = readSettings().refreshToken
+        if (refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+            val freshSettings = settingsStore.read()
+            settingsCacheMutex.withLock { cachedSettings = freshSettings }
+            refreshToken = freshSettings.refreshToken
+        }
+        require(refreshToken.isNotBlank() && refreshToken != STARTUP_LOGGED_IN_TOKEN) { "Pixiv refresh token が未設定です。" }
         return login(refreshToken)
     }
 
@@ -648,9 +654,13 @@ class IllustiaRepository(
     }
 
     private suspend fun refreshSession(): PixivSession {
-        val settings = readSettings()
-        val refreshToken = settings.refreshToken
-        require(refreshToken.isNotBlank()) { "Pixiv refresh token が未設定です。" }
+        var refreshToken = readSettings().refreshToken
+        if (refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+            val freshSettings = settingsStore.read()
+            settingsCacheMutex.withLock { cachedSettings = freshSettings }
+            refreshToken = freshSettings.refreshToken
+        }
+        require(refreshToken.isNotBlank() && refreshToken != STARTUP_LOGGED_IN_TOKEN) { "Pixiv refresh token が未設定です。" }
         return login(refreshToken)
     }
 
