@@ -85,7 +85,7 @@ class SettingsStore internal constructor(
     private val legacyPreferences by lazy { appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE) }
     private val encryptedPreferences by lazy { Companion.createEncryptedPreferences(appContext) }
     private val sensitivePreferences by lazy { encryptedPreferences ?: legacyPreferences }
-    private val dataStore = Companion.dataStoreFor(appContext)
+    private val dataStore by lazy { Companion.dataStoreFor(appContext) }
     private val database by lazy { IllustiaDatabase.getInstance(appContext) }
     private val dao by lazy { database.settingsDao() }
 
