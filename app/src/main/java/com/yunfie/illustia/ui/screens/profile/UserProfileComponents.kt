@@ -179,6 +179,7 @@ internal fun UserProfilePagerContent(
                         name = user.name,
                         size = 280.dp,
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        maxDecodeDimensionPx = 512,
                     )
                     HeaderOverlayIcon(
                         icon = MiuixIcons.Close,
@@ -206,7 +207,7 @@ internal fun UserProfilePagerContent(
         ) {
             UserProfileHeader(
                 user = user,
-                selectedTab = pagerState.currentPage,
+                selectedTabProvider = { pagerState.currentPage },
                 onTabSelected = onTabSelected,
                 onToggleFollow = onToggleFollow,
                 isMuted = isMuted,
@@ -238,7 +239,7 @@ internal fun UserProfilePagerContent(
                         .height(54.dp),
                 )
                 UserProfileTabs(
-                    selectedTab = pagerState.currentPage,
+                    selectedTabProvider = { pagerState.currentPage },
                     onTabSelected = onTabSelected,
                     modifier = Modifier.padding(horizontal = 14.dp),
                     listState = tabListState,
@@ -305,7 +306,7 @@ internal fun UserProfilePagerContent(
 @Composable
 private fun UserProfileHeader(
     user: UserProfile,
-    selectedTab: Int,
+    selectedTabProvider: () -> Int,
     onTabSelected: (Int) -> Unit,
     onToggleFollow: () -> Unit,
     isMuted: Boolean,
@@ -349,7 +350,7 @@ private fun UserProfileHeader(
         }
         UserProfileInfo(
             user = user,
-            selectedTab = selectedTab,
+            selectedTabProvider = selectedTabProvider,
             onTabSelected = onTabSelected,
             onToggleFollow = onToggleFollow,
             isMuted = isMuted,
@@ -666,7 +667,7 @@ private fun TopBarTitle(
 @Composable
 private fun UserProfileInfo(
     user: UserProfile,
-    selectedTab: Int,
+    selectedTabProvider: () -> Int,
     onTabSelected: (Int) -> Unit,
     onToggleFollow: () -> Unit,
     isMuted: Boolean,
@@ -723,16 +724,21 @@ private fun UserProfileInfo(
                 )
             }
         }
-        UserProfileTabs(selectedTab, onTabSelected, listState = tabListState)
+        UserProfileTabs(
+            onTabSelected = onTabSelected,
+            listState = tabListState,
+            selectedTabProvider = selectedTabProvider,
+        )
     }
 }
 
 @Composable
 internal fun UserProfileTabs(
-    selectedTab: Int,
+    selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    selectedTabProvider: (() -> Int)? = null,
 ) {
     val performHaptic =
         com.yunfie.illustia.ui.components
@@ -743,12 +749,13 @@ internal fun UserProfileTabs(
             stringResource(R.string.user_tab_bookmarks),
             stringResource(R.string.user_tab_info),
         )
+    val currentSelectedTab = selectedTabProvider?.invoke() ?: selectedTab
     TabRowWithContour(
         modifier = modifier.fillMaxWidth(),
         tabs = tabs,
-        selectedTabIndex = selectedTab,
+        selectedTabIndex = currentSelectedTab,
         onTabSelected = { index ->
-            if (index != selectedTab) {
+            if (index != currentSelectedTab) {
                 performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
             }
             onTabSelected(index)

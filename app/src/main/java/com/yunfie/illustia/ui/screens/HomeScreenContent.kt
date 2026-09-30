@@ -69,6 +69,8 @@ internal fun HomeAccountAvatar(account: UserProfile?) {
                 url = account.profileImageUrl,
                 contentDescription = account.name,
                 contentScale = ContentScale.Crop,
+                thumbnail = true,
+                maxDecodeDimensionPx = 128,
                 modifier =
                     Modifier
                         .fillMaxSize()

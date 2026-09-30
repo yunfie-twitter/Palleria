@@ -55,5 +55,7 @@ internal class IllustiaAppStateBundle(
             isBookmarkPaginating = state.isBookmarkPaginating,
             isTimelineRefreshing = state.isTimelineRefreshing,
             isTimelinePaginating = state.isTimelinePaginating,
+            isFollowingRefreshing = state.isFollowingRefreshing,
+            isFollowingPaginating = state.isFollowingPaginating,
         )
 }

@@ -26,7 +26,8 @@ fun rememberAppThemeColors(
                 colorSchemeMode = settings.toColorSchemeMode(useDynamicColor),
             )
         }
-    return controller.currentColors().let { base ->
+    val base = controller.currentColors()
+    return remember(base, settings.artworkThemeEnabled, artworkAccentArgb) {
         if (settings.artworkThemeEnabled && artworkAccentArgb != null) {
             base.withArtworkAccent(Color(artworkAccentArgb))
         } else {

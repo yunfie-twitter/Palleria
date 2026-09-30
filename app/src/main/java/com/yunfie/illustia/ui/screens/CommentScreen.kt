@@ -148,7 +148,7 @@ fun CommentScreen(
                     ) { _, comment ->
                         CommentRow(
                             comment = comment,
-                            onOpenUser = comment.user?.id?.let { userId -> { onOpenUser(userId) } },
+                            onOpenUser = onOpenUser,
                         )
                     }
                     if (showPaginationSkeletons) {
@@ -156,7 +156,7 @@ fun CommentScreen(
                             CommentItemSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!settings.autoLoadMore && state.nextUrl != null) {
-                        item {
+                        item(key = "comment_load_more", contentType = "comment_load_more") {
                             Button(
                                 onClick = { scope.launch { store.next() } },
                                 modifier = Modifier.fillMaxWidth(),
@@ -228,23 +228,25 @@ fun CommentScreen(
     }
 }
 
-private val WHITESPACE_REGEX = Regex("\\s+")
-
-private fun Comment.isPixivCommentDisabledNotice(): Boolean {
-    val message = comment.orEmpty().replace(WHITESPACE_REGEX, "")
-    return message.contains("コメントがオフにされています")
-}
+private fun Comment.isPixivCommentDisabledNotice(): Boolean = comment?.contains("コメントがオフにされています") == true
 
 @Composable
 private fun CommentRow(
     comment: Comment,
-    onOpenUser: (() -> Unit)?,
+    onOpenUser: ((Long) -> Unit)?,
 ) {
+    val userId = comment.user?.id
+    val clickableModifier =
+        if (userId != null && onOpenUser != null) {
+            Modifier.miuixClickable { onOpenUser(userId) }
+        } else {
+            Modifier
+        }
     ElevatedPanel(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .miuixClickable(onClick = onOpenUser ?: {}),
+                .then(clickableModifier),
     ) {
         Column(
             modifier =

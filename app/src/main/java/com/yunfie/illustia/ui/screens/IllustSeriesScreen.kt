@@ -211,7 +211,7 @@ fun IllustSeriesScreen(
         gridState = gridState,
         enabled = settings.autoLoadMore,
         nextUrl = state.model?.nextUrl,
-        isLoading = state.isLoading,
+        isLoading = state.isLoading || state.isPaginating,
         onLoadMore = { scope.launch { store.loadMore() } },
     )
 

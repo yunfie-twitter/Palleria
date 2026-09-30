@@ -111,6 +111,10 @@ internal fun IllustDetailInfo(
             val defaults = listOf("artist", "tags", "description", "related")
             sectionOrder.filter { it in defaults }.distinct() + defaults.filterNot { it in sectionOrder }
         }
+    val displayTags =
+        remember(illust.tags) {
+            if (illust.tags.size <= 12) illust.tags else illust.tags.take(12)
+        }
 
     Column(
         modifier =
@@ -244,7 +248,7 @@ internal fun IllustDetailInfo(
                         "tags" -> {
                             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                                 FlowButtons(
-                                    values = illust.tags.take(12),
+                                    values = displayTags,
                                     label = { "#$it" },
                                     onClick = onSearchTag,
                                     onLongClick = onLongPressTag,
@@ -439,13 +443,15 @@ private fun RelatedIllustCard(
                 null
             }
         }
+    val onClick = remember(related.id) { { onOpenIllust(related) } }
+    val onLongClick = remember(related.id) { { onLongPressIllust(related) } }
     Box(
         modifier =
             Modifier
                 .aspectRatio(1f)
                 .combinedClickable(
-                    onClick = { onOpenIllust(related) },
-                    onLongClick = { onLongPressIllust(related) },
+                    onClick = onClick,
+                    onLongClick = onLongClick,
                 ),
     ) {
         PixivImage(
@@ -454,6 +460,7 @@ private fun RelatedIllustCard(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
             thumbnail = true,
+            maxDecodeDimensionPx = 384,
         )
         if (ageRestrictionBadgeText != null) {
             Text(

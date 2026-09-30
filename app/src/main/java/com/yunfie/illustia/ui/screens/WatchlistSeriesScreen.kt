@@ -305,12 +305,16 @@ fun WatchlistSeriesScreen(
                     verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
                 ) {
                     if (showInitialLoading) {
-                        gridItems(List(6) { it }, contentType = { "watchlist_series_skeleton" }) {
+                        items(
+                            count = 6,
+                            key = { "watchlist_series_initial_skeleton_$it" },
+                            contentType = { "watchlist_series_skeleton" },
+                        ) {
                             WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                         }
                     }
                     if (state.errorMessage != null && state.mangaSeries.isEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_error") {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(32.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -330,7 +334,7 @@ fun WatchlistSeriesScreen(
                         }
                     }
                     if (processedSeries.isEmpty() && !state.isLoading && state.errorMessage == null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_empty") {
                             EmptyState(stringResource(R.string.watchlist_series_empty))
                         }
                     }
@@ -350,7 +354,7 @@ fun WatchlistSeriesScreen(
                             WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!settings.autoLoadMore && state.model?.nextUrl != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_load_more_button") {
                             Button(
                                 onClick = { scope.launch { store.loadMore() } },
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
