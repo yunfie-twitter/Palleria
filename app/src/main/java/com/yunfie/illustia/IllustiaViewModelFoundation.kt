@@ -112,6 +112,10 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
         favoriteTags = full.favoriteTags,
         viewHistory = full.viewHistory,
         accounts = if (full.accounts.isNotEmpty()) full.accounts else accounts,
+        mutedIllusts = if (full.mutedIllusts.isNotEmpty()) full.mutedIllusts else mutedIllusts,
+        mutedUsers = if (full.mutedUsers.isNotEmpty()) full.mutedUsers else mutedUsers,
+        mutedTags = if (full.mutedTags.isNotEmpty()) full.mutedTags else mutedTags,
+        seenFeedIllusts = if (full.seenFeedIllusts.isNotEmpty()) full.seenFeedIllusts else seenFeedIllusts,
     )
 
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */

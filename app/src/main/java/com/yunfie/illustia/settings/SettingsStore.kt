@@ -120,8 +120,7 @@ class SettingsStore internal constructor(
 
     private fun isStartupLoggedIn(): Boolean {
         if (legacyPreferences.contains(KEY_STARTUP_IS_LOGGED_IN)) {
-            val isLogged = legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
-            if (isLogged) return true
+            return legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
         }
         val loggedIn = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty().isNotBlank()
         legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, loggedIn).apply()
