@@ -6,7 +6,9 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.structuralEqualityPolicy
+import coil3.compose.LocalPlatformContext
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.PlatformCapabilities
 
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
 internal fun upcomingArtworkIndices(
@@ -76,7 +78,9 @@ fun PrefetchIllustGridImages(
             }
         }
     }
-    PrefetchPixivImages(urls, enabled = enabled, limit = limit)
+    val context = LocalPlatformContext.current
+    val prefetchActive = enabled && (!PlatformCapabilities.isLowSpecDevice(context) || !gridState.isScrollInProgress)
+    PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }
 
 @Composable
@@ -126,5 +130,7 @@ fun PrefetchNovelGridImages(
             }
         }
     }
-    PrefetchPixivImages(urls, enabled = enabled, limit = limit)
+    val context = LocalPlatformContext.current
+    val prefetchActive = enabled && (!PlatformCapabilities.isLowSpecDevice(context) || !gridState.isScrollInProgress)
+    PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }

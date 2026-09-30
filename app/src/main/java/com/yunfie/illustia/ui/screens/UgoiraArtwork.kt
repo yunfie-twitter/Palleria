@@ -38,12 +38,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.normalizedUgoiraDelayMillis
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
@@ -60,6 +62,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.concurrent.ConcurrentHashMap
 
 private const val MAX_CACHED_FRAMES = 24
+private const val MAX_CACHED_FRAMES_LOW = 8
 private const val PREFETCH_AHEAD = 18
 private const val KEEP_BEHIND = 4
 
@@ -155,19 +158,29 @@ internal fun UgoiraArtwork(
     }
 
     val bitmapPool = remember(playback) { java.util.concurrent.ConcurrentLinkedQueue<Bitmap>() }
+    val context = LocalContext.current
+    val preferredConfig = remember(context) { PlatformCapabilities.recommendedBitmapConfig(context) }
+    val maxCachedFrames =
+        remember(context) {
+            if (PlatformCapabilities.isLowRamDevice(context)) MAX_CACHED_FRAMES_LOW else MAX_CACHED_FRAMES
+        }
+    val prefetchAhead = remember(context) { PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) }
+    val keepBehind = remember(context) { PlatformCapabilities.recommendedUgoiraKeepBehind(context) }
+
     // フレームのデコードは ConcurrentHashMap に書き込む。
     // メモリ上限を超えないよう、フレーム数が多い場合は再生位置前後のスライディングウィンドウで管理する。
-    LaunchedEffect(playback) {
+    LaunchedEffect(playback, maxCachedFrames, prefetchAhead, keepBehind, preferredConfig) {
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         withContext(Dispatchers.IO) {
-            if (frames.size <= MAX_CACHED_FRAMES) {
+            if (frames.size <= maxCachedFrames) {
                 frames.forEachIndexed { index, frame ->
                     if (!isActive) return@withContext
                     if (!decodedBitmaps.containsKey(index)) {
                         val bitmap =
                             runCatching {
-                                BitmapFactory.decodeFile(frame.filePath)?.asImageBitmap()
+                                val opts = BitmapFactory.Options().apply { inPreferredConfig = preferredConfig }
+                                BitmapFactory.decodeFile(frame.filePath, opts)?.asImageBitmap()
                             }.getOrNull()
                         if (bitmap != null) {
                             decodedBitmaps[index] = bitmap
@@ -178,7 +191,7 @@ internal fun UgoiraArtwork(
                 while (isActive) {
                     val current = currentFrameIndex
                     val needed =
-                        (-KEEP_BEHIND..PREFETCH_AHEAD)
+                        (-keepBehind..prefetchAhead)
                             .map {
                                 (current + it + frames.size) % frames.size
                             }.toSet()
@@ -193,7 +206,7 @@ internal fun UgoiraArtwork(
                         }
                     }
 
-                    for (step in 0..PREFETCH_AHEAD) {
+                    for (step in 0..prefetchAhead) {
                         if (!isActive) break
                         val targetIdx = (current + step) % frames.size
                         if (!decodedBitmaps.containsKey(targetIdx)) {
@@ -203,9 +216,13 @@ internal fun UgoiraArtwork(
                                     BitmapFactory.Options().apply {
                                         inBitmap = pooled
                                         inMutable = true
+                                        inPreferredConfig = preferredConfig
                                     }
                                 } else {
-                                    BitmapFactory.Options().apply { inMutable = true }
+                                    BitmapFactory.Options().apply {
+                                        inMutable = true
+                                        inPreferredConfig = preferredConfig
+                                    }
                                 }
 
                             var androidBitmap =
@@ -220,8 +237,8 @@ internal fun UgoiraArtwork(
                                         BitmapFactory.decodeFile(
                                             frames[targetIdx].filePath,
                                             BitmapFactory.Options().apply {
-                                                inMutable =
-                                                    true
+                                                inMutable = true
+                                                inPreferredConfig = preferredConfig
                                             },
                                         )
                                     }.getOrNull()
@@ -245,7 +262,7 @@ internal fun UgoiraArtwork(
         }
     }
 
-    LaunchedEffect(playback) {
+    LaunchedEffect(playback, preferredConfig) {
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         var index = 0
@@ -263,9 +280,13 @@ internal fun UgoiraArtwork(
                                 BitmapFactory.Options().apply {
                                     inBitmap = pooled
                                     inMutable = true
+                                    inPreferredConfig = preferredConfig
                                 }
                             } else {
-                                BitmapFactory.Options().apply { inMutable = true }
+                                BitmapFactory.Options().apply {
+                                    inMutable = true
+                                    inPreferredConfig = preferredConfig
+                                }
                             }
 
                         var androidBitmap =
@@ -276,7 +297,11 @@ internal fun UgoiraArtwork(
                         if (androidBitmap == null && pooled != null) {
                             androidBitmap =
                                 runCatching {
-                                    val fbOptions = BitmapFactory.Options().apply { inMutable = true }
+                                    val fbOptions =
+                                        BitmapFactory.Options().apply {
+                                            inMutable = true
+                                            inPreferredConfig = preferredConfig
+                                        }
                                     BitmapFactory.decodeFile(frame.filePath, fbOptions)
                                 }.getOrNull()
                         }

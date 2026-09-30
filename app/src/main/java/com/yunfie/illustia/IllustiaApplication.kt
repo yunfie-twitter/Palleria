@@ -54,14 +54,18 @@ class IllustiaApplication : Application() {
     }
 
     val sharedHttpClient: OkHttpClient by lazy {
+        val isLowRam = PlatformCapabilities.isLowRamDevice(this)
+        val maxConcurrentRequests = if (isLowRam) 16 else 64
+        val maxConcurrentPerHost = if (isLowRam) 6 else 16
+        val connectionPoolSize = if (isLowRam) 8 else 16
         OkHttpClient
             .Builder()
             .dispatcher(
                 Dispatcher().apply {
-                    maxRequests = 64
-                    maxRequestsPerHost = 16
+                    maxRequests = maxConcurrentRequests
+                    maxRequestsPerHost = maxConcurrentPerHost
                 },
-            ).connectionPool(okhttp3.ConnectionPool(16, 5, TimeUnit.MINUTES))
+            ).connectionPool(okhttp3.ConnectionPool(connectionPoolSize, 5, TimeUnit.MINUTES))
             .connectTimeout(12, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .writeTimeout(20, TimeUnit.SECONDS)
@@ -86,7 +90,7 @@ class IllustiaApplication : Application() {
             val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
             val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
             val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
-            val memoryCachePercent = if (isLowRam) 0.12 else 0.20
+            val memoryCachePercent = PlatformCapabilities.recommendedCoilMemoryCachePercent(appContext)
             ImageLoader
                 .Builder(appContext)
                 .components {
@@ -101,6 +105,7 @@ class IllustiaApplication : Application() {
                     MemoryCache
                         .Builder()
                         .maxSizePercent(appContext, memoryCachePercent)
+                        .weakReferencesEnabled(!isLowRam)
                         .build()
                 }.diskCache {
                     DiskCache
