@@ -31,6 +31,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
@@ -74,7 +75,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
-private const val SETTINGS_DEBOUNCE_MS = 500L
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -591,6 +591,7 @@ abstract class IllustiaViewModelFoundation(
     }
 
     protected suspend fun persistSettingsUpdates() {
+        val debounceMs = PlatformCapabilities.recommendedDataStoreDebounceMs(getApplication<Application>())
         while (true) {
             var request = settingsPersistenceRequests.receive()
             var baseSettings = request.baseSettings
@@ -599,7 +600,7 @@ abstract class IllustiaViewModelFoundation(
 
             while (true) {
                 val next =
-                    kotlinx.coroutines.withTimeoutOrNull(SETTINGS_DEBOUNCE_MS) {
+                    kotlinx.coroutines.withTimeoutOrNull<SettingsPersistenceRequest>(debounceMs) {
                         settingsPersistenceRequests.receive()
                     }
                 if (next == null) break

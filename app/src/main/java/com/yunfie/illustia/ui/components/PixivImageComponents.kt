@@ -37,9 +37,6 @@ val PixivImageHeaders =
         .set("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Illustia)")
         .build()
 
-private const val ThumbnailDecodeSizePx = 512
-private const val PrefetchDecodeSizePx = 512
-
 @Composable
 fun PixivImage(
     url: String,
@@ -69,8 +66,8 @@ fun PixivImage(
         remember(context) {
             val displayMetrics = context.resources.displayMetrics
             val screenMaxDim = maxOf(displayMetrics.widthPixels, displayMetrics.heightPixels)
-            val maxCap = if (PlatformCapabilities.isLowRamDevice(context)) 1536 else 2560
-            (screenMaxDim * 1.25f).toInt().coerceIn(1280, maxCap)
+            val maxCap = PlatformCapabilities.maxImageDecodeDimension(context)
+            (screenMaxDim * 1.25f).toInt().coerceIn(1080, maxCap)
         }
     val imageRequest =
         remember(
@@ -89,7 +86,7 @@ fun PixivImage(
                     .httpHeaders(PixivImageHeaders)
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .memoryCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(!thumbnail && crossfade)
+                    .crossfade(!thumbnail && crossfade && PlatformCapabilities.supportsImageCrossfade(context))
 
             if (hasLoadingListener || hasSuccessListener) {
                 builder.listener(
@@ -122,11 +119,12 @@ fun PixivImage(
             builder
                 .apply {
                     if (thumbnail) {
+                        val defaultThumbSize = PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
                         val thumbSize =
                             if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
                                 maxDecodeDimensionPx
                             } else {
-                                ThumbnailDecodeSizePx
+                                defaultThumbSize
                             }
                         size(thumbSize)
                         scale(Scale.FILL)
@@ -146,7 +144,10 @@ fun PixivImage(
                             scale(Scale.FIT)
                             precision(Precision.INEXACT)
                         }
-                        if (allowRgb565) {
+                        val shouldAllowRgb565 =
+                            allowRgb565 ||
+                                PlatformCapabilities.recommendedBitmapConfig(context) == Bitmap.Config.RGB_565
+                        if (shouldAllowRgb565) {
                             allowRgb565(true)
                         }
                     }
@@ -187,14 +188,15 @@ fun PrefetchPixivImages(
 ) {
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
+    val effectiveLimit = minOf(limit, PlatformCapabilities.recommendedPrefetchItemCount(context))
     val prefetchUrls =
-        remember(urls, proxyBaseUrl, limit) {
+        remember(urls, proxyBaseUrl, effectiveLimit) {
             urls
                 .asSequence()
                 .filter { it.isNotBlank() }
                 .map { proxyPixivImageUrl(it, proxyBaseUrl) }
                 .distinct()
-                .take(limit)
+                .take(effectiveLimit)
                 .toList()
         }
 
@@ -227,7 +229,7 @@ fun PrefetchPixivImages(
                         .httpHeaders(PixivImageHeaders)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .memoryCachePolicy(CachePolicy.ENABLED)
-                        .size(PrefetchDecodeSizePx)
+                        .size(PlatformCapabilities.recommendedThumbnailDecodeDimension(context))
                         .scale(Scale.FILL)
                         .precision(Precision.INEXACT)
                         .allowRgb565(true)
