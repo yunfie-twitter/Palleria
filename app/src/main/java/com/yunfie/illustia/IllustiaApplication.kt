@@ -81,19 +81,6 @@ class IllustiaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashHandler.instance.init(this)
-        appScope.launch {
-            val telemetryEnabled =
-                runCatching {
-                    settingsStore.readStartup().sendTelemetry
-                }.getOrDefault(false)
-            withContext(Dispatchers.Main.immediate) {
-                setTelemetryEnabled(telemetryEnabled)
-                // Begin measuring cold-start duration. startTransaction returns null
-                // when telemetry is disabled, so no extra consent check is required.
-                startupTransaction =
-                    GlitchTipTelemetry.startTransaction("app.startup", "app.launch")
-            }
-        }
         SingletonImageLoader.setSafe {
             val appContext = applicationContext
             val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()

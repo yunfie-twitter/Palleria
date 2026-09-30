@@ -329,6 +329,7 @@ class MainActivity : FragmentActivity() {
                     reportFullyDrawn()
                     registerProcessLifecycleObserverIfNeeded()
                     requestLegacyStoragePermissionIfNeeded()
+                    enableHandoffIfSupported()
                     kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()
                     (application as IllustiaApplication).startPostStartupWork()
@@ -365,7 +366,6 @@ class MainActivity : FragmentActivity() {
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
         }
-        enableHandoffIfSupported()
     }
 
     override fun onResume() {
@@ -589,9 +589,26 @@ class MainActivity : FragmentActivity() {
         setTaskDescription(taskDesc)
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val isDark = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        if (appliedDarkTheme != isDark) {
+            appliedDarkTheme = isDark
+        }
+    }
+
     private fun applyAppLanguage(language: String) {
         if (appliedAppLanguage == language) return
         appliedAppLanguage = language
+        val isSystemAlreadyConfigured =
+            language == "system" &&
+                if (PlatformCapabilities.supportsPlatformLocaleManager()) {
+                    getSystemService(LocaleManager::class.java)?.applicationLocales?.isEmpty != false
+                } else {
+                    AppCompatDelegate.getApplicationLocales().isEmpty
+                }
+        if (isSystemAlreadyConfigured) return
+
         if (PlatformCapabilities.supportsPlatformLocaleManager()) {
             val localeManager = getSystemService(LocaleManager::class.java)
             if (localeManager != null) {
@@ -626,6 +643,7 @@ class MainActivity : FragmentActivity() {
 
     private fun resolveAppTextStyles(fontFamily: FontFamily): TextStyles {
         val base = defaultTextStyles()
+        if (fontFamily == FontFamily.Default) return base
         return base.copy(
             main = base.main.copy(fontFamily = fontFamily),
             paragraph = base.paragraph.copy(fontFamily = fontFamily),

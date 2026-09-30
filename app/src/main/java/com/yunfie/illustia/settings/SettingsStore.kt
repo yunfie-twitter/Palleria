@@ -107,7 +107,6 @@ class SettingsStore internal constructor(
         cachedStartupSettings?.let { return it }
         return startupCacheMutex.withLock {
             cachedStartupSettings?.let { return@withLock it }
-            ensureMigrated()
             val result = readStartupAppSettingsImpl(dataStore, sensitivePreferences)
             cachedStartupSettings = result
             result
@@ -306,12 +305,18 @@ class SettingsStore internal constructor(
 
     fun savedIllustDir(): File = File(appContext.filesDir, "saved_illusts")
 
-    private suspend fun ensureMigrated() {
+    internal suspend fun ensureMigrated() {
         if (migrationCompleted) return
         migrationMutex.withLock {
             if (migrationCompleted) return@withLock
             withContext(Dispatchers.IO) {
-                migrateSettingsIfNeededImpl(dataStore, encryptedPreferences, legacyPreferences, database, dao)
+                migrateSettingsIfNeededImpl(
+                    dataStore = dataStore,
+                    encryptedPreferences = encryptedPreferences,
+                    legacyPreferences = legacyPreferences,
+                    databaseProvider = { database },
+                    daoProvider = { dao },
+                )
                 val current = dataStore.data.first()
                 if (current[AUTO_LOAD_MORE_SPEC_MIGRATED] != true) {
                     val isNormalOrHigher = !PlatformCapabilities.isLowSpecDevice(appContext)
