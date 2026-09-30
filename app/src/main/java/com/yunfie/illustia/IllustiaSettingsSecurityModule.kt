@@ -938,6 +938,14 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(dynamicAmbientViewerEnabled = value) }
     }
 
+    fun updateImageViewerSwipeToDismissEnabled(value: Boolean) {
+        updateSettings { it.copy(imageViewerSwipeToDismissEnabled = value) }
+    }
+
+    fun updateQuickPeekEnabled(value: Boolean) {
+        updateSettings { it.copy(quickPeekEnabled = value) }
+    }
+
     fun updateRestrict(value: Restrict) {
         updateSettings { it.copy(bookmarkRestrict = value) }
     }

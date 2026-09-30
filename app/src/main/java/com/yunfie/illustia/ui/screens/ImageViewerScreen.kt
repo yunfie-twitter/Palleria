@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -20,6 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +62,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -74,6 +77,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
@@ -120,9 +124,12 @@ fun ImageViewerScreen(
     loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
     ambientLightEnabled: Boolean = false,
     volumeKeyPageTurnerEnabled: Boolean = false,
+    swipeToDismissEnabled: Boolean = true,
 ) {
     val context = LocalContext.current
     val shareFailedMessage = stringResource(R.string.viewer_share_failed)
+    val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
+    val copyFailedMessage = stringResource(R.string.copy_image_failed)
     val imageUrls =
         remember(illust, fullscreenQuality) {
             when (fullscreenQuality) {
@@ -250,6 +257,24 @@ fun ImageViewerScreen(
         }
     }
 
+    val performHaptic = rememberHapticFeedbackAction()
+    val dismissOffsetY = remember { Animatable(0f) }
+    val density = LocalDensity.current
+    val dismissThresholdPx = remember(density) { with(density) { 140.dp.toPx() } }
+
+    fun copyCurrentPage() {
+        val url = imageUrls.getOrNull(pagerState.currentPage) ?: return
+        coroutineScope.launch {
+            val success = ImageClipboardHelper.copyImageToClipboard(context, url)
+            if (success) {
+                performHaptic(AppHapticEffect.Success)
+                onMessage(copiedMessage)
+            } else {
+                onMessage(copyFailedMessage)
+            }
+        }
+    }
+
     fun movePage(direction: Int) {
         if (imageUrls.isEmpty()) return
         val targetPage = (pagerState.currentPage + direction).coerceIn(0, imageUrls.lastIndex)
@@ -261,7 +286,6 @@ fun ImageViewerScreen(
 
     PredictiveBackGestureHandler(onBack = onBack)
 
-    val performHaptic = rememberHapticFeedbackAction()
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
@@ -480,6 +504,25 @@ fun ImageViewerScreen(
                             ) {
                                 IconButton(onClick = {
                                     performHaptic(AppHapticEffect.Click)
+                                    copyCurrentPage()
+                                }) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Copy,
+                                        contentDescription = stringResource(R.string.action_copy_image),
+                                        tint = MiuixTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                IconButton(onClick = {
+                                    performHaptic(AppHapticEffect.Click)
                                     shareCurrentPage()
                                 }) {
                                     Icon(
@@ -496,11 +539,53 @@ fun ImageViewerScreen(
         },
         floatingToolbarPosition = ToolbarPosition.BottomCenter,
     ) {
+        val dismissProgress = (dismissOffsetY.value / (dismissThresholdPx * 2f)).coerceIn(0f, 1f)
+        val bgAlpha = (1f - dismissProgress * 1.2f).coerceIn(0f, 1f)
+        val contentScale = (1f - dismissProgress * 0.2f).coerceIn(0.7f, 1f)
+
+        val swipeModifier =
+            if (swipeToDismissEnabled && !comicMode && !isZoomed) {
+                Modifier.pointerInput(swipeToDismissEnabled, isZoomed, comicMode) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            coroutineScope.launch {
+                                if (dismissOffsetY.value > dismissThresholdPx) {
+                                    onBack()
+                                } else {
+                                    dismissOffsetY.animateTo(
+                                        0f,
+                                        spring(dampingRatio = 0.8f, stiffness = 600f),
+                                    )
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            coroutineScope.launch {
+                                dismissOffsetY.animateTo(
+                                    0f,
+                                    spring(dampingRatio = 0.8f, stiffness = 600f),
+                                )
+                            }
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            if (dragAmount > 0f || dismissOffsetY.value > 0f) {
+                                change.consume()
+                                coroutineScope.launch {
+                                    dismissOffsetY.snapTo((dismissOffsetY.value + dragAmount).coerceAtLeast(0f))
+                                }
+                            }
+                        },
+                    )
+                }
+            } else {
+                Modifier
+            }
+
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black),
+                    .background(Color.Black.copy(alpha = bgAlpha)),
         ) {
             if (ambientLightEnabled && ambientUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
                 val ambientUrl = ambientUrls.getOrNull(pagerState.currentPage) ?: ambientUrls.first()
@@ -515,7 +600,7 @@ fun ImageViewerScreen(
                         Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                alpha = 0.40f
+                                alpha = 0.40f * bgAlpha
                                 scaleX = 1.35f
                                 scaleY = 1.35f
                             }.blur(48.dp),
@@ -524,62 +609,74 @@ fun ImageViewerScreen(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.30f)),
+                            .background(Color.Black.copy(alpha = 0.30f * bgAlpha)),
                 )
             }
-            if (illust.type == "ugoira") {
-                UgoiraArtwork(
-                    previewUrl = imageUrls.firstOrNull().orEmpty(),
-                    contentDescription = illust.title,
-                    loadPlayback = { loadUgoiraPlayback(illust.id) },
-                    modifier = Modifier.fillMaxSize(),
-                    zoomEnabled = true,
-                    onZoomChanged = { isZoomed = it },
-                    onTap = { showControls = !showControls },
-                )
-            } else if (comicMode) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 72.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    itemsIndexed(
-                        imageUrls,
-                        key = { index, _ -> index },
-                        contentType = { _, _ -> "comic_page" },
-                    ) { page, url ->
-                        PixivImage(
-                            url = url,
-                            contentDescription = "${illust.title} ${page + 1}",
-                            contentScale = ContentScale.FillWidth,
-                            showLoadingSpinner = true,
-                            maxDecodeDimensionPx = 1920,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight()
-                                    .clickable { showControls = !showControls },
-                        )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .then(swipeModifier)
+                        .graphicsLayer {
+                            translationY = dismissOffsetY.value
+                            scaleX = contentScale
+                            scaleY = contentScale
+                        },
+            ) {
+                if (illust.type == "ugoira") {
+                    UgoiraArtwork(
+                        previewUrl = imageUrls.firstOrNull().orEmpty(),
+                        contentDescription = illust.title,
+                        loadPlayback = { loadUgoiraPlayback(illust.id) },
+                        modifier = Modifier.fillMaxSize(),
+                        zoomEnabled = true,
+                        onZoomChanged = { isZoomed = it },
+                        onTap = { showControls = !showControls },
+                    )
+                } else if (comicMode) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 72.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        itemsIndexed(
+                            imageUrls,
+                            key = { index, _ -> index },
+                            contentType = { _, _ -> "comic_page" },
+                        ) { page, url ->
+                            PixivImage(
+                                url = url,
+                                contentDescription = "${illust.title} ${page + 1}",
+                                contentScale = ContentScale.FillWidth,
+                                showLoadingSpinner = true,
+                                maxDecodeDimensionPx = 1920,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight()
+                                        .clickable { showControls = !showControls },
+                            )
+                        }
                     }
-                }
-            } else {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    beyondViewportPageCount = if (prefetchImages) 1 else 0,
-                    userScrollEnabled = !isZoomed,
-                    key = { it },
-                ) { page ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        ZoomablePixivImage(
-                            url = imageUrls[page],
-                            contentDescription = illust.title,
-                            isActive = pagerState.currentPage == page,
-                            onZoomChanged = { zoomed ->
-                                if (pagerState.currentPage == page) isZoomed = zoomed
-                            },
-                            onTap = { showControls = !showControls },
-                        )
+                } else {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        beyondViewportPageCount = if (prefetchImages) 1 else 0,
+                        userScrollEnabled = !isZoomed,
+                        key = { it },
+                    ) { page ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            ZoomablePixivImage(
+                                url = imageUrls[page],
+                                contentDescription = illust.title,
+                                isActive = pagerState.currentPage == page,
+                                onZoomChanged = { zoomed ->
+                                    if (pagerState.currentPage == page) isZoomed = zoomed
+                                },
+                                onTap = { showControls = !showControls },
+                            )
+                        }
                     }
                 }
             }

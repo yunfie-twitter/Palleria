@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,15 +21,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.ImageClipboardHelper
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.QuickPeekOverlay
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -54,6 +60,9 @@ internal fun AppOverlayHost(
     onSearchTag: (String) -> Unit,
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
+    val copyFailedMessage = stringResource(R.string.copy_image_failed)
 
     selectedCommentTarget?.let { target ->
         CommentScreen(
@@ -71,89 +80,134 @@ internal fun AppOverlayHost(
     }
 
     appState.state.longPressedIllust?.let { illust ->
-        OverlayBottomSheet(
-            show = true,
-            modifier = Modifier.scrollEndHaptic(),
-            title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
-            onDismissRequest = viewModel::closeIllustOptions,
-            backgroundColor = LocalBottomSheetBackgroundColor.current,
-            insideMargin = BottomSheetInsideMargin,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.dialog_artist_label, illust.artistName),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    style = MiuixTheme.textStyles.footnote1,
-                )
-                Button(
-                    onClick = {
-                        viewModel.closeIllustOptions()
-                        viewModel.openIllust(illust)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = overlayActionButtonColors(),
-                ) {
-                    Text(stringResource(R.string.dialog_show_detail))
-                }
-                Button(
-                    onClick = {
-                        viewModel.closeIllustOptions()
-                        viewModel.toggleBookmark(illust)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = overlayActionButtonColors(),
-                ) {
-                    Text(
-                        if (illust.isBookmarked) {
-                            stringResource(R.string.action_remove_bookmark)
+        val isQuickPeekActive =
+            appState.state.settings.isFeatureEnabled(FeatureFlag.QuickPeek) &&
+                appState.state.settings.quickPeekEnabled
+
+        if (isQuickPeekActive) {
+            QuickPeekOverlay(
+                illust = illust,
+                onDismiss = viewModel::closeIllustOptions,
+                onOpenDetail = {
+                    viewModel.closeIllustOptions()
+                    viewModel.openIllust(illust)
+                },
+                onBookmark = { viewModel.toggleBookmark(illust) },
+                onCopyImage = {
+                    val url = illust.originalImageUrl ?: illust.imageUrl
+                    coroutineScope.launch {
+                        val success = ImageClipboardHelper.copyImageToClipboard(context, url)
+                        if (success) {
+                            viewModel.showMessage(copiedMessage)
                         } else {
-                            stringResource(R.string.action_bookmark)
-                        },
-                    )
-                }
-                Button(
-                    onClick = {
-                        viewModel.closeIllustOptions()
-                        viewModel.saveImage(illust.originalImageUrl ?: illust.imageUrl, "illustia_${illust.id}")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = overlayActionButtonColors(),
-                ) {
+                            viewModel.showMessage(copyFailedMessage)
+                        }
+                    }
+                },
+            )
+        } else {
+            OverlayBottomSheet(
+                show = true,
+                modifier = Modifier.scrollEndHaptic(),
+                title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
+                onDismissRequest = viewModel::closeIllustOptions,
+                backgroundColor = LocalBottomSheetBackgroundColor.current,
+                insideMargin = BottomSheetInsideMargin,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        stringResource(
-                            if (illust.type == "ugoira") {
-                                R.string.detail_save_ugoira
-                            } else {
-                                R.string.detail_save_image
-                            },
-                        ),
+                        text = stringResource(R.string.dialog_artist_label, illust.artistName),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
                     )
-                }
-                DividerLine()
-                Text(
-                    text = stringResource(R.string.dialog_mute),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    style = MiuixTheme.textStyles.footnote1,
-                )
-                Button(
-                    onClick = {
-                        viewModel.closeIllustOptions()
-                        viewModel.muteIllust(illust.id)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = overlayActionButtonColors(),
-                ) {
-                    Text(stringResource(R.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
-                }
-                Button(
-                    onClick = {
-                        viewModel.closeIllustOptions()
-                        viewModel.muteUser(illust.artistId)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = overlayActionButtonColors(),
-                ) {
-                    Text(stringResource(R.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
+                    Button(
+                        onClick = {
+                            viewModel.closeIllustOptions()
+                            viewModel.openIllust(illust)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(stringResource(R.string.dialog_show_detail))
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.closeIllustOptions()
+                            viewModel.toggleBookmark(illust)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(
+                            if (illust.isBookmarked) {
+                                stringResource(R.string.action_remove_bookmark)
+                            } else {
+                                stringResource(R.string.action_bookmark)
+                            },
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.closeIllustOptions()
+                            viewModel.saveImage(illust.originalImageUrl ?: illust.imageUrl, "illustia_${illust.id}")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(
+                            stringResource(
+                                if (illust.type == "ugoira") {
+                                    R.string.detail_save_ugoira
+                                } else {
+                                    R.string.detail_save_image
+                                },
+                            ),
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.closeIllustOptions()
+                            val url = illust.originalImageUrl ?: illust.imageUrl
+                            coroutineScope.launch {
+                                val success = ImageClipboardHelper.copyImageToClipboard(context, url)
+                                if (success) {
+                                    viewModel.showMessage(copiedMessage)
+                                } else {
+                                    viewModel.showMessage(copyFailedMessage)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(stringResource(R.string.action_copy_image))
+                    }
+                    DividerLine()
+                    Text(
+                        text = stringResource(R.string.dialog_mute),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                    )
+                    Button(
+                        onClick = {
+                            viewModel.closeIllustOptions()
+                            viewModel.muteIllust(illust.id)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(stringResource(R.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.closeIllustOptions()
+                            viewModel.muteUser(illust.artistId)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        Text(stringResource(R.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
+                    }
                 }
             }
         }

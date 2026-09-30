@@ -91,6 +91,8 @@ data class AppSettings(
     val fullscreenQuality: String = "high",
     val mangaReaderMode: String = "paged",
     val dynamicAmbientViewerEnabled: Boolean = true,
+    val imageViewerSwipeToDismissEnabled: Boolean = true,
+    val quickPeekEnabled: Boolean = true,
     val smartCacheEnabled: Boolean = false,
     val smartCacheWifiOnly: Boolean = true,
     val smartCacheItemCount: Int = 12,

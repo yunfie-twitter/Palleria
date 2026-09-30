@@ -214,6 +214,8 @@ internal fun readFromDataStore(
         dohProvider = preferences[DOH_PROVIDER] ?: "system",
         dohCustomUrl = preferences[DOH_CUSTOM_URL].orEmpty(),
         dynamicAmbientViewerEnabled = preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] ?: true,
+        imageViewerSwipeToDismissEnabled = preferences[IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED] ?: true,
+        quickPeekEnabled = preferences[QUICK_PEEK_ENABLED] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -376,6 +378,8 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         dohProvider = preferences.getSafeString(KEY_DOH_PROVIDER, "system"),
         dohCustomUrl = preferences.getString(KEY_DOH_CUSTOM_URL, "").orEmpty(),
         dynamicAmbientViewerEnabled = preferences.getBoolean(KEY_DYNAMIC_AMBIENT_VIEWER_ENABLED, true),
+        imageViewerSwipeToDismissEnabled = preferences.getBoolean(KEY_IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED, true),
+        quickPeekEnabled = preferences.getBoolean(KEY_QUICK_PEEK_ENABLED, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -531,6 +535,8 @@ internal fun writeToDataStore(
     preferences[DOH_PROVIDER] = settings.dohProvider
     preferences[DOH_CUSTOM_URL] = settings.dohCustomUrl
     preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] = settings.dynamicAmbientViewerEnabled
+    preferences[IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED] = settings.imageViewerSwipeToDismissEnabled
+    preferences[QUICK_PEEK_ENABLED] = settings.quickPeekEnabled
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

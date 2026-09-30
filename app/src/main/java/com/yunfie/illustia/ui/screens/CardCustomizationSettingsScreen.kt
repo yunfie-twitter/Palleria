@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -121,6 +123,15 @@ fun CardCustomizationSettingsScreen(
                             onCheckedChange = viewModel::updateDoubleTapToBookmark,
                             summary = stringResource(R.string.experimental_card_double_tap_to_bookmark_desc),
                         )
+                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeek)) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.setting_quick_peek_title),
+                                checked = state.settings.quickPeekEnabled,
+                                onCheckedChange = viewModel::updateQuickPeekEnabled,
+                                summary = stringResource(R.string.setting_quick_peek_desc),
+                            )
+                        }
                     }
                 }
             }

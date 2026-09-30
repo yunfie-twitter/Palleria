@@ -373,6 +373,7 @@ internal fun AppNavHost(
                         loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
                         ambientLightEnabled = appState.state.settings.dynamicAmbientViewerEnabled,
                         volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
+                        swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
                     )
                 }
             }
