@@ -42,10 +42,11 @@ internal object PlatformCapabilities {
     // OpenGL ES 3.2 is encoded as 0x00030002 in reqGlEsVersion
     internal const val GL_ES_VERSION_3_2 = 0x00030002
 
-    private const val RAM_THRESHOLD_4GB_BYTES = 4_294_967_296L // 4.0 GB
-    private const val RAM_THRESHOLD_7GB_BYTES = 7_516_192_768L // 7.0 GB (~8 GB devices)
-    private const val LOW_LARGE_HEAP_THRESHOLD_MB = 256
-    private const val HIGH_LARGE_HEAP_THRESHOLD_MB = 512
+    // Performance tier thresholds calibrated for Palleria's lightweight memory footprint (~100-500MB max)
+    private const val RAM_THRESHOLD_LOW_BYTES = 3_221_225_472L // 3.0 GB (devices with <=3GB RAM)
+    private const val RAM_THRESHOLD_HIGH_BYTES = 5_368_709_120L // 5.0 GB (devices with >=6GB RAM)
+    private const val LOW_LARGE_HEAP_THRESHOLD_MB = 192
+    private const val HIGH_LARGE_HEAP_THRESHOLD_MB = 384
 
     private const val LOW_TIER_MAX_CORES = 4
     private const val HIGH_TIER_MIN_CORES = 8
@@ -131,14 +132,14 @@ internal object PlatformCapabilities {
         val isArchitectureConstrained = !profile.is64Bit || profile.isLowRamDevice || isGlConstrained
         val isKnownLowSoc = isKnownLowTierSoc(profile.socOrHardware)
 
-        val isMemoryConstrained = profile.totalMemBytes in 1..RAM_THRESHOLD_4GB_BYTES
+        val isMemoryConstrained = profile.totalMemBytes in 1..RAM_THRESHOLD_LOW_BYTES
         val isHeapConstrained = profile.largeMemoryClassMb in 1..LOW_LARGE_HEAP_THRESHOLD_MB
         val isCpuConstrained = profile.cores <= LOW_TIER_MAX_CORES
         val isHardwareConstrained = isMemoryConstrained || isHeapConstrained || isCpuConstrained
 
         val isLowTier = isArchitectureConstrained || isKnownLowSoc || isHardwareConstrained
 
-        val isHighRam = profile.totalMemBytes >= RAM_THRESHOLD_7GB_BYTES
+        val isHighRam = profile.totalMemBytes >= RAM_THRESHOLD_HIGH_BYTES
         val isHighHeap = profile.largeMemoryClassMb >= HIGH_LARGE_HEAP_THRESHOLD_MB
         val isHighCores = profile.cores >= HIGH_TIER_MIN_CORES
         val isHighTier = isHighRam && isHighHeap && isHighCores

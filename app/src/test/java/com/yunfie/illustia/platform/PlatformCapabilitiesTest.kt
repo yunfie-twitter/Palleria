@@ -132,24 +132,37 @@ class PlatformCapabilitiesTest {
 
     @Test
     fun `resolvePerformanceTier classifies mid range devices as MEDIUM`() {
-        // 6 GB RAM, 8 cores, 384 MB heap, ES 3.2, modern SoC
+        // 4 GB RAM, 8 cores, 256 MB heap, ES 3.2, modern SoC (e.g. Pixel 4a LTE / mid-range)
         val profile =
             DeviceHardwareProfile(
-                totalMemBytes = 6_442_450_944L,
+                totalMemBytes = 3_900_000_000L,
                 isLowRamDevice = false,
-                memoryClassMb = 256,
-                largeMemoryClassMb = 384,
+                memoryClassMb = 192,
+                largeMemoryClassMb = 256,
                 cores = 8,
                 glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
-                socOrHardware = "qcom sm7325",
+                socOrHardware = "qcom sm7150",
             )
         PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.MEDIUM
     }
 
     @Test
-    fun `resolvePerformanceTier classifies flagship devices as HIGH`() {
+    fun `resolvePerformanceTier classifies 6GB+ devices and flagships as HIGH`() {
+        // 6 GB RAM, 8 cores, 384 MB heap, ES 3.2, modern SoC (e.g. Pixel 6a)
+        val pixel6aProfile =
+            DeviceHardwareProfile(
+                totalMemBytes = 6_000_000_000L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
+                socOrHardware = "google tensor gs101",
+            )
+        PlatformCapabilities.resolvePerformanceTier(pixel6aProfile) shouldBe DevicePerformanceTier.HIGH
+
         // 12 GB RAM, 8 cores, 512 MB large memory class, ES 3.2
-        val profile =
+        val flagshipProfile =
             DeviceHardwareProfile(
                 totalMemBytes = 12_884_901_888L,
                 isLowRamDevice = false,
@@ -159,7 +172,7 @@ class PlatformCapabilitiesTest {
                 glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
                 socOrHardware = "qcom sm8550",
             )
-        PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.HIGH
+        PlatformCapabilities.resolvePerformanceTier(flagshipProfile) shouldBe DevicePerformanceTier.HIGH
     }
 
     @Test
