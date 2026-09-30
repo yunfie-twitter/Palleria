@@ -1145,4 +1145,19 @@
     <string name="internal_proxy_bypass_hosts_desc">プロキシを経由せず直接接続するホスト名（カンマ区切り）</string>
     <string name="internal_proxy_entry_title">内部プロキシ</string>
     <string name="internal_proxy_entry_desc">DoH (暗号化DNS) やローカルプロキシ、バイパスルールを設定します</string>
+
+    <!-- Copy Image -->
+    <string name="action_copy_image">画像をコピー</string>
+    <string name="copied_image_to_clipboard">画像をクリップボードにコピーしました</string>
+    <string name="copy_image_failed">画像のコピーに失敗しました</string>
+
+    <!-- Swipe to Dismiss -->
+    <string name="setting_image_viewer_swipe_to_dismiss_title">下スワイプで閉じる</string>
+    <string name="setting_image_viewer_swipe_to_dismiss_desc">全画面表示時に画像を引き下げて前画面に戻ります</string>
+
+    <!-- Quick Peek Feature Flag & Setting -->
+    <string name="flag_quick_peek_title">クイックプレビュー (Quick Peek)</string>
+    <string name="flag_quick_peek_desc">一覧の作品カード長押し時にクイックプレビューを表示する機能を有効化します</string>
+    <string name="setting_quick_peek_title">長押しクイックプレビュー</string>
+    <string name="setting_quick_peek_desc">一覧の作品カードを長押ししたときに画像プレビューを表示します</string>
 </resources>

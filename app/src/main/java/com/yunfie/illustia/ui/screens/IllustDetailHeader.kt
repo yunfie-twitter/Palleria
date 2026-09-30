@@ -48,6 +48,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
@@ -130,9 +131,13 @@ internal fun IllustDetailHeader(
         )
     }
     val moreLabel = stringResource(R.string.detail_more)
+    val copyImageLabel = stringResource(R.string.action_copy_image)
+    val copiedImageMessage = stringResource(R.string.copied_image_to_clipboard)
+    val copyImageFailedMessage = stringResource(R.string.copy_image_failed)
     val browserFailedMessage = stringResource(R.string.error_browser_failed)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val urlCopiedMessage = stringResource(R.string.msg_url_copied)
+    val coroutineScope = rememberCoroutineScope()
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
     val previewUrl: String =
         remember(illust.id, highQualityImages, detailQuality) {
@@ -378,6 +383,9 @@ internal fun IllustDetailHeader(
                     muteWorkLabel,
                     muteArtistLabel,
                     reportProblemLabel,
+                    copyImageLabel,
+                    copiedImageMessage,
+                    copyImageFailedMessage,
                 ) {
                     listOf(
                         DropdownEntry(
@@ -402,6 +410,28 @@ internal fun IllustDetailHeader(
                                                     }
                                                 context.startActivity(Intent.createChooser(shareIntent, shareLabel))
                                             }.onFailure { onMessage(shareFailedMessage) }
+                                        },
+                                    ),
+                                    DropdownItem(
+                                        text = copyImageLabel,
+                                        onClick = {
+                                            val currentPage =
+                                                pagerState.currentPage.coerceIn(
+                                                    0,
+                                                    (imageUrls.size - 1).coerceAtLeast(0),
+                                                )
+                                            val targetUrl =
+                                                illust.originalImagePages.getOrNull(currentPage)
+                                                    ?: imageUrls.getOrNull(currentPage)
+                                                    ?: (illust.originalImageUrl ?: illust.imageUrl)
+                                            coroutineScope.launch {
+                                                val success = ImageClipboardHelper.copyImageToClipboard(context, targetUrl)
+                                                if (success) {
+                                                    onMessage(copiedImageMessage)
+                                                } else {
+                                                    onMessage(copyImageFailedMessage)
+                                                }
+                                            }
                                         },
                                     ),
                                     if (imageUrls.size > 1) {

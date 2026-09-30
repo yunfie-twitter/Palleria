@@ -1092,4 +1092,19 @@
     <string name="internal_proxy_bypass_hosts_desc">Comma-separated list of hosts to connect directly without proxy</string>
     <string name="internal_proxy_entry_title">Internal Proxy</string>
     <string name="internal_proxy_entry_desc">Configure DoH (Encrypted DNS), local proxy, and bypass rules</string>
+
+    <!-- Copy Image -->
+    <string name="action_copy_image">Copy Image</string>
+    <string name="copied_image_to_clipboard">Image copied to clipboard</string>
+    <string name="copy_image_failed">Failed to copy image</string>
+
+    <!-- Swipe to Dismiss -->
+    <string name="setting_image_viewer_swipe_to_dismiss_title">Swipe down to dismiss</string>
+    <string name="setting_image_viewer_swipe_to_dismiss_desc">Pull down full-screen image to close viewer</string>
+
+    <!-- Quick Peek Feature Flag & Setting -->
+    <string name="flag_quick_peek_title">Quick Peek preview</string>
+    <string name="flag_quick_peek_desc">Enables quick preview overlay when long-pressing artwork cards</string>
+    <string name="setting_quick_peek_title">Long-press Quick Peek</string>
+    <string name="setting_quick_peek_desc">Show floating preview when long-pressing artwork cards</string>
 </resources>

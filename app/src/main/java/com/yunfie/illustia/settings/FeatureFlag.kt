@@ -65,6 +65,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_novel_tts_audiobook_desc,
         defaultEnabled = false,
     ),
+    QuickPeek(
+        key = "flag_quick_peek",
+        titleRes = R.string.flag_quick_peek_title,
+        descRes = R.string.flag_quick_peek_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {
