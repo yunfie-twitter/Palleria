@@ -35,6 +35,8 @@ data class BookmarkChromeState(
     val isBookmarkPaginating: Boolean = false,
     val isTimelineRefreshing: Boolean = false,
     val isTimelinePaginating: Boolean = false,
+    val isFollowingRefreshing: Boolean = false,
+    val isFollowingPaginating: Boolean = false,
 )
 
 data class PixivWebLoginRequest(

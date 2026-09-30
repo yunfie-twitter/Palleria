@@ -74,7 +74,7 @@ fun RelatedUsersScreen(
         listState = listState,
         enabled = settings.autoLoadMore,
         nextUrl = uiState.selectedRelatedUsersNextUrl,
-        isLoading = uiState.selectedRelatedUsersLoading,
+        isLoading = uiState.selectedRelatedUsersPaginating || uiState.selectedRelatedUsersLoading,
         onLoadMore = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
     )
 
@@ -108,9 +108,11 @@ fun RelatedUsersScreen(
         },
     ) { scaffoldPadding ->
         val adaptivePadding = adaptiveMainNavigationContentPadding()
-        val shimmer = if (uiState.selectedRelatedUsersLoading) rememberIllustSkeletonShimmer() else null
+        val showInitialSkeletons = uiState.selectedRelatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading
+        val showPaginationSkeletons = settings.autoLoadMore && uiState.selectedRelatedUsersPaginating
+        val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
         PullToRefresh(
-            isRefreshing = uiState.selectedRelatedUsersLoading && uiState.selectedRelatedUsers.isNotEmpty(),
+            isRefreshing = uiState.selectedRelatedUsersRefreshing,
             onRefresh = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
             modifier =
                 Modifier
@@ -152,13 +154,17 @@ fun RelatedUsersScreen(
                     )
                 }
 
-                if (settings.autoLoadMore && uiState.selectedRelatedUsersLoading && uiState.selectedRelatedUsers.isNotEmpty()) {
-                    item(key = "related_user_paginating_skeleton", contentType = "related_paginating_skeleton") {
+                if (showPaginationSkeletons && uiState.selectedRelatedUsers.isNotEmpty()) {
+                    items(
+                        count = 3,
+                        key = { "related_user_paginating_skeleton_$it" },
+                        contentType = { "related_paginating_skeleton" },
+                    ) {
                         UserResultCardSkeleton(shimmerValue = shimmer)
                     }
                 }
 
-                if (uiState.selectedRelatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading) {
+                if (showInitialSkeletons) {
                     items(
                         count = 4,
                         key = { "related_user_skeleton_$it" },
@@ -166,7 +172,7 @@ fun RelatedUsersScreen(
                     ) {
                         UserResultCardSkeleton(shimmerValue = shimmer)
                     }
-                } else if (uiState.selectedRelatedUsers.isEmpty()) {
+                } else if (uiState.selectedRelatedUsers.isEmpty() && !uiState.selectedRelatedUsersRefreshing) {
                     item(contentType = "related_empty") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
@@ -185,10 +191,10 @@ fun RelatedUsersScreen(
                     item(contentType = "related_more") {
                         Button(
                             onClick = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
-                            enabled = !uiState.selectedRelatedUsersLoading,
+                            enabled = !uiState.selectedRelatedUsersLoading && !uiState.selectedRelatedUsersPaginating,
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         ) {
-                            if (uiState.selectedRelatedUsersLoading) {
+                            if (uiState.selectedRelatedUsersLoading || uiState.selectedRelatedUsersPaginating) {
                                 LoadingIndicator(Modifier.size(20.dp))
                             } else {
                                 Text(stringResource(R.string.action_load_more))

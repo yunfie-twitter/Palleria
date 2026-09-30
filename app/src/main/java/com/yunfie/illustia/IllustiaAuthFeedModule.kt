@@ -1009,13 +1009,16 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadWatchlistTag(tag: String) {
+    fun loadWatchlistTag(
+        tag: String,
+        forceRefresh: Boolean = false,
+    ) {
         val normalized = tag.trim().removePrefix("#")
         if (normalized.isBlank()) return
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    isWatchlistRefreshing = true,
+                    isWatchlistRefreshing = forceRefresh,
                     loadState = if (it.watchlistItems.isEmpty() || it.activeWatchlistTag != normalized) LoadState.Loading else it.loadState,
                 )
             }
@@ -1088,26 +1091,63 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun refreshFollowingUsers(forceRefresh: Boolean = false) {
-        runLoading {
-            val page = repository.followingUsers(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    followingUsers = page.items,
-                    followingUsersNextUrl = page.nextUrl,
+                    isFollowingRefreshing = forceRefresh,
+                    loadState = if (it.followingUsers.isEmpty()) LoadState.Loading else it.loadState,
                 )
+            }
+            try {
+                val page = repository.followingUsers(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                _uiState.update {
+                    it.copy(
+                        followingUsers = page.items,
+                        followingUsersNextUrl = page.nextUrl,
+                        isFollowingRefreshing = false,
+                        loadState = LoadState.Loaded,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_following_users_refresh")
+                _uiState.update {
+                    it.copy(
+                        isFollowingRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                    )
+                }
             }
         }
     }
 
     fun loadMoreFollowingUsers() {
         val nextUrl = _uiState.value.followingUsersNextUrl ?: return
-        runLoading {
-            val page = repository.nextUserSearchPage(nextUrl)
-            _uiState.update {
-                it.copy(
-                    followingUsers = it.followingUsers + page.items,
-                    followingUsersNextUrl = page.nextUrl,
-                )
+        if (_uiState.value.isFollowingPaginating) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isFollowingPaginating = true) }
+            try {
+                val page = repository.nextUserSearchPage(nextUrl)
+                _uiState.update {
+                    it.copy(
+                        followingUsers = it.followingUsers + page.items,
+                        followingUsersNextUrl = page.nextUrl,
+                        isFollowingPaginating = false,
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) throw error
+                if (handleAuthExpired(error)) return@launch
+                GlitchTipTelemetry.recordException(error, tag = "feed_following_users_load_more")
+                _uiState.update {
+                    it.copy(
+                        isFollowingPaginating = false,
+                        message = cleanErrorMessage(error),
+                    )
+                }
             }
         }
     }
