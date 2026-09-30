@@ -53,6 +53,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -139,8 +141,8 @@ fun WatchlistSeriesScreen(
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
 
-    var sortOrder by remember { mutableStateOf(WatchlistSortOrder.Newest) }
-    var isHeaderCollapsed by remember { mutableStateOf(false) }
+    var sortOrder by rememberSaveable { mutableStateOf(WatchlistSortOrder.Newest) }
+    var isHeaderCollapsed by rememberSaveable { mutableStateOf(false) }
 
     val processedSeries =
         remember(state.mangaSeries, sortOrder) {
@@ -157,22 +159,30 @@ fun WatchlistSeriesScreen(
         }
     }
 
-    LaunchedEffect(isAtTop) {
-        if (isAtTop) {
-            isHeaderCollapsed = false
-        }
-    }
+    val currentIsAtTop by rememberUpdatedState(isAtTop)
 
+    // Coordinate collapsing/expanding across short content lists without flapping (aligned with UserProfileScreen)
     val watchlistScrollConnection =
-        remember(gridState) {
+        remember {
             object : NestedScrollConnection {
                 override fun onPreScroll(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (available.y < -12f && (gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 32)) {
+                    if (available.y < -10f) {
                         isHeaderCollapsed = true
-                    } else if (available.y > 8f && gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset <= 12) {
+                    } else if (available.y > 8f && currentIsAtTop) {
+                        isHeaderCollapsed = false
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (available.y > 8f && currentIsAtTop) {
                         isHeaderCollapsed = false
                     }
                     return Offset.Zero
@@ -180,9 +190,9 @@ fun WatchlistSeriesScreen(
             }
         }
 
-    val isContentScrolled by remember(gridState, isHeaderCollapsed, isAtTop) {
+    val isContentScrolled by remember(isHeaderCollapsed, isAtTop) {
         derivedStateOf {
-            !isAtTop && (isHeaderCollapsed || gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 24)
+            isHeaderCollapsed || !isAtTop
         }
     }
 
@@ -247,12 +257,12 @@ fun WatchlistSeriesScreen(
                     visible = !isContentScrolled,
                     enter =
                         expandVertically(
-                            animationSpec = tween(320),
+                            animationSpec = tween(300, easing = FastOutSlowInEasing),
                             expandFrom = Alignment.Top,
                         ) + fadeIn(animationSpec = tween(220, delayMillis = 60)),
                     exit =
                         shrinkVertically(
-                            animationSpec = tween(280),
+                            animationSpec = tween(260, easing = FastOutSlowInEasing),
                             shrinkTowards = Alignment.Top,
                         ) + fadeOut(animationSpec = tween(180)),
                 ) {
@@ -268,12 +278,12 @@ fun WatchlistSeriesScreen(
                     visible = isContentScrolled,
                     enter =
                         expandVertically(
-                            animationSpec = tween(280),
+                            animationSpec = tween(260, easing = FastOutSlowInEasing),
                             expandFrom = Alignment.Top,
-                        ) + fadeIn(animationSpec = tween(200, delayMillis = 80)),
+                        ) + fadeIn(animationSpec = tween(200, delayMillis = 60)),
                     exit =
                         shrinkVertically(
-                            animationSpec = tween(220),
+                            animationSpec = tween(220, easing = FastOutSlowInEasing),
                             shrinkTowards = Alignment.Top,
                         ) + fadeOut(animationSpec = tween(140)),
                 ) {

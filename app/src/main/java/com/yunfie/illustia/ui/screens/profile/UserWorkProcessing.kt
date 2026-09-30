@@ -13,6 +13,32 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
+internal fun processUserWorksSync(
+    items: List<Illust>,
+    sortOrder: UserWorkSortOrder,
+    typeFilter: UserWorkTypeFilter,
+): List<Illust> {
+    if (sortOrder == UserWorkSortOrder.Newest && typeFilter == UserWorkTypeFilter.All) {
+        return items
+    }
+    val comparator =
+        when (sortOrder) {
+            UserWorkSortOrder.Newest -> compareByDescending<Illust> { it.id }
+            UserWorkSortOrder.Oldest -> compareBy<Illust> { it.id }
+            UserWorkSortOrder.MostBookmarks -> compareByDescending<Illust> { it.totalBookmarks }
+        }
+    return items
+        .asSequence()
+        .filter {
+            when (typeFilter) {
+                UserWorkTypeFilter.All -> true
+                UserWorkTypeFilter.IllustOnly -> it.type != "manga"
+                UserWorkTypeFilter.MangaOnly -> it.type == "manga"
+            }
+        }.sortedWith(comparator)
+        .toList()
+}
+
 internal suspend fun processUserWorks(
     items: List<Illust>,
     sortOrder: UserWorkSortOrder,
@@ -71,16 +97,26 @@ internal fun rememberUserWorks(
     typeFilter: UserWorkTypeFilter,
     active: Boolean,
 ): UserWorkList {
-    var result by remember(userId) { mutableStateOf<ProcessedWorks?>(null, referentialEqualityPolicy()) }
+    val initialProcessed =
+        remember(userId, WorkSourceIdentity(items), sortOrder, typeFilter) {
+            ProcessedWorks(
+                source = items,
+                sortOrder = sortOrder,
+                typeFilter = typeFilter,
+                items = processUserWorksSync(items, sortOrder, typeFilter),
+            )
+        }
+    var result by remember(userId) { mutableStateOf(initialProcessed, referentialEqualityPolicy()) }
     LaunchedEffect(userId, WorkSourceIdentity(items), sortOrder, typeFilter, active) {
         val current = result
-        val upToDate = current != null && current.source === items && current.sortOrder == sortOrder && current.typeFilter == typeFilter
+        val upToDate = current.source === items && current.sortOrder == sortOrder && current.typeFilter == typeFilter
         if (active && !upToDate) {
             result = ProcessedWorks(items, sortOrder, typeFilter, processUserWorks(items, sortOrder, typeFilter))
         }
     }
     val current = result
-    val processing =
-        active && (current == null || current.source !== items || current.sortOrder != sortOrder || current.typeFilter != typeFilter)
-    return UserWorkList(current?.items.orEmpty(), processing)
+    val upToDate = current.source === items && current.sortOrder == sortOrder && current.typeFilter == typeFilter
+    val effectiveResult = if (upToDate) current else initialProcessed
+    val processing = active && !upToDate
+    return UserWorkList(effectiveResult.items, processing)
 }
