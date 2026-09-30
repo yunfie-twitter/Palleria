@@ -66,6 +66,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -432,7 +433,7 @@ fun ImageViewerScreen(
                     .fillMaxSize()
                     .background(Color.Black),
         ) {
-            if (ambientLightEnabled && imageUrls.isNotEmpty()) {
+            if (ambientLightEnabled && imageUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
                 val currentUrl = imageUrls.getOrNull(pagerState.currentPage) ?: imageUrls.first()
                 PixivImage(
                     url = currentUrl,

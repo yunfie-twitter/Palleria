@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
@@ -29,6 +30,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.isMutedByTags
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -98,9 +100,12 @@ internal fun AppNavHost(
     onSearchTag: (String) -> Unit,
     onTabSelected: (Int, AppTab) -> Unit,
 ) {
+    val context = LocalContext.current
+    val effectiveSmoothTransitions =
+        appState.settings.smoothTransitions && PlatformCapabilities.supportsRichAnimations(context)
     val artworkMetadata =
-        remember(appState.settings.smoothTransitions) {
-            artworkPageTransitionMetadata(appState.settings.smoothTransitions)
+        remember(effectiveSmoothTransitions) {
+            artworkPageTransitionMetadata(effectiveSmoothTransitions)
         }
     val entryProvider =
         entryProvider<NavKey> {
