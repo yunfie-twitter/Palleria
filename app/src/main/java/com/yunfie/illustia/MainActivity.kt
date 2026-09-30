@@ -23,7 +23,6 @@ import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.WindowManager
-import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -89,11 +88,16 @@ private val MiSansFontFamily by lazy {
     )
 }
 
+@Suppress("LargeClass")
 class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
         const val STARTUP_POST_WORK_DELAY_MS = 400L
-        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 130L
+        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 280L
+        const val SPLASH_MIN_ANIMATION_DURATION_MS = 100L
+        const val SPLASH_ICON_EXIT_TARGET_SCALE = 1.15f
+        const val SPLASH_EASING_CONTROL_X1 = 0.4f
+        const val SPLASH_EASING_CONTROL_X2 = 0.2f
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -116,29 +120,62 @@ class MainActivity : FragmentActivity() {
             !viewModel.uiState.value.settingsLoaded
         }
 
-        // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウトにする。
+        // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウト＆ズームアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
-            if (viewModel.uiState.value.settingsLoaded) {
-                splashScreenView.remove()
-            } else {
-                android.animation.ObjectAnimator
-                    .ofFloat(
-                        splashScreenView.view,
-                        android.view.View.ALPHA,
+            val splashView = splashScreenView.view
+            val iconView = splashScreenView.iconView
+
+            val animDurationScale =
+                runCatching {
+                    android.provider.Settings.Global.getFloat(
+                        contentResolver,
+                        android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
                         1f,
+                    )
+                }.getOrDefault(1f)
+            if (animDurationScale == 0f) {
+                splashScreenView.remove()
+                return@setOnExitAnimationListener
+            }
+
+            val iconScaleX =
+                android.animation.ObjectAnimator.ofFloat(
+                    iconView,
+                    android.view.View.SCALE_X,
+                    1f,
+                    SPLASH_ICON_EXIT_TARGET_SCALE,
+                )
+            val iconScaleY =
+                android.animation.ObjectAnimator.ofFloat(
+                    iconView,
+                    android.view.View.SCALE_Y,
+                    1f,
+                    SPLASH_ICON_EXIT_TARGET_SCALE,
+                )
+            val iconAlpha = android.animation.ObjectAnimator.ofFloat(iconView, android.view.View.ALPHA, 1f, 0f)
+            val splashAlpha = android.animation.ObjectAnimator.ofFloat(splashView, android.view.View.ALPHA, 1f, 0f)
+
+            android.animation.AnimatorSet().apply {
+                duration =
+                    (SPLASH_EXIT_ANIMATION_DURATION_MS * animDurationScale)
+                        .toLong()
+                        .coerceAtLeast(SPLASH_MIN_ANIMATION_DURATION_MS)
+                interpolator =
+                    android.view.animation.PathInterpolator(
+                        SPLASH_EASING_CONTROL_X1,
                         0f,
-                    ).apply {
-                        duration = SPLASH_EXIT_ANIMATION_DURATION_MS
-                        interpolator = AccelerateDecelerateInterpolator()
-                        addListener(
-                            object : android.animation.AnimatorListenerAdapter() {
-                                override fun onAnimationEnd(animation: android.animation.Animator) {
-                                    splashScreenView.remove()
-                                }
-                            },
-                        )
-                        start()
-                    }
+                        SPLASH_EASING_CONTROL_X2,
+                        1f,
+                    )
+                playTogether(splashAlpha, iconScaleX, iconScaleY, iconAlpha)
+                addListener(
+                    object : android.animation.AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: android.animation.Animator) {
+                            splashScreenView.remove()
+                        }
+                    },
+                )
+                start()
             }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
