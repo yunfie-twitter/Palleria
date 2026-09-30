@@ -131,11 +131,15 @@ class IllustiaApplication : Application() {
 
         appScope.launch {
             val appContext = applicationContext
-            val recoveredPallaSync =
-                runCatching {
-                    pallaSyncCoordinator.recoverInterruptedActivation()
-                }.getOrDefault(false)
             val settings = repository.readSettings()
+            val recoveredPallaSync =
+                if (settings.pallaSyncEnabled) {
+                    runCatching {
+                        pallaSyncCoordinator.recoverInterruptedActivation()
+                    }.getOrDefault(false)
+                } else {
+                    false
+                }
             withContext(Dispatchers.Main.immediate) {
                 setTelemetryEnabled(settings.sendTelemetry)
             }

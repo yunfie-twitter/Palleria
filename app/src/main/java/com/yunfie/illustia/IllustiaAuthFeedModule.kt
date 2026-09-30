@@ -149,6 +149,20 @@ abstract class IllustiaAuthFeedModule(
         loadRankingModeIfNeeded(mode)
     }
 
+    override fun prefetchHomeFeedOnStartup(kind: HomeFeedKind) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (_uiState.value.homeItems.isNotEmpty() || _uiState.value.loadState == LoadState.Loading) return@launch
+            _uiState.update { it.copy(loadState = LoadState.Loading) }
+            try {
+                loadHomeInternal(kind)
+                _uiState.update { it.copy(loadState = LoadState.Loaded) }
+            } catch (expectedFailure: Exception) {
+                if (isCancellation(expectedFailure)) throw expectedFailure
+                _uiState.update { it.copy(loadState = LoadState.Idle) }
+            }
+        }
+    }
+
     override fun refreshHome(forceRefresh: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
