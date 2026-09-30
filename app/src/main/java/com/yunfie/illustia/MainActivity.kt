@@ -118,24 +118,28 @@ class MainActivity : FragmentActivity() {
 
         // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
-            android.animation.ObjectAnimator
-                .ofFloat(
-                    splashScreenView.view,
-                    android.view.View.ALPHA,
-                    1f,
-                    0f,
-                ).apply {
-                    duration = SPLASH_EXIT_ANIMATION_DURATION_MS
-                    interpolator = AccelerateDecelerateInterpolator()
-                    addListener(
-                        object : android.animation.AnimatorListenerAdapter() {
-                            override fun onAnimationEnd(animation: android.animation.Animator) {
-                                splashScreenView.remove()
-                            }
-                        },
-                    )
-                    start()
-                }
+            if (viewModel.uiState.value.settingsLoaded) {
+                splashScreenView.remove()
+            } else {
+                android.animation.ObjectAnimator
+                    .ofFloat(
+                        splashScreenView.view,
+                        android.view.View.ALPHA,
+                        1f,
+                        0f,
+                    ).apply {
+                        duration = SPLASH_EXIT_ANIMATION_DURATION_MS
+                        interpolator = AccelerateDecelerateInterpolator()
+                        addListener(
+                            object : android.animation.AnimatorListenerAdapter() {
+                                override fun onAnimationEnd(animation: android.animation.Animator) {
+                                    splashScreenView.remove()
+                                }
+                            },
+                        )
+                        start()
+                    }
+            }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         appliedDarkTheme = isDark
@@ -162,24 +166,8 @@ class MainActivity : FragmentActivity() {
             isAppearanceLightNavigationBars = !isDark
         }
         super.onCreate(savedInstanceState)
-        requestLegacyStoragePermissionIfNeeded()
         applyAppLanguage(SettingsStore.readStoredAppLanguage(applicationContext))
         lastHandledClipboardText = null
-
-        // Observe app lifecycle for lock-on-return
-        val lifecycleObserver =
-            object : DefaultLifecycleObserver {
-                override fun onStop(owner: LifecycleOwner) {
-                    if (viewModel.shouldLockOnReturn()) {
-                        viewModel.lockApp()
-                    }
-                }
-            }
-        processLifecycleObserver = lifecycleObserver
-        androidx.lifecycle.ProcessLifecycleOwner
-            .get()
-            .lifecycle
-            .addObserver(lifecycleObserver)
 
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -339,6 +327,8 @@ class MainActivity : FragmentActivity() {
                 androidx.compose.runtime.withFrameNanos { }
                 this@MainActivity.lifecycleScope.launch {
                     reportFullyDrawn()
+                    registerProcessLifecycleObserverIfNeeded()
+                    requestLegacyStoragePermissionIfNeeded()
                     kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()
                     (application as IllustiaApplication).startPostStartupWork()
@@ -433,6 +423,23 @@ class MainActivity : FragmentActivity() {
                 .setAllowHandoffWithoutPackageInstalled(true)
                 .build()
         setHandoffEnabled(true, params)
+    }
+
+    private fun registerProcessLifecycleObserverIfNeeded() {
+        if (processLifecycleObserver != null) return
+        val lifecycleObserver =
+            object : DefaultLifecycleObserver {
+                override fun onStop(owner: LifecycleOwner) {
+                    if (viewModel.shouldLockOnReturn()) {
+                        viewModel.lockApp()
+                    }
+                }
+            }
+        processLifecycleObserver = lifecycleObserver
+        androidx.lifecycle.ProcessLifecycleOwner
+            .get()
+            .lifecycle
+            .addObserver(lifecycleObserver)
     }
 
     private fun requestLegacyStoragePermissionIfNeeded() {
