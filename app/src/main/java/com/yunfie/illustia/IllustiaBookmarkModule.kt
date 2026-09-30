@@ -208,11 +208,16 @@ abstract class IllustiaBookmarkModule(
             _uiState.value.selectedRelatedUsers.isNotEmpty() &&
                 _uiState.value.selectedRelatedUsersUserId == userId
         val shouldSkip =
-            (!force && _uiState.value.selectedRelatedUsersLoading) ||
+            (!force && (_uiState.value.selectedRelatedUsersLoading || _uiState.value.selectedRelatedUsersRefreshing)) ||
                 (!force && cachedForSameUser)
         if (shouldSkip) return
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(selectedRelatedUsersLoading = true) }
+            _uiState.update {
+                it.copy(
+                    selectedRelatedUsersLoading = !force && it.selectedRelatedUsers.isEmpty(),
+                    selectedRelatedUsersRefreshing = force,
+                )
+            }
             try {
                 val page = repository.relatedUsers(userId)
                 _uiState.update { state ->
@@ -221,6 +226,7 @@ abstract class IllustiaBookmarkModule(
                         selectedRelatedUsersNextUrl = page.nextUrl,
                         selectedRelatedUsersUserId = userId,
                         selectedRelatedUsersLoading = false,
+                        selectedRelatedUsersRefreshing = false,
                     )
                 }
             } catch (expectedFailure: Exception) {
@@ -230,6 +236,7 @@ abstract class IllustiaBookmarkModule(
                     _uiState.update { state ->
                         state.copy(
                             selectedRelatedUsersLoading = false,
+                            selectedRelatedUsersRefreshing = false,
                             message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
                         )
                     }
@@ -241,9 +248,9 @@ abstract class IllustiaBookmarkModule(
     fun loadMoreSelectedRelatedUsers(targetUserId: Long? = null) {
         val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
         val nextUrl = _uiState.value.selectedRelatedUsersNextUrl
-        if (nextUrl == null || _uiState.value.selectedRelatedUsersLoading) return
+        if (nextUrl == null || _uiState.value.selectedRelatedUsersPaginating || _uiState.value.selectedRelatedUsersLoading) return
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(selectedRelatedUsersLoading = true) }
+            _uiState.update { it.copy(selectedRelatedUsersPaginating = true) }
             try {
                 val page = repository.nextRelatedUsersPage(nextUrl)
                 _uiState.update { state ->
@@ -253,7 +260,7 @@ abstract class IllustiaBookmarkModule(
                                 page.users.filterNot { it.id == userId },
                             ),
                         selectedRelatedUsersNextUrl = page.nextUrl,
-                        selectedRelatedUsersLoading = false,
+                        selectedRelatedUsersPaginating = false,
                     )
                 }
             } catch (expectedFailure: Exception) {
@@ -262,7 +269,7 @@ abstract class IllustiaBookmarkModule(
                 if (!handleAuthExpired(error)) {
                     _uiState.update { state ->
                         state.copy(
-                            selectedRelatedUsersLoading = false,
+                            selectedRelatedUsersPaginating = false,
                             message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
                         )
                     }

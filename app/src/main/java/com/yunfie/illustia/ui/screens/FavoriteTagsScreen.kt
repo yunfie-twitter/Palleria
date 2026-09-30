@@ -168,7 +168,7 @@ fun FavoriteTagsScreen(
                 actions = {
                     HeaderIcon(
                         icon = MiuixIcons.Refresh,
-                        onClick = { selectedTag?.let(viewModel::loadWatchlistTag) },
+                        onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
                     )
                 },
             )
@@ -176,7 +176,7 @@ fun FavoriteTagsScreen(
     ) { scaffoldPadding ->
         PullToRefresh(
             isRefreshing = state.isWatchlistRefreshing,
-            onRefresh = { selectedTag?.let(viewModel::loadWatchlistTag) },
+            onRefresh = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
             modifier = Modifier.fillMaxSize(),
         ) {
             AutoLoadMoreEffect(
