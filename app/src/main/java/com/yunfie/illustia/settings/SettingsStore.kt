@@ -93,14 +93,25 @@ class SettingsStore internal constructor(
         // Migration will be executed on first suspend read/write off main thread
     }
 
+    private val startupCacheMutex = Mutex()
+
+    @Volatile
+    private var cachedStartupSettings: AppSettings? = null
+
     suspend fun read(viewHistoryLimit: Int? = null): AppSettings {
         ensureMigrated()
         return readAppSettingsImpl(dataStore, sensitivePreferences, dao, viewHistoryLimit)
     }
 
     suspend fun readStartup(): AppSettings {
-        ensureMigrated()
-        return readStartupAppSettingsImpl(dataStore, sensitivePreferences)
+        cachedStartupSettings?.let { return it }
+        return startupCacheMutex.withLock {
+            cachedStartupSettings?.let { return@withLock it }
+            ensureMigrated()
+            val result = readStartupAppSettingsImpl(dataStore, sensitivePreferences)
+            cachedStartupSettings = result
+            result
+        }
     }
 
     suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings {
@@ -173,7 +184,9 @@ class SettingsStore internal constructor(
         return try {
             // The coordinator owns operationMutex first, then this callback takes
             // persistenceMutex. Incoming page apply uses the same lock order.
-            persistAfterSyncEnqueue(events, syncEventWriter) { persistRebased() }
+            persistAfterSyncEnqueue(events, syncEventWriter) { persistRebased() }.also {
+                cachedStartupSettings = null
+            }
         } catch (error: CancellationException) {
             throw error
         } catch (expectedFailure: Exception) {
@@ -199,6 +212,7 @@ class SettingsStore internal constructor(
             val current = read().syncedCollections()
             val updated = transform(current)
             if (updated != current) {
+                cachedStartupSettings = null
                 writeSyncedCollectionsImpl(dataStore, database, dao, updated)
                 publishSyncUpdate(updated)
             }
@@ -208,6 +222,7 @@ class SettingsStore internal constructor(
 
     internal suspend fun setPallaSyncEnabledFromCoordinator(enabled: Boolean) {
         persistenceMutex.withLock {
+            cachedStartupSettings = null
             dataStore.edit { preferences -> preferences[PALLA_SYNC_ENABLED] = enabled }
             _pallaSyncEnabledUpdates.value =
                 PallaSyncEnabledUpdate(

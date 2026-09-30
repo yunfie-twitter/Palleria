@@ -94,12 +94,12 @@ class IllustiaApplication : Application() {
                     GlitchTipTelemetry.startTransaction("app.startup", "app.launch")
             }
         }
-        val appContext = applicationContext
-        val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
-        val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
-        val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
-        val memoryCachePercent = if (isLowRam) 0.12 else 0.20
         SingletonImageLoader.setSafe {
+            val appContext = applicationContext
+            val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
+            val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
+            val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
+            val memoryCachePercent = if (isLowRam) 0.12 else 0.20
             ImageLoader
                 .Builder(appContext)
                 .components {

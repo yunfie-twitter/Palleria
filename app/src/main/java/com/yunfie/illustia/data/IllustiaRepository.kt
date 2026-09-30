@@ -59,7 +59,16 @@ class IllustiaRepository(
     private var apiClientMode: NetworkMode = NetworkMode.Standard
 
     @Volatile
-    private var apiClient: PixivApiClient = PixivApiClient()
+    private var apiClientInstance: PixivApiClient? = null
+
+    private val apiClient: PixivApiClient
+        get() {
+            val current = apiClientInstance
+            if (current != null) return current
+            return synchronized(this) {
+                apiClientInstance ?: PixivApiClient(apiClientMode).also { apiClientInstance = it }
+            }
+        }
 
     val apiCache = PixivApiCache()
 
@@ -111,11 +120,7 @@ class IllustiaRepository(
         return fullHistory
     }
 
-    suspend fun readStartupSettings(): AppSettings {
-        val settings = settingsStore.readStartup()
-        ensureApiClient(NetworkMode.fromCode(settings.pixivNetworkMode))
-        return settings
-    }
+    suspend fun readStartupSettings(): AppSettings = settingsStore.readStartup()
 
     suspend fun saveSettings(
         settings: AppSettings,
@@ -650,10 +655,10 @@ class IllustiaRepository(
     }
 
     private fun ensureApiClient(mode: NetworkMode) {
-        if (apiClientMode == mode) return
+        if (apiClientMode == mode && apiClientInstance != null) return
         synchronized(this) {
-            if (apiClientMode != mode) {
-                apiClient = PixivApiClient(mode)
+            if (apiClientMode != mode || apiClientInstance == null) {
+                apiClientInstance = PixivApiClient(mode)
                 apiClientMode = mode
             }
         }
