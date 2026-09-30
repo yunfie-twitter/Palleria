@@ -16,6 +16,20 @@ internal enum class DevicePerformanceTier {
 }
 
 /**
+ * Profile of hardware capabilities and constraints for tier classification.
+ */
+internal data class DeviceHardwareProfile(
+    val totalMemBytes: Long,
+    val isLowRamDevice: Boolean,
+    val memoryClassMb: Int,
+    val largeMemoryClassMb: Int = memoryClassMb,
+    val cores: Int,
+    val glEsVersion: Int = PlatformCapabilities.GL_ES_VERSION_3_2,
+    val is64Bit: Boolean = true,
+    val socOrHardware: String = "",
+)
+
+/**
  * Centralized Android feature gates.
  *
  * Call sites should branch on a capability instead of an SDK number. The annotations keep Android
@@ -24,12 +38,17 @@ internal enum class DevicePerformanceTier {
  */
 internal object PlatformCapabilities {
     const val HANDOFF_API = 37
-    const val LOW_RAM_THRESHOLD_BYTES = 3_758_096_384L // 3.5 GB
-    const val MEDIUM_RAM_THRESHOLD_BYTES = 6_442_450_944L // 6.0 GB
-    const val LOW_MEMORY_CLASS_THRESHOLD_MB = 192
+
+    // OpenGL ES 3.2 is encoded as 0x00030002 in reqGlEsVersion
+    internal const val GL_ES_VERSION_3_2 = 0x00030002
+
+    private const val RAM_THRESHOLD_4GB_BYTES = 4_294_967_296L // 4.0 GB
+    private const val RAM_THRESHOLD_7GB_BYTES = 7_516_192_768L // 7.0 GB (~8 GB devices)
+    private const val LOW_LARGE_HEAP_THRESHOLD_MB = 256
+    private const val HIGH_LARGE_HEAP_THRESHOLD_MB = 512
 
     private const val LOW_TIER_MAX_CORES = 4
-    private const val MEDIUM_TIER_MAX_CORES = 6
+    private const val HIGH_TIER_MIN_CORES = 8
 
     private const val MAX_DECODE_DIMENSION_LOW = 1080
     private const val MAX_DECODE_DIMENSION_MEDIUM = 1536
@@ -41,6 +60,24 @@ internal object PlatformCapabilities {
 
     private const val DATASTORE_DEBOUNCE_LOW_MS = 1200L
     private const val DATASTORE_DEBOUNCE_DEFAULT_MS = 500L
+
+    private val KNOWN_LOW_TIER_SOCS =
+        setOf(
+            "msm8956", // Snapdragon 620
+            "msm8976", // Snapdragon 652
+            "msm8953", // Snapdragon 625
+            "msm8937", // Snapdragon 430
+            "msm8917", // Snapdragon 425
+            "msm8940", // Snapdragon 435
+            "sdm439", // Snapdragon 439
+            "sdm450", // Snapdragon 450
+            "mt6765", // Helio P35 / G35
+            "mt6762", // Helio P22
+            "mt6761", // Helio A22
+            "sc9863a", // Unisoc SC9863A
+            "ums512", // Unisoc T618
+            "ums312", // Unisoc T310
+        )
 
     @Volatile
     private var cachedPerformanceTier: DevicePerformanceTier? = null
@@ -61,12 +98,56 @@ internal object PlatformCapabilities {
         val memoryInfo = ActivityManager.MemoryInfo()
         activityManager?.getMemoryInfo(memoryInfo)
 
+        val totalMem = memoryInfo.totalMem
+        val isLowRam = activityManager?.isLowRamDevice == true
+        val memoryClass = activityManager?.memoryClass ?: 0
+        val largeMemoryClass = activityManager?.largeMemoryClass ?: memoryClass
+        val cores = Runtime.getRuntime().availableProcessors()
+        val glEsVersion = activityManager?.deviceConfigurationInfo?.reqGlEsVersion ?: GL_ES_VERSION_3_2
+        val is64Bit = Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+        val socOrHardware =
+            listOf(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else "",
+                Build.HARDWARE,
+                Build.BOARD,
+            ).filter { it.isNotBlank() }.joinToString(" ").lowercase()
+
         return resolvePerformanceTier(
-            totalMemBytes = memoryInfo.totalMem,
-            isLowRamDevice = activityManager?.isLowRamDevice == true,
-            memoryClassMb = activityManager?.memoryClass ?: 0,
-            cores = Runtime.getRuntime().availableProcessors(),
+            DeviceHardwareProfile(
+                totalMemBytes = totalMem,
+                isLowRamDevice = isLowRam,
+                memoryClassMb = memoryClass,
+                largeMemoryClassMb = largeMemoryClass,
+                cores = cores,
+                glEsVersion = glEsVersion,
+                is64Bit = is64Bit,
+                socOrHardware = socOrHardware,
+            ),
         )
+    }
+
+    internal fun resolvePerformanceTier(profile: DeviceHardwareProfile): DevicePerformanceTier {
+        val isGlConstrained = profile.glEsVersion < GL_ES_VERSION_3_2
+        val isArchitectureConstrained = !profile.is64Bit || profile.isLowRamDevice || isGlConstrained
+        val isKnownLowSoc = isKnownLowTierSoc(profile.socOrHardware)
+
+        val isMemoryConstrained = profile.totalMemBytes in 1..RAM_THRESHOLD_4GB_BYTES
+        val isHeapConstrained = profile.largeMemoryClassMb in 1..LOW_LARGE_HEAP_THRESHOLD_MB
+        val isCpuConstrained = profile.cores <= LOW_TIER_MAX_CORES
+        val isHardwareConstrained = isMemoryConstrained || isHeapConstrained || isCpuConstrained
+
+        val isLowTier = isArchitectureConstrained || isKnownLowSoc || isHardwareConstrained
+
+        val isHighRam = profile.totalMemBytes >= RAM_THRESHOLD_7GB_BYTES
+        val isHighHeap = profile.largeMemoryClassMb >= HIGH_LARGE_HEAP_THRESHOLD_MB
+        val isHighCores = profile.cores >= HIGH_TIER_MIN_CORES
+        val isHighTier = isHighRam && isHighHeap && isHighCores
+
+        return when {
+            isLowTier -> DevicePerformanceTier.LOW
+            isHighTier -> DevicePerformanceTier.HIGH
+            else -> DevicePerformanceTier.MEDIUM
+        }
     }
 
     internal fun resolvePerformanceTier(
@@ -74,18 +155,21 @@ internal object PlatformCapabilities {
         isLowRamDevice: Boolean,
         memoryClassMb: Int,
         cores: Int,
-    ): DevicePerformanceTier {
-        val isRamConstrained = isLowRamDevice || totalMemBytes in 1..LOW_RAM_THRESHOLD_BYTES
-        val isHardwareConstrained = memoryClassMb in 1..LOW_MEMORY_CLASS_THRESHOLD_MB || cores <= LOW_TIER_MAX_CORES
-        val isLowTier = isRamConstrained || isHardwareConstrained
+    ): DevicePerformanceTier =
+        resolvePerformanceTier(
+            DeviceHardwareProfile(
+                totalMemBytes = totalMemBytes,
+                isLowRamDevice = isLowRamDevice,
+                memoryClassMb = memoryClassMb,
+                largeMemoryClassMb = memoryClassMb,
+                cores = cores,
+            ),
+        )
 
-        val isMediumTier = totalMemBytes in 1..MEDIUM_RAM_THRESHOLD_BYTES || cores <= MEDIUM_TIER_MAX_CORES
-
-        return when {
-            isLowTier -> DevicePerformanceTier.LOW
-            isMediumTier -> DevicePerformanceTier.MEDIUM
-            else -> DevicePerformanceTier.HIGH
-        }
+    private fun isKnownLowTierSoc(socString: String): Boolean {
+        if (socString.isBlank()) return false
+        val normalized = socString.lowercase()
+        return KNOWN_LOW_TIER_SOCS.any { normalized.contains(it) }
     }
 
     fun isLowRamDevice(context: Context): Boolean = devicePerformanceTier(context) == DevicePerformanceTier.LOW

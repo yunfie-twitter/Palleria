@@ -72,6 +72,7 @@ import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BookmarkHeartButton
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -375,21 +376,23 @@ fun IllustDetailScreen(
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
         ) {
-            PixivImage(
-                url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .blur(36.dp)
-                        .graphicsLayer {
-                            val raw = pullToRefreshState.pullProgress
-                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
-                            alpha = progress * 0.55f
-                        },
-                thumbnail = true,
-            )
+            if (PlatformCapabilities.supportsHardwareBlur(context)) {
+                PixivImage(
+                    url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .blur(36.dp)
+                            .graphicsLayer {
+                                val raw = pullToRefreshState.pullProgress
+                                val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                                alpha = progress * 0.55f
+                            },
+                    thumbnail = true,
+                )
+            }
             Box(
                 modifier =
                     Modifier

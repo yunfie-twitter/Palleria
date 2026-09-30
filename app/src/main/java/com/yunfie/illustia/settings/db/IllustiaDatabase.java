@@ -61,6 +61,15 @@ public abstract class IllustiaDatabase extends RoomDatabase {
         }
     };
 
+    private static final RoomDatabase.Callback PRAGMA_CALLBACK = new RoomDatabase.Callback() {
+        @Override
+        public void onOpen(SupportSQLiteDatabase db) {
+            super.onOpen(db);
+            db.execSQL("PRAGMA synchronous = NORMAL;");
+            db.execSQL("PRAGMA temp_store = MEMORY;");
+        }
+    };
+
     public static IllustiaDatabase getInstance(Context context) {
         IllustiaDatabase current = INSTANCE;
         if (current != null) {
@@ -75,6 +84,7 @@ public abstract class IllustiaDatabase extends RoomDatabase {
                                 "illustia.db"
                         )
                         .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                        .addCallback(PRAGMA_CALLBACK)
                         .fallbackToDestructiveMigration()
                         .build();
                 INSTANCE = current;

@@ -61,64 +61,105 @@ class PlatformCapabilitiesTest {
 
     @Test
     fun `resolvePerformanceTier classifies Snapdragon 620 tier devices as LOW`() {
-        // Snapdragon 620 profile: 3 GB RAM, 6 cores, 192 MB memory class
-        val tier =
-            PlatformCapabilities.resolvePerformanceTier(
+        // Snapdragon 620 profile: 3 GB RAM, 6 cores, 192 MB memory class, OpenGL ES 3.1, msm8956
+        val profile =
+            DeviceHardwareProfile(
                 totalMemBytes = 3_221_225_472L,
                 isLowRamDevice = false,
                 memoryClassMb = 192,
+                largeMemoryClassMb = 192,
                 cores = 6,
+                glEsVersion = 0x00030001, // ES 3.1
+                is64Bit = true,
+                socOrHardware = "qcom msm8956",
             )
-        tier shouldBe DevicePerformanceTier.LOW
+        PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.LOW
     }
 
     @Test
-    fun `resolvePerformanceTier classifies low RAM or low core count as LOW`() {
-        // 2 GB RAM, 4 cores
+    fun `resolvePerformanceTier classifies 32bit or sub-ES32 devices as LOW`() {
+        // 32-bit device even with 4 GB RAM and 8 cores
         PlatformCapabilities.resolvePerformanceTier(
-            totalMemBytes = 2_147_483_648L,
-            isLowRamDevice = true,
-            memoryClassMb = 128,
-            cores = 4,
+            DeviceHardwareProfile(
+                totalMemBytes = 4_294_967_296L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                is64Bit = false,
+            ),
         ) shouldBe DevicePerformanceTier.LOW
 
-        // 4 cores even with 8 GB RAM
+        // OpenGL ES 3.0 / 3.1 GPU
         PlatformCapabilities.resolvePerformanceTier(
-            totalMemBytes = 8_589_934_592L,
-            isLowRamDevice = false,
-            memoryClassMb = 256,
-            cores = 4,
+            DeviceHardwareProfile(
+                totalMemBytes = 5_368_709_120L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                glEsVersion = 0x00030000,
+            ),
+        ) shouldBe DevicePerformanceTier.LOW
+    }
+
+    @Test
+    fun `resolvePerformanceTier identifies known low tier SoCs even with 4GB RAM`() {
+        // Snapdragon 625 (msm8953) with 4 GB RAM and 8 cores
+        PlatformCapabilities.resolvePerformanceTier(
+            DeviceHardwareProfile(
+                totalMemBytes = 4_500_000_000L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                socOrHardware = "qualcomm msm8953",
+            ),
+        ) shouldBe DevicePerformanceTier.LOW
+
+        // Helio P35 (mt6765)
+        PlatformCapabilities.resolvePerformanceTier(
+            DeviceHardwareProfile(
+                totalMemBytes = 4_500_000_000L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                socOrHardware = "mediatek mt6765",
+            ),
         ) shouldBe DevicePerformanceTier.LOW
     }
 
     @Test
     fun `resolvePerformanceTier classifies mid range devices as MEDIUM`() {
-        // 6 GB RAM, 8 cores
-        PlatformCapabilities.resolvePerformanceTier(
-            totalMemBytes = 6_442_450_944L,
-            isLowRamDevice = false,
-            memoryClassMb = 256,
-            cores = 8,
-        ) shouldBe DevicePerformanceTier.MEDIUM
-
-        // 8 GB RAM but 6 cores
-        PlatformCapabilities.resolvePerformanceTier(
-            totalMemBytes = 8_589_934_592L,
-            isLowRamDevice = false,
-            memoryClassMb = 256,
-            cores = 6,
-        ) shouldBe DevicePerformanceTier.MEDIUM
+        // 6 GB RAM, 8 cores, 384 MB heap, ES 3.2, modern SoC
+        val profile =
+            DeviceHardwareProfile(
+                totalMemBytes = 6_442_450_944L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
+                socOrHardware = "qcom sm7325",
+            )
+        PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.MEDIUM
     }
 
     @Test
     fun `resolvePerformanceTier classifies flagship devices as HIGH`() {
-        // 12 GB RAM, 8 cores, 512 MB memory class
-        PlatformCapabilities.resolvePerformanceTier(
-            totalMemBytes = 12_884_901_888L,
-            isLowRamDevice = false,
-            memoryClassMb = 512,
-            cores = 8,
-        ) shouldBe DevicePerformanceTier.HIGH
+        // 12 GB RAM, 8 cores, 512 MB large memory class, ES 3.2
+        val profile =
+            DeviceHardwareProfile(
+                totalMemBytes = 12_884_901_888L,
+                isLowRamDevice = false,
+                memoryClassMb = 384,
+                largeMemoryClassMb = 512,
+                cores = 8,
+                glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
+                socOrHardware = "qcom sm8550",
+            )
+        PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.HIGH
     }
 
     @Test

@@ -69,8 +69,8 @@ fun PixivImage(
         remember(context) {
             val displayMetrics = context.resources.displayMetrics
             val screenMaxDim = maxOf(displayMetrics.widthPixels, displayMetrics.heightPixels)
-            val maxCap = if (PlatformCapabilities.isLowRamDevice(context)) 1536 else 2560
-            (screenMaxDim * 1.25f).toInt().coerceIn(1280, maxCap)
+            val maxCap = PlatformCapabilities.maxImageDecodeDimension(context)
+            (screenMaxDim * 1.25f).toInt().coerceIn(1080, maxCap)
         }
     val imageRequest =
         remember(
@@ -146,7 +146,10 @@ fun PixivImage(
                             scale(Scale.FIT)
                             precision(Precision.INEXACT)
                         }
-                        if (allowRgb565) {
+                        val shouldAllowRgb565 =
+                            allowRgb565 ||
+                                PlatformCapabilities.recommendedBitmapConfig(context) == Bitmap.Config.RGB_565
+                        if (shouldAllowRgb565) {
                             allowRgb565(true)
                         }
                     }
@@ -187,14 +190,15 @@ fun PrefetchPixivImages(
 ) {
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
+    val effectiveLimit = minOf(limit, PlatformCapabilities.recommendedPrefetchItemCount(context))
     val prefetchUrls =
-        remember(urls, proxyBaseUrl, limit) {
+        remember(urls, proxyBaseUrl, effectiveLimit) {
             urls
                 .asSequence()
                 .filter { it.isNotBlank() }
                 .map { proxyPixivImageUrl(it, proxyBaseUrl) }
                 .distinct()
-                .take(limit)
+                .take(effectiveLimit)
                 .toList()
         }
 
