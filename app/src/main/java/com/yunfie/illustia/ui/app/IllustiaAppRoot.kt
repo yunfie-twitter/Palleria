@@ -76,7 +76,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
-    val tabs = mainTabs(settings)
+    val tabs = remember(settings.shortsFeedEnabled, settings.navigationOrder) { mainTabs(settings) }
     val initialTab =
         remember(startupScreen, tabs) {
             viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
@@ -101,9 +101,13 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val context = LocalContext.current
     val pendingShortcut by AppShortcutRouter.pending.collectAsStateWithLifecycle()
     val discordRpcManager =
-        remember {
-            com.yunfie.illustia.discord
-                .DiscordRpcManager(context.applicationContext)
+        remember(state.settings.discordRpcEnabled) {
+            if (state.settings.discordRpcEnabled) {
+                com.yunfie.illustia.discord
+                    .DiscordRpcManager(context.applicationContext)
+            } else {
+                null
+            }
         }
 
     val appState = remember(state) { IllustiaAppStateBundle(state) }
@@ -471,15 +475,15 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         currentRoute,
         viewingIllust,
     ) {
-        discordRpcManager.updatePresence(
+        discordRpcManager?.updatePresence(
             settings = state.settings,
             selectedIllust = viewingIllust,
         )
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(discordRpcManager) {
         onDispose {
-            discordRpcManager.close()
+            discordRpcManager?.close()
         }
     }
 

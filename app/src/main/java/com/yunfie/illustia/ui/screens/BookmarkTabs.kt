@@ -58,6 +58,7 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
@@ -223,6 +224,7 @@ private fun WatchlistSeriesCard(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         thumbnail = true,
+                        maxDecodeDimensionPx = 384,
                     )
                 } else {
                     Icon(
@@ -576,8 +578,17 @@ internal fun BookmarkFollowingTab(
                 }
             }
         }
+    val showInitialSkeletons = followingUsers.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && chrome.isFollowingPaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
+
     PullToRefresh(
-        isRefreshing = loadState == LoadState.Loading && followingUsers.isNotEmpty(),
+        isRefreshing = chrome.isFollowingRefreshing,
         onRefresh = { viewModel.refreshFollowingUsers(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -585,7 +596,7 @@ internal fun BookmarkFollowingTab(
             gridState = gridState,
             enabled = settings.autoLoadMore,
             nextUrl = chrome.followingUsersNextUrl,
-            isLoading = loadState == LoadState.Loading,
+            isLoading = chrome.isFollowingPaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreFollowingUsers,
         )
         LazyVerticalGrid(
@@ -599,7 +610,17 @@ internal fun BookmarkFollowingTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+            if (showInitialSkeletons) {
+                items(
+                    count = 4,
+                    key = { "following_user_skeleton_$it" },
+                    contentType = { "user_skeleton" },
+                ) {
+                    UserResultCardSkeleton(shimmerValue = shimmer)
+                }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+            }
             if (followingUsers.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.following_users_empty))
@@ -608,12 +629,34 @@ internal fun BookmarkFollowingTab(
             gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
                 UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
             }
-            if (!settings.autoLoadMore && chrome.followingUsersNextUrl != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+            if (showPaginationSkeletons) {
+                items(
+                    count = 3,
+                    key = { "following_paginating_skeleton_$it" },
+                    contentType = { "user_skeleton" },
+                ) {
+                    UserResultCardSkeleton(shimmerValue = shimmer)
+                }
+            } else if (!settings.autoLoadMore && chrome.followingUsersNextUrl != null) {
+                item(key = "following_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
                         onClick = viewModel::loadMoreFollowingUsers,
+                        enabled = !chrome.isFollowingPaginating,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.action_load_more)) }
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (chrome.isFollowingPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(R.string.action_load_more))
+                        }
+                    }
                 }
             }
         }

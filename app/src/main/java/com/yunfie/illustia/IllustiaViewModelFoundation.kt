@@ -280,39 +280,6 @@ abstract class IllustiaViewModelFoundation(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.activeDownloads)
 
     init {
-        viewModelScope.launch {
-            AppUpdateDownloadWorker.progressFlow.collect { event ->
-                when (event) {
-                    is AppUpdateDownloadWorker.DownloadProgressEvent.Progress -> {
-                        _updateCheckState.value =
-                            UpdateCheckState.Downloading(
-                                progress = event.progress,
-                                downloadedBytes = event.downloadedBytes,
-                                totalBytes = event.totalBytes,
-                            )
-                    }
-
-                    is AppUpdateDownloadWorker.DownloadProgressEvent.Completed -> {
-                        _updateCheckState.value =
-                            UpdateCheckState.ReadyToInstall(
-                                apkFile = event.file,
-                                release = event.release,
-                            )
-                    }
-
-                    is AppUpdateDownloadWorker.DownloadProgressEvent.Failed -> {
-                        _updateCheckState.value = UpdateCheckState.Error(event.error)
-                        _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
-                    }
-
-                    null -> {
-                        if (_updateCheckState.value is UpdateCheckState.Downloading) {
-                            _updateCheckState.value = UpdateCheckState.Idle
-                        }
-                    }
-                }
-            }
-        }
         viewModelScope.launch(Dispatchers.IO) {
             persistSettingsUpdates()
         }
@@ -348,11 +315,52 @@ abstract class IllustiaViewModelFoundation(
             if (lastSeenVersionCode != currentVersionCode) {
                 updateSettings { it.copy(lastSeenAppVersionCode = currentVersionCode) }
             }
+            if (!shouldLock && !normalizedStartupSettings.privacyModeEnabled && normalizedStartupSettings.refreshToken.isNotBlank()) {
+                prefetchHomeFeedOnStartup(_uiState.value.homeKind)
+            }
             resumePendingNativeIntentIfReady()
         }
     }
 
+    protected fun observeAppUpdateDownloadWorkerProgress() {
+        viewModelScope.launch {
+            AppUpdateDownloadWorker.progressFlow.collect { event ->
+                when (event) {
+                    is AppUpdateDownloadWorker.DownloadProgressEvent.Progress -> {
+                        _updateCheckState.value =
+                            UpdateCheckState.Downloading(
+                                progress = event.progress,
+                                downloadedBytes = event.downloadedBytes,
+                                totalBytes = event.totalBytes,
+                            )
+                    }
+
+                    is AppUpdateDownloadWorker.DownloadProgressEvent.Completed -> {
+                        _updateCheckState.value =
+                            UpdateCheckState.ReadyToInstall(
+                                apkFile = event.file,
+                                release = event.release,
+                            )
+                    }
+
+                    is AppUpdateDownloadWorker.DownloadProgressEvent.Failed -> {
+                        _updateCheckState.value = UpdateCheckState.Error(event.error)
+                        _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
+                    }
+
+                    null -> {
+                        if (_updateCheckState.value is UpdateCheckState.Downloading) {
+                            _updateCheckState.value = UpdateCheckState.Idle
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /** Hooks implemented by feature modules that participate in startup/session flows. */
+    protected abstract fun prefetchHomeFeedOnStartup(kind: HomeFeedKind)
+
     protected abstract fun resumePendingNativeIntentIfReady()
 
     abstract fun logout()

@@ -153,6 +153,7 @@ fun AvatarImage(
     name: String,
     size: Dp,
     modifier: Modifier = Modifier,
+    maxDecodeDimensionPx: Int = 192,
 ) {
     val commonModifier =
         modifier
@@ -166,6 +167,8 @@ fun AvatarImage(
             contentDescription = name,
             contentScale = ContentScale.Crop,
             modifier = commonModifier,
+            thumbnail = true,
+            maxDecodeDimensionPx = maxDecodeDimensionPx,
         )
     } else {
         Box(

@@ -168,7 +168,7 @@ fun FavoriteTagsScreen(
                 actions = {
                     HeaderIcon(
                         icon = MiuixIcons.Refresh,
-                        onClick = { selectedTag?.let(viewModel::loadWatchlistTag) },
+                        onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
                     )
                 },
             )
@@ -176,7 +176,7 @@ fun FavoriteTagsScreen(
     ) { scaffoldPadding ->
         PullToRefresh(
             isRefreshing = state.isWatchlistRefreshing,
-            onRefresh = { selectedTag?.let(viewModel::loadWatchlistTag) },
+            onRefresh = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
             modifier = Modifier.fillMaxSize(),
         ) {
             AutoLoadMoreEffect(
@@ -226,16 +226,22 @@ fun FavoriteTagsScreen(
                 // ── 検索結果 ──────────────────────────────────
                 if (selectedTag != null) {
                     if (showInitialLoading) {
-                        items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
+                        items(
+                            count = 6,
+                            key = { "fav_initial_skeleton_$it" },
+                            contentType = { "illust_skeleton" },
+                        ) {
+                            IllustCardSkeleton(shimmerValue = shimmer)
+                        }
                     } else {
-                        item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(state.loadState) }
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "state_banner") { StateBanner(state.loadState) }
                     }
 
                     val currentSelectedTag = selectedTag
                     if (state.watchlistItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error &&
                         currentSelectedTag != null
                     ) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
                             EmptyState(stringResource(R.string.favorite_tags_works_not_found, currentSelectedTag))
                         }
                     }
@@ -264,7 +270,7 @@ fun FavoriteTagsScreen(
                             IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     } else if (!state.settings.autoLoadMore && state.watchlistNextUrl != null) {
-                        item(key = "watchlist_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                        item(key = "watchlist_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more_button") {
                             Button(
                                 onClick = viewModel::loadMoreWatchlist,
                                 enabled = !state.isWatchlistPaginating,

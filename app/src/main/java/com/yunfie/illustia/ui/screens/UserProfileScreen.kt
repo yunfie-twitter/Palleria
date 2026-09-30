@@ -94,14 +94,15 @@ fun UserProfileScreen(
     val infoListState = remember(user.id) { LazyListState() }
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
-    val selectedTab = pagerState.currentPage
-    val processedIllusts = rememberUserWorks(user.id, illusts, sortOrder, typeFilter, selectedTab == 0)
-    val processedBookmarks = rememberUserWorks(user.id, bookmarks, sortOrder, typeFilter, selectedTab == 1)
+    val isIllustActive by remember { derivedStateOf { pagerState.settledPage == 0 } }
+    val isBookmarkActive by remember { derivedStateOf { pagerState.settledPage == 1 } }
+    val processedIllusts = rememberUserWorks(user.id, illusts, sortOrder, typeFilter, isIllustActive)
+    val processedBookmarks = rememberUserWorks(user.id, bookmarks, sortOrder, typeFilter, isBookmarkActive)
     var isHeaderCollapsed by remember(user.id) { mutableStateOf(false) }
 
-    val activeIsAtTop by remember(selectedTab, gridState, bookmarkGridState, infoListState) {
+    val activeIsAtTop by remember(gridState, bookmarkGridState, infoListState) {
         derivedStateOf {
-            when (selectedTab) {
+            when (pagerState.currentPage) {
                 0 -> gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset <= 0
                 1 -> bookmarkGridState.firstVisibleItemIndex == 0 && bookmarkGridState.firstVisibleItemScrollOffset <= 0
                 else -> infoListState.firstVisibleItemIndex == 0 && infoListState.firstVisibleItemScrollOffset <= 0
@@ -165,8 +166,10 @@ fun UserProfileScreen(
         }
     }
 
-    LaunchedEffect(selectedTab, user.id, isMuted) {
-        if (!isMuted && selectedTab == 1) onLoadBookmarks()
+    LaunchedEffect(pagerState, user.id, isMuted) {
+        androidx.compose.runtime.snapshotFlow { pagerState.settledPage }.collect { settled ->
+            if (!isMuted && settled == 1) onLoadBookmarks()
+        }
     }
 
     if (showUnfollowConfirm) {
@@ -196,7 +199,7 @@ fun UserProfileScreen(
         }
     }
     val selectTab: (Int) -> Unit = { index ->
-        if (index != selectedTab) {
+        if (index != pagerState.currentPage) {
             performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
         }
         coroutineScope.launch { pagerState.animateScrollToPage(index) }
@@ -204,7 +207,7 @@ fun UserProfileScreen(
     val scrollToTop: () -> Unit = {
         isHeaderCollapsed = false
         coroutineScope.launch {
-            when (selectedTab) {
+            when (pagerState.currentPage) {
                 0 -> gridState.animateScrollToItem(0)
                 1 -> bookmarkGridState.animateScrollToItem(0)
                 else -> infoListState.animateScrollToItem(0)
