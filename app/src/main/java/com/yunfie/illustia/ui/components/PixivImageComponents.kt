@@ -37,9 +37,6 @@ val PixivImageHeaders =
         .set("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Illustia)")
         .build()
 
-private const val ThumbnailDecodeSizePx = 512
-private const val PrefetchDecodeSizePx = 512
-
 @Composable
 fun PixivImage(
     url: String,
@@ -89,7 +86,7 @@ fun PixivImage(
                     .httpHeaders(PixivImageHeaders)
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .memoryCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(!thumbnail && crossfade)
+                    .crossfade(!thumbnail && crossfade && PlatformCapabilities.supportsImageCrossfade(context))
 
             if (hasLoadingListener || hasSuccessListener) {
                 builder.listener(
@@ -122,11 +119,12 @@ fun PixivImage(
             builder
                 .apply {
                     if (thumbnail) {
+                        val defaultThumbSize = PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
                         val thumbSize =
                             if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
                                 maxDecodeDimensionPx
                             } else {
-                                ThumbnailDecodeSizePx
+                                defaultThumbSize
                             }
                         size(thumbSize)
                         scale(Scale.FILL)
@@ -231,7 +229,7 @@ fun PrefetchPixivImages(
                         .httpHeaders(PixivImageHeaders)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .memoryCachePolicy(CachePolicy.ENABLED)
-                        .size(PrefetchDecodeSizePx)
+                        .size(PlatformCapabilities.recommendedThumbnailDecodeDimension(context))
                         .scale(Scale.FILL)
                         .precision(Precision.INEXACT)
                         .allowRgb565(true)

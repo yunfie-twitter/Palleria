@@ -62,22 +62,105 @@ internal object PlatformCapabilities {
     private const val DATASTORE_DEBOUNCE_LOW_MS = 1200L
     private const val DATASTORE_DEBOUNCE_DEFAULT_MS = 500L
 
+    private const val MAX_DECODE_DIMENSION_THUMBNAIL_LOW = 384
+    private const val MAX_DECODE_DIMENSION_THUMBNAIL_DEFAULT = 512
+
+    private const val COIL_MEMORY_CACHE_PERCENT_LOW = 0.10
+    private const val COIL_MEMORY_CACHE_PERCENT_DEFAULT = 0.20
+
+    private const val UGOIRA_PREFETCH_AHEAD_LOW = 6
+    private const val UGOIRA_PREFETCH_AHEAD_DEFAULT = 18
+
+    private const val UGOIRA_KEEP_BEHIND_LOW = 2
+    private const val UGOIRA_KEEP_BEHIND_DEFAULT = 4
+
     private val KNOWN_LOW_TIER_SOCS =
         setOf(
+            // Qualcomm Snapdragon 200 / 400 / 600 legacy & entry series
+            "msm8909", // Snapdragon 210
+            "msm8916", // Snapdragon 410
+            "msm8926", // Snapdragon 400
+            "msm8928", // Snapdragon 400
+            "msm8929", // Snapdragon 415
+            "msm8936", // Snapdragon 610
+            "msm8939", // Snapdragon 615 / 616
+            "msm8952", // Snapdragon 617
             "msm8956", // Snapdragon 620
             "msm8976", // Snapdragon 652
-            "msm8953", // Snapdragon 625
+            "msm8953", // Snapdragon 625 / 626
             "msm8937", // Snapdragon 430
             "msm8917", // Snapdragon 425
             "msm8940", // Snapdragon 435
+            "sdm429", // Snapdragon 429
             "sdm439", // Snapdragon 439
             "sdm450", // Snapdragon 450
-            "mt6765", // Helio P35 / G35
-            "mt6762", // Helio P22
+            "sm4250", // Snapdragon 460
+            "sm4350", // Snapdragon 480 / 480+
+            "qcm2150", // Snapdragon 215
+            "qcm2290", // Snapdragon 2290
+            "sdm630", // Snapdragon 630
+            "sdm632", // Snapdragon 632
+            "sdm636", // Snapdragon 636
+            "sm6115", // Snapdragon 662
+            "sm6125", // Snapdragon 665
+            "msm8992", // Snapdragon 808
+            "msm8994", // Snapdragon 810
+            // MediaTek Helio A / P / low-end G / MT series
+            "mt6580", // MT6580
+            "mt6582", // MT6582
+            "mt6735", // MT6735
+            "mt6737", // MT6737
+            "mt6739", // MT6739
+            "mt6750", // MT6750
+            "mt6752", // MT6752
+            "mt6753", // MT6753
+            "mt6755", // Helio P10
+            "mt6757", // Helio P20 / P25
             "mt6761", // Helio A22
-            "sc9863a", // Unisoc SC9863A
-            "ums512", // Unisoc T618
+            "mt6762", // Helio P22 / A25
+            "mt6763", // Helio P23
+            "mt6765", // Helio P35 / G35 / G37
+            "mt6768", // Helio P65 / G85
+            "mt6769", // Helio G70 / G80 / G85 / G88
+            "mt6771", // Helio P60 / P70
+            "mt8163", // MT8163 (Fire Tablet)
+            "mt8167", // MT8167 (Fire Tablet)
+            "mt8168", // MT8168 (Fire HD 8)
+            "mt8173", // MT8173
+            "mt8765", // MT8765
+            "mt8766", // MT8766
+            "mt8768", // MT8768
+            // Unisoc / Spreadtrum
+            "sc7731", // SC7731
+            "sc9832", // SC9832E
+            "sc9863", // SC9863
+            "sc9863a", // SC9863A
+            "sp9863a", // SP9863A
             "ums312", // Unisoc T310
+            "ums512", // Unisoc T618 / T616
+            "ums9230", // Unisoc T606
+            "t610", // Unisoc T610
+            "t606", // Unisoc T606
+            "sl8541e", // SL8541E
+            "sl8521e", // SL8521E
+            // Samsung Exynos (legacy & sluggish entry)
+            "exynos7870", // Exynos 7870
+            "exynos7880", // Exynos 7880
+            "exynos7884", // Exynos 7884
+            "exynos7885", // Exynos 7885
+            "exynos7904", // Exynos 7904
+            "exynos850", // Exynos 850 (A55x8 sluggish)
+            "exynos9610", // Exynos 9610
+            "exynos9611", // Exynos 9611
+            "s5e3830", // Exynos 850 part code
+            // Rockchip / JLQ / Allwinner
+            "jr510", // JLQ JR510 (POCO C40)
+            "rk3326", // Rockchip RK3326
+            "rk3328", // Rockchip RK3328
+            "rk3566", // Rockchip RK3566
+            "a133", // Allwinner A133
+            "h616", // Allwinner H616
+            "h618", // Allwinner H618
         )
 
     @Volatile
@@ -195,6 +278,13 @@ internal object PlatformCapabilities {
             DevicePerformanceTier.HIGH -> MAX_DECODE_DIMENSION_HIGH
         }
 
+    fun recommendedThumbnailDecodeDimension(context: Context): Int =
+        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
+            MAX_DECODE_DIMENSION_THUMBNAIL_LOW
+        } else {
+            MAX_DECODE_DIMENSION_THUMBNAIL_DEFAULT
+        }
+
     fun recommendedPrefetchItemCount(context: Context): Int =
         when (devicePerformanceTier(context)) {
             DevicePerformanceTier.LOW -> PREFETCH_COUNT_LOW
@@ -203,6 +293,29 @@ internal object PlatformCapabilities {
         }
 
     fun supportsRichAnimations(context: Context): Boolean = devicePerformanceTier(context) != DevicePerformanceTier.LOW
+
+    fun supportsImageCrossfade(context: Context): Boolean = devicePerformanceTier(context) != DevicePerformanceTier.LOW
+
+    fun recommendedCoilMemoryCachePercent(context: Context): Double =
+        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
+            COIL_MEMORY_CACHE_PERCENT_LOW
+        } else {
+            COIL_MEMORY_CACHE_PERCENT_DEFAULT
+        }
+
+    fun recommendedUgoiraPrefetchAhead(context: Context): Int =
+        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
+            UGOIRA_PREFETCH_AHEAD_LOW
+        } else {
+            UGOIRA_PREFETCH_AHEAD_DEFAULT
+        }
+
+    fun recommendedUgoiraKeepBehind(context: Context): Int =
+        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
+            UGOIRA_KEEP_BEHIND_LOW
+        } else {
+            UGOIRA_KEEP_BEHIND_DEFAULT
+        }
 
     fun recommendedDataStoreDebounceMs(context: Context): Long =
         if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {

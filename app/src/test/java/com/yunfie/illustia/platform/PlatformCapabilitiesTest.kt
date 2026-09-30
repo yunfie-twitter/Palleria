@@ -128,6 +128,42 @@ class PlatformCapabilitiesTest {
                 socOrHardware = "mediatek mt6765",
             ),
         ) shouldBe DevicePerformanceTier.LOW
+
+        // Exynos 850 (exynos850 / s5e3830)
+        PlatformCapabilities.resolvePerformanceTier(
+            DeviceHardwareProfile(
+                totalMemBytes = 4_500_000_000L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                socOrHardware = "samsung exynos850",
+            ),
+        ) shouldBe DevicePerformanceTier.LOW
+
+        // Snapdragon 460 (sm4250)
+        PlatformCapabilities.resolvePerformanceTier(
+            DeviceHardwareProfile(
+                totalMemBytes = 4_500_000_000L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                socOrHardware = "qcom sm4250",
+            ),
+        ) shouldBe DevicePerformanceTier.LOW
+
+        // POCO C40 JLQ JR510
+        PlatformCapabilities.resolvePerformanceTier(
+            DeviceHardwareProfile(
+                totalMemBytes = 4_500_000_000L,
+                isLowRamDevice = false,
+                memoryClassMb = 256,
+                largeMemoryClassMb = 384,
+                cores = 8,
+                socOrHardware = "jlq jr510",
+            ),
+        ) shouldBe DevicePerformanceTier.LOW
     }
 
     @Test
@@ -184,8 +220,13 @@ class PlatformCapabilitiesTest {
         PlatformCapabilities.isLowSpecDevice(context).shouldBeTrue()
         PlatformCapabilities.recommendedBitmapConfig(context) shouldBe Bitmap.Config.RGB_565
         PlatformCapabilities.maxImageDecodeDimension(context) shouldBe 1080
+        PlatformCapabilities.recommendedThumbnailDecodeDimension(context) shouldBe 384
         PlatformCapabilities.recommendedPrefetchItemCount(context) shouldBe 2
         PlatformCapabilities.supportsRichAnimations(context).shouldBeFalse()
+        PlatformCapabilities.supportsImageCrossfade(context).shouldBeFalse()
+        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.10
+        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 6
+        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 2
         PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 1200L
         PlatformCapabilities.supportsHardwareBlur(context).shouldBeFalse()
     }
@@ -199,15 +240,25 @@ class PlatformCapabilitiesTest {
         PlatformCapabilities.isLowSpecDevice(context).shouldBeFalse()
         PlatformCapabilities.recommendedBitmapConfig(context) shouldBe Bitmap.Config.ARGB_8888
         PlatformCapabilities.maxImageDecodeDimension(context) shouldBe 1536
+        PlatformCapabilities.recommendedThumbnailDecodeDimension(context) shouldBe 512
         PlatformCapabilities.recommendedPrefetchItemCount(context) shouldBe 4
         PlatformCapabilities.supportsRichAnimations(context).shouldBeTrue()
+        PlatformCapabilities.supportsImageCrossfade(context).shouldBeTrue()
+        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.20
+        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 18
+        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 4
         PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 500L
 
         PlatformCapabilities.setPerformanceTierForTesting(DevicePerformanceTier.HIGH)
         PlatformCapabilities.recommendedBitmapConfig(context) shouldBe Bitmap.Config.ARGB_8888
         PlatformCapabilities.maxImageDecodeDimension(context) shouldBe 2560
+        PlatformCapabilities.recommendedThumbnailDecodeDimension(context) shouldBe 512
         PlatformCapabilities.recommendedPrefetchItemCount(context) shouldBe 6
         PlatformCapabilities.supportsRichAnimations(context).shouldBeTrue()
+        PlatformCapabilities.supportsImageCrossfade(context).shouldBeTrue()
+        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.20
+        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 18
+        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 4
         PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 500L
     }
 }

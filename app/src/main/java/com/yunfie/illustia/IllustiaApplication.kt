@@ -90,7 +90,7 @@ class IllustiaApplication : Application() {
             val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
             val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
             val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
-            val memoryCachePercent = if (isLowRam) 0.12 else 0.20
+            val memoryCachePercent = PlatformCapabilities.recommendedCoilMemoryCachePercent(appContext)
             ImageLoader
                 .Builder(appContext)
                 .components {
