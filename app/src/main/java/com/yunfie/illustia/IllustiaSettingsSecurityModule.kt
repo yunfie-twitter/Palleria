@@ -45,6 +45,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun loadDeferredStartupData() {
         if (!deferredStartupDataStarted.compareAndSet(false, true)) return
+        observeAppUpdateDownloadWorkerProgress()
 
         viewModelScope.launch(Dispatchers.IO) {
             val fullSettings = repository.readSettings(SettingsStore.STARTUP_VIEW_HISTORY_LIMIT)

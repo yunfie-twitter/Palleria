@@ -80,7 +80,7 @@ fun HomeScreen(
     LaunchedEffect(selectedTab) {
         when (selectedTab) {
             HomeTab.Feed -> {
-                if (items.isEmpty()) {
+                if (items.isEmpty() && loadState != LoadState.Loading) {
                     viewModel.refreshHome()
                 }
             }

@@ -27,6 +27,9 @@ import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE_SPEC_MIGRATED
 import com.yunfie.illustia.settings.store.DATASTORE_NAME
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
+import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
+import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
+import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
 import com.yunfie.illustia.settings.store.PALLA_SYNC_ENABLED
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
@@ -82,16 +85,21 @@ class SettingsStore internal constructor(
     constructor(context: Context) : this(context, defaultSyncEventWriter(context))
 
     private val appContext = context.applicationContext
-    private val legacyPreferences = appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-    private val encryptedPreferences = Companion.createEncryptedPreferences(appContext)
-    private val sensitivePreferences = encryptedPreferences ?: legacyPreferences
-    private val dataStore = Companion.dataStoreFor(appContext)
-    private val database = IllustiaDatabase.getInstance(appContext)
-    private val dao = database.settingsDao()
+    private val legacyPreferences by lazy { appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE) }
+    private val encryptedPreferences by lazy { Companion.createEncryptedPreferences(appContext) }
+    private val sensitivePreferences by lazy { encryptedPreferences ?: legacyPreferences }
+    private val dataStore by lazy { Companion.dataStoreFor(appContext) }
+    private val database by lazy { IllustiaDatabase.getInstance(appContext) }
+    private val dao by lazy { database.settingsDao() }
 
     init {
         // Migration will be executed on first suspend read/write off main thread
     }
+
+    private val startupCacheMutex = Mutex()
+
+    @Volatile
+    private var cachedStartupSettings: AppSettings? = null
 
     suspend fun read(viewHistoryLimit: Int? = null): AppSettings {
         ensureMigrated()
@@ -99,8 +107,23 @@ class SettingsStore internal constructor(
     }
 
     suspend fun readStartup(): AppSettings {
-        ensureMigrated()
-        return readStartupAppSettingsImpl(dataStore, sensitivePreferences)
+        cachedStartupSettings?.let { return it }
+        return startupCacheMutex.withLock {
+            cachedStartupSettings?.let { return@withLock it }
+            val isLoggedIn = isStartupLoggedIn()
+            val result = readStartupAppSettingsImpl(dataStore, isLoggedIn = isLoggedIn)
+            cachedStartupSettings = result
+            result
+        }
+    }
+
+    private fun isStartupLoggedIn(): Boolean {
+        if (legacyPreferences.contains(KEY_STARTUP_IS_LOGGED_IN)) {
+            return legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
+        }
+        val loggedIn = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty().isNotBlank()
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, loggedIn).apply()
+        return loggedIn
     }
 
     suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings {
@@ -165,6 +188,8 @@ class SettingsStore internal constructor(
                     .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
                     .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
                     .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
+                    .putBoolean(KEY_STARTUP_IS_LOGGED_IN, rebased.refreshToken.isNotBlank())
+                    .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
                     .apply()
 
                 rebased
@@ -173,7 +198,9 @@ class SettingsStore internal constructor(
         return try {
             // The coordinator owns operationMutex first, then this callback takes
             // persistenceMutex. Incoming page apply uses the same lock order.
-            persistAfterSyncEnqueue(events, syncEventWriter) { persistRebased() }
+            persistAfterSyncEnqueue(events, syncEventWriter) { persistRebased() }.also {
+                cachedStartupSettings = null
+            }
         } catch (error: CancellationException) {
             throw error
         } catch (expectedFailure: Exception) {
@@ -199,6 +226,7 @@ class SettingsStore internal constructor(
             val current = read().syncedCollections()
             val updated = transform(current)
             if (updated != current) {
+                cachedStartupSettings = null
                 writeSyncedCollectionsImpl(dataStore, database, dao, updated)
                 publishSyncUpdate(updated)
             }
@@ -208,6 +236,7 @@ class SettingsStore internal constructor(
 
     internal suspend fun setPallaSyncEnabledFromCoordinator(enabled: Boolean) {
         persistenceMutex.withLock {
+            cachedStartupSettings = null
             dataStore.edit { preferences -> preferences[PALLA_SYNC_ENABLED] = enabled }
             _pallaSyncEnabledUpdates.value =
                 PallaSyncEnabledUpdate(
@@ -260,14 +289,23 @@ class SettingsStore internal constructor(
 
     fun savePinHash(pin: String) {
         savePinHashImpl(sensitivePreferences, pin)
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, true).apply()
     }
 
     suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
 
-    fun hasPinSet(): Boolean = hasPinSetImpl(sensitivePreferences)
+    fun hasPinSet(): Boolean {
+        if (legacyPreferences.contains(KEY_STARTUP_HAS_PIN)) {
+            return legacyPreferences.getBoolean(KEY_STARTUP_HAS_PIN, false)
+        }
+        val hasPin = hasPinSetImpl(sensitivePreferences)
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, hasPin).apply()
+        return hasPin
+    }
 
     fun clearPinHash() {
         clearPinHashImpl(sensitivePreferences)
+        legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, false).apply()
     }
 
     fun saveUnlockCodeHash(code: String) {
@@ -291,12 +329,18 @@ class SettingsStore internal constructor(
 
     fun savedIllustDir(): File = File(appContext.filesDir, "saved_illusts")
 
-    private suspend fun ensureMigrated() {
+    internal suspend fun ensureMigrated() {
         if (migrationCompleted) return
         migrationMutex.withLock {
             if (migrationCompleted) return@withLock
             withContext(Dispatchers.IO) {
-                migrateSettingsIfNeededImpl(dataStore, encryptedPreferences, legacyPreferences, database, dao)
+                migrateSettingsIfNeededImpl(
+                    dataStore = dataStore,
+                    encryptedPreferences = encryptedPreferences,
+                    legacyPreferences = legacyPreferences,
+                    databaseProvider = { database },
+                    daoProvider = { dao },
+                )
                 val current = dataStore.data.first()
                 if (current[AUTO_LOAD_MORE_SPEC_MIGRATED] != true) {
                     val isNormalOrHigher = !PlatformCapabilities.isLowSpecDevice(appContext)
