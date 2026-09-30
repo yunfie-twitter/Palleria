@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -74,6 +75,7 @@ fun UserProfileScreen(
     isMuted: Boolean,
     onUnmuteUser: () -> Unit,
     gridState: LazyGridState,
+    bookmarkGridState: LazyGridState = remember(user.id) { LazyGridState() },
     onIllustLongClick: (Illust) -> Unit = {},
     showHeaderControls: Boolean = true,
     modifier: Modifier = Modifier,
@@ -87,10 +89,9 @@ fun UserProfileScreen(
 
     var showUnfollowConfirm by remember(user.id) { mutableStateOf(false) }
     var followAnimationTrigger by remember(user.id) { mutableIntStateOf(0) }
-    var sortOrder by remember(user.id) { mutableStateOf(UserWorkSortOrder.Newest) }
-    var typeFilter by remember(user.id) { mutableStateOf(UserWorkTypeFilter.All) }
+    var sortOrder by rememberSaveable(user.id) { mutableStateOf(UserWorkSortOrder.Newest) }
+    var typeFilter by rememberSaveable(user.id) { mutableStateOf(UserWorkTypeFilter.All) }
 
-    val bookmarkGridState = remember(user.id) { LazyGridState() }
     val infoListState = remember(user.id) { LazyListState() }
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -98,7 +99,7 @@ fun UserProfileScreen(
     val isBookmarkActive by remember { derivedStateOf { pagerState.settledPage == 1 } }
     val processedIllusts = rememberUserWorks(user.id, illusts, sortOrder, typeFilter, isIllustActive)
     val processedBookmarks = rememberUserWorks(user.id, bookmarks, sortOrder, typeFilter, isBookmarkActive)
-    var isHeaderCollapsed by remember(user.id) { mutableStateOf(false) }
+    var isHeaderCollapsed by rememberSaveable(user.id) { mutableStateOf(false) }
 
     val activeIsAtTop by remember(gridState, bookmarkGridState, infoListState) {
         derivedStateOf {

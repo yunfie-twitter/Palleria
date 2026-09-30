@@ -420,6 +420,8 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun userProfileGridState(userId: Long): LazyGridState = userProfileGridStates.getOrPut(userId) { LazyGridState() }
 
+    fun userProfileBookmarkGridState(userId: Long): LazyGridState = userProfileBookmarkGridStates.getOrPut(userId) { LazyGridState() }
+
     fun illustDetailListState(illustId: Long): LazyListState = illustDetailListStates.getOrPut(illustId) { LazyListState() }
 
     fun rankingGridState(mode: String): LazyGridState = rankingGridStates.getOrPut(mode) { LazyGridState() }

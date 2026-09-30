@@ -196,6 +196,7 @@ abstract class IllustiaViewModelFoundation(
     fun clearScrollStates() {
         rankingGridStates.clear()
         userProfileGridStates.clear()
+        userProfileBookmarkGridStates.clear()
         illustDetailListStates.clear()
     }
 
@@ -204,6 +205,10 @@ abstract class IllustiaViewModelFoundation(
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
         }
     protected val userProfileGridStates: MutableMap<Long, LazyGridState> =
+        object : java.util.LinkedHashMap<Long, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
+        }
+    protected val userProfileBookmarkGridStates: MutableMap<Long, LazyGridState> =
         object : java.util.LinkedHashMap<Long, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
         }
