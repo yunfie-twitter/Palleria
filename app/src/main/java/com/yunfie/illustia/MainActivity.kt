@@ -80,6 +80,7 @@ class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
         const val STARTUP_POST_WORK_DELAY_MS = 400L
+        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 130L
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -89,6 +90,7 @@ class MainActivity : FragmentActivity() {
     private var lastHandledClipboardText: String? = null
     private var appliedRefreshRateHint: Float? = null
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
+    private var appliedAppLanguage: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
@@ -109,7 +111,7 @@ class MainActivity : FragmentActivity() {
                     1f,
                     0f,
                 ).apply {
-                    duration = 220L
+                    duration = SPLASH_EXIT_ANIMATION_DURATION_MS
                     interpolator = AccelerateDecelerateInterpolator()
                     addListener(
                         object : android.animation.AnimatorListenerAdapter() {
@@ -564,24 +566,27 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun applyAppLanguage(language: String) {
+        if (appliedAppLanguage == language) return
+        appliedAppLanguage = language
         if (PlatformCapabilities.supportsPlatformLocaleManager()) {
-            val localeManager = getSystemService(LocaleManager::class.java) ?: return
-            localeManager.applicationLocales = appLanguageLocaleList(language)
-            return
+            val localeManager = getSystemService(LocaleManager::class.java)
+            if (localeManager != null) {
+                localeManager.applicationLocales = appLanguageLocaleList(language)
+            }
+        } else {
+            AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags(
+                    when (language) {
+                        "ja" -> "ja-JP"
+                        "en" -> "en-US"
+                        "ko" -> "ko-KR"
+                        "zh-Hans" -> "zh-Hans"
+                        "zh-Hant" -> "zh-Hant"
+                        else -> ""
+                    },
+                ),
+            )
         }
-
-        AppCompatDelegate.setApplicationLocales(
-            LocaleListCompat.forLanguageTags(
-                when (language) {
-                    "ja" -> "ja-JP"
-                    "en" -> "en-US"
-                    "ko" -> "ko-KR"
-                    "zh-Hans" -> "zh-Hans"
-                    "zh-Hant" -> "zh-Hant"
-                    else -> ""
-                },
-            ),
-        )
     }
 
     private fun resolveAppFontFamily(value: String): FontFamily =
