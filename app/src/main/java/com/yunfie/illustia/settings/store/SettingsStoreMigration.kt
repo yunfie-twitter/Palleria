@@ -20,6 +20,20 @@ internal suspend fun migrateSettingsIfNeeded(
     legacyPreferences: SharedPreferences,
     database: IllustiaDatabase,
     dao: SettingsDao,
+) = migrateSettingsIfNeeded(
+    dataStore = dataStore,
+    encryptedPreferences = encryptedPreferences,
+    legacyPreferences = legacyPreferences,
+    databaseProvider = { database },
+    daoProvider = { dao },
+)
+
+internal suspend fun migrateSettingsIfNeeded(
+    dataStore: DataStore<Preferences>,
+    encryptedPreferences: SharedPreferences?,
+    legacyPreferences: SharedPreferences,
+    databaseProvider: () -> IllustiaDatabase,
+    daoProvider: () -> SettingsDao,
 ) = withContext(Dispatchers.IO) {
     val current =
         dataStore.data
@@ -39,6 +53,8 @@ internal suspend fun migrateSettingsIfNeeded(
             else -> legacyPreferences
         }
     val sensitivePreferences = encryptedPreferences ?: legacyPreferences
+    val dao = daoProvider()
+    val database = databaseProvider()
     val migrated =
         if (current[SETTINGS_VERSION] != null) {
             // Once migrated, DataStore and Room own these values; the secure store holds only credentials.

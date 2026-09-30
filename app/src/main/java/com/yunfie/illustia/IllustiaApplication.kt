@@ -81,25 +81,12 @@ class IllustiaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashHandler.instance.init(this)
-        appScope.launch {
-            val telemetryEnabled =
-                runCatching {
-                    settingsStore.readStartup().sendTelemetry
-                }.getOrDefault(false)
-            withContext(Dispatchers.Main.immediate) {
-                setTelemetryEnabled(telemetryEnabled)
-                // Begin measuring cold-start duration. startTransaction returns null
-                // when telemetry is disabled, so no extra consent check is required.
-                startupTransaction =
-                    GlitchTipTelemetry.startTransaction("app.startup", "app.launch")
-            }
-        }
-        val appContext = applicationContext
-        val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
-        val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
-        val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
-        val memoryCachePercent = if (isLowRam) 0.12 else 0.20
         SingletonImageLoader.setSafe {
+            val appContext = applicationContext
+            val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
+            val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
+            val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
+            val memoryCachePercent = if (isLowRam) 0.12 else 0.20
             ImageLoader
                 .Builder(appContext)
                 .components {
@@ -131,11 +118,15 @@ class IllustiaApplication : Application() {
 
         appScope.launch {
             val appContext = applicationContext
-            val recoveredPallaSync =
-                runCatching {
-                    pallaSyncCoordinator.recoverInterruptedActivation()
-                }.getOrDefault(false)
             val settings = repository.readSettings()
+            val recoveredPallaSync =
+                if (settings.pallaSyncEnabled) {
+                    runCatching {
+                        pallaSyncCoordinator.recoverInterruptedActivation()
+                    }.getOrDefault(false)
+                } else {
+                    false
+                }
             withContext(Dispatchers.Main.immediate) {
                 setTelemetryEnabled(settings.sendTelemetry)
             }

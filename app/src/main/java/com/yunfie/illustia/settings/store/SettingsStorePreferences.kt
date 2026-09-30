@@ -22,12 +22,15 @@ private const val DEFAULT_RELATED_ILLUST_COLUMN_COUNT = 3
 internal fun readFromDataStore(
     preferences: Preferences,
     roomData: RoomSettingsData,
-    sensitivePreferences: SharedPreferences,
+    sensitivePreferences: SharedPreferences? = null,
     isStartup: Boolean = false,
+    isStartupLoggedIn: Boolean = false,
 ): AppSettings {
     // Storage selection belongs to SettingsStore; migrations also read legacy preferences.
-    val tokenByUserId = decodeAccountTokens(sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty())
-    val fallbackAccounts = decodeAccounts(sensitivePreferences.getString(KEY_ACCOUNTS, "").orEmpty())
+    val tokenByUserId =
+        sensitivePreferences?.getString(KEY_ACCOUNT_TOKENS, null)?.let(::decodeAccountTokens).orEmpty()
+    val fallbackAccounts =
+        sensitivePreferences?.getString(KEY_ACCOUNTS, null)?.let(::decodeAccounts).orEmpty()
     val fallbackTokenByUserId = fallbackAccounts.associate { it.userId to it.refreshToken }
     val accounts =
         if (roomData.accounts.isNotEmpty()) {
@@ -45,9 +48,15 @@ internal fun readFromDataStore(
         } else {
             fallbackAccounts
         }
+    val resolvedRefreshToken =
+        when {
+            sensitivePreferences != null -> sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty()
+            isStartup && isStartupLoggedIn -> STARTUP_LOGGED_IN_TOKEN
+            else -> ""
+        }
     return AppSettings(
-        refreshToken = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty(),
-        discordToken = sensitivePreferences.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
+        refreshToken = resolvedRefreshToken,
+        discordToken = sensitivePreferences?.getString(KEY_DISCORD_TOKEN, "").orEmpty(),
         bookmarkUserId = preferences[BOOKMARK_USER_ID].takeIf { it != null && it > 0L },
         appLanguage = preferences[APP_LANGUAGE] ?: "system",
         appFont = preferences[APP_FONT] ?: "system",

@@ -76,10 +76,24 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.defaultTextStyles
 
+private val MiSansFontFamily by lazy {
+    FontFamily(
+        Font(R.font.mi_sans_light, FontWeight.Light),
+        Font(R.font.mi_sans_regular, FontWeight.Normal),
+        Font(R.font.mi_sans_medium, FontWeight.Medium),
+        Font(R.font.mi_sans_demibold, FontWeight.SemiBold),
+        Font(R.font.mi_sans_bold, FontWeight.Bold),
+        Font(R.font.mi_sans_heavy, FontWeight.Black),
+        Font(R.font.mi_sans_extra_light, FontWeight.ExtraLight),
+        Font(R.font.mi_sans_thin, FontWeight.Thin),
+    )
+}
+
 class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
         const val STARTUP_POST_WORK_DELAY_MS = 400L
+        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 130L
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -89,6 +103,8 @@ class MainActivity : FragmentActivity() {
     private var lastHandledClipboardText: String? = null
     private var appliedRefreshRateHint: Float? = null
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
+    private var appliedAppLanguage: String? = null
+    private var appliedDarkTheme: Boolean? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
@@ -102,26 +118,31 @@ class MainActivity : FragmentActivity() {
 
         // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
-            android.animation.ObjectAnimator
-                .ofFloat(
-                    splashScreenView.view,
-                    android.view.View.ALPHA,
-                    1f,
-                    0f,
-                ).apply {
-                    duration = 220L
-                    interpolator = AccelerateDecelerateInterpolator()
-                    addListener(
-                        object : android.animation.AnimatorListenerAdapter() {
-                            override fun onAnimationEnd(animation: android.animation.Animator) {
-                                splashScreenView.remove()
-                            }
-                        },
-                    )
-                    start()
-                }
+            if (viewModel.uiState.value.settingsLoaded) {
+                splashScreenView.remove()
+            } else {
+                android.animation.ObjectAnimator
+                    .ofFloat(
+                        splashScreenView.view,
+                        android.view.View.ALPHA,
+                        1f,
+                        0f,
+                    ).apply {
+                        duration = SPLASH_EXIT_ANIMATION_DURATION_MS
+                        interpolator = AccelerateDecelerateInterpolator()
+                        addListener(
+                            object : android.animation.AnimatorListenerAdapter() {
+                                override fun onAnimationEnd(animation: android.animation.Animator) {
+                                    splashScreenView.remove()
+                                }
+                            },
+                        )
+                        start()
+                    }
+            }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        appliedDarkTheme = isDark
         enableEdgeToEdge(
             statusBarStyle =
                 if (isDark) {
@@ -145,24 +166,8 @@ class MainActivity : FragmentActivity() {
             isAppearanceLightNavigationBars = !isDark
         }
         super.onCreate(savedInstanceState)
-        requestLegacyStoragePermissionIfNeeded()
         applyAppLanguage(SettingsStore.readStoredAppLanguage(applicationContext))
         lastHandledClipboardText = null
-
-        // Observe app lifecycle for lock-on-return
-        val lifecycleObserver =
-            object : DefaultLifecycleObserver {
-                override fun onStop(owner: LifecycleOwner) {
-                    if (viewModel.shouldLockOnReturn()) {
-                        viewModel.lockApp()
-                    }
-                }
-            }
-        processLifecycleObserver = lifecycleObserver
-        androidx.lifecycle.ProcessLifecycleOwner
-            .get()
-            .lifecycle
-            .addObserver(lifecycleObserver)
 
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -237,6 +242,8 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(settingsLoaded, settings.themeMode, systemDark) {
                 if (!settingsLoaded) return@LaunchedEffect
                 val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
+                if (appliedDarkTheme == isDarkTheme) return@LaunchedEffect
+                appliedDarkTheme = isDarkTheme
                 enableEdgeToEdge(
                     statusBarStyle =
                         if (isDarkTheme) {
@@ -320,6 +327,9 @@ class MainActivity : FragmentActivity() {
                 androidx.compose.runtime.withFrameNanos { }
                 this@MainActivity.lifecycleScope.launch {
                     reportFullyDrawn()
+                    registerProcessLifecycleObserverIfNeeded()
+                    requestLegacyStoragePermissionIfNeeded()
+                    enableHandoffIfSupported()
                     kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()
                     (application as IllustiaApplication).startPostStartupWork()
@@ -356,7 +366,6 @@ class MainActivity : FragmentActivity() {
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
         }
-        enableHandoffIfSupported()
     }
 
     override fun onResume() {
@@ -414,6 +423,23 @@ class MainActivity : FragmentActivity() {
                 .setAllowHandoffWithoutPackageInstalled(true)
                 .build()
         setHandoffEnabled(true, params)
+    }
+
+    private fun registerProcessLifecycleObserverIfNeeded() {
+        if (processLifecycleObserver != null) return
+        val lifecycleObserver =
+            object : DefaultLifecycleObserver {
+                override fun onStop(owner: LifecycleOwner) {
+                    if (viewModel.shouldLockOnReturn()) {
+                        viewModel.lockApp()
+                    }
+                }
+            }
+        processLifecycleObserver = lifecycleObserver
+        androidx.lifecycle.ProcessLifecycleOwner
+            .get()
+            .lifecycle
+            .addObserver(lifecycleObserver)
     }
 
     private fun requestLegacyStoragePermissionIfNeeded() {
@@ -563,25 +589,45 @@ class MainActivity : FragmentActivity() {
         setTaskDescription(taskDesc)
     }
 
-    private fun applyAppLanguage(language: String) {
-        if (PlatformCapabilities.supportsPlatformLocaleManager()) {
-            val localeManager = getSystemService(LocaleManager::class.java) ?: return
-            localeManager.applicationLocales = appLanguageLocaleList(language)
-            return
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val isDark = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        if (appliedDarkTheme != isDark) {
+            appliedDarkTheme = isDark
         }
+    }
 
-        AppCompatDelegate.setApplicationLocales(
-            LocaleListCompat.forLanguageTags(
-                when (language) {
-                    "ja" -> "ja-JP"
-                    "en" -> "en-US"
-                    "ko" -> "ko-KR"
-                    "zh-Hans" -> "zh-Hans"
-                    "zh-Hant" -> "zh-Hant"
-                    else -> ""
-                },
-            ),
-        )
+    private fun applyAppLanguage(language: String) {
+        if (appliedAppLanguage == language) return
+        appliedAppLanguage = language
+        val isSystemAlreadyConfigured =
+            language == "system" &&
+                if (PlatformCapabilities.supportsPlatformLocaleManager()) {
+                    getSystemService(LocaleManager::class.java)?.applicationLocales?.isEmpty != false
+                } else {
+                    AppCompatDelegate.getApplicationLocales().isEmpty
+                }
+        if (isSystemAlreadyConfigured) return
+
+        if (PlatformCapabilities.supportsPlatformLocaleManager()) {
+            val localeManager = getSystemService(LocaleManager::class.java)
+            if (localeManager != null) {
+                localeManager.applicationLocales = appLanguageLocaleList(language)
+            }
+        } else {
+            AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags(
+                    when (language) {
+                        "ja" -> "ja-JP"
+                        "en" -> "en-US"
+                        "ko" -> "ko-KR"
+                        "zh-Hans" -> "zh-Hans"
+                        "zh-Hant" -> "zh-Hant"
+                        else -> ""
+                    },
+                ),
+            )
+        }
     }
 
     private fun resolveAppFontFamily(value: String): FontFamily =
@@ -591,21 +637,13 @@ class MainActivity : FragmentActivity() {
             }
 
             AppFont.MiSans -> {
-                FontFamily(
-                    Font(R.font.mi_sans_light, FontWeight.Light),
-                    Font(R.font.mi_sans_regular, FontWeight.Normal),
-                    Font(R.font.mi_sans_medium, FontWeight.Medium),
-                    Font(R.font.mi_sans_demibold, FontWeight.SemiBold),
-                    Font(R.font.mi_sans_bold, FontWeight.Bold),
-                    Font(R.font.mi_sans_heavy, FontWeight.Black),
-                    Font(R.font.mi_sans_extra_light, FontWeight.ExtraLight),
-                    Font(R.font.mi_sans_thin, FontWeight.Thin),
-                )
+                MiSansFontFamily
             }
         }
 
     private fun resolveAppTextStyles(fontFamily: FontFamily): TextStyles {
         val base = defaultTextStyles()
+        if (fontFamily == FontFamily.Default) return base
         return base.copy(
             main = base.main.copy(fontFamily = fontFamily),
             paragraph = base.paragraph.copy(fontFamily = fontFamily),
