@@ -139,6 +139,18 @@ fun ImageViewerScreen(
                 }
             }
         }
+    val ambientUrls =
+        remember(illust) {
+            illust.mediumImagePages.ifEmpty {
+                illust.imagePages.ifEmpty {
+                    listOf(
+                        illust.mediumImageUrl.ifBlank {
+                            illust.squareImageUrl.ifBlank { illust.imageUrl }
+                        },
+                    )
+                }
+            }
+        }
     val pagerState =
         rememberPagerState(initialPage = startPage.coerceIn(0, imageUrls.lastIndex.coerceAtLeast(0)), pageCount = { imageUrls.size })
     val coroutineScope = rememberCoroutineScope()
@@ -433,10 +445,10 @@ fun ImageViewerScreen(
                     .fillMaxSize()
                     .background(Color.Black),
         ) {
-            if (ambientLightEnabled && imageUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
-                val currentUrl = imageUrls.getOrNull(pagerState.currentPage) ?: imageUrls.first()
+            if (ambientLightEnabled && ambientUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
+                val ambientUrl = ambientUrls.getOrNull(pagerState.currentPage) ?: ambientUrls.first()
                 PixivImage(
-                    url = currentUrl,
+                    url = ambientUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     thumbnail = true,

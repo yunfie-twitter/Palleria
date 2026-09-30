@@ -213,6 +213,7 @@ internal fun readFromDataStore(
         internalProxyBypassHosts = preferences[INTERNAL_PROXY_BYPASS_HOSTS] ?: "localhost, 127.0.0.1",
         dohProvider = preferences[DOH_PROVIDER] ?: "system",
         dohCustomUrl = preferences[DOH_CUSTOM_URL].orEmpty(),
+        dynamicAmbientViewerEnabled = preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -374,6 +375,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         internalProxyBypassHosts = preferences.getString(KEY_INTERNAL_PROXY_BYPASS_HOSTS, "localhost, 127.0.0.1").orEmpty(),
         dohProvider = preferences.getSafeString(KEY_DOH_PROVIDER, "system"),
         dohCustomUrl = preferences.getString(KEY_DOH_CUSTOM_URL, "").orEmpty(),
+        dynamicAmbientViewerEnabled = preferences.getBoolean(KEY_DYNAMIC_AMBIENT_VIEWER_ENABLED, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -528,6 +530,7 @@ internal fun writeToDataStore(
     preferences[INTERNAL_PROXY_BYPASS_HOSTS] = settings.internalProxyBypassHosts
     preferences[DOH_PROVIDER] = settings.dohProvider
     preferences[DOH_CUSTOM_URL] = settings.dohCustomUrl
+    preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] = settings.dynamicAmbientViewerEnabled
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

@@ -53,12 +53,6 @@ enum class FeatureFlag(
         descRes = R.string.flag_custom_download_path_desc,
         defaultEnabled = false,
     ),
-    DynamicAmbientViewer(
-        key = "flag_dynamic_ambient_viewer",
-        titleRes = R.string.flag_dynamic_ambient_viewer_title,
-        descRes = R.string.flag_dynamic_ambient_viewer_desc,
-        defaultEnabled = false,
-    ),
     VolumeKeyPageTurner(
         key = "flag_volume_key_page_turner",
         titleRes = R.string.flag_volume_key_page_turner_title,
@@ -69,12 +63,6 @@ enum class FeatureFlag(
         key = "flag_novel_tts_audiobook",
         titleRes = R.string.flag_novel_tts_audiobook_title,
         descRes = R.string.flag_novel_tts_audiobook_desc,
-        defaultEnabled = false,
-    ),
-    InternalProxy(
-        key = "flag_internal_proxy",
-        titleRes = R.string.flag_internal_proxy_title,
-        descRes = R.string.flag_internal_proxy_desc,
         defaultEnabled = false,
     ),
     ;

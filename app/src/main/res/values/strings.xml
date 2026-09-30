@@ -1079,8 +1079,8 @@
     <string name="flag_embed_metadata_desc">ダウンロードした画像ファイルに作品ID・作者名・タイトル・Pixiv URLなどのメタデータを自動埋め込みします</string>
     <string name="flag_custom_download_path_title">柔軟なカスタム保存パス</string>
     <string name="flag_custom_download_path_desc">作者名・タグ・作品IDなどのプレースホルダーを用いた柔軟な保存フォルダ振り分けを有効にします</string>
-    <string name="flag_dynamic_ambient_viewer_title">アンビエント・ライト鑑賞モード</string>
-    <string name="flag_dynamic_ambient_viewer_desc">画像ビューワーで作品の色彩に合わせたダイナミックな発光ブラー背景を描画します</string>
+    <string name="ambient_light_viewer_title">アンビエント・ライト鑑賞モード</string>
+    <string name="ambient_light_viewer_desc">画像ビューワーで作品の色彩に合わせたダイナミックな発光ブラー背景を描画します</string>
     <string name="flag_volume_key_page_turner_title">音量キー/リモコン ページ送り</string>
     <string name="flag_volume_key_page_turner_desc">端末の音量キーやBluetoothリモコンのキー操作でマンガ・小説のページめくりを行います</string>
     <string name="flag_novel_tts_audiobook_title">小説の音声読み上げ (TTS)</string>
@@ -1123,8 +1123,6 @@
     <string name="setup_progress">%2$d ページ中 %1$d ページ目</string>
 
     <!-- Internal Proxy & DoH -->
-    <string name="flag_internal_proxy_title">内部プロキシ &amp; DoH (DNS over HTTPS)</string>
-    <string name="flag_internal_proxy_desc">DNS over HTTPSとアプリ内部プロキシ・バイパスルーティング設定を有効にします</string>
     <string name="internal_proxy_settings_title">内部プロキシ設定</string>
     <string name="internal_proxy_section_doh">DNS over HTTPS (DoH)</string>
     <string name="internal_proxy_doh_provider">DoH プロバイダー</string>

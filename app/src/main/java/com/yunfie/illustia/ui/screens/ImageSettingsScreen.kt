@@ -133,6 +133,13 @@ fun ImageSettingsScreen(
                             },
                             onSelect = viewModel::updateMangaReaderMode,
                         )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.ambient_light_viewer_title),
+                            checked = state.settings.dynamicAmbientViewerEnabled,
+                            onCheckedChange = viewModel::updateDynamicAmbientViewerEnabled,
+                            summary = stringResource(R.string.ambient_light_viewer_desc),
+                        )
                     }
                 }
             }

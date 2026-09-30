@@ -934,6 +934,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(dohCustomUrl = value) }
     }
 
+    fun updateDynamicAmbientViewerEnabled(value: Boolean) {
+        updateSettings { it.copy(dynamicAmbientViewerEnabled = value) }
+    }
+
     fun updateRestrict(value: Restrict) {
         updateSettings { it.copy(bookmarkRestrict = value) }
     }
