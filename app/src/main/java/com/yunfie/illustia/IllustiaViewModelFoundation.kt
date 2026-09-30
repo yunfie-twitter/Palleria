@@ -348,11 +348,16 @@ abstract class IllustiaViewModelFoundation(
             if (lastSeenVersionCode != currentVersionCode) {
                 updateSettings { it.copy(lastSeenAppVersionCode = currentVersionCode) }
             }
+            if (!shouldLock && !normalizedStartupSettings.privacyModeEnabled && normalizedStartupSettings.refreshToken.isNotBlank()) {
+                prefetchHomeFeedOnStartup(_uiState.value.homeKind)
+            }
             resumePendingNativeIntentIfReady()
         }
     }
 
     /** Hooks implemented by feature modules that participate in startup/session flows. */
+    protected abstract fun prefetchHomeFeedOnStartup(kind: HomeFeedKind)
+
     protected abstract fun resumePendingNativeIntentIfReady()
 
     abstract fun logout()

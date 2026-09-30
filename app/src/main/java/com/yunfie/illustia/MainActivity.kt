@@ -76,6 +76,19 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.defaultTextStyles
 
+private val MiSansFontFamily by lazy {
+    FontFamily(
+        Font(R.font.mi_sans_light, FontWeight.Light),
+        Font(R.font.mi_sans_regular, FontWeight.Normal),
+        Font(R.font.mi_sans_medium, FontWeight.Medium),
+        Font(R.font.mi_sans_demibold, FontWeight.SemiBold),
+        Font(R.font.mi_sans_bold, FontWeight.Bold),
+        Font(R.font.mi_sans_heavy, FontWeight.Black),
+        Font(R.font.mi_sans_extra_light, FontWeight.ExtraLight),
+        Font(R.font.mi_sans_thin, FontWeight.Thin),
+    )
+}
+
 class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
@@ -91,6 +104,7 @@ class MainActivity : FragmentActivity() {
     private var appliedRefreshRateHint: Float? = null
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
     private var appliedAppLanguage: String? = null
+    private var appliedDarkTheme: Boolean? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
@@ -124,6 +138,7 @@ class MainActivity : FragmentActivity() {
                 }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        appliedDarkTheme = isDark
         enableEdgeToEdge(
             statusBarStyle =
                 if (isDark) {
@@ -239,6 +254,8 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(settingsLoaded, settings.themeMode, systemDark) {
                 if (!settingsLoaded) return@LaunchedEffect
                 val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
+                if (appliedDarkTheme == isDarkTheme) return@LaunchedEffect
+                appliedDarkTheme = isDarkTheme
                 enableEdgeToEdge(
                     statusBarStyle =
                         if (isDarkTheme) {
@@ -596,16 +613,7 @@ class MainActivity : FragmentActivity() {
             }
 
             AppFont.MiSans -> {
-                FontFamily(
-                    Font(R.font.mi_sans_light, FontWeight.Light),
-                    Font(R.font.mi_sans_regular, FontWeight.Normal),
-                    Font(R.font.mi_sans_medium, FontWeight.Medium),
-                    Font(R.font.mi_sans_demibold, FontWeight.SemiBold),
-                    Font(R.font.mi_sans_bold, FontWeight.Bold),
-                    Font(R.font.mi_sans_heavy, FontWeight.Black),
-                    Font(R.font.mi_sans_extra_light, FontWeight.ExtraLight),
-                    Font(R.font.mi_sans_thin, FontWeight.Thin),
-                )
+                MiSansFontFamily
             }
         }
 

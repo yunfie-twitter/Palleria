@@ -82,12 +82,12 @@ class SettingsStore internal constructor(
     constructor(context: Context) : this(context, defaultSyncEventWriter(context))
 
     private val appContext = context.applicationContext
-    private val legacyPreferences = appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-    private val encryptedPreferences = Companion.createEncryptedPreferences(appContext)
-    private val sensitivePreferences = encryptedPreferences ?: legacyPreferences
+    private val legacyPreferences by lazy { appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE) }
+    private val encryptedPreferences by lazy { Companion.createEncryptedPreferences(appContext) }
+    private val sensitivePreferences by lazy { encryptedPreferences ?: legacyPreferences }
     private val dataStore = Companion.dataStoreFor(appContext)
-    private val database = IllustiaDatabase.getInstance(appContext)
-    private val dao = database.settingsDao()
+    private val database by lazy { IllustiaDatabase.getInstance(appContext) }
+    private val dao by lazy { database.settingsDao() }
 
     init {
         // Migration will be executed on first suspend read/write off main thread
