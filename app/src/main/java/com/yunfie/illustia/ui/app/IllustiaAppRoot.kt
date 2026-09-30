@@ -76,7 +76,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
-    val tabs = mainTabs(settings)
+    val tabs = remember(settings.shortsFeedEnabled, settings.navigationOrder) { mainTabs(settings) }
     val initialTab =
         remember(startupScreen, tabs) {
             viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
