@@ -22,8 +22,6 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
 import com.yunfie.illustia.ui.components.DividerLine
@@ -125,14 +123,12 @@ fun NetworkSettingsScreen(
                                 }
                             },
                         )
-                        if (state.settings.isFeatureEnabled(FeatureFlag.InternalProxy)) {
-                            DividerLine()
-                            SettingLinkRow(
-                                title = stringResource(R.string.internal_proxy_entry_title),
-                                summary = stringResource(R.string.internal_proxy_entry_desc),
-                                onClick = onOpenInternalProxySettings,
-                            )
-                        }
+                        DividerLine()
+                        SettingLinkRow(
+                            title = stringResource(R.string.internal_proxy_entry_title),
+                            summary = stringResource(R.string.internal_proxy_entry_desc),
+                            onClick = onOpenInternalProxySettings,
+                        )
                     }
                 }
             }

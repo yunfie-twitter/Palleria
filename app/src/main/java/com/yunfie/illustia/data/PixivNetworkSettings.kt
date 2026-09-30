@@ -2,8 +2,6 @@ package com.yunfie.illustia.data
 
 import com.yunfie.illustia.models.NetworkMode
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.Dns
@@ -89,23 +87,14 @@ internal fun createPixivHttpClient(settings: AppSettings): OkHttpClient {
             "ech" -> NetworkMode.Ech
             else -> NetworkMode.Standard
         }
-    val dohUrl =
-        if (settings.isFeatureEnabled(FeatureFlag.InternalProxy)) {
-            DohDns.resolveUrl(settings.dohProvider, settings.dohCustomUrl)
-        } else {
-            null
-        }
+    val dohUrl = DohDns.resolveUrl(settings.dohProvider, settings.dohCustomUrl)
     val proxySelector =
-        if (settings.isFeatureEnabled(FeatureFlag.InternalProxy)) {
-            InternalProxySelector.create(
-                enabled = settings.internalProxyEnabled,
-                type = settings.internalProxyType,
-                host = settings.internalProxyHost,
-                port = settings.internalProxyPort,
-                bypassHostsStr = settings.internalProxyBypassHosts,
-            )
-        } else {
-            null
-        }
+        InternalProxySelector.create(
+            enabled = settings.internalProxyEnabled,
+            type = settings.internalProxyType,
+            host = settings.internalProxyHost,
+            port = settings.internalProxyPort,
+            bypassHostsStr = settings.internalProxyBypassHosts,
+        )
     return PixivNetworkSettings.createPixivHttpClient(mode, dohUrl, proxySelector)
 }

@@ -371,7 +371,7 @@ internal fun AppNavHost(
                         mangaReaderMode = appState.state.settings.mangaReaderMode,
                         onPageChanged = viewModel::updateImageViewerPage,
                         loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
-                        ambientLightEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.DynamicAmbientViewer),
+                        ambientLightEnabled = appState.state.settings.dynamicAmbientViewerEnabled,
                         volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
                     )
                 }

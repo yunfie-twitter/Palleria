@@ -1057,8 +1057,8 @@
     <string name="flag_embed_metadata_desc">Automatically embed artwork ID, artist, title, and Pixiv URL metadata into saved image files</string>
     <string name="flag_custom_download_path_title">Flexible Custom Save Path</string>
     <string name="flag_custom_download_path_desc">Enable dynamic subfolder organization based on artist, tags, and artwork ID placeholders</string>
-    <string name="flag_dynamic_ambient_viewer_title">Ambient Light Viewer Mode</string>
-    <string name="flag_dynamic_ambient_viewer_desc">Render dynamic ambient blurred backlight matching artwork colors in the image viewer</string>
+    <string name="ambient_light_viewer_title">Ambient Light Viewer Mode</string>
+    <string name="ambient_light_viewer_desc">Render dynamic ambient blurred backlight matching artwork colors in the image viewer</string>
     <string name="flag_volume_key_page_turner_title">Volume Key / Remote Page Turner</string>
     <string name="flag_volume_key_page_turner_desc">Use volume hardware keys or Bluetooth remote controllers to turn pages in manga and novel readers</string>
     <string name="flag_novel_tts_audiobook_title">Novel Text-to-Speech (TTS)</string>
@@ -1070,8 +1070,6 @@
     <string name="tts_reading_novel">Reading novel: %1$s</string>
 
     <!-- Internal Proxy & DoH -->
-    <string name="flag_internal_proxy_title">Internal Proxy &amp; DoH (DNS over HTTPS)</string>
-    <string name="flag_internal_proxy_desc">Enable DNS over HTTPS and in-app proxy/bypass routing configuration</string>
     <string name="internal_proxy_settings_title">Internal Proxy Settings</string>
     <string name="internal_proxy_section_doh">DNS over HTTPS (DoH)</string>
     <string name="internal_proxy_doh_provider">DoH Provider</string>
