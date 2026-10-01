@@ -151,6 +151,11 @@ data class AppSettings(
     val novelLayoutMode: String = "paged",
     val novelProgress: Map<Long, com.yunfie.illustia.models.NovelReadingProgress> = emptyMap(),
     val novelFontFamily: String = "system",
+    val novelTtsSpeechRate: Float = 1.0f,
+    val novelTtsPitch: Float = 1.0f,
+    val novelTtsVoiceName: String = "",
+    val novelTtsSkipSymbols: Boolean = true,
+    val novelTtsCustomDictionary: Map<String, String> = emptyMap(),
     val internalProxyEnabled: Boolean = false,
     val internalProxyType: String = "HTTP",
     val internalProxyHost: String = "",
@@ -158,6 +163,8 @@ data class AppSettings(
     val internalProxyBypassHosts: String = "localhost, 127.0.0.1",
     val dohProvider: String = "system",
     val dohCustomUrl: String = "",
+    val gridPinchToZoom: Boolean = true,
+    val quickPeekSharedElementTransition: Boolean = true,
     val featureFlags: Map<String, Boolean> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean

@@ -1111,4 +1111,23 @@
     <string name="flag_quick_peek_desc">Enables quick preview overlay when long-pressing artwork cards</string>
     <string name="setting_quick_peek_title">Long-press Quick Peek</string>
     <string name="setting_quick_peek_desc">Show floating preview when long-pressing artwork cards</string>
+
+    <string name="action_edit">Edit</string>
+
+    <!-- Novel TTS Enhanced Settings -->
+    <string name="tts_settings_title">TTS Audio Settings</string>
+    <string name="tts_speed_label">Playback Speed</string>
+    <string name="tts_pitch_label">Voice Pitch</string>
+    <string name="tts_voice_label">Voice &amp; Tone</string>
+    <string name="tts_voice_default">System Default</string>
+    <string name="tts_skip_symbols_title">Skip Repeated / Decorative Symbols</string>
+    <string name="tts_skip_symbols_summary">Skip reading out repeated punctuation (…、――) and decorative marks (★、◆)</string>
+    <string name="tts_dictionary_title">Custom Pronunciation Dictionary</string>
+    <string name="tts_dictionary_summary">Register custom readings for difficult kanji or names</string>
+    <string name="tts_dictionary_add">Add Word</string>
+    <string name="tts_dictionary_word">Word (Kanji / Term)</string>
+    <string name="tts_dictionary_reading">Reading (Hiragana / Pronunciation)</string>
+    <string name="tts_dictionary_empty">No custom words registered</string>
+    <string name="tts_dictionary_delete">Delete</string>
+    <string name="tts_dictionary_delete_confirm">Remove pronunciation mapping for this word?</string>
 </resources>

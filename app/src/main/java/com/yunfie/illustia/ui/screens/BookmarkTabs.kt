@@ -44,9 +44,12 @@ import com.yunfie.illustia.data.pixiv.WatchlistState
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
@@ -63,6 +66,7 @@ import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
@@ -377,10 +381,18 @@ internal fun BookmarkMainTab(
             isLoading = chrome.isBookmarkPaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreBookmarks,
         )
+        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pinchToChangeColumns(
+                        enabled = pinchEnabled,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -398,11 +410,16 @@ internal fun BookmarkMainTab(
             gridItems(bookmarkItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
                 val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illustId) } }
+                val onBookmarkLongClick =
+                    remember(
+                        illustId,
+                    ) { { viewModel.toggleBookmark(illustId, restrict = com.yunfie.illustia.models.Restrict.Private) } }
                 val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
                 IllustCard(
                     illust = illust,
                     onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
                     onClick = onClick,
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
@@ -483,10 +500,18 @@ internal fun BookmarkTimelineTab(
             isLoading = chrome.isTimelinePaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreTimeline,
         )
+        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pinchToChangeColumns(
+                        enabled = pinchEnabled,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -504,11 +529,16 @@ internal fun BookmarkTimelineTab(
             gridItems(timelineItems, key = { "timeline_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
                 val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illustId) } }
+                val onBookmarkLongClick =
+                    remember(
+                        illustId,
+                    ) { { viewModel.toggleBookmark(illustId, restrict = com.yunfie.illustia.models.Restrict.Private) } }
                 val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
                 IllustCard(
                     illust = illust,
                     onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
                     onClick = onClick,
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,

@@ -30,8 +30,11 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
@@ -42,6 +45,7 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -129,13 +133,18 @@ internal fun FeedTabContent(
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
+        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .pinchToChangeColumns(
+                        enabled = pinchEnabled,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
                     .background(MiuixTheme.colorScheme.surface),
             contentPadding =
                 PaddingValues(
@@ -168,12 +177,15 @@ internal fun FeedTabContent(
             gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
                 val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onBookmarkLongClick =
+                    remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
                 val onClick = remember(illust) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
                     illust = illust,
                     onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
                     onClick = onClick,
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
@@ -262,13 +274,18 @@ internal fun FollowingTabContent(
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
+        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .pinchToChangeColumns(
+                        enabled = pinchEnabled,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
                     .background(MiuixTheme.colorScheme.surface),
             contentPadding =
                 PaddingValues(
@@ -301,12 +318,15 @@ internal fun FollowingTabContent(
             gridItems(items, key = { "tl_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
                 val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onBookmarkLongClick =
+                    remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
                 val onClick = remember(illust) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
                     illust = illust,
                     onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
                     onClick = onClick,
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,

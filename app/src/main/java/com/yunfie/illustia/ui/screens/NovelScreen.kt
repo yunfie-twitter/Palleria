@@ -68,8 +68,11 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchNovelGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -147,11 +150,13 @@ fun NovelScreen(
         gridState = gridState,
         enabled = settings.prefetchImages,
     )
+    val columns = adaptiveIllustColumns(settings)
+    val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val showPaginationSkeletons = settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All
     val shimmer =
-        if (showPaginationSkeletons) {
-            com.yunfie.illustia.ui.components
-                .rememberIllustSkeletonShimmer()
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
         } else {
             null
         }
@@ -205,20 +210,25 @@ fun NovelScreen(
         ) {
             LazyVerticalGrid(
                 state = gridState,
-                columns = GridCells.Fixed(1),
+                columns = GridCells.Fixed(columns),
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(MiuixTheme.colorScheme.surface)
+                        .pinchToChangeColumns(
+                            enabled = pinchEnabled,
+                            currentColumns = columns,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
+                        ).background(MiuixTheme.colorScheme.surface)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     PaddingValues(
-                        start = 14.dp,
-                        end = 14.dp,
+                        start = 12.dp,
+                        end = 12.dp,
                         top = scaffoldPadding.calculateTopPadding() + 8.dp,
                         bottom = 24.dp,
                     ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     androidx.compose.foundation.layout.Row(
@@ -246,7 +256,12 @@ fun NovelScreen(
                         }
                     }
                 }
-                if (filteredItems.isEmpty()) {
+                if (showInitialSkeletons) {
+                    items(columns * 3, key = { "novel_initial_skeleton_$it" }, contentType = { "novel_skeleton" }) {
+                        NovelCardSkeleton(shimmerValue = shimmer)
+                    }
+                }
+                if (filteredItems.isEmpty() && !showInitialSkeletons) {
                     item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
                 }
                 if (filteredItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
@@ -286,7 +301,7 @@ fun NovelScreen(
                 }
 
                 if (showPaginationSkeletons) {
-                    item(key = "novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                    items(columns, key = { "novel_paginating_skeleton_$it" }, contentType = { "novel_skeleton" }) {
                         NovelCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
@@ -352,6 +367,15 @@ fun NovelReaderScreen(
         }
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pages.size })
     val continuousListState = rememberLazyListState()
+    val isScrolling = pagerState.isScrollInProgress || continuousListState.isScrollInProgress
+    val novelDynamicMode =
+        if (isScrolling) {
+            com.yunfie.illustia.platform.DynamicHzMode.Boost
+        } else {
+            com.yunfie.illustia.platform.DynamicHzMode.PowerSaving
+        }
+    com.yunfie.illustia.platform
+        .RequestDynamicHzMode(novelDynamicMode)
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
@@ -489,6 +513,38 @@ fun NovelReaderScreen(
         }
     }
 
+    val ttsLocations = remember(pages) { NovelTtsTextSanitizer.extractTtsParagraphLocations(pages) }
+    val currentTtsLocation =
+        remember(isTtsEnabled, ttsPlayer?.isPlaying, ttsPlayer?.currentParagraphIndex, ttsLocations) {
+            if (isTtsEnabled && ttsPlayer?.isPlaying == true) {
+                ttsLocations.getOrNull(ttsPlayer.currentParagraphIndex)
+            } else {
+                null
+            }
+        }
+
+    LaunchedEffect(ttsPlayer?.currentParagraphIndex, ttsPlayer?.isPlaying) {
+        val player = ttsPlayer ?: return@LaunchedEffect
+        if (!player.isPlaying) return@LaunchedEffect
+        val loc = ttsLocations.getOrNull(player.currentParagraphIndex) ?: return@LaunchedEffect
+        when (layoutMode) {
+            NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
+                if (pagerState.currentPage != loc.pageIndex) {
+                    pagerState.animateScrollToPage(loc.pageIndex)
+                }
+            }
+
+            NovelLayoutMode.Scroll -> {
+                var targetItemIndex = 0
+                for (p in 0 until loc.pageIndex) {
+                    targetItemIndex += 1 + pages[p].blocks.size + (if (p < pages.size - 1) 1 else 0)
+                }
+                targetItemIndex += 1 + loc.blockIndexInPage
+                continuousListState.animateScrollToItem((targetItemIndex - 1).coerceAtLeast(0))
+            }
+        }
+    }
+
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -586,11 +642,20 @@ fun NovelReaderScreen(
                                     if (ttsPlayer.currentParagraphIndex > 0) {
                                         ttsPlayer.resume()
                                     } else {
+                                        val curPage = currentNovelPage()
+                                        val initialIndex =
+                                            ttsLocations.indexOfFirst { it.pageIndex == curPage }.coerceAtLeast(0)
                                         ttsPlayer.startReading(
                                             rawText = text.text,
+                                            startIndex = initialIndex,
                                             novelTitle = currentNovel.title,
                                             authorName = currentNovel.userName,
                                             novelId = currentNovel.id,
+                                            rate = settings.novelTtsSpeechRate,
+                                            pitchLevel = settings.novelTtsPitch,
+                                            voice = settings.novelTtsVoiceName,
+                                            skipSymbols = settings.novelTtsSkipSymbols,
+                                            customDictionary = settings.novelTtsCustomDictionary,
                                         )
                                     }
                                 }
@@ -647,6 +712,12 @@ fun NovelReaderScreen(
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 scrollBehavior = scrollBehavior,
                                 contentPadding = readerPadding,
+                                readingBlockIndex =
+                                    if (currentTtsLocation?.pageIndex == pageIndex) {
+                                        currentTtsLocation.blockIndexInPage
+                                    } else {
+                                        null
+                                    },
                             )
                         }
                     }
@@ -669,6 +740,7 @@ fun NovelReaderScreen(
                             scrollBehavior = scrollBehavior,
                             contentPadding = readerPadding,
                             modifier = Modifier.fillMaxSize().background(backgroundColor),
+                            readingLocation = currentTtsLocation,
                         )
                     }
 
@@ -691,6 +763,12 @@ fun NovelReaderScreen(
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 scrollBehavior = scrollBehavior,
                                 contentPadding = readerPadding,
+                                readingBlockIndex =
+                                    if (currentTtsLocation?.pageIndex == pageIndex) {
+                                        currentTtsLocation.blockIndexInPage
+                                    } else {
+                                        null
+                                    },
                             )
                         }
                     }
@@ -751,5 +829,27 @@ fun NovelReaderScreen(
         fontFamily = fontFamily,
         onFontFamilyChange = { viewModel.updateNovelFontFamily(it.id) },
         onDismiss = { showSettingsSheet = false },
+        isTtsEnabled = isTtsEnabled,
+        ttsSpeechRate = settings.novelTtsSpeechRate,
+        onTtsSpeechRateChange = { rate ->
+            viewModel.updateNovelTtsSpeechRate(rate)
+            ttsPlayer?.setRate(rate)
+        },
+        ttsPitch = settings.novelTtsPitch,
+        onTtsPitchChange = { pitch ->
+            viewModel.updateNovelTtsPitch(pitch)
+            ttsPlayer?.setPitchLevel(pitch)
+        },
+        ttsVoiceName = settings.novelTtsVoiceName,
+        availableVoices = ttsPlayer?.availableVoices.orEmpty(),
+        onTtsVoiceChange = { voice ->
+            viewModel.updateNovelTtsVoiceName(voice)
+            ttsPlayer?.setVoiceSelection(voice)
+        },
+        ttsSkipSymbols = settings.novelTtsSkipSymbols,
+        onTtsSkipSymbolsChange = viewModel::updateNovelTtsSkipSymbols,
+        ttsCustomDictionary = settings.novelTtsCustomDictionary,
+        onAddDictionaryEntry = viewModel::addNovelTtsDictionaryEntry,
+        onRemoveDictionaryEntry = viewModel::removeNovelTtsDictionaryEntry,
     )
 }

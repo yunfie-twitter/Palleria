@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -127,6 +128,10 @@ fun ImageViewerScreen(
     swipeToDismissEnabled: Boolean = true,
 ) {
     val context = LocalContext.current
+    if (!illust.isUgoira) {
+        com.yunfie.illustia.platform
+            .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.PowerSaving)
+    }
     val shareFailedMessage = stringResource(R.string.viewer_share_failed)
     val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
     val copyFailedMessage = stringResource(R.string.copy_image_failed)
@@ -358,7 +363,7 @@ fun ImageViewerScreen(
         floatingToolbar = {
             AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
                 FloatingToolbar(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
                     color = MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
                     cornerRadius = 24.dp,
                     outSidePadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),

@@ -175,6 +175,7 @@ fun IllustCard(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onBookmarkLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
     highQualityImages: Boolean = true,
     showAiBadge: Boolean = true,
@@ -210,6 +211,7 @@ fun IllustCard(
         cardBadgeText = cardBadgeText,
         ageRestrictionBadgeText = ageRestrictionBadgeText,
         onBookmark = onBookmark,
+        onBookmarkLongClick = onBookmarkLongClick,
         onClick = onClick,
         onLongClick = onLongClick,
         showBookmarkButton = showBookmarkButton && cardPreferences.showBookmarkButton,
@@ -239,6 +241,7 @@ private fun IllustCardImpl(
     isSelected: Boolean,
     isMutedByTag: Boolean,
     preferences: ArtworkCardPreferences,
+    onBookmarkLongClick: (() -> Unit)? = null,
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -310,6 +313,7 @@ private fun IllustCardImpl(
                         totalBookmarks = totalBookmarks,
                         isBookmarked = isBookmarked,
                         onBookmark = onBookmark,
+                        onBookmarkLongClick = onBookmarkLongClick,
                         showBookmarkButton = showBookmarkButton,
                         preferences = preferences,
                     )
@@ -410,6 +414,7 @@ private fun IllustCardInfo(
     onBookmark: () -> Unit,
     showBookmarkButton: Boolean,
     preferences: ArtworkCardPreferences,
+    onBookmarkLongClick: (() -> Unit)? = null,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -470,6 +475,7 @@ private fun IllustCardInfo(
             BookmarkHeartButton(
                 isBookmarked = isBookmarked,
                 onClick = onBookmark,
+                onLongClick = onBookmarkLongClick,
                 size = 32.dp,
                 iconSize = 22.dp,
             )
@@ -491,6 +497,7 @@ fun IllustListRow(
     onBookmark: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    onBookmarkLongClick: (() -> Unit)? = null,
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -620,6 +627,7 @@ fun IllustListRow(
                 BookmarkHeartButton(
                     isBookmarked = illust.isBookmarked,
                     onClick = onBookmark,
+                    onLongClick = onBookmarkLongClick,
                     size = 40.dp,
                     iconSize = 26.dp,
                 )

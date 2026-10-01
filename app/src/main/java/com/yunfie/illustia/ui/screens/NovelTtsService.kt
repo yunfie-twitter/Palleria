@@ -7,11 +7,14 @@ import android.content.Intent
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.os.Build
 import android.os.IBinder
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.content.ContextCompat
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.store.decodeStringMap
+import com.yunfie.illustia.settings.store.encodeStringMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +32,9 @@ data class NovelTtsState(
     val totalParagraphs: Int = 0,
     val currentParagraphText: String = "",
     val speechRate: Float = 1.0f,
+    val pitch: Float = 1.0f,
+    val voiceName: String = "",
+    val availableVoices: List<String> = emptyList(),
     val isInitialized: Boolean = false,
 )
 
@@ -52,6 +58,11 @@ class NovelTtsService :
     private var novelTitle = ""
     private var authorName = ""
     private var speechRate = DEFAULT_SPEECH_RATE
+    private var pitch = DEFAULT_PITCH
+    private var voiceName = ""
+    private var skipSymbols = true
+    private var customDictionary: Map<String, String> = emptyMap()
+    private var availableVoices: List<String> = emptyList()
 
     private val mediaSessionCallback =
         object : MediaSession.Callback() {
@@ -104,6 +115,20 @@ class NovelTtsService :
                     engine.setLanguage(Locale.getDefault())
                 }
                 engine.setSpeechRate(speechRate)
+                engine.setPitch(pitch)
+
+                // ボイス一覧の取得
+                availableVoices =
+                    runCatching {
+                        engine.voices
+                            ?.filter { it.locale.language == Locale.JAPANESE.language || it.locale == Locale.getDefault() }
+                            ?.map { it.name }
+                            ?.sorted()
+                            .orEmpty()
+                    }.getOrDefault(emptyList())
+
+                applyVoice(engine)
+
                 engine.setOnUtteranceProgressListener(
                     object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {
@@ -141,6 +166,17 @@ class NovelTtsService :
         }
     }
 
+    private fun applyVoice(engine: TextToSpeech? = tts) {
+        if (voiceName.isNotBlank() && engine != null) {
+            runCatching {
+                val voice = engine.voices?.firstOrNull { it.name == voiceName }
+                if (voice != null) {
+                    engine.voice = voice
+                }
+            }
+        }
+    }
+
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,
@@ -152,6 +188,10 @@ class NovelTtsService :
                 novelTitle = intent.getStringExtra(EXTRA_NOVEL_TITLE).orEmpty()
                 authorName = intent.getStringExtra(EXTRA_AUTHOR_NAME).orEmpty()
                 speechRate = intent.getFloatExtra(EXTRA_SPEED_RATE, DEFAULT_SPEECH_RATE)
+                pitch = intent.getFloatExtra(EXTRA_PITCH, DEFAULT_PITCH)
+                voiceName = intent.getStringExtra(EXTRA_VOICE_NAME).orEmpty()
+                skipSymbols = intent.getBooleanExtra(EXTRA_SKIP_SYMBOLS, true)
+                customDictionary = decodeStringMap(intent.getStringExtra(EXTRA_CUSTOM_DICTIONARY_JSON))
                 val rawText = intent.getStringExtra(EXTRA_RAW_TEXT).orEmpty()
                 val startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0)
                 handleStartReading(rawText, startIndex)
@@ -185,6 +225,14 @@ class NovelTtsService :
                 setSpeedRate(intent.getFloatExtra(EXTRA_SPEED_RATE, speechRate))
             }
 
+            ACTION_SET_PITCH -> {
+                setPitchLevel(intent.getFloatExtra(EXTRA_PITCH, pitch))
+            }
+
+            ACTION_SET_VOICE -> {
+                setVoiceByName(intent.getStringExtra(EXTRA_VOICE_NAME).orEmpty())
+            }
+
             ACTION_SEEK_PARAGRAPH -> {
                 seekToParagraph(intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, currentParagraphIndex))
             }
@@ -196,15 +244,7 @@ class NovelTtsService :
         rawText: String,
         startIndex: Int,
     ) {
-        val cleaned =
-            rawText
-                .replace(RUBY_REGEX, "$1")
-                .replace(JUMP_REGEX, "")
-                .replace(NEWPAGE_REGEX, "\n\n")
-                .replace(PIXIV_IMAGE_REGEX, "")
-                .replace(CHAPTER_REGEX, "$1")
-
-        paragraphs = cleaned.split("\n").map { it.trim() }.filter { it.isNotBlank() }
+        paragraphs = NovelTtsTextSanitizer.sanitizeTextToParagraphs(rawText, skipSymbols, customDictionary)
         if (paragraphs.isEmpty()) return
 
         currentParagraphIndex = startIndex.coerceIn(0, paragraphs.lastIndex)
@@ -217,6 +257,7 @@ class NovelTtsService :
         updatePlaybackState(PlaybackState.STATE_PLAYING)
 
         if (isTtsInitialized) {
+            applyVoice()
             speakCurrentParagraph()
         } else {
             updateState(isPlaying = true)
@@ -230,6 +271,7 @@ class NovelTtsService :
         }
         val text = paragraphs[currentParagraphIndex]
         tts?.setSpeechRate(speechRate)
+        tts?.setPitch(pitch)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "paragraph_$currentParagraphIndex")
         updateState(isPlaying = true)
         updatePlaybackState(PlaybackState.STATE_PLAYING)
@@ -280,6 +322,18 @@ class NovelTtsService :
         updateState(isPlaying = isPlaying())
     }
 
+    private fun setPitchLevel(pitchValue: Float) {
+        pitch = pitchValue.coerceIn(MIN_PITCH, MAX_PITCH)
+        tts?.setPitch(pitch)
+        updateState(isPlaying = isPlaying())
+    }
+
+    private fun setVoiceByName(name: String) {
+        voiceName = name
+        applyVoice()
+        updateState(isPlaying = isPlaying())
+    }
+
     private fun stopReading() {
         tts?.stop()
         audioHelper?.abandonAudioFocus()
@@ -308,6 +362,9 @@ class NovelTtsService :
                 totalParagraphs = paragraphs.size,
                 currentParagraphText = currentText,
                 speechRate = speechRate,
+                pitch = pitch,
+                voiceName = voiceName,
+                availableVoices = availableVoices,
                 isInitialized = isInitialized,
             )
     }
@@ -316,7 +373,7 @@ class NovelTtsService :
         mediaSession =
             MediaSession(this, "NovelTtsMediaSession").apply {
                 setCallback(mediaSessionCallback)
-                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                     @Suppress("DEPRECATION")
                     setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
                 }
@@ -391,6 +448,10 @@ class NovelTtsService :
         private const val MIN_SPEECH_RATE = 0.5f
         private const val MAX_SPEECH_RATE = 2.5f
 
+        private const val DEFAULT_PITCH = 1.0f
+        private const val MIN_PITCH = 0.5f
+        private const val MAX_PITCH = 2.0f
+
         const val ACTION_START_READING = "com.yunfie.illustia.tts.START_READING"
         const val ACTION_PLAY = "com.yunfie.illustia.tts.PLAY"
         const val ACTION_PAUSE = "com.yunfie.illustia.tts.PAUSE"
@@ -399,6 +460,8 @@ class NovelTtsService :
         const val ACTION_PREV = "com.yunfie.illustia.tts.PREV"
         const val ACTION_STOP = "com.yunfie.illustia.tts.STOP"
         const val ACTION_SET_SPEED = "com.yunfie.illustia.tts.SET_SPEED"
+        const val ACTION_SET_PITCH = "com.yunfie.illustia.tts.SET_PITCH"
+        const val ACTION_SET_VOICE = "com.yunfie.illustia.tts.SET_VOICE"
         const val ACTION_SEEK_PARAGRAPH = "com.yunfie.illustia.tts.SEEK_PARAGRAPH"
 
         const val EXTRA_NOVEL_ID = "novel_id"
@@ -407,13 +470,11 @@ class NovelTtsService :
         const val EXTRA_RAW_TEXT = "raw_text"
         const val EXTRA_START_INDEX = "start_index"
         const val EXTRA_SPEED_RATE = "speed_rate"
+        const val EXTRA_PITCH = "pitch"
+        const val EXTRA_VOICE_NAME = "voice_name"
+        const val EXTRA_SKIP_SYMBOLS = "skip_symbols"
+        const val EXTRA_CUSTOM_DICTIONARY_JSON = "custom_dictionary_json"
         const val EXTRA_PARAGRAPH_INDEX = "paragraph_index"
-
-        private val RUBY_REGEX = Regex("""\[\[rb:[^>]*>(.*?)\]\]""")
-        private val JUMP_REGEX = Regex("""\[jump:\d+\]""")
-        private val NEWPAGE_REGEX = Regex("""\[newpage\]""")
-        private val PIXIV_IMAGE_REGEX = Regex("""\[pixivimage:\d+\]""")
-        private val CHAPTER_REGEX = Regex("""\[chapter:(.*?)\]""")
 
         private val _ttsState = MutableStateFlow(NovelTtsState())
         val ttsState: StateFlow<NovelTtsState> = _ttsState.asStateFlow()
@@ -426,6 +487,10 @@ class NovelTtsService :
             rawText: String,
             startIndex: Int = 0,
             speedRate: Float = DEFAULT_SPEECH_RATE,
+            pitch: Float = DEFAULT_PITCH,
+            voiceName: String = "",
+            skipSymbols: Boolean = true,
+            customDictionary: Map<String, String> = emptyMap(),
         ) {
             val intent =
                 Intent(context, NovelTtsService::class.java).apply {
@@ -436,6 +501,10 @@ class NovelTtsService :
                     putExtra(EXTRA_RAW_TEXT, rawText)
                     putExtra(EXTRA_START_INDEX, startIndex)
                     putExtra(EXTRA_SPEED_RATE, speedRate)
+                    putExtra(EXTRA_PITCH, pitch)
+                    putExtra(EXTRA_VOICE_NAME, voiceName)
+                    putExtra(EXTRA_SKIP_SYMBOLS, skipSymbols)
+                    putExtra(EXTRA_CUSTOM_DICTIONARY_JSON, encodeStringMap(customDictionary))
                 }
             ContextCompat.startForegroundService(context, intent)
         }
@@ -478,6 +547,30 @@ class NovelTtsService :
                 Intent(context, NovelTtsService::class.java).apply {
                     action = ACTION_SET_SPEED
                     putExtra(EXTRA_SPEED_RATE, speedRate)
+                }
+            context.startService(intent)
+        }
+
+        fun setPitch(
+            context: Context,
+            pitch: Float,
+        ) {
+            val intent =
+                Intent(context, NovelTtsService::class.java).apply {
+                    action = ACTION_SET_PITCH
+                    putExtra(EXTRA_PITCH, pitch)
+                }
+            context.startService(intent)
+        }
+
+        fun setVoice(
+            context: Context,
+            voiceName: String,
+        ) {
+            val intent =
+                Intent(context, NovelTtsService::class.java).apply {
+                    action = ACTION_SET_VOICE
+                    putExtra(EXTRA_VOICE_NAME, voiceName)
                 }
             context.startService(intent)
         }

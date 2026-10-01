@@ -98,12 +98,18 @@ class MainActivity : FragmentActivity() {
         const val SPLASH_ICON_EXIT_TARGET_SCALE = 1.15f
         const val SPLASH_EASING_CONTROL_X1 = 0.4f
         const val SPLASH_EASING_CONTROL_X2 = 0.2f
+        const val REFRESH_RATE_LOW_MIN = 30f
+        const val REFRESH_RATE_NORMAL = 60f
+        const val REFRESH_RATE_HIGH_MAX = 120f
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
         androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
             .getInstance(application)
     }
+    private val dynamicHzController =
+        com.yunfie.illustia.platform
+            .DefaultDynamicHzController()
     private var lastHandledClipboardText: String? = null
     private var appliedRefreshRateHint: Float? = null
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
@@ -381,9 +387,16 @@ class MainActivity : FragmentActivity() {
                 remember(settings.appFont) {
                     resolveAppTextStyles(fontFamily)
                 }
+            LaunchedEffect(dynamicHzController) {
+                dynamicHzController.currentMode.collect { mode ->
+                    applyAdaptiveRefreshRateHint(mode)
+                }
+            }
+
             MiuixTheme(colors = themeColors, textStyles = textStyles) {
                 CompositionLocalProvider(
                     LocalTextStyle provides LocalTextStyle.current.merge(TextStyle(fontFamily = fontFamily)),
+                    com.yunfie.illustia.platform.LocalDynamicHzController provides dynamicHzController,
                 ) {
                     if (settingsLoaded) {
                         IllustiaApp(viewModel)
@@ -407,7 +420,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
-        applyAdaptiveRefreshRateHint()
+        applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
         openPixivUrlFromClipboardIfNeeded()
     }
 
@@ -564,19 +577,56 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private fun applyAdaptiveRefreshRateHint() {
+    private fun hasDisplayArrSupport(display: Display): Boolean =
+        runCatching {
+            val method = Display::class.java.getMethod("hasArrSupport")
+            (method.invoke(display) as? Boolean) == true
+        }.getOrDefault(false)
+
+    private fun resolveArrRefreshRate(
+        display: Display,
+        mode: com.yunfie.illustia.platform.DynamicHzMode,
+    ): Float =
+        runCatching {
+            val category =
+                when (mode) {
+                    com.yunfie.illustia.platform.DynamicHzMode.PowerSaving -> 1
+                    com.yunfie.illustia.platform.DynamicHzMode.Normal -> 2
+                    com.yunfie.illustia.platform.DynamicHzMode.Boost -> 3
+                }
+            val method = Display::class.java.getMethod("getSuggestedFrameRate", Int::class.javaPrimitiveType)
+            (method.invoke(display, category) as? Float) ?: REFRESH_RATE_NORMAL
+        }.getOrDefault(REFRESH_RATE_NORMAL)
+
+    private fun resolveLegacyRefreshRate(
+        display: Display,
+        mode: com.yunfie.illustia.platform.DynamicHzMode,
+    ): Float {
+        val rates = display.supportedModes.map { it.refreshRate }
+        return when (mode) {
+            com.yunfie.illustia.platform.DynamicHzMode.PowerSaving -> {
+                rates.filter { it >= REFRESH_RATE_LOW_MIN }.minOrNull() ?: REFRESH_RATE_NORMAL
+            }
+
+            com.yunfie.illustia.platform.DynamicHzMode.Normal -> {
+                REFRESH_RATE_NORMAL
+            }
+
+            com.yunfie.illustia.platform.DynamicHzMode.Boost -> {
+                rates.maxOrNull() ?: REFRESH_RATE_HIGH_MAX
+            }
+        }
+    }
+
+    private fun applyAdaptiveRefreshRateHint(mode: com.yunfie.illustia.platform.DynamicHzMode = dynamicHzController.currentMode.value) {
         if (!PlatformCapabilities.supportsRefreshRateHint()) return
 
         val display = window.decorView.display ?: return
         val preferredRefreshRate =
-            when {
-                PlatformCapabilities.supportsAdaptiveRefreshRate() && display.hasArrSupport() -> {
-                    display.getSuggestedFrameRate(Display.FRAME_RATE_CATEGORY_NORMAL)
-                }
-
-                else -> {
-                    60f
-                }
+            if (PlatformCapabilities.supportsAdaptiveRefreshRate() && hasDisplayArrSupport(display)) {
+                resolveArrRefreshRate(display, mode)
+            } else {
+                resolveLegacyRefreshRate(display, mode)
             }
 
         if (preferredRefreshRate <= 0f || appliedRefreshRateHint == preferredRefreshRate) return

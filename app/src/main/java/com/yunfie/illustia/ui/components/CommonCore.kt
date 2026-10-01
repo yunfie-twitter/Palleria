@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.yunfie.illustia.ui.components
 
 import android.content.Context
@@ -5,6 +7,7 @@ import android.net.ConnectivityManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -14,10 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -109,7 +114,67 @@ fun adaptiveIllustColumns(settings: AppSettings): Int {
         if (isLandscape) {
             settings.horizontalColumnCount.coerceIn(3, 6)
         } else {
-            settings.verticalColumnCount.coerceIn(2, 4)
+            settings.verticalColumnCount.coerceIn(1, 4)
+        }
+    }
+}
+
+private const val PINCH_ZOOM_IN_THRESHOLD = 1.28f
+private const val PINCH_ZOOM_OUT_THRESHOLD = 0.78f
+
+@Composable
+fun Modifier.pinchToChangeColumns(
+    enabled: Boolean,
+    currentColumns: Int,
+    onColumnsChange: (Int) -> Unit,
+): Modifier {
+    if (!enabled) return this
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val hapticMode = LocalAppHapticMode.current
+
+    val currentColumnsState = rememberUpdatedState(currentColumns)
+    val onColumnsChangeState = rememberUpdatedState(onColumnsChange)
+
+    return this.pointerInput(enabled) {
+        awaitEachGesture {
+            var zoomAccumulator = 1f
+
+            do {
+                val event = awaitPointerEvent()
+            } while (event.changes.size < 2 && event.changes.any { it.pressed })
+
+            while (true) {
+                val event = awaitPointerEvent()
+                val activePointers = event.changes.filter { it.pressed }
+                if (activePointers.size < 2) break
+
+                val p1 = activePointers[0]
+                val p2 = activePointers[1]
+                val prevDistance = (p1.previousPosition - p2.previousPosition).getDistance()
+                val currentDistance = (p1.position - p2.position).getDistance()
+
+                if (prevDistance > 0f) {
+                    val zoom = currentDistance / prevDistance
+                    zoomAccumulator *= zoom
+
+                    if (zoomAccumulator > PINCH_ZOOM_IN_THRESHOLD) {
+                        val next = (currentColumnsState.value - 1).coerceAtLeast(1)
+                        if (next != currentColumnsState.value) {
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                            onColumnsChangeState.value(next)
+                        }
+                        zoomAccumulator = 1f
+                    } else if (zoomAccumulator < PINCH_ZOOM_OUT_THRESHOLD) {
+                        val next = (currentColumnsState.value + 1).coerceAtMost(4)
+                        if (next != currentColumnsState.value) {
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                            onColumnsChangeState.value(next)
+                        }
+                        zoomAccumulator = 1f
+                    }
+                }
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -150,22 +151,26 @@ internal fun MainSurface(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard") {
-                    NavigationBar(
-                        color = MiuixTheme.colorScheme.surfaceContainer,
-                        showDivider = true,
+                    Box(
+                        modifier = Modifier.background(MiuixTheme.colorScheme.surfaceContainer).navigationBarsPadding(),
                     ) {
-                        navigationTabs.forEach { tab ->
-                            val pageIndex = tabs.indexOf(tab)
-                            NavigationBarItem(
-                                selected = selectedTab == tab,
-                                onClick = {
-                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                                    viewModel.closeAccountSwitcher()
-                                    onTabSelected(pageIndex, tab)
-                                },
-                                icon = tab.icon,
-                                label = stringResource(tab.labelResId),
-                            )
+                        NavigationBar(
+                            color = MiuixTheme.colorScheme.surfaceContainer,
+                            showDivider = true,
+                        ) {
+                            navigationTabs.forEach { tab ->
+                                val pageIndex = tabs.indexOf(tab)
+                                NavigationBarItem(
+                                    selected = selectedTab == tab,
+                                    onClick = {
+                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                                        viewModel.closeAccountSwitcher()
+                                        onTabSelected(pageIndex, tab)
+                                    },
+                                    icon = tab.icon,
+                                    label = stringResource(tab.labelResId),
+                                )
+                            }
                         }
                     }
                 }
@@ -274,7 +279,7 @@ internal fun MainSurface(
                         visible = appState.settings.navigationStyle != "auto" || navigationVisible,
                         enter = fadeIn() + slideInVertically { it / 2 },
                         exit = fadeOut() + slideOutVertically { it / 2 },
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
                     ) {
                         FloatingNavigationBar(
                             color = MiuixTheme.colorScheme.surfaceContainerHigh,

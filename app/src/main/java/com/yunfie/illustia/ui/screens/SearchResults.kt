@@ -31,8 +31,11 @@ import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.searchUiState
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
@@ -47,6 +50,7 @@ import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -112,10 +116,20 @@ internal fun SearchResultGrid(
         onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
     )
 
+    val pinchEnabled =
+        state.settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) &&
+            state.settings.gridPinchToZoom && page == 0 && !isNovelResult
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(if (page == 0 && !isNovelResult) illustColumns else 1),
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .pinchToChangeColumns(
+                    enabled = pinchEnabled,
+                    currentColumns = illustColumns,
+                    onColumnsChange = viewModel::updateVerticalColumnCount,
+                ),
         contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = adaptiveMainNavigationContentPadding()),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -180,12 +194,15 @@ internal fun SearchResultGrid(
                 gridItems(state.searchItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     val illustId = illust.id
                     val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                    val onBookmarkLongClick =
+                        remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
                     val onClick = remember(illust) { { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) } }
                     val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                     IllustCard(
                         illust = illust,
                         onBookmark = onBookmark,
+                        onBookmarkLongClick = onBookmarkLongClick,
                         onClick = onClick,
                         onLongClick = onLongClick,
                         highQualityImages = feedHighQuality,

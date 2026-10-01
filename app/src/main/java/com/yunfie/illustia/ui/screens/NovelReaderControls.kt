@@ -13,9 +13,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,16 +39,21 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.roundToInt
 
 private const val MIN_FONT_SIZE = 13f
 private const val MAX_FONT_SIZE = 26f
@@ -50,6 +62,38 @@ private const val SEPIA_PANEL_COLOR = 0xFFF4ECD8
 private const val DARK_PANEL_COLOR = 0xFF2A2A2A
 private const val BLACK_PANEL_COLOR = 0xFF121212
 private const val SEPIA_TEXT_COLOR = 0xFF5F4B32
+
+private val TtsPlayIcon: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "TtsPlay",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            addPath(
+                pathData = PathParser().parsePathString("M8 5v14l11-7z").toNodes(),
+                fill = SolidColor(Color.White),
+            )
+        }.build()
+}
+
+private val TtsPauseIcon: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "TtsPause",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            addPath(
+                pathData = PathParser().parsePathString("M6 19h4V5H6v14zm8-14v14h4V5h-4z").toNodes(),
+                fill = SolidColor(Color.White),
+            )
+        }.build()
+}
 
 @Composable
 internal fun NovelBottomControlBar(
@@ -202,7 +246,11 @@ internal fun NovelBottomControlBar(
                                         },
                                 ),
                         ) {
-                            Text(stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play))
+                            Icon(
+                                imageVector = if (ttsPlayer.isPlaying) TtsPauseIcon else TtsPlayIcon,
+                                contentDescription = stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play),
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
                     }
 
@@ -429,9 +477,24 @@ internal fun NovelSettingsBottomSheet(
     fontFamily: NovelFontFamily,
     onFontFamilyChange: (NovelFontFamily) -> Unit,
     onDismiss: () -> Unit,
+    isTtsEnabled: Boolean = false,
+    ttsSpeechRate: Float = 1.0f,
+    onTtsSpeechRateChange: (Float) -> Unit = {},
+    ttsPitch: Float = 1.0f,
+    onTtsPitchChange: (Float) -> Unit = {},
+    ttsVoiceName: String = "",
+    availableVoices: List<String> = emptyList(),
+    onTtsVoiceChange: (String) -> Unit = {},
+    ttsSkipSymbols: Boolean = true,
+    onTtsSkipSymbolsChange: (Boolean) -> Unit = {},
+    ttsCustomDictionary: Map<String, String> = emptyMap(),
+    onAddDictionaryEntry: (String, String) -> Unit = { _, _ -> },
+    onRemoveDictionaryEntry: (String) -> Unit = {},
 ) {
     if (!show) return
     val performHaptic = rememberHapticFeedbackAction()
+    var showDictionarySheet by remember { mutableStateOf(false) }
+
     OverlayBottomSheet(
         show = true,
         title = stringResource(R.string.novel_display_settings),
@@ -655,6 +718,366 @@ internal fun NovelSettingsBottomSheet(
                                 fontWeight = FontWeight.Bold,
                                 style = MiuixTheme.textStyles.body2,
                             )
+                        }
+                    }
+                }
+            }
+
+            if (isTtsEnabled) {
+                NovelTtsSettingsSection(
+                    ttsSpeechRate = ttsSpeechRate,
+                    onTtsSpeechRateChange = onTtsSpeechRateChange,
+                    ttsPitch = ttsPitch,
+                    onTtsPitchChange = onTtsPitchChange,
+                    ttsVoiceName = ttsVoiceName,
+                    availableVoices = availableVoices,
+                    onTtsVoiceChange = onTtsVoiceChange,
+                    ttsSkipSymbols = ttsSkipSymbols,
+                    onTtsSkipSymbolsChange = onTtsSkipSymbolsChange,
+                    onOpenDictionary = { showDictionarySheet = true },
+                    performHaptic = performHaptic,
+                )
+            }
+        }
+    }
+
+    if (isTtsEnabled && showDictionarySheet) {
+        NovelTtsDictionarySheet(
+            show = true,
+            dictionary = ttsCustomDictionary,
+            onAddEntry = onAddDictionaryEntry,
+            onRemoveEntry = onRemoveDictionaryEntry,
+            onDismiss = { showDictionarySheet = false },
+        )
+    }
+}
+
+@Composable
+private fun NovelTtsSettingsSection(
+    ttsSpeechRate: Float,
+    onTtsSpeechRateChange: (Float) -> Unit,
+    ttsPitch: Float,
+    onTtsPitchChange: (Float) -> Unit,
+    ttsVoiceName: String,
+    availableVoices: List<String>,
+    onTtsVoiceChange: (String) -> Unit,
+    ttsSkipSymbols: Boolean,
+    onTtsSkipSymbolsChange: (Boolean) -> Unit,
+    onOpenDictionary: () -> Unit,
+    performHaptic: (AppHapticEffect) -> Unit,
+) {
+    ElevatedPanel {
+        Text(
+            text = stringResource(R.string.tts_settings_title),
+            style = MiuixTheme.textStyles.headline1,
+            fontWeight = FontWeight.Bold,
+            color = MiuixTheme.colorScheme.primary,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.tts_speed_label),
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.tts_speed, ttsSpeechRate),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Slider(
+            value = ttsSpeechRate,
+            onValueChange = {
+                val rounded = (it * 10f).roundToInt() / 10f
+                if (rounded != ttsSpeechRate) {
+                    performHaptic(AppHapticEffect.Toggle)
+                    onTtsSpeechRateChange(rounded)
+                }
+            },
+            valueRange = 0.5f..2.5f,
+            steps = 19,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.tts_pitch_label),
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = String.format(java.util.Locale.US, "%.1fx", ttsPitch),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Slider(
+            value = ttsPitch,
+            onValueChange = {
+                val rounded = (it * 10f).roundToInt() / 10f
+                if (rounded != ttsPitch) {
+                    performHaptic(AppHapticEffect.Toggle)
+                    onTtsPitchChange(rounded)
+                }
+            },
+            valueRange = 0.5f..1.5f,
+            steps = 9,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        if (availableVoices.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.tts_voice_label),
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Bold,
+            )
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item {
+                    val isDefault = ttsVoiceName.isBlank()
+                    Box(
+                        modifier =
+                            Modifier
+                                .squircleSurface(
+                                    color =
+                                        if (isDefault) {
+                                            MiuixTheme.colorScheme.primary
+                                        } else {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest
+                                        },
+                                    cornerRadius = 12.dp,
+                                ).miuixClickable(
+                                    pressedScale = 0.95f,
+                                    haptic = true,
+                                    onClick = { onTtsVoiceChange("") },
+                                ).padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.tts_voice_default),
+                            color = if (isDefault) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = if (isDefault) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+                items(
+                    count = availableVoices.size,
+                    key = { availableVoices[it] },
+                ) { idx ->
+                    val voice = availableVoices[idx]
+                    val isSelected = voice == ttsVoiceName
+                    val displayName = voice.substringAfterLast("#").ifBlank { voice }
+                    Box(
+                        modifier =
+                            Modifier
+                                .squircleSurface(
+                                    color =
+                                        if (isSelected) {
+                                            MiuixTheme.colorScheme.primary
+                                        } else {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest
+                                        },
+                                    cornerRadius = 12.dp,
+                                ).miuixClickable(
+                                    pressedScale = 0.95f,
+                                    haptic = true,
+                                    onClick = { onTtsVoiceChange(voice) },
+                                ).padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = displayName,
+                            color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.tts_skip_symbols_title),
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.tts_skip_symbols_summary),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            Switch(
+                checked = ttsSkipSymbols,
+                onCheckedChange = {
+                    performHaptic(AppHapticEffect.Toggle)
+                    onTtsSkipSymbolsChange(it)
+                },
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.tts_dictionary_title),
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.tts_dictionary_summary),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            Button(
+                onClick = {
+                    performHaptic(AppHapticEffect.Click)
+                    onOpenDictionary()
+                },
+                colors =
+                    ButtonDefaults.buttonColors(
+                        color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = MiuixTheme.colorScheme.onSurface,
+                    ),
+            ) {
+                Text(stringResource(R.string.action_edit))
+            }
+        }
+    }
+}
+
+@Composable
+private fun NovelTtsDictionarySheet(
+    show: Boolean,
+    dictionary: Map<String, String>,
+    onAddEntry: (String, String) -> Unit,
+    onRemoveEntry: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (!show) return
+    var wordInput by remember { mutableStateOf("") }
+    var readingInput by remember { mutableStateOf("") }
+
+    OverlayBottomSheet(
+        show = true,
+        title = stringResource(R.string.tts_dictionary_title),
+        onDismissRequest = onDismiss,
+        backgroundColor = LocalBottomSheetBackgroundColor.current,
+        insideMargin = BottomSheetInsideMargin,
+        startAction = {
+            IconButton(onClick = onDismiss) {
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+            }
+        },
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                ElevatedPanel {
+                    Text(
+                        text = stringResource(R.string.tts_dictionary_add),
+                        style = MiuixTheme.textStyles.body1,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    TextField(
+                        value = wordInput,
+                        onValueChange = { wordInput = it },
+                        label = stringResource(R.string.tts_dictionary_word),
+                        useLabelAsPlaceholder = true,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    TextField(
+                        value = readingInput,
+                        onValueChange = { readingInput = it },
+                        label = stringResource(R.string.tts_dictionary_reading),
+                        useLabelAsPlaceholder = true,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Button(
+                        onClick = {
+                            val w = wordInput.trim()
+                            val r = readingInput.trim()
+                            if (w.isNotBlank() && r.isNotBlank()) {
+                                onAddEntry(w, r)
+                                wordInput = ""
+                                readingInput = ""
+                            }
+                        },
+                        enabled = wordInput.isNotBlank() && readingInput.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.action_add), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            if (dictionary.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.tts_dictionary_empty),
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.padding(vertical = 12.dp),
+                    )
+                }
+            } else {
+                items(
+                    count = dictionary.size,
+                    key = { dictionary.keys.elementAt(it) },
+                ) { idx ->
+                    val word = dictionary.keys.elementAt(idx)
+                    val reading = dictionary[word].orEmpty()
+                    ElevatedPanel {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = word,
+                                    style = MiuixTheme.textStyles.body1,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = reading,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.primary,
+                                )
+                            }
+                            IconButton(onClick = { onRemoveEntry(word) }) {
+                                Icon(
+                                    imageVector = MiuixIcons.Remove,
+                                    contentDescription = stringResource(R.string.tts_dictionary_delete),
+                                    tint = MiuixTheme.colorScheme.error,
+                                )
+                            }
                         }
                     }
                 }

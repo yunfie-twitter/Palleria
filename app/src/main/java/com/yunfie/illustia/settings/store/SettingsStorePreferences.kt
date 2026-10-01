@@ -206,6 +206,11 @@ internal fun readFromDataStore(
         novelLayoutMode = preferences[NOVEL_LAYOUT_MODE] ?: "paged",
         novelProgress = decodeNovelProgress(preferences[NOVEL_PROGRESS_RECORDS]),
         novelFontFamily = preferences[NOVEL_FONT_FAMILY] ?: "system",
+        novelTtsSpeechRate = preferences[NOVEL_TTS_SPEECH_RATE] ?: 1.0f,
+        novelTtsPitch = preferences[NOVEL_TTS_PITCH] ?: 1.0f,
+        novelTtsVoiceName = preferences[NOVEL_TTS_VOICE_NAME].orEmpty(),
+        novelTtsSkipSymbols = preferences[NOVEL_TTS_SKIP_SYMBOLS] ?: true,
+        novelTtsCustomDictionary = decodeStringMap(preferences[NOVEL_TTS_CUSTOM_DICTIONARY]),
         internalProxyEnabled = preferences[INTERNAL_PROXY_ENABLED] ?: false,
         internalProxyType = preferences[INTERNAL_PROXY_TYPE] ?: "HTTP",
         internalProxyHost = preferences[INTERNAL_PROXY_HOST].orEmpty(),
@@ -216,6 +221,8 @@ internal fun readFromDataStore(
         dynamicAmbientViewerEnabled = preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] ?: true,
         imageViewerSwipeToDismissEnabled = preferences[IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED] ?: true,
         quickPeekEnabled = preferences[QUICK_PEEK_ENABLED] ?: true,
+        gridPinchToZoom = preferences[GRID_PINCH_TO_ZOOM] ?: true,
+        quickPeekSharedElementTransition = preferences[QUICK_PEEK_SHARED_ELEMENT_TRANSITION] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -380,6 +387,8 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         dynamicAmbientViewerEnabled = preferences.getBoolean(KEY_DYNAMIC_AMBIENT_VIEWER_ENABLED, true),
         imageViewerSwipeToDismissEnabled = preferences.getBoolean(KEY_IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED, true),
         quickPeekEnabled = preferences.getBoolean(KEY_QUICK_PEEK_ENABLED, true),
+        gridPinchToZoom = preferences.getBoolean(KEY_GRID_PINCH_TO_ZOOM, true),
+        quickPeekSharedElementTransition = preferences.getBoolean(KEY_QUICK_PEEK_SHARED_ELEMENT_TRANSITION, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -527,6 +536,11 @@ internal fun writeToDataStore(
     preferences[NOVEL_LAYOUT_MODE] = settings.novelLayoutMode
     preferences[NOVEL_PROGRESS_RECORDS] = encodeNovelProgress(settings.novelProgress)
     preferences[NOVEL_FONT_FAMILY] = settings.novelFontFamily
+    preferences[NOVEL_TTS_SPEECH_RATE] = settings.novelTtsSpeechRate
+    preferences[NOVEL_TTS_PITCH] = settings.novelTtsPitch
+    preferences[NOVEL_TTS_VOICE_NAME] = settings.novelTtsVoiceName
+    preferences[NOVEL_TTS_SKIP_SYMBOLS] = settings.novelTtsSkipSymbols
+    preferences[NOVEL_TTS_CUSTOM_DICTIONARY] = encodeStringMap(settings.novelTtsCustomDictionary)
     preferences[INTERNAL_PROXY_ENABLED] = settings.internalProxyEnabled
     preferences[INTERNAL_PROXY_TYPE] = settings.internalProxyType
     preferences[INTERNAL_PROXY_HOST] = settings.internalProxyHost
@@ -537,6 +551,8 @@ internal fun writeToDataStore(
     preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] = settings.dynamicAmbientViewerEnabled
     preferences[IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED] = settings.imageViewerSwipeToDismissEnabled
     preferences[QUICK_PEEK_ENABLED] = settings.quickPeekEnabled
+    preferences[GRID_PINCH_TO_ZOOM] = settings.gridPinchToZoom
+    preferences[QUICK_PEEK_SHARED_ELEMENT_TRANSITION] = settings.quickPeekSharedElementTransition
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

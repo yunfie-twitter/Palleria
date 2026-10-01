@@ -11,6 +11,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
@@ -54,7 +56,7 @@ private enum class FollowPillStage { UNFOLLOWED, CHECK, FOLLOWED, REMOVING }
 
 private enum class WatchlistPillStage { UNADDED, CHECK, ADDED, REMOVING }
 
-private enum class BookmarkButtonStage { UNBOOKMARKED, CHECK, BOOKMARKED, REMOVING }
+private enum class BookmarkButtonStage { UNBOOKMARKED, CHECK, PRIVATE_CHECK, BOOKMARKED, REMOVING }
 
 @Composable
 fun FollowPill(
@@ -346,6 +348,7 @@ fun BookmarkHeartButton(
     isBookmarked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     size: Dp = 40.dp,
     iconSize: Dp = 26.dp,
     cornerRadius: Dp = size / 2,
@@ -377,6 +380,12 @@ fun BookmarkHeartButton(
                 userClicked = false
             }
 
+            BookmarkButtonStage.PRIVATE_CHECK -> {
+                delay(550)
+                stage = BookmarkButtonStage.BOOKMARKED
+                userClicked = false
+            }
+
             BookmarkButtonStage.REMOVING -> {
                 delay(220)
                 stage = BookmarkButtonStage.UNBOOKMARKED
@@ -389,66 +398,90 @@ fun BookmarkHeartButton(
         }
     }
 
-    val active = remember(stage) { stage == BookmarkButtonStage.BOOKMARKED || stage == BookmarkButtonStage.CHECK }
+    val active =
+        remember(stage) {
+            stage == BookmarkButtonStage.BOOKMARKED || stage == BookmarkButtonStage.CHECK || stage == BookmarkButtonStage.PRIVATE_CHECK
+        }
     val scheme = MiuixTheme.colorScheme
-    IconButton(
-        onClick = {
-            userClicked = true
-            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
-            onClick()
-        },
-        modifier = modifier.size(size),
-        minWidth = size,
-        minHeight = size,
-        cornerRadius = cornerRadius,
-        backgroundColor = if (active) activeBackground else inactiveBackground,
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            HeartBurst(
-                visible = stage == BookmarkButtonStage.CHECK,
-                modifier = Modifier.size(size * 1.5f),
-                color = scheme.error,
+
+    val buttonModifier =
+        modifier
+            .size(size)
+            .squircleSurface(if (active) activeBackground else inactiveBackground, cornerRadius)
+            .combinedClickable(
+                onClick = {
+                    userClicked = true
+                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                    onClick()
+                },
+                onLongClick =
+                    if (onLongClick != null) {
+                        {
+                            userClicked = true
+                            stage = BookmarkButtonStage.PRIVATE_CHECK
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                            onLongClick()
+                        }
+                    } else {
+                        null
+                    },
             )
 
-            AnimatedContent(
-                targetState = stage,
-                transitionSpec = {
-                    when (targetState) {
-                        BookmarkButtonStage.CHECK -> {
-                            (scaleIn(spring(dampingRatio = 0.35f, stiffness = 300f), initialScale = 0.1f) + fadeIn(tween(100))) togetherWith
-                                (scaleOut(tween(100), targetScale = 0.5f) + fadeOut(tween(100)))
-                        }
+    Box(
+        modifier = buttonModifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        HeartBurst(
+            visible = stage == BookmarkButtonStage.CHECK || stage == BookmarkButtonStage.PRIVATE_CHECK,
+            modifier = Modifier.size(size * 1.5f),
+            color = scheme.error,
+        )
 
-                        BookmarkButtonStage.BOOKMARKED -> {
-                            (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.8f)) togetherWith
-                                (fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 1.1f))
-                        }
-
-                        BookmarkButtonStage.REMOVING,
-                        BookmarkButtonStage.UNBOOKMARKED,
-                        -> {
-                            fadeIn(tween(150)) togetherWith fadeOut(tween(150))
-                        }
+        AnimatedContent(
+            targetState = stage,
+            transitionSpec = {
+                when (targetState) {
+                    BookmarkButtonStage.CHECK -> {
+                        (scaleIn(spring(dampingRatio = 0.35f, stiffness = 300f), initialScale = 0.1f) + fadeIn(tween(100))) togetherWith
+                            (scaleOut(tween(100), targetScale = 0.5f) + fadeOut(tween(100)))
                     }
-                },
-                label = "bookmark-heart-stage",
-            ) { s ->
-                Icon(
-                    imageVector =
-                        when (s) {
-                            BookmarkButtonStage.CHECK, BookmarkButtonStage.BOOKMARKED -> MiuixIcons.FavoritesFill
-                            BookmarkButtonStage.REMOVING, BookmarkButtonStage.UNBOOKMARKED -> MiuixIcons.Favorites
-                        },
-                    contentDescription = null,
-                    tint =
-                        when (s) {
-                            BookmarkButtonStage.CHECK, BookmarkButtonStage.BOOKMARKED -> scheme.error
-                            BookmarkButtonStage.REMOVING -> scheme.onSurface.copy(alpha = 0.42f)
-                            BookmarkButtonStage.UNBOOKMARKED -> scheme.onSurface
-                        },
-                    modifier = Modifier.size(iconSize),
-                )
-            }
+
+                    BookmarkButtonStage.PRIVATE_CHECK -> {
+                        (scaleIn(spring(dampingRatio = 0.35f, stiffness = 320f), initialScale = 0.1f) + fadeIn(tween(100))) togetherWith
+                            (scaleOut(tween(100), targetScale = 0.5f) + fadeOut(tween(100)))
+                    }
+
+                    BookmarkButtonStage.BOOKMARKED -> {
+                        (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.8f)) togetherWith
+                            (fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 1.1f))
+                    }
+
+                    BookmarkButtonStage.REMOVING,
+                    BookmarkButtonStage.UNBOOKMARKED,
+                    -> {
+                        fadeIn(tween(150)) togetherWith fadeOut(tween(150))
+                    }
+                }
+            },
+            label = "bookmark-heart-stage",
+        ) { s ->
+            Icon(
+                imageVector =
+                    when (s) {
+                        BookmarkButtonStage.PRIVATE_CHECK -> MiuixIcons.Lock
+                        BookmarkButtonStage.CHECK, BookmarkButtonStage.BOOKMARKED -> MiuixIcons.FavoritesFill
+                        BookmarkButtonStage.REMOVING, BookmarkButtonStage.UNBOOKMARKED -> MiuixIcons.Favorites
+                    },
+                contentDescription = null,
+                tint =
+                    when (s) {
+                        BookmarkButtonStage.PRIVATE_CHECK -> scheme.primary
+                        BookmarkButtonStage.CHECK, BookmarkButtonStage.BOOKMARKED -> scheme.error
+                        BookmarkButtonStage.REMOVING -> scheme.onSurface.copy(alpha = 0.42f)
+                        BookmarkButtonStage.UNBOOKMARKED -> scheme.onSurface
+                    },
+                modifier = Modifier.size(iconSize),
+            )
         }
     }
 }

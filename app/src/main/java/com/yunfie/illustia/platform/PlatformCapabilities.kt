@@ -364,7 +364,7 @@ internal object PlatformCapabilities {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
     fun supportsRefreshRateHint(): Boolean = current().supportsRefreshRateHint
 
-    @ChecksSdkIntAtLeast(api = 36)
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun supportsAdaptiveRefreshRate(): Boolean = current().supportsAdaptiveRefreshRate
 
     @ChecksSdkIntAtLeast(api = HANDOFF_API)
@@ -408,7 +408,7 @@ internal class PlatformCapabilitySnapshot(
     val supportsRecentsScreenshotControl = sdkInt >= Build.VERSION_CODES.TIRAMISU
     val supportsPredictiveBack = sdkInt >= Build.VERSION_CODES.TIRAMISU
     val supportsRefreshRateHint = sdkInt >= Build.VERSION_CODES.R
-    val supportsAdaptiveRefreshRate = sdkInt >= 36
+    val supportsAdaptiveRefreshRate = sdkInt >= Build.VERSION_CODES.VANILLA_ICE_CREAM
     val supportsActivityHandoff = sdkInt >= PlatformCapabilities.HANDOFF_API
     val supportsWidgetPreview = sdkInt >= Build.VERSION_CODES.VANILLA_ICE_CREAM
     val supportsRemoteViewsSharedElement = sdkInt >= Build.VERSION_CODES.Q

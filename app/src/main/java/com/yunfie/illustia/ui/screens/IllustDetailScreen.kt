@@ -73,6 +73,7 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BookmarkHeartButton
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -112,6 +113,7 @@ fun IllustDetailScreen(
     firstComment: Comment?,
     onBack: () -> Unit,
     onBookmark: () -> Unit,
+    onBookmarkLongClick: (() -> Unit)? = null,
     onRefresh: () -> Unit = {},
     onOpenUser: (Long) -> Unit,
     onOpenComments: () -> Unit,
@@ -352,10 +354,23 @@ fun IllustDetailScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    performAppHapticFeedback(context, haptic, hapticMode)
-                    onBookmark()
-                },
+                onClick = {},
+                modifier =
+                    Modifier.combinedClickable(
+                        onClick = {
+                            performAppHapticFeedback(context, haptic, hapticMode)
+                            onBookmark()
+                        },
+                        onLongClick =
+                            if (onBookmarkLongClick != null) {
+                                {
+                                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                                    onBookmarkLongClick()
+                                }
+                            } else {
+                                null
+                            },
+                    ),
                 shape = RoundedCornerShape(18.dp),
                 containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
             ) {

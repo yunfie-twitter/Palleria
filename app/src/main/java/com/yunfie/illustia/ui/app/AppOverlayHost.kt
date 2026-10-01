@@ -83,10 +83,14 @@ internal fun AppOverlayHost(
         val isQuickPeekActive =
             appState.state.settings.isFeatureEnabled(FeatureFlag.QuickPeek) &&
                 appState.state.settings.quickPeekEnabled
+        val useSharedTransition =
+            appState.state.settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition) &&
+                appState.state.settings.quickPeekSharedElementTransition
 
         if (isQuickPeekActive) {
             QuickPeekOverlay(
                 illust = illust,
+                useSharedElementTransition = useSharedTransition,
                 onDismiss = viewModel::closeIllustOptions,
                 onOpenDetail = {
                     viewModel.closeIllustOptions()

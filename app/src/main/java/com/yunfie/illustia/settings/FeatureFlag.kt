@@ -71,6 +71,18 @@ enum class FeatureFlag(
         descRes = R.string.flag_quick_peek_desc,
         defaultEnabled = false,
     ),
+    GridPinchToZoomColumns(
+        key = "flag_grid_pinch_to_zoom_columns",
+        titleRes = R.string.flag_grid_pinch_to_zoom_title,
+        descRes = R.string.flag_grid_pinch_to_zoom_desc,
+        defaultEnabled = false,
+    ),
+    QuickPeekSharedElementTransition(
+        key = "flag_quick_peek_shared_element_transition",
+        titleRes = R.string.flag_quick_peek_shared_element_transition_title,
+        descRes = R.string.flag_quick_peek_shared_element_transition_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {

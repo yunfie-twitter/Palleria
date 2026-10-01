@@ -34,6 +34,9 @@ data class Illust(
     /** プレビュー用URL (medium → original のフォールバック) */
     val previewUrl: String = mediumImageUrl.ifBlank { imageUrl }
 
+    /** うごイラ作品かどうか */
+    val isUgoira: Boolean = type == "ugoira"
+
     /** AI作品かどうか */
     val isAi: Boolean = illustAiType == 2 || tags.any { it.equals("AI", ignoreCase = true) || it.contains("AI生成") }
 
