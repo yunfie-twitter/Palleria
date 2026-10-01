@@ -258,6 +258,7 @@ internal fun NovelReaderPage(
     scrollBehavior: ScrollBehavior,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    readingBlockIndex: Int? = null,
 ) {
     val currentOnToggleControls by rememberUpdatedState(onToggleControls)
     LazyColumn(
@@ -280,7 +281,7 @@ internal fun NovelReaderPage(
             items = page.blocks,
             key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
             contentType = { _, block -> block.contentType },
-        ) { _, block ->
+        ) { blockIndex, block ->
             NovelBlockItem(
                 block = block,
                 fontSize = fontSize,
@@ -291,6 +292,7 @@ internal fun NovelReaderPage(
                 uriHandler = uriHandler,
                 onJumpPage = onJumpPage,
                 onToggleControls = onToggleControls,
+                isReading = readingBlockIndex == blockIndex,
             )
         }
         if (pageIndex == pageCount - 1 && seriesNextId != null) {
@@ -355,6 +357,7 @@ internal fun NovelReaderContinuousContent(
     scrollBehavior: ScrollBehavior,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    readingLocation: NovelTtsParagraphLocation? = null,
 ) {
     val currentOnToggleControls by rememberUpdatedState(onToggleControls)
     val toggleControlsAction = remember { { currentOnToggleControls() } }
@@ -386,7 +389,7 @@ internal fun NovelReaderContinuousContent(
                 items = page.blocks,
                 key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
                 contentType = { _, block -> block.contentType },
-            ) { _, block ->
+            ) { blockIndex, block ->
                 NovelBlockItem(
                     block = block,
                     fontSize = fontSize,
@@ -397,6 +400,7 @@ internal fun NovelReaderContinuousContent(
                     uriHandler = uriHandler,
                     onJumpPage = onJumpPage,
                     onToggleControls = toggleControlsAction,
+                    isReading = readingLocation?.pageIndex == pageIndex && readingLocation.blockIndexInPage == blockIndex,
                 )
             }
             if (pageIndex < pages.size - 1) {
@@ -467,6 +471,7 @@ private fun NovelBlockItem(
     uriHandler: UriHandler,
     onJumpPage: (Int) -> Unit,
     onToggleControls: () -> Unit,
+    isReading: Boolean = false,
 ) {
     when (block) {
         NovelSpacerBlock -> {
@@ -474,7 +479,12 @@ private fun NovelBlockItem(
         }
 
         is NovelChapterBlock -> {
-            NovelChapterItem(title = block.title, textColor = textColor, fontFamily = fontFamily)
+            NovelChapterItem(
+                title = block.title,
+                textColor = textColor,
+                fontFamily = fontFamily,
+                isReading = isReading,
+            )
         }
 
         is NovelPixivImageBlock -> {
@@ -499,6 +509,7 @@ private fun NovelBlockItem(
                 fontFamily = fontFamily,
                 uriHandler = uriHandler,
                 onToggleControls = onToggleControls,
+                isReading = isReading,
             )
         }
     }
@@ -509,9 +520,20 @@ private fun NovelChapterItem(
     title: String,
     textColor: Color,
     fontFamily: FontFamily,
+    isReading: Boolean = false,
 ) {
+    val highlightModifier =
+        if (isReading) {
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                .padding(8.dp)
+        } else {
+            Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+        }
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
+        modifier = highlightModifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
@@ -648,6 +670,7 @@ private fun NovelParagraph(
     fontFamily: FontFamily,
     uriHandler: UriHandler,
     onToggleControls: () -> Unit,
+    isReading: Boolean = false,
 ) {
     if (block.text.text.isBlank()) return
 
@@ -669,6 +692,17 @@ private fun NovelParagraph(
 
     val currentOnToggleControls by rememberUpdatedState(onToggleControls)
 
+    val highlightModifier =
+        if (isReading) {
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                .padding(horizontal = 6.dp, vertical = 3.dp)
+        } else {
+            Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 3.dp)
+        }
+
     val urlAnnotations = remember(block.text) { block.text.getStringAnnotations("URL", 0, block.text.length) }
     if (urlAnnotations.isNotEmpty()) {
         var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -678,7 +712,7 @@ private fun NovelParagraph(
             inlineContent = inlineContentMap,
             onTextLayout = { layoutResult = it },
             modifier =
-                Modifier.pointerInput(block.text) {
+                highlightModifier.pointerInput(block.text) {
                     detectTapGestures { pos ->
                         val offset = layoutResult?.getOffsetForPosition(pos) ?: -1
                         val annotation =
@@ -696,6 +730,7 @@ private fun NovelParagraph(
             text = block.text,
             style = textStyle,
             inlineContent = inlineContentMap,
+            modifier = highlightModifier,
         )
     }
 }

@@ -77,7 +77,30 @@ class NovelTtsPlaybackTest :
             NovelTtsService.ACTION_PREV shouldBe "com.yunfie.illustia.tts.PREV"
             NovelTtsService.ACTION_STOP shouldBe "com.yunfie.illustia.tts.STOP"
             NovelTtsService.ACTION_SET_SPEED shouldBe "com.yunfie.illustia.tts.SET_SPEED"
+            NovelTtsService.ACTION_SET_PITCH shouldBe "com.yunfie.illustia.tts.SET_PITCH"
+            NovelTtsService.ACTION_SET_VOICE shouldBe "com.yunfie.illustia.tts.SET_VOICE"
             NovelTtsService.ACTION_SEEK_PARAGRAPH shouldBe "com.yunfie.illustia.tts.SEEK_PARAGRAPH"
+        }
+
+        test("NovelTtsTextSanitizer replaces custom dictionary words and skips symbols") {
+            val text = "★主人公の月姫は……何者かに追われていた――！"
+            val dict = mapOf("月姫" to "かぐや")
+
+            val sanitizedWithSkip =
+                NovelTtsTextSanitizer.sanitizeParagraph(
+                    paragraphText = text,
+                    skipSymbols = true,
+                    customDictionary = dict,
+                )
+            sanitizedWithSkip shouldBe "主人公のかぐやは、何者かに追われていた、！"
+
+            val sanitizedWithoutSkip =
+                NovelTtsTextSanitizer.sanitizeParagraph(
+                    paragraphText = text,
+                    skipSymbols = false,
+                    customDictionary = dict,
+                )
+            sanitizedWithoutSkip shouldBe "★主人公のかぐやは……何者かに追われていた――！"
         }
 
         test("NovelTtsNotificationHelper notification channel and ID constants") {

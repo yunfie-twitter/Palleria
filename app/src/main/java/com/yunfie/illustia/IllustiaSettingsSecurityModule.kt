@@ -30,6 +30,10 @@ import kotlinx.coroutines.withContext
 
 private const val MIN_NOVEL_FONT_SIZE = 12f
 private const val MAX_NOVEL_FONT_SIZE = 32f
+private const val MIN_TTS_SPEECH_RATE = 0.5f
+private const val MAX_TTS_SPEECH_RATE = 2.5f
+private const val MIN_TTS_PITCH = 0.5f
+private const val MAX_TTS_PITCH = 2.0f
 
 private fun canRefreshProfileOnStartup(
     settings: com.yunfie.illustia.settings.AppSettings,
@@ -832,6 +836,44 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateNovelFontFamily(value: String) {
         updateSettings { it.copy(novelFontFamily = value) }
+    }
+
+    fun updateNovelTtsSpeechRate(value: Float) {
+        updateSettings { it.copy(novelTtsSpeechRate = value.coerceIn(MIN_TTS_SPEECH_RATE, MAX_TTS_SPEECH_RATE)) }
+    }
+
+    fun updateNovelTtsPitch(value: Float) {
+        updateSettings { it.copy(novelTtsPitch = value.coerceIn(MIN_TTS_PITCH, MAX_TTS_PITCH)) }
+    }
+
+    fun updateNovelTtsVoiceName(value: String) {
+        updateSettings { it.copy(novelTtsVoiceName = value) }
+    }
+
+    fun updateNovelTtsSkipSymbols(value: Boolean) {
+        updateSettings { it.copy(novelTtsSkipSymbols = value) }
+    }
+
+    fun updateNovelTtsCustomDictionary(value: Map<String, String>) {
+        updateSettings { it.copy(novelTtsCustomDictionary = value) }
+    }
+
+    fun addNovelTtsDictionaryEntry(
+        word: String,
+        reading: String,
+    ) {
+        val trimmedWord = word.trim()
+        val trimmedReading = reading.trim()
+        if (trimmedWord.isBlank()) return
+        updateSettings { current ->
+            current.copy(novelTtsCustomDictionary = current.novelTtsCustomDictionary + (trimmedWord to trimmedReading))
+        }
+    }
+
+    fun removeNovelTtsDictionaryEntry(word: String) {
+        updateSettings { current ->
+            current.copy(novelTtsCustomDictionary = current.novelTtsCustomDictionary - word)
+        }
     }
 
     fun updateSmartCacheEnabled(value: Boolean) {

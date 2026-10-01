@@ -275,6 +275,7 @@ internal fun NovelReaderVerticalPage(
     scrollBehavior: ScrollBehavior,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    readingBlockIndex: Int? = null,
 ) {
     BoxWithConstraints(
         modifier =
@@ -314,6 +315,7 @@ internal fun NovelReaderVerticalPage(
                         fontFamily = fontFamily,
                         viewModel = viewModel,
                         onJumpPage = onJumpPage,
+                        isReading = readingBlockIndex == blockIndex,
                     )
                 }
             }
@@ -339,6 +341,7 @@ private fun LazyListScope.renderVerticalBlock(
     fontFamily: FontFamily,
     viewModel: IllustiaViewModel,
     onJumpPage: (Int) -> Unit,
+    isReading: Boolean = false,
 ) {
     when (block) {
         NovelSpacerBlock -> {
@@ -377,11 +380,20 @@ private fun LazyListScope.renderVerticalBlock(
                 key = { colIndex, _ -> "para_${blockIndex}_col_$colIndex" },
                 contentType = { _, _ -> "vertical_column" },
             ) { _, columnTokens ->
+                val highlightModifier =
+                    if (isReading) {
+                        Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                    } else {
+                        Modifier
+                    }
                 NovelVerticalColumn(
                     tokens = columnTokens,
                     fontSize = fontSize,
                     textColor = textColor,
                     fontFamily = fontFamily,
+                    modifier = highlightModifier,
                 )
             }
         }
