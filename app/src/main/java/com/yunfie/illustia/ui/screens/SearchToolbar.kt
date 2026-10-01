@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +29,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun SearchToolbar(
     value: String,
+    focusRequest: Int = 0,
+    onFocusRequestHandled: () -> Unit = {},
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onValueChange: (String) -> Unit,
@@ -37,9 +42,21 @@ fun SearchToolbar(
     onRemoveHistoryItem: ((String) -> Unit)? = null,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
+    val focusRequester =
+        androidx.compose.runtime.remember {
+            androidx.compose.ui.focus
+                .FocusRequester()
+        }
+    androidx.compose.runtime.LaunchedEffect(focusRequest, expanded) {
+        if (focusRequest > 0 && expanded) {
+            focusRequester.requestFocus()
+            onFocusRequestHandled()
+        }
+    }
     SearchBar(
         inputField = {
             InputField(
+                modifier = Modifier.focusRequester(focusRequester),
                 query = value,
                 onQueryChange = onValueChange,
                 onSearch = { onSearch() },
@@ -100,6 +117,7 @@ fun SearchToolbar(
                         if (onRemoveHistoryItem != null) {
                             {
                                 IconButton(
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                                     onClick = {
                                         performHaptic(AppHapticEffect.Click)
                                         onRemoveHistoryItem(suggestion)

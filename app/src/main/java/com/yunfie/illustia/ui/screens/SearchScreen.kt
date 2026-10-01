@@ -39,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -103,6 +105,8 @@ private val SearchBookmarkFilterOptions = SearchBookmarkFilter.entries.toList()
 fun SearchScreen(
     state: SearchUiState,
     viewModel: IllustiaViewModel,
+    focusRequest: Int = 0,
+    onFocusRequestHandled: () -> Unit = {},
     widgetSelectionMode: Boolean = false,
     isResultRoute: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
@@ -111,6 +115,9 @@ fun SearchScreen(
     onNavigateToResults: ((String) -> Unit)? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
+    LaunchedEffect(focusRequest) {
+        if (focusRequest > 0) searchExpanded = true
+    }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val suggestionStore = remember(repository) { SuggestionStore(repository) }
     val autocompleteSuggestions by suggestionStore.autoWords.collectAsStateWithLifecycle()
@@ -274,6 +281,8 @@ fun SearchScreen(
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(
+                        focusRequest = focusRequest,
+                        onFocusRequestHandled = onFocusRequestHandled,
                         value = state.activeSearchWord,
                         expanded = false,
                         suggestions = suggestions,
@@ -316,6 +325,8 @@ fun SearchScreen(
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(
+                        focusRequest = focusRequest,
+                        onFocusRequestHandled = onFocusRequestHandled,
                         value = state.searchDraft,
                         expanded = false,
                         suggestions = suggestions,
@@ -334,6 +345,8 @@ fun SearchScreen(
                 }
             } else {
                 SearchToolbar(
+                    focusRequest = focusRequest,
+                    onFocusRequestHandled = onFocusRequestHandled,
                     value = state.searchDraft,
                     expanded = searchExpanded,
                     suggestions = suggestions,
@@ -460,10 +473,10 @@ private fun SearchResultsArea(
                     viewModel.updateSearchSelectedTab(index)
                     coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).pointerHoverIcon(PointerIcon.Hand),
             )
             Box {
-                IconButton(onClick = {
+                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                     performHaptic(AppHapticEffect.Click)
                     showOptionsSheet = true
                 }) {
@@ -530,6 +543,8 @@ private fun SearchResultsArea(
 fun SearchScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    focusRequest: Int = 0,
+    onFocusRequestHandled: () -> Unit = {},
     widgetSelectionMode: Boolean = false,
     isResultRoute: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
@@ -539,6 +554,8 @@ fun SearchScreen(
 ) {
     SearchScreen(
         state = state.searchUiState,
+        focusRequest = focusRequest,
+        onFocusRequestHandled = onFocusRequestHandled,
         viewModel = viewModel,
         widgetSelectionMode = widgetSelectionMode,
         isResultRoute = isResultRoute,

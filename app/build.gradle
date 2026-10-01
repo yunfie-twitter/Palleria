@@ -83,7 +83,10 @@ android {
     }
 
     testOptions {
+        unitTests.includeAndroidResources = true
         unitTests.all {
+            // Robolectric's Android shared-memory setup accesses FileDescriptor via SharedSecrets.
+            jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED'
             useJUnitPlatform()
         }
     }
@@ -370,7 +373,10 @@ dependencies {
     implementation libs.glance.material3
     implementation libs.work.runtime.ktx
 
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
+
     // Test dependencies
+    testImplementation "androidx.compose.ui:ui-test-junit4"
     testImplementation libs.kotest.runner
     testImplementation libs.kotest.assertions
     testImplementation libs.kotest.property

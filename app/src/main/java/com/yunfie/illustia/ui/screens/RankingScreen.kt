@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -160,7 +162,10 @@ fun RankingScreen(
                     }
                 },
             actions = {
-                IconButton(onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) }) {
+                IconButton(
+                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                    onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) },
+                ) {
                     Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
                 }
             },
@@ -382,7 +387,7 @@ private fun RankingTabRow(
         tabs = tabs,
         selectedTabIndex = pagerState.targetPage.coerceIn(0, (tabs.size - 1).coerceAtLeast(0)),
         onTabSelected = onTabSelected,
-        modifier = modifier,
+        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
         minWidth = 92.dp,
         maxWidth = 148.dp,
     )

@@ -339,7 +339,14 @@ abstract class IllustiaDetailProfileModule(
         openUserPage(user.id)
     }
 
-    override fun openUserPage(userId: Long) {
+    override fun openUserPage(userId: Long) = loadUserPage(userId, forceRefresh = false)
+
+    fun refreshUserPage(userId: Long) = loadUserPage(userId, forceRefresh = true)
+
+    private fun loadUserPage(
+        userId: Long,
+        forceRefresh: Boolean,
+    ) {
         if (userId <= 0L) {
             _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
             return
@@ -349,7 +356,7 @@ abstract class IllustiaDetailProfileModule(
         val session = userProfileRequests.open(userId, _uiState.value.settings.refreshToken)
         userPageSnapshot = snapshotUserPageState()
         captureProfileReturnDetail()
-        val cached = userProfileCache.get(userId, _uiState.value.settings)
+        val cached = if (forceRefresh) null else userProfileCache.get(userId, _uiState.value.settings)
         _userNavigationRequests.tryEmit(userId)
         _uiState.update { state ->
             val empty =
@@ -366,7 +373,7 @@ abstract class IllustiaDetailProfileModule(
         }
         session.scope.launch {
             try {
-                val profile = withContext(Dispatchers.IO) { repository.userDetail(userId) }
+                val profile = withContext(Dispatchers.IO) { repository.userDetail(userId, forceRefresh = forceRefresh) }
                 if (!isCurrentProfileRequest(session)) return@launch
                 _uiState.update { it.copy(selectedUser = profile, loadState = LoadState.Loaded) }
                 userPageSnapshot = null

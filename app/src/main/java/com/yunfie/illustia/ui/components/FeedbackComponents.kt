@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -115,7 +117,7 @@ fun HeaderIcon(
             }
         },
         enabled = onClick != null,
-        modifier = modifier,
+        modifier = modifier.then(if (onClick != null) Modifier.pointerHoverIcon(PointerIcon.Hand) else Modifier),
         minWidth = 44.dp,
         minHeight = 44.dp,
     ) {
@@ -143,7 +145,7 @@ fun HeaderOverlayIcon(
             performHaptic(AppHapticEffect.Click)
             onClick()
         },
-        modifier = modifier.size(38.dp),
+        modifier = modifier.pointerHoverIcon(PointerIcon.Hand).size(38.dp),
         backgroundColor = backgroundColor,
         cornerRadius = 19.dp,
         minWidth = 38.dp,

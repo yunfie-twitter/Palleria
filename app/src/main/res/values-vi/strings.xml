@@ -1035,4 +1035,7 @@
     <string name="update_auto_download_desc">Tự động tải về trong nền (tự động cài đặt nếu bật Shizuku)</string>
     <string name="search_age_restriction">Giới hạn độ tuổi</string>
     <string name="search_age_all">Tất cả</string>
+    <string name="desktop_open_new_tab">Mở trong thẻ trình duyệt mới</string>
+    <string name="desktop_bookmark_private">Dấu trang riêng tư</string>
+    <string name="desktop_save_as">Lưu thành</string>
 </resources>

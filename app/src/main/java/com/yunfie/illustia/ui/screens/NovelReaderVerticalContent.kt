@@ -264,6 +264,8 @@ internal object NovelVerticalEngine {
 internal fun NovelReaderVerticalPage(
     page: NovelPage,
     pageIndex: Int,
+    paragraphStep: Int = 0,
+    keyboardActive: Boolean = true,
     pageCount: Int,
     fontSize: Float,
     lineHeightMultiplier: Float,
@@ -277,6 +279,9 @@ internal fun NovelReaderVerticalPage(
     modifier: Modifier = Modifier,
     readingBlockIndex: Int? = null,
 ) {
+    val keyboardListState =
+        androidx.compose.foundation.lazy
+            .rememberLazyListState()
     BoxWithConstraints(
         modifier =
             modifier
@@ -299,8 +304,25 @@ internal fun NovelReaderVerticalPage(
                 }
             }
 
+        val paragraphIndices =
+            remember(page, columnsByParagraph) {
+                buildList {
+                    var offset = 0
+                    page.blocks.forEach { block ->
+                        if (block is NovelParagraphBlock) {
+                            add(offset)
+                            offset += columnsByParagraph[block].orEmpty().size
+                        } else {
+                            offset++
+                        }
+                    }
+                }
+            }
+        com.yunfie.illustia.ui.components
+            .ParagraphNavigation(keyboardListState, paragraphStep, keyboardActive, paragraphIndices)
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
             LazyRow(
+                state = keyboardListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy((fontSize * VERTICAL_COLUMN_SPACING_FACTOR).dp),

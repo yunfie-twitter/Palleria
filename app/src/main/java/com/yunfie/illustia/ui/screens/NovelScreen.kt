@@ -46,6 +46,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -191,12 +193,15 @@ fun NovelScreen(
                         }
                     },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
                         Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.refreshNovels(forceRefresh = true) }) {
+                    IconButton(
+                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                        onClick = { viewModel.refreshNovels(forceRefresh = true) },
+                    ) {
                         Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
                     }
                 },
@@ -397,6 +402,27 @@ fun NovelReaderScreen(
     val layoutMode = remember(settings.novelLayoutMode) { NovelLayoutMode.fromId(settings.novelLayoutMode) }
     val fontFamily = remember(settings.novelFontFamily) { NovelFontFamily.fromId(settings.novelFontFamily) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
+    var fullscreen by rememberSaveable { mutableStateOf(false) }
+    var paragraphStep by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    com.yunfie.illustia.ui.components
+        .ReaderFullscreen(fullscreen)
+    LaunchedEffect(fullscreen) { controlsVisible = !fullscreen }
+    com.yunfie.illustia.ui.components.ParagraphNavigation(
+        continuousListState,
+        paragraphStep,
+        layoutMode == NovelLayoutMode.Scroll,
+        remember(pages) {
+            buildList {
+                var offset = 0
+                pages.forEachIndexed { index, page ->
+                    page.blocks.forEachIndexed { blockIndex, block ->
+                        if (block is NovelParagraphBlock) add(offset + 1 + blockIndex)
+                    }
+                    offset += 1 + page.blocks.size + if (index < pages.lastIndex) 1 else 0
+                }
+            }
+        },
+    )
     var showTocSheet by rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -555,27 +581,29 @@ fun NovelReaderScreen(
             Modifier
                 .fillMaxSize()
                 .focusRequester(focusRequester)
-                .focusable()
                 .onKeyEvent { keyEvent ->
-                    if (isVolumeTurnerEnabled && keyEvent.type == KeyEventType.KeyDown) {
-                        when (keyEvent.nativeKeyEvent.keyCode) {
-                            AndroidKeyEvent.KEYCODE_VOLUME_DOWN,
-                            AndroidKeyEvent.KEYCODE_PAGE_DOWN,
-                            AndroidKeyEvent.KEYCODE_DPAD_DOWN,
-                            AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
-                            AndroidKeyEvent.KEYCODE_MEDIA_NEXT,
-                            -> {
-                                jumpToPage((currentNovelPage() + 1).coerceAtMost(pages.size - 1))
+                    val event = keyEvent.nativeKeyEvent
+                    if (keyEvent.type != KeyEventType.KeyDown) {
+                        false
+                    } else {
+                        val direction =
+                            com.yunfie.illustia.platform
+                                .readerPageDirection(event, isVolumeTurnerEnabled)
+                        when {
+                            direction != 0 -> {
+                                jumpToPage((currentNovelPage() + direction).coerceIn(0, pages.lastIndex))
                                 true
                             }
 
-                            AndroidKeyEvent.KEYCODE_VOLUME_UP,
-                            AndroidKeyEvent.KEYCODE_PAGE_UP,
-                            AndroidKeyEvent.KEYCODE_DPAD_UP,
-                            AndroidKeyEvent.KEYCODE_DPAD_LEFT,
-                            AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS,
-                            -> {
-                                jumpToPage((currentNovelPage() - 1).coerceAtLeast(0))
+                            !event.isCtrlPressed && !event.isAltPressed && !event.isMetaPressed &&
+                                event.keyCode == AndroidKeyEvent.KEYCODE_F -> {
+                                if (event.repeatCount == 0) fullscreen = !fullscreen
+                                true
+                            }
+
+                            !event.isCtrlPressed && !event.isAltPressed && !event.isMetaPressed &&
+                                event.keyCode in listOf(AndroidKeyEvent.KEYCODE_J, AndroidKeyEvent.KEYCODE_K) -> {
+                                paragraphStep += if (event.keyCode == AndroidKeyEvent.KEYCODE_J) 1 else -1
                                 true
                             }
 
@@ -583,10 +611,8 @@ fun NovelReaderScreen(
                                 false
                             }
                         }
-                    } else {
-                        false
                     }
-                },
+                }.focusable(),
         containerColor = backgroundColor,
         topBar = {
             AnimatedVisibility(
@@ -600,7 +626,7 @@ fun NovelReaderScreen(
                     titleColor = textColor,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
                                 contentDescription = stringResource(R.string.action_close),
@@ -609,7 +635,7 @@ fun NovelReaderScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = onRetry) {
+                        IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onRetry) {
                             Icon(
                                 imageVector = MiuixIcons.Refresh,
                                 contentDescription = stringResource(R.string.dialog_reload),
@@ -698,6 +724,8 @@ fun NovelReaderScreen(
                             NovelReaderPage(
                                 page = pages[pageIndex],
                                 pageIndex = pageIndex,
+                                paragraphStep = paragraphStep,
+                                keyboardActive = pageIndex == pagerState.currentPage,
                                 pageCount = pages.size,
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,
@@ -753,6 +781,8 @@ fun NovelReaderScreen(
                             NovelReaderVerticalPage(
                                 page = pages[pageIndex],
                                 pageIndex = pageIndex,
+                                paragraphStep = paragraphStep,
+                                keyboardActive = pageIndex == pagerState.currentPage,
                                 pageCount = pages.size,
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,

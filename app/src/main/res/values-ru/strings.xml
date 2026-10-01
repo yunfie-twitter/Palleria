@@ -1035,4 +1035,7 @@
     <string name="update_auto_download_desc">Автоматически загружать обновления в фоне (автоустановка при включенном Shizuku)</string>
     <string name="search_age_restriction">Возрастное ограничение</string>
     <string name="search_age_all">Все</string>
+    <string name="desktop_open_new_tab">Открыть в новой вкладке браузера</string>
+    <string name="desktop_bookmark_private">Приватная закладка</string>
+    <string name="desktop_save_as">Сохранить как</string>
 </resources>

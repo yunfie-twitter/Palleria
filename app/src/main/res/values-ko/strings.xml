@@ -925,4 +925,7 @@
     <string name="update_auto_download_desc">백그라운드에서 업데이트를 자동 다운로드합니다 (Shizuku 선택 시 자동 설치)</string>
     <string name="search_age_restriction">연령 제한</string>
     <string name="search_age_all">전체</string>
+    <string name="desktop_open_new_tab">새 브라우저 탭에서 열기</string>
+    <string name="desktop_bookmark_private">비공개 북마크</string>
+    <string name="desktop_save_as">다른 이름으로 저장</string>
 </resources>

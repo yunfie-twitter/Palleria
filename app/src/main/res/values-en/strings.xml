@@ -1130,4 +1130,7 @@
     <string name="tts_dictionary_empty">No custom words registered</string>
     <string name="tts_dictionary_delete">Delete</string>
     <string name="tts_dictionary_delete_confirm">Remove pronunciation mapping for this word?</string>
+    <string name="desktop_open_new_tab">Open in a new browser tab</string>
+    <string name="desktop_bookmark_private">Private bookmark</string>
+    <string name="desktop_save_as">Save as</string>
 </resources>

@@ -63,6 +63,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -114,6 +116,7 @@ import android.view.KeyEvent as AndroidKeyEvent
 fun ImageViewerScreen(
     illust: Illust,
     startPage: Int,
+    onSave: (String, String) -> Unit,
     onBack: () -> Unit,
     isBookmarked: Boolean,
     onBookmark: () -> Unit,
@@ -176,8 +179,14 @@ fun ImageViewerScreen(
     val coroutineScope = rememberCoroutineScope()
     var isZoomed by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
+    var fullscreen by remember { mutableStateOf(true) }
     var showSeekSlider by remember { mutableStateOf(false) }
     val comicMode = illust.type == "manga" && imageUrls.size > 1 && mangaReaderMode == "vertical"
+
+    val comicListState =
+        androidx.compose.foundation.lazy
+            .rememberLazyListState(initialFirstVisibleItemIndex = startPage)
+    val currentPage = if (comicMode) comicListState.firstVisibleItemIndex else pagerState.currentPage
 
     var localBookmarked by remember(illust.id, isBookmarked) { mutableStateOf(isBookmarked) }
     LaunchedEffect(isBookmarked) {
@@ -224,30 +233,16 @@ fun ImageViewerScreen(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
+    LaunchedEffect(currentPage) {
         isZoomed = false
-        onPageChanged(pagerState.currentPage)
+        onPageChanged(currentPage)
     }
 
-    val activity = remember(context) { context.findActivity() }
-    DisposableEffect(activity) {
-        val window = activity?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            insetsController.hide(WindowInsetsCompat.Type.statusBars())
-
-            onDispose {
-                insetsController.show(WindowInsetsCompat.Type.statusBars())
-            }
-        } else {
-            onDispose {}
-        }
-    }
+    com.yunfie.illustia.ui.components
+        .ReaderFullscreen(fullscreen)
 
     fun shareCurrentPage() {
-        val url = imageUrls.getOrNull(pagerState.currentPage) ?: return
+        val url = imageUrls.getOrNull(currentPage) ?: return
         val sendIntent =
             Intent().apply {
                 action = Intent.ACTION_SEND
@@ -268,7 +263,7 @@ fun ImageViewerScreen(
     val dismissThresholdPx = remember(density) { with(density) { 140.dp.toPx() } }
 
     fun copyCurrentPage() {
-        val url = imageUrls.getOrNull(pagerState.currentPage) ?: return
+        val url = imageUrls.getOrNull(currentPage) ?: return
         coroutineScope.launch {
             val success = ImageClipboardHelper.copyImageToClipboard(context, url)
             if (success) {
@@ -282,10 +277,10 @@ fun ImageViewerScreen(
 
     fun movePage(direction: Int) {
         if (imageUrls.isEmpty()) return
-        val targetPage = (pagerState.currentPage + direction).coerceIn(0, imageUrls.lastIndex)
-        if (targetPage == pagerState.currentPage) return
+        val targetPage = (currentPage + direction).coerceIn(0, imageUrls.lastIndex)
+        if (targetPage == currentPage) return
         coroutineScope.launch {
-            pagerState.animateScrollToPage(targetPage)
+            if (comicMode) comicListState.animateScrollToItem(targetPage) else pagerState.animateScrollToPage(targetPage)
         }
     }
 
@@ -302,27 +297,34 @@ fun ImageViewerScreen(
             Modifier
                 .fillMaxSize()
                 .focusRequester(focusRequester)
-                .focusable()
                 .onKeyEvent { keyEvent ->
-                    if (volumeKeyPageTurnerEnabled && keyEvent.type == KeyEventType.KeyDown) {
-                        when (keyEvent.nativeKeyEvent.keyCode) {
-                            AndroidKeyEvent.KEYCODE_VOLUME_DOWN,
-                            AndroidKeyEvent.KEYCODE_PAGE_DOWN,
-                            AndroidKeyEvent.KEYCODE_DPAD_DOWN,
-                            AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
-                            AndroidKeyEvent.KEYCODE_MEDIA_NEXT,
-                            -> {
-                                movePage(1)
+                    val event = keyEvent.nativeKeyEvent
+                    if (keyEvent.type != KeyEventType.KeyDown) {
+                        false
+                    } else {
+                        val direction =
+                            com.yunfie.illustia.platform
+                                .readerPageDirection(event, volumeKeyPageTurnerEnabled)
+                        when {
+                            direction != 0 -> {
+                                movePage(direction)
                                 true
                             }
 
-                            AndroidKeyEvent.KEYCODE_VOLUME_UP,
-                            AndroidKeyEvent.KEYCODE_PAGE_UP,
-                            AndroidKeyEvent.KEYCODE_DPAD_UP,
-                            AndroidKeyEvent.KEYCODE_DPAD_LEFT,
-                            AndroidKeyEvent.KEYCODE_MEDIA_PREVIOUS,
-                            -> {
-                                movePage(-1)
+                            !event.isCtrlPressed && !event.isAltPressed && !event.isMetaPressed &&
+                                event.keyCode == AndroidKeyEvent.KEYCODE_F -> {
+                                if (event.repeatCount == 0) fullscreen = !fullscreen
+                                true
+                            }
+
+                            event.isCtrlPressed && event.keyCode == AndroidKeyEvent.KEYCODE_S -> {
+                                if (event.repeatCount == 0) {
+                                    val page = currentPage
+                                    val url =
+                                        illust.originalImagePages.getOrNull(page)
+                                            ?: illust.originalImageUrl?.takeIf { page == 0 } ?: imageUrls.getOrNull(page)
+                                    if (url != null) onSave(url, "${illust.id}_p$page")
+                                }
                                 true
                             }
 
@@ -330,10 +332,8 @@ fun ImageViewerScreen(
                                 false
                             }
                         }
-                    } else {
-                        false
                     }
-                },
+                }.focusable(),
         containerColor = Color.Black,
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -346,7 +346,7 @@ fun ImageViewerScreen(
                     titleColor = Color.White,
                     modifier = Modifier.padding(top = safeTop),
                     navigationIcon = {
-                        IconButton(onClick = {
+                        IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                             performHaptic(AppHapticEffect.Click)
                             onBack()
                         }) {
@@ -384,11 +384,12 @@ fun ImageViewerScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "${pagerState.currentPage + 1} / ${imageUrls.size}",
+                                    text = "${currentPage + 1} / ${imageUrls.size}",
                                     color = MiuixTheme.colorScheme.onSurface,
                                     style = MiuixTheme.textStyles.title4,
                                 )
                                 IconButton(
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                                     onClick = {
                                         performHaptic(AppHapticEffect.Click)
                                         showSeekSlider = false
@@ -405,13 +406,19 @@ fun ImageViewerScreen(
                                 }
                             }
                             Slider(
-                                value = (pagerState.currentPage + 1).toFloat(),
+                                value = (currentPage + 1).toFloat(),
                                 onValueChange = { targetPage ->
                                     val targetIndex = (targetPage.toInt() - 1).coerceIn(0, imageUrls.lastIndex)
-                                    if (targetIndex != pagerState.currentPage) {
+                                    if (targetIndex != currentPage) {
                                         performHaptic(AppHapticEffect.Toggle)
                                         coroutineScope.launch {
-                                            pagerState.scrollToPage(targetIndex)
+                                            if (comicMode) {
+                                                comicListState.scrollToItem(
+                                                    targetIndex,
+                                                )
+                                            } else {
+                                                pagerState.scrollToPage(targetIndex)
+                                            }
                                         }
                                     }
                                 },
@@ -455,7 +462,7 @@ fun ImageViewerScreen(
                                         modifier = Modifier.size(20.dp),
                                     )
                                     Text(
-                                        text = "${pagerState.currentPage + 1} / ${imageUrls.size}",
+                                        text = "${currentPage + 1} / ${imageUrls.size}",
                                         color = MiuixTheme.colorScheme.onSurface,
                                         style = MiuixTheme.textStyles.title4,
                                     )
@@ -472,7 +479,7 @@ fun ImageViewerScreen(
                                         .background(buttonBgColor),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                IconButton(onClick = {
+                                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                                     performHaptic(AppHapticEffect.Toggle)
                                     triggerPop = true
                                     localBookmarked = !localBookmarked
@@ -507,7 +514,7 @@ fun ImageViewerScreen(
                                         .background(MiuixTheme.colorScheme.surfaceContainerHighest),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                IconButton(onClick = {
+                                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                                     performHaptic(AppHapticEffect.Click)
                                     copyCurrentPage()
                                 }) {
@@ -526,7 +533,7 @@ fun ImageViewerScreen(
                                         .background(MiuixTheme.colorScheme.surfaceContainerHighest),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                IconButton(onClick = {
+                                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                                     performHaptic(AppHapticEffect.Click)
                                     shareCurrentPage()
                                 }) {
@@ -593,7 +600,7 @@ fun ImageViewerScreen(
                     .background(Color.Black.copy(alpha = bgAlpha)),
         ) {
             if (ambientLightEnabled && ambientUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
-                val ambientUrl = ambientUrls.getOrNull(pagerState.currentPage) ?: ambientUrls.first()
+                val ambientUrl = ambientUrls.getOrNull(currentPage) ?: ambientUrls.first()
                 PixivImage(
                     url = ambientUrl,
                     contentDescription = null,
@@ -640,6 +647,7 @@ fun ImageViewerScreen(
                     )
                 } else if (comicMode) {
                     LazyColumn(
+                        state = comicListState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = 72.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),

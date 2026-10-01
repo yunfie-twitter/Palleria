@@ -751,6 +751,7 @@ class MainActivity : FragmentActivity() {
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_SCROLL &&
+            event.metaState and KeyEvent.META_CTRL_ON == 0 &&
             (event.source and InputDevice.SOURCE_CLASS_POINTER != 0)
         ) {
             val vScroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL)
@@ -794,6 +795,8 @@ class MainActivity : FragmentActivity() {
         return super.dispatchGenericMotionEvent(event)
     }
 
+    var desktopShortcutHandler: ((com.yunfie.illustia.platform.DesktopCommand) -> Boolean)? = null
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && handleKeyDown(event)) {
             return true
@@ -802,24 +805,11 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleKeyDown(event: KeyEvent): Boolean {
-        val isCtrl = event.isCtrlPressed
+        com.yunfie.illustia.platform.desktopCommand(event)?.let { command ->
+            return event.repeatCount > 0 || desktopShortcutHandler?.invoke(command) == true
+        }
         val isAlt = event.isAltPressed
         return when {
-            isCtrl && event.keyCode == KeyEvent.KEYCODE_R -> {
-                val state = viewModel.uiState.value
-                when {
-                    state.selectedIllust != null -> viewModel.refreshIllustDetail(state.selectedIllust.id)
-                    state.showUserPage && state.selectedUser != null -> viewModel.openUserPage(state.selectedUser.id)
-                    else -> viewModel.refreshHome()
-                }
-                true
-            }
-
-            isCtrl && event.keyCode == KeyEvent.KEYCODE_F -> {
-                AppShortcutRouter.trigger(AppShortcutDestination.Search)
-                true
-            }
-
             event.keyCode == KeyEvent.KEYCODE_ESCAPE ||
                 (isAlt && event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -> {
                 if (onBackPressedDispatcher.hasEnabledCallbacks()) {

@@ -256,11 +256,20 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun openNovel(novel: NovelPreview) {
+    fun openNovel(novel: NovelPreview) = loadNovel(novel, forceRefresh = false)
+
+    fun refreshNovel() {
+        _uiState.value.selectedNovel?.let { loadNovel(it, forceRefresh = true) }
+    }
+
+    private fun loadNovel(
+        novel: NovelPreview,
+        forceRefresh: Boolean,
+    ) {
         _uiState.update { it.copy(selectedNovel = novel, selectedNovelText = null) }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val text = repository.loadNovelText(novel.id)
+                val text = repository.loadNovelText(novel.id, forceRefresh = forceRefresh)
                 _uiState.update {
                     if (it.selectedNovel?.id != novel.id) it else it.copy(selectedNovelText = text)
                 }

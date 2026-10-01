@@ -7,6 +7,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.core.content.FileProvider
 import coil3.SingletonImageLoader
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.toBitmap
@@ -30,6 +32,7 @@ object ImageClipboardHelper {
                     ImageRequest
                         .Builder(context)
                         .data(imageUrl)
+                        .httpHeaders(NetworkHeaders.Builder().set("Referer", "https://www.pixiv.net/").build())
                         .build()
                 val result = imageLoader.execute(request)
                 if (result !is SuccessResult) return@withContext false

@@ -353,35 +353,16 @@ fun IllustDetailScreen(
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {},
-                modifier =
-                    Modifier.combinedClickable(
-                        onClick = {
-                            performAppHapticFeedback(context, haptic, hapticMode)
-                            onBookmark()
-                        },
-                        onLongClick =
-                            if (onBookmarkLongClick != null) {
-                                {
-                                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
-                                    onBookmarkLongClick()
-                                }
-                            } else {
-                                null
-                            },
-                    ),
-                shape = RoundedCornerShape(18.dp),
-                containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
-            ) {
-                AnimatedContent(targetState = illust.isBookmarked, label = "detail-bookmark-fab") { bookmarked ->
-                    Icon(
-                        imageVector = if (bookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                        contentDescription = stringResource(R.string.action_bookmark),
-                        tint = if (bookmarked) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-            }
+            BookmarkHeartButton(
+                isBookmarked = illust.isBookmarked,
+                onClick = onBookmark,
+                onLongClick = onBookmarkLongClick,
+                size = 56.dp,
+                iconSize = 26.dp,
+                cornerRadius = 18.dp,
+                activeBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+                inactiveBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+            )
         },
     ) { scaffoldPadding ->
         val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
