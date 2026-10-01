@@ -44,7 +44,8 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 com.yunfie.illustia.platform.ArtworkDownloadService
                     .acquire(getApplication())
-            } catch (error: RuntimeException) {
+            } catch (expectedFailure: RuntimeException) {
+                GlitchTipTelemetry.recordException(expectedFailure, tag = "download_service_start")
                 _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
                 return
             }
@@ -106,7 +107,8 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 com.yunfie.illustia.platform.ArtworkDownloadService
                     .acquire(getApplication())
-            } catch (error: RuntimeException) {
+            } catch (expectedFailure: RuntimeException) {
+                GlitchTipTelemetry.recordException(expectedFailure, tag = "download_service_start")
                 _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
                 return
             }
@@ -126,8 +128,9 @@ abstract class IllustiaLibraryNavigationModule(
                             response.body.byteStream().use { it.copyTo(output) }
                         }
                     }
-                } catch (error: Exception) {
-                    if (isCancellation(error)) throw error
+                } catch (expectedFailure: Exception) {
+                    if (isCancellation(expectedFailure)) throw expectedFailure
+                    GlitchTipTelemetry.recordException(expectedFailure, tag = "download_document")
                     _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
                 }
             }.invokeOnCompletion { keepAlive.close() }

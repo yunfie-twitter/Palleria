@@ -404,8 +404,6 @@ fun SearchScreen(
 private fun SearchResultsArea(
     state: SearchUiState,
     viewModel: IllustiaViewModel,
-    focusRequest: Int = 0,
-    onFocusRequestHandled: () -> Unit = {},
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {

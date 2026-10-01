@@ -806,8 +806,7 @@ class MainActivity : FragmentActivity() {
 
     private fun handleKeyDown(event: KeyEvent): Boolean {
         com.yunfie.illustia.platform.desktopCommand(event)?.let { command ->
-            if (event.repeatCount > 0) return true
-            return desktopShortcutHandler?.invoke(command) == true
+            return event.repeatCount > 0 || desktopShortcutHandler?.invoke(command) == true
         }
         val isAlt = event.isAltPressed
         return when {

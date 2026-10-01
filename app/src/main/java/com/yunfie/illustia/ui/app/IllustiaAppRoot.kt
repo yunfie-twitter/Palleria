@@ -392,9 +392,13 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             val route = backStack.lastOrNull()
             when (command) {
                 DesktopCommand.Search -> {
-                    if (route != AppRoute.Search && route !is AppRoute.SearchResults && route !is AppRoute.TagSearch &&
-                        !(route == AppRoute.Main && selectedTab == AppTab.Search)
-                    ) {
+                    val hasSearchBar =
+                        when (route) {
+                            AppRoute.Search, is AppRoute.SearchResults, is AppRoute.TagSearch -> true
+                            AppRoute.Main -> selectedTab == AppTab.Search
+                            else -> false
+                        }
+                    if (!hasSearchBar) {
                         navigate(AppRoute.Search)
                     }
                     searchFocusRequest++

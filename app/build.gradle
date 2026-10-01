@@ -85,6 +85,8 @@ android {
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
+            // Robolectric's Android shared-memory setup accesses FileDescriptor via SharedSecrets.
+            jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED'
             useJUnitPlatform()
         }
     }
