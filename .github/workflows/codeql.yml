@@ -57,6 +57,7 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+        cache: 'gradle'
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
@@ -67,10 +68,19 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
+    - name: Cache cargo-ndk
+      uses: actions/cache@v4
+      id: cache-cargo-ndk
+      with:
+        path: ~/.cargo/bin/cargo-ndk
+        key: cargo-ndk-${{ runner.os }}-4.0.0
+
     - name: Set up Rust Android toolchain
       run: |
         rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
-        cargo install cargo-ndk --locked
+        if [ ! -f ~/.cargo/bin/cargo-ndk ]; then
+          cargo install cargo-ndk --locked
+        fi
 
     - name: Build for CodeQL
       shell: bash
