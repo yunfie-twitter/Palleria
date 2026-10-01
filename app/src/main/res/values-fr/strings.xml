@@ -1035,4 +1035,7 @@
     <string name="update_auto_download_desc">Télécharger automatiquement en arrière-plan (installation automatique si Shizuku est activé)</string>
     <string name="search_age_restriction">Restriction d’âge</string>
     <string name="search_age_all">Tout</string>
+    <string name="desktop_open_new_tab">Ouvrir dans un nouvel onglet du navigateur</string>
+    <string name="desktop_bookmark_private">Favori privé</string>
+    <string name="desktop_save_as">Enregistrer sous</string>
 </resources>

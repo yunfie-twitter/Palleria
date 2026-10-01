@@ -83,6 +83,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun AppNavHost(
     appState: IllustiaAppStateBundle,
+    searchFocusRequest: Int = 0,
+    onSearchFocusHandled: () -> Unit = {},
+    viewerRefreshRequest: Int = 0,
     viewModel: IllustiaViewModel,
     backStack: MutableList<NavKey>,
     detailSnapshots: Map<Long, DetailEntrySnapshot>,
@@ -112,6 +115,8 @@ internal fun AppNavHost(
         entryProvider<NavKey> {
             entry(AppRoute.Main) {
                 MainSurface(
+                    onSearchFocusHandled = onSearchFocusHandled,
+                    searchFocusRequest = if (backStack.lastOrNull() == AppRoute.Main) searchFocusRequest else 0,
                     appState = appState,
                     viewModel = viewModel,
                     selectedTab = selectedTab,
@@ -147,6 +152,8 @@ internal fun AppNavHost(
             ) {
                 val searchState by viewModel.searchState.collectAsStateWithLifecycle()
                 SearchScreen(
+                    onFocusRequestHandled = onSearchFocusHandled,
+                    focusRequest = if (backStack.lastOrNull() == AppRoute.Search) searchFocusRequest else 0,
                     state = searchState,
                     viewModel = viewModel,
                     isResultRoute = false,
@@ -194,6 +201,8 @@ internal fun AppNavHost(
                         )
                     }
                 SearchScreen(
+                    onFocusRequestHandled = onSearchFocusHandled,
+                    focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
                     state = effectiveState,
                     viewModel = viewModel,
                     isResultRoute = true,
@@ -241,6 +250,8 @@ internal fun AppNavHost(
                         )
                     }
                 SearchScreen(
+                    onFocusRequestHandled = onSearchFocusHandled,
+                    focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
                     state = effectiveState,
                     viewModel = viewModel,
                     isResultRoute = true,
@@ -361,22 +372,27 @@ internal fun AppNavHost(
                 metadata = artworkMetadata,
             ) {
                 appState.state.imageViewerIllust?.let { illust ->
-                    ImageViewerScreen(
-                        illust = illust,
-                        startPage = appState.state.imageViewerStartPage,
-                        onBack = onPopRoute,
-                        isBookmarked = illust.isBookmarked,
-                        onBookmark = { viewModel.toggleBookmark(illust) },
-                        onMessage = viewModel::showMessage,
-                        fullscreenQuality = appState.state.settings.fullscreenQuality,
-                        prefetchImages = appState.state.settings.prefetchImages,
-                        mangaReaderMode = appState.state.settings.mangaReaderMode,
-                        onPageChanged = viewModel::updateImageViewerPage,
-                        loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
-                        ambientLightEnabled = appState.state.settings.dynamicAmbientViewerEnabled,
-                        volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
-                        swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
-                    )
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.yunfie.illustia.ui.components.LocalImageRefreshRequest provides viewerRefreshRequest,
+                    ) {
+                        ImageViewerScreen(
+                            illust = illust,
+                            startPage = appState.state.imageViewerStartPage,
+                            onSave = viewModel::saveImage,
+                            onBack = onPopRoute,
+                            isBookmarked = illust.isBookmarked,
+                            onBookmark = { viewModel.toggleBookmark(illust) },
+                            onMessage = viewModel::showMessage,
+                            fullscreenQuality = appState.state.settings.fullscreenQuality,
+                            prefetchImages = appState.state.settings.prefetchImages,
+                            mangaReaderMode = appState.state.settings.mangaReaderMode,
+                            onPageChanged = viewModel::updateImageViewerPage,
+                            loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
+                            ambientLightEnabled = appState.state.settings.dynamicAmbientViewerEnabled,
+                            volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
+                            swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
+                        )
+                    }
                 }
             }
             entry(AppRoute.NovelList) {

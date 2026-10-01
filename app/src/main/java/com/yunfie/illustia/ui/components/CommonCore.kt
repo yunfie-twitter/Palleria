@@ -22,6 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -119,9 +124,6 @@ fun adaptiveIllustColumns(settings: AppSettings): Int {
     }
 }
 
-private const val PINCH_ZOOM_IN_THRESHOLD = 1.28f
-private const val PINCH_ZOOM_OUT_THRESHOLD = 0.78f
-
 @Composable
 fun Modifier.pinchToChangeColumns(
     enabled: Boolean,
@@ -136,47 +138,49 @@ fun Modifier.pinchToChangeColumns(
     val currentColumnsState = rememberUpdatedState(currentColumns)
     val onColumnsChangeState = rememberUpdatedState(onColumnsChange)
 
-    return this.pointerInput(enabled) {
-        awaitEachGesture {
-            var zoomAccumulator = 1f
-
-            do {
-                val event = awaitPointerEvent()
-            } while (event.changes.size < 2 && event.changes.any { it.pressed })
-
-            while (true) {
-                val event = awaitPointerEvent()
-                val activePointers = event.changes.filter { it.pressed }
-                if (activePointers.size < 2) break
-
-                val p1 = activePointers[0]
-                val p2 = activePointers[1]
-                val prevDistance = (p1.previousPosition - p2.previousPosition).getDistance()
-                val currentDistance = (p1.position - p2.position).getDistance()
-
-                if (prevDistance > 0f) {
-                    val zoom = currentDistance / prevDistance
-                    zoomAccumulator *= zoom
-
-                    if (zoomAccumulator > PINCH_ZOOM_IN_THRESHOLD) {
-                        val next = (currentColumnsState.value - 1).coerceAtLeast(1)
-                        if (next != currentColumnsState.value) {
-                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
-                            onColumnsChangeState.value(next)
+    return this
+        .pointerInput(enabled) {
+            awaitPointerEventScope {
+                var scrollAccumulator = 0f
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    if (event.type == PointerEventType.Scroll && event.keyboardModifiers.isCtrlPressed) {
+                        scrollAccumulator += event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
+                        if (kotlin.math.abs(scrollAccumulator) >= 1f) {
+                            val direction = if (scrollAccumulator > 0) 1 else -1
+                            onColumnsChangeState.value((currentColumnsState.value + direction).coerceIn(1, 4))
+                            scrollAccumulator = 0f
                         }
-                        zoomAccumulator = 1f
-                    } else if (zoomAccumulator < PINCH_ZOOM_OUT_THRESHOLD) {
-                        val next = (currentColumnsState.value + 1).coerceAtMost(4)
-                        if (next != currentColumnsState.value) {
-                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
-                            onColumnsChangeState.value(next)
-                        }
-                        zoomAccumulator = 1f
+                        event.changes.forEach { it.consume() }
                     }
                 }
             }
+        }.pointerInput(enabled) {
+            awaitEachGesture {
+                val gesture = GridPinchGesture()
+                do {
+                    // Claim the second finger before card long-press detectors see it.
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val active = event.changes.filter { it.pressed }
+                    val zoom =
+                        if (active.size >= 2 && active[0].previousPressed && active[1].previousPressed) {
+                            val previous = (active[0].previousPosition - active[1].previousPosition).getDistance()
+                            if (previous > 0f) (active[0].position - active[1].position).getDistance() / previous else 1f
+                        } else {
+                            1f
+                        }
+                    val update = gesture.update(active.size, zoom)
+                    if (update.consume) event.changes.forEach { it.consume() }
+                    if (update.columnDelta != 0) {
+                        val next = (currentColumnsState.value + update.columnDelta).coerceIn(1, 4)
+                        if (next != currentColumnsState.value) {
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                            onColumnsChangeState.value(next)
+                        }
+                    }
+                } while (event.changes.any { it.pressed })
+            }
         }
-    }
 }
 
 fun Modifier.horizontalPadding(padding: Dp): Modifier =
@@ -199,17 +203,18 @@ fun Modifier.miuixClickable(
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
-    return pressable(
-        interactionSource = null,
-        indication = SinkFeedback(sinkAmount = pressedScale),
-    ).clickable(
-        interactionSource = null,
-        indication = null,
-        onClick = {
-            if (haptic) performAppHapticFeedback(context, hapticFeedback, hapticMode)
-            onClick()
-        },
-    )
+    return pointerHoverIcon(PointerIcon.Hand)
+        .pressable(
+            interactionSource = null,
+            indication = SinkFeedback(sinkAmount = pressedScale),
+        ).clickable(
+            interactionSource = null,
+            indication = null,
+            onClick = {
+                if (haptic) performAppHapticFeedback(context, hapticFeedback, hapticMode)
+                onClick()
+            },
+        )
 }
 
 @Composable

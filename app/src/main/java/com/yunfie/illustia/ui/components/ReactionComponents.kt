@@ -31,9 +31,13 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -359,14 +363,27 @@ fun BookmarkHeartButton(
     val context = LocalContext.current
     val hapticMode = LocalAppHapticMode.current
     var userClicked by remember { mutableStateOf(false) }
+    var privateRequested by remember { mutableStateOf(false) }
+    val actionLabel = stringResource(if (isBookmarked) R.string.action_remove_bookmark else R.string.action_bookmark)
     var previousBookmarked by remember { mutableStateOf(isBookmarked) }
     var stage by remember(isBookmarked) {
         val initial =
             when {
-                isBookmarked && !previousBookmarked && userClicked -> BookmarkButtonStage.CHECK
-                !isBookmarked && previousBookmarked && userClicked -> BookmarkButtonStage.REMOVING
-                isBookmarked -> BookmarkButtonStage.BOOKMARKED
-                else -> BookmarkButtonStage.UNBOOKMARKED
+                isBookmarked && !previousBookmarked && userClicked -> {
+                    if (privateRequested) BookmarkButtonStage.PRIVATE_CHECK else BookmarkButtonStage.CHECK
+                }
+
+                !isBookmarked && previousBookmarked && userClicked -> {
+                    BookmarkButtonStage.REMOVING
+                }
+
+                isBookmarked -> {
+                    BookmarkButtonStage.BOOKMARKED
+                }
+
+                else -> {
+                    BookmarkButtonStage.UNBOOKMARKED
+                }
             }
         previousBookmarked = isBookmarked
         mutableStateOf(initial)
@@ -408,9 +425,13 @@ fun BookmarkHeartButton(
         modifier
             .size(size)
             .squircleSurface(if (active) activeBackground else inactiveBackground, cornerRadius)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .semantics { contentDescription = actionLabel }
             .combinedClickable(
+                role = androidx.compose.ui.semantics.Role.Button,
                 onClick = {
                     userClicked = true
+                    privateRequested = false
                     performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
                     onClick()
                 },
@@ -418,7 +439,7 @@ fun BookmarkHeartButton(
                     if (onLongClick != null) {
                         {
                             userClicked = true
-                            stage = BookmarkButtonStage.PRIVATE_CHECK
+                            privateRequested = true
                             performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
                             onLongClick()
                         }

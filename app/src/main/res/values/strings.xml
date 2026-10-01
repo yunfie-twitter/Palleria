@@ -1195,4 +1195,7 @@
     <string name="flag_quick_peek_shared_element_transition_desc">QuickPeekプレビューの表示・非表示アニメーションを共有要素風の滑らかなトランジションにします</string>
     <string name="setting_quick_peek_shared_element_transition_title">共有要素風トランジション</string>
     <string name="setting_quick_peek_shared_element_transition_desc">カード位置から拡大する滑らかな共有要素アニメーションを適用します</string>
+    <string name="desktop_open_new_tab">ブラウザーの新しいタブで開く</string>
+    <string name="desktop_bookmark_private">非公開ブックマーク</string>
+    <string name="desktop_save_as">別名で保存</string>
 </resources>

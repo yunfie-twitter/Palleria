@@ -23,10 +23,13 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -39,6 +42,7 @@ import com.yunfie.illustia.IllustiaNavigationRequest
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
+import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
@@ -100,6 +104,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val homeScrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val pendingShortcut by AppShortcutRouter.pending.collectAsStateWithLifecycle()
+    var searchFocusRequest by remember { mutableStateOf(0) }
+    var viewerRefreshRequest by remember { mutableStateOf(0) }
     val discordRpcManager =
         remember(state.settings.discordRpcEnabled) {
             if (state.settings.discordRpcEnabled) {
@@ -379,6 +385,48 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         AppShortcutRouter.consume(destination)
     }
 
+    val desktopHandler by rememberUpdatedState<(DesktopCommand) -> Boolean> { command ->
+        if (state.appLocked || state.privacyLocked || !state.sessionReady) {
+            false
+        } else {
+            val route = backStack.lastOrNull()
+            when (command) {
+                DesktopCommand.Search -> {
+                    if (route != AppRoute.Search && route !is AppRoute.SearchResults && route !is AppRoute.TagSearch &&
+                        !(route == AppRoute.Main && selectedTab == AppTab.Search)
+                    ) {
+                        navigate(AppRoute.Search)
+                    }
+                    searchFocusRequest++
+                    true
+                }
+
+                DesktopCommand.Refresh -> {
+                    if (route == AppRoute.ImageViewer) {
+                        viewerRefreshRequest++
+                        true
+                    } else {
+                        refreshDesktopDestination(route, selectedTab, state, viewModel)
+                    }
+                }
+
+                DesktopCommand.CloseReader -> {
+                    if (route == AppRoute.ImageViewer || route == AppRoute.NovelReader || route == AppRoute.SavedIllustViewer) {
+                        popRoute()
+                        true
+                    } else {
+                        false
+                    }
+                }
+            }
+        }
+    }
+    DisposableEffect(context) {
+        val activity = context as? com.yunfie.illustia.MainActivity
+        activity?.desktopShortcutHandler = { desktopHandler(it) }
+        onDispose { activity?.desktopShortcutHandler = null }
+    }
+
     LaunchedEffect(state.message) {
         state.message?.let { message ->
             snackbarHostState.showSnackbar(
@@ -599,7 +647,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val platformHapticFeedback = LocalHapticFeedback.current
     val hapticsSupported = remember(context) { isAppHapticsSupported(context) }
     val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
+    val desktopActions =
+        com.yunfie.illustia.ui.components
+            .rememberArtworkDesktopActions(viewModel)
     CompositionLocalProvider(
+        com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
@@ -668,6 +720,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                             val pageIndex = tabs.indexOf(tab)
                                             val isSelected = (backStack.lastOrNull() == AppRoute.Main) && (selectedTab == tab)
                                             NavigationRailItem(
+                                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                                                 selected = isSelected,
                                                 onClick = {
                                                     viewModel.closeAccountSwitcher()
@@ -696,6 +749,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                     color = MiuixTheme.colorScheme.surface,
                                 ) {
                                     AppNavHost(
+                                        searchFocusRequest = searchFocusRequest,
+                                        onSearchFocusHandled = { searchFocusRequest = 0 },
+                                        viewerRefreshRequest = viewerRefreshRequest,
                                         appState = appState,
                                         viewModel = viewModel,
                                         backStack = backStack,

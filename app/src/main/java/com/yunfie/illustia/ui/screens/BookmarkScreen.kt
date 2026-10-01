@@ -87,6 +87,9 @@ fun BookmarkScreen(
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val watchlistStore = remember(repository) { WatchlistStore(repository) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
+    LaunchedEffect(viewModel, watchlistStore) {
+        viewModel.watchlistRefreshRequests.collect { watchlistStore.fetch() }
+    }
     val pagerState =
         rememberPagerState(
             initialPage = chrome.selectedTab,

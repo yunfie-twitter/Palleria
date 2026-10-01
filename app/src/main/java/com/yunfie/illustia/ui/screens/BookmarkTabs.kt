@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -710,7 +712,7 @@ internal fun CompactBookmarkTabs(
             ),
         selectedTabIndex = selectedTab,
         onTabSelected = onSelect,
-        modifier = modifier,
+        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
         colors =
             TabRowDefaults.tabRowColors(
                 backgroundColor = scheme.surfaceContainer.copy(alpha = 0.44f),

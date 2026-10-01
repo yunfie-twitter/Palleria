@@ -40,50 +40,97 @@ abstract class IllustiaLibraryNavigationModule(
         url: String,
         filename: String,
     ) {
+        val keepAlive =
+            try {
+                com.yunfie.illustia.platform.ArtworkDownloadService
+                    .acquire(getApplication())
+            } catch (error: RuntimeException) {
+                _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+                return
+            }
         val queueId = System.nanoTime()
         val queuedIllust = resolveDownloadIllust(filename)
         val queueTitle = queuedIllust?.title?.takeIf { it.isNotBlank() } ?: filename
         val queueSubtitle =
             queuedIllust?.artistName?.takeIf { it.isNotBlank() }
                 ?: str(R.string.download_queue_waiting)
-        viewModelScope.launch(Dispatchers.IO) {
-            enqueueDownloadQueue(queueId, queueTitle, queueSubtitle, DownloadQueueStatus.Waiting)
-            var terminalStatus: DownloadQueueStatus? = null
-            acquireDownloadSlot()
-            updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
-            _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
-            try {
-                GlitchTipTelemetry.traceAsync("download.artwork", "download") {
-                    val currentIllust = resolveDownloadIllust(filename)
-                    val targetName = buildDownloadPath(filename, currentIllust)
-                    val checkUrl = resolveCheckUrl(url, currentIllust)
-                    val (finalName, clearOld) =
-                        resolveDuplicateTarget(targetName, checkUrl, _uiState.value.settings.duplicateSaveMode)
-                            ?: run {
-                                terminalStatus = DownloadQueueStatus.Skipped
-                                _uiState.update {
-                                    it.copy(loadState = LoadState.Loaded, message = str(R.string.msg_save_skipped_duplicate))
+        val saveJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                enqueueDownloadQueue(queueId, queueTitle, queueSubtitle, DownloadQueueStatus.Waiting)
+                var terminalStatus: DownloadQueueStatus? = null
+                var acquiredSlot = false
+                try {
+                    acquireDownloadSlot()
+                    acquiredSlot = true
+                    updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
+                    _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+                    GlitchTipTelemetry.traceAsync("download.artwork", "download") {
+                        val currentIllust = resolveDownloadIllust(filename)
+                        val targetName = buildDownloadPath(filename, currentIllust)
+                        val checkUrl = resolveCheckUrl(url, currentIllust)
+                        val (finalName, clearOld) =
+                            resolveDuplicateTarget(targetName, checkUrl, _uiState.value.settings.duplicateSaveMode)
+                                ?: run {
+                                    terminalStatus = DownloadQueueStatus.Skipped
+                                    _uiState.update {
+                                        it.copy(loadState = LoadState.Loaded, message = str(R.string.msg_save_skipped_duplicate))
+                                    }
+                                    return@traceAsync
                                 }
-                                return@traceAsync
-                            }
-                    executeGalleryDownload(currentIllust, url, finalName, clearOld)
-                    terminalStatus = DownloadQueueStatus.Completed
-                    _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                        executeGalleryDownload(currentIllust, url, finalName, clearOld)
+                        terminalStatus = DownloadQueueStatus.Completed
+                        _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                    }
+                } catch (expectedFailure: Exception) {
+                    val error = expectedFailure
+                    if (isCancellation(error)) {
+                        throw error
+                    }
+                    terminalStatus = DownloadQueueStatus.Failed
+                    if (handleAuthExpired(error)) return@launch
+                    GlitchTipTelemetry.recordException(error, tag = "download_image", extras = mapOf("url" to url, "filename" to filename))
+                    _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
+                } finally {
+                    terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
+                    if (acquiredSlot) kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { releaseDownloadSlot() }
                 }
-            } catch (expectedFailure: Exception) {
-                val error = expectedFailure
-                if (isCancellation(error)) {
-                    throw error
-                }
-                terminalStatus = DownloadQueueStatus.Failed
-                if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "download_image", extras = mapOf("url" to url, "filename" to filename))
-                _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
-            } finally {
-                terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
-                releaseDownloadSlot()
             }
-        }
+        saveJob.invokeOnCompletion { keepAlive.close() }
+    }
+
+    fun saveImageToDocument(
+        url: String,
+        uri: android.net.Uri,
+    ) {
+        val keepAlive =
+            try {
+                com.yunfie.illustia.platform.ArtworkDownloadService
+                    .acquire(getApplication())
+            } catch (error: RuntimeException) {
+                _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+                return
+            }
+        viewModelScope
+            .launch(Dispatchers.IO) {
+                try {
+                    val request =
+                        Request
+                            .Builder()
+                            .url(proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl))
+                            .header("Referer", "https://www.pixiv.net/")
+                            .build()
+                    downloadClient.newCall(request).execute().use { response ->
+                        check(response.isSuccessful) { "HTTP ${response.code}" }
+                        getApplication<Application>().contentResolver.openOutputStream(uri, "wt").use { output ->
+                            checkNotNull(output)
+                            response.body.byteStream().use { it.copyTo(output) }
+                        }
+                    }
+                } catch (error: Exception) {
+                    if (isCancellation(error)) throw error
+                    _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+                }
+            }.invokeOnCompletion { keepAlive.close() }
     }
 
     private fun resolveCheckUrl(

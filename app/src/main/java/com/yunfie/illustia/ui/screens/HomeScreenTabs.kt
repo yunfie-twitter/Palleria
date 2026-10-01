@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
@@ -28,6 +30,6 @@ internal fun HomeTabRow(
         tabs = tabs,
         selectedTabIndex = selectedTabIndex,
         onTabSelected = onTabSelected,
-        modifier = modifier,
+        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
     )
 }

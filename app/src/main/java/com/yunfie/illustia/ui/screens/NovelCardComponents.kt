@@ -31,6 +31,8 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -116,7 +118,7 @@ internal fun NovelCard(
 ) {
     val cardPreferences = LocalArtworkCardPreferences.current
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().pointerHoverIcon(PointerIcon.Hand),
         cornerRadius = 14.dp,
         insideMargin = PaddingValues(0.dp),
         colors =

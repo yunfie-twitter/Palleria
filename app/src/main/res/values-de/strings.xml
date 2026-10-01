@@ -1035,4 +1035,7 @@
     <string name="update_auto_download_desc">Updates automatisch im Hintergrund herunterladen (automatische Installation mit Shizuku)</string>
     <string name="search_age_restriction">Altersbeschränkung</string>
     <string name="search_age_all">Alle</string>
+    <string name="desktop_open_new_tab">In neuem Browser-Tab öffnen</string>
+    <string name="desktop_bookmark_private">Privates Lesezeichen</string>
+    <string name="desktop_save_as">Speichern unter</string>
 </resources>

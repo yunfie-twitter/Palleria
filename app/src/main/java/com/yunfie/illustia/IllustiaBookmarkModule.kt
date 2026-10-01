@@ -409,6 +409,13 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
+    private val _watchlistRefreshRequests = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val watchlistRefreshRequests: kotlinx.coroutines.flow.SharedFlow<Unit> = _watchlistRefreshRequests
+
+    fun refreshWatchlist() {
+        _watchlistRefreshRequests.tryEmit(Unit)
+    }
+
     fun toggleBookmark(
         illust: Illust,
         restrict: com.yunfie.illustia.models.Restrict? = null,
@@ -454,6 +461,7 @@ abstract class IllustiaBookmarkModule(
                             settings.bookmarkRestrict
                         }
                 val updated = repository.toggleBookmark(illust, restrict)
+                updateIllustEverywhere(updated)
                 if (updated.isBookmarked) {
                     if (settings.followOnLike && illust.artistId > 0L) {
                         repository.followUser(illust.artistId, settings.bookmarkRestrict)
@@ -466,7 +474,6 @@ abstract class IllustiaBookmarkModule(
                         saveImage(updated.originalImageUrl ?: updated.imageUrl, "illustia_${updated.id}")
                     }
                 }
-                updateIllustEverywhere(updated)
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) {

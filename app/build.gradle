@@ -83,6 +83,7 @@ android {
     }
 
     testOptions {
+        unitTests.includeAndroidResources = true
         unitTests.all {
             useJUnitPlatform()
         }
@@ -370,7 +371,10 @@ dependencies {
     implementation libs.glance.material3
     implementation libs.work.runtime.ktx
 
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
+
     // Test dependencies
+    testImplementation "androidx.compose.ui:ui-test-junit4"
     testImplementation libs.kotest.runner
     testImplementation libs.kotest.assertions
     testImplementation libs.kotest.property
