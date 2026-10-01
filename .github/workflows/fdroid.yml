@@ -328,11 +328,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: 9.4.1
-          cache-disabled: true
 
       # --------------------------------------------------------
       # Rust Android Toolchain
       # --------------------------------------------------------
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust/pixiv-api -> rust/pixiv-api/target"
+
+      - name: Cache cargo-ndk
+        uses: actions/cache@v4
+        id: cache-cargo-ndk
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: cargo-ndk-${{ runner.os }}-4.0.0
+
       - name: Set up Rust Android toolchain
         shell: bash
         run: |
@@ -343,7 +354,9 @@ jobs:
             armv7-linux-androideabi \
             x86_64-linux-android
 
-          cargo install cargo-ndk --locked
+          if [ ! -f ~/.cargo/bin/cargo-ndk ]; then
+            cargo install cargo-ndk --locked
+          fi
 
       # --------------------------------------------------------
       # Keystore
@@ -453,6 +466,15 @@ jobs:
       # --------------------------------------------------------
       # fdroidserver
       # --------------------------------------------------------
+      - name: Cache pipx and fdroidserver
+        uses: actions/cache@v4
+        id: cache-fdroidserver
+        with:
+          path: |
+            ~/.local/share/pipx
+            ~/.local/bin
+          key: fdroidserver-${{ runner.os }}-pipx
+
       - name: Install fdroidserver
         shell: bash
         run: |
@@ -471,7 +493,9 @@ jobs:
             zlib1g-dev \
             rsync
 
-          pipx install fdroidserver
+          if [ "${{ steps.cache-fdroidserver.outputs.cache-hit }}" != "true" ]; then
+            pipx install fdroidserver
+          fi
 
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
