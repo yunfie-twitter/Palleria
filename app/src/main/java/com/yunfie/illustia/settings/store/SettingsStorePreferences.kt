@@ -221,6 +221,8 @@ internal fun readFromDataStore(
         dynamicAmbientViewerEnabled = preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] ?: true,
         imageViewerSwipeToDismissEnabled = preferences[IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED] ?: true,
         quickPeekEnabled = preferences[QUICK_PEEK_ENABLED] ?: true,
+        gridPinchToZoom = preferences[GRID_PINCH_TO_ZOOM] ?: true,
+        quickPeekSharedElementTransition = preferences[QUICK_PEEK_SHARED_ELEMENT_TRANSITION] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -385,6 +387,8 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         dynamicAmbientViewerEnabled = preferences.getBoolean(KEY_DYNAMIC_AMBIENT_VIEWER_ENABLED, true),
         imageViewerSwipeToDismissEnabled = preferences.getBoolean(KEY_IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED, true),
         quickPeekEnabled = preferences.getBoolean(KEY_QUICK_PEEK_ENABLED, true),
+        gridPinchToZoom = preferences.getBoolean(KEY_GRID_PINCH_TO_ZOOM, true),
+        quickPeekSharedElementTransition = preferences.getBoolean(KEY_QUICK_PEEK_SHARED_ELEMENT_TRANSITION, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -547,6 +551,8 @@ internal fun writeToDataStore(
     preferences[DYNAMIC_AMBIENT_VIEWER_ENABLED] = settings.dynamicAmbientViewerEnabled
     preferences[IMAGE_VIEWER_SWIPE_TO_DISMISS_ENABLED] = settings.imageViewerSwipeToDismissEnabled
     preferences[QUICK_PEEK_ENABLED] = settings.quickPeekEnabled
+    preferences[GRID_PINCH_TO_ZOOM] = settings.gridPinchToZoom
+    preferences[QUICK_PEEK_SHARED_ELEMENT_TRANSITION] = settings.quickPeekSharedElementTransition
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

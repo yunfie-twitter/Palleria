@@ -30,6 +30,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.isMutedByTags
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -283,6 +284,7 @@ internal fun AppNavHost(
                         firstComment = snapshot.firstComment,
                         onBack = onPopRoute,
                         onBookmark = { viewModel.toggleBookmark(illust) },
+                        onBookmarkLongClick = { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) },
                         onRefresh = { viewModel.refreshIllustDetail(illust.id) },
                         onOpenUser = viewModel::openUser,
                         onOpenComments = {

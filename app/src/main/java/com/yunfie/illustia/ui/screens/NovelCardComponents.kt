@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,9 +43,13 @@ import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.squircle.squircleBackground
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 @Composable
 internal fun NovelCardSkeleton(
@@ -70,71 +75,34 @@ internal fun NovelCardSkeleton(
             }
         }
 
-    ElevatedPanel(modifier = modifier.fillMaxWidth()) {
-        Row(
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .width(104.dp)
-                        .aspectRatio(0.76f)
-                        .clip(RoundedCornerShape(18.dp))
-                        .then(shimmerModifier),
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(0.85f)
-                            .height(18.dp)
-                            .clip(CircleShape)
-                            .then(shimmerModifier),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(0.45f)
-                            .height(14.dp)
-                            .clip(CircleShape)
-                            .then(shimmerModifier),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(0.9f)
-                            .height(14.dp)
-                            .clip(CircleShape)
-                            .then(shimmerModifier),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .width(60.dp)
-                                .height(24.dp)
-                                .clip(RoundedCornerShape(999.dp))
-                                .then(shimmerModifier),
-                    )
-                    Box(
-                        modifier =
-                            Modifier
-                                .width(70.dp)
-                                .height(24.dp)
-                                .clip(RoundedCornerShape(999.dp))
-                                .then(shimmerModifier),
-                    )
-                }
-            }
-        }
+                    .aspectRatio(0.72f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .then(shimmerModifier),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(16.dp)
+                    .clip(CircleShape)
+                    .then(shimmerModifier),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(12.dp)
+                    .clip(CircleShape)
+                    .then(shimmerModifier),
+        )
     }
 }
 
@@ -144,23 +112,31 @@ internal fun NovelCard(
     progress: com.yunfie.illustia.models.NovelReadingProgress? = null,
     onClick: () -> Unit,
     onStatusToggle: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     val cardPreferences = LocalArtworkCardPreferences.current
-    ElevatedPanel(modifier = Modifier.fillMaxWidth().miuixClickable(onClick = onClick)) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        cornerRadius = 14.dp,
+        insideMargin = PaddingValues(0.dp),
+        colors =
+            CardDefaults.defaultColors(
+                color = Color.Transparent,
+                contentColor = MiuixTheme.colorScheme.onBackground,
+            ),
+        pressFeedbackType = PressFeedbackType.Sink,
+        onClick = onClick,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Box(
                 modifier =
                     Modifier
-                        .width(104.dp)
-                        .aspectRatio(0.76f)
-                        .clip(RoundedCornerShape(18.dp)),
+                        .fillMaxWidth()
+                        .aspectRatio(0.72f)
+                        .clip(RoundedCornerShape(14.dp)),
             ) {
                 PixivImage(
                     url = novel.coverUrl,
@@ -177,7 +153,7 @@ internal fun NovelCard(
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f)),
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
                                 ),
                             ),
                 )
@@ -195,83 +171,106 @@ internal fun NovelCard(
                                 .padding(horizontal = 5.dp, vertical = 2.dp),
                     )
                 }
+
+                Text(
+                    text = stringResource(R.string.novel_page_count, novel.pageCount),
+                    color = Color.White,
+                    style = MiuixTheme.textStyles.footnote2,
+                    fontWeight = FontWeight.Bold,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .squircleBackground(Color.Black.copy(alpha = 0.6f), 6.dp)
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                )
+
+                if (progress != null && progress.status != com.yunfie.illustia.models.NovelReadingStatus.Unread) {
+                    val (statusText, statusBg, statusFg) =
+                        when (progress.status) {
+                            com.yunfie.illustia.models.NovelReadingStatus.Reading -> {
+                                Triple(
+                                    if (progress.lastReadPage > 0) {
+                                        stringResource(R.string.novel_resume_reading, progress.lastReadPage + 1, progress.totalPages)
+                                    } else {
+                                        stringResource(R.string.novel_status_reading)
+                                    },
+                                    MiuixTheme.colorScheme.primaryContainer,
+                                    MiuixTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+
+                            com.yunfie.illustia.models.NovelReadingStatus.Completed -> {
+                                Triple(
+                                    stringResource(R.string.novel_status_completed),
+                                    MiuixTheme.colorScheme.primary,
+                                    MiuixTheme.colorScheme.onPrimary,
+                                )
+                            }
+
+                            com.yunfie.illustia.models.NovelReadingStatus.Later -> {
+                                Triple(
+                                    stringResource(R.string.novel_status_later),
+                                    MiuixTheme.colorScheme.secondaryContainer,
+                                    MiuixTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
+
+                            com.yunfie.illustia.models.NovelReadingStatus.Unread -> {
+                                Triple("", Color.Transparent, Color.Transparent)
+                            }
+                        }
+                    if (statusText.isNotEmpty()) {
+                        NovelMetaPill(
+                            text = statusText,
+                            backgroundColor = statusBg,
+                            textColor = statusFg,
+                            onClick = onStatusToggle,
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 3.dp),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(6.dp),
+                        )
+                    }
+                }
             }
+
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(
-                    text = novel.title,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = novel.userName,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-                Text(
-                    text =
-                        if (novel.caption.isBlank()) {
-                            stringResource(R.string.novel_length_label, novel.textLength)
-                        } else {
-                            novel.caption
-                        },
-                    style = MiuixTheme.textStyles.footnote1,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (cardPreferences.showTitle) {
+                    Text(
+                        text = novel.title,
+                        style = MiuixTheme.textStyles.body2,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    NovelMetaPill(text = stringResource(R.string.novel_page_count, novel.pageCount))
-                    NovelMetaPill(text = stringResource(R.string.novel_bookmark_count, novel.totalBookmarks))
-                    if (progress != null && progress.status != com.yunfie.illustia.models.NovelReadingStatus.Unread) {
-                        val (statusText, statusBg, statusFg) =
-                            when (progress.status) {
-                                com.yunfie.illustia.models.NovelReadingStatus.Reading -> {
-                                    Triple(
-                                        if (progress.lastReadPage > 0) {
-                                            stringResource(R.string.novel_resume_reading, progress.lastReadPage + 1, progress.totalPages)
-                                        } else {
-                                            stringResource(R.string.novel_status_reading)
-                                        },
-                                        MiuixTheme.colorScheme.primaryContainer,
-                                        MiuixTheme.colorScheme.onPrimaryContainer,
-                                    )
-                                }
-
-                                com.yunfie.illustia.models.NovelReadingStatus.Completed -> {
-                                    Triple(
-                                        stringResource(R.string.novel_status_completed),
-                                        MiuixTheme.colorScheme.primary,
-                                        MiuixTheme.colorScheme.onPrimary,
-                                    )
-                                }
-
-                                com.yunfie.illustia.models.NovelReadingStatus.Later -> {
-                                    Triple(
-                                        stringResource(R.string.novel_status_later),
-                                        MiuixTheme.colorScheme.secondaryContainer,
-                                        MiuixTheme.colorScheme.onSecondaryContainer,
-                                    )
-                                }
-
-                                com.yunfie.illustia.models.NovelReadingStatus.Unread -> {
-                                    Triple("", Color.Transparent, Color.Transparent)
-                                }
-                            }
-                        if (statusText.isNotEmpty()) {
-                            NovelMetaPill(
-                                text = statusText,
-                                backgroundColor = statusBg,
-                                textColor = statusFg,
-                                onClick = onStatusToggle,
-                            )
-                        }
+                    if (cardPreferences.showArtist) {
+                        Text(
+                            text = novel.userName,
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    if (cardPreferences.showBookmarkCount && novel.totalBookmarks > 0) {
+                        Text(
+                            text = "♥ ${novel.totalBookmarks}",
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                        )
                     }
                 }
             }
@@ -282,13 +281,15 @@ internal fun NovelCard(
 @Composable
 internal fun NovelMetaPill(
     text: String,
+    modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.surfaceContainerHighest,
     textColor: Color = MiuixTheme.colorScheme.onSurface,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
     onClick: (() -> Unit)? = null,
 ) {
     Box(
         modifier =
-            Modifier
+            modifier
                 .clip(RoundedCornerShape(999.dp))
                 .background(backgroundColor)
                 .then(
@@ -297,7 +298,7 @@ internal fun NovelMetaPill(
                     } else {
                         Modifier
                     },
-                ).padding(horizontal = 10.dp, vertical = 6.dp),
+                ).padding(contentPadding),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -939,7 +939,15 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     fun updateVerticalColumnCount(value: Int) {
-        updateSettings { it.copy(verticalColumnCount = value.coerceIn(2, 4)) }
+        updateSettings { it.copy(verticalColumnCount = value.coerceIn(1, 4)) }
+    }
+
+    fun updateGridPinchToZoom(enabled: Boolean) {
+        updateSettings { it.copy(gridPinchToZoom = enabled) }
+    }
+
+    fun updateQuickPeekSharedElementTransition(enabled: Boolean) {
+        updateSettings { it.copy(quickPeekSharedElementTransition = enabled) }
     }
 
     fun updateHorizontalColumnCount(value: Int) {

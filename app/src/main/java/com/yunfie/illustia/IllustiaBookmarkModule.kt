@@ -409,20 +409,24 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
-    fun toggleBookmark(illust: Illust) {
+    fun toggleBookmark(
+        illust: Illust,
+        restrict: com.yunfie.illustia.models.Restrict? = null,
+    ) {
         if (illust.isBookmarked) {
             _uiState.update { it.copy(pendingBookmarkRemoval = illust) }
             return
         }
-        performToggleBookmark(illust)
+        performToggleBookmark(illust, restrict)
     }
 
     fun toggleBookmark(
         illustId: Long,
         fallback: Illust? = null,
+        restrict: com.yunfie.illustia.models.Restrict? = null,
     ) {
         val illust = findIllustById(illustId) ?: fallback ?: return
-        toggleBookmark(illust)
+        toggleBookmark(illust, restrict)
     }
 
     fun cancelBookmarkRemoval() {
@@ -435,11 +439,20 @@ abstract class IllustiaBookmarkModule(
         performToggleBookmark(illust)
     }
 
-    private fun performToggleBookmark(illust: Illust) {
+    private fun performToggleBookmark(
+        illust: Illust,
+        explicitRestrict: com.yunfie.illustia.models.Restrict? = null,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val settings = _uiState.value.settings
-                val restrict = if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
+                val restrict =
+                    explicitRestrict
+                        ?: if (settings.privateBookmarkDefault) {
+                            com.yunfie.illustia.models.Restrict.Private
+                        } else {
+                            settings.bookmarkRestrict
+                        }
                 val updated = repository.toggleBookmark(illust, restrict)
                 if (updated.isBookmarked) {
                     if (settings.followOnLike && illust.artistId > 0L) {

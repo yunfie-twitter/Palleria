@@ -163,6 +163,8 @@ data class AppSettings(
     val internalProxyBypassHosts: String = "localhost, 127.0.0.1",
     val dohProvider: String = "system",
     val dohCustomUrl: String = "",
+    val gridPinchToZoom: Boolean = true,
+    val quickPeekSharedElementTransition: Boolean = true,
     val featureFlags: Map<String, Boolean> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean

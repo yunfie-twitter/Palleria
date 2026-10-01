@@ -66,6 +66,7 @@ fun QuickPeekOverlay(
     onOpenDetail: () -> Unit,
     onBookmark: () -> Unit,
     onCopyImage: () -> Unit,
+    useSharedElementTransition: Boolean = false,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
     var isVisible by remember { mutableStateOf(false) }
@@ -74,6 +75,12 @@ fun QuickPeekOverlay(
         performHaptic(AppHapticEffect.Success)
         isVisible = true
     }
+
+    val scrimAlpha by animateFloatAsState(
+        targetValue = if (isVisible) 0.65f else 0f,
+        animationSpec = tween(if (useSharedElementTransition) 220 else 160),
+        label = "quick_peek_scrim",
+    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -88,7 +95,7 @@ fun QuickPeekOverlay(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.65f))
+                    .background(Color.Black.copy(alpha = scrimAlpha))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -96,15 +103,44 @@ fun QuickPeekOverlay(
                     ),
             contentAlignment = Alignment.Center,
         ) {
-            AnimatedVisibility(
-                visible = isVisible,
-                enter =
+            val enterSpec =
+                if (useSharedElementTransition) {
+                    fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
+                        scaleIn(
+                            initialScale = 0.35f,
+                            animationSpec =
+                                spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow,
+                                ),
+                        )
+                } else {
                     fadeIn(tween(180)) +
                         scaleIn(
                             initialScale = 0.85f,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
-                        ),
-                exit = fadeOut(tween(140)) + scaleOut(targetScale = 0.85f, animationSpec = tween(140)),
+                            animationSpec =
+                                spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow,
+                                ),
+                        )
+                }
+
+            val exitSpec =
+                if (useSharedElementTransition) {
+                    fadeOut(tween(160)) +
+                        scaleOut(
+                            targetScale = 0.35f,
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        )
+                } else {
+                    fadeOut(tween(140)) + scaleOut(targetScale = 0.85f, animationSpec = tween(140))
+                }
+
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = enterSpec,
+                exit = exitSpec,
             ) {
                 Box(
                     modifier =

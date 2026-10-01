@@ -68,8 +68,11 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchNovelGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -147,11 +150,13 @@ fun NovelScreen(
         gridState = gridState,
         enabled = settings.prefetchImages,
     )
+    val columns = adaptiveIllustColumns(settings)
+    val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+    val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val showPaginationSkeletons = settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All
     val shimmer =
-        if (showPaginationSkeletons) {
-            com.yunfie.illustia.ui.components
-                .rememberIllustSkeletonShimmer()
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
         } else {
             null
         }
@@ -205,20 +210,25 @@ fun NovelScreen(
         ) {
             LazyVerticalGrid(
                 state = gridState,
-                columns = GridCells.Fixed(1),
+                columns = GridCells.Fixed(columns),
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(MiuixTheme.colorScheme.surface)
+                        .pinchToChangeColumns(
+                            enabled = pinchEnabled,
+                            currentColumns = columns,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
+                        ).background(MiuixTheme.colorScheme.surface)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     PaddingValues(
-                        start = 14.dp,
-                        end = 14.dp,
+                        start = 12.dp,
+                        end = 12.dp,
                         top = scaffoldPadding.calculateTopPadding() + 8.dp,
                         bottom = 24.dp,
                     ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     androidx.compose.foundation.layout.Row(
@@ -246,7 +256,12 @@ fun NovelScreen(
                         }
                     }
                 }
-                if (filteredItems.isEmpty()) {
+                if (showInitialSkeletons) {
+                    items(columns * 3, key = { "novel_initial_skeleton_$it" }, contentType = { "novel_skeleton" }) {
+                        NovelCardSkeleton(shimmerValue = shimmer)
+                    }
+                }
+                if (filteredItems.isEmpty() && !showInitialSkeletons) {
                     item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
                 }
                 if (filteredItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
@@ -286,7 +301,7 @@ fun NovelScreen(
                 }
 
                 if (showPaginationSkeletons) {
-                    item(key = "novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }) {
+                    items(columns, key = { "novel_paginating_skeleton_$it" }, contentType = { "novel_skeleton" }) {
                         NovelCardSkeleton(shimmerValue = shimmer)
                     }
                 } else if (!settings.autoLoadMore && nextUrl != null && selectedFilter == NovelFilterTab.All) {
@@ -352,6 +367,15 @@ fun NovelReaderScreen(
         }
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pages.size })
     val continuousListState = rememberLazyListState()
+    val isScrolling = pagerState.isScrollInProgress || continuousListState.isScrollInProgress
+    val novelDynamicMode =
+        if (isScrolling) {
+            com.yunfie.illustia.platform.DynamicHzMode.Boost
+        } else {
+            com.yunfie.illustia.platform.DynamicHzMode.PowerSaving
+        }
+    com.yunfie.illustia.platform
+        .RequestDynamicHzMode(novelDynamicMode)
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current

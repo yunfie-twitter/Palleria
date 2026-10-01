@@ -20,6 +20,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,6 +62,38 @@ private const val SEPIA_PANEL_COLOR = 0xFFF4ECD8
 private const val DARK_PANEL_COLOR = 0xFF2A2A2A
 private const val BLACK_PANEL_COLOR = 0xFF121212
 private const val SEPIA_TEXT_COLOR = 0xFF5F4B32
+
+private val TtsPlayIcon: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "TtsPlay",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            addPath(
+                pathData = PathParser().parsePathString("M8 5v14l11-7z").toNodes(),
+                fill = SolidColor(Color.White),
+            )
+        }.build()
+}
+
+private val TtsPauseIcon: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "TtsPause",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            addPath(
+                pathData = PathParser().parsePathString("M6 19h4V5H6v14zm8-14v14h4V5h-4z").toNodes(),
+                fill = SolidColor(Color.White),
+            )
+        }.build()
+}
 
 @Composable
 internal fun NovelBottomControlBar(
@@ -211,7 +246,11 @@ internal fun NovelBottomControlBar(
                                         },
                                 ),
                         ) {
-                            Text(stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play))
+                            Icon(
+                                imageVector = if (ttsPlayer.isPlaying) TtsPauseIcon else TtsPlayIcon,
+                                contentDescription = stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play),
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
                     }
 

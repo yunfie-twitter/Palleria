@@ -158,6 +158,10 @@ internal fun UgoiraArtwork(
     }
 
     val bitmapPool = remember(playback) { java.util.concurrent.ConcurrentLinkedQueue<Bitmap>() }
+    if (playback != null && playback.frames.isNotEmpty()) {
+        com.yunfie.illustia.platform
+            .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost)
+    }
     val context = LocalContext.current
     val preferredConfig = remember(context) { PlatformCapabilities.recommendedBitmapConfig(context) }
     val maxCachedFrames =

@@ -158,8 +158,8 @@ fun ImageSettingsScreen(
                     ElevatedPanel {
                         SettingDropdownRow(
                             title = stringResource(R.string.image_columns),
-                            values = listOf(2, 3, 4),
-                            selected = state.settings.verticalColumnCount.coerceIn(2, 4),
+                            values = listOf(1, 2, 3, 4),
+                            selected = state.settings.verticalColumnCount.coerceIn(1, 4),
                             label = { stringResource(R.string.data_columns_count, it) },
                             onSelect = viewModel::updateVerticalColumnCount,
                         )
@@ -185,6 +185,15 @@ fun ImageSettingsScreen(
                             },
                             onSelect = viewModel::updateRelatedIllustColumnCount,
                         )
+                        if (state.settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns)) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.setting_grid_pinch_to_zoom_title),
+                                checked = state.settings.gridPinchToZoom,
+                                onCheckedChange = viewModel::updateGridPinchToZoom,
+                                summary = stringResource(R.string.setting_grid_pinch_to_zoom_desc),
+                            )
+                        }
                     }
                 }
             }
@@ -218,6 +227,15 @@ fun ImageSettingsScreen(
                                 checked = state.settings.quickPeekEnabled,
                                 onCheckedChange = viewModel::updateQuickPeekEnabled,
                                 summary = stringResource(R.string.setting_quick_peek_desc),
+                            )
+                        }
+                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition)) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
+                                checked = state.settings.quickPeekSharedElementTransition,
+                                onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
+                                summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
                             )
                         }
                     }

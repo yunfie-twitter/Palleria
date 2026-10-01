@@ -132,6 +132,15 @@ fun CardCustomizationSettingsScreen(
                                 summary = stringResource(R.string.setting_quick_peek_desc),
                             )
                         }
+                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition)) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
+                                checked = state.settings.quickPeekSharedElementTransition,
+                                onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
+                                summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
+                            )
+                        }
                     }
                 }
             }

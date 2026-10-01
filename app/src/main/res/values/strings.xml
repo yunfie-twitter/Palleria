@@ -1183,4 +1183,16 @@
     <string name="tts_dictionary_empty">登録された単語はありません</string>
     <string name="tts_dictionary_delete">削除</string>
     <string name="tts_dictionary_delete_confirm">この単語の読み替え設定を削除しますか？</string>
+
+    <!-- Grid Pinch to Zoom Feature Flag & Setting -->
+    <string name="flag_grid_pinch_to_zoom_title">グリッドのピンチ操作で列数シームレス変更</string>
+    <string name="flag_grid_pinch_to_zoom_desc">作品一覧画面で2本指ピンチ操作により列数をシームレスに変更できるようにします</string>
+    <string name="setting_grid_pinch_to_zoom_title">ピンチで列数を伸縮</string>
+    <string name="setting_grid_pinch_to_zoom_desc">2本指ピンチ操作で列数を1列〜4列にシームレス切り替え</string>
+
+    <!-- Quick Peek Shared Element Transition Feature Flag & Setting -->
+    <string name="flag_quick_peek_shared_element_transition_title">QuickPeek共有要素アニメーション</string>
+    <string name="flag_quick_peek_shared_element_transition_desc">QuickPeekプレビューの表示・非表示アニメーションを共有要素風の滑らかなトランジションにします</string>
+    <string name="setting_quick_peek_shared_element_transition_title">共有要素風トランジション</string>
+    <string name="setting_quick_peek_shared_element_transition_desc">カード位置から拡大する滑らかな共有要素アニメーションを適用します</string>
 </resources>

@@ -53,9 +53,9 @@ class PlatformCapabilitiesTest {
         PlatformCapabilities.forSdk(29).supportsScopedMediaStore.shouldBeTrue()
         PlatformCapabilities.forSdk(30).supportsVibrationComposition.shouldBeTrue()
         PlatformCapabilities.forSdk(31).supportsDynamicColor.shouldBeTrue()
-        PlatformCapabilities.forSdk(33).supportsPlatformLocaleManager.shouldBeTrue()
+        PlatformCapabilities.forSdk(34).supportsAdaptiveRefreshRate.shouldBeFalse()
+        PlatformCapabilities.forSdk(35).supportsAdaptiveRefreshRate.shouldBeTrue()
         PlatformCapabilities.forSdk(35).supportsWidgetPreview.shouldBeTrue()
-        PlatformCapabilities.forSdk(36).supportsAdaptiveRefreshRate.shouldBeTrue()
         PlatformCapabilities.forSdk(37).supportsActivityHandoff.shouldBeTrue()
     }
 

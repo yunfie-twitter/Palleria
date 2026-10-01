@@ -47,6 +47,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
@@ -316,12 +317,15 @@ private fun RankingGridContent(
             gridItems(items, key = { "ranking_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
                 val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onBookmarkLongClick =
+                    remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
                 val onClick = remember(illust) { { viewModel.openIllust(illust) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
                     illust = illust,
                     onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
                     onClick = onClick,
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
