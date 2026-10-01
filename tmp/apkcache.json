@@ -27592,5 +27592,447 @@
     "size": 58794487,
     "apkName": "Palleria-v6.5.0-release-x86_64.apk",
     "added": 1790853810.37775
+  },
+  "Palleria-v6.6.0-beta.1-release-arm64-v8a.apk": {
+    "hash": "1e4692e011e9f60835ed85998695399ccab731e54eb0c05a7af4fe3285a37d68",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 139,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.1",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "arm64-v8a"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 58232944,
+    "apkName": "Palleria-v6.6.0-beta.1-release-arm64-v8a.apk",
+    "added": 1790872368.961762
+  },
+  "Palleria-v6.6.0-beta.1-release-armeabi-v7a.apk": {
+    "hash": "8f121f2b921d20140c374f38c1d5702acc3d977b5a919c99b8bdc65f83ee2a42",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 139,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.1",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "armeabi-v7a"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 56219970,
+    "apkName": "Palleria-v6.6.0-beta.1-release-armeabi-v7a.apk",
+    "added": 1790872369.482165
+  },
+  "Palleria-v6.6.0-beta.1-release-universal.apk": {
+    "hash": "6a11c81473768dc452c78f061b16af248db5b5e95e0e237368fe314981a15fce",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 139,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.1",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "arm64-v8a",
+      "armeabi",
+      "armeabi-v7a",
+      "mips",
+      "mips64",
+      "x86",
+      "x86_64"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 70605421,
+    "apkName": "Palleria-v6.6.0-beta.1-release-universal.apk",
+    "added": 1790872370.091787
+  },
+  "Palleria-v6.6.0-beta.1-release-x86_64.apk": {
+    "hash": "359f78f54174ab20da7bb30efd319f5d26cfc7a49817f837e9b155fbd818bf8d",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 139,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.1",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "x86_64"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 58823571,
+    "apkName": "Palleria-v6.6.0-beta.1-release-x86_64.apk",
+    "added": 1790872370.641618
   }
 }
