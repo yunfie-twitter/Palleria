@@ -1090,6 +1090,10 @@
     <string name="tts_stop">停止</string>
     <string name="tts_speed">再生速度: %1$.1fx</string>
     <string name="tts_reading_novel">小説を読み上げ中: %1$s</string>
+    <string name="tts_channel_name">小説の音声読み上げ</string>
+    <string name="tts_channel_description">小説読み上げのメディア再生コントロール</string>
+    <string name="tts_next_paragraph">次の段落</string>
+    <string name="tts_prev_paragraph">前の段落</string>
     <string name="flag_detail_section_order_title">詳細画面セクション順序の変更</string>
     <string name="flag_detail_section_order_desc">画像・表示設定に作品詳細画面のセクション表示順序を変更する項目を追加します</string>
     <string name="update_auto_download_wifi_only">Wi-Fi 接続時のみ自動取得</string>

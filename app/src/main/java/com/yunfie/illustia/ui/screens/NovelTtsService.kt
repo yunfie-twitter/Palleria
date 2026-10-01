@@ -1,0 +1,497 @@
+package com.yunfie.illustia.ui.screens
+
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.media.MediaMetadata
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
+import android.os.IBinder
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import androidx.core.content.ContextCompat
+import com.yunfie.illustia.R
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.util.Locale
+
+/**
+ * State of the Novel Text-to-Speech audio playback.
+ */
+data class NovelTtsState(
+    val isPlaying: Boolean = false,
+    val novelId: Long? = null,
+    val novelTitle: String = "",
+    val authorName: String = "",
+    val currentParagraphIndex: Int = 0,
+    val totalParagraphs: Int = 0,
+    val currentParagraphText: String = "",
+    val speechRate: Float = 1.0f,
+    val isInitialized: Boolean = false,
+)
+
+/**
+ * Foreground Service for Novel Text-to-Speech playback with Android Media Control API.
+ * Integrates with [MediaSession] and [android.app.Notification.MediaStyle] to enable playback control
+ * from lock screen, notification shade, Bluetooth headsets, and smartwatches.
+ */
+@Suppress("TooManyFunctions")
+class NovelTtsService :
+    Service(),
+    TextToSpeech.OnInitListener {
+    private var tts: TextToSpeech? = null
+    private var isTtsInitialized = false
+    private var mediaSession: MediaSession? = null
+    private var audioHelper: NovelTtsAudioHelper? = null
+
+    private var paragraphs: List<String> = emptyList()
+    private var currentParagraphIndex = 0
+    private var novelId: Long? = null
+    private var novelTitle = ""
+    private var authorName = ""
+    private var speechRate = DEFAULT_SPEECH_RATE
+
+    private val mediaSessionCallback =
+        object : MediaSession.Callback() {
+            override fun onPlay() {
+                resumeReading()
+            }
+
+            override fun onPause() {
+                pauseReading()
+            }
+
+            override fun onSkipToNext() {
+                skipToNext()
+            }
+
+            override fun onSkipToPrevious() {
+                skipToPrevious()
+            }
+
+            override fun onStop() {
+                stopReading()
+            }
+
+            override fun onSeekTo(pos: Long) {
+                seekToParagraph(pos.toInt())
+            }
+        }
+
+    override fun onCreate() {
+        super.onCreate()
+        NovelTtsNotificationHelper.createNotificationChannel(this)
+        setupMediaSession()
+        audioHelper =
+            NovelTtsAudioHelper(
+                context = this,
+                onLoss = { pauseReading() },
+                onGain = { if (!isPlaying()) resumeReading() },
+            )
+        tts = TextToSpeech(applicationContext, this)
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            isTtsInitialized = true
+            tts?.let { engine ->
+                val result = engine.setLanguage(Locale.JAPANESE)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    engine.setLanguage(Locale.getDefault())
+                }
+                engine.setSpeechRate(speechRate)
+                engine.setOnUtteranceProgressListener(
+                    object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {
+                            updateState(isPlaying = true)
+                            updatePlaybackState(PlaybackState.STATE_PLAYING)
+                            updateNotification()
+                        }
+
+                        override fun onDone(utteranceId: String?) {
+                            val nextIndex = currentParagraphIndex + 1
+                            if (nextIndex < paragraphs.size) {
+                                currentParagraphIndex = nextIndex
+                                speakCurrentParagraph()
+                            } else {
+                                updateState(isPlaying = false)
+                                updatePlaybackState(PlaybackState.STATE_STOPPED)
+                                updateNotification()
+                                audioHelper?.abandonAudioFocus()
+                            }
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) {
+                            updateState(isPlaying = false)
+                            updatePlaybackState(PlaybackState.STATE_PAUSED)
+                            updateNotification()
+                        }
+                    },
+                )
+            }
+            updateState(isInitialized = true)
+            if (paragraphs.isNotEmpty() && _ttsState.value.isPlaying) {
+                speakCurrentParagraph()
+            }
+        }
+    }
+
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
+        when (intent?.action) {
+            ACTION_START_READING -> {
+                novelId = intent.getLongExtra(EXTRA_NOVEL_ID, -1L).takeIf { it != -1L }
+                novelTitle = intent.getStringExtra(EXTRA_NOVEL_TITLE).orEmpty()
+                authorName = intent.getStringExtra(EXTRA_AUTHOR_NAME).orEmpty()
+                speechRate = intent.getFloatExtra(EXTRA_SPEED_RATE, DEFAULT_SPEECH_RATE)
+                val rawText = intent.getStringExtra(EXTRA_RAW_TEXT).orEmpty()
+                val startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0)
+                handleStartReading(rawText, startIndex)
+            }
+
+            ACTION_PLAY -> {
+                resumeReading()
+            }
+
+            ACTION_PAUSE -> {
+                pauseReading()
+            }
+
+            ACTION_TOGGLE_PLAY -> {
+                if (isPlaying()) pauseReading() else resumeReading()
+            }
+
+            ACTION_NEXT -> {
+                skipToNext()
+            }
+
+            ACTION_PREV -> {
+                skipToPrevious()
+            }
+
+            ACTION_STOP -> {
+                stopReading()
+            }
+
+            ACTION_SET_SPEED -> {
+                setSpeedRate(intent.getFloatExtra(EXTRA_SPEED_RATE, speechRate))
+            }
+
+            ACTION_SEEK_PARAGRAPH -> {
+                seekToParagraph(intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, currentParagraphIndex))
+            }
+        }
+        return START_NOT_STICKY
+    }
+
+    private fun handleStartReading(
+        rawText: String,
+        startIndex: Int,
+    ) {
+        val cleaned =
+            rawText
+                .replace(RUBY_REGEX, "$1")
+                .replace(JUMP_REGEX, "")
+                .replace(NEWPAGE_REGEX, "\n\n")
+                .replace(PIXIV_IMAGE_REGEX, "")
+                .replace(CHAPTER_REGEX, "$1")
+
+        paragraphs = cleaned.split("\n").map { it.trim() }.filter { it.isNotBlank() }
+        if (paragraphs.isEmpty()) return
+
+        currentParagraphIndex = startIndex.coerceIn(0, paragraphs.lastIndex)
+        audioHelper?.requestAudioFocus()
+        startForeground(
+            NovelTtsNotificationHelper.NOTIFICATION_ID,
+            buildNotification(),
+        )
+        updateMediaMetadata()
+        updatePlaybackState(PlaybackState.STATE_PLAYING)
+
+        if (isTtsInitialized) {
+            speakCurrentParagraph()
+        } else {
+            updateState(isPlaying = true)
+        }
+    }
+
+    private fun speakCurrentParagraph() {
+        if (!isTtsInitialized || tts == null || currentParagraphIndex !in paragraphs.indices) {
+            updateState(isPlaying = false)
+            return
+        }
+        val text = paragraphs[currentParagraphIndex]
+        tts?.setSpeechRate(speechRate)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "paragraph_$currentParagraphIndex")
+        updateState(isPlaying = true)
+        updatePlaybackState(PlaybackState.STATE_PLAYING)
+        updateNotification()
+    }
+
+    private fun resumeReading() {
+        if (paragraphs.isEmpty()) return
+        audioHelper?.requestAudioFocus()
+        startForeground(
+            NovelTtsNotificationHelper.NOTIFICATION_ID,
+            buildNotification(),
+        )
+        speakCurrentParagraph()
+    }
+
+    private fun pauseReading() {
+        tts?.stop()
+        updateState(isPlaying = false)
+        updatePlaybackState(PlaybackState.STATE_PAUSED)
+        updateNotification()
+    }
+
+    private fun skipToNext() {
+        if (currentParagraphIndex < paragraphs.size - 1) {
+            currentParagraphIndex++
+            speakCurrentParagraph()
+        }
+    }
+
+    private fun skipToPrevious() {
+        if (currentParagraphIndex > 0) {
+            currentParagraphIndex--
+            speakCurrentParagraph()
+        }
+    }
+
+    private fun seekToParagraph(index: Int) {
+        if (paragraphs.isNotEmpty()) {
+            currentParagraphIndex = index.coerceIn(0, paragraphs.lastIndex)
+            speakCurrentParagraph()
+        }
+    }
+
+    private fun setSpeedRate(rate: Float) {
+        speechRate = rate.coerceIn(MIN_SPEECH_RATE, MAX_SPEECH_RATE)
+        tts?.setSpeechRate(speechRate)
+        updateState(isPlaying = isPlaying())
+    }
+
+    private fun stopReading() {
+        tts?.stop()
+        audioHelper?.abandonAudioFocus()
+        updateState(isPlaying = false, currentParagraphIndex = 0)
+        updatePlaybackState(PlaybackState.STATE_STOPPED)
+        mediaSession?.isActive = false
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun isPlaying(): Boolean = _ttsState.value.isPlaying
+
+    private fun updateState(
+        isPlaying: Boolean = _ttsState.value.isPlaying,
+        currentParagraphIndex: Int = this.currentParagraphIndex,
+        isInitialized: Boolean = this.isTtsInitialized,
+    ) {
+        val currentText = paragraphs.getOrNull(currentParagraphIndex).orEmpty()
+        _ttsState.value =
+            NovelTtsState(
+                isPlaying = isPlaying,
+                novelId = novelId,
+                novelTitle = novelTitle,
+                authorName = authorName,
+                currentParagraphIndex = currentParagraphIndex,
+                totalParagraphs = paragraphs.size,
+                currentParagraphText = currentText,
+                speechRate = speechRate,
+                isInitialized = isInitialized,
+            )
+    }
+
+    private fun setupMediaSession() {
+        mediaSession =
+            MediaSession(this, "NovelTtsMediaSession").apply {
+                setCallback(mediaSessionCallback)
+                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+                    @Suppress("DEPRECATION")
+                    setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
+                }
+                isActive = true
+            }
+    }
+
+    private fun updatePlaybackState(state: Int) {
+        val session = mediaSession ?: return
+        val actions =
+            PlaybackState.ACTION_PLAY or
+                PlaybackState.ACTION_PAUSE or
+                PlaybackState.ACTION_PLAY_PAUSE or
+                PlaybackState.ACTION_SKIP_TO_NEXT or
+                PlaybackState.ACTION_SKIP_TO_PREVIOUS or
+                PlaybackState.ACTION_STOP
+        val playbackState =
+            PlaybackState
+                .Builder()
+                .setActions(actions)
+                .setState(state, currentParagraphIndex.toLong(), 1.0f)
+                .build()
+        session.setPlaybackState(playbackState)
+    }
+
+    private fun updateMediaMetadata() {
+        val session = mediaSession ?: return
+        val metadata =
+            MediaMetadata
+                .Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, novelTitle)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, authorName)
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, getString(R.string.app_name))
+                .putLong(MediaMetadata.METADATA_KEY_NUM_TRACKS, paragraphs.size.toLong())
+                .putLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER, (currentParagraphIndex + 1).toLong())
+                .build()
+        session.setMetadata(metadata)
+    }
+
+    private fun buildNotification() =
+        NovelTtsNotificationHelper.buildNotification(
+            service = this,
+            novelTitle = novelTitle,
+            authorName = authorName,
+            currentParagraphIndex = currentParagraphIndex,
+            totalParagraphs = paragraphs.size,
+            isPlaying = isPlaying(),
+            mediaSession = mediaSession,
+        )
+
+    private fun updateNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        notificationManager?.notify(
+            NovelTtsNotificationHelper.NOTIFICATION_ID,
+            buildNotification(),
+        )
+    }
+
+    override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
+        mediaSession?.release()
+        mediaSession = null
+        audioHelper?.abandonAudioFocus()
+        updateState(isPlaying = false, currentParagraphIndex = 0, isInitialized = false)
+        super.onDestroy()
+    }
+
+    companion object {
+        private const val DEFAULT_SPEECH_RATE = 1.0f
+        private const val MIN_SPEECH_RATE = 0.5f
+        private const val MAX_SPEECH_RATE = 2.5f
+
+        const val ACTION_START_READING = "com.yunfie.illustia.tts.START_READING"
+        const val ACTION_PLAY = "com.yunfie.illustia.tts.PLAY"
+        const val ACTION_PAUSE = "com.yunfie.illustia.tts.PAUSE"
+        const val ACTION_TOGGLE_PLAY = "com.yunfie.illustia.tts.TOGGLE_PLAY"
+        const val ACTION_NEXT = "com.yunfie.illustia.tts.NEXT"
+        const val ACTION_PREV = "com.yunfie.illustia.tts.PREV"
+        const val ACTION_STOP = "com.yunfie.illustia.tts.STOP"
+        const val ACTION_SET_SPEED = "com.yunfie.illustia.tts.SET_SPEED"
+        const val ACTION_SEEK_PARAGRAPH = "com.yunfie.illustia.tts.SEEK_PARAGRAPH"
+
+        const val EXTRA_NOVEL_ID = "novel_id"
+        const val EXTRA_NOVEL_TITLE = "novel_title"
+        const val EXTRA_AUTHOR_NAME = "author_name"
+        const val EXTRA_RAW_TEXT = "raw_text"
+        const val EXTRA_START_INDEX = "start_index"
+        const val EXTRA_SPEED_RATE = "speed_rate"
+        const val EXTRA_PARAGRAPH_INDEX = "paragraph_index"
+
+        private val RUBY_REGEX = Regex("""\[\[rb:[^>]*>(.*?)\]\]""")
+        private val JUMP_REGEX = Regex("""\[jump:\d+\]""")
+        private val NEWPAGE_REGEX = Regex("""\[newpage\]""")
+        private val PIXIV_IMAGE_REGEX = Regex("""\[pixivimage:\d+\]""")
+        private val CHAPTER_REGEX = Regex("""\[chapter:(.*?)\]""")
+
+        private val _ttsState = MutableStateFlow(NovelTtsState())
+        val ttsState: StateFlow<NovelTtsState> = _ttsState.asStateFlow()
+
+        fun startReading(
+            context: Context,
+            novelId: Long? = null,
+            novelTitle: String = "",
+            authorName: String = "",
+            rawText: String,
+            startIndex: Int = 0,
+            speedRate: Float = DEFAULT_SPEECH_RATE,
+        ) {
+            val intent =
+                Intent(context, NovelTtsService::class.java).apply {
+                    action = ACTION_START_READING
+                    putExtra(EXTRA_NOVEL_ID, novelId ?: -1L)
+                    putExtra(EXTRA_NOVEL_TITLE, novelTitle)
+                    putExtra(EXTRA_AUTHOR_NAME, authorName)
+                    putExtra(EXTRA_RAW_TEXT, rawText)
+                    putExtra(EXTRA_START_INDEX, startIndex)
+                    putExtra(EXTRA_SPEED_RATE, speedRate)
+                }
+            ContextCompat.startForegroundService(context, intent)
+        }
+
+        fun pause(context: Context) {
+            val intent = Intent(context, NovelTtsService::class.java).apply { action = ACTION_PAUSE }
+            context.startService(intent)
+        }
+
+        fun resume(context: Context) {
+            val intent = Intent(context, NovelTtsService::class.java).apply { action = ACTION_PLAY }
+            ContextCompat.startForegroundService(context, intent)
+        }
+
+        fun togglePlay(context: Context) {
+            val intent = Intent(context, NovelTtsService::class.java).apply { action = ACTION_TOGGLE_PLAY }
+            ContextCompat.startForegroundService(context, intent)
+        }
+
+        fun skipToNext(context: Context) {
+            val intent = Intent(context, NovelTtsService::class.java).apply { action = ACTION_NEXT }
+            context.startService(intent)
+        }
+
+        fun skipToPrevious(context: Context) {
+            val intent = Intent(context, NovelTtsService::class.java).apply { action = ACTION_PREV }
+            context.startService(intent)
+        }
+
+        fun stop(context: Context) {
+            val intent = Intent(context, NovelTtsService::class.java).apply { action = ACTION_STOP }
+            context.startService(intent)
+        }
+
+        fun setSpeed(
+            context: Context,
+            speedRate: Float,
+        ) {
+            val intent =
+                Intent(context, NovelTtsService::class.java).apply {
+                    action = ACTION_SET_SPEED
+                    putExtra(EXTRA_SPEED_RATE, speedRate)
+                }
+            context.startService(intent)
+        }
+
+        fun seekToParagraph(
+            context: Context,
+            index: Int,
+        ) {
+            val intent =
+                Intent(context, NovelTtsService::class.java).apply {
+                    action = ACTION_SEEK_PARAGRAPH
+                    putExtra(EXTRA_PARAGRAPH_INDEX, index)
+                }
+            context.startService(intent)
+        }
+    }
+}
