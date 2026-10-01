@@ -282,3 +282,25 @@ internal fun decodeFeatureFlags(value: String?): Map<String, Boolean> {
         result
     }.getOrDefault(emptyMap())
 }
+
+internal fun encodeStringMap(map: Map<String, String>): String {
+    val obj = JSONObject()
+    map.forEach { (key, value) ->
+        obj.put(key, value)
+    }
+    return obj.toString()
+}
+
+internal fun decodeStringMap(value: String?): Map<String, String> {
+    if (value.isNullOrBlank()) return emptyMap()
+    return runCatching {
+        val obj = JSONObject(value)
+        val result = mutableMapOf<String, String>()
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            result[key] = obj.optString(key, "")
+        }
+        result
+    }.getOrDefault(emptyMap())
+}

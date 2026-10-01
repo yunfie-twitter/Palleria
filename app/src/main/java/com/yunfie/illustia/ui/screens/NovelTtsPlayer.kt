@@ -31,6 +31,15 @@ class NovelTtsPlayer(
     var speechRate by mutableFloatStateOf(DEFAULT_SPEECH_RATE)
         private set
 
+    var pitch by mutableFloatStateOf(DEFAULT_PITCH)
+        private set
+
+    var voiceName by mutableStateOf("")
+        private set
+
+    var availableVoices by mutableStateOf<List<String>>(emptyList())
+        private set
+
     var totalParagraphs by mutableIntStateOf(0)
         private set
 
@@ -41,6 +50,9 @@ class NovelTtsPlayer(
                 isPlaying = state.isPlaying
                 currentParagraphIndex = state.currentParagraphIndex
                 speechRate = state.speechRate
+                pitch = state.pitch
+                voiceName = state.voiceName
+                availableVoices = state.availableVoices
                 totalParagraphs = state.totalParagraphs
 
                 if (prevIndex != state.currentParagraphIndex) {
@@ -56,6 +68,11 @@ class NovelTtsPlayer(
         novelTitle: String = "",
         authorName: String = "",
         novelId: Long? = null,
+        rate: Float = speechRate,
+        pitchLevel: Float = pitch,
+        voice: String = voiceName,
+        skipSymbols: Boolean = true,
+        customDictionary: Map<String, String> = emptyMap(),
     ) {
         NovelTtsService.startReading(
             context = context,
@@ -64,7 +81,11 @@ class NovelTtsPlayer(
             authorName = authorName,
             rawText = rawText,
             startIndex = startIndex,
-            speedRate = speechRate,
+            speedRate = rate,
+            pitch = pitchLevel,
+            voiceName = voice,
+            skipSymbols = skipSymbols,
+            customDictionary = customDictionary,
         )
     }
 
@@ -74,10 +95,6 @@ class NovelTtsPlayer(
 
     fun resume() {
         NovelTtsService.resume(context)
-    }
-
-    fun togglePlay() {
-        NovelTtsService.togglePlay(context)
     }
 
     fun skipToNext() {
@@ -102,6 +119,17 @@ class NovelTtsPlayer(
         NovelTtsService.setSpeed(context, clamped)
     }
 
+    fun setPitchLevel(pitchValue: Float) {
+        val clamped = pitchValue.coerceIn(MIN_PITCH, MAX_PITCH)
+        pitch = clamped
+        NovelTtsService.setPitch(context, clamped)
+    }
+
+    fun setVoiceSelection(name: String) {
+        voiceName = name
+        NovelTtsService.setVoice(context, name)
+    }
+
     fun shutdown() {
         // Cancel the Compose UI scope; service continues playback in background if playing.
         scope.cancel()
@@ -111,5 +139,9 @@ class NovelTtsPlayer(
         private const val DEFAULT_SPEECH_RATE = 1.0f
         private const val MIN_SPEECH_RATE = 0.5f
         private const val MAX_SPEECH_RATE = 2.5f
+
+        private const val DEFAULT_PITCH = 1.0f
+        private const val MIN_PITCH = 0.5f
+        private const val MAX_PITCH = 2.0f
     }
 }

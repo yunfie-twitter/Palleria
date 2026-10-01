@@ -489,6 +489,38 @@ fun NovelReaderScreen(
         }
     }
 
+    val ttsLocations = remember(pages) { NovelTtsTextSanitizer.extractTtsParagraphLocations(pages) }
+    val currentTtsLocation =
+        remember(isTtsEnabled, ttsPlayer?.isPlaying, ttsPlayer?.currentParagraphIndex, ttsLocations) {
+            if (isTtsEnabled && ttsPlayer?.isPlaying == true) {
+                ttsLocations.getOrNull(ttsPlayer.currentParagraphIndex)
+            } else {
+                null
+            }
+        }
+
+    LaunchedEffect(ttsPlayer?.currentParagraphIndex, ttsPlayer?.isPlaying) {
+        val player = ttsPlayer ?: return@LaunchedEffect
+        if (!player.isPlaying) return@LaunchedEffect
+        val loc = ttsLocations.getOrNull(player.currentParagraphIndex) ?: return@LaunchedEffect
+        when (layoutMode) {
+            NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
+                if (pagerState.currentPage != loc.pageIndex) {
+                    pagerState.animateScrollToPage(loc.pageIndex)
+                }
+            }
+
+            NovelLayoutMode.Scroll -> {
+                var targetItemIndex = 0
+                for (p in 0 until loc.pageIndex) {
+                    targetItemIndex += 1 + pages[p].blocks.size + (if (p < pages.size - 1) 1 else 0)
+                }
+                targetItemIndex += 1 + loc.blockIndexInPage
+                continuousListState.animateScrollToItem((targetItemIndex - 1).coerceAtLeast(0))
+            }
+        }
+    }
+
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -586,11 +618,20 @@ fun NovelReaderScreen(
                                     if (ttsPlayer.currentParagraphIndex > 0) {
                                         ttsPlayer.resume()
                                     } else {
+                                        val curPage = currentNovelPage()
+                                        val initialIndex =
+                                            ttsLocations.indexOfFirst { it.pageIndex == curPage }.coerceAtLeast(0)
                                         ttsPlayer.startReading(
                                             rawText = text.text,
+                                            startIndex = initialIndex,
                                             novelTitle = currentNovel.title,
                                             authorName = currentNovel.userName,
                                             novelId = currentNovel.id,
+                                            rate = settings.novelTtsSpeechRate,
+                                            pitchLevel = settings.novelTtsPitch,
+                                            voice = settings.novelTtsVoiceName,
+                                            skipSymbols = settings.novelTtsSkipSymbols,
+                                            customDictionary = settings.novelTtsCustomDictionary,
                                         )
                                     }
                                 }
@@ -647,6 +688,12 @@ fun NovelReaderScreen(
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 scrollBehavior = scrollBehavior,
                                 contentPadding = readerPadding,
+                                readingBlockIndex =
+                                    if (currentTtsLocation?.pageIndex == pageIndex) {
+                                        currentTtsLocation.blockIndexInPage
+                                    } else {
+                                        null
+                                    },
                             )
                         }
                     }
@@ -669,6 +716,7 @@ fun NovelReaderScreen(
                             scrollBehavior = scrollBehavior,
                             contentPadding = readerPadding,
                             modifier = Modifier.fillMaxSize().background(backgroundColor),
+                            readingLocation = currentTtsLocation,
                         )
                     }
 
@@ -691,6 +739,12 @@ fun NovelReaderScreen(
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 scrollBehavior = scrollBehavior,
                                 contentPadding = readerPadding,
+                                readingBlockIndex =
+                                    if (currentTtsLocation?.pageIndex == pageIndex) {
+                                        currentTtsLocation.blockIndexInPage
+                                    } else {
+                                        null
+                                    },
                             )
                         }
                     }
@@ -751,5 +805,27 @@ fun NovelReaderScreen(
         fontFamily = fontFamily,
         onFontFamilyChange = { viewModel.updateNovelFontFamily(it.id) },
         onDismiss = { showSettingsSheet = false },
+        isTtsEnabled = isTtsEnabled,
+        ttsSpeechRate = settings.novelTtsSpeechRate,
+        onTtsSpeechRateChange = { rate ->
+            viewModel.updateNovelTtsSpeechRate(rate)
+            ttsPlayer?.setRate(rate)
+        },
+        ttsPitch = settings.novelTtsPitch,
+        onTtsPitchChange = { pitch ->
+            viewModel.updateNovelTtsPitch(pitch)
+            ttsPlayer?.setPitchLevel(pitch)
+        },
+        ttsVoiceName = settings.novelTtsVoiceName,
+        availableVoices = ttsPlayer?.availableVoices.orEmpty(),
+        onTtsVoiceChange = { voice ->
+            viewModel.updateNovelTtsVoiceName(voice)
+            ttsPlayer?.setVoiceSelection(voice)
+        },
+        ttsSkipSymbols = settings.novelTtsSkipSymbols,
+        onTtsSkipSymbolsChange = viewModel::updateNovelTtsSkipSymbols,
+        ttsCustomDictionary = settings.novelTtsCustomDictionary,
+        onAddDictionaryEntry = viewModel::addNovelTtsDictionaryEntry,
+        onRemoveDictionaryEntry = viewModel::removeNovelTtsDictionaryEntry,
     )
 }

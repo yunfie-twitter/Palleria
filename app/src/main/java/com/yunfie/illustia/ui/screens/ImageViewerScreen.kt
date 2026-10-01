@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -358,7 +359,7 @@ fun ImageViewerScreen(
         floatingToolbar = {
             AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
                 FloatingToolbar(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
                     color = MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
                     cornerRadius = 24.dp,
                     outSidePadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
