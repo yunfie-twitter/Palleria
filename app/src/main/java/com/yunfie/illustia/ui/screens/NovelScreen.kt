@@ -586,7 +586,12 @@ fun NovelReaderScreen(
                                     if (ttsPlayer.currentParagraphIndex > 0) {
                                         ttsPlayer.resume()
                                     } else {
-                                        ttsPlayer.startReading(text.text)
+                                        ttsPlayer.startReading(
+                                            rawText = text.text,
+                                            novelTitle = currentNovel.title,
+                                            authorName = currentNovel.userName,
+                                            novelId = currentNovel.id,
+                                        )
                                     }
                                 }
                             }
