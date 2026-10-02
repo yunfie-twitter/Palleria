@@ -28,14 +28,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -338,13 +340,12 @@ fun ImageViewerScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
-                val cutoutTop = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
-                val safeTop = maxOf(cutoutTop, 24.dp)
                 SmallTopAppBar(
                     title = illust.title,
                     color = Color.Transparent,
                     titleColor = Color.White,
-                    modifier = Modifier.padding(top = safeTop),
+                    // Consume the safe inset so SmallTopAppBar does not add the status bar twice.
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)),
                     navigationIcon = {
                         IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                             performHaptic(AppHapticEffect.Click)
