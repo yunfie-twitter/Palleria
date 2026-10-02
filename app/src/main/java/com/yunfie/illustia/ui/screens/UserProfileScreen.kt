@@ -262,6 +262,7 @@ fun UserProfileScreen(
             content(Modifier.fillMaxSize())
             UserProfileSmallTopAppBar(
                 user = user,
+                showWorkControls = pagerState.currentPage < 2,
                 sortOrder = sortOrder,
                 typeFilter = typeFilter,
                 onSortOrderChange = { sortOrder = it },

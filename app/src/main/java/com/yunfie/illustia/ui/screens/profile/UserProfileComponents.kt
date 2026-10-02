@@ -366,6 +366,7 @@ private fun UserProfileHeader(
 @Composable
 internal fun UserProfileSmallTopAppBar(
     user: UserProfile,
+    showWorkControls: Boolean,
     sortOrder: UserWorkSortOrder,
     typeFilter: UserWorkTypeFilter,
     onSortOrderChange: (UserWorkSortOrder) -> Unit,
@@ -411,6 +412,7 @@ internal fun UserProfileSmallTopAppBar(
             .rememberHapticFeedbackAction()
     val menuEntries =
         remember(
+            showWorkControls,
             sortOrder,
             typeFilter,
             shareTitle,
@@ -430,7 +432,7 @@ internal fun UserProfileSmallTopAppBar(
             muteLabel,
             reportProblemLabel,
         ) {
-            listOf(
+            listOfNotNull(
                 DropdownEntry(
                     items =
                         listOf(
@@ -495,7 +497,7 @@ internal fun UserProfileSmallTopAppBar(
                                     ),
                             ),
                         ),
-                ),
+                ).takeIf { showWorkControls },
                 DropdownEntry(
                     items =
                         listOfNotNull(
