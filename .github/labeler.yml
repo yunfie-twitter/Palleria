@@ -1,0 +1,35 @@
+# Reuse existing repository labels. File paths do not imply bug/feature intent.
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "**/*.md"
+
+github_actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/actions/**"
+          - ".github/scripts/**"
+          - ".github/labeler.yml"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/dependabot.yml"
+          - "**/build.gradle"
+          - "**/build.gradle.kts"
+          - "**/settings.gradle"
+          - "**/settings.gradle.kts"
+          - "gradle/libs.versions.toml"
+          - "gradle/wrapper/**"
+          - "**/Cargo.toml"
+          - "**/Cargo.lock"
+          - "**/package.json"
+          - "**/package-lock.json"
+
+i18n:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/src/**/res/values*/strings*.xml"
+          - "fdroid/metadata/*/**"
