@@ -40,12 +40,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -53,6 +54,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.screens.OnboardingScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import com.yunfie.illustia.ui.screens.SearchScreen
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -100,6 +102,8 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val widgetQuality = state.settings.fullscreenQuality
+            var isSaving by remember { mutableStateOf(false) }
+            var saveError by remember { mutableStateOf<String?>(null) }
             var showTokenLogin by remember { mutableStateOf(false) }
             var pendingIllustId by rememberSaveable { mutableStateOf<Long?>(null) }
             var selectedPageIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -147,6 +151,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                 viewModel = viewModel,
                                 widgetSelectionMode = true,
                                 onIllustSelected = { illust ->
+                                    saveError = null
                                     pendingIllustId = illust.id
                                     selectedPageIndex = 0
                                     viewModel.openIllust(illust.id)
@@ -167,29 +172,38 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                     illust = pendingIllust,
                                     quality = widgetQuality,
                                     initialPageIndex = selectedPageIndex,
+                                    isSaving = isSaving,
+                                    errorMessage = saveError,
                                     onPageSelected = { selectedPageIndex = it },
                                     onCancel = {
-                                        pendingIllustId = null
-                                        viewModel.closeIllust()
+                                        if (!isSaving) {
+                                            pendingIllustId = null
+                                            viewModel.closeIllust()
+                                        }
                                     },
                                     onApply = { pageIndex ->
-                                        scope.launch {
-                                            runCatching {
-                                                saveSelection(widgetId, pendingIllust, pageIndex)
-                                            }.onSuccess {
-                                                runCatching {
-                                                    val glanceManager = GlanceAppWidgetManager(this@IllustWidgetConfigureActivity)
-                                                    val glanceId = glanceManager.getGlanceIdBy(widgetId)
+                                        if (!isSaving) {
+                                            isSaving = true
+                                            saveError = null
+                                            scope.launch {
+                                                try {
+                                                    saveSelection(widgetId, pendingIllust, pageIndex)
+                                                    val manager = GlanceAppWidgetManager(this@IllustWidgetConfigureActivity)
+                                                    val glanceId = checkNotNull(manager.getGlanceIdBy(intent))
                                                     IllustGlanceWidget().update(this@IllustWidgetConfigureActivity, glanceId)
-                                                }.onFailure {
-                                                    IllustGlanceWidget().updateAll(this@IllustWidgetConfigureActivity)
+                                                    setResult(
+                                                        Activity.RESULT_OK,
+                                                        Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId),
+                                                    )
+                                                    finish()
+                                                } catch (cancelled: CancellationException) {
+                                                    throw cancelled
+                                                } catch (expectedFailure: Exception) {
+                                                    GlitchTipTelemetry.recordException(expectedFailure, tag = "configure_illust_widget")
+                                                    saveError = getString(R.string.error_save_failed)
+                                                } finally {
+                                                    isSaving = false
                                                 }
-                                                IllustWidgetProvider.publishPreview(this@IllustWidgetConfigureActivity)
-                                                setResult(
-                                                    Activity.RESULT_OK,
-                                                    Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId),
-                                                )
-                                                finish()
                                             }
                                         }
                                     },
@@ -227,7 +241,10 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                 imageUrl = selectedUrl,
                 imagePath = imageFile.absolutePath,
             )
-        IllustWidgetStore(this).save(widgetId, selection)
+        val store = IllustWidgetStore(this)
+        val previous = store.load(widgetId)
+        store.save(widgetId, selection)
+        previous?.imagePath?.takeIf { it != selection.imagePath }?.let { File(it).delete() }
     }
 
     private suspend fun downloadWidgetImage(
@@ -240,7 +257,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
             val request =
                 Request
                     .Builder()
-                    .url(imageUrl)
+                    .url(proxyPixivImageUrl(imageUrl, viewModel.uiState.value.settings.pixivImageProxyBaseUrl))
                     .header("Referer", "https://www.pixiv.net/")
                     .header("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Illustia)")
                     .build()
@@ -248,23 +265,28 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
             response.use { resp ->
                 if (!resp.isSuccessful) throw IOException("Widget image download failed: ${resp.code}")
                 val imageDir = File(filesDir, "widget_images").apply { mkdirs() }
-                val rawFile = File(imageDir, "illust_${widgetId}_p$pageIndex.raw")
-                val outputFile = File(imageDir, "illust_${widgetId}_p$pageIndex.jpg")
-                resp.body.use { body ->
-                    FileOutputStream(rawFile).use { output -> body.byteStream().use { input -> input.copyTo(output) } }
-                }
-                val bitmap =
-                    IllustGlanceWidget.decodeWidgetBitmap(rawFile, widgetImageMaxDimension)
-                        ?: throw IOException("Widget image decode failed")
-                FileOutputStream(outputFile).use { output ->
-                    if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)) {
-                        throw IOException("Widget image encode failed")
+                val rawFile = File.createTempFile("illust_${widgetId}_p${pageIndex}_", ".raw", imageDir)
+                val outputFile = File.createTempFile("illust_${widgetId}_p${pageIndex}_", ".jpg", imageDir)
+                var bitmap: Bitmap? = null
+                var completed = false
+                try {
+                    resp.body.use { body ->
+                        FileOutputStream(rawFile).use { output -> body.byteStream().use { input -> input.copyTo(output) } }
                     }
+                    bitmap = IllustGlanceWidget.decodeWidgetBitmap(rawFile, widgetImageMaxDimension)
+                        ?: throw IOException("Widget image decode failed")
+                    FileOutputStream(outputFile).use { output ->
+                        if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)) {
+                            throw IOException("Widget image encode failed")
+                        }
+                    }
+                    completed = true
+                    outputFile
+                } finally {
+                    bitmap?.recycle()
+                    rawFile.delete()
+                    if (!completed) outputFile.delete()
                 }
-                if (!rawFile.delete()) {
-                    rawFile.deleteOnExit()
-                }
-                outputFile
             }
         }
 
@@ -300,6 +322,8 @@ private fun WidgetPagePickerSheet(
     illust: Illust,
     quality: String,
     initialPageIndex: Int,
+    isSaving: Boolean,
+    errorMessage: String?,
     onPageSelected: (Int) -> Unit,
     onCancel: () -> Unit,
     onApply: (Int) -> Unit,
@@ -376,10 +400,14 @@ private fun WidgetPagePickerSheet(
             }
             Spacer(modifier = Modifier.height(2.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onApply(selected) }, modifier = Modifier.fillMaxWidth()) {
+                if (errorMessage != null) {
+                    Text(errorMessage, color = MiuixTheme.colorScheme.error)
+                }
+                if (isSaving) LoadingIndicator()
+                Button(onClick = { onApply(selected) }, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.widget_illust_apply))
                 }
-                Button(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onCancel, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.widget_illust_cancel))
                 }
             }

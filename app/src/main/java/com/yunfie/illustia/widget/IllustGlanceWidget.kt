@@ -7,6 +7,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,13 +54,19 @@ class IllustGlanceWidget : GlanceAppWidget() {
     ) {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
         val isPrivacyMode = SettingsStore(context.applicationContext).read().privacyModeEnabled
-        val selection = if (isPrivacyMode) null else IllustWidgetStore(context).load(appWidgetId)
-        val bitmap = loadWidgetBitmap(selection)
+        val store = IllustWidgetStore(context)
+        val initialSelection = if (isPrivacyMode) null else store.load(appWidgetId)
+        val initialBitmap = loadWidgetBitmap(initialSelection)
         val configIntent = buildConfigIntent(context, appWidgetId)
-        val detailIntent = selection?.let { buildDetailIntent(context, it.illustId) }
-        val promptText = resolvePromptText(context, isPrivacyMode, selection)
 
         provideContent {
+            val storedSelection by remember { store.observe(appWidgetId) }.collectAsState(initial = initialSelection)
+            val selection = if (isPrivacyMode) null else storedSelection
+            val bitmap by produceState(initialBitmap, selection) {
+                value = loadWidgetBitmap(selection)
+            }
+            val detailIntent = selection?.let { buildDetailIntent(context, it.illustId) }
+            val promptText = resolvePromptText(context, isPrivacyMode, selection)
             Box(
                 modifier =
                     GlanceModifier
@@ -64,9 +74,10 @@ class IllustGlanceWidget : GlanceAppWidget() {
                         .cornerRadius(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                if (bitmap != null && detailIntent != null && selection != null) {
+                val displayedBitmap = bitmap
+                if (displayedBitmap != null && detailIntent != null && selection != null) {
                     LoadedIllustView(
-                        bitmap = bitmap,
+                        bitmap = displayedBitmap,
                         title = selection.title,
                         detailIntent = detailIntent,
                     )
@@ -177,7 +188,7 @@ class IllustGlanceWidget : GlanceAppWidget() {
             var inSampleSize = 1
             var halfHeight = srcHeight / 2
             var halfWidth = srcWidth / 2
-            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+            while ((halfHeight / inSampleSize) >= reqHeight || (halfWidth / inSampleSize) >= reqWidth) {
                 inSampleSize *= 2
             }
             return inSampleSize.coerceAtLeast(1)
