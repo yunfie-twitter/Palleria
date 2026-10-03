@@ -3,6 +3,10 @@ package com.yunfie.illustia.widget
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 data class IllustWidgetSelection(
     val illustId: Long,
@@ -47,6 +51,17 @@ class IllustWidgetStore(
             imagePath = prefs.getString(key(appWidgetId, KEY_IMAGE_PATH), "").orEmpty(),
         ).takeIf { it.illustId > 0 && it.imagePath.isNotBlank() }
     }
+
+    fun observe(appWidgetId: Int): Flow<IllustWidgetSelection?> =
+        callbackFlow {
+            val listener =
+                SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+                    trySend(load(appWidgetId))
+                }
+            prefs.registerOnSharedPreferenceChangeListener(listener)
+            trySend(load(appWidgetId))
+            awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+        }.distinctUntilChanged()
 
     fun loadAny(): IllustWidgetSelection? {
         return prefs.all.keys
