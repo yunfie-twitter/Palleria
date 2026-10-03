@@ -74,3 +74,15 @@ npm run docs:preview
 ```
 
 生成先は `docs/.vitepress/dist`、配信baseは `/Palleria/` です。ページ画像は `docs/assets` に置き、Markdownから相対パスで参照するとビルド時にURLが解決されます。
+
+## 起動プロファイルと計測
+
+`app/src/main/baselineProfiles/` には `baseline-prof.txt` と `startup-prof.txt` を配置しています。現在のファイルはクラス単位の暫定ルールです。`benchmark` モジュールの `BaselineProfileGenerator` は `includeInStartupProfile = true` を指定し、起動経路から両方のプロファイルを生成します。
+
+AGP 9.4.1 では DEX レイアウト最適化が既定で有効です。release は `minifyEnabled = true` で R8 を使用します。`app/build.gradle` に `startupProfile` や `dexLayoutOptimization` の明示指定がないことだけでは、無効とは判断できません。[Android の公式説明](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)も参照してください。
+
+Android SDK・NDK と設定済みの管理対象デバイスを利用できる環境で `./gradlew :app:generateBaselineProfile` を実行し、生成したルールを確認・更新します。`StartupBenchmark` はプロファイル適用有無のコールド起動と、適用時のウォーム起動を各10回測定します。ただし同一APKでの ART コンパイル条件の比較だけでは、ビルド時の DEX 配置最適化の効果を単独では測定できません。DEX 最適化の適用は release ビルドの R8 出力でも確認し、短縮時間は実機の測定結果から判断してください。
+
+ABI 別 APK と universal APK は配布形式の違いです。複数 ABI の同梱だけで、すべての共有ライブラリを起動時にロードするわけではありません。Pixiv の UniFFI クライアントは API 操作などで必要になった時に初期化します。設定を読み込んでクライアントのラッパーを生成するだけでは初期化しません。
+
+Sentry は `io.sentry.auto-init = false` に加え、SDK が追加する `SentryInitProvider`・`SentryPerformanceProvider`・`SentryNdkPreloadProvider` を Manifest マージで除外しています。これにより、手動初期化前のライフサイクル登録や起動プロファイル設定ファイルの確認を避けます。代わりに Sentry による初期化前の自動起動計測は行いません。ユーザー操作・ネットワークイベントのブレッドクラムも無効です。テレメトリに同意している場合、起動後の処理で SDK を初期化します。トレース率は Manifest と `GlitchTipTelemetry` の両方で `1.0`（100%）に設定されています。これは同意済みのトレースを全件サンプリングする指定であり、起動前から自動計測する指定ではありません。
