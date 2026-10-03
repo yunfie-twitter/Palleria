@@ -1,8 +1,29 @@
-:root {
-  --vp-nav-height: 72px;
+/* Navigation height and logo size use VitePress defaults. */
+.vp-doc .app-screenshot {
+  margin: 24px auto;
+  max-width: 320px;
 }
-
-.VPNavBarTitle .logo {
-  width: 44px;
-  height: 44px;
+.vp-doc .app-screenshot img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1080 / 2400;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+}
+.vp-doc .app-screenshot figcaption {
+  margin-top: 8px;
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.vp-doc .screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 480px) {
+  .vp-doc .screenshot-grid {
+    grid-template-columns: 1fr;
+  }
 }

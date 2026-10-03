@@ -31,7 +31,7 @@ PalleriaはPixiv Inc.とは関係のない非公式アプリです。利用に�
 
 ## 動作環境
 
-- Android 7.1（API 25）以降
+- Android 7.0（API 24）以降
 - Pixivアカウント
 - インターネット接続
 

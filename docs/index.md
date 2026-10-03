@@ -33,7 +33,7 @@ features:
     link: /user/security
     linkText: セキュリティ機能を見る
   - title: 暗号化された端末間同期
-    details: PallaSyncで設定やお気に入りタグを複数端末へ安全に同期。
+    details: PallaSyncでお気に入りタグ・履歴・ミュートをペアリングした端末間で同期。
     link: /user/sync
     linkText: 同期機能を見る
 ---

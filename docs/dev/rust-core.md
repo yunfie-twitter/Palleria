@@ -15,18 +15,18 @@ description: UniFFI を用いた Rust API クライアント、バッファサ�
 
 | 対象データ | 上限サイズ | 超過時の動作 |
 | :--- | :--- | :--- |
-| **JSON レスポンス** | **16 MiB** | デコードストリームバッファ上限。超過時は即時 `ApiException` を発生 |
+| **JSON レスポンス** | **16 MiB** | デコードストリームバッファ上限。超過時は即時 `ApiError` を発生 |
 | **小説本文 (HTML)** | **8 MiB** | 小説本文パースバッファ上限 |
 | **HTTP エラー本文** | **64 KiB** | サーバーエラーレスポンス取得上限 |
-| **例外スタック詳細** | **4 KiB** | Kotlin 側へ伝播するエラーメッセージ情報量の上限 |
+| **HTTPエラー詳細文字列** | **4 KiB + 省略記号** | HTTPエラーの説明に使用する本文抜粋の上限 |
 
 ---
 
 ## モジュール構造 (`rust/pixiv-api/src/`)
 
-- `lib.rs`: UniFFI インターフェース定義およびエントリポイント
-- `client.rs`: HTTP 通信クライアントおよびヘッダー・認証処理
-- `models/`: Domain 別 DTO 定義 (`illust.rs`, `novel.rs`, `user.rs`, `ugoira.rs`)
+- `lib.rs`: モジュールと公開APIのエントリポイント
+- `client/`: HTTP 通信クライアントおよびヘッダー・認証処理
+- `models/`: Domain 別 DTO 定義 
 
 ---
 
@@ -35,3 +35,5 @@ description: UniFFI を用いた Rust API クライアント、バッファサ�
 - `arm64-v8a/libpalleria_pixiv_api.so`
 - `armeabi-v7a/libpalleria_pixiv_api.so`
 - `x86_64/libpalleria_pixiv_api.so`
+
+上限値の定義は `src/client/transport.rs` にあります。うごイラのアーカイブ取得には `src/client/ugoira_download.rs` の512 MiB上限もあります。
