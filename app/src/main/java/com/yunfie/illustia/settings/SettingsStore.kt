@@ -11,10 +11,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.pallasync.PallaSyncEventWriter
-import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.buildSettingsSyncEvents
 import com.yunfie.illustia.platform.PlatformCapabilities
@@ -25,6 +23,7 @@ import com.yunfie.illustia.settings.db.SavedIllustWithPages
 import com.yunfie.illustia.settings.db.SettingsDao
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE_SPEC_MIGRATED
+import com.yunfie.illustia.settings.store.CollectionSeparatedDataStore
 import com.yunfie.illustia.settings.store.DATASTORE_NAME
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
 import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
@@ -73,19 +72,16 @@ internal data class PallaSyncEnabledUpdate(
     val enabled: Boolean,
 )
 
-private fun defaultSyncEventWriter(context: Context): PallaSyncEventWriter {
-    val appContext = context.applicationContext
-    return (appContext as? IllustiaApplication)?.pallaSyncCoordinator
-        ?: PalleriaSyncCoordinator(context = appContext)
-}
-
 class SettingsStore internal constructor(
     context: Context,
-    private val syncEventWriter: PallaSyncEventWriter,
+    private val providedSyncEventWriter: PallaSyncEventWriter?,
 ) {
-    constructor(context: Context) : this(context, defaultSyncEventWriter(context))
+    constructor(context: Context) : this(context, null)
 
     private val appContext = context.applicationContext
+    private val syncEventWriter by lazy {
+        providedSyncEventWriter ?: PalleriaSyncManager(context = appContext).eventWriter
+    }
     private val legacyPreferences by lazy { appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE) }
     private val encryptedPreferences by lazy { Companion.createEncryptedPreferences(appContext) }
     private val sensitivePreferences by lazy { encryptedPreferences ?: legacyPreferences }
@@ -107,16 +103,17 @@ class SettingsStore internal constructor(
         return readAppSettingsImpl(dataStore, sensitivePreferences, dao, viewHistoryLimit)
     }
 
-    suspend fun readStartup(): AppSettings {
-        cachedStartupSettings?.let { return it }
-        return startupCacheMutex.withLock {
-            cachedStartupSettings?.let { return@withLock it }
-            val isLoggedIn = isStartupLoggedIn()
-            val result = readStartupAppSettingsImpl(dataStore, isLoggedIn = isLoggedIn)
-            cachedStartupSettings = result
-            result
+    suspend fun readStartup(): AppSettings =
+        withContext(Dispatchers.IO) {
+            cachedStartupSettings?.let { return@withContext it }
+            startupCacheMutex.withLock {
+                cachedStartupSettings?.let { return@withLock it }
+                val isLoggedIn = isStartupLoggedIn()
+                val result = readStartupAppSettingsImpl(startupDataStoreFor(appContext), isLoggedIn = isLoggedIn)
+                cachedStartupSettings = result
+                result
+            }
         }
-    }
 
     private fun isStartupLoggedIn(): Boolean {
         if (legacyPreferences.contains(KEY_STARTUP_IS_LOGGED_IN)) {
@@ -170,9 +167,14 @@ class SettingsStore internal constructor(
         return try {
             // The coordinator owns operationMutex first, then this callback takes
             // persistenceMutex. Incoming page apply uses the same lock order.
-            persistAfterSyncEnqueue(events, syncEventWriter) { persistRebased() }.also {
-                cachedStartupSettings = null
-            }
+            val saved =
+                if (events.isEmpty()) {
+                    persistRebased()
+                } else {
+                    persistAfterSyncEnqueue(events, syncEventWriter) { persistRebased() }
+                }
+            cachedStartupSettings = null
+            saved
         } catch (error: CancellationException) {
             throw error
         } catch (expectedFailure: Exception) {
@@ -413,6 +415,9 @@ class SettingsStore internal constructor(
         private var sharedDataStore: DataStore<Preferences>? = null
 
         @Volatile
+        private var sharedStartupDataStore: DataStore<Preferences>? = null
+
+        @Volatile
         private var sharedEncryptedPreferences: SharedPreferences? = null
 
         @Volatile
@@ -425,12 +430,26 @@ class SettingsStore internal constructor(
 
         fun dataStoreFor(context: Context): DataStore<Preferences> =
             sharedDataStore ?: synchronized(this) {
-                sharedDataStore ?: PreferenceDataStoreFactory
-                    .create(
-                        scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO),
-                        produceFile = { context.preferencesDataStoreFile(DATASTORE_NAME) },
-                    ).also { sharedDataStore = it }
+                sharedDataStore ?: CollectionSeparatedDataStore(
+                    startupDataStoreFor(context),
+                    createPreferencesStore(context, "illustia_collections"),
+                ).also { sharedDataStore = it }
             }
+
+        private fun startupDataStoreFor(context: Context): DataStore<Preferences> =
+            sharedStartupDataStore ?: synchronized(this) {
+                sharedStartupDataStore ?: createPreferencesStore(context, DATASTORE_NAME)
+                    .also { sharedStartupDataStore = it }
+            }
+
+        private fun createPreferencesStore(
+            context: Context,
+            name: String,
+        ): DataStore<Preferences> =
+            PreferenceDataStoreFactory.create(
+                scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO),
+                produceFile = { context.preferencesDataStoreFile(name) },
+            )
 
         fun createEncryptedPreferences(context: Context): SharedPreferences? {
             if (encryptedPreferencesInitialized) return sharedEncryptedPreferences

@@ -10,6 +10,11 @@ object DummyAppIconSwitcher {
     private const val ALIAS_DUMMY = "com.yunfie.illustia.MainActivityDummy"
     private const val ALIAS_CAT = "com.yunfie.illustia.MainActivityCat"
 
+    /** The launcher state is available without opening the legacy preferences file. */
+    fun isPrivacyLauncherEnabled(context: Context): Boolean =
+        context.packageManager.getComponentEnabledSetting(ComponentName(context, ALIAS_DUMMY)) ==
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
     fun apply(
         context: Context,
         privacyModeEnabled: Boolean,
