@@ -26,7 +26,7 @@ title: データベースと設定の保存
 
 `AppSettings` はアプリの設定モデルです。`SettingsStore` がPreferences DataStore、Room、EncryptedSharedPreferencesの値を集約します。すべてのプロパティがそのままDataStoreに保存されるわけではありません。
 
-一般設定にはテーマ、画質、ダウンロード、ミュート、ロック、PallaSync、テレメトリ等があります。認証トークンなどの秘密値は通常EncryptedSharedPreferencesで保護します。移行・暗号化ストアの初期化失敗時には、既存値を保持して再試行する処理があります。
+一般設定にはテーマ、画質、ダウンロード、ロック、PallaSync、テレメトリ等があります。作品・ユーザー・タグのミュート一覧と既読フィード作品は、別のPreferences DataStore（`illustia_collections`）に保存します。起動用の読み込みではこのファイルを開きません。既存の一覧は通常設定の初回読み込み時にコピーし、保存成功後に元ファイルから取り除きます。移行途中の失敗時は元データを優先して再試行します。認証トークンなどの秘密値は通常EncryptedSharedPreferencesで保護します。移行・暗号化ストアの初期化失敗時には、既存値を保持して再試行する処理があります。
 
 フィールド追加時は `AppSettings` だけでなく、`settings/store/` の読み書き・移行、Roomへの投影、必要に応じて同期イベントの対象も確認してください。
 

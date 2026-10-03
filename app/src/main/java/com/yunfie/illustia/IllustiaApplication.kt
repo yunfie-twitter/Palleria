@@ -74,13 +74,16 @@ class IllustiaApplication : Application() {
     }
 
     /** The only stateful PallaSync coordinator in this application process. */
-    internal val pallaSyncCoordinator: PalleriaSyncCoordinator by lazy {
-        PalleriaSyncCoordinator(
-            client = sharedHttpClient,
-            context = this,
-            coordinatorScope = appScope,
-        )
-    }
+    private val pallaSyncCoordinatorDelegate =
+        lazy {
+            PalleriaSyncCoordinator(
+                client = sharedHttpClient,
+                context = this,
+                coordinatorScope = appScope,
+            )
+        }
+
+    internal val pallaSyncCoordinator: PalleriaSyncCoordinator by pallaSyncCoordinatorDelegate
 
     override fun onCreate() {
         super.onCreate()
@@ -154,7 +157,7 @@ class IllustiaApplication : Application() {
     fun setPallaSyncEnabled(enabled: Boolean) {
         if (enabled) {
             pallaSyncCoordinator.startBackgroundSync()
-        } else {
+        } else if (pallaSyncCoordinatorDelegate.isInitialized()) {
             pallaSyncCoordinator.stopBackgroundSync()
         }
     }

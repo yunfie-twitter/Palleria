@@ -61,7 +61,6 @@ import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
-import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.appLanguageLocaleList
 import com.yunfie.illustia.settings.isAppDarkTheme
 import com.yunfie.illustia.settings.rememberAppThemeColors
@@ -118,13 +117,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
-        if (SettingsStore.isPrivacyModeEnabledSync(applicationContext)) {
+        if (DummyAppIconSwitcher.isPrivacyLauncherEnabled(applicationContext)) {
             setTheme(R.style.AppTheme_Splash_Calculator)
         }
         val splashScreen = installSplashScreen()
-        splashScreen.setKeepOnScreenCondition {
-            !viewModel.uiState.value.settingsLoaded
-        }
 
         // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウト＆ズームアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
@@ -209,7 +205,8 @@ class MainActivity : FragmentActivity() {
             isAppearanceLightNavigationBars = !isDark
         }
         super.onCreate(savedInstanceState)
-        applyAppLanguage(SettingsStore.readStoredAppLanguage(applicationContext))
+        // Keep the first frame protected until the async settings/lock state is known.
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         lastHandledClipboardText = null
 
         setContent {
@@ -247,11 +244,6 @@ class MainActivity : FragmentActivity() {
                 }.getOrNull()?.let { artworkAccent = it }
             }
             val themeColors = rememberAppThemeColors(settings, artworkAccent)
-
-            LaunchedEffect(settingsLoaded, settings.secureWindow) {
-                if (!settingsLoaded) return@LaunchedEffect
-                applySecureWindow(settings.secureWindow)
-            }
 
             // Force FLAG_SECURE while locked so the app is obscured in recents
             // and screenshots are blocked, regardless of secureWindow setting.
