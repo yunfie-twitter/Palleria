@@ -14,6 +14,10 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
 
+  markdown: {
+    image: { lazyLoading: true }
+  },
+
   sitemap: {
     hostname: siteUrl
   },
@@ -84,6 +88,7 @@ export default defineConfig({
           { text: 'アーキテクチャ概要 & レイヤー設計', link: '/dev/' },
           { text: 'アプリケーション仕様（実装基準）', link: '/dev/application-specification' },
           { text: 'ビルド & 環境構築パイプライン', link: '/dev/build' },
+          { text: 'ChromeOS・キーボード操作', link: '/dev/chromeos' },
           { text: 'Rust Native コア (pixiv-api)', link: '/dev/rust-core' },
           { text: 'PallaSync 同期エンジン仕様', link: '/dev/pallasync-engine' },
           { text: 'セキュリティ & 電卓パーサー仕様', link: '/dev/security-engine' },

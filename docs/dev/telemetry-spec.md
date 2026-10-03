@@ -52,8 +52,8 @@ report-uri https://glitchtip.yunfi.f5.si/api/1/security/?glitchtip_key=b2607da9c
 ## ローカルクラッシュハンドラー & 未捕獲例外送信 (`CrashHandler`)
 
 `Thread.UncaughtExceptionHandler` を継承し、未捕獲例外発生時に以下の処理を行います：
-1. スタックトレースを解析し、リソース未検出 (`Resources.NotFoundException`) やドキュメントアクセス権限エラーを検知して復旧ダイアログ/トーストを表示。
-2. テレメトリ有効時、`GlitchTipTelemetry.recordException(ex, tag = "uncaught_crash")` によりクラッシュレポートを送信し、`GlitchTipTelemetry.flush()` でプロセス終了前に確実にフラッシュ。
+1. スタックトレースを解析し、リソース未検出 (`Resources.NotFoundException`) やドキュメントアクセス権限エラーを検知して原因に応じたトースト表示を試行。
+2. テレメトリ有効時、`GlitchTipTelemetry.recordException(ex, tag = "uncaught_crash")` によりクラッシュレポートを送信し、`GlitchTipTelemetry.flush()` で最大2秒の待機で送信キューのフラッシュを試行。
 
 ---
 
@@ -62,6 +62,8 @@ report-uri https://glitchtip.yunfi.f5.si/api/1/security/?glitchtip_key=b2607da9c
 各種 ViewModel、フィード読み込み、検索、詳細表示、ブックマーク、ダウンロード、PallaSync 同期処理などで発生した予期せぬ例外を `GlitchTipTelemetry.recordException(...)` で収集します。
 - `CancellationException`（コルーチンキャンセル）は自動的に除外されます。
 - モジュールタグ（`module`）および追加コンテキスト情報（クエリ、URL、作品IDなど）を付与して記録されます。
+- `isSendDefaultPii = false` は呼び出し元が渡す `extras` の自動削除を意味しません。例えば検索失敗経路は検索語を渡しており、個人情報が一切含まれないとは保証できません。
+- プロセス終了前の送信はベストエフォートです。通信状態やOSによっては送信が完了しません。
 
 ---
 
@@ -96,7 +98,7 @@ GlitchTip は Sentry Envelope の `transaction` アイテムタイプを受け�
 | `ugoira.convert.mp4` | `ugoira.convert` | うごイラフレームの MP4 エンコード処理 |
 | `pallasync.sync` | `sync.operation` | PallaSync デバイス同期、アウトボックス送信、インボックス受信 |
 
-`GlitchTipTelemetry.trace` / `GlitchTipTelemetry.traceAsync` はテレメトリが無効な場合に計測オーバーヘッドなしでブロックを直接実行するため、呼び出し側で同意状態を別途確認する必要はありません。
+`GlitchTipTelemetry.trace` / `GlitchTipTelemetry.traceAsync` はテレメトリが無効な場合にトランザクションを生成せずブロックを実行するため、呼び出し側で同意状態を別途確認する必要はありません。
 
 ### GlitchTip 非対応のため無効化している機能
 

@@ -5,7 +5,7 @@ description: Palleriaの開発環境とプロジェクト構成の概要。
 
 # 開発ガイド
 
-PalleriaはKotlinとJetpack Composeを中心に構成されたAndroidアプリです。一部のPixiv API処理と同期処理にはRustを利用し、UniFFIでKotlinから呼び出します。
+PalleriaはKotlinとJetpack Composeを中心に構成されたAndroidアプリです。Pixiv API処理にはRustとUniFFIを利用し、PallaSyncのRust暗号コアはJNIで呼び出します。
 
 ## 技術スタック
 

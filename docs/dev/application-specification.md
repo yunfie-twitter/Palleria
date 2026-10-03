@@ -1,18 +1,20 @@
 ---
 title: アプリケーション仕様
-description: Palleria 5.9.0-beta.1 の実装に基づく機能・状態・連携の仕様。
+description: Palleria 6.6.0-beta.3 の実装に基づく機能・状態・連携の仕様。
 ---
 
 # アプリケーション仕様
 
 このページは `app`、`rust/pixiv-api`、`rust/pallasync-core` の現行ソースを基準にした実装仕様です。将来の構想ではなく、リポジトリに実装されている振る舞いを記録します。
 
+確認日: 2026年10月3日。バージョン値は `app/build.gradle` を基準にしています。
+
 ## 対象と動作環境
 
 | 項目 | 仕様 |
 | --- | --- |
 | アプリケーション ID | `com.yunfie.illustia` |
-| 現行バージョン | `5.9.0-beta.1`（`versionCode` 89） |
+| 現行バージョン | `6.6.0-beta.3`（`versionCode` 141） |
 | 最低 / target SDK | API 24（Android 7.0） / API 36 |
 | UI | Kotlin、Jetpack Compose、Navigation 3、Miuix KMP |
 | ネイティブ層 | Rust 2024 edition、UniFFI/JNI 経由で利用 |
@@ -76,9 +78,9 @@ Palleria は Pixiv 非公式クライアントであり、認証と作品取得�
 
 ## PallaSync プロトコル
 
-PallaSync はチェーン単位の暗号化イベント同期である。プロトコル版は `2.0`、標準の受信ページサイズは 200 件で、relay cursor と Lamport clock を永続化する。同期対象はお気に入りタグ、検索履歴、ミュート設定、閲覧履歴の各 v1/v2 スキーマで、イベント操作は `upsert` または `delete` である。
+PallaSync はチェーン単位の暗号化イベント同期である。プロトコル版は `2.1`（旧 `2.0` を受信可能）、標準の受信ページサイズは 200 件で、relay cursor と Lamport clock を永続化する。同期対象はお気に入りタグ、検索履歴、ミュート設定、既読フィード作品、閲覧履歴の各 v1/v2 スキーマで、イベント操作は `upsert` または `delete` である。
 
-レコードは暗号化ペイロード、チェーン ID、端末 ID、作成時刻、署名を持つ。Rust コアは ChaCha20-Poly1305、Ed25519、X25519/HPKE、HKDF、PBKDF2、BIP39 を利用する。受信レコードは inbox に耐久保存してから適用し、復号・検証・スキーマ処理に失敗したものは隔離する。初回 pull 完了前のローカル変更は `pending_initial_merge` として待機し、マージ後に送信キューへ投入する。
+レコードは暗号化ペイロード、チェーン ID、端末 ID、作成時刻、署名を持つ。Rust コアは XChaCha20-Poly1305（旧形式はChaCha20-Poly1305）、Ed25519、X25519/HPKE、HKDF、PBKDF2、BIP39 を利用する。受信レコードは inbox に耐久保存してから適用し、復号・検証・スキーマ処理に失敗したものは隔離する。初回 pull 完了前のローカル変更は `pending_initial_merge` として待機し、マージ後に送信キューへ投入する。
 
 ## 実装上の境界
 
@@ -100,3 +102,7 @@ Pixiv API クライアント      AppSettings       Room outbox/inbox
 - 公開コンポーネントや URL 受信規則を変更する場合は、Manifest の `exported`、権限、受信データ検証を確認する。
 - PallaSync の wire 形式、暗号処理、スキーマ名を変更する場合は、既存端末との互換性、inbox 隔離、移行処理を確認する。
 - Rust API を変更する場合は UniFFI Kotlin バインディングと 3 ABI のネイティブライブラリを再生成する。
+
+## デスクトップ操作と読み上げ
+
+[ChromeOS・デスクトップ入力](/dev/chromeos)に、キー操作、右クリック、列数変更、バックグラウンドサービスの仕様を記載しています。小説のTTSは `NovelTtsService` と `NovelTtsProgress` が担当し、一時停止時の発話範囲オフセットを保持します。
