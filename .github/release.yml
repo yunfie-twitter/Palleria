@@ -1,0 +1,53 @@
+# .github/release.yml
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+      - renovate-bot
+
+  categories:
+    # 1. 重要な変更
+    - title: 仕様変更・互換性のない更新
+      labels:
+        - breaking-change
+        - Semver-Major
+
+    # 2. 新機能
+    - title: 新機能
+      labels:
+        - feature
+
+    # 3. バグ修正
+    - title: バグ修正
+      labels:
+        - bug
+
+    # 4. パフォーマンス
+    - title: パフォーマンス
+      labels:
+        - performance
+
+    # 5. CI/ビルド
+    - title: CI/ビルド
+      labels:
+        - ci
+        - build
+        - github-actions
+
+    # 6. 依存ライブラリ（必要なら）
+    - title: 依存ライブラリの更新
+      labels:
+        - dependencies
+
+    # 7. ドキュメント（必要なら）
+    - title: ドキュメント
+      labels:
+        - documentation
+        - docs
+
+    # 8. その他（キャッチオール）
+    - title: その他
+      labels:
+        - "*"
