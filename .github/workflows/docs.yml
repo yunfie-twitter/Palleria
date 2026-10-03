@@ -20,6 +20,7 @@ jobs:
     concurrency:
       group: gh-pages-publish
       cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout repository
@@ -46,11 +47,14 @@ jobs:
         run: npm run docs:build
 
       - name: Preserve F-Droid repository
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git clone --branch gh-pages --single-branch \
-            https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git old-pages || true
+          set -euo pipefail
+          mkdir old-pages
+          git ls-remote --heads origin refs/heads/gh-pages > pages-ref.txt
+          if [ -s pages-ref.txt ]; then
+            git fetch origin refs/heads/gh-pages
+            git archive FETCH_HEAD | tar -x -C old-pages
+          fi
 
           for directory in repo metadata tmp; do
             if [ -d "old-pages/${directory}" ]; then
