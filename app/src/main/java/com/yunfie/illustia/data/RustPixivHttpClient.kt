@@ -74,13 +74,15 @@ import com.yunfie.illustia.rust.UserProfile as RustUserProfile
 internal class RustPixivHttpClient(
     mode: NetworkMode,
 ) {
-    private val native =
+    // Settings reads also construct this adapter. Load UniFFI only when an operation needs it.
+    private val native by lazy {
         PixivHttpClient(
             networkMode = mode.code,
             userAgent = "PixivAndroidApp/${PixivApiConfig.APP_VERSION} (Android ${Build.VERSION.RELEASE}; ${Build.MODEL})",
             appOsVersion = "Android ${Build.VERSION.RELEASE}",
             acceptLanguage = currentAcceptLanguage(),
         )
+    }
 
     fun newCall(request: Request): RustPixivCall = RustPixivCall(native, request)
 

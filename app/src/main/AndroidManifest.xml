@@ -61,6 +61,18 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme.Splash">
 
+        <!-- Initialize Sentry only after consent and the first app frame. auto-init=false
+             alone does not remove the SDK's performance and native preload providers. -->
+        <provider
+            android:name="io.sentry.android.core.SentryInitProvider"
+            tools:node="remove" />
+        <provider
+            android:name="io.sentry.android.core.SentryPerformanceProvider"
+            tools:node="remove" />
+        <provider
+            android:name="io.sentry.ndk.SentryNdkPreloadProvider"
+            tools:node="remove" />
+
         <meta-data
             android:name="io.sentry.dsn"
             android:value="https://b2607da9caa6433b8e0718ebb46d3a2f@glitchtip.yunfi.f5.si/1" />
