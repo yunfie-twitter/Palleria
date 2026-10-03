@@ -26,7 +26,7 @@ description: UniFFI を用いた Rust API クライアント、バッファサ�
 
 - `lib.rs`: モジュールと公開APIのエントリポイント
 - `client/`: HTTP 通信クライアントおよびヘッダー・認証処理
-- `models/`: Domain 別 DTO 定義 
+- `models/`: Domain 別 DTO 定義
 
 ---
 
