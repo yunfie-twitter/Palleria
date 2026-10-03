@@ -665,7 +665,7 @@ fun NovelReaderScreen(
                                 if (ttsPlayer.isPlaying) {
                                     ttsPlayer.pause()
                                 } else {
-                                    if (ttsPlayer.currentParagraphIndex > 0) {
+                                    if (ttsPlayer.novelId == currentNovel.id && ttsPlayer.totalParagraphs > 0) {
                                         ttsPlayer.resume()
                                     } else {
                                         val curPage = currentNovelPage()

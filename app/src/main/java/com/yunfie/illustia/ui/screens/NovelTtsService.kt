@@ -8,7 +8,9 @@ import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.content.ContextCompat
@@ -47,6 +49,8 @@ data class NovelTtsState(
 class NovelTtsService :
     Service(),
     TextToSpeech.OnInitListener {
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val progress = NovelTtsProgress()
     private var tts: TextToSpeech? = null
     private var isTtsInitialized = false
     private var mediaSession: MediaSession? = null
@@ -107,7 +111,11 @@ class NovelTtsService :
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
+        mainHandler.post { initializeTts(status) }
+    }
+
+    private fun initializeTts(status: Int) {
+        if (status == TextToSpeech.SUCCESS && tts != null) {
             isTtsInitialized = true
             tts?.let { engine ->
                 val result = engine.setLanguage(Locale.JAPANESE)
@@ -129,40 +137,69 @@ class NovelTtsService :
 
                 applyVoice(engine)
 
-                engine.setOnUtteranceProgressListener(
-                    object : UtteranceProgressListener() {
-                        override fun onStart(utteranceId: String?) {
-                            updateState(isPlaying = true)
-                            updatePlaybackState(PlaybackState.STATE_PLAYING)
-                            updateNotification()
-                        }
-
-                        override fun onDone(utteranceId: String?) {
-                            val nextIndex = currentParagraphIndex + 1
-                            if (nextIndex < paragraphs.size) {
-                                currentParagraphIndex = nextIndex
-                                speakCurrentParagraph()
-                            } else {
-                                updateState(isPlaying = false)
-                                updatePlaybackState(PlaybackState.STATE_STOPPED)
-                                updateNotification()
-                                audioHelper?.abandonAudioFocus()
-                            }
-                        }
-
-                        @Deprecated("Deprecated in Java")
-                        override fun onError(utteranceId: String?) {
-                            updateState(isPlaying = false)
-                            updatePlaybackState(PlaybackState.STATE_PAUSED)
-                            updateNotification()
-                        }
-                    },
-                )
+                engine.setOnUtteranceProgressListener(createProgressListener())
             }
             updateState(isInitialized = true)
             if (paragraphs.isNotEmpty() && _ttsState.value.isPlaying) {
                 speakCurrentParagraph()
             }
+        }
+    }
+
+    private fun createProgressListener(): UtteranceProgressListener =
+        object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                withActiveUtterance(utteranceId) {
+                    updateState(isPlaying = true)
+                    updatePlaybackState(PlaybackState.STATE_PLAYING)
+                    updateNotification()
+                }
+            }
+
+            override fun onRangeStart(
+                utteranceId: String?,
+                start: Int,
+                end: Int,
+                frame: Int,
+            ) {
+                withActiveUtterance(utteranceId) { progress.onRangeStart(utteranceId, start, end) }
+            }
+
+            override fun onDone(utteranceId: String?) {
+                withActiveUtterance(utteranceId) { finishParagraph() }
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                withActiveUtterance(utteranceId) {
+                    progress.pause()
+                    updateState(isPlaying = false)
+                    updatePlaybackState(PlaybackState.STATE_PAUSED)
+                    updateNotification()
+                }
+            }
+        }
+
+    private fun withActiveUtterance(
+        id: String?,
+        action: () -> Unit,
+    ) {
+        mainHandler.post {
+            if (progress.isActive(id)) action()
+        }
+    }
+
+    private fun finishParagraph() {
+        progress.reset()
+        val nextIndex = currentParagraphIndex + 1
+        if (nextIndex < paragraphs.size) {
+            currentParagraphIndex = nextIndex
+            speakCurrentParagraph()
+        } else {
+            updateState(isPlaying = false)
+            updatePlaybackState(PlaybackState.STATE_STOPPED)
+            updateNotification()
+            audioHelper?.abandonAudioFocus()
         }
     }
 
@@ -244,6 +281,8 @@ class NovelTtsService :
         rawText: String,
         startIndex: Int,
     ) {
+        progress.reset()
+        tts?.stop()
         paragraphs = NovelTtsTextSanitizer.sanitizeTextToParagraphs(rawText, skipSymbols, customDictionary)
         if (paragraphs.isEmpty()) return
 
@@ -269,17 +308,17 @@ class NovelTtsService :
             updateState(isPlaying = false)
             return
         }
-        val text = paragraphs[currentParagraphIndex]
+        val (utteranceId, text) = progress.begin(paragraphs[currentParagraphIndex])
         tts?.setSpeechRate(speechRate)
         tts?.setPitch(pitch)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "paragraph_$currentParagraphIndex")
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         updateState(isPlaying = true)
         updatePlaybackState(PlaybackState.STATE_PLAYING)
         updateNotification()
     }
 
     private fun resumeReading() {
-        if (paragraphs.isEmpty()) return
+        if (paragraphs.isEmpty() || isPlaying()) return
         audioHelper?.requestAudioFocus()
         startForeground(
             NovelTtsNotificationHelper.NOTIFICATION_ID,
@@ -289,6 +328,7 @@ class NovelTtsService :
     }
 
     private fun pauseReading() {
+        progress.pause()
         tts?.stop()
         updateState(isPlaying = false)
         updatePlaybackState(PlaybackState.STATE_PAUSED)
@@ -297,6 +337,7 @@ class NovelTtsService :
 
     private fun skipToNext() {
         if (currentParagraphIndex < paragraphs.size - 1) {
+            progress.reset()
             currentParagraphIndex++
             speakCurrentParagraph()
         }
@@ -304,6 +345,7 @@ class NovelTtsService :
 
     private fun skipToPrevious() {
         if (currentParagraphIndex > 0) {
+            progress.reset()
             currentParagraphIndex--
             speakCurrentParagraph()
         }
@@ -311,6 +353,7 @@ class NovelTtsService :
 
     private fun seekToParagraph(index: Int) {
         if (paragraphs.isNotEmpty()) {
+            progress.reset()
             currentParagraphIndex = index.coerceIn(0, paragraphs.lastIndex)
             speakCurrentParagraph()
         }
@@ -335,8 +378,12 @@ class NovelTtsService :
     }
 
     private fun stopReading() {
+        progress.reset()
         tts?.stop()
         audioHelper?.abandonAudioFocus()
+        paragraphs = emptyList()
+        novelId = null
+        currentParagraphIndex = 0
         updateState(isPlaying = false, currentParagraphIndex = 0)
         updatePlaybackState(PlaybackState.STATE_STOPPED)
         mediaSession?.isActive = false
@@ -433,12 +480,17 @@ class NovelTtsService :
     }
 
     override fun onDestroy() {
+        progress.reset()
+        mainHandler.removeCallbacksAndMessages(null)
         tts?.stop()
         tts?.shutdown()
         tts = null
         mediaSession?.release()
         mediaSession = null
         audioHelper?.abandonAudioFocus()
+        paragraphs = emptyList()
+        novelId = null
+        currentParagraphIndex = 0
         updateState(isPlaying = false, currentParagraphIndex = 0, isInitialized = false)
         super.onDestroy()
     }

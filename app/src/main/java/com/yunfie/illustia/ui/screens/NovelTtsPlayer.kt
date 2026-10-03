@@ -22,6 +22,9 @@ class NovelTtsPlayer(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    var novelId by mutableStateOf<Long?>(null)
+        private set
+
     var isPlaying by mutableStateOf(false)
         private set
 
@@ -47,6 +50,7 @@ class NovelTtsPlayer(
         scope.launch {
             NovelTtsService.ttsState.collect { state ->
                 val prevIndex = currentParagraphIndex
+                novelId = state.novelId
                 isPlaying = state.isPlaying
                 currentParagraphIndex = state.currentParagraphIndex
                 speechRate = state.speechRate
