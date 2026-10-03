@@ -1,0 +1,21 @@
+name: Release Pipeline Tests
+
+on:
+  pull_request:
+    paths: [".github/scripts/**", ".github/workflows/**"]
+  push:
+    branches: [main]
+    paths: [".github/scripts/**", ".github/workflows/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s .github/scripts -p 'test_*.py' -v
