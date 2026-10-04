@@ -42,7 +42,12 @@ val LocalScrollHeaderInset = staticCompositionLocalOf { 0.dp }
 fun ScrollBlurScaffold(
     enabled: Boolean,
     scrollBehavior: ScrollBehavior,
-    scrollFraction: () -> Float = { scrollBehavior.state.collapsedFraction },
+    scrollFraction: () -> Float = {
+        // Track both collapsedFraction and contentOffset so micro-scrolls immediately blur
+        val scrollOffsetPx = -scrollBehavior.state.contentOffset
+        val overlapProgress = (scrollOffsetPx / 60f).coerceIn(0f, 1f)
+        maxOf(scrollBehavior.state.collapsedFraction, overlapProgress).coerceIn(0f, 1f)
+    },
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
@@ -87,22 +92,14 @@ fun ScrollBlurOverlay(
         return
     }
     val surface = MiuixTheme.colorScheme.surface
+    val outline = MiuixTheme.colorScheme.outline
     val source = rememberGraphicsLayer()
     val blurred = rememberGraphicsLayer()
-    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !LocalFastScrolling.current
+    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val maxFadeHeightPx = with(density) { 44.dp.toPx() }
 
-    val rawFraction = fraction().coerceIn(0f, 1f)
-    // Deadzone and smooth rescale for micro-scrolls so that borderline scrolling never jitters
-    val targetFraction =
-        if (rawFraction < 0.012f) {
-            0f
-        } else {
-            ((rawFraction - 0.012f) / (1f - 0.012f)).coerceIn(0f, 1f)
-        }
-
+    val targetFraction = fraction().coerceIn(0f, 1f)
     val animatedFraction by animateFloatAsState(
         targetValue = targetFraction,
         animationSpec =
@@ -129,67 +126,40 @@ fun ScrollBlurOverlay(
         ) { content() }
 
         if (measuredHeaderHeight > 0) {
-            val currentFadeHeightPx = maxFadeHeightPx * progress
-            val totalBackdropHeightPx = measuredHeaderHeight + currentFadeHeightPx
-            val totalBackdropHeightDp = with(density) { totalBackdropHeightPx.toDp() }
-            val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.18f * progress).coerceIn(0f, 1f)
+            val totalBackdropHeightDp = with(density) { measuredHeaderHeight.toDp() }
+            val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.28f * progress).coerceIn(0f, 1f)
 
-            if (baseAlpha > 0f || (supportsBlur && progress > 0.02f)) {
+            if (baseAlpha > 0f || (supportsBlur && progress > 0f)) {
                 Box(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .height(totalBackdropHeightDp)
-                            .graphicsLayer {
-                                compositingStrategy = CompositingStrategy.Offscreen
-                            }.drawWithContent {
-                                // Keep the entire header area (including tabs) at full opacity,
-                                // and fade out smoothly below the header.
-                                val fadeStartPx = measuredHeaderHeight.toFloat()
-                                val fadeStartRatio =
-                                    if (totalBackdropHeightPx > 0f) {
-                                        (fadeStartPx / totalBackdropHeightPx).coerceIn(0f, 1f)
-                                    } else {
-                                        1f
-                                    }
-
-                                if (supportsBlur && progress > 0.02f) {
+                            .clipToBounds()
+                            .drawWithContent {
+                                if (supportsBlur && progress > 0f) {
                                     val blurRadius = 16.dp.toPx() * progress
                                     blurred.renderEffect = BlurEffect(blurRadius, blurRadius)
                                     blurred.record { drawLayer(source) }
                                     drawLayer(blurred)
-
-                                    val blurMaskBrush =
-                                        Brush.verticalGradient(
-                                            colorStops =
-                                                arrayOf(
-                                                    0f to Color.Black,
-                                                    fadeStartRatio to Color.Black,
-                                                    1f to Color.Transparent,
-                                                ),
-                                            startY = 0f,
-                                            endY = totalBackdropHeightPx,
-                                        )
-                                    drawRect(
-                                        brush = blurMaskBrush,
-                                        size = size,
-                                        blendMode = BlendMode.DstIn,
-                                    )
                                 }
 
                                 if (baseAlpha > 0f) {
-                                    val surfaceBrush =
-                                        Brush.verticalGradient(
-                                            colorStops =
-                                                arrayOf(
-                                                    0f to surface.copy(alpha = baseAlpha),
-                                                    fadeStartRatio to surface.copy(alpha = baseAlpha),
-                                                    1f to Color.Transparent,
-                                                ),
-                                            startY = 0f,
-                                            endY = totalBackdropHeightPx,
-                                        )
-                                    drawRect(brush = surfaceBrush, size = size)
+                                    drawRect(color = surface.copy(alpha = baseAlpha))
+                                }
+
+                                // Subtle, clean hairline divider on scroll instead of heavy shadow
+                                if (progress > 0f) {
+                                    val dividerHeightPx = 1.dp.toPx()
+                                    drawRect(
+                                        color = outline.copy(alpha = 0.08f * progress),
+                                        topLeft =
+                                            androidx.compose.ui.geometry
+                                                .Offset(0f, size.height - dividerHeightPx),
+                                        size =
+                                            androidx.compose.ui.geometry
+                                                .Size(size.width, dividerHeightPx),
+                                    )
                                 }
                             },
                 )
