@@ -402,6 +402,8 @@ abstract class IllustiaViewModelFoundation(
 
     abstract fun saveCurrentAccount()
 
+    abstract fun openAccountSwitcher()
+
     protected suspend fun loadHomeInternal(
         kind: HomeFeedKind,
         forceRefresh: Boolean = false,

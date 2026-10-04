@@ -69,7 +69,6 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 private val MoreCardShape = RoundedCornerShape(18.dp)
 private val IconTileShape = RoundedCornerShape(12.dp)
@@ -126,7 +125,8 @@ fun MoreScreen(
                 MoreHeader(
                     isLoggedIn = state.settings.refreshToken.isNotBlank(),
                     account = state.currentAccount,
-                    onClick = viewModel::openAccountSwitcher,
+                    onOpenProfile = viewModel::openCurrentUserProfile,
+                    onOpenAccountSwitcher = viewModel::openAccountSwitcher,
                 )
             }
             item { ActionList(actions = quickActions + utilityActions) }
@@ -243,8 +243,10 @@ private fun rememberUtilityActions(viewModel: IllustiaViewModel): List<MoreActio
 private fun MoreHeader(
     isLoggedIn: Boolean,
     account: UserProfile?,
-    onClick: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onOpenAccountSwitcher: () -> Unit,
 ) {
+    val performHaptic = rememberHapticFeedbackAction()
     Card(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 18.dp,
@@ -254,8 +256,6 @@ private fun MoreHeader(
                 color = MiuixTheme.colorScheme.surfaceContainer,
                 contentColor = MiuixTheme.colorScheme.onBackground,
             ),
-        pressFeedbackType = PressFeedbackType.Sink,
-        onClick = onClick,
     ) {
         Row(
             modifier =
@@ -266,35 +266,68 @@ private fun MoreHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            AccountAvatar(account = account)
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            Row(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .miuixClickable(
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                if (isLoggedIn) {
+                                    onOpenProfile()
+                                } else {
+                                    onOpenAccountSwitcher()
+                                }
+                            },
+                        ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text(
-                    text = accountTitle(isLoggedIn, account),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = accountSubtitle(isLoggedIn, account),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    style = MiuixTheme.textStyles.footnote1,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                AccountAvatar(account = account)
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = accountTitle(isLoggedIn, account),
+                        color = MiuixTheme.colorScheme.onBackground,
+                        style = MiuixTheme.textStyles.title3,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = accountSubtitle(isLoggedIn, account),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
-            Icon(
-                imageVector = MiuixIcons.ChevronForward,
-                contentDescription = null,
-                tint = MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier.size(20.dp),
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .miuixClickable(
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                onOpenAccountSwitcher()
+                            },
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = stringResource(R.string.account_switch_title),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }

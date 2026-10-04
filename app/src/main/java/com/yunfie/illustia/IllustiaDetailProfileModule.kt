@@ -339,6 +339,63 @@ abstract class IllustiaDetailProfileModule(
         openUserPage(user.id)
     }
 
+    fun openCurrentUserProfile() {
+        val settings = _uiState.value.settings
+        if (settings.refreshToken.isBlank()) {
+            openAccountSwitcher()
+            return
+        }
+
+        val cachedUserId = _uiState.value.currentAccount?.id ?: settings.bookmarkUserId
+        if (cachedUserId != null && cachedUserId > 0L) {
+            openUserPage(cachedUserId)
+        }
+
+        viewModelScope.launch {
+            try {
+                val myProfile =
+                    withContext(Dispatchers.IO) {
+                        repository.currentUserProfile()
+                    }
+                _uiState.update { current ->
+                    val existing = current.currentAccount
+                    val updatedAccount =
+                        if (existing != null) {
+                            existing.copy(
+                                id = myProfile.userId,
+                                name = myProfile.name,
+                                account = myProfile.pixivId,
+                                profileImageUrl = myProfile.profileImageUrl ?: existing.profileImageUrl,
+                            )
+                        } else {
+                            UserProfile(
+                                id = myProfile.userId,
+                                name = myProfile.name,
+                                account = myProfile.pixivId,
+                                profileImageUrl = myProfile.profileImageUrl,
+                                backgroundImageUrl = null,
+                                comment = "",
+                                isFollowed = false,
+                            )
+                        }
+                    current.copy(currentAccount = updatedAccount)
+                }
+                saveCurrentAccount()
+
+                if (cachedUserId != myProfile.userId) {
+                    openUserPage(myProfile.userId)
+                }
+            } catch (expectedFailure: Exception) {
+                if (isCancellation(expectedFailure)) throw expectedFailure
+                if (handleAuthExpired(expectedFailure)) return@launch
+                if (cachedUserId == null || cachedUserId <= 0L) {
+                    val message = loadFailureMessage(_uiState.value, expectedFailure, str(R.string.error_load_artist_failed))
+                    _uiState.update { it.copy(message = message) }
+                }
+            }
+        }
+    }
+
     override fun openUserPage(userId: Long) = loadUserPage(userId, forceRefresh = false)
 
     fun refreshUserPage(userId: Long) = loadUserPage(userId, forceRefresh = true)

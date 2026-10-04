@@ -816,7 +816,7 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.FeatureFlags)
     }
 
-    fun openAccountSwitcher() {
+    override fun openAccountSwitcher() {
         _uiState.update { it.copy(showAccountSwitcher = true) }
     }
 
