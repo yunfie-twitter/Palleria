@@ -1,5 +1,6 @@
 package com.yunfie.illustia.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,6 +41,7 @@ fun SearchToolbar(
     suggestions: List<String> = emptyList(),
     historyCount: Int = 0,
     onRemoveHistoryItem: ((String) -> Unit)? = null,
+    onCancel: (() -> Unit)? = null,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
     val focusRequester =
@@ -67,6 +69,25 @@ fun SearchToolbar(
         },
         expanded = expanded,
         onExpandedChange = onExpandedChange,
+        outsideEndAction = {
+            Text(
+                modifier =
+                    Modifier
+                        .padding(start = 12.dp)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                        ) {
+                            performHaptic(AppHapticEffect.Click)
+                            onExpandedChange(false)
+                            onValueChange("")
+                            onCancel?.invoke()
+                        },
+                text = stringResource(R.string.action_cancel),
+                color = MiuixTheme.colorScheme.primary,
+            )
+        },
         modifier =
             modifier
                 .fillMaxWidth()
