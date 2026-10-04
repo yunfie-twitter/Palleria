@@ -1,7 +1,9 @@
 package com.yunfie.illustia.ui.components
 
 import android.os.Build
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -18,9 +20,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -88,7 +92,20 @@ fun ScrollBlurOverlay(
     val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !LocalFastScrolling.current
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val fadeHeightPx = with(density) { 24.dp.toPx() }
+    val maxFadeHeightPx = with(density) { 44.dp.toPx() }
+    val maxFadeOverlapPx = with(density) { 16.dp.toPx() }
+
+    val targetFraction = fraction().coerceIn(0f, 1f)
+    val animatedFraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec =
+            spring(
+                stiffness = Spring.StiffnessMedium,
+                dampingRatio = Spring.DampingRatioNoBouncy,
+            ),
+        label = "scrollBlurFraction",
+    )
+    val progress = (animatedFraction * animatedFraction * (3f - 2f * animatedFraction)).coerceIn(0f, 1f)
 
     Box(modifier = modifier.clipToBounds()) {
         Box(
@@ -103,70 +120,81 @@ fun ScrollBlurOverlay(
                 },
             ),
         ) { content() }
+
+        if (measuredHeaderHeight > 0) {
+            val currentFadeHeightPx = maxFadeHeightPx * progress
+            val totalBackdropHeightPx = measuredHeaderHeight + currentFadeHeightPx
+            val totalBackdropHeightDp = with(density) { totalBackdropHeightPx.toDp() }
+            val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.18f * progress).coerceIn(0f, 1f)
+
+            if (baseAlpha > 0f || (supportsBlur && progress > 0f)) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(totalBackdropHeightDp)
+                            .graphicsLayer {
+                                compositingStrategy = CompositingStrategy.Offscreen
+                            }.drawWithContent {
+                                val fadeOverlapPx = maxFadeOverlapPx * progress
+                                val fadeStartPx = (measuredHeaderHeight - fadeOverlapPx).coerceAtLeast(0f)
+                                val fadeStartRatio =
+                                    if (totalBackdropHeightPx > 0f) {
+                                        (fadeStartPx / totalBackdropHeightPx).coerceIn(0f, 1f)
+                                    } else {
+                                        1f
+                                    }
+
+                                if (supportsBlur && progress > 0f) {
+                                    val blurRadius = 16.dp.toPx() * progress
+                                    blurred.renderEffect = BlurEffect(blurRadius, blurRadius)
+                                    blurred.record { drawLayer(source) }
+                                    drawLayer(blurred)
+
+                                    val blurMaskBrush =
+                                        Brush.verticalGradient(
+                                            colorStops =
+                                                arrayOf(
+                                                    0f to Color.Black,
+                                                    fadeStartRatio to Color.Black,
+                                                    1f to Color.Transparent,
+                                                ),
+                                            startY = 0f,
+                                            endY = totalBackdropHeightPx,
+                                        )
+                                    drawRect(
+                                        brush = blurMaskBrush,
+                                        size = size,
+                                        blendMode = BlendMode.DstIn,
+                                    )
+                                }
+
+                                if (baseAlpha > 0f) {
+                                    val surfaceBrush =
+                                        Brush.verticalGradient(
+                                            colorStops =
+                                                arrayOf(
+                                                    0f to surface.copy(alpha = baseAlpha),
+                                                    fadeStartRatio to surface.copy(alpha = baseAlpha),
+                                                    1f to Color.Transparent,
+                                                ),
+                                            startY = 0f,
+                                            endY = totalBackdropHeightPx,
+                                        )
+                                    drawRect(brush = surfaceBrush, size = size)
+                                }
+                            },
+                )
+            }
+        }
+
         Box(
             Modifier
                 .fillMaxWidth()
                 .onSizeChanged {
                     measuredHeaderHeight = it.height
                     onHeaderHeight(it.height)
-                }.clipToBounds()
-                .drawWithContent {
-                    val progress = fraction().coerceIn(0f, 1f)
-                    val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.18f * progress).coerceIn(0f, 1f)
-                    val edgeAlpha = baseAlpha * 0.42f
-
-                    if (supportsBlur && progress > 0f) {
-                        blurred.renderEffect = BlurEffect(16.dp.toPx() * progress, 16.dp.toPx() * progress)
-                        blurred.record { drawLayer(source) }
-                        drawLayer(blurred)
-                    }
-
-                    if (baseAlpha > 0f) {
-                        if (progress > 0f && size.height > fadeHeightPx) {
-                            val fadeStartRatio = ((size.height - fadeHeightPx) / size.height).coerceIn(0f, 1f)
-                            val gradientBrush =
-                                Brush.verticalGradient(
-                                    colorStops =
-                                        arrayOf(
-                                            0f to surface.copy(alpha = baseAlpha),
-                                            fadeStartRatio to surface.copy(alpha = baseAlpha),
-                                            1f to surface.copy(alpha = edgeAlpha),
-                                        ),
-                                    startY = 0f,
-                                    endY = size.height,
-                                )
-                            drawRect(brush = gradientBrush, size = size)
-                        } else {
-                            drawRect(surface.copy(alpha = baseAlpha))
-                        }
-                    }
-                    drawContent()
                 },
         ) { header() }
-
-        val progress = fraction().coerceIn(0f, 1f)
-        if (progress > 0f && measuredHeaderHeight > 0) {
-            val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.18f * progress).coerceIn(0f, 1f)
-            val edgeAlpha = baseAlpha * 0.42f
-            if (edgeAlpha > 0f) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(24.dp)
-                            .graphicsLayer {
-                                translationY = measuredHeaderHeight.toFloat()
-                            }.background(
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            surface.copy(alpha = edgeAlpha),
-                                            Color.Transparent,
-                                        ),
-                                ),
-                            ),
-                )
-            }
-        }
     }
 }
