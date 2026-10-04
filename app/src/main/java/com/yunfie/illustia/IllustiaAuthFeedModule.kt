@@ -154,11 +154,19 @@ abstract class IllustiaAuthFeedModule(
             if (_uiState.value.homeItems.isNotEmpty() || _uiState.value.loadState == LoadState.Loading) return@launch
             _uiState.update { it.copy(loadState = LoadState.Loading) }
             try {
-                loadHomeInternal(kind)
+                val generation = repository.accountGeneration
+                repository.readHomeSnapshot(kind)?.let { cached ->
+                    _uiState.update {
+                        if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
+                        if (it.appLocked || it.privacyLocked) return@update it
+                        it.copy(homeItems = cached.items.visibleWithSettings(it.settings), homeNextUrl = null, loadState = LoadState.Loaded)
+                    }
+                }
+                loadHomeInternal(kind, forceRefresh = true)
                 _uiState.update { it.copy(loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(loadState = LoadState.Idle) }
+                _uiState.update { it.copy(loadState = if (it.homeItems.isEmpty()) LoadState.Idle else LoadState.Loaded) }
             }
         }
     }

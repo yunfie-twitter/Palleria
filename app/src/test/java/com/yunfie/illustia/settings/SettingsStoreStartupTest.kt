@@ -3,6 +3,7 @@ package com.yunfie.illustia.settings
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.models.SearchAgeRestriction
+import com.yunfie.illustia.models.StoredAccount
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
@@ -67,6 +68,47 @@ class SettingsStoreStartupTest {
                 val persisted = store.read()
                 persisted.refreshToken shouldBe testToken
                 persisted.lastSeenAppVersionCode shouldBe 999
+                verifyAuthOnlyRotation()
+            } finally {
+                store.write(original, store.read())
+            }
+        }
+    }
+
+    private fun verifyAuthOnlyRotation() {
+        runBlocking {
+            val store = SettingsStore(ApplicationProvider.getApplicationContext<Context>())
+            val original = store.read()
+            try {
+                val base =
+                    store.write(
+                        original.copy(
+                            refreshToken = "before",
+                            searchHistory = listOf("keep"),
+                            mutedUsers = listOf(42),
+                            accounts =
+                                listOf(
+                                    StoredAccount("one", "one", null, "before", 9),
+                                    StoredAccount("two", "two", null, "other", 10),
+                                ),
+                        ),
+                        original,
+                    )
+                store.persistAuth(
+                    com.yunfie.illustia.models
+                        .PixivSession("access", "rotated", 9, System.currentTimeMillis() + 3_600_000),
+                )
+                store.readAuth().refreshToken shouldBe "rotated"
+                store.readFeedSettings().mutedUsers shouldBe listOf(42L)
+                store.readFeedSettings().searchHistory.shouldBeEmpty()
+                store.write(base.copy(themeMode = "dark"), base)
+                store.read().apply {
+                    refreshToken shouldBe "rotated"
+                    searchHistory shouldBe listOf("keep")
+                    mutedUsers shouldBe listOf(42L)
+                    accounts.map { it.refreshToken } shouldBe listOf("rotated", "other")
+                    bookmarkUserId shouldBe 9L
+                }
             } finally {
                 store.write(original, store.read())
             }
