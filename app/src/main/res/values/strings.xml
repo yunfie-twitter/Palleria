@@ -1198,4 +1198,8 @@
     <string name="desktop_open_new_tab">ブラウザーの新しいタブで開く</string>
     <string name="desktop_bookmark_private">非公開ブックマーク</string>
     <string name="desktop_save_as">別名で保存</string>
+    <string name="flag_top_scroll_blur_title">トップスクロールのぼかし効果</string>
+    <string name="flag_top_scroll_blur_desc">スクロールした内容が上部ヘッダーの背後でぼけます。Android 12未満では半透明の背景を使用します。</string>
+    <string name="flag_navigation_icons_only_title">ナビゲーションバーをアイコンのみにする</string>
+    <string name="flag_navigation_icons_only_desc">標準の下部ナビゲーションバーのラベルを隠します。フローティング表示は元からアイコンのみです。</string>
 </resources>

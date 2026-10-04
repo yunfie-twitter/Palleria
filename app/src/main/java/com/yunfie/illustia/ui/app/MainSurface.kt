@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -47,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.AppNavigationBar
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.screens.AccountSwitchSheet
 import com.yunfie.illustia.ui.screens.AppLockScreen
@@ -61,7 +61,6 @@ import com.yunfie.illustia.visibleWith
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
@@ -156,12 +155,9 @@ internal fun MainSurface(
             bottomBar = {
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard") {
                     Box(
-                        modifier = Modifier.background(MiuixTheme.colorScheme.surfaceContainer).navigationBarsPadding(),
+                        modifier = Modifier.background(MiuixTheme.colorScheme.surfaceContainer),
                     ) {
-                        NavigationBar(
-                            color = MiuixTheme.colorScheme.surfaceContainer,
-                            showDivider = true,
-                        ) {
+                        AppNavigationBar(settings = appState.settings) {
                             navigationTabs.forEach { tab ->
                                 val pageIndex = tabs.indexOf(tab)
                                 NavigationBarItem(
@@ -286,7 +282,7 @@ internal fun MainSurface(
                         visible = appState.settings.navigationStyle != "auto" || navigationVisible,
                         enter = fadeIn() + slideInVertically { it / 2 },
                         exit = fadeOut() + slideOutVertically { it / 2 },
-                        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+                        modifier = Modifier.align(Alignment.BottomCenter),
                     ) {
                         FloatingNavigationBar(
                             color = MiuixTheme.colorScheme.surfaceContainerHigh,
