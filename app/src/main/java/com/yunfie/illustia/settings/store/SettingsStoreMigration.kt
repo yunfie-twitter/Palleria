@@ -103,7 +103,7 @@ private fun readLegacyMigrationSettings(
     )
 }
 
-private fun migrateFallbackCredentials(
+internal fun migrateFallbackCredentials(
     encryptedPreferences: SharedPreferences,
     legacyPreferences: SharedPreferences,
 ) {

@@ -109,6 +109,7 @@ fn finish_session(
         .or_else(|| fallback_refresh_token.map(str::to_owned))
         .ok_or_else(|| invalid_response("OAuth response has no refresh token"))?;
     Ok(LoginSession {
+        expires_in: response.expires_in,
         access_token: response.access_token,
         refresh_token,
         user_id: response.user.and_then(|user| user.id?.into_u64()),
@@ -132,6 +133,7 @@ impl OAuthPayload {
 
 #[derive(Debug, Deserialize)]
 struct OAuthResponse {
+    expires_in: Option<u64>,
     access_token: String,
     refresh_token: Option<String>,
     user: Option<OAuthUser>,
@@ -165,7 +167,7 @@ mod tests {
     #[test]
     fn parses_wrapped_oauth_response_with_string_user_id() {
         let session = parse_session(
-            r#"{"response":{"access_token":"access","refresh_token":"refresh","user":{"id":"42"}}}"#,
+            r#"{"response":{"access_token":"access","refresh_token":"refresh","expires_in":3600,"user":{"id":"42"}}}"#,
             None,
         )
         .unwrap();
@@ -173,6 +175,7 @@ mod tests {
         assert_eq!(session.access_token, "access");
         assert_eq!(session.refresh_token, "refresh");
         assert_eq!(session.user_id, Some(42));
+        assert_eq!(session.expires_in, Some(3600));
     }
 
     #[test]
@@ -180,5 +183,6 @@ mod tests {
         let session = parse_session(r#"{"access_token":"access"}"#, Some("fallback")).unwrap();
 
         assert_eq!(session.refresh_token, "fallback");
+        assert_eq!(session.expires_in, None);
     }
 }

@@ -40,6 +40,7 @@ data class Illusts(
     val totalComments: Int? = null,
 )
 
+@kotlinx.serialization.Serializable
 data class IllustSeries(
     val id: Long,
     val title: String? = null,

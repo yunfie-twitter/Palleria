@@ -166,6 +166,7 @@ abstract class IllustiaViewModelFoundation(
 
     protected companion object {
         val RECOMMENDED_TAG_CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(30)
+        const val STARTUP_VERSION_WORK_DELAY_MS = 500L
         const val MAX_SEEN_FEED_ILLUSTS = 2_000
         const val MAX_CACHED_GRID_STATES = 16
     }
@@ -311,44 +312,48 @@ abstract class IllustiaViewModelFoundation(
                     startupSettings
                 }
             val shouldLock = normalizedStartupSettings.appLockEnabled && settingsStore.hasPinSet()
-            val currentVersionCode =
-                runCatching {
-                    val pInfo =
-                        getApplication<Application>().packageManager.getPackageInfo(
-                            getApplication<Application>().packageName,
-                            0,
-                        )
-                    PackageInfoCompat.getLongVersionCode(pInfo).toInt()
-                }.getOrDefault(133)
-            val lastSeenVersionCode = normalizedStartupSettings.lastSeenAppVersionCode
-            val isUpdated = lastSeenVersionCode in 1 until currentVersionCode
-            if (isUpdated) {
-                appUpdaterRepository.cleanUpdateApks()
-            }
-            val postUpdateMsg =
-                if (isUpdated) {
-                    val currentVersionName = appUpdaterRepository.getCurrentVersionName()
-                    str(R.string.post_update_notice, currentVersionName)
-                } else {
-                    null
-                }
-
             _uiState.update {
                 it.withSettings(normalizedStartupSettings).copy(
                     settingsLoaded = true,
                     appLocked = shouldLock,
                     privacyLocked = normalizedStartupSettings.privacyModeEnabled,
                     showLockRecoveryDialog = normalizedStartupSettings.appLockFailCount >= 12,
-                    message = postUpdateMsg ?: it.message,
                 )
-            }
-            if (lastSeenVersionCode != currentVersionCode) {
-                updateSettings { it.copy(lastSeenAppVersionCode = currentVersionCode) }
             }
             if (!shouldLock && !normalizedStartupSettings.privacyModeEnabled && normalizedStartupSettings.refreshToken.isNotBlank()) {
                 prefetchHomeFeedOnStartup(_uiState.value.homeKind)
             }
             resumePendingNativeIntentIfReady()
+            // Nonessential package/version work must not gate the first frame or feed request.
+            viewModelScope.launch(Dispatchers.IO) {
+                kotlinx.coroutines.delay(STARTUP_VERSION_WORK_DELAY_MS)
+                val currentVersionCode =
+                    runCatching {
+                        val pInfo =
+                            getApplication<Application>().packageManager.getPackageInfo(
+                                getApplication<Application>().packageName,
+                                0,
+                            )
+                        PackageInfoCompat.getLongVersionCode(pInfo).toInt()
+                    }.getOrDefault(133)
+                val lastSeenVersionCode = normalizedStartupSettings.lastSeenAppVersionCode
+                val isUpdated = lastSeenVersionCode in 1 until currentVersionCode
+                if (isUpdated) {
+                    appUpdaterRepository.cleanUpdateApks()
+                }
+                val postUpdateMsg =
+                    if (isUpdated) {
+                        val currentVersionName = appUpdaterRepository.getCurrentVersionName()
+                        str(R.string.post_update_notice, currentVersionName)
+                    } else {
+                        null
+                    }
+
+                if (postUpdateMsg != null) _uiState.update { it.copy(message = it.message ?: postUpdateMsg) }
+                if (lastSeenVersionCode != currentVersionCode) {
+                    updateSettings { it.copy(lastSeenAppVersionCode = currentVersionCode) }
+                }
+            }
         }
     }
 
@@ -402,20 +407,29 @@ abstract class IllustiaViewModelFoundation(
         forceRefresh: Boolean = false,
     ) {
         GlitchTipTelemetry.traceAsync("feed.home.load", "feed.home") {
+            val generation = repository.accountGeneration
             val page = repository.loadHome(kind, forceRefresh = forceRefresh)
-            val settings = _uiState.value.settings
+            val currentSettings = _uiState.value.settings
+            val settings =
+                if (currentSettings.refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+                    repository.readFeedSettings()
+                } else {
+                    currentSettings
+                }
             val items =
                 withContext(Dispatchers.Default) {
                     page.items.visibleWithSettings(settings).preferUnseenFeedItems(settings)
                 }
             _uiState.update {
+                if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
+                if (it.appLocked || it.privacyLocked) return@update it
                 it.copy(
                     sessionReady = true,
-                    homeItems = items,
+                    homeItems = items.visibleWithSettings(it.settings),
                     homeNextUrl = page.nextUrl,
                 )
             }
-            rememberFeedItems(items)
+            if (repository.accountGeneration == generation) rememberFeedItems(items)
         }
     }
 

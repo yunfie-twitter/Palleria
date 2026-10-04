@@ -67,6 +67,8 @@ import com.yunfie.illustia.settings.rememberAppThemeColors
 import com.yunfie.illustia.ui.IllustiaApp
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Surface
@@ -210,7 +212,11 @@ class MainActivity : FragmentActivity() {
         lastHandledClipboardText = null
 
         setContent {
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val presentation =
+                remember(viewModel) {
+                    viewModel.uiState.map { it.activityPresentation() }.distinctUntilChanged()
+                }
+            val uiState by presentation.collectAsStateWithLifecycle(initialValue = viewModel.uiState.value.activityPresentation())
             val settings = uiState.settings
             val appLocked = uiState.appLocked
             val settingsLoaded = uiState.settingsLoaded
@@ -328,7 +334,7 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(
                 settingsLoaded,
                 uiState.selectedIllust?.title,
-                uiState.selectedUser?.name,
+                uiState.selectedUserName,
                 uiState.activeSearchWord,
                 uiState.showUserPage,
             ) {
@@ -342,8 +348,8 @@ class MainActivity : FragmentActivity() {
                             if (artist.isNotBlank()) "$illustTitle - $artist | $appName" else "$illustTitle | $appName"
                         }
 
-                        uiState.showUserPage && uiState.selectedUser != null -> {
-                            "${uiState.selectedUser?.name} | $appName"
+                        uiState.showUserPage && uiState.selectedUserName != null -> {
+                            "${uiState.selectedUserName} | $appName"
                         }
 
                         uiState.activeSearchWord.isNotBlank() -> {

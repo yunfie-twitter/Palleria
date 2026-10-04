@@ -2,6 +2,7 @@ package com.yunfie.illustia.data
 
 import android.os.Build
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.MAX_SESSION_LIFETIME_SECONDS
 import com.yunfie.illustia.models.NetworkMode
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
@@ -58,6 +59,7 @@ import okhttp3.Request
 import okio.buffer
 import okio.sink
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.TimeUnit
 import com.yunfie.illustia.rust.Comment as RustComment
 import com.yunfie.illustia.rust.CommentStamp as RustCommentStamp
 import com.yunfie.illustia.rust.CommentUser as RustCommentUser
@@ -90,7 +92,15 @@ internal class RustPixivHttpClient(
         withContext(Dispatchers.IO) {
             nativeCall {
                 native.loginWithRefreshToken(refreshToken).let {
-                    PixivSession(it.accessToken, it.refreshToken, it.userId?.toLong())
+                    PixivSession(
+                        it.accessToken,
+                        it.refreshToken,
+                        it.userId?.toLong(),
+                        it.expiresIn
+                            ?.coerceAtMost(MAX_SESSION_LIFETIME_SECONDS.toULong())
+                            ?.toLong()
+                            ?.let { seconds -> System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(seconds) } ?: 0,
+                    )
                 }
             }
         }
@@ -102,7 +112,15 @@ internal class RustPixivHttpClient(
         withContext(Dispatchers.IO) {
             nativeCall {
                 native.loginWithAuthorizationCode(code, codeVerifier).let {
-                    PixivSession(it.accessToken, it.refreshToken, it.userId?.toLong())
+                    PixivSession(
+                        it.accessToken,
+                        it.refreshToken,
+                        it.userId?.toLong(),
+                        it.expiresIn
+                            ?.coerceAtMost(MAX_SESSION_LIFETIME_SECONDS.toULong())
+                            ?.toLong()
+                            ?.let { seconds -> System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(seconds) } ?: 0,
+                    )
                 }
             }
         }
