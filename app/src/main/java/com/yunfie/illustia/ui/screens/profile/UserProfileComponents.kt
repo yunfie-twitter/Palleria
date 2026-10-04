@@ -343,8 +343,6 @@ private fun UserProfileHeader(
                     url = it,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    maxDecodeDimensionPx = 1080,
-                    allowRgb565 = true,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -569,9 +567,6 @@ internal fun UserProfileSmallTopAppBar(
                 url = user.backgroundImageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                thumbnail = true,
-                maxDecodeDimensionPx = 128,
-                allowRgb565 = true,
                 modifier =
                     Modifier
                         .matchParentSize()
