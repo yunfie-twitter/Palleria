@@ -86,6 +86,7 @@ import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
+import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -856,7 +857,7 @@ private fun UserIllustGridPage(
                 onBookmark = { onBookmark(illust) },
                 onClick = { onOpenIllust(illust) },
                 onLongClick = onIllustLongClick?.let { { it(illust) } },
-                modifier = Modifier.animateItem(),
+                modifier = animatedGridPlacement(),
                 highQualityImages = settings.useHighQualityFeedImages,
                 showAiBadge = settings.showAiBadge,
             )

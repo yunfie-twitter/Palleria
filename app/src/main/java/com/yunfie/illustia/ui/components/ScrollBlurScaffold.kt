@@ -80,7 +80,7 @@ fun ScrollBlurOverlay(
     val surface = MiuixTheme.colorScheme.surface
     val source = rememberGraphicsLayer()
     val blurred = rememberGraphicsLayer()
-    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !LocalFastScrolling.current
     Box(modifier = modifier.clipToBounds()) {
         Box(
             Modifier.fillMaxSize().then(

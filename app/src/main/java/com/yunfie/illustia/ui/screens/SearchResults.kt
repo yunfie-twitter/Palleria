@@ -49,6 +49,7 @@ import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
+import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -200,6 +201,7 @@ internal fun SearchResultGrid(
                     val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                     IllustCard(
+                        modifier = animatedGridPlacement(),
                         illust = illust,
                         onBookmark = onBookmark,
                         onBookmarkLongClick = onBookmarkLongClick,

@@ -65,6 +65,7 @@ import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
+import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -338,6 +339,7 @@ private fun RankingGridContent(
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
                 IllustCard(
+                    modifier = animatedGridPlacement(),
                     illust = illust,
                     onBookmark = onBookmark,
                     onBookmarkLongClick = onBookmarkLongClick,

@@ -19,6 +19,9 @@ class DesktopShortcutsTest {
     @Test
     fun globalShortcutsRequireTheirModifiers() {
         assertNull(desktopCommand(key(KeyEvent.KEYCODE_F)))
+        assertNull(desktopCommand(key(KeyEvent.KEYCODE_K)))
+        assertEquals(DesktopCommand.Palette, desktopCommand(key(KeyEvent.KEYCODE_K, KeyEvent.META_CTRL_ON)))
+        assertNull(desktopCommand(key(KeyEvent.KEYCODE_K, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON)))
         assertEquals(DesktopCommand.Search, desktopCommand(key(KeyEvent.KEYCODE_F, KeyEvent.META_CTRL_ON)))
         assertEquals(DesktopCommand.Refresh, desktopCommand(key(KeyEvent.KEYCODE_R, KeyEvent.META_CTRL_ON)))
         assertEquals(DesktopCommand.Refresh, desktopCommand(key(KeyEvent.KEYCODE_F5)))
