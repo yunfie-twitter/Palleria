@@ -84,7 +84,6 @@ fun LazyGridItemScope.animatedGridPlacement(): Modifier =
     } else {
         Modifier
             .animateItem(fadeInSpec = null, placementSpec = tween(GRID_ANIMATION_MILLIS), fadeOutSpec = null)
-            .animateContentSize(tween(GRID_ANIMATION_MILLIS))
     }
 
 private const val SCROLL_SETTLE_MILLIS = 180L

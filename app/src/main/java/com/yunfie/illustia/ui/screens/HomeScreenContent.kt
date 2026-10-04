@@ -199,12 +199,16 @@ internal fun FeedTabContent(
             }
 
             if (showPaginationSkeletons) {
-                items(
-                    count = columns,
-                    key = { "home_paginating_skeleton_$it" },
-                    contentType = { "illust_skeleton" },
-                ) {
-                    IllustCardSkeleton(shimmerValue = shimmer)
+                item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -341,12 +345,16 @@ internal fun FollowingTabContent(
             }
 
             if (showPaginationSkeletons) {
-                items(
-                    count = columns,
-                    key = { "timeline_paginating_skeleton_$it" },
-                    contentType = { "illust_skeleton" },
-                ) {
-                    IllustCardSkeleton(shimmerValue = shimmer)
+                item(key = "timeline_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

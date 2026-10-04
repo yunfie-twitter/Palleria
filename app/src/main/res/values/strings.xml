@@ -1214,4 +1214,12 @@
     <string name="command_palette_light">ライトテーマに変更</string>
     <string name="command_palette_dark">ダークテーマに変更</string>
     <string name="command_palette_system">端末のテーマに合わせる</string>
+    <string name="command_palette_category_navigation">移動</string>
+    <string name="command_palette_category_settings">設定</string>
+    <string name="command_palette_category_appearance">テーマ</string>
+    <string name="command_palette_category_action">アクション</string>
+    <string name="command_palette_shortcut_navigate">選択</string>
+    <string name="command_palette_shortcut_select">実行</string>
+    <string name="command_palette_shortcut_close">閉じる</string>
+    <string name="command_palette_no_results">一致するコマンドが見つかりません</string>
 </resources>

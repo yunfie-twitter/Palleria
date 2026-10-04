@@ -17,11 +17,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
-const val DEFAULT_GRID_BUFFER = 16
-const val DEFAULT_LIST_BUFFER = 8
+const val DEFAULT_GRID_BUFFER = 28
+const val DEFAULT_LIST_BUFFER = 14
 const val AUTO_LOAD_COOLDOWN_MS = 1200L
 const val AUTO_LOAD_FAILURE_BACKOFF_MS = 5000L
-const val AUTO_LOAD_DEBOUNCE_MS = 200L
+const val AUTO_LOAD_DEBOUNCE_MS = 40L
 
 internal object AutoLoadMoreThrottle {
     fun calculateDelayMillis(
