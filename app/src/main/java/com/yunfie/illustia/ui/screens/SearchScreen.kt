@@ -65,11 +65,14 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.searchUiState
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGridSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.delay
@@ -77,6 +80,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -260,75 +264,101 @@ fun SearchScreen(
         modifier = Modifier.fillMaxSize(),
         color = scheme.surface,
     ) {
-        Column(
+        ScrollBlurScaffold(
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        ) {
-            // Search bar area (no TopAppBar title spacing)
-            if (isResultMode && !searchExpanded) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    HeaderIcon(
-                        MiuixIcons.Back,
-                        onClick = {
-                            performHaptic(AppHapticEffect.Click)
-                            (onBackFromResults ?: onClearResults).invoke()
-                        },
-                        modifier = Modifier.height(56.dp),
-                    )
-                    SearchToolbar(
-                        focusRequest = focusRequest,
-                        onFocusRequestHandled = onFocusRequestHandled,
-                        value = state.activeSearchWord,
-                        expanded = false,
-                        suggestions = suggestions,
-                        historyCount = state.settings.searchHistory.size,
-                        onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
-                        onExpandedChange = { expanded ->
-                            if (expanded && state.searchDraft.isBlank()) {
-                                onUpdateDraft(state.activeSearchWord)
-                            }
-                            onExpandedChange(expanded)
-                        },
-                        onValueChange = { newQuery ->
-                            onUpdateDraft(newQuery)
-                            onExpandedChange(true)
-                        },
-                        onSearch = {
-                            val target = state.searchDraft.ifBlank { state.activeSearchWord }
-                            onSubmit(target)
-                        },
-                        onSuggestionClick = {
-                            onSubmit(it)
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            } else if (onBack != null && !searchExpanded) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    HeaderIcon(
-                        MiuixIcons.Back,
-                        onClick = {
-                            performHaptic(AppHapticEffect.Click)
-                            onBack()
-                        },
-                        modifier = Modifier.height(56.dp),
-                    )
+            enabled = state.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur) && !isResultMode && !searchExpanded,
+            scrollBehavior = MiuixScrollBehavior(),
+            scrollFraction = {
+                val grid = viewModel.searchBrowseGridState
+                if (grid.firstVisibleItemIndex > 0) 1f else (grid.firstVisibleItemScrollOffset / 64f).coerceIn(0f, 1f)
+            },
+            header = {
+                // Search bar area (no TopAppBar title spacing)
+                if (isResultMode && !searchExpanded) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        HeaderIcon(
+                            MiuixIcons.Back,
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                (onBackFromResults ?: onClearResults).invoke()
+                            },
+                            modifier = Modifier.height(56.dp),
+                        )
+                        SearchToolbar(
+                            focusRequest = focusRequest,
+                            onFocusRequestHandled = onFocusRequestHandled,
+                            value = state.activeSearchWord,
+                            expanded = false,
+                            suggestions = suggestions,
+                            historyCount = state.settings.searchHistory.size,
+                            onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
+                            onExpandedChange = { expanded ->
+                                if (expanded && state.searchDraft.isBlank()) {
+                                    onUpdateDraft(state.activeSearchWord)
+                                }
+                                onExpandedChange(expanded)
+                            },
+                            onValueChange = { newQuery ->
+                                onUpdateDraft(newQuery)
+                                onExpandedChange(true)
+                            },
+                            onSearch = {
+                                val target = state.searchDraft.ifBlank { state.activeSearchWord }
+                                onSubmit(target)
+                            },
+                            onSuggestionClick = {
+                                onSubmit(it)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                } else if (onBack != null && !searchExpanded) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        HeaderIcon(
+                            MiuixIcons.Back,
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                onBack()
+                            },
+                            modifier = Modifier.height(56.dp),
+                        )
+                        SearchToolbar(
+                            focusRequest = focusRequest,
+                            onFocusRequestHandled = onFocusRequestHandled,
+                            value = state.searchDraft,
+                            expanded = false,
+                            suggestions = suggestions,
+                            historyCount = state.settings.searchHistory.size,
+                            onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
+                            onExpandedChange = onExpandedChange,
+                            onValueChange = onUpdateDraft,
+                            onSearch = {
+                                onSubmit(state.searchDraft)
+                            },
+                            onSuggestionClick = {
+                                onSubmit(it)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                } else {
                     SearchToolbar(
                         focusRequest = focusRequest,
                         onFocusRequestHandled = onFocusRequestHandled,
                         value = state.searchDraft,
-                        expanded = false,
+                        expanded = searchExpanded,
                         suggestions = suggestions,
                         historyCount = state.settings.searchHistory.size,
                         onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
@@ -340,30 +370,11 @@ fun SearchScreen(
                         onSuggestionClick = {
                             onSubmit(it)
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
-            } else {
-                SearchToolbar(
-                    focusRequest = focusRequest,
-                    onFocusRequestHandled = onFocusRequestHandled,
-                    value = state.searchDraft,
-                    expanded = searchExpanded,
-                    suggestions = suggestions,
-                    historyCount = state.settings.searchHistory.size,
-                    onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
-                    onExpandedChange = onExpandedChange,
-                    onValueChange = onUpdateDraft,
-                    onSearch = {
-                        onSubmit(state.searchDraft)
-                    },
-                    onSuggestionClick = {
-                        onSubmit(it)
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
-
+            },
+        ) {
             // Content area
             AnimatedContent(
                 targetState = contentMode,

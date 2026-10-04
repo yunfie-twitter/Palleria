@@ -58,6 +58,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
@@ -121,7 +122,7 @@ internal fun BookmarkWatchlistTab(
                     .then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
             contentPadding =
                 profileGridContentPadding(
-                    top = 8.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
                     bottom = adaptiveMainNavigationContentPadding(),
                 ),
             horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
@@ -251,7 +252,7 @@ private fun WatchlistSeriesCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "${series.publishedContentCount}話",
+                            text = "${series.publishedContentCount}隧ｱ",
                             color = MiuixTheme.colorScheme.onBackground,
                             style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Black,
@@ -395,7 +396,13 @@ internal fun BookmarkMainTab(
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
+            contentPadding =
+                PaddingValues(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -514,7 +521,13 @@ internal fun BookmarkTimelineTab(
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
+            contentPadding =
+                PaddingValues(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -638,7 +651,13 @@ internal fun BookmarkFollowingTab(
                 Modifier
                     .fillMaxSize()
                     .then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = adaptiveMainNavigationContentPadding()),
+            contentPadding =
+                PaddingValues(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

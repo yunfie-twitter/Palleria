@@ -40,10 +40,12 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -150,8 +152,8 @@ internal fun FeedTabContent(
                 PaddingValues(
                     start = 12.dp,
                     end = 12.dp,
-                    top = 12.dp,
-                    bottom = 28.dp,
+                    top = LocalScrollHeaderInset.current + 12.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
                 ),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -291,8 +293,8 @@ internal fun FollowingTabContent(
                 PaddingValues(
                     start = 12.dp,
                     end = 12.dp,
-                    top = 12.dp,
-                    bottom = 28.dp,
+                    top = LocalScrollHeaderInset.current + 12.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
                 ),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

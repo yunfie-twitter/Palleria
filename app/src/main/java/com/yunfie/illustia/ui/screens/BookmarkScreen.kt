@@ -32,9 +32,12 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
+import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -152,209 +155,214 @@ fun BookmarkScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val performHaptic = rememberHapticFeedbackAction()
 
-    Column(
+    ScrollBlurScaffold(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.surface),
-    ) {
-        TopAppBar(
-            title = stringResource(R.string.nav_bookmarks_full),
-            largeTitle = stringResource(R.string.nav_bookmarks_full),
-            scrollBehavior = scrollBehavior,
-            modifier =
-                Modifier.pointerInput(Unit) {
-                    detectTapGestures {
-                        performHaptic(AppHapticEffect.Click)
-                        coroutineScope.launch {
-                            val targetState =
-                                when (pagerState.currentPage) {
-                                    0 -> viewModel.bookmarkTimelineGridState
-                                    1 -> viewModel.bookmarkMainGridState
-                                    2 -> viewModel.bookmarkWatchlistGridState
-                                    3 -> viewModel.bookmarkFollowingGridState
-                                    else -> null
-                                }
-                            targetState?.smoothScrollToTop(scrollBehavior)
+        enabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
+        scrollBehavior = scrollBehavior,
+        header = {
+            TopAppBar(
+                color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
+                title = stringResource(R.string.nav_bookmarks_full),
+                largeTitle = stringResource(R.string.nav_bookmarks_full),
+                scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures {
+                            performHaptic(AppHapticEffect.Click)
+                            coroutineScope.launch {
+                                val targetState =
+                                    when (pagerState.currentPage) {
+                                        0 -> viewModel.bookmarkTimelineGridState
+                                        1 -> viewModel.bookmarkMainGridState
+                                        2 -> viewModel.bookmarkWatchlistGridState
+                                        3 -> viewModel.bookmarkFollowingGridState
+                                        else -> null
+                                    }
+                                targetState?.smoothScrollToTop(scrollBehavior)
+                            }
                         }
-                    }
-                },
-            actions = {
-                if (selectedTopTab == 1) {
-                    val publicLabel = stringResource(R.string.restrict_public)
-                    val privateLabel = stringResource(R.string.restrict_private)
-                    val sortLabel = stringResource(R.string.action_sort)
-                    val sortNewestLabel = stringResource(R.string.sort_date_desc)
-                    val sortOldestLabel = stringResource(R.string.sort_date_asc)
-                    val sortPopularLabel = stringResource(R.string.sort_popular_desc)
-                    val sortTitleLabel = stringResource(R.string.sort_name_asc)
+                    },
+                actions = {
+                    if (selectedTopTab == 1) {
+                        val publicLabel = stringResource(R.string.restrict_public)
+                        val privateLabel = stringResource(R.string.restrict_private)
+                        val sortLabel = stringResource(R.string.action_sort)
+                        val sortNewestLabel = stringResource(R.string.sort_date_desc)
+                        val sortOldestLabel = stringResource(R.string.sort_date_asc)
+                        val sortPopularLabel = stringResource(R.string.sort_popular_desc)
+                        val sortTitleLabel = stringResource(R.string.sort_name_asc)
 
-                    val bookmarkMenuEntries =
-                        remember(
-                            settings.bookmarkRestrict,
-                            bookmarkSort,
-                            publicLabel,
-                            privateLabel,
-                            sortLabel,
-                            sortNewestLabel,
-                            sortOldestLabel,
-                            sortPopularLabel,
-                            sortTitleLabel,
-                        ) {
-                            listOf(
-                                DropdownEntry(
-                                    items =
-                                        listOf(
-                                            DropdownItem(
-                                                text = publicLabel,
-                                                selected = settings.bookmarkRestrict == Restrict.Public,
-                                                onClick = {
-                                                    if (settings.bookmarkRestrict != Restrict.Public) {
-                                                        performHaptic(AppHapticEffect.Toggle)
-                                                        viewModel.updateRestrict(Restrict.Public)
-                                                        viewModel.refreshBookmarks()
-                                                    }
-                                                },
+                        val bookmarkMenuEntries =
+                            remember(
+                                settings.bookmarkRestrict,
+                                bookmarkSort,
+                                publicLabel,
+                                privateLabel,
+                                sortLabel,
+                                sortNewestLabel,
+                                sortOldestLabel,
+                                sortPopularLabel,
+                                sortTitleLabel,
+                            ) {
+                                listOf(
+                                    DropdownEntry(
+                                        items =
+                                            listOf(
+                                                DropdownItem(
+                                                    text = publicLabel,
+                                                    selected = settings.bookmarkRestrict == Restrict.Public,
+                                                    onClick = {
+                                                        if (settings.bookmarkRestrict != Restrict.Public) {
+                                                            performHaptic(AppHapticEffect.Toggle)
+                                                            viewModel.updateRestrict(Restrict.Public)
+                                                            viewModel.refreshBookmarks()
+                                                        }
+                                                    },
+                                                ),
+                                                DropdownItem(
+                                                    text = privateLabel,
+                                                    selected = settings.bookmarkRestrict == Restrict.Private,
+                                                    onClick = {
+                                                        if (settings.bookmarkRestrict != Restrict.Private) {
+                                                            performHaptic(AppHapticEffect.Toggle)
+                                                            viewModel.updateRestrict(Restrict.Private)
+                                                            viewModel.refreshBookmarks()
+                                                        }
+                                                    },
+                                                ),
                                             ),
-                                            DropdownItem(
-                                                text = privateLabel,
-                                                selected = settings.bookmarkRestrict == Restrict.Private,
-                                                onClick = {
-                                                    if (settings.bookmarkRestrict != Restrict.Private) {
-                                                        performHaptic(AppHapticEffect.Toggle)
-                                                        viewModel.updateRestrict(Restrict.Private)
-                                                        viewModel.refreshBookmarks()
-                                                    }
-                                                },
+                                    ),
+                                    DropdownEntry(
+                                        items =
+                                            listOf(
+                                                DropdownItem(
+                                                    text = sortLabel,
+                                                    children =
+                                                        listOf(
+                                                            DropdownItem(
+                                                                text = sortNewestLabel,
+                                                                selected = bookmarkSort == BookmarkSort.Newest,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    bookmarkSort = BookmarkSort.Newest
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = sortOldestLabel,
+                                                                selected = bookmarkSort == BookmarkSort.Oldest,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    bookmarkSort = BookmarkSort.Oldest
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = sortPopularLabel,
+                                                                selected = bookmarkSort == BookmarkSort.Popular,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    bookmarkSort = BookmarkSort.Popular
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = sortTitleLabel,
+                                                                selected = bookmarkSort == BookmarkSort.Title,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    bookmarkSort = BookmarkSort.Title
+                                                                },
+                                                            ),
+                                                        ),
+                                                ),
                                             ),
-                                        ),
-                                ),
-                                DropdownEntry(
-                                    items =
-                                        listOf(
-                                            DropdownItem(
-                                                text = sortLabel,
-                                                children =
-                                                    listOf(
-                                                        DropdownItem(
-                                                            text = sortNewestLabel,
-                                                            selected = bookmarkSort == BookmarkSort.Newest,
-                                                            onClick = {
-                                                                performHaptic(AppHapticEffect.Toggle)
-                                                                bookmarkSort = BookmarkSort.Newest
-                                                            },
-                                                        ),
-                                                        DropdownItem(
-                                                            text = sortOldestLabel,
-                                                            selected = bookmarkSort == BookmarkSort.Oldest,
-                                                            onClick = {
-                                                                performHaptic(AppHapticEffect.Toggle)
-                                                                bookmarkSort = BookmarkSort.Oldest
-                                                            },
-                                                        ),
-                                                        DropdownItem(
-                                                            text = sortPopularLabel,
-                                                            selected = bookmarkSort == BookmarkSort.Popular,
-                                                            onClick = {
-                                                                performHaptic(AppHapticEffect.Toggle)
-                                                                bookmarkSort = BookmarkSort.Popular
-                                                            },
-                                                        ),
-                                                        DropdownItem(
-                                                            text = sortTitleLabel,
-                                                            selected = bookmarkSort == BookmarkSort.Title,
-                                                            onClick = {
-                                                                performHaptic(AppHapticEffect.Toggle)
-                                                                bookmarkSort = BookmarkSort.Title
-                                                            },
-                                                        ),
-                                                    ),
-                                            ),
-                                        ),
-                                ),
-                            )
-                        }
+                                    ),
+                                )
+                            }
 
-                    OverlayIconCascadingDropdownMenu(
-                        entries = bookmarkMenuEntries,
-                        icon = MiuixIcons.Tune,
-                        backgroundColor = Color.Transparent,
-                        contentColor = MiuixTheme.colorScheme.onBackground,
-                        contentDescription = stringResource(R.string.nav_bookmarks_full),
-                    )
-                }
-                if (selectedTopTab == 3) {
-                    val sortOptions =
-                        listOf(
-                            stringResource(R.string.sort_date_desc),
-                            stringResource(R.string.sort_date_asc),
-                            stringResource(R.string.sort_name_asc),
+                        OverlayIconCascadingDropdownMenu(
+                            entries = bookmarkMenuEntries,
+                            icon = MiuixIcons.Tune,
+                            backgroundColor = Color.Transparent,
+                            contentColor = MiuixTheme.colorScheme.onBackground,
+                            contentDescription = stringResource(R.string.nav_bookmarks_full),
                         )
-                    Box {
-                        IconButton(
-                            onClick = {
-                                performHaptic(AppHapticEffect.Click)
-                                showSortPopup = true
-                            },
-                        ) {
-                            Icon(
-                                MiuixIcons.Filter,
-                                contentDescription = stringResource(R.string.action_sort),
+                    }
+                    if (selectedTopTab == 3) {
+                        val sortOptions =
+                            listOf(
+                                stringResource(R.string.sort_date_desc),
+                                stringResource(R.string.sort_date_asc),
+                                stringResource(R.string.sort_name_asc),
                             )
-                        }
-                        OverlayListPopup(
-                            show = showSortPopup,
-                            alignment = PopupPositionProvider.Align.TopEnd,
-                            onDismissRequest = { showSortPopup = false },
-                        ) {
-                            ListPopupColumn {
-                                sortOptions.forEachIndexed { index, string ->
-                                    DropdownImpl(
-                                        text = string,
-                                        optionSize = sortOptions.size,
-                                        isSelected = followingUserSort.ordinal == index,
-                                        index = index,
-                                        onSelectedIndexChange = {
-                                            performHaptic(AppHapticEffect.Toggle)
-                                            followingUserSort = FollowingUserSort.entries[index]
-                                            showSortPopup = false
-                                        },
-                                    )
+                        Box {
+                            IconButton(
+                                onClick = {
+                                    performHaptic(AppHapticEffect.Click)
+                                    showSortPopup = true
+                                },
+                            ) {
+                                Icon(
+                                    MiuixIcons.Filter,
+                                    contentDescription = stringResource(R.string.action_sort),
+                                )
+                            }
+                            OverlayListPopup(
+                                show = showSortPopup,
+                                alignment = PopupPositionProvider.Align.TopEnd,
+                                onDismissRequest = { showSortPopup = false },
+                            ) {
+                                ListPopupColumn {
+                                    sortOptions.forEachIndexed { index, string ->
+                                        DropdownImpl(
+                                            text = string,
+                                            optionSize = sortOptions.size,
+                                            isSelected = followingUserSort.ordinal == index,
+                                            index = index,
+                                            onSelectedIndexChange = {
+                                                performHaptic(AppHapticEffect.Toggle)
+                                                followingUserSort = FollowingUserSort.entries[index]
+                                                showSortPopup = false
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                IconButton(onClick = {
-                    performHaptic(AppHapticEffect.Click)
-                    when (selectedTopTab) {
-                        0 -> viewModel.refreshTimeline(forceRefresh = true)
-                        2 -> coroutineScope.launch { watchlistStore.fetch() }
-                        3 -> viewModel.refreshFollowingUsers(forceRefresh = true)
-                        else -> viewModel.refreshBookmarks(forceRefresh = true)
-                    }
-                }) {
-                    Icon(
-                        MiuixIcons.Refresh,
-                        contentDescription =
-                            androidx.compose.ui.res
-                                .stringResource(R.string.dialog_reload),
-                    )
-                }
-            },
-            bottomContent = {
-                CompactBookmarkTabs(
-                    selectedTab = selectedTopTab,
-                    onSelect = { index ->
-                        if (index != selectedTopTab) {
-                            performHaptic(AppHapticEffect.Toggle)
+                    IconButton(onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        when (selectedTopTab) {
+                            0 -> viewModel.refreshTimeline(forceRefresh = true)
+                            2 -> coroutineScope.launch { watchlistStore.fetch() }
+                            3 -> viewModel.refreshFollowingUsers(forceRefresh = true)
+                            else -> viewModel.refreshBookmarks(forceRefresh = true)
                         }
-                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-                )
-            },
-        )
+                    }) {
+                        Icon(
+                            MiuixIcons.Refresh,
+                            contentDescription =
+                                androidx.compose.ui.res
+                                    .stringResource(R.string.dialog_reload),
+                        )
+                    }
+                },
+                bottomContent = {
+                    CompactBookmarkTabs(
+                        selectedTab = selectedTopTab,
+                        onSelect = { index ->
+                            if (index != selectedTopTab) {
+                                performHaptic(AppHapticEffect.Toggle)
+                            }
+                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                    )
+                },
+            )
+        },
+    ) {
         Surface(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             color = MiuixTheme.colorScheme.surface,

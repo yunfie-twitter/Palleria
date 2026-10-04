@@ -51,15 +51,20 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
+import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -137,69 +142,74 @@ fun RankingScreen(
 
     val scheme = MiuixTheme.colorScheme
     val scrollBehavior = MiuixScrollBehavior()
-    Column(
+    ScrollBlurScaffold(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(scheme.surface),
-    ) {
-        TopAppBar(
-            title = stringResource(R.string.nav_ranking),
-            largeTitle = stringResource(R.string.nav_ranking),
-            scrollBehavior = scrollBehavior,
-            modifier =
-                remember {
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                val currentMode = modes.getOrNull(pagerState.currentPage)
-                                if (currentMode != null) {
-                                    viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+        enabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
+        scrollBehavior = scrollBehavior,
+        header = {
+            TopAppBar(
+                color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
+                title = stringResource(R.string.nav_ranking),
+                largeTitle = stringResource(R.string.nav_ranking),
+                scrollBehavior = scrollBehavior,
+                modifier =
+                    remember {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures {
+                                performHaptic(AppHapticEffect.Click)
+                                coroutineScope.launch {
+                                    val currentMode = modes.getOrNull(pagerState.currentPage)
+                                    if (currentMode != null) {
+                                        viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+                                    }
                                 }
                             }
                         }
+                    },
+                actions = {
+                    IconButton(
+                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                        onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) },
+                    ) {
+                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
                     }
                 },
-            actions = {
-                IconButton(
-                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                    onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) },
-                ) {
-                    Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
-                }
-            },
-            bottomContent = {
-                val tabs =
-                    remember {
-                        listOf(
-                            R.string.ranking_day,
-                            R.string.ranking_day_male,
-                            R.string.ranking_day_female,
-                            R.string.ranking_week,
-                            R.string.ranking_month,
-                            R.string.ranking_week_rookie,
-                            R.string.ranking_day_ai,
-                        )
-                    }
-                val tabTitles = tabs.map { stringResource(it) }
-                val onTabSelected: (Int) -> Unit =
-                    remember(modes) {
-                        { index ->
-                            if (modes.getOrNull(index) != null) {
-                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
-                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                bottomContent = {
+                    val tabs =
+                        remember {
+                            listOf(
+                                R.string.ranking_day,
+                                R.string.ranking_day_male,
+                                R.string.ranking_day_female,
+                                R.string.ranking_week,
+                                R.string.ranking_month,
+                                R.string.ranking_week_rookie,
+                                R.string.ranking_day_ai,
+                            )
+                        }
+                    val tabTitles = tabs.map { stringResource(it) }
+                    val onTabSelected: (Int) -> Unit =
+                        remember(modes) {
+                            { index ->
+                                if (modes.getOrNull(index) != null) {
+                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                }
                             }
                         }
-                    }
-                RankingTabRow(
-                    pagerState = pagerState,
-                    tabs = tabTitles,
-                    onTabSelected = onTabSelected,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-                )
-            },
-        )
+                    RankingTabRow(
+                        pagerState = pagerState,
+                        tabs = tabTitles,
+                        onTabSelected = onTabSelected,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                    )
+                },
+            )
+        },
+    ) {
         Surface(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,
@@ -301,8 +311,8 @@ private fun RankingGridContent(
                 PaddingValues(
                     start = 14.dp,
                     end = 14.dp,
-                    top = 2.dp,
-                    bottom = 24.dp,
+                    top = LocalScrollHeaderInset.current + 2.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
                 ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

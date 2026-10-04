@@ -23,6 +23,16 @@ enum class FeatureFlag(
         descRes = R.string.flag_navigation_customization_desc,
         defaultEnabled = false,
     ),
+    TopScrollBlur(
+        key = "flag_top_scroll_blur",
+        titleRes = R.string.flag_top_scroll_blur_title,
+        descRes = R.string.flag_top_scroll_blur_desc,
+    ),
+    NavigationIconsOnly(
+        key = "flag_navigation_icons_only",
+        titleRes = R.string.flag_navigation_icons_only_title,
+        descRes = R.string.flag_navigation_icons_only_desc,
+    ),
     ShortsFeed(
         key = "flag_shorts_feed",
         titleRes = R.string.flag_shorts_feed_title,
