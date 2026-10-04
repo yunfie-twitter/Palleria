@@ -2590,7 +2590,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 66471820,
     "apkName": "Illustia-v5.0.0-release.apk",
-    "added": 1785996453.239018
+    "added": 1785996453.0
   },
   "Illustia-v5.1.0-release.apk": {
     "hash": "a5d2ad79bf236f2c4b49b0544ebb967971d8419b4ba0d2e704a9e9377bda9a14",
@@ -2677,7 +2677,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 66902452,
     "apkName": "Illustia-v5.1.0-release.apk",
-    "added": 1786263215.864684
+    "added": 1786263215.0
   },
   "Illustia-v5.2.0-release.apk": {
     "hash": "6089ea571b8e59a37d57bc94a44547903e6f1a8a93f0e40c80d8bda38a197d90",
@@ -2764,7 +2764,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 66967992,
     "apkName": "Illustia-v5.2.0-release.apk",
-    "added": 1786278898.109924
+    "added": 1786278898.0
   },
   "Illustia-v5.3.0-release.apk": {
     "hash": "a115b6bea262c347478ec2206615c0c6a2f7fe85bac5ffcef48ccac2b775d105",
@@ -2851,7 +2851,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 67232492,
     "apkName": "Illustia-v5.3.0-release.apk",
-    "added": 1786294741.102162
+    "added": 1786294741.0
   },
   "Illustia-v5.4.0-beta.1-release.apk": {
     "hash": "f588d265a42e58bdeca2aa01e432762c34c42fa90b387c2c9c306511aa9f625e",
@@ -2938,7 +2938,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 67266388,
     "apkName": "Illustia-v5.4.0-beta.1-release.apk",
-    "added": 1786328229.275208
+    "added": 1786328229.0
   },
   "Illustia-v5.4.0-beta.2-release.apk": {
     "hash": "90e1745d81f80d6e92bd57cbd41cd31cf09143210e26f9906c20f20f924482bc",
@@ -3025,7 +3025,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 63767847,
     "apkName": "Illustia-v5.4.0-beta.2-release.apk",
-    "added": 1786350354.175391
+    "added": 1786350354.0
   },
   "Illustia-v5.4.0-beta.3-release.apk": {
     "hash": "2a3f9abda1ee021597b18d972c47bf1bc2f0e9942dca8110b8fcd0c0b3cde341",
@@ -3112,7 +3112,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 66826336,
     "apkName": "Illustia-v5.4.0-beta.3-release.apk",
-    "added": 1786516216.101797
+    "added": 1786516216.0
   },
   "Illustia-v5.4.0-beta.4-release.apk": {
     "hash": "fb03281d7c7530e1341bd638310ad4b3fd3d674a5450b5b5f7f1c8324422f3e3",
@@ -3199,7 +3199,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 66859983,
     "apkName": "Illustia-v5.4.0-beta.4-release.apk",
-    "added": 1786689040.803941
+    "added": 1786689040.0
   },
   "Illustia-v5.4.0-release.apk": {
     "hash": "29810e51a7c3aa295f44f90508233ca976547ab661efd4bd862b2adb017b1af8",
@@ -3286,7 +3286,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 66863216,
     "apkName": "Illustia-v5.4.0-release.apk",
-    "added": 1786775522.973561
+    "added": 1786775522.0
   },
   "Illustia-v5.5.0-beta.1-release.apk": {
     "hash": "29c30866b89ac0a28835014f1d78890ad80210c42747e311f7972d194f4e6c73",
@@ -3373,7 +3373,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 65912489,
     "apkName": "Illustia-v5.5.0-beta.1-release.apk",
-    "added": 1788087632.021807
+    "added": 1788087632.0
   },
   "Illustia-v5.5.0-beta.2-release.apk": {
     "hash": "b092a998ac02fe66e9fc0bde93d2982e42f27fad4020dd42f64ba41a5d00c460",
@@ -3460,7 +3460,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 67856773,
     "apkName": "Illustia-v5.5.0-beta.2-release.apk",
-    "added": 1788094929.825944
+    "added": 1788094929.0
   },
   "Illustia-v5.5.0-beta.3-release.apk": {
     "hash": "4c4616ffecddb1a667893de036a28c3e0fa477f0e89ded4af8f72fb800e73117",
@@ -3547,7 +3547,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68337202,
     "apkName": "Illustia-v5.5.0-beta.3-release.apk",
-    "added": 1788098984.750871
+    "added": 1788098984.0
   },
   "Illustia-v5.5.0-beta.4-release.apk": {
     "hash": "651196238075e6c227ff671080bc2ade588e18cc0781a86a9b48da335b6b294f",
@@ -3634,7 +3634,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 80307501,
     "apkName": "Illustia-v5.5.0-beta.4-release.apk",
-    "added": 1788158912.282931
+    "added": 1788158912.0
   },
   "Illustia-v5.5.0-beta.5-release.apk": {
     "hash": "b9d91431f84ab52dca2a02a5a2b926e62403642be27f4f97f08cf5cdc154886e",
@@ -3721,7 +3721,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68219264,
     "apkName": "Illustia-v5.5.0-beta.5-release.apk",
-    "added": 1788166138.832113
+    "added": 1788166138.0
   },
   "Illustia-v5.5.0-beta.6-release.apk": {
     "hash": "6e647e27700c0b077e9d5f68b797a8ac0814981ad5e5a5f5104df5a261c81a09",
@@ -3808,7 +3808,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68219264,
     "apkName": "Illustia-v5.5.0-beta.6-release.apk",
-    "added": 1788168829.1231
+    "added": 1788168829.0
   },
   "Illustia-v5.5.0-release.apk": {
     "hash": "4c7a03109832bb2440a410125333721dfaec16dfc080c166df7186bbe79d164b",
@@ -3895,7 +3895,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68219256,
     "apkName": "Illustia-v5.5.0-release.apk",
-    "added": 1788172683.195246
+    "added": 1788172683.0
   },
   "Illustia-v5.5.1-release.apk": {
     "hash": "3845908c3b5c97d6e3cd0b218ae845518be7ef0d2ed598c103b27fcf4d98b903",
@@ -3982,7 +3982,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68219256,
     "apkName": "Illustia-v5.5.1-release.apk",
-    "added": 1788185453.329039
+    "added": 1788185453.0
   },
   "Illustia-v5.5.2-release.apk": {
     "hash": "9cda4b26965ef8d7699d7e9c1865ad57a7368eb0e760e6d0fb9a8fdac9264778",
@@ -4077,7 +4077,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68251916,
     "apkName": "Illustia-v5.5.2-release.apk",
-    "added": 1788187546.666524
+    "added": 1788187546.0
   },
   "Illustia-v5.5.3-release.apk": {
     "hash": "bbbd7be758c354651919a11d55d238e3fc5512b76469cd45ad7698083ec27937",
@@ -4172,7 +4172,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68251916,
     "apkName": "Illustia-v5.5.3-release.apk",
-    "added": 1788189367.809227
+    "added": 1788189367.0
   },
   "Illustia-v5.5.4-release.apk": {
     "hash": "c4045086a2254ca31252299159ce8748c3d107b318e322422a1f6960d7f8cf74",
@@ -4267,7 +4267,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68251796,
     "apkName": "Illustia-v5.5.4-release.apk",
-    "added": 1788191185.902314
+    "added": 1788191185.0
   },
   "Illustia-v5.5.5-release.apk": {
     "hash": "5fefee248845095a7f87c280e434bac815cfe4494dccf765922a729eca9e4b94",
@@ -4362,7 +4362,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68251796,
     "apkName": "Illustia-v5.5.5-release.apk",
-    "added": 1788192593.590076
+    "added": 1788192593.0
   },
   "Illustia-v5.5.6-release.apk": {
     "hash": "ada7459ec4b9c2241b6165817e4c6721da3052beae1d8b76f045bf7f14befb82",
@@ -4457,7 +4457,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68482744,
     "apkName": "Illustia-v5.5.6-release.apk",
-    "added": 1788250513.263737
+    "added": 1788250513.0
   },
   "Illustia-v5.5.7-release.apk": {
     "hash": "1428c80c0255e100c16155858722964ed33cfc404844eae0f97fd818bf36479c",
@@ -4552,7 +4552,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68482744,
     "apkName": "Illustia-v5.5.7-release.apk",
-    "added": 1788256146.079854
+    "added": 1788256146.0
   },
   "Illustia-v5.5.8-release.apk": {
     "hash": "4e44c0d95a47e60443eda4dc7a86c41ed65b501e2b36286e1f1065377e1932cb",
@@ -4647,7 +4647,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68483052,
     "apkName": "Illustia-v5.5.8-release.apk",
-    "added": 1788258332.969869
+    "added": 1788258332.0
   },
   "Illustia-v5.5.9-release.apk": {
     "hash": "e21c6ed159ee8a9c6d435f046507d072564c6166496b682d9f5aaa369c447357",
@@ -4742,7 +4742,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68483052,
     "apkName": "Illustia-v5.5.9-release.apk",
-    "added": 1788264297.017851
+    "added": 1788264297.0
   },
   "Illustia-v5.5.10-release.apk": {
     "hash": "e790a4c83fa16a81a02d2a9c672084fe83d23f024d3792e3725bb366c5b124bd",
@@ -4837,7 +4837,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68483060,
     "apkName": "Illustia-v5.5.10-release.apk",
-    "added": 1788269999.214795
+    "added": 1788269999.0
   },
   "Illustia-v5.5.12-release.apk": {
     "hash": "a961c2287471cda2f30f297827d8449f4c497c99e06c6ceeb65b29b956a48c0a",
@@ -4932,7 +4932,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68483940,
     "apkName": "Illustia-v5.5.12-release.apk",
-    "added": 1788271631.53303
+    "added": 1788271631.0
   },
   "Illustia-v5.5.11-release.apk": {
     "hash": "3efdd1996d47ad1aebf6c91cea27675fed5ec3a59141c16fc6ac4c7a1dff1bd6",
@@ -5027,7 +5027,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68483060,
     "apkName": "Illustia-v5.5.11-release.apk",
-    "added": 1788273210.304426
+    "added": 1788273210.0
   },
   "Illustia-v5.5.13-release.apk": {
     "hash": "63791219148e164e864aa1d63ef4b9912d667c742c52fe4a6b76e9658ee81255",
@@ -5122,7 +5122,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68500324,
     "apkName": "Illustia-v5.5.13-release.apk",
-    "added": 1788274986.478737
+    "added": 1788274986.0
   },
   "Illustia-v5.5.14-release.apk": {
     "hash": "aca35f379d14cc122ff6645f7543e85883d45536d90cb5a6df4d5ad732171bf9",
@@ -5217,7 +5217,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68500324,
     "apkName": "Illustia-v5.5.14-release.apk",
-    "added": 1788289219.549068
+    "added": 1788289219.0
   },
   "Illustia-v5.5.15-release.apk": {
     "hash": "69f2edfd93ca936c8b97fa82f106c5c4b356b39c53c026244984ff077a860545",
@@ -5312,7 +5312,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68500324,
     "apkName": "Illustia-v5.5.15-release.apk",
-    "added": 1788290988.324178
+    "added": 1788290988.0
   },
   "Illustia-v5.5.17-release.apk": {
     "hash": "d812391714ae3a5e3f4d30927f330da829aaa3f71594aba59e7d7bf308c5e1e7",
@@ -5407,7 +5407,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68504120,
     "apkName": "Illustia-v5.5.17-release.apk",
-    "added": 1788292562.579348
+    "added": 1788292562.0
   },
   "Illustia-v5.5.18-release.apk": {
     "hash": "678f7d6a8a457cd7f55c68348174026456be0868a9c2aa742bf325a04ee4ac43",
@@ -5502,7 +5502,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68504120,
     "apkName": "Illustia-v5.5.18-release.apk",
-    "added": 1788302841.946479
+    "added": 1788302841.0
   },
   "Illustia-v5.5.19-release.apk": {
     "hash": "0f68554ed7de6e4950a44881391a15428f97c8a748be21b5f9cc5fba68bbe23e",
@@ -5597,7 +5597,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68504120,
     "apkName": "Illustia-v5.5.19-release.apk",
-    "added": 1788337730.902301
+    "added": 1788337730.0
   },
   "Illustia-v5.5.20-release.apk": {
     "hash": "26340ab5381d46d46e80fd44fe83598bdd06fe287278865a481442bf20297319",
@@ -5692,7 +5692,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68621048,
     "apkName": "Illustia-v5.5.20-release.apk",
-    "added": 1788358163.450698
+    "added": 1788358163.0
   },
   "Illustia-v5.5.21-release.apk": {
     "hash": "577d8e5735284ba33c6e5aac797d4a91c19118ff7e03842ebf54ccdc16e71a88",
@@ -5787,7 +5787,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68624064,
     "apkName": "Illustia-v5.5.21-release.apk",
-    "added": 1788359824.634087
+    "added": 1788359824.0
   },
   "Illustia-v5.5.22-release.apk": {
     "hash": "9961796aaac715bbf90b46f29aebe9219a71f2469d0a3e350700bcf74d4cf0a5",
@@ -5882,7 +5882,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68624064,
     "apkName": "Illustia-v5.5.22-release.apk",
-    "added": 1788361215.710111
+    "added": 1788361215.0
   },
   "Illustia-v5.5.23-release.apk": {
     "hash": "d65de94024b665263c79cdea11cf1ca6ad59c119a96eef57e69c8e004746392d",
@@ -5977,7 +5977,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68624064,
     "apkName": "Illustia-v5.5.23-release.apk",
-    "added": 1788364519.90977
+    "added": 1788364519.0
   },
   "Illustia-v5.5.24-release.apk": {
     "hash": "b66b7c7301f8dd54ff6d33d4ad670ec854d2fe65aecbc2be1dae7183ecefb447",
@@ -6072,7 +6072,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68624084,
     "apkName": "Illustia-v5.5.24-release.apk",
-    "added": 1788424094.593601
+    "added": 1788424094.0
   },
   "Illustia-v5.5.25-release.apk": {
     "hash": "a8d55e5602c2ca570e2680c4c2c7bd0d386f25ca299047b0f75cfcf4e64bd2c8",
@@ -6167,7 +6167,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68624088,
     "apkName": "Illustia-v5.5.25-release.apk",
-    "added": 1788434502.827893
+    "added": 1788434502.0
   },
   "Illustia-v5.5.26-release.apk": {
     "hash": "c510cd593cd59e6c6d8129576ea7b46964ce3262752f8f13e6446f665baaaca5",
@@ -6262,7 +6262,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68625664,
     "apkName": "Illustia-v5.5.26-release.apk",
-    "added": 1788531027.454943
+    "added": 1788531027.0
   },
   "Illustia-v5.5.27-release.apk": {
     "hash": "1b1a965a599cc29142ff36260b1e77db9b500e714d5c849a79853e913d47e9de",
@@ -6357,7 +6357,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68625664,
     "apkName": "Illustia-v5.5.27-release.apk",
-    "added": 1788601941.851637
+    "added": 1788601941.0
   },
   "Illustia-v5.5.28-release.apk": {
     "hash": "4973a3fcf5bdbd8bea6b6e7b5105ab973662334feb7a265ded517f4d979b91e6",
@@ -6452,7 +6452,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68658432,
     "apkName": "Illustia-v5.5.28-release.apk",
-    "added": 1788666885.756628
+    "added": 1788666885.0
   },
   "Illustia-v5.5.29-release.apk": {
     "hash": "af1500a3256c756e29934e3e698d0fed109d9a83377b748e862a483fb3e11119",
@@ -6547,7 +6547,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68590204,
     "apkName": "Illustia-v5.5.29-release.apk",
-    "added": 1788682384.460975
+    "added": 1788682384.0
   },
   "Illustia-v5.6.0-beta.1-release.apk": {
     "hash": "bf72faa3b3af52cfd305ca96ec545616ca749ff279ec36a747eadfffde77c5ca",
@@ -6642,7 +6642,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68590212,
     "apkName": "Illustia-v5.6.0-beta.1-release.apk",
-    "added": 1788687219.623237
+    "added": 1788687219.0
   },
   "Illustia-v5.6.0-release.apk": {
     "hash": "8bdea22c3bdb9375fde0b9fc7d296e4a4a70c04c8ed7b07e146214fe6521a8b2",
@@ -6737,7 +6737,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68590200,
     "apkName": "Illustia-v5.6.0-release.apk",
-    "added": 1788701683.487813
+    "added": 1788701683.0
   },
   "Illustia-v5.6.1-release.apk": {
     "hash": "fd3cdc440ac15c4d8815d63e06059e23ee717fcf4065bc24c76659e5a46aaaaa",
@@ -6832,7 +6832,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68591320,
     "apkName": "Illustia-v5.6.1-release.apk",
-    "added": 1788711705.003866
+    "added": 1788711705.0
   },
   "Illustia-v5.7.0-release.apk": {
     "hash": "eb9878d8dfe511608b717e23caf6b1edb9cc6b39834018f2d10310223bc606a0",
@@ -6927,7 +6927,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68590160,
     "apkName": "Illustia-v5.7.0-release.apk",
-    "added": 1788742356.288457
+    "added": 1788742356.0
   },
   "Illustia-v5.8.0-release.apk": {
     "hash": "07d57ce8d0c095d4f33455a76a64fb4472f255d84b5958a68729b837937b0fa8",
@@ -7022,7 +7022,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68619783,
     "apkName": "Illustia-v5.8.0-release.apk",
-    "added": 1788791856.486336
+    "added": 1788791856.0
   },
   "Illustia-v5.8.1-release.apk": {
     "hash": "b9ab2bb0bea586810110a1fbd9dbbcdb66a36f8390d3feaae158f6f0a98a7cea",
@@ -7117,7 +7117,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68619783,
     "apkName": "Illustia-v5.8.1-release.apk",
-    "added": 1788795524.807809
+    "added": 1788795524.0
   },
   "Illustia-v5.8.2-release.apk": {
     "hash": "76f2524b47f2fb195591275e824b574ca92c4e0530bf09b88ae3192ce3e0b1f2",
@@ -7212,7 +7212,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68619783,
     "apkName": "Illustia-v5.8.2-release.apk",
-    "added": 1788851989.064361
+    "added": 1788851989.0
   },
   "Illustia-v5.8.3-release.apk": {
     "hash": "d22be8418790a0122cbbef654450c4a8b04495e863645a8e012b575ddc0957af",
@@ -7307,7 +7307,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68619779,
     "apkName": "Illustia-v5.8.3-release.apk",
-    "added": 1788854923.831663
+    "added": 1788854923.0
   },
   "Illustia-v5.9.0-beta.1-release.apk": {
     "hash": "1b1a34ffad13fa9d6526f99580f239ffba17947d00f2cc8c361556ebfd11cfa9",
@@ -7402,7 +7402,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68619795,
     "apkName": "Illustia-v5.9.0-beta.1-release.apk",
-    "added": 1788887253.737353
+    "added": 1788887253.0
   },
   "Illustia-v5.9.0-release.apk": {
     "hash": "cff16d4bfbbc0be100db129c508f617099ab748d1790bfaa0f9704435ffb4fbb",
@@ -7497,7 +7497,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68620715,
     "apkName": "Illustia-v5.9.0-release.apk",
-    "added": 1788969536.150408
+    "added": 1788969536.0
   },
   "Palleria-v5.9.1-release-arm64-v8a.apk": {
     "hash": "0c226db5a700d71f070acab3eced2076acdb4e23168ec97cafeb6c9754f60460",
@@ -7586,7 +7586,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56100606,
     "apkName": "Palleria-v5.9.1-release-arm64-v8a.apk",
-    "added": 1789136320.394033
+    "added": 1789136320.0
   },
   "Palleria-v5.9.1-release-armeabi-v7a.apk": {
     "hash": "b0fe283b5566f4de3088ac080be0c02706a95255a77314fac6c4f6c49dbebcef",
@@ -7675,7 +7675,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54055360,
     "apkName": "Palleria-v5.9.1-release-armeabi-v7a.apk",
-    "added": 1789136320.909755
+    "added": 1789136320.0
   },
   "Palleria-v5.9.1-release-universal.apk": {
     "hash": "b6379a04a9bcceab2862358398c5d7d69d9239dfe93f3258e8b2de0915c5847a",
@@ -7770,7 +7770,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68620715,
     "apkName": "Palleria-v5.9.1-release-universal.apk",
-    "added": 1789136321.451071
+    "added": 1789136321.0
   },
   "Palleria-v5.9.1-release-x86_64.apk": {
     "hash": "90e1bdc7600b520f82a486884988aa84fb8b3b45cba0e469c8b660d78ef8222f",
@@ -7859,7 +7859,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56707793,
     "apkName": "Palleria-v5.9.1-release-x86_64.apk",
-    "added": 1789136321.966999
+    "added": 1789136321.0
   },
   "Palleria-v5.10.0-release-arm64-v8a.apk": {
     "hash": "c3679d9e3de425bd6a6ebe856c5d62459029e74c1bcc4639ba584fec777c8e8c",
@@ -7948,7 +7948,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56147022,
     "apkName": "Palleria-v5.10.0-release-arm64-v8a.apk",
-    "added": 1789421662.112645
+    "added": 1789421662.0
   },
   "Palleria-v5.10.0-release-armeabi-v7a.apk": {
     "hash": "274169c35e632cd61729e34008ae6cfd373b68ee92877c7d5c1759553b9d423c",
@@ -8037,7 +8037,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54101280,
     "apkName": "Palleria-v5.10.0-release-armeabi-v7a.apk",
-    "added": 1789421662.737658
+    "added": 1789421662.0
   },
   "Palleria-v5.10.0-release-universal.apk": {
     "hash": "cc56426dbe7b397c9d959c0c7188c38ecb3eaeb441cd5b092c4412eff9b46435",
@@ -8132,7 +8132,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68666955,
     "apkName": "Palleria-v5.10.0-release-universal.apk",
-    "added": 1789421663.444912
+    "added": 1789421663.0
   },
   "Palleria-v5.10.0-release-x86_64.apk": {
     "hash": "227450e16dd572add706d99893156c7214cdc729ae1454f8a81b434ba84c0b54",
@@ -8221,7 +8221,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56754033,
     "apkName": "Palleria-v5.10.0-release-x86_64.apk",
-    "added": 1789421664.058194
+    "added": 1789421664.0
   },
   "Palleria-v5.10.1-release-arm64-v8a.apk": {
     "hash": "30740b2e3d8416b7929eaf35e14d6e4a2bc146a2d0b1b8d1085520f809d5255a",
@@ -8310,7 +8310,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56146942,
     "apkName": "Palleria-v5.10.1-release-arm64-v8a.apk",
-    "added": 1789459857.684927
+    "added": 1789459857.0
   },
   "Palleria-v5.10.1-release-armeabi-v7a.apk": {
     "hash": "d97339e0387bae81c8456c3f723f18584daf3178da02f9008dc7fb383f4f2da4",
@@ -8399,7 +8399,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54101200,
     "apkName": "Palleria-v5.10.1-release-armeabi-v7a.apk",
-    "added": 1789459858.201854
+    "added": 1789459858.0
   },
   "Palleria-v5.10.1-release-universal.apk": {
     "hash": "e08ec39901c789178b9f099c3d09d34f7eb7551bcfc622a042877044613446a0",
@@ -8494,7 +8494,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68666875,
     "apkName": "Palleria-v5.10.1-release-universal.apk",
-    "added": 1789459858.929812
+    "added": 1789459858.0
   },
   "Palleria-v5.10.1-release-x86_64.apk": {
     "hash": "52889198272f5222a5c379b56c8e76fe37c4f08859192c976c90d4d417c5d77e",
@@ -8583,7 +8583,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56753953,
     "apkName": "Palleria-v5.10.1-release-x86_64.apk",
-    "added": 1789459859.517703
+    "added": 1789459859.0
   },
   "Palleria-v5.11.0-release-arm64-v8a.apk": {
     "hash": "062e6f04f7a3c59c276558018833d08c438a0801420691748258902dd029d999",
@@ -8672,7 +8672,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56149986,
     "apkName": "Palleria-v5.11.0-release-arm64-v8a.apk",
-    "added": 1789467679.265066
+    "added": 1789467679.0
   },
   "Palleria-v5.11.0-release-armeabi-v7a.apk": {
     "hash": "165e3a4e3f2219f1308061e09a41c17d6752655acb8bff057fe4437c336bcb2a",
@@ -8761,7 +8761,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54104244,
     "apkName": "Palleria-v5.11.0-release-armeabi-v7a.apk",
-    "added": 1789467679.813661
+    "added": 1789467679.0
   },
   "Palleria-v5.11.0-release-universal.apk": {
     "hash": "d9731c1712a97b61896b06aa969a875b85dbca806584e34b9338495a753256d0",
@@ -8856,7 +8856,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68669919,
     "apkName": "Palleria-v5.11.0-release-universal.apk",
-    "added": 1789467680.576146
+    "added": 1789467680.0
   },
   "Palleria-v5.11.0-release-x86_64.apk": {
     "hash": "1cd010639723e0a969fb27fed24fb3d73aeda89b040b783de0e6e5824c0623d6",
@@ -8945,7 +8945,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56756997,
     "apkName": "Palleria-v5.11.0-release-x86_64.apk",
-    "added": 1789467681.184998
+    "added": 1789467681.0
   },
   "Palleria-v5.12.0-release-arm64-v8a.apk": {
     "hash": "c8029db34be98bc92027ce6055380a2b0439043dd3022fc604264a81f8eaef3a",
@@ -9034,7 +9034,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56208966,
     "apkName": "Palleria-v5.12.0-release-arm64-v8a.apk",
-    "added": 1789473905.093113
+    "added": 1789473905.0
   },
   "Palleria-v5.12.0-release-armeabi-v7a.apk": {
     "hash": "e0636b30ab8ba3e173a0d8460c5af7482d130be9ca0c1c65334fb0a688440a3b",
@@ -9123,7 +9123,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54163224,
     "apkName": "Palleria-v5.12.0-release-armeabi-v7a.apk",
-    "added": 1789473905.582411
+    "added": 1789473905.0
   },
   "Palleria-v5.12.0-release-universal.apk": {
     "hash": "2301482eb3f33a602576e8f40765c1398ed1f054f70bbbfb1658c09a2bf01ce5",
@@ -9218,7 +9218,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68728899,
     "apkName": "Palleria-v5.12.0-release-universal.apk",
-    "added": 1789473906.161458
+    "added": 1789473906.0
   },
   "Palleria-v5.12.0-release-x86_64.apk": {
     "hash": "e9aff953df41cca99f2fe10c754f7286701dca1f742d8ab0326008ed898b7da9",
@@ -9307,7 +9307,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56815977,
     "apkName": "Palleria-v5.12.0-release-x86_64.apk",
-    "added": 1789473906.686194
+    "added": 1789473906.0
   },
   "Palleria-v5.12.0-beta.1-release-arm64-v8a.apk": {
     "hash": "11e99b2484feebea6527a3562baede2cd58f4e9dcfd4f779035d8482a7efaaf0",
@@ -9396,7 +9396,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56149994,
     "apkName": "Palleria-v5.12.0-beta.1-release-arm64-v8a.apk",
-    "added": 1789483096.781214
+    "added": 1789483096.0
   },
   "Palleria-v5.12.0-beta.1-release-armeabi-v7a.apk": {
     "hash": "ec80188f277711372ec6184d624f914237a6ebdce9da10aba134e115ed4d05d3",
@@ -9485,7 +9485,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54104252,
     "apkName": "Palleria-v5.12.0-beta.1-release-armeabi-v7a.apk",
-    "added": 1789483097.400779
+    "added": 1789483097.0
   },
   "Palleria-v5.12.0-beta.1-release-universal.apk": {
     "hash": "f5057949bb51dad354875081e05b5d539c6de52bc54fc5cbba922d75c01dff89",
@@ -9580,7 +9580,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68669927,
     "apkName": "Palleria-v5.12.0-beta.1-release-universal.apk",
-    "added": 1789483098.104193
+    "added": 1789483098.0
   },
   "Palleria-v5.12.0-beta.1-release-x86_64.apk": {
     "hash": "2128df7f915f25b1887c80fb486771edaef2bcecaebc09d10bc55d16c26a7f37",
@@ -9669,7 +9669,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56757005,
     "apkName": "Palleria-v5.12.0-beta.1-release-x86_64.apk",
-    "added": 1789483098.762481
+    "added": 1789483098.0
   },
   "Palleria-v5.13.0-release-arm64-v8a.apk": {
     "hash": "828c78638545bd0cbf9f3c3e3e91d232551bb6259e9ec8798fa5ca5f2212f1c0",
@@ -9758,7 +9758,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56149986,
     "apkName": "Palleria-v5.13.0-release-arm64-v8a.apk",
-    "added": 1789487351.289002
+    "added": 1789487351.0
   },
   "Palleria-v5.13.0-release-armeabi-v7a.apk": {
     "hash": "a69dd8e014b0f09824a4d2b1f3739dcb344b5686b29822980434fff093bb1c94",
@@ -9847,7 +9847,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54104244,
     "apkName": "Palleria-v5.13.0-release-armeabi-v7a.apk",
-    "added": 1789487351.907664
+    "added": 1789487351.0
   },
   "Palleria-v5.13.0-release-universal.apk": {
     "hash": "cb13d757c6e9ffdb71a58767221f44ff667252c34dba360bea14a1fdd58f9649",
@@ -9942,7 +9942,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68669919,
     "apkName": "Palleria-v5.13.0-release-universal.apk",
-    "added": 1789487352.597974
+    "added": 1789487352.0
   },
   "Palleria-v5.13.0-release-x86_64.apk": {
     "hash": "fab9215f2afeb5c6896d99967a15be53f54316d4a8747babd8bad6eb1d79ba72",
@@ -10031,7 +10031,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56756997,
     "apkName": "Palleria-v5.13.0-release-x86_64.apk",
-    "added": 1789487353.243802
+    "added": 1789487353.0
   },
   "Palleria-v6.0.0-release-arm64-v8a.apk": {
     "hash": "a80847fcfa0743e0c156b6db368c48db2f80592ff68d0aca0ab907c5e4b90bd3",
@@ -10120,7 +10120,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56149982,
     "apkName": "Palleria-v6.0.0-release-arm64-v8a.apk",
-    "added": 1789489162.04095
+    "added": 1789489162.0
   },
   "Palleria-v6.0.0-release-armeabi-v7a.apk": {
     "hash": "98728826e59cfcbdc7d0cff7536ffd400c299b066538e1484913810014d72bd8",
@@ -10209,7 +10209,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54104240,
     "apkName": "Palleria-v6.0.0-release-armeabi-v7a.apk",
-    "added": 1789489162.670811
+    "added": 1789489162.0
   },
   "Palleria-v6.0.0-release-universal.apk": {
     "hash": "4ca9926c9ffee4f9cf2a19bd5dd221819fadd5cb65c5b12040ced6822256d0aa",
@@ -10304,7 +10304,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68669915,
     "apkName": "Palleria-v6.0.0-release-universal.apk",
-    "added": 1789489163.367764
+    "added": 1789489163.0
   },
   "Palleria-v6.0.0-release-x86_64.apk": {
     "hash": "14cb3810820caf2d5788a68fd109510052a3208e1746e7bc3747d3819675343d",
@@ -10393,7 +10393,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56756993,
     "apkName": "Palleria-v6.0.0-release-x86_64.apk",
-    "added": 1789489163.934347
+    "added": 1789489163.0
   },
   "Palleria-v6.1.0-beta.1-release-arm64-v8a.apk": {
     "hash": "73b0305c46399af1327933a4c07ae3f09c477d3741307f0a2ea85eb57d51f3da",
@@ -10482,7 +10482,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56156136,
     "apkName": "Palleria-v6.1.0-beta.1-release-arm64-v8a.apk",
-    "added": 1789546317.248407
+    "added": 1789546317.0
   },
   "Palleria-v6.1.0-beta.1-release-armeabi-v7a.apk": {
     "hash": "6fd9b3c9f42fbd94723aa58332c3db260f5762cb163d5e69ef02f7251fc25026",
@@ -10571,7 +10571,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54110394,
     "apkName": "Palleria-v6.1.0-beta.1-release-armeabi-v7a.apk",
-    "added": 1789546317.722169
+    "added": 1789546317.0
   },
   "Palleria-v6.1.0-beta.1-release-universal.apk": {
     "hash": "8ba4fbbb3cd95aa4293374142ac41687e5bcf74dd9b7941dd07f8fded07944a9",
@@ -10666,7 +10666,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68676069,
     "apkName": "Palleria-v6.1.0-beta.1-release-universal.apk",
-    "added": 1789546318.412901
+    "added": 1789546318.0
   },
   "Palleria-v6.1.0-beta.1-release-x86_64.apk": {
     "hash": "41c3d92ebe338f9943a769f7726866b8a30a5145bbe6f5b57f923117ce3833aa",
@@ -10755,7 +10755,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56763147,
     "apkName": "Palleria-v6.1.0-beta.1-release-x86_64.apk",
-    "added": 1789546318.998446
+    "added": 1789546318.0
   },
   "Palleria-v6.1.0-beta.2-release-arm64-v8a.apk": {
     "hash": "5e01b4bafe42237a25394e0dea49acb86edcf0d918310f3756322169fb6a5805",
@@ -10844,7 +10844,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56198452,
     "apkName": "Palleria-v6.1.0-beta.2-release-arm64-v8a.apk",
-    "added": 1789553385.78884
+    "added": 1789553385.0
   },
   "Palleria-v6.1.0-beta.2-release-armeabi-v7a.apk": {
     "hash": "b7b3d20fa98a888ea33fdb9b2b4074fed738af5658e8e4e74d583f4e814e8aea",
@@ -10933,7 +10933,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54152710,
     "apkName": "Palleria-v6.1.0-beta.2-release-armeabi-v7a.apk",
-    "added": 1789553386.272637
+    "added": 1789553386.0
   },
   "Palleria-v6.1.0-beta.2-release-universal.apk": {
     "hash": "42c9c4f883440e7a5dad6f46df8f5b8630d99808cc55f28f798929a1395adb30",
@@ -11028,7 +11028,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68718385,
     "apkName": "Palleria-v6.1.0-beta.2-release-universal.apk",
-    "added": 1789553386.803976
+    "added": 1789553386.0
   },
   "Palleria-v6.1.0-beta.2-release-x86_64.apk": {
     "hash": "9e6947a4b08f95ff9a738f81fc0c4c05f9d8086a8bff9cc7c4e01c3c3ee0839b",
@@ -11117,7 +11117,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56805463,
     "apkName": "Palleria-v6.1.0-beta.2-release-x86_64.apk",
-    "added": 1789553387.21364
+    "added": 1789553387.0
   },
   "Palleria-v6.1.0-beta.3-release-arm64-v8a.apk": {
     "hash": "1eab36fe494705fa52e63fa5570ae1beee9c918b65d0d6b7a30a0da951ca26e0",
@@ -11206,7 +11206,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56198448,
     "apkName": "Palleria-v6.1.0-beta.3-release-arm64-v8a.apk",
-    "added": 1789559658.264888
+    "added": 1789559658.0
   },
   "Palleria-v6.1.0-beta.3-release-armeabi-v7a.apk": {
     "hash": "6be62ad85dbff42b063b3cd9e55892e5716a1224d2656122ceced8c6dbf104d0",
@@ -11295,7 +11295,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54152706,
     "apkName": "Palleria-v6.1.0-beta.3-release-armeabi-v7a.apk",
-    "added": 1789559658.837421
+    "added": 1789559658.0
   },
   "Palleria-v6.1.0-beta.3-release-universal.apk": {
     "hash": "e98d3b1e54a5ec69ac79ca4574667c80951f28b8776621b5a2d9d7f2897aa756",
@@ -11390,7 +11390,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68718381,
     "apkName": "Palleria-v6.1.0-beta.3-release-universal.apk",
-    "added": 1789559659.494205
+    "added": 1789559659.0
   },
   "Palleria-v6.1.0-beta.3-release-x86_64.apk": {
     "hash": "949f0b2d43f6a1de69c4ac746c8387a627446de721627bb1b40eb07550e89e18",
@@ -11479,7 +11479,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56805459,
     "apkName": "Palleria-v6.1.0-beta.3-release-x86_64.apk",
-    "added": 1789559660.097432
+    "added": 1789559660.0
   },
   "Palleria-v6.1.0-beta.4-release-arm64-v8a.apk": {
     "hash": "76bcb52df64ec5d76c90f27c3a84b6a2cf4aa11e00e1472987fe97c394592b12",
@@ -11568,7 +11568,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56222632,
     "apkName": "Palleria-v6.1.0-beta.4-release-arm64-v8a.apk",
-    "added": 1789666735.551117
+    "added": 1789666735.0
   },
   "Palleria-v6.1.0-beta.4-release-armeabi-v7a.apk": {
     "hash": "61ae7b1a08376bff0fcef589750b4d0eebebb5784ece1536824b208e958d49d6",
@@ -11657,7 +11657,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54176890,
     "apkName": "Palleria-v6.1.0-beta.4-release-armeabi-v7a.apk",
-    "added": 1789666736.088381
+    "added": 1789666736.0
   },
   "Palleria-v6.1.0-beta.4-release-universal.apk": {
     "hash": "cd26e1a71e6893c435a8616bfd7c6fc5517cf89f308fa352190e10c07860b82a",
@@ -11752,7 +11752,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68742565,
     "apkName": "Palleria-v6.1.0-beta.4-release-universal.apk",
-    "added": 1789666736.76033
+    "added": 1789666736.0
   },
   "Palleria-v6.1.0-beta.4-release-x86_64.apk": {
     "hash": "97b99e0afac66894a1cff3cd5dde70c49e1ce1fc933eebaaa10ebff0936e4184",
@@ -11841,7 +11841,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56829643,
     "apkName": "Palleria-v6.1.0-beta.4-release-x86_64.apk",
-    "added": 1789666737.345487
+    "added": 1789666737.0
   },
   "Palleria-v6.1.0-beta.5-release-arm64-v8a.apk": {
     "hash": "997f796c47cc677d30588250a3905fca42bf1d9014eb57f01489e8ed474af92c",
@@ -11930,7 +11930,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56222636,
     "apkName": "Palleria-v6.1.0-beta.5-release-arm64-v8a.apk",
-    "added": 1789728025.868167
+    "added": 1789728025.0
   },
   "Palleria-v6.1.0-beta.5-release-armeabi-v7a.apk": {
     "hash": "02e0f27687a8980d107de28c5ad765f39e928be413c2bc9e384e7379351c2ab0",
@@ -12019,7 +12019,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54176894,
     "apkName": "Palleria-v6.1.0-beta.5-release-armeabi-v7a.apk",
-    "added": 1789728026.52612
+    "added": 1789728026.0
   },
   "Palleria-v6.1.0-beta.5-release-universal.apk": {
     "hash": "c6fb8c4f98e827e61e8445a2bfecb5dcfa2a6dc328a33342c392b39ef14f2fef",
@@ -12114,7 +12114,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 68742569,
     "apkName": "Palleria-v6.1.0-beta.5-release-universal.apk",
-    "added": 1789728027.199774
+    "added": 1789728027.0
   },
   "Palleria-v6.1.0-beta.5-release-x86_64.apk": {
     "hash": "02f0f57fedf33ecb22f0038711a1419e84e5917605bf6a2b9d303dd0d7bbe47f",
@@ -12203,7 +12203,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56829647,
     "apkName": "Palleria-v6.1.0-beta.5-release-x86_64.apk",
-    "added": 1789728027.85804
+    "added": 1789728027.0
   },
   "Palleria-v6.1.0-beta.6-release-arm64-v8a.apk": {
     "hash": "98900c3980592cb9dce405194c27e93a678465e28848f37e0136cca49ecc71a3",
@@ -12292,7 +12292,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56683680,
     "apkName": "Palleria-v6.1.0-beta.6-release-arm64-v8a.apk",
-    "added": 1789807795.990786
+    "added": 1789807795.0
   },
   "Palleria-v6.1.0-beta.6-release-armeabi-v7a.apk": {
     "hash": "3e4c26bba5550eef7a2bef2bb5a247b80b1dc4bed79919517d24ee6a2b0630ff",
@@ -12381,7 +12381,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 54637938,
     "apkName": "Palleria-v6.1.0-beta.6-release-armeabi-v7a.apk",
-    "added": 1789807796.683094
+    "added": 1789807796.0
   },
   "Palleria-v6.1.0-beta.6-release-universal.apk": {
     "hash": "1a973e630a10f8a84bef6d0907022bfff1c0979a280c9e453323c42e34c0a636",
@@ -12476,7 +12476,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69203613,
     "apkName": "Palleria-v6.1.0-beta.6-release-universal.apk",
-    "added": 1789807797.456642
+    "added": 1789807797.0
   },
   "Palleria-v6.1.0-beta.6-release-x86_64.apk": {
     "hash": "552b30d6461fe53013f09c576b823336338d8b6d40e448840fcda5d4b9d7e272",
@@ -12565,7 +12565,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57290691,
     "apkName": "Palleria-v6.1.0-beta.6-release-x86_64.apk",
-    "added": 1789807798.145507
+    "added": 1789807798.0
   },
   "Palleria-v6.1.0-beta.7-release-arm64-v8a.apk": {
     "hash": "967b5caf2fde30719089e599bffdfea0cdee09160b7936f7a0608cb00d8f8ba3",
@@ -12654,7 +12654,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57220237,
     "apkName": "Palleria-v6.1.0-beta.7-release-arm64-v8a.apk",
-    "added": 1789822227.084808
+    "added": 1789822227.0
   },
   "Palleria-v6.1.0-beta.7-release-armeabi-v7a.apk": {
     "hash": "28d02f2c52f05dd5c858a852898d76d9482c4b9515a5df81b083e62d005441a8",
@@ -12743,7 +12743,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55174495,
     "apkName": "Palleria-v6.1.0-beta.7-release-armeabi-v7a.apk",
-    "added": 1789822227.556639
+    "added": 1789822227.0
   },
   "Palleria-v6.1.0-beta.7-release-universal.apk": {
     "hash": "fb7e5a020a93ed4fe754dc7c9cafa2c154cb3b41c315e0c61df2973f028de870",
@@ -12838,7 +12838,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69740170,
     "apkName": "Palleria-v6.1.0-beta.7-release-universal.apk",
-    "added": 1789822228.15475
+    "added": 1789822228.0
   },
   "Palleria-v6.1.0-beta.7-release-x86_64.apk": {
     "hash": "29feae66cda167380393ccffd564bc0ce7d91df992336425e2342af35aef7947",
@@ -12927,7 +12927,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57827248,
     "apkName": "Palleria-v6.1.0-beta.7-release-x86_64.apk",
-    "added": 1789822228.732377
+    "added": 1789822228.0
   },
   "Palleria-v6.1.0-beta.8-release-arm64-v8a.apk": {
     "hash": "ab806e308f361d20c261ea9a64e39d0cbeac0b03b24d230dbbfa63f2bc801d17",
@@ -13016,7 +13016,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57220241,
     "apkName": "Palleria-v6.1.0-beta.8-release-arm64-v8a.apk",
-    "added": 1789839805.635121
+    "added": 1789839805.0
   },
   "Palleria-v6.1.0-beta.8-release-armeabi-v7a.apk": {
     "hash": "dbac6e94493d1f64c13b3820895b5dd90480e3349e7a8d4b7e3e3f09efca6637",
@@ -13105,7 +13105,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55174499,
     "apkName": "Palleria-v6.1.0-beta.8-release-armeabi-v7a.apk",
-    "added": 1789839806.109071
+    "added": 1789839806.0
   },
   "Palleria-v6.1.0-beta.8-release-universal.apk": {
     "hash": "afd246151d00941ff7b971b7b5623aaab74e4bc610d7d586fc9887cb5db32e50",
@@ -13200,7 +13200,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69740174,
     "apkName": "Palleria-v6.1.0-beta.8-release-universal.apk",
-    "added": 1789839806.624362
+    "added": 1789839806.0
   },
   "Palleria-v6.1.0-beta.8-release-x86_64.apk": {
     "hash": "cb15ceed298d1d92749466f3c68ad8e071cc8907294fc8dc3243ea754c3d6e67",
@@ -13289,7 +13289,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57827252,
     "apkName": "Palleria-v6.1.0-beta.8-release-x86_64.apk",
-    "added": 1789839807.074383
+    "added": 1789839807.0
   },
   "Palleria-v6.1.0-beta.9-release-arm64-v8a.apk": {
     "hash": "a541af25acd78460daa80e279f977339a847a1721af392455fa0f19842d64742",
@@ -13378,7 +13378,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57157341,
     "apkName": "Palleria-v6.1.0-beta.9-release-arm64-v8a.apk",
-    "added": 1789952541.555918
+    "added": 1789952541.0
   },
   "Palleria-v6.1.0-beta.9-release-armeabi-v7a.apk": {
     "hash": "a598a04954165e121650fe63d1830b677d9322fbc0a8bfe47cf419bebe9b79e6",
@@ -13467,7 +13467,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55144367,
     "apkName": "Palleria-v6.1.0-beta.9-release-armeabi-v7a.apk",
-    "added": 1789952542.04983
+    "added": 1789952542.0
   },
   "Palleria-v6.1.0-beta.9-release-universal.apk": {
     "hash": "db9d3118eaf0123b9eed1a7703a36a07953d6ae3510b4e58f852e906840594a7",
@@ -13562,7 +13562,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69578970,
     "apkName": "Palleria-v6.1.0-beta.9-release-universal.apk",
-    "added": 1789952542.608112
+    "added": 1789952542.0
   },
   "Palleria-v6.1.0-beta.9-release-x86_64.apk": {
     "hash": "e4027a2a13d8aa6331a9ed7056b3468c3b3d4ea026e9a018c27d99ac1095a761",
@@ -13651,7 +13651,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57764352,
     "apkName": "Palleria-v6.1.0-beta.9-release-x86_64.apk",
-    "added": 1789952543.154151
+    "added": 1789952543.0
   },
   "Palleria-v6.1.0-beta.10-release-arm64-v8a.apk": {
     "hash": "c8523159ec31af71c13ab5e20b99ed2e06dd581cb435e5ebb41354852f80e8a2",
@@ -13740,7 +13740,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57161865,
     "apkName": "Palleria-v6.1.0-beta.10-release-arm64-v8a.apk",
-    "added": 1789963670.27882
+    "added": 1789963670.0
   },
   "Palleria-v6.1.0-beta.10-release-armeabi-v7a.apk": {
     "hash": "b7f1696d13257fa34b03f98b15928ed46276eee2d5a5837b3220c4188659e4ae",
@@ -13829,7 +13829,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55148891,
     "apkName": "Palleria-v6.1.0-beta.10-release-armeabi-v7a.apk",
-    "added": 1789963670.932813
+    "added": 1789963670.0
   },
   "Palleria-v6.1.0-beta.10-release-universal.apk": {
     "hash": "063de5a29c0c05e91aa3c620047bdd6dd5503f8f902eb8d002efeb965d56e22d",
@@ -13924,7 +13924,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69583494,
     "apkName": "Palleria-v6.1.0-beta.10-release-universal.apk",
-    "added": 1789963671.740285
+    "added": 1789963671.0
   },
   "Palleria-v6.1.0-beta.10-release-x86_64.apk": {
     "hash": "3b210fbeef85f56168485ecac90ffa0b64d2c517f78bc5b6c806bf7e193d18e3",
@@ -14013,7 +14013,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57768876,
     "apkName": "Palleria-v6.1.0-beta.10-release-x86_64.apk",
-    "added": 1789963672.487002
+    "added": 1789963672.0
   },
   "Palleria-v6.1.0-release-arm64-v8a.apk": {
     "hash": "4a217993226e3ef60b01a8438deef572f87eb81286e4c423c20820d8d1a376fa",
@@ -14102,7 +14102,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57164985,
     "apkName": "Palleria-v6.1.0-release-arm64-v8a.apk",
-    "added": 1789972341.779395
+    "added": 1789972341.0
   },
   "Palleria-v6.1.0-release-armeabi-v7a.apk": {
     "hash": "285e79fff014a4d5747a3211afd97c7bf09b6ef85abfc466b8f937112900d0c1",
@@ -14191,7 +14191,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55152011,
     "apkName": "Palleria-v6.1.0-release-armeabi-v7a.apk",
-    "added": 1789972342.478064
+    "added": 1789972342.0
   },
   "Palleria-v6.1.0-release-universal.apk": {
     "hash": "12d088e0e2fe78a0c97bf09eff5d36ec754e5d083ec473192b5ff7b437ea1857",
@@ -14286,7 +14286,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69586614,
     "apkName": "Palleria-v6.1.0-release-universal.apk",
-    "added": 1789972343.240425
+    "added": 1789972343.0
   },
   "Palleria-v6.1.0-release-x86_64.apk": {
     "hash": "a3731fa27625fb35622631269542ae00f9d85f17a0f022041d9e409a38f7a8e8",
@@ -14375,7 +14375,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57771996,
     "apkName": "Palleria-v6.1.0-release-x86_64.apk",
-    "added": 1789972343.929273
+    "added": 1789972343.0
   },
   "Palleria-v6.2.0-beta.1-release-arm64-v8a.apk": {
     "hash": "4c47cf765499f3409fa4fb1d47cc8b592e40a7db3409c6ab531d5c3cb441c397",
@@ -14464,7 +14464,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57200133,
     "apkName": "Palleria-v6.2.0-beta.1-release-arm64-v8a.apk",
-    "added": 1789998543.599039
+    "added": 1789998543.0
   },
   "Palleria-v6.2.0-beta.1-release-armeabi-v7a.apk": {
     "hash": "d7ab87d2cdba419efaf2c76eb6b8a7e2529e3d9cccb87db84f26ebd42157e7c0",
@@ -14553,7 +14553,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55187159,
     "apkName": "Palleria-v6.2.0-beta.1-release-armeabi-v7a.apk",
-    "added": 1789998544.283695
+    "added": 1789998544.0
   },
   "Palleria-v6.2.0-beta.1-release-universal.apk": {
     "hash": "9012e37b6eb6e110d3484bb459185ac9c76b8b73dcc070c3a41bf4b60dc84039",
@@ -14648,7 +14648,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 69621762,
     "apkName": "Palleria-v6.2.0-beta.1-release-universal.apk",
-    "added": 1789998545.05352
+    "added": 1789998545.0
   },
   "Palleria-v6.2.0-beta.1-release-x86_64.apk": {
     "hash": "e36656eaed041581cf53ba679f0c89e992dd6fd463c339be325d6f84d64ebedb",
@@ -14737,7 +14737,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 57807144,
     "apkName": "Palleria-v6.2.0-beta.1-release-x86_64.apk",
-    "added": 1789998545.760868
+    "added": 1789998545.0
   },
   "Palleria-v6.2.0-beta.2-release-arm64-v8a.apk": {
     "hash": "3d6955dbb7507d00d2e5cbaba4f6fce96a1aa0d6fe624e7b32dc44f829b4b95e",
@@ -14838,7 +14838,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58007837,
     "apkName": "Palleria-v6.2.0-beta.2-release-arm64-v8a.apk",
-    "added": 1790077366.653145
+    "added": 1790077366.0
   },
   "Palleria-v6.2.0-beta.2-release-armeabi-v7a.apk": {
     "hash": "4e8e8b5b243ab4354eeca7701fb8897ddb7335f1a125ba6288c0377e3830d95f",
@@ -14939,7 +14939,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55994863,
     "apkName": "Palleria-v6.2.0-beta.2-release-armeabi-v7a.apk",
-    "added": 1790077367.399136
+    "added": 1790077367.0
   },
   "Palleria-v6.2.0-beta.2-release-universal.apk": {
     "hash": "9e6059834e8ea1b3f811816a91679935d440db4d23e3dd3c1d4c104b4696f421",
@@ -15046,7 +15046,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70429466,
     "apkName": "Palleria-v6.2.0-beta.2-release-universal.apk",
-    "added": 1790077368.216056
+    "added": 1790077368.0
   },
   "Palleria-v6.2.0-beta.2-release-x86_64.apk": {
     "hash": "9d16296d92960509ea6a64ea66024af7607a3892d670e838352116e7cf46faba",
@@ -15147,7 +15147,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58614848,
     "apkName": "Palleria-v6.2.0-beta.2-release-x86_64.apk",
-    "added": 1790077368.964264
+    "added": 1790077368.0
   },
   "Palleria-v6.2.0-beta.3-release-arm64-v8a.apk": {
     "hash": "f3ec3b94dca724926b82e988aca66c85d0e189b515297c1de94c5c791841f05a",
@@ -15248,7 +15248,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58007837,
     "apkName": "Palleria-v6.2.0-beta.3-release-arm64-v8a.apk",
-    "added": 1790139426.515443
+    "added": 1790139426.0
   },
   "Palleria-v6.2.0-beta.3-release-armeabi-v7a.apk": {
     "hash": "cbdbe73bd9e9be66225e44d79d699d39be5a52b52274ed47985e153d295fe9d4",
@@ -15349,7 +15349,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 55994863,
     "apkName": "Palleria-v6.2.0-beta.3-release-armeabi-v7a.apk",
-    "added": 1790139426.988196
+    "added": 1790139426.0
   },
   "Palleria-v6.2.0-beta.3-release-universal.apk": {
     "hash": "7da8a354679b9166fd17a72afe304eb08ca56b0a97488d7badfd6a6fd1211cc9",
@@ -15456,7 +15456,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70429466,
     "apkName": "Palleria-v6.2.0-beta.3-release-universal.apk",
-    "added": 1790139427.536719
+    "added": 1790139427.0
   },
   "Palleria-v6.2.0-beta.3-release-x86_64.apk": {
     "hash": "735c4ea2502af8a0826919c3c4b9e62f54520c92be1b3f4f7e16e5352e05adc3",
@@ -15557,7 +15557,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58614848,
     "apkName": "Palleria-v6.2.0-beta.3-release-x86_64.apk",
-    "added": 1790139428.04028
+    "added": 1790139428.0
   },
   "Palleria-v6.2.0-beta.4-release-arm64-v8a.apk": {
     "hash": "ab16a981dee716144486c7d2a608ab17b446e97d18c24698be3963d527a2e1f0",
@@ -15658,7 +15658,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58022325,
     "apkName": "Palleria-v6.2.0-beta.4-release-arm64-v8a.apk",
-    "added": 1790143343.055232
+    "added": 1790143343.0
   },
   "Palleria-v6.2.0-beta.4-release-armeabi-v7a.apk": {
     "hash": "767b98e62acdecf9d9aa4be23e808bda7e0b790e5b67ae9462ed5e5c4f3a30b7",
@@ -15759,7 +15759,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56009351,
     "apkName": "Palleria-v6.2.0-beta.4-release-armeabi-v7a.apk",
-    "added": 1790143343.835111
+    "added": 1790143343.0
   },
   "Palleria-v6.2.0-beta.4-release-universal.apk": {
     "hash": "74e53d200032e62a870f9068d7316a4e856364a0c9bd4ac62430c8091fb424cf",
@@ -15866,7 +15866,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70443954,
     "apkName": "Palleria-v6.2.0-beta.4-release-universal.apk",
-    "added": 1790143344.703004
+    "added": 1790143344.0
   },
   "Palleria-v6.2.0-beta.4-release-x86_64.apk": {
     "hash": "7056231fc4ca2ff482b72ba526c8caa3ef572f72957f5f909705f13947fc8732",
@@ -15967,7 +15967,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58629336,
     "apkName": "Palleria-v6.2.0-beta.4-release-x86_64.apk",
-    "added": 1790143345.503323
+    "added": 1790143345.0
   },
   "Palleria-v6.2.0-beta.5-release-arm64-v8a.apk": {
     "hash": "2f2c68a3f5d902812e2a0cd565f58c5e8df81af0aa2d2d3caa3609f87263d29b",
@@ -16068,7 +16068,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58049449,
     "apkName": "Palleria-v6.2.0-beta.5-release-arm64-v8a.apk",
-    "added": 1790150603.185827
+    "added": 1790150603.0
   },
   "Palleria-v6.2.0-beta.5-release-armeabi-v7a.apk": {
     "hash": "dfdea77902e3cddaca86a9daae2d39122c6c40b3ff2fbc40cd0b22657fe86109",
@@ -16169,7 +16169,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56036475,
     "apkName": "Palleria-v6.2.0-beta.5-release-armeabi-v7a.apk",
-    "added": 1790150603.996289
+    "added": 1790150603.0
   },
   "Palleria-v6.2.0-beta.5-release-universal.apk": {
     "hash": "949114030d3dc76f7977590df5cacf0b8ae5f5e493654840a255e1ab37ba413d",
@@ -16276,7 +16276,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70471078,
     "apkName": "Palleria-v6.2.0-beta.5-release-universal.apk",
-    "added": 1790150604.85806
+    "added": 1790150604.0
   },
   "Palleria-v6.2.0-beta.5-release-x86_64.apk": {
     "hash": "7f25d4112c71a45129879b2687a73f647789ae41f5a9d4f5fd63a5bb127e2c5f",
@@ -16377,7 +16377,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58656460,
     "apkName": "Palleria-v6.2.0-beta.5-release-x86_64.apk",
-    "added": 1790150605.639025
+    "added": 1790150605.0
   },
   "Palleria-v6.2.0-beta.6-release-arm64-v8a.apk": {
     "hash": "9a2d147a56112e77a24daa48062f0b7538ae7681f1ec1069fa4f532ccbe1b0ed",
@@ -16478,7 +16478,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58084693,
     "apkName": "Palleria-v6.2.0-beta.6-release-arm64-v8a.apk",
-    "added": 1790157875.05215
+    "added": 1790157875.0
   },
   "Palleria-v6.2.0-beta.6-release-armeabi-v7a.apk": {
     "hash": "3e80fe3bcd8020f82feb9bf15ac7213e6c51619f72412c20b25d059c3a7a2ef9",
@@ -16579,7 +16579,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56071719,
     "apkName": "Palleria-v6.2.0-beta.6-release-armeabi-v7a.apk",
-    "added": 1790157875.848602
+    "added": 1790157875.0
   },
   "Palleria-v6.2.0-beta.6-release-universal.apk": {
     "hash": "2e72efaa8e47fa7645985eac10b81d3b5c41906090805153befd2b64c1b9c70d",
@@ -16686,7 +16686,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70506322,
     "apkName": "Palleria-v6.2.0-beta.6-release-universal.apk",
-    "added": 1790157876.748901
+    "added": 1790157876.0
   },
   "Palleria-v6.2.0-beta.6-release-x86_64.apk": {
     "hash": "e665e3a45e9611289c59e8b857c35d6dc82a7757d33dad3a0a2b19109941f4ad",
@@ -16787,7 +16787,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58691704,
     "apkName": "Palleria-v6.2.0-beta.6-release-x86_64.apk",
-    "added": 1790157877.589568
+    "added": 1790157877.0
   },
   "Palleria-v6.2.0-beta.7-release-arm64-v8a.apk": {
     "hash": "4b741bf601c028a18b3117aa09400c370a69759006444649f57e5918c47a9c19",
@@ -16888,7 +16888,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58090877,
     "apkName": "Palleria-v6.2.0-beta.7-release-arm64-v8a.apk",
-    "added": 1790198620.012112
+    "added": 1790198620.0
   },
   "Palleria-v6.2.0-beta.7-release-armeabi-v7a.apk": {
     "hash": "2f1d8488ecda0dee620ad902187ff315f7bafaa45e304ffde39b75b4d0f99298",
@@ -16989,7 +16989,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56077903,
     "apkName": "Palleria-v6.2.0-beta.7-release-armeabi-v7a.apk",
-    "added": 1790198620.81375
+    "added": 1790198620.0
   },
   "Palleria-v6.2.0-beta.7-release-universal.apk": {
     "hash": "dfb0d38c0688a657a27045c55ddb786f7451a8eceed1a69fe67aa1f69d75113c",
@@ -17096,7 +17096,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70512506,
     "apkName": "Palleria-v6.2.0-beta.7-release-universal.apk",
-    "added": 1790198621.741591
+    "added": 1790198621.0
   },
   "Palleria-v6.2.0-beta.7-release-x86_64.apk": {
     "hash": "1f4e7b17c87342a89c962903b84ee08e747c1a41ff29568176da7fef6e1842bc",
@@ -17197,7 +17197,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58697888,
     "apkName": "Palleria-v6.2.0-beta.7-release-x86_64.apk",
-    "added": 1790198622.574954
+    "added": 1790198622.0
   },
   "Palleria-v6.2.0-beta.8-release-arm64-v8a.apk": {
     "hash": "1b835c20c2f0ecf68b66685e2b67a557e8416749e5fdf49ffe68798e163aa913",
@@ -17708,7 +17708,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58090877,
     "apkName": "Palleria-v6.2.0-beta.9-release-arm64-v8a.apk",
-    "added": 1790242091.435108
+    "added": 1790242091.0
   },
   "Palleria-v6.2.0-beta.9-release-armeabi-v7a.apk": {
     "hash": "49a327240e992c4d59fceaa13f956f80105e2102968c4262edbbc78010b08bf1",
@@ -17809,7 +17809,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56077903,
     "apkName": "Palleria-v6.2.0-beta.9-release-armeabi-v7a.apk",
-    "added": 1790242092.183035
+    "added": 1790242092.0
   },
   "Palleria-v6.2.0-beta.9-release-universal.apk": {
     "hash": "2001f9e15796c27c6db932d19a5ff83932d1dace266ae31b33fd7525e15ba878",
@@ -17916,7 +17916,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70512506,
     "apkName": "Palleria-v6.2.0-beta.9-release-universal.apk",
-    "added": 1790242093.011575
+    "added": 1790242093.0
   },
   "Palleria-v6.2.0-beta.9-release-x86_64.apk": {
     "hash": "9c5063d30a9d1169ea9a7170a7fcdcbe096e715da37f4097cc6522337914ce0a",
@@ -18017,7 +18017,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58697888,
     "apkName": "Palleria-v6.2.0-beta.9-release-x86_64.apk",
-    "added": 1790242093.81938
+    "added": 1790242093.0
   },
   "Palleria-v6.2.0-pre.1-release-arm64-v8a.apk": {
     "hash": "06e9f6bfeef13f142a50525d7647f0ceef1652ec4d6f56401c8fc35967629a15",
@@ -18118,7 +18118,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58090881,
     "apkName": "Palleria-v6.2.0-pre.1-release-arm64-v8a.apk",
-    "added": 1790247060.447967
+    "added": 1790247060.0
   },
   "Palleria-v6.2.0-pre.1-release-armeabi-v7a.apk": {
     "hash": "52faffc7c43c181de84816775967f969da9be43d890b1f87c82d3f2d8d618559",
@@ -18219,7 +18219,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56077907,
     "apkName": "Palleria-v6.2.0-pre.1-release-armeabi-v7a.apk",
-    "added": 1790247060.953061
+    "added": 1790247060.0
   },
   "Palleria-v6.2.0-pre.1-release-universal.apk": {
     "hash": "eebd83305ba3bc11ce7082f38459c39cc0649832643558ec1c26bd8f18e4c4f0",
@@ -18326,7 +18326,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70512510,
     "apkName": "Palleria-v6.2.0-pre.1-release-universal.apk",
-    "added": 1790247061.668289
+    "added": 1790247061.0
   },
   "Palleria-v6.2.0-pre.1-release-x86_64.apk": {
     "hash": "3053d49996843cbb96f7ecebeb293754d6706262e4a082f20175ad140841446e",
@@ -18427,7 +18427,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58697892,
     "apkName": "Palleria-v6.2.0-pre.1-release-x86_64.apk",
-    "added": 1790247062.20425
+    "added": 1790247062.0
   },
   "Palleria-v6.2.0-pre.2-release-arm64-v8a.apk": {
     "hash": "1dcaba4825ccbaa1852bc9a45ab80ebe317daa1e699a92b1a4da8e47fe38c6a6",
@@ -18528,7 +18528,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58091509,
     "apkName": "Palleria-v6.2.0-pre.2-release-arm64-v8a.apk",
-    "added": 1790251891.025799
+    "added": 1790251891.0
   },
   "Palleria-v6.2.0-pre.2-release-armeabi-v7a.apk": {
     "hash": "402148c81957e4260f795fb72d28bd5990e7f25089ed6376eb11e2a12002b6cf",
@@ -18629,7 +18629,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56078535,
     "apkName": "Palleria-v6.2.0-pre.2-release-armeabi-v7a.apk",
-    "added": 1790251891.817294
+    "added": 1790251891.0
   },
   "Palleria-v6.2.0-pre.2-release-universal.apk": {
     "hash": "25504afc7f4caf6b4037fe54f12529d394b5784fc15d00790effedc6bf1fa9e3",
@@ -18736,7 +18736,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70513138,
     "apkName": "Palleria-v6.2.0-pre.2-release-universal.apk",
-    "added": 1790251892.691609
+    "added": 1790251892.0
   },
   "Palleria-v6.2.0-pre.2-release-x86_64.apk": {
     "hash": "651a84e6e17a1a71ff35faad172844678e2b83cbc797b9d89f14c2e5b41f4698",
@@ -18837,7 +18837,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58698520,
     "apkName": "Palleria-v6.2.0-pre.2-release-x86_64.apk",
-    "added": 1790251893.508016
+    "added": 1790251893.0
   },
   "Palleria-v6.2.0-release-arm64-v8a.apk": {
     "hash": "dae4c431471a97cf97a5dd17753ed20b7938830faf6f6df73434f5d5f7f60963",
@@ -18938,7 +18938,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58091501,
     "apkName": "Palleria-v6.2.0-release-arm64-v8a.apk",
-    "added": 1790255388.435835
+    "added": 1790255388.0
   },
   "Palleria-v6.2.0-release-armeabi-v7a.apk": {
     "hash": "8309f3418e43ab4e12d111f5be04f3bf1b4cd2366e82b784410e32e3c2993c00",
@@ -19039,7 +19039,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56078527,
     "apkName": "Palleria-v6.2.0-release-armeabi-v7a.apk",
-    "added": 1790255388.974113
+    "added": 1790255388.0
   },
   "Palleria-v6.2.0-release-universal.apk": {
     "hash": "a025897fba1c8b337175b18838b2b1129f3183b6158b76853778482ae01a1c40",
@@ -19146,7 +19146,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70513130,
     "apkName": "Palleria-v6.2.0-release-universal.apk",
-    "added": 1790255389.591769
+    "added": 1790255389.0
   },
   "Palleria-v6.2.0-release-x86_64.apk": {
     "hash": "6444aa21d45e5a462ade5d2e8596a62fe9aa981525bf47812ef5448d2438e214",
@@ -19247,7 +19247,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58698512,
     "apkName": "Palleria-v6.2.0-release-x86_64.apk",
-    "added": 1790255390.174741
+    "added": 1790255390.0
   },
   "Palleria-v6.2.1-pre.1-release-arm64-v8a.apk": {
     "hash": "62978bca5fe23d2131c19f59fd8b0082462553c16cc9d64361bdb0d532788860",
@@ -19348,7 +19348,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58091509,
     "apkName": "Palleria-v6.2.1-pre.1-release-arm64-v8a.apk",
-    "added": 1790324860.333888
+    "added": 1790324860.0
   },
   "Palleria-v6.2.1-pre.1-release-armeabi-v7a.apk": {
     "hash": "af047978410f31005f18163f9afc7f1c2c3c0eec2de90263b9a6dd6846722f5d",
@@ -19449,7 +19449,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56078535,
     "apkName": "Palleria-v6.2.1-pre.1-release-armeabi-v7a.apk",
-    "added": 1790324861.095563
+    "added": 1790324861.0
   },
   "Palleria-v6.2.1-pre.1-release-universal.apk": {
     "hash": "8bcab2e7adaa7292a42513b01a0344bd29714663dd06c1ecbda52406c879ed71",
@@ -19556,7 +19556,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70513138,
     "apkName": "Palleria-v6.2.1-pre.1-release-universal.apk",
-    "added": 1790324861.941939
+    "added": 1790324861.0
   },
   "Palleria-v6.2.1-pre.1-release-x86_64.apk": {
     "hash": "3b98c7a476aa12edfbb4ee01db08bce37f09a3dd0d838e5b622bcad65e1c48e2",
@@ -19657,7 +19657,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58698520,
     "apkName": "Palleria-v6.2.1-pre.1-release-x86_64.apk",
-    "added": 1790324862.742096
+    "added": 1790324862.0
   },
   "Palleria-v6.2.1-pre.2-release-arm64-v8a.apk": {
     "hash": "0b0a567b061c410a0dbe0841a901aa2fa4a39dc7f795449f546a6a2ac3f44614",
@@ -19758,7 +19758,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58091509,
     "apkName": "Palleria-v6.2.1-pre.2-release-arm64-v8a.apk",
-    "added": 1790350949.047169
+    "added": 1790350949.0
   },
   "Palleria-v6.2.1-pre.2-release-armeabi-v7a.apk": {
     "hash": "7319079672a3f05502a4c33b402612c691c6390f8037ecaafda9df600c27e1f8",
@@ -19859,7 +19859,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56078535,
     "apkName": "Palleria-v6.2.1-pre.2-release-armeabi-v7a.apk",
-    "added": 1790350949.831068
+    "added": 1790350949.0
   },
   "Palleria-v6.2.1-pre.2-release-universal.apk": {
     "hash": "fdecc47e43d8e4786dc024d9e6c31aeb849f5f861ded9a817d0b26e0cdd7ab72",
@@ -19966,7 +19966,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70513138,
     "apkName": "Palleria-v6.2.1-pre.2-release-universal.apk",
-    "added": 1790350950.685892
+    "added": 1790350950.0
   },
   "Palleria-v6.2.1-pre.2-release-x86_64.apk": {
     "hash": "e2f939864213c6f679ce0060808de40fd5853eb969e9d0b5baf28552127ae1cb",
@@ -20067,7 +20067,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58698520,
     "apkName": "Palleria-v6.2.1-pre.2-release-x86_64.apk",
-    "added": 1790350951.492759
+    "added": 1790350951.0
   },
   "Palleria-v6.2.1-pre.3-release-arm64-v8a.apk": {
     "hash": "5a98c9b84645d0587b27df6aaca0e98cbdde92a237ec0e00aa04582c13863757",
@@ -20168,7 +20168,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58058741,
     "apkName": "Palleria-v6.2.1-pre.3-release-arm64-v8a.apk",
-    "added": 1790407817.194179
+    "added": 1790407817.0
   },
   "Palleria-v6.2.1-pre.3-release-armeabi-v7a.apk": {
     "hash": "41935361ed9c9598d7cb4b017be3bb8c8a695edfae4a2c8240b4104d680983f5",
@@ -20269,7 +20269,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56062151,
     "apkName": "Palleria-v6.2.1-pre.3-release-armeabi-v7a.apk",
-    "added": 1790407817.720607
+    "added": 1790407817.0
   },
   "Palleria-v6.2.1-pre.3-release-universal.apk": {
     "hash": "edd0de228c5ac9b40ab1a87905ea38063d8c61e29d6767639209fecfed8c9aff",
@@ -20376,7 +20376,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70431218,
     "apkName": "Palleria-v6.2.1-pre.3-release-universal.apk",
-    "added": 1790407818.307008
+    "added": 1790407818.0
   },
   "Palleria-v6.2.1-pre.3-release-x86_64.apk": {
     "hash": "8282b37daa9e6310d5614024303a1cd17b516da3180aba361e6ee9e69e60dc49",
@@ -20477,7 +20477,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58665752,
     "apkName": "Palleria-v6.2.1-pre.3-release-x86_64.apk",
-    "added": 1790407818.851905
+    "added": 1790407818.0
   },
   "Palleria-v6.2.1-pre.4-release-arm64-v8a.apk": {
     "hash": "d4b999880cf8e604f62c12291f42bb7ad1b10ba0ce7a00987b0ffa54af254420",
@@ -20578,7 +20578,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58058741,
     "apkName": "Palleria-v6.2.1-pre.4-release-arm64-v8a.apk",
-    "added": 1790413472.682329
+    "added": 1790413472.0
   },
   "Palleria-v6.2.1-pre.4-release-armeabi-v7a.apk": {
     "hash": "6130b6c34238a9a1fe544fde337228dc4f4b37099797d1f3e96ec58861bb1266",
@@ -20679,7 +20679,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56062151,
     "apkName": "Palleria-v6.2.1-pre.4-release-armeabi-v7a.apk",
-    "added": 1790413473.301619
+    "added": 1790413473.0
   },
   "Palleria-v6.2.1-pre.4-release-universal.apk": {
     "hash": "1d8e47f9088476c4bac667e955f9004b1e668d2aada1ef96ae56cd851429c9d0",
@@ -20786,7 +20786,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70431218,
     "apkName": "Palleria-v6.2.1-pre.4-release-universal.apk",
-    "added": 1790413473.997321
+    "added": 1790413473.0
   },
   "Palleria-v6.2.1-pre.4-release-x86_64.apk": {
     "hash": "8a3ca17f73f0bb3727bd77f618ca8945eaf39d160849fb68b03a13a650a82afc",
@@ -20887,7 +20887,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58665752,
     "apkName": "Palleria-v6.2.1-pre.4-release-x86_64.apk",
-    "added": 1790413474.624324
+    "added": 1790413474.0
   },
   "Palleria-v6.2.1-release-arm64-v8a.apk": {
     "hash": "1c2451e5a27221ddfc60525f09fe3e378c83b5556278f6b8b23d0c987fa8258c",
@@ -20988,7 +20988,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58058733,
     "apkName": "Palleria-v6.2.1-release-arm64-v8a.apk",
-    "added": 1790422142.941736
+    "added": 1790422142.0
   },
   "Palleria-v6.2.1-release-armeabi-v7a.apk": {
     "hash": "3a47c7e1825e7c18b3b2867c130f52cbfaf9f91f400a806b35e5e01d474f75c2",
@@ -21089,7 +21089,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56062143,
     "apkName": "Palleria-v6.2.1-release-armeabi-v7a.apk",
-    "added": 1790422143.568416
+    "added": 1790422143.0
   },
   "Palleria-v6.2.1-release-universal.apk": {
     "hash": "e9b4d2908cea92b23e5e5c78dc2e1524a2b64dacccb27a838c8f7ded40c71a59",
@@ -21196,7 +21196,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70431210,
     "apkName": "Palleria-v6.2.1-release-universal.apk",
-    "added": 1790422144.240316
+    "added": 1790422144.0
   },
   "Palleria-v6.2.1-release-x86_64.apk": {
     "hash": "46f2bd4430b5a6c7d6546aec9b23f903cc3b6134cbef7880e51e75e3eca1ebc6",
@@ -21297,7 +21297,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58665744,
     "apkName": "Palleria-v6.2.1-release-x86_64.apk",
-    "added": 1790422144.896733
+    "added": 1790422144.0
   },
   "Palleria-v6.3.0-release-arm64-v8a.apk": {
     "hash": "da012754518437761ccb299f1e30adabb5fa85f1f55b5c8f08b6ec34d9233a7f",
@@ -21398,7 +21398,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58101501,
     "apkName": "Palleria-v6.3.0-release-arm64-v8a.apk",
-    "added": 1790490341.145932
+    "added": 1790490341.0
   },
   "Palleria-v6.3.0-release-armeabi-v7a.apk": {
     "hash": "dd7163169d7efae09f2b5264218d496465401f111b745a85ca611146b239562d",
@@ -21499,7 +21499,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56104911,
     "apkName": "Palleria-v6.3.0-release-armeabi-v7a.apk",
-    "added": 1790490341.952321
+    "added": 1790490341.0
   },
   "Palleria-v6.3.0-release-universal.apk": {
     "hash": "c10fd491fe2b607fcfb3f87ba6d151962b4833cd659997882cedfafc8aa62008",
@@ -21606,7 +21606,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70473978,
     "apkName": "Palleria-v6.3.0-release-universal.apk",
-    "added": 1790490342.84042
+    "added": 1790490342.0
   },
   "Palleria-v6.3.0-release-x86_64.apk": {
     "hash": "de6f6aea8291b1be05db24ef6afd049af58e0cde452636943c49a34951661c4f",
@@ -21707,7 +21707,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58708512,
     "apkName": "Palleria-v6.3.0-release-x86_64.apk",
-    "added": 1790490343.655027
+    "added": 1790490343.0
   },
   "Palleria-v6.3.1-release-arm64-v8a.apk": {
     "hash": "7dd9bba9024b667483fc2904872b4b31d28ae878c1487947f633ac34cf57becc",
@@ -21808,7 +21808,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58101501,
     "apkName": "Palleria-v6.3.1-release-arm64-v8a.apk",
-    "added": 1790492728.387455
+    "added": 1790492728.0
   },
   "Palleria-v6.3.1-release-armeabi-v7a.apk": {
     "hash": "ba4785db42af245aca1620980a25146154234ca189f3f37c7624e577afb6ae45",
@@ -21909,7 +21909,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56104911,
     "apkName": "Palleria-v6.3.1-release-armeabi-v7a.apk",
-    "added": 1790492728.944449
+    "added": 1790492728.0
   },
   "Palleria-v6.3.1-release-universal.apk": {
     "hash": "72331af5c8134fb28655771667ce0b22bebb4c9a4f469e8d25610c808da034fc",
@@ -22016,7 +22016,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70473978,
     "apkName": "Palleria-v6.3.1-release-universal.apk",
-    "added": 1790492729.571104
+    "added": 1790492729.0
   },
   "Palleria-v6.3.1-release-x86_64.apk": {
     "hash": "43b4cd805eb33643c3e240319537a22525fa1729271590ce4e010bbeca63a57d",
@@ -22117,7 +22117,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58708512,
     "apkName": "Palleria-v6.3.1-release-x86_64.apk",
-    "added": 1790492730.244515
+    "added": 1790492730.0
   },
   "Palleria-v6.3.2-release-arm64-v8a.apk": {
     "hash": "f79f2cddfed6c65c634c9a9762f1a64db4d9e652752023b70b2e88c2304ac7d6",
@@ -22218,7 +22218,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58101501,
     "apkName": "Palleria-v6.3.2-release-arm64-v8a.apk",
-    "added": 1790495063.482862
+    "added": 1790495063.0
   },
   "Palleria-v6.3.2-release-armeabi-v7a.apk": {
     "hash": "b30247b7519c947af8f9392b75bd5515238e55d3fc78bad6e985f76bacd30542",
@@ -22319,7 +22319,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56104911,
     "apkName": "Palleria-v6.3.2-release-armeabi-v7a.apk",
-    "added": 1790495064.302144
+    "added": 1790495064.0
   },
   "Palleria-v6.3.2-release-universal.apk": {
     "hash": "4dff18818a8b5a8c866f499cf3d627e4ea5e3172b1d4e81005836dae19071000",
@@ -22426,7 +22426,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70473978,
     "apkName": "Palleria-v6.3.2-release-universal.apk",
-    "added": 1790495065.156409
+    "added": 1790495065.0
   },
   "Palleria-v6.3.2-release-x86_64.apk": {
     "hash": "3211412aeb7d791d9fd6019c8f2e3750aab5a247458a554fad9738ac4ef23c8c",
@@ -22527,7 +22527,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58708512,
     "apkName": "Palleria-v6.3.2-release-x86_64.apk",
-    "added": 1790495065.940211
+    "added": 1790495065.0
   },
   "Palleria-v6.4.0-release-arm64-v8a.apk": {
     "hash": "89f0f0873f20a57956557858869e4446b0bcdeadb0ecc75614b6bef537b8ffa9",
@@ -22628,7 +22628,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58124485,
     "apkName": "Palleria-v6.4.0-release-arm64-v8a.apk",
-    "added": 1790498639.849609
+    "added": 1790498639.0
   },
   "Palleria-v6.4.0-release-armeabi-v7a.apk": {
     "hash": "dda4c9e6da3042094972c6fadbf6710f01a2ddf86490e64c59ad5b9fc98807a7",
@@ -22729,7 +22729,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56127895,
     "apkName": "Palleria-v6.4.0-release-armeabi-v7a.apk",
-    "added": 1790498640.633279
+    "added": 1790498640.0
   },
   "Palleria-v6.4.0-release-universal.apk": {
     "hash": "41f5465caf0a43e6bfa3bc05bd087658a9f5975063016629e6dc1eac994755fe",
@@ -22836,7 +22836,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70496962,
     "apkName": "Palleria-v6.4.0-release-universal.apk",
-    "added": 1790498641.480895
+    "added": 1790498641.0
   },
   "Palleria-v6.4.0-release-x86_64.apk": {
     "hash": "22454a5ede76ca4b34744ffbdf411079a0f09c4390a978d3de123d960872cf26",
@@ -22937,7 +22937,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58731496,
     "apkName": "Palleria-v6.4.0-release-x86_64.apk",
-    "added": 1790498642.284795
+    "added": 1790498642.0
   },
   "Palleria-v6.5.0-beta.1-release-arm64-v8a.apk": {
     "hash": "88ac0d93907467b95cabf77852046864a1ccb942695e6aeb15e08527d5ac8608",
@@ -23038,7 +23038,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58152833,
     "apkName": "Palleria-v6.5.0-beta.1-release-arm64-v8a.apk",
-    "added": 1790589918.506839
+    "added": 1790589918.0
   },
   "Palleria-v6.5.0-beta.1-release-armeabi-v7a.apk": {
     "hash": "82d95354532e0884290b1758b1c72c03b83cf30c6e5cc9bac304225fcd30f2a3",
@@ -23139,7 +23139,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56139859,
     "apkName": "Palleria-v6.5.0-beta.1-release-armeabi-v7a.apk",
-    "added": 1790589919.329877
+    "added": 1790589919.0
   },
   "Palleria-v6.5.0-beta.1-release-universal.apk": {
     "hash": "2cba65f8cf6379f525d6a87c7ce6fedc33a9a7d213f1b254525eb64867b1025a",
@@ -23246,7 +23246,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70525310,
     "apkName": "Palleria-v6.5.0-beta.1-release-universal.apk",
-    "added": 1790589920.207146
+    "added": 1790589920.0
   },
   "Palleria-v6.5.0-beta.1-release-x86_64.apk": {
     "hash": "145998f0753ee6ff64314c45ef9e56deb2fdae0c96c84e8ae98e7f2169dbc2b7",
@@ -23347,7 +23347,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58743460,
     "apkName": "Palleria-v6.5.0-beta.1-release-x86_64.apk",
-    "added": 1790589921.038201
+    "added": 1790589921.0
   },
   "Palleria-v6.5.0-beta.2-release-arm64-v8a.apk": {
     "hash": "ec31630ea57d66e75818fb443137c189440074828bcea8cad6f41c2ba093c724",
@@ -23448,7 +23448,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58152833,
     "apkName": "Palleria-v6.5.0-beta.2-release-arm64-v8a.apk",
-    "added": 1790592794.115231
+    "added": 1790592794.0
   },
   "Palleria-v6.5.0-beta.2-release-armeabi-v7a.apk": {
     "hash": "5b6850606af755694ad21ad93f1a039fb45b537c991e179d4d993697094ca922",
@@ -23549,7 +23549,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56139859,
     "apkName": "Palleria-v6.5.0-beta.2-release-armeabi-v7a.apk",
-    "added": 1790592794.668186
+    "added": 1790592794.0
   },
   "Palleria-v6.5.0-beta.2-release-universal.apk": {
     "hash": "92ea15e5a4bf41d1394522868017f045403d63547bfb8b82d4f659d24d2806e6",
@@ -23656,7 +23656,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70525310,
     "apkName": "Palleria-v6.5.0-beta.2-release-universal.apk",
-    "added": 1790592795.292492
+    "added": 1790592795.0
   },
   "Palleria-v6.5.0-beta.2-release-x86_64.apk": {
     "hash": "6ab5bacd7d9a165c6646e8e069d9631a7757eb0cfcfc56834bab5f6926de8dfc",
@@ -23757,7 +23757,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58743460,
     "apkName": "Palleria-v6.5.0-beta.2-release-x86_64.apk",
-    "added": 1790592795.898318
+    "added": 1790592795.0
   },
   "Palleria-v6.5.0-beta.3-release-arm64-v8a.apk": {
     "hash": "39729a2d9d96055e687adcff9b9e4bd9181092ce9f2d982d40d7283437ebf28d",
@@ -23862,7 +23862,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58167849,
     "apkName": "Palleria-v6.5.0-beta.3-release-arm64-v8a.apk",
-    "added": 1790635005.973032
+    "added": 1790635005.0
   },
   "Palleria-v6.5.0-beta.3-release-armeabi-v7a.apk": {
     "hash": "d86ae201304bd66450588937080ecdd88b174cd20470c76b54d9f6513fd27e10",
@@ -23967,7 +23967,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56154875,
     "apkName": "Palleria-v6.5.0-beta.3-release-armeabi-v7a.apk",
-    "added": 1790635006.691081
+    "added": 1790635006.0
   },
   "Palleria-v6.5.0-beta.3-release-universal.apk": {
     "hash": "8b3d94450ddad0814f6cedb5518bbe063e4736b8c10bedef9dc7df7c7f103f38",
@@ -24078,7 +24078,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70540326,
     "apkName": "Palleria-v6.5.0-beta.3-release-universal.apk",
-    "added": 1790635007.504435
+    "added": 1790635007.0
   },
   "Palleria-v6.5.0-beta.3-release-x86_64.apk": {
     "hash": "bd8fcdb1e1f1e68c74b36a8e07a48e2d2af9d22a534448f7966353234b19b09a",
@@ -24183,7 +24183,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58758476,
     "apkName": "Palleria-v6.5.0-beta.3-release-x86_64.apk",
-    "added": 1790635008.254519
+    "added": 1790635008.0
   },
   "Palleria-v6.5.0-beta.4-release-arm64-v8a.apk": {
     "hash": "b7d928c4ad43112aeb14dff0af5d3ec8ac33d97c12ef27635c1e4a7ac8ba41c3",
@@ -24288,7 +24288,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58167849,
     "apkName": "Palleria-v6.5.0-beta.4-release-arm64-v8a.apk",
-    "added": 1790673568.509283
+    "added": 1790673568.0
   },
   "Palleria-v6.5.0-beta.4-release-armeabi-v7a.apk": {
     "hash": "a9f0b4aae1e18362920d90ac7a166d7418e957fe1656f39ec6b2e221a0992151",
@@ -24393,7 +24393,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56154875,
     "apkName": "Palleria-v6.5.0-beta.4-release-armeabi-v7a.apk",
-    "added": 1790673569.297011
+    "added": 1790673569.0
   },
   "Palleria-v6.5.0-beta.4-release-universal.apk": {
     "hash": "410156ab4eae34316a840f72b72e40756ebc760ee66fe7c26011a682011c5e11",
@@ -24504,7 +24504,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70540326,
     "apkName": "Palleria-v6.5.0-beta.4-release-universal.apk",
-    "added": 1790673570.126632
+    "added": 1790673570.0
   },
   "Palleria-v6.5.0-beta.4-release-x86_64.apk": {
     "hash": "af60363b909efbb6417eec8c12dd56afeefdb0e382c420a494b794cebffa7cff",
@@ -24609,7 +24609,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58758476,
     "apkName": "Palleria-v6.5.0-beta.4-release-x86_64.apk",
-    "added": 1790673570.905754
+    "added": 1790673570.0
   },
   "Palleria-v6.5.0-beta.5-release-arm64-v8a.apk": {
     "hash": "7ae6f26c9a18ba7ec12384646246d3c1797834ff331b68a92d314af5ca823217",
@@ -24714,7 +24714,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58167849,
     "apkName": "Palleria-v6.5.0-beta.5-release-arm64-v8a.apk",
-    "added": 1790686996.625005
+    "added": 1790686996.0
   },
   "Palleria-v6.5.0-beta.5-release-armeabi-v7a.apk": {
     "hash": "f1d45f6d9c0163ea793239bbe7a73fb8a208e488a83bfa266f48ca1298d63818",
@@ -24819,7 +24819,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56154875,
     "apkName": "Palleria-v6.5.0-beta.5-release-armeabi-v7a.apk",
-    "added": 1790686997.286456
+    "added": 1790686997.0
   },
   "Palleria-v6.5.0-beta.5-release-universal.apk": {
     "hash": "d4473408bdc843979e7a8050cfa5ac633d698c4aa4591612f50e8ff3202a29fe",
@@ -24930,7 +24930,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70540326,
     "apkName": "Palleria-v6.5.0-beta.5-release-universal.apk",
-    "added": 1790686998.001452
+    "added": 1790686998.0
   },
   "Palleria-v6.5.0-beta.5-release-x86_64.apk": {
     "hash": "1477f2463c37553db8f19a010f1cb1815d8afdf13339cc83c7f43353f9c4bcb5",
@@ -25035,7 +25035,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58758476,
     "apkName": "Palleria-v6.5.0-beta.5-release-x86_64.apk",
-    "added": 1790686998.659331
+    "added": 1790686998.0
   },
   "Palleria-v6.5.0-beta.6-release-arm64-v8a.apk": {
     "hash": "4b18c914902f3627bb0c980b080f78ce6ba326d9f97fc626bc3c6a34d8f6f1bf",
@@ -25140,7 +25140,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58168233,
     "apkName": "Palleria-v6.5.0-beta.6-release-arm64-v8a.apk",
-    "added": 1790756560.963034
+    "added": 1790756560.0
   },
   "Palleria-v6.5.0-beta.6-release-armeabi-v7a.apk": {
     "hash": "1c1307e1036bb0a8b33f743e4556e30797dc9850846e95b0b071a31b60451d57",
@@ -25245,7 +25245,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56155259,
     "apkName": "Palleria-v6.5.0-beta.6-release-armeabi-v7a.apk",
-    "added": 1790756561.759142
+    "added": 1790756561.0
   },
   "Palleria-v6.5.0-beta.6-release-universal.apk": {
     "hash": "27d3accdb5869b94a3aaa9342ce40f06340dcfeb2faeabc74936d1b7f46aa4de",
@@ -25356,7 +25356,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70540710,
     "apkName": "Palleria-v6.5.0-beta.6-release-universal.apk",
-    "added": 1790756562.607491
+    "added": 1790756562.0
   },
   "Palleria-v6.5.0-beta.6-release-x86_64.apk": {
     "hash": "f0af27d62921704c8c33162e5fa1bdcca958587f5b5b523a8600b7cbbaf8008e",
@@ -25461,7 +25461,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58758860,
     "apkName": "Palleria-v6.5.0-beta.6-release-x86_64.apk",
-    "added": 1790756563.401407
+    "added": 1790756563.0
   },
   "Palleria-v6.5.0-beta.7-release-arm64-v8a.apk": {
     "hash": "042a9c1de9db47fa41702a504955a5e2eab5080a4cd5f21cc639a9a9cc784e79",
@@ -25566,7 +25566,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58182740,
     "apkName": "Palleria-v6.5.0-beta.7-release-arm64-v8a.apk",
-    "added": 1790781887.622147
+    "added": 1790781887.0
   },
   "Palleria-v6.5.0-beta.7-release-armeabi-v7a.apk": {
     "hash": "4517c217554232577396b8d32615172f78f4fb4507bd9bb50cc88fe1452ed516",
@@ -25671,7 +25671,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56169766,
     "apkName": "Palleria-v6.5.0-beta.7-release-armeabi-v7a.apk",
-    "added": 1790781888.408244
+    "added": 1790781888.0
   },
   "Palleria-v6.5.0-beta.7-release-universal.apk": {
     "hash": "144fb3bd9caa9005da3bbde9b50a692c8a66428cb2da4a9ac45505489c0a2094",
@@ -25782,7 +25782,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70555217,
     "apkName": "Palleria-v6.5.0-beta.7-release-universal.apk",
-    "added": 1790781889.267929
+    "added": 1790781889.0
   },
   "Palleria-v6.5.0-beta.7-release-x86_64.apk": {
     "hash": "f3f3f7e052b3cf86d97cd543841d47d120d83bff65de128aff53cc64fcb53c0e",
@@ -25887,7 +25887,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58773367,
     "apkName": "Palleria-v6.5.0-beta.7-release-x86_64.apk",
-    "added": 1790781890.079298
+    "added": 1790781890.0
   },
   "Palleria-v6.5.0-beta.8-release-arm64-v8a.apk": {
     "hash": "7c6a3140843688fcf18c0872974f909687b8945fc5969549a4bd38605c939764",
@@ -25992,7 +25992,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58203864,
     "apkName": "Palleria-v6.5.0-beta.8-release-arm64-v8a.apk",
-    "added": 1790786207.9129
+    "added": 1790786207.0
   },
   "Palleria-v6.5.0-beta.8-release-armeabi-v7a.apk": {
     "hash": "0843e5a4b9482e23770406c12cb9c3049261173c1620af82999421d5e85dc748",
@@ -26097,7 +26097,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56190890,
     "apkName": "Palleria-v6.5.0-beta.8-release-armeabi-v7a.apk",
-    "added": 1790786208.76889
+    "added": 1790786208.0
   },
   "Palleria-v6.5.0-beta.8-release-universal.apk": {
     "hash": "16051b781a6bd29adbd967b787bb98d8fa6b863d7b93ed58e9a5a4f5371f2961",
@@ -26208,7 +26208,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70576341,
     "apkName": "Palleria-v6.5.0-beta.8-release-universal.apk",
-    "added": 1790786209.634995
+    "added": 1790786209.0
   },
   "Palleria-v6.5.0-beta.8-release-x86_64.apk": {
     "hash": "5172dfc80ba4b8961b8b0c745b13fde6d03dbe4aac740e3f5b79c827cbcd7997",
@@ -26313,7 +26313,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58794491,
     "apkName": "Palleria-v6.5.0-beta.8-release-x86_64.apk",
-    "added": 1790786210.478503
+    "added": 1790786210.0
   },
   "Palleria-v6.5.0-beta.9-release-arm64-v8a.apk": {
     "hash": "c97f121c799b013e58113a13a66205fb0991443de7cdc17147a8473e9e2b9cac",
@@ -26418,7 +26418,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58203864,
     "apkName": "Palleria-v6.5.0-beta.9-release-arm64-v8a.apk",
-    "added": 1790790446.566287
+    "added": 1790790446.0
   },
   "Palleria-v6.5.0-beta.9-release-armeabi-v7a.apk": {
     "hash": "f5a6a85517691c585acf17de4c40025268b284f3ca734b3d76d81c5f3b2ce862",
@@ -26523,7 +26523,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56190890,
     "apkName": "Palleria-v6.5.0-beta.9-release-armeabi-v7a.apk",
-    "added": 1790790447.349662
+    "added": 1790790447.0
   },
   "Palleria-v6.5.0-beta.9-release-universal.apk": {
     "hash": "4e0e079fba897fb25c6b248509d0778aebdf0f537c6170759eabdddb244f198c",
@@ -26634,7 +26634,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70576341,
     "apkName": "Palleria-v6.5.0-beta.9-release-universal.apk",
-    "added": 1790790448.207713
+    "added": 1790790448.0
   },
   "Palleria-v6.5.0-beta.9-release-x86_64.apk": {
     "hash": "45c8bb0d5b7352ed91dcccbc410268de75bb77c2ba5d82e065abc54980c102d8",
@@ -26739,7 +26739,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58794491,
     "apkName": "Palleria-v6.5.0-beta.9-release-x86_64.apk",
-    "added": 1790790449.012639
+    "added": 1790790449.0
   },
   "Palleria-v6.5.0-pre.1-release-arm64-v8a.apk": {
     "hash": "b777ddf20e9b69e9fd7fa879c9c32980f8a1fb2becc51e561d1e4eac2d6bec26",
@@ -26844,7 +26844,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58203860,
     "apkName": "Palleria-v6.5.0-pre.1-release-arm64-v8a.apk",
-    "added": 1790792654.533652
+    "added": 1790792654.0
   },
   "Palleria-v6.5.0-pre.1-release-armeabi-v7a.apk": {
     "hash": "f238ad449d7381f7dc01bdf0c0f2c7ac168ba38b4ebdc9b7abf59c566c629fa6",
@@ -26949,7 +26949,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56190886,
     "apkName": "Palleria-v6.5.0-pre.1-release-armeabi-v7a.apk",
-    "added": 1790792655.298644
+    "added": 1790792655.0
   },
   "Palleria-v6.5.0-pre.1-release-universal.apk": {
     "hash": "4cb65daf4329fc46650901973dc5b3b25f4304d826fb3c1d25110a9f757e74f7",
@@ -27060,7 +27060,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70576337,
     "apkName": "Palleria-v6.5.0-pre.1-release-universal.apk",
-    "added": 1790792656.159369
+    "added": 1790792656.0
   },
   "Palleria-v6.5.0-pre.1-release-x86_64.apk": {
     "hash": "be4cf784ef900ac682658d4dd1d4c6454a165c15c7b280921f82aadab33ea49c",
@@ -27165,7 +27165,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58794487,
     "apkName": "Palleria-v6.5.0-pre.1-release-x86_64.apk",
-    "added": 1790792656.950037
+    "added": 1790792656.0
   },
   "Palleria-v6.5.0-release-arm64-v8a.apk": {
     "hash": "29186f0cef7c626c8579ad3fb750c60d2642ba50d8fd7bff0ba0cd6e1d5d6159",
@@ -27270,7 +27270,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58203860,
     "apkName": "Palleria-v6.5.0-release-arm64-v8a.apk",
-    "added": 1790853808.553748
+    "added": 1790853808.0
   },
   "Palleria-v6.5.0-release-armeabi-v7a.apk": {
     "hash": "82919f7efabcd7b280db56b68484be83eecfe9a31a80a1ecbb9694e5f9e0f021",
@@ -27375,7 +27375,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56190886,
     "apkName": "Palleria-v6.5.0-release-armeabi-v7a.apk",
-    "added": 1790853809.139306
+    "added": 1790853809.0
   },
   "Palleria-v6.5.0-release-universal.apk": {
     "hash": "0d5064518be8e057f38a104dcd8f45ec1b6a230d0e91852242078d182731fa69",
@@ -27486,7 +27486,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70576337,
     "apkName": "Palleria-v6.5.0-release-universal.apk",
-    "added": 1790853809.775914
+    "added": 1790853809.0
   },
   "Palleria-v6.5.0-release-x86_64.apk": {
     "hash": "a6c1d575ae2d128bee97a5b05e8eba3ab9536794628854257dbab597d3e2aa4a",
@@ -27591,7 +27591,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58794487,
     "apkName": "Palleria-v6.5.0-release-x86_64.apk",
-    "added": 1790853810.37775
+    "added": 1790853810.0
   },
   "Palleria-v6.6.0-beta.1-release-arm64-v8a.apk": {
     "hash": "1e4692e011e9f60835ed85998695399ccab731e54eb0c05a7af4fe3285a37d68",
@@ -27700,7 +27700,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58232944,
     "apkName": "Palleria-v6.6.0-beta.1-release-arm64-v8a.apk",
-    "added": 1790872368.961762
+    "added": 1790872368.0
   },
   "Palleria-v6.6.0-beta.1-release-armeabi-v7a.apk": {
     "hash": "8f121f2b921d20140c374f38c1d5702acc3d977b5a919c99b8bdc65f83ee2a42",
@@ -27809,7 +27809,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56219970,
     "apkName": "Palleria-v6.6.0-beta.1-release-armeabi-v7a.apk",
-    "added": 1790872369.482165
+    "added": 1790872369.0
   },
   "Palleria-v6.6.0-beta.1-release-universal.apk": {
     "hash": "6a11c81473768dc452c78f061b16af248db5b5e95e0e237368fe314981a15fce",
@@ -27924,7 +27924,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70605421,
     "apkName": "Palleria-v6.6.0-beta.1-release-universal.apk",
-    "added": 1790872370.091787
+    "added": 1790872370.0
   },
   "Palleria-v6.6.0-beta.1-release-x86_64.apk": {
     "hash": "359f78f54174ab20da7bb30efd319f5d26cfc7a49817f837e9b155fbd818bf8d",
@@ -28033,7 +28033,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58823571,
     "apkName": "Palleria-v6.6.0-beta.1-release-x86_64.apk",
-    "added": 1790872370.641618
+    "added": 1790872370.0
   },
   "Palleria-v6.6.0-beta.2-release-arm64-v8a.apk": {
     "hash": "92f3749b6b9a0c4a3a9816cccc9ecc217de1085ef9c6675cc86c984f43eb5622",
@@ -28142,7 +28142,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58252644,
     "apkName": "Palleria-v6.6.0-beta.2-release-arm64-v8a.apk",
-    "added": 1790880973.591656
+    "added": 1790880973.0
   },
   "Palleria-v6.6.0-beta.2-release-armeabi-v7a.apk": {
     "hash": "08aef548eb7af90913872b9d4727470626457b8d8f51a26469c22073cfeee73a",
@@ -28251,7 +28251,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56239670,
     "apkName": "Palleria-v6.6.0-beta.2-release-armeabi-v7a.apk",
-    "added": 1790880974.353575
+    "added": 1790880974.0
   },
   "Palleria-v6.6.0-beta.2-release-universal.apk": {
     "hash": "135568695d216bac37a15b58f641749b1bd58ceb0086a775942ab0da4f6c990f",
@@ -28366,7 +28366,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70625121,
     "apkName": "Palleria-v6.6.0-beta.2-release-universal.apk",
-    "added": 1790880975.217606
+    "added": 1790880975.0
   },
   "Palleria-v6.6.0-beta.2-release-x86_64.apk": {
     "hash": "702b5cc88c8ce95507f33647501153488715d4423b86004a0c1235a11bcc536a",
@@ -28475,7 +28475,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58843271,
     "apkName": "Palleria-v6.6.0-beta.2-release-x86_64.apk",
-    "added": 1790880976.007777
+    "added": 1790880976.0
   },
   "Palleria-v6.6.0-beta.3-release-arm64-v8a.apk": {
     "hash": "457d6f1009bb4ad397fd42fd8c768677423644ca283b0f75f5f1b9879e23fe27",
@@ -28584,7 +28584,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58252644,
     "apkName": "Palleria-v6.6.0-beta.3-release-arm64-v8a.apk",
-    "added": 1790994881.839391
+    "added": 1790994881.0
   },
   "Palleria-v6.6.0-beta.3-release-armeabi-v7a.apk": {
     "hash": "9e3e8b2f4529273cd61143dbad48c946a7b9e1f64a035858a6b54db289422ba0",
@@ -28693,7 +28693,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 56239670,
     "apkName": "Palleria-v6.6.0-beta.3-release-armeabi-v7a.apk",
-    "added": 1790994882.632086
+    "added": 1790994882.0
   },
   "Palleria-v6.6.0-beta.3-release-universal.apk": {
     "hash": "0eecf1b4b971ab3e24169be8219ce00df32fe95402a11c5f60dc09952fec7ec3",
@@ -28808,7 +28808,7 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 70625121,
     "apkName": "Palleria-v6.6.0-beta.3-release-universal.apk",
-    "added": 1790994883.456984
+    "added": 1790994883.0
   },
   "Palleria-v6.6.0-beta.3-release-x86_64.apk": {
     "hash": "613d6eaee05fbf2bf3254e4e048d2279f852df7a22471a825816d4415be30f98",
@@ -28917,6 +28917,448 @@
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
     "size": 58843271,
     "apkName": "Palleria-v6.6.0-beta.3-release-x86_64.apk",
-    "added": 1790994884.260571
+    "added": 1790994884.0
+  },
+  "Palleria-v6.6.0-beta.4-release-arm64-v8a.apk": {
+    "hash": "454d77684550e130d16608284e044ac32495dc1522eada01017da0d65bfa71a0",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 142,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.4",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "arm64-v8a"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 58293712,
+    "apkName": "Palleria-v6.6.0-beta.4-release-arm64-v8a.apk",
+    "added": 1791100987.490521
+  },
+  "Palleria-v6.6.0-beta.4-release-armeabi-v7a.apk": {
+    "hash": "b369ce3133bd99fc458f2d2e1148972bbe90e5b5df630dbdad3512f5d75c92a3",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 142,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.4",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "armeabi-v7a"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 56297122,
+    "apkName": "Palleria-v6.6.0-beta.4-release-armeabi-v7a.apk",
+    "added": 1791100988.000897
+  },
+  "Palleria-v6.6.0-beta.4-release-universal.apk": {
+    "hash": "88aec7aec40c1c7c1f7fb9e71ce30d494bacf99bf497886f4166e066fc2a89d5",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 142,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.4",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "arm64-v8a",
+      "armeabi",
+      "armeabi-v7a",
+      "mips",
+      "mips64",
+      "x86",
+      "x86_64"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 70682573,
+    "apkName": "Palleria-v6.6.0-beta.4-release-universal.apk",
+    "added": 1791100988.614619
+  },
+  "Palleria-v6.6.0-beta.4-release-x86_64.apk": {
+    "hash": "f569863787f9dbd38ebcf7bc242e9ddb3be973eb3396e6188b47fe880b55ce95",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.VIBRATE",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "android.permission.POST_NOTIFICATIONS",
+        null
+      ],
+      [
+        "android.permission.READ_MEDIA_IMAGES",
+        null
+      ],
+      [
+        "android.permission.SET_WALLPAPER",
+        null
+      ],
+      [
+        "android.permission.READ_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.WRITE_SYNC_SETTINGS",
+        null
+      ],
+      [
+        "android.permission.CAMERA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        28
+      ],
+      [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        null
+      ],
+      [
+        "android.permission.USE_BIOMETRIC",
+        null
+      ],
+      [
+        "android.permission.USE_FINGERPRINT",
+        null
+      ],
+      [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        null
+      ],
+      [
+        "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ],
+      [
+        "moe.shizuku.manager.permission.API_V23",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "com.yunfie.illustia",
+    "versionCode": 142,
+    "name": "Palleria",
+    "versionName": "6.6.0-beta.4",
+    "minSdkVersion": 24,
+    "targetSdkVersion": 36,
+    "nativecode": [
+      "x86_64"
+    ],
+    "sig": "f647964cdccdcc133cade2961a136053",
+    "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
+    "size": 58884339,
+    "apkName": "Palleria-v6.6.0-beta.4-release-x86_64.apk",
+    "added": 1791100989.152479
   }
 }
