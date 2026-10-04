@@ -49,7 +49,14 @@ jobs:
 
       - name: Install fdroidserver
         if: steps.sync.outputs.changed == 'true'
-        run: pipx install fdroidserver
+        shell: bash
+        run: |
+          set -euo pipefail
+          pipx install fdroidserver
+          fdroid_bin="$(pipx environment --value PIPX_BIN_DIR)"
+          test -x "$fdroid_bin/fdroid"
+          printf '%s\n' "$fdroid_bin" >> "$GITHUB_PATH"
+          "$fdroid_bin/fdroid" --version
 
       - name: Update and sign F-Droid indexes
         if: steps.sync.outputs.changed == 'true'
@@ -61,7 +68,7 @@ jobs:
         run: |
           python .github/scripts/release_pipeline.py index
           cd public
-          "$HOME/.local/bin/fdroid" update --create-metadata --pretty
+          fdroid update --create-metadata --pretty
 
       - name: Remove signing credentials
         if: always()

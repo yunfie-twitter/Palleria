@@ -54,6 +54,7 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
 import com.yunfie.illustia.ui.components.NoOpHapticFeedback
+import com.yunfie.illustia.ui.components.appNavigationSafeArea
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
 import com.yunfie.illustia.ui.screens.CalculatorScreen
@@ -683,6 +684,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .appNavigationSafeArea()
                     .then(
                         if (effectiveHapticMode == AppHapticMode.Off) Modifier else Modifier.scrollEndHaptic(),
                     ),

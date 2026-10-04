@@ -1133,4 +1133,8 @@
     <string name="desktop_open_new_tab">Open in a new browser tab</string>
     <string name="desktop_bookmark_private">Private bookmark</string>
     <string name="desktop_save_as">Save as</string>
+    <string name="flag_top_scroll_blur_title">Top scroll blur</string>
+    <string name="flag_top_scroll_blur_desc">Blur scrolled content behind the top header. A translucent background is used on Android versions below 12.</string>
+    <string name="flag_navigation_icons_only_title">Icon-only navigation bar</string>
+    <string name="flag_navigation_icons_only_desc">Hide labels in the standard bottom navigation bar. Floating navigation already uses icons only.</string>
 </resources>

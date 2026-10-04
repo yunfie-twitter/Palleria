@@ -378,6 +378,7 @@ internal fun UserProfileSmallTopAppBar(
     onOpenRelatedUsers: () -> Unit,
     onTitleClick: () -> Unit = {},
     compact: Boolean,
+    useScrollBackdrop: Boolean = false,
 ) {
     val context = LocalContext.current
     val shareLabel = stringResource(R.string.detail_share)
@@ -535,7 +536,7 @@ internal fun UserProfileSmallTopAppBar(
         }
 
     val barScrimColor by animateColorAsState(
-        targetValue = if (compact) MiuixTheme.colorScheme.background.copy(alpha = 0.85f) else Color.Transparent,
+        targetValue = if (compact && !useScrollBackdrop) MiuixTheme.colorScheme.background.copy(alpha = 0.85f) else Color.Transparent,
         animationSpec = tween(280),
         label = "profile-top-bar-color",
     )
@@ -562,7 +563,7 @@ internal fun UserProfileSmallTopAppBar(
             label = "profile-border-alpha",
         )
     Box(Modifier.fillMaxWidth()) {
-        if (user.backgroundImageUrl != null) {
+        if (!useScrollBackdrop && user.backgroundImageUrl != null) {
             PixivImage(
                 url = user.backgroundImageUrl,
                 contentDescription = null,
