@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -28,7 +29,10 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -107,102 +111,107 @@ fun HomeScreen(
     }
     val performHaptic = rememberHapticFeedbackAction()
 
-    Column(
+    ScrollBlurScaffold(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(scheme.surface),
-    ) {
-        TopAppBar(
-            title = stringResource(R.string.nav_home),
-            largeTitle = stringResource(R.string.nav_home),
-            scrollBehavior = scrollBehavior,
-            modifier =
-                remember {
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                val currentTab = HomeTab.entries[pagerState.currentPage]
-                                val gridState =
-                                    when (currentTab) {
-                                        HomeTab.Feed -> viewModel.homeFeedGridState
-                                        HomeTab.Following -> viewModel.homeTimelineGridState
-                                    }
-                                gridState.smoothScrollToTop(scrollBehavior)
+        enabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
+        scrollBehavior = scrollBehavior,
+        header = {
+            TopAppBar(
+                color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
+                title = stringResource(R.string.nav_home),
+                largeTitle = stringResource(R.string.nav_home),
+                scrollBehavior = scrollBehavior,
+                modifier =
+                    remember {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures {
+                                performHaptic(AppHapticEffect.Click)
+                                coroutineScope.launch {
+                                    val currentTab = HomeTab.entries[pagerState.currentPage]
+                                    val gridState =
+                                        when (currentTab) {
+                                            HomeTab.Feed -> viewModel.homeFeedGridState
+                                            HomeTab.Following -> viewModel.homeTimelineGridState
+                                        }
+                                    gridState.smoothScrollToTop(scrollBehavior)
+                                }
                             }
                         }
+                    },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        viewModel.openAccountSwitcher()
+                    }) {
+                        HomeAccountAvatar(account = currentAccount)
                     }
                 },
-            navigationIcon = {
-                IconButton(onClick = {
-                    performHaptic(AppHapticEffect.Click)
-                    viewModel.openAccountSwitcher()
-                }) {
-                    HomeAccountAvatar(account = currentAccount)
-                }
-            },
-            actions = {
-                if (settings.shortsFeedEnabled) {
-                    IconButton(onClick = {
-                        performHaptic(AppHapticEffect.Click)
-                        onSearch()
-                    }) {
-                        Icon(MiuixIcons.Search, contentDescription = stringResource(R.string.nav_search))
-                    }
-                }
-                if (!settings.hideHomeNovelButton) {
-                    IconButton(onClick = {
-                        performHaptic(AppHapticEffect.Click)
-                        onOpenNovels()
-                    }) {
-                        Icon(
-                            MiuixIcons.Photos,
-                            contentDescription = stringResource(R.string.nav_novel),
-                        )
-                    }
-                } else {
-                    IconButton(onClick = {
-                        performHaptic(AppHapticEffect.Click)
-                        viewModel.openNotifications()
-                    }) {
-                        Icon(
-                            MiuixIcons.Messages,
-                            contentDescription = stringResource(R.string.more_notifications),
-                        )
-                    }
-                }
-                IconButton(
-                    onClick = {
-                        performHaptic(AppHapticEffect.Click)
-                        when (selectedTab) {
-                            HomeTab.Feed -> viewModel.refreshHome(forceRefresh = true)
-                            HomeTab.Following -> viewModel.refreshTimeline(forceRefresh = true)
+                actions = {
+                    if (settings.shortsFeedEnabled) {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onSearch()
+                        }) {
+                            Icon(MiuixIcons.Search, contentDescription = stringResource(R.string.nav_search))
                         }
-                    },
-                ) {
-                    Icon(
-                        MiuixIcons.Refresh,
-                        contentDescription = stringResource(R.string.dialog_reload),
+                    }
+                    if (!settings.hideHomeNovelButton) {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onOpenNovels()
+                        }) {
+                            Icon(
+                                MiuixIcons.Photos,
+                                contentDescription = stringResource(R.string.nav_novel),
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            viewModel.openNotifications()
+                        }) {
+                            Icon(
+                                MiuixIcons.Messages,
+                                contentDescription = stringResource(R.string.more_notifications),
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            when (selectedTab) {
+                                HomeTab.Feed -> viewModel.refreshHome(forceRefresh = true)
+                                HomeTab.Following -> viewModel.refreshTimeline(forceRefresh = true)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            MiuixIcons.Refresh,
+                            contentDescription = stringResource(R.string.dialog_reload),
+                        )
+                    }
+                },
+                bottomContent = {
+                    HomeTabRow(
+                        selectedTabIndex = selectedTab.ordinal,
+                        onTabSelected = { index ->
+                            if (index != selectedTab.ordinal) {
+                                performHaptic(AppHapticEffect.Toggle)
+                            }
+                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
                     )
-                }
-            },
-            bottomContent = {
-                HomeTabRow(
-                    selectedTabIndex = selectedTab.ordinal,
-                    onTabSelected = { index ->
-                        if (index != selectedTab.ordinal) {
-                            performHaptic(AppHapticEffect.Toggle)
-                        }
-                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
-                )
-            },
-        )
+                },
+            )
+        },
+    ) {
         Surface(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,

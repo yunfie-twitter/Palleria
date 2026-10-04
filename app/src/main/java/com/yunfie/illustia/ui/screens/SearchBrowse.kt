@@ -33,6 +33,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.RecommendedTagsSkeleton
 import com.yunfie.illustia.ui.components.SectionHeader
@@ -85,7 +86,13 @@ internal fun BrowseArea(
         state = viewModel.searchBrowseGridState,
         columns = GridCells.Fixed(adaptiveProfileGridColumns()),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = adaptiveMainNavigationContentPadding()),
+        contentPadding =
+            PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = LocalScrollHeaderInset.current,
+                bottom = adaptiveMainNavigationContentPadding(),
+            ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
