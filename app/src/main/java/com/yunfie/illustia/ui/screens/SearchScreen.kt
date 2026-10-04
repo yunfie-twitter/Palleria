@@ -2,9 +2,12 @@ package com.yunfie.illustia.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -273,104 +276,74 @@ fun SearchScreen(
                 if (grid.firstVisibleItemIndex > 0) 1f else (grid.firstVisibleItemScrollOffset / 64f).coerceIn(0f, 1f)
             },
             header = {
-                // Search bar area (no TopAppBar title spacing)
-                if (isResultMode && !searchExpanded) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                val hasBackButton = isResultMode || onBack != null
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = if (hasBackButton && !searchExpanded) 4.dp else 16.dp,
+                                end = 16.dp,
+                                top = 4.dp,
+                                bottom = 6.dp,
+                            ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AnimatedVisibility(
+                        visible = hasBackButton && !searchExpanded,
+                        enter = fadeIn(tween(200)) + expandHorizontally(),
+                        exit = fadeOut(tween(200)) + shrinkHorizontally(),
                     ) {
                         HeaderIcon(
                             MiuixIcons.Back,
                             onClick = {
                                 performHaptic(AppHapticEffect.Click)
-                                (onBackFromResults ?: onClearResults).invoke()
-                            },
-                            modifier = Modifier.height(56.dp),
-                        )
-                        SearchToolbar(
-                            focusRequest = focusRequest,
-                            onFocusRequestHandled = onFocusRequestHandled,
-                            value = state.activeSearchWord,
-                            expanded = false,
-                            suggestions = suggestions,
-                            historyCount = state.settings.searchHistory.size,
-                            onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
-                            onExpandedChange = { expanded ->
-                                if (expanded && state.searchDraft.isBlank()) {
-                                    onUpdateDraft(state.activeSearchWord)
+                                if (isResultMode) {
+                                    (onBackFromResults ?: onClearResults).invoke()
+                                } else {
+                                    onBack?.invoke()
                                 }
-                                onExpandedChange(expanded)
-                            },
-                            onValueChange = { newQuery ->
-                                onUpdateDraft(newQuery)
-                                onExpandedChange(true)
-                            },
-                            onSearch = {
-                                val target = state.searchDraft.ifBlank { state.activeSearchWord }
-                                onSubmit(target)
-                            },
-                            onSuggestionClick = {
-                                onSubmit(it)
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                } else if (onBack != null && !searchExpanded) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        HeaderIcon(
-                            MiuixIcons.Back,
-                            onClick = {
-                                performHaptic(AppHapticEffect.Click)
-                                onBack()
                             },
                             modifier = Modifier.height(56.dp),
                         )
-                        SearchToolbar(
-                            focusRequest = focusRequest,
-                            onFocusRequestHandled = onFocusRequestHandled,
-                            value = state.searchDraft,
-                            expanded = false,
-                            suggestions = suggestions,
-                            historyCount = state.settings.searchHistory.size,
-                            onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
-                            onExpandedChange = onExpandedChange,
-                            onValueChange = onUpdateDraft,
-                            onSearch = {
-                                onSubmit(state.searchDraft)
-                            },
-                            onSuggestionClick = {
-                                onSubmit(it)
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
                     }
-                } else {
                     SearchToolbar(
                         focusRequest = focusRequest,
                         onFocusRequestHandled = onFocusRequestHandled,
-                        value = state.searchDraft,
+                        value =
+                            if (searchExpanded) {
+                                state.searchDraft
+                            } else if (isResultMode) {
+                                state.activeSearchWord
+                            } else {
+                                state.searchDraft
+                            },
                         expanded = searchExpanded,
                         suggestions = suggestions,
                         historyCount = state.settings.searchHistory.size,
                         onRemoveHistoryItem = { viewModel.removeSearchHistoryItem(it) },
-                        onExpandedChange = onExpandedChange,
+                        onExpandedChange = { expanded ->
+                            if (expanded && state.searchDraft.isBlank()) {
+                                onUpdateDraft(state.activeSearchWord)
+                            }
+                            onExpandedChange(expanded)
+                        },
                         onValueChange = onUpdateDraft,
                         onSearch = {
-                            onSubmit(state.searchDraft)
+                            val target = state.searchDraft.ifBlank { state.activeSearchWord }
+                            onSubmit(target)
                         },
                         onSuggestionClick = {
                             onSubmit(it)
                         },
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                        onCancel = {
+                            if (isResultMode) {
+                                onUpdateDraft(state.activeSearchWord)
+                            } else {
+                                onUpdateDraft("")
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             },
