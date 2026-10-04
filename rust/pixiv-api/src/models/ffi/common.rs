@@ -11,6 +11,7 @@ pub struct PixivRequest {
 
 #[derive(Debug, uniffi::Record)]
 pub struct LoginSession {
+    pub expires_in: Option<u64>,
     pub access_token: String,
     pub refresh_token: String,
     pub user_id: Option<u64>,

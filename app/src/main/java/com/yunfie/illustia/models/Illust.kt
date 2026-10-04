@@ -3,6 +3,7 @@ package com.yunfie.illustia.models
 import androidx.compose.runtime.Immutable
 import com.yunfie.illustia.models.pixiv.IllustSeries
 
+@kotlinx.serialization.Serializable
 @Immutable
 data class Illust(
     val id: Long,

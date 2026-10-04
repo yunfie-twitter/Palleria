@@ -23,16 +23,26 @@ import com.yunfie.illustia.settings.db.SavedIllustWithPages
 import com.yunfie.illustia.settings.db.SettingsDao
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE_SPEC_MIGRATED
+import com.yunfie.illustia.settings.store.BOOKMARK_USER_ID
+import com.yunfie.illustia.settings.store.CURRENT_SETTINGS_VERSION
 import com.yunfie.illustia.settings.store.CollectionSeparatedDataStore
 import com.yunfie.illustia.settings.store.DATASTORE_NAME
+import com.yunfie.illustia.settings.store.KEY_ACCOUNT_TOKENS
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
 import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
+import com.yunfie.illustia.settings.store.MUTED_ILLUSTS_JSON
+import com.yunfie.illustia.settings.store.MUTED_TAGS_JSON
+import com.yunfie.illustia.settings.store.MUTED_USERS_JSON
 import com.yunfie.illustia.settings.store.PALLA_SYNC_ENABLED
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
+import com.yunfie.illustia.settings.store.SECURE_PREFS_NAME
+import com.yunfie.illustia.settings.store.SETTINGS_VERSION
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
+import com.yunfie.illustia.settings.store.decodeLongList
+import com.yunfie.illustia.settings.store.decodeStringList
 import com.yunfie.illustia.settings.store.illustFromEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -102,6 +112,70 @@ class SettingsStore internal constructor(
         ensureMigrated()
         return readAppSettingsImpl(dataStore, sensitivePreferences, dao, viewHistoryLimit)
     }
+
+    /** Credentials only: no Room tables or history decoding on the request path. */
+    internal suspend fun readAuth(): AuthSettings =
+        withContext(Dispatchers.IO) {
+            val primary = startupDataStoreFor(appContext).data.first()
+            if ((primary[SETTINGS_VERSION] ?: 0) <
+                CURRENT_SETTINGS_VERSION
+            ) {
+                ensureMigrated()
+            }
+            if (legacyPreferences.contains(KEY_REFRESH_TOKEN)) {
+                encryptedPreferences?.let { secure ->
+                    persistenceMutex.withLock {
+                        com.yunfie.illustia.settings.store
+                            .migrateFallbackCredentials(secure, legacyPreferences)
+                    }
+                }
+            }
+            val token = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty()
+            AuthSettings(token, readStartup().pixivNetworkMode, encryptedPreferences?.let { readPersistedSession(it, token) })
+        }
+
+    internal suspend fun persistAuth(session: com.yunfie.illustia.models.PixivSession) =
+        withContext(Dispatchers.IO) {
+            persistenceMutex.withLock {
+                val editor = sensitivePreferences.edit().putString(KEY_REFRESH_TOKEN, session.refreshToken)
+                val tokens = org.json.JSONObject()
+                com.yunfie.illustia.settings.store
+                    .decodeAccountTokens(
+                        sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty(),
+                    ).forEach { (userId, token) -> tokens.put(userId.toString(), token) }
+                session.userId?.let { tokens.put(it.toString(), session.refreshToken) }
+                editor.putString(KEY_ACCOUNT_TOKENS, tokens.toString())
+                if (encryptedPreferences != null) editor.putString(KEY_CACHED_SESSION, encodePersistedSession(session))
+                check(editor.commit()) { "Could not persist OAuth credentials" }
+                startupDataStoreFor(appContext).edit { preferences ->
+                    session.userId?.let { preferences[BOOKMARK_USER_ID] = it }
+                }
+                legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, true).apply()
+                cachedStartupSettings = null
+            }
+        }
+
+    internal suspend fun readFeedSettings(): AppSettings =
+        withContext(Dispatchers.IO) {
+            // Read current filters, without opening Room or decoding account/history collections.
+            val preferences = dataStore.data.first()
+            readStartup().copy(
+                mutedIllusts =
+                    decodeLongList(
+                        preferences[MUTED_ILLUSTS_JSON],
+                    ),
+                mutedUsers =
+                    decodeLongList(
+                        preferences[MUTED_USERS_JSON],
+                    ),
+                mutedTags =
+                    decodeStringList(
+                        preferences[MUTED_TAGS_JSON],
+                    ),
+            )
+        }
+
+    internal fun homeCacheDirectory(): File = File(appContext.cacheDir, "home-feed")
 
     suspend fun readStartup(): AppSettings =
         withContext(Dispatchers.IO) {
@@ -202,7 +276,7 @@ class SettingsStore internal constructor(
                 settings.pallaSyncServerUrl
             }
         val resolvedRefreshToken =
-            if (settings.refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+            if (settings.refreshToken == STARTUP_LOGGED_IN_TOKEN || settings.refreshToken == base.refreshToken) {
                 persisted.refreshToken
             } else {
                 settings.refreshToken
@@ -214,14 +288,23 @@ class SettingsStore internal constructor(
                 settings.discordToken
             }
         val resolvedAccounts =
-            if (settings.accounts.isEmpty() && persisted.accounts.isNotEmpty()) {
+            if (settings.accounts == base.accounts || (settings.accounts.isEmpty() && persisted.accounts.isNotEmpty())) {
                 persisted.accounts
             } else {
-                settings.accounts
+                settings.accounts.map { account ->
+                    val previous = base.accounts.firstOrNull { it.userId == account.userId }
+                    val current = persisted.accounts.firstOrNull { it.userId == account.userId }
+                    if (account.refreshToken == previous?.refreshToken && current != null) {
+                        account.copy(refreshToken = current.refreshToken)
+                    } else {
+                        account
+                    }
+                }
             }
         return settings
             .copy(
                 refreshToken = resolvedRefreshToken,
+                bookmarkUserId = if (settings.bookmarkUserId == base.bookmarkUserId) persisted.bookmarkUserId else settings.bookmarkUserId,
                 discordToken = resolvedDiscordToken,
                 accounts = resolvedAccounts,
                 pallaSyncEnabled = enabled,
@@ -291,7 +374,9 @@ class SettingsStore internal constructor(
 
     suspend fun clearSensitive() =
         withContext(Dispatchers.IO) {
+            encryptedPreferences?.edit()?.remove(KEY_CACHED_SESSION)?.commit()
             clearSensitiveSettingsImpl(dataStore, sensitivePreferences, legacyPreferences, database, dao)
+            cachedStartupSettings = null
         }
 
     suspend fun getSavedIllusts() =
@@ -465,7 +550,7 @@ class SettingsStore internal constructor(
                                     .build()
                             EncryptedSharedPreferences.create(
                                 appContext,
-                                com.yunfie.illustia.settings.store.SECURE_PREFS_NAME,
+                                SECURE_PREFS_NAME,
                                 masterKey,
                                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,

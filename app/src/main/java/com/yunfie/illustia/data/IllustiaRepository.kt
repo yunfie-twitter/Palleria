@@ -9,6 +9,7 @@ import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.models.PageResult
 import com.yunfie.illustia.models.PixivSession
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SESSION_EXPIRY_SKEW_MILLIS
 import com.yunfie.illustia.models.SearchBookmarkFilter
 import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
@@ -38,8 +39,11 @@ import com.yunfie.illustia.settings.rebaseSyncedCollections
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.settings.syncedCollections
 import com.yunfie.illustia.settings.withSyncedCollections
+import com.yunfie.illustia.visibleWithSettings
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicLong
 
 private const val CACHE_TTL_SHORT_MILLIS = 3 * 60 * 1000L // 3 minutes
 private const val CACHE_TTL_MEDIUM_MILLIS = 5 * 60 * 1000L // 5 minutes
@@ -53,7 +57,28 @@ class IllustiaRepository(
     private val settingsStore: SettingsStore,
 ) {
     private var session: PixivSession? = null
+    private val sessionMutex = Mutex()
+    private val homeSnapshot = HomeFeedSnapshot(settingsStore.homeCacheDirectory())
+    private val accountRevision = AtomicLong()
+    private val credentialsRevision = AtomicLong()
+    internal val accountGeneration: Long get() = accountRevision.get()
+
+    internal suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? =
+        sessionMutex.withLock {
+            val auth = settingsStore.readAuth()
+            val filters = settingsStore.readFeedSettings()
+            homeSnapshot.read(kind, auth.refreshToken)?.let { page ->
+                page.copy(items = page.items.visibleWithSettings(filters))
+            }
+        }
+
+    internal suspend fun readFeedSettings(): AppSettings = settingsStore.readFeedSettings()
+
+    @Volatile
     private var cachedSettings: AppSettings? = null
+
+    @Volatile
+    private var cachedSettingsRevision = 0L
     private val settingsCacheMutex = Mutex()
 
     @Volatile
@@ -87,9 +112,10 @@ class IllustiaRepository(
             val cached = apiCache.get<T>(key)
             if (cached != null) return cached
         }
+        val generation = accountGeneration
         return try {
             val result = block()
-            apiCache.put(key, result, ttlMillis = ttlMillis)
+            if (accountGeneration == generation) apiCache.put(key, result, ttlMillis = ttlMillis)
             result
         } catch (expectedFailure: Exception) {
             if (expectedFailure.isCancellationFailure()) throw expectedFailure
@@ -107,7 +133,18 @@ class IllustiaRepository(
     suspend fun readSettings(viewHistoryLimit: Int? = null): AppSettings {
         val settings =
             settingsCacheMutex.withLock {
-                cachedSettings ?: settingsStore.read(viewHistoryLimit).also { cachedSettings = it }
+                cachedSettings?.takeIf { cachedSettingsRevision == credentialsRevision.get() } ?: run {
+                    var revision: Long
+                    var loaded: AppSettings
+                    do {
+                        revision = credentialsRevision.get()
+                        loaded = settingsStore.read(viewHistoryLimit)
+                    } while (revision != credentialsRevision.get())
+                    loaded.also {
+                        cachedSettings = it
+                        cachedSettingsRevision = revision
+                    }
+                }
             }
         ensureApiClient(NetworkMode.fromCode(settings.pixivNetworkMode))
         return settings
@@ -180,8 +217,16 @@ class IllustiaRepository(
         }
     }
 
-    suspend fun login(refreshToken: String): PixivSession {
-        ensureApiClient(NetworkMode.fromCode(readSettings().pixivNetworkMode))
+    suspend fun login(refreshToken: String): PixivSession =
+        sessionMutex.withLock {
+            accountRevision.incrementAndGet()
+            homeSnapshot.clear()
+            clearApiCache()
+            loginInternal(refreshToken)
+        }
+
+    private suspend fun loginInternal(refreshToken: String): PixivSession {
+        ensureApiClient(NetworkMode.fromCode(settingsStore.readAuth().networkMode))
         val nextSession = apiClient.loginWithRefreshToken(refreshToken)
         persistSession(nextSession)
         return nextSession
@@ -190,35 +235,36 @@ class IllustiaRepository(
     suspend fun loginWithAuthorizationCode(
         code: String,
         codeVerifier: String,
-    ): PixivSession {
-        ensureApiClient(NetworkMode.fromCode(readSettings().pixivNetworkMode))
-        val nextSession = apiClient.loginWithAuthorizationCode(code, codeVerifier)
-        persistSession(nextSession)
-        return nextSession
-    }
+    ): PixivSession =
+        sessionMutex.withLock {
+            accountRevision.incrementAndGet()
+            homeSnapshot.clear()
+            clearApiCache()
+            ensureApiClient(NetworkMode.fromCode(settingsStore.readAuth().networkMode))
+            val nextSession = apiClient.loginWithAuthorizationCode(code, codeVerifier)
+            persistSession(nextSession)
+            nextSession
+        }
 
     private suspend fun persistSession(nextSession: PixivSession) {
+        settingsStore.persistAuth(nextSession)
         session = nextSession
-        val current = settingsStore.read()
-        val nextSettings =
-            current.copy(
-                refreshToken = nextSession.refreshToken,
-                bookmarkUserId = nextSession.userId ?: current.bookmarkUserId,
-            )
-        settingsCacheMutex.withLock {
-            cachedSettings = settingsStore.write(nextSettings, current)
-        }
+        credentialsRevision.incrementAndGet()
+        cachedSettings = null
     }
 
-    suspend fun logout() {
-        session = null
-        clearApiCache()
-        settingsStore.clearSensitive()
-        cachedSettings =
-            settingsCacheMutex
-                .withLock { settingsStore.read().also { cachedSettings = it } }
-                .also { ensureApiClient(NetworkMode.fromCode(it.pixivNetworkMode)) }
-    }
+    suspend fun logout() =
+        sessionMutex.withLock {
+            accountRevision.incrementAndGet()
+            homeSnapshot.clear()
+            session = null
+            clearApiCache()
+            settingsStore.clearSensitive()
+            cachedSettings =
+                settingsCacheMutex
+                    .withLock { settingsStore.read().also { cachedSettings = it } }
+                    .also { ensureApiClient(NetworkMode.fromCode(it.pixivNetworkMode)) }
+        }
 
     suspend fun loadRanking(
         mode: String,
@@ -239,19 +285,25 @@ class IllustiaRepository(
     suspend fun loadHome(
         kind: HomeFeedKind,
         forceRefresh: Boolean = false,
-    ): PageResult<Illust> =
-        withApiCache("home_feed:${kind.name}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
-            withSessionRetry { session ->
-                when (kind) {
-                    HomeFeedKind.Recommended -> apiClient.recommended(session)
-
-                    HomeFeedKind.Ranking -> apiClient.ranking(session)
-
-                    // Default to day
-                    HomeFeedKind.New -> apiClient.newest(session)
+    ): PageResult<Illust> {
+        val generation = accountGeneration
+        return withApiCache("home_feed:$generation:${kind.name}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
+            withSessionRetry { active ->
+                val page =
+                    when (kind) {
+                        HomeFeedKind.Recommended -> apiClient.recommended(active)
+                        HomeFeedKind.Ranking -> apiClient.ranking(active)
+                        HomeFeedKind.New -> apiClient.newest(active)
+                    }
+                sessionMutex.withLock {
+                    if (accountGeneration == generation && settingsStore.readAuth().refreshToken == active.refreshToken) {
+                        homeSnapshot.write(kind, active.refreshToken, page)
+                    }
                 }
+                page
             }
         }
+    }
 
     suspend fun loadNovels(forceRefresh: Boolean = false): PageResult<NovelPreview> =
         withApiCache("novels:recommended", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
@@ -605,31 +657,37 @@ class IllustiaRepository(
             }
         }
 
-    private suspend fun requireSession(): PixivSession {
-        session?.let { return it }
-        var refreshToken = readSettings().refreshToken
-        if (refreshToken == STARTUP_LOGGED_IN_TOKEN) {
-            val freshSettings = settingsStore.read()
-            settingsCacheMutex.withLock { cachedSettings = freshSettings }
-            refreshToken = freshSettings.refreshToken
+    private suspend fun requireSession(): PixivSession =
+        sessionMutex.withLock {
+            val auth = settingsStore.readAuth()
+            require(
+                auth.refreshToken.isNotBlank() && auth.refreshToken != STARTUP_LOGGED_IN_TOKEN,
+            ) { "Pixiv refresh token が未設定です。" }
+            ensureApiClient(NetworkMode.fromCode(auth.networkMode))
+            session?.takeIf {
+                it.refreshToken == auth.refreshToken &&
+                    (it.expiresAtMillis == 0L || it.expiresAtMillis > System.currentTimeMillis() + SESSION_EXPIRY_SKEW_MILLIS)
+            }
+                ?: auth.session?.also { session = it }
+                ?: loginInternal(auth.refreshToken)
         }
-        require(refreshToken.isNotBlank() && refreshToken != STARTUP_LOGGED_IN_TOKEN) { "Pixiv refresh token が未設定です。" }
-        return login(refreshToken)
-    }
 
     private suspend inline fun <T> withSessionRetry(crossinline block: suspend (PixivSession) -> T): T {
+        val generation = accountGeneration
         var activeSession = requireSession()
         var attempt = 0
         while (attempt < 2) {
+            if (generation != accountGeneration) throw CancellationException("Account changed during request")
             try {
                 return block(activeSession)
             } catch (expectedFailure: Exception) {
                 if (expectedFailure.isCancellationFailure()) throw expectedFailure
+                if (generation != accountGeneration) throw CancellationException("Account changed during request")
                 val error = expectedFailure
                 when {
                     error.isPixivAuthExpired() -> {
                         if (attempt == 0) {
-                            activeSession = refreshSession()
+                            activeSession = refreshSession(activeSession)
                             attempt++
                             continue
                         }
@@ -653,16 +711,13 @@ class IllustiaRepository(
         throw IllegalStateException("Pixiv request failed unexpectedly.")
     }
 
-    private suspend fun refreshSession(): PixivSession {
-        var refreshToken = readSettings().refreshToken
-        if (refreshToken == STARTUP_LOGGED_IN_TOKEN) {
-            val freshSettings = settingsStore.read()
-            settingsCacheMutex.withLock { cachedSettings = freshSettings }
-            refreshToken = freshSettings.refreshToken
+    private suspend fun refreshSession(failed: PixivSession): PixivSession =
+        sessionMutex.withLock {
+            val refreshToken = settingsStore.readAuth().refreshToken
+            session?.takeIf { it.accessToken != failed.accessToken && it.refreshToken == refreshToken }?.let { return@withLock it }
+            require(refreshToken.isNotBlank() && refreshToken != STARTUP_LOGGED_IN_TOKEN) { "Pixiv refresh token が未設定です。" }
+            loginInternal(refreshToken)
         }
-        require(refreshToken.isNotBlank() && refreshToken != STARTUP_LOGGED_IN_TOKEN) { "Pixiv refresh token が未設定です。" }
-        return login(refreshToken)
-    }
 
     private fun ensureApiClient(mode: NetworkMode) {
         if (apiClientMode == mode && apiClientInstance != null) return
@@ -672,36 +727,5 @@ class IllustiaRepository(
                 apiClientMode = mode
             }
         }
-    }
-
-    private fun Throwable.isPixivAuthExpired(): Boolean {
-        var current: Throwable? = this
-        while (current != null) {
-            if (current is PixivApiException && current.isAuthExpired()) return true
-            current = current.cause
-        }
-        return false
-    }
-
-    private fun PixivApiException.isAuthExpired(): Boolean {
-        if (statusCode == 401) return true
-        if (statusCode != 400) return false
-        val message = apiMessage.lowercase()
-        return message.contains("oauth") ||
-            message.contains("token") ||
-            message.contains("invalid_grant") ||
-            message.contains("invalid refresh")
-    }
-
-    private fun Throwable.isTransientConnectionIssue(): Boolean {
-        var current: Throwable? = this
-        while (current != null) {
-            val message = current.message.orEmpty()
-            if (message.contains("Connection closed before full header was received")) {
-                return true
-            }
-            current = current.cause
-        }
-        return false
     }
 }
