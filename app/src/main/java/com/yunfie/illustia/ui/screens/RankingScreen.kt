@@ -395,11 +395,19 @@ private fun RankingTabRow(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scheme = MiuixTheme.colorScheme
     TabRow(
         tabs = tabs,
         selectedTabIndex = pagerState.targetPage.coerceIn(0, (tabs.size - 1).coerceAtLeast(0)),
         onTabSelected = onTabSelected,
         modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
+        colors =
+            TabRowDefaults.tabRowColors(
+                backgroundColor = Color.Transparent,
+                contentColor = scheme.onSurfaceVariantSummary,
+                selectedBackgroundColor = scheme.surfaceContainerHigh,
+                selectedContentColor = scheme.onBackground,
+            ),
         minWidth = 92.dp,
         maxWidth = 148.dp,
     )

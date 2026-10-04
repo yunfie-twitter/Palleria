@@ -268,7 +268,7 @@ fun SearchScreen(
         color = scheme.surface,
     ) {
         ScrollBlurScaffold(
-            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            modifier = Modifier.fillMaxSize(),
             enabled = state.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur) && !isResultMode && !searchExpanded,
             scrollBehavior = MiuixScrollBehavior(),
             scrollFraction = {
@@ -281,6 +281,7 @@ fun SearchScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
+                            .statusBarsPadding()
                             .padding(
                                 start = if (hasBackButton && !searchExpanded) 4.dp else 16.dp,
                                 end = 16.dp,
