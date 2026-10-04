@@ -1149,4 +1149,12 @@
     <string name="command_palette_light">Use light theme</string>
     <string name="command_palette_dark">Use dark theme</string>
     <string name="command_palette_system">Use system theme</string>
+    <string name="command_palette_category_navigation">Navigation</string>
+    <string name="command_palette_category_settings">Settings</string>
+    <string name="command_palette_category_appearance">Appearance</string>
+    <string name="command_palette_category_action">Action</string>
+    <string name="command_palette_shortcut_navigate">Navigate</string>
+    <string name="command_palette_shortcut_select">Select</string>
+    <string name="command_palette_shortcut_close">Close</string>
+    <string name="command_palette_no_results">No matching commands</string>
 </resources>
