@@ -1202,4 +1202,16 @@
     <string name="flag_top_scroll_blur_desc">スクロールした内容が上部ヘッダーの背後でぼけます。Android 12未満では半透明の背景を使用します。</string>
     <string name="flag_navigation_icons_only_title">ナビゲーションバーをアイコンのみにする</string>
     <string name="flag_navigation_icons_only_desc">標準の下部ナビゲーションバーのラベルを隠します。フローティング表示は元からアイコンのみです。</string>
+    <string name="flag_fast_scroll_rendering_title">高速スクロール時の描画軽量化</string>
+    <string name="flag_fast_scroll_rendering_desc">高速スクロール中はぼかし・影・一覧アニメーションを抑え、停止後に戻します。</string>
+    <string name="flag_command_palette_title">コマンドパレット</string>
+    <string name="flag_command_palette_desc">Ctrl + Kで検索・画面移動・テーマ変更を呼び出します。</string>
+    <string name="command_palette_hint">コマンドまたは検索語を入力</string>
+    <string name="command_palette_search">「%1$s」を検索</string>
+    <string name="command_palette_home">ホームへ移動</string>
+    <string name="command_palette_settings">設定を開く</string>
+    <string name="command_palette_flags">実験フラグを開く</string>
+    <string name="command_palette_light">ライトテーマに変更</string>
+    <string name="command_palette_dark">ダークテーマに変更</string>
+    <string name="command_palette_system">端末のテーマに合わせる</string>
 </resources>

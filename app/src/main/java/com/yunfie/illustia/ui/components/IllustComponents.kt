@@ -130,6 +130,7 @@ fun IllustCardSkeleton(
 
 @Composable
 fun rememberIllustSkeletonShimmer(): State<Float> {
+    if (LocalFastScrolling.current) return remember { androidx.compose.runtime.mutableStateOf(0f) }
     val transition = rememberInfiniteTransition(label = "illustSkeleton")
     return transition.animateFloat(
         initialValue = -1f,
@@ -728,6 +729,7 @@ fun IllustGrid(
                 val onBookmarkClick = remember(illust, onBookmark) { { onBookmark(illust) } }
                 IllustCard(
                     illust = illust,
+                    modifier = animatedGridPlacement(),
                     onBookmark = onBookmarkClick,
                     onClick = onClick,
                     showBookmarkButton = showBookmarkButton,

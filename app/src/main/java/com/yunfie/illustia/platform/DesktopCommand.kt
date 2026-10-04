@@ -2,19 +2,20 @@ package com.yunfie.illustia.platform
 
 import android.view.KeyEvent
 
-enum class DesktopCommand { Search, Refresh, CloseReader }
+enum class DesktopCommand { Search, Refresh, CloseReader, Palette }
 
 internal fun desktopCommand(event: KeyEvent): DesktopCommand? {
     if (event.isAltPressed || event.isMetaPressed) return null
-    return when {
-        event.isCtrlPressed && event.keyCode == KeyEvent.KEYCODE_F -> DesktopCommand.Search
-
-        event.isCtrlPressed && event.keyCode == KeyEvent.KEYCODE_W -> DesktopCommand.CloseReader
-
-        (event.isCtrlPressed && event.keyCode == KeyEvent.KEYCODE_R) ||
-            (!event.isCtrlPressed && event.keyCode == KeyEvent.KEYCODE_F5) -> DesktopCommand.Refresh
-
-        else -> null
+    return if (event.isCtrlPressed) {
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_F -> DesktopCommand.Search
+            KeyEvent.KEYCODE_R -> DesktopCommand.Refresh
+            KeyEvent.KEYCODE_W -> DesktopCommand.CloseReader
+            KeyEvent.KEYCODE_K -> if (event.isShiftPressed) null else DesktopCommand.Palette
+            else -> null
+        }
+    } else {
+        if (event.keyCode == KeyEvent.KEYCODE_F5) DesktopCommand.Refresh else null
     }
 }
 

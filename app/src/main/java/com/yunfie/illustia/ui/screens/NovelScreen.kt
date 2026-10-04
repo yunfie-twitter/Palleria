@@ -71,6 +71,7 @@ import com.yunfie.illustia.ui.components.PrefetchNovelGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -278,6 +279,7 @@ fun NovelScreen(
                 gridItems(filteredItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
                     val progress = settings.novelProgress[novel.id]
                     NovelCard(
+                        modifier = animatedGridPlacement(),
                         novel = novel,
                         progress = progress,
                         onClick = { viewModel.openNovel(novel) },

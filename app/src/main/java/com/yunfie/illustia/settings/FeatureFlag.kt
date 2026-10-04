@@ -11,6 +11,16 @@ enum class FeatureFlag(
     @StringRes val descRes: Int,
     val defaultEnabled: Boolean = false,
 ) {
+    FastScrollRendering(
+        key = "flag_fast_scroll_rendering",
+        titleRes = R.string.flag_fast_scroll_rendering_title,
+        descRes = R.string.flag_fast_scroll_rendering_desc,
+    ),
+    CommandPalette(
+        key = "flag_command_palette",
+        titleRes = R.string.flag_command_palette_title,
+        descRes = R.string.flag_command_palette_desc,
+    ),
     CustomAppIcon(
         key = "flag_custom_app_icon",
         titleRes = R.string.flag_custom_app_icon_title,

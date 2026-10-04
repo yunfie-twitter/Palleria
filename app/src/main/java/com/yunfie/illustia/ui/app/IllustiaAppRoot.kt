@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalContext
@@ -46,17 +47,21 @@ import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
+import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.effectiveAppHapticMode
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.LocalFastScrolling
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
 import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationSafeArea
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
+import com.yunfie.illustia.ui.components.rememberScrollRendering
 import com.yunfie.illustia.ui.screens.CalculatorScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -105,6 +110,13 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val homeScrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val pendingShortcut by AppShortcutRouter.pending.collectAsStateWithLifecycle()
+    var showCommandPalette by remember { mutableStateOf(false) }
+    val paletteEnabled = settings.isFeatureEnabled(FeatureFlag.CommandPalette)
+    val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
+    val (scrollRenderingConnection, fastScrolling) = rememberScrollRendering(settings.isFeatureEnabled(FeatureFlag.FastScrollRendering))
+    LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
+        if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
+    }
     var searchFocusRequest by remember { mutableStateOf(0) }
     var viewerRefreshRequest by remember { mutableStateOf(0) }
     val discordRpcManager =
@@ -387,11 +399,21 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     }
 
     val desktopHandler by rememberUpdatedState<(DesktopCommand) -> Boolean> { command ->
-        if (state.appLocked || state.privacyLocked || !state.sessionReady) {
+        if (state.appLocked || state.privacyLocked) {
+            false
+        } else if (command == DesktopCommand.Palette) {
+            val allowed = paletteAvailable && settings.refreshToken.isNotBlank()
+            if (allowed) showCommandPalette = !showCommandPalette
+            allowed
+        } else if (!state.sessionReady) {
             false
         } else {
             val route = backStack.lastOrNull()
             when (command) {
+                DesktopCommand.Palette -> {
+                    false
+                }
+
                 DesktopCommand.Search -> {
                     val hasSearchBar =
                         when (route) {
@@ -656,6 +678,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         com.yunfie.illustia.ui.components
             .rememberArtworkDesktopActions(viewModel)
     CompositionLocalProvider(
+        LocalFastScrolling provides fastScrolling,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
@@ -685,10 +708,62 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 Modifier
                     .fillMaxSize()
                     .appNavigationSafeArea()
+                    .nestedScroll(scrollRenderingConnection)
                     .then(
                         if (effectiveHapticMode == AppHapticMode.Off) Modifier else Modifier.scrollEndHaptic(),
                     ),
         ) {
+            if (showCommandPalette && paletteAvailable) {
+                CommandPalette(
+                    onDismiss = { showCommandPalette = false },
+                    onAction = { action, query ->
+                        showCommandPalette = false
+                        when (action) {
+                            PaletteAction.Home, PaletteAction.Ranking, PaletteAction.Bookmarks -> {
+                                val tab =
+                                    when (action) {
+                                        PaletteAction.Ranking -> AppTab.Ranking
+                                        PaletteAction.Bookmarks -> AppTab.Bookmarks
+                                        else -> AppTab.Home
+                                    }
+                                backStack.clear()
+                                backStack.add(AppRoute.Main)
+                                selectedTab = tab
+                                coroutineScope.launch { pagerState.scrollToPage(tabs.indexOf(tab).coerceAtLeast(0)) }
+                            }
+
+                            PaletteAction.Search -> {
+                                viewModel.submitSearch(query)
+                                navigate(AppRoute.SearchResults(query))
+                            }
+
+                            PaletteAction.Novel -> {
+                                navigate(AppRoute.NovelList)
+                            }
+
+                            PaletteAction.Settings -> {
+                                navigate(AppRoute.Settings)
+                            }
+
+                            PaletteAction.Flags -> {
+                                navigate(AppRoute.FeatureFlags)
+                            }
+
+                            PaletteAction.Light -> {
+                                viewModel.updateThemeMode("light")
+                            }
+
+                            PaletteAction.Dark -> {
+                                viewModel.updateThemeMode("dark")
+                            }
+
+                            PaletteAction.System -> {
+                                viewModel.updateThemeMode("system")
+                            }
+                        }
+                    },
+                )
+            }
             if (!state.privacyLocked || state.isTransitioningToIllustia) {
                 Scaffold(
                     containerColor = MiuixTheme.colorScheme.surface,

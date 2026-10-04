@@ -1137,4 +1137,16 @@
     <string name="flag_top_scroll_blur_desc">Blur scrolled content behind the top header. A translucent background is used on Android versions below 12.</string>
     <string name="flag_navigation_icons_only_title">Icon-only navigation bar</string>
     <string name="flag_navigation_icons_only_desc">Hide labels in the standard bottom navigation bar. Floating navigation already uses icons only.</string>
+    <string name="flag_fast_scroll_rendering_title">Reduce rendering during fast scrolling</string>
+    <string name="flag_fast_scroll_rendering_desc">Temporarily reduce blur, shadows and grid animations while scrolling quickly.</string>
+    <string name="flag_command_palette_title">Command palette</string>
+    <string name="flag_command_palette_desc">Press Ctrl + K to search, navigate and change the theme.</string>
+    <string name="command_palette_hint">Type a command or search query</string>
+    <string name="command_palette_search">Search for “%1$s”</string>
+    <string name="command_palette_home">Go to Home</string>
+    <string name="command_palette_settings">Open settings</string>
+    <string name="command_palette_flags">Open feature flags</string>
+    <string name="command_palette_light">Use light theme</string>
+    <string name="command_palette_dark">Use dark theme</string>
+    <string name="command_palette_system">Use system theme</string>
 </resources>
