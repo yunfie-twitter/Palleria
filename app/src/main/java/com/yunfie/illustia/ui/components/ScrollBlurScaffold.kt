@@ -93,14 +93,21 @@ fun ScrollBlurOverlay(
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val maxFadeHeightPx = with(density) { 44.dp.toPx() }
-    val maxFadeOverlapPx = with(density) { 16.dp.toPx() }
 
-    val targetFraction = fraction().coerceIn(0f, 1f)
+    val rawFraction = fraction().coerceIn(0f, 1f)
+    // Deadzone and smooth rescale for micro-scrolls so that borderline scrolling never jitters
+    val targetFraction =
+        if (rawFraction < 0.012f) {
+            0f
+        } else {
+            ((rawFraction - 0.012f) / (1f - 0.012f)).coerceIn(0f, 1f)
+        }
+
     val animatedFraction by animateFloatAsState(
         targetValue = targetFraction,
         animationSpec =
             spring(
-                stiffness = Spring.StiffnessMedium,
+                stiffness = Spring.StiffnessMediumLow,
                 dampingRatio = Spring.DampingRatioNoBouncy,
             ),
         label = "scrollBlurFraction",
@@ -127,7 +134,7 @@ fun ScrollBlurOverlay(
             val totalBackdropHeightDp = with(density) { totalBackdropHeightPx.toDp() }
             val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.18f * progress).coerceIn(0f, 1f)
 
-            if (baseAlpha > 0f || (supportsBlur && progress > 0f)) {
+            if (baseAlpha > 0f || (supportsBlur && progress > 0.02f)) {
                 Box(
                     modifier =
                         Modifier
@@ -136,8 +143,9 @@ fun ScrollBlurOverlay(
                             .graphicsLayer {
                                 compositingStrategy = CompositingStrategy.Offscreen
                             }.drawWithContent {
-                                val fadeOverlapPx = maxFadeOverlapPx * progress
-                                val fadeStartPx = (measuredHeaderHeight - fadeOverlapPx).coerceAtLeast(0f)
+                                // Keep the entire header area (including tabs) at full opacity,
+                                // and fade out smoothly below the header.
+                                val fadeStartPx = measuredHeaderHeight.toFloat()
                                 val fadeStartRatio =
                                     if (totalBackdropHeightPx > 0f) {
                                         (fadeStartPx / totalBackdropHeightPx).coerceIn(0f, 1f)
@@ -145,7 +153,7 @@ fun ScrollBlurOverlay(
                                         1f
                                     }
 
-                                if (supportsBlur && progress > 0f) {
+                                if (supportsBlur && progress > 0.02f) {
                                     val blurRadius = 16.dp.toPx() * progress
                                     blurred.renderEffect = BlurEffect(blurRadius, blurRadius)
                                     blurred.record { drawLayer(source) }
