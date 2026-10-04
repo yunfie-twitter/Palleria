@@ -37,6 +37,8 @@ val PixivImageHeaders =
         .set("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Illustia)")
         .build()
 
+internal val LocalImageRefreshRequest = androidx.compose.runtime.compositionLocalOf { 0 }
+
 @Composable
 fun PixivImage(
     url: String,
@@ -51,6 +53,7 @@ fun PixivImage(
     onSuccess: ((Bitmap) -> Unit)? = null,
     onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 ) {
+    val refreshRequest = LocalImageRefreshRequest.current
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
     val effectiveUrl =
@@ -72,6 +75,7 @@ fun PixivImage(
     val imageRequest =
         remember(
             effectiveUrl,
+            refreshRequest,
             thumbnail,
             maxDecodeDimensionPx,
             defaultMaxDimension,
@@ -84,7 +88,8 @@ fun PixivImage(
                     .Builder(context)
                     .data(effectiveUrl)
                     .httpHeaders(PixivImageHeaders)
-                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(if (refreshRequest == 0) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY)
+                    .memoryCacheKey(if (refreshRequest == 0) effectiveUrl else "$effectiveUrl#reload-$refreshRequest")
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .crossfade(!thumbnail && crossfade && PlatformCapabilities.supportsImageCrossfade(context))
 

@@ -25,6 +25,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -391,17 +393,33 @@ fun BookmarkHeartButton(
 
     val active = remember(stage) { stage == BookmarkButtonStage.BOOKMARKED || stage == BookmarkButtonStage.CHECK }
     val scheme = MiuixTheme.colorScheme
-    IconButton(
-        onClick = {
-            userClicked = true
-            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
-            onClick()
-        },
-        modifier = modifier.size(size),
-        minWidth = size,
-        minHeight = size,
-        cornerRadius = cornerRadius,
-        backgroundColor = if (active) activeBackground else inactiveBackground,
+    val buttonModifier =
+        modifier
+            .size(size)
+            .squircleSurface(if (active) activeBackground else inactiveBackground, cornerRadius)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .combinedClickable(
+                onClick = {
+                    userClicked = true
+                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                    onClick()
+                },
+                onLongClick =
+                    if (onLongClick != null) {
+                        {
+                            userClicked = true
+                            stage = BookmarkButtonStage.PRIVATE_CHECK
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                            onLongClick()
+                        }
+                    } else {
+                        null
+                    },
+            )
+
+    Box(
+        modifier = buttonModifier,
+        contentAlignment = Alignment.Center,
     ) {
         Box(contentAlignment = Alignment.Center) {
             HeartBurst(

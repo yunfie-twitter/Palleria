@@ -82,6 +82,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun AppNavHost(
     appState: IllustiaAppStateBundle,
+    searchFocusRequest: Int = 0,
+    viewerRefreshRequest: Int = 0,
     viewModel: IllustiaViewModel,
     backStack: MutableList<NavKey>,
     detailSnapshots: Map<Long, DetailEntrySnapshot>,
@@ -111,6 +113,7 @@ internal fun AppNavHost(
         entryProvider<NavKey> {
             entry(AppRoute.Main) {
                 MainSurface(
+                    searchFocusRequest = if (backStack.lastOrNull() == AppRoute.Main) searchFocusRequest else 0,
                     appState = appState,
                     viewModel = viewModel,
                     selectedTab = selectedTab,
@@ -146,6 +149,7 @@ internal fun AppNavHost(
             ) {
                 val searchState by viewModel.searchState.collectAsStateWithLifecycle()
                 SearchScreen(
+                    focusRequest = if (backStack.lastOrNull() == AppRoute.Search) searchFocusRequest else 0,
                     state = searchState,
                     viewModel = viewModel,
                     isResultRoute = false,
@@ -193,6 +197,7 @@ internal fun AppNavHost(
                         )
                     }
                 SearchScreen(
+                    focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
                     state = effectiveState,
                     viewModel = viewModel,
                     isResultRoute = true,
@@ -240,6 +245,7 @@ internal fun AppNavHost(
                         )
                     }
                 SearchScreen(
+                    focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
                     state = effectiveState,
                     viewModel = viewModel,
                     isResultRoute = true,
@@ -359,9 +365,13 @@ internal fun AppNavHost(
                 metadata = artworkMetadata,
             ) {
                 appState.state.imageViewerIllust?.let { illust ->
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.yunfie.illustia.ui.components.LocalImageRefreshRequest provides viewerRefreshRequest,
+                    ) {
                     ImageViewerScreen(
                         illust = illust,
                         startPage = appState.state.imageViewerStartPage,
+                        onSave = viewModel::saveImage,
                         onBack = onPopRoute,
                         isBookmarked = illust.isBookmarked,
                         onBookmark = { viewModel.toggleBookmark(illust) },
@@ -375,6 +385,7 @@ internal fun AppNavHost(
                         volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
                         swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
                     )
+                    }
                 }
             }
             entry(AppRoute.NovelList) {

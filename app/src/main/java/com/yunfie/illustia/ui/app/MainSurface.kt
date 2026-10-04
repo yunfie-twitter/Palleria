@@ -29,6 +29,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.luminance
@@ -71,6 +73,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun MainSurface(
     appState: IllustiaAppStateBundle,
+    searchFocusRequest: Int = 0,
     viewModel: IllustiaViewModel,
     selectedTab: AppTab,
     pagerState: PagerState,
@@ -153,10 +156,10 @@ internal fun MainSurface(
                     NavigationBar(
                         color = MiuixTheme.colorScheme.surfaceContainer,
                         showDivider = true,
-                    ) {
                         navigationTabs.forEach { tab ->
                             val pageIndex = tabs.indexOf(tab)
                             NavigationBarItem(
+                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                                 selected = selectedTab == tab,
                                 onClick = {
                                     performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
@@ -245,6 +248,7 @@ internal fun MainSurface(
 
                         AppTab.Search -> {
                             SearchTabContent(
+                                focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
                                 viewModel = viewModel,
                                 onNavigateToResults = onNavigateToResults,
                             )
@@ -283,6 +287,7 @@ internal fun MainSurface(
                             navigationTabs.forEach { tab ->
                                 val pageIndex = tabs.indexOf(tab)
                                 FloatingNavigationBarItem(
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                                     selected = selectedTab == tab,
                                     onClick = {
                                         performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
@@ -318,11 +323,13 @@ internal fun MainSurface(
 
 @Composable
 private fun SearchTabContent(
+    focusRequest: Int,
     viewModel: IllustiaViewModel,
     onNavigateToResults: (String) -> Unit,
 ) {
     val searchState by viewModel.searchState.collectAsStateWithLifecycle()
     SearchScreen(
+        focusRequest = focusRequest,
         state = searchState,
         viewModel = viewModel,
         isResultRoute = false,

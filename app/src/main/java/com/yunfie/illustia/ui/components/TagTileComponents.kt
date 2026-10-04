@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -48,7 +50,7 @@ fun TagTile(
         modifier =
             modifier
                 .aspectRatio(1f)
-                .combinedClickable(
+                .pointerHoverIcon(PointerIcon.Hand).combinedClickable(
                     onClick = {
                         performHaptic(AppHapticEffect.Click)
                         onClick()

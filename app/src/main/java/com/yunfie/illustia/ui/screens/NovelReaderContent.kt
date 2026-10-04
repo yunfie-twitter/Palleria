@@ -243,6 +243,8 @@ internal data class NovelJumpBlock(
 internal fun NovelReaderPage(
     page: NovelPage,
     pageIndex: Int,
+    paragraphStep: Int = 0,
+    keyboardActive: Boolean = true,
     pageCount: Int,
     fontSize: Float,
     lineHeightMultiplier: Float,
@@ -259,8 +261,14 @@ internal fun NovelReaderPage(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    val keyboardListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    com.yunfie.illustia.ui.components.ParagraphNavigation(
+        keyboardListState, paragraphStep, keyboardActive,
+        remember(page) { page.blocks.mapIndexedNotNull { index, block -> if (block is NovelParagraphBlock) index + 1 else null } },
+    )
     val currentOnToggleControls by rememberUpdatedState(onToggleControls)
     LazyColumn(
+        state = keyboardListState,
         modifier =
             modifier
                 .fillMaxSize()

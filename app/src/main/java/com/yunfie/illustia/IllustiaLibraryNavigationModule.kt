@@ -40,19 +40,27 @@ abstract class IllustiaLibraryNavigationModule(
         url: String,
         filename: String,
     ) {
+        val keepAlive = try {
+            com.yunfie.illustia.platform.ArtworkDownloadService.acquire(getApplication())
+        } catch (error: RuntimeException) {
+            _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+            return
+        }
         val queueId = System.nanoTime()
         val queuedIllust = resolveDownloadIllust(filename)
         val queueTitle = queuedIllust?.title?.takeIf { it.isNotBlank() } ?: filename
         val queueSubtitle =
             queuedIllust?.artistName?.takeIf { it.isNotBlank() }
                 ?: str(R.string.download_queue_waiting)
-        viewModelScope.launch(Dispatchers.IO) {
+        val saveJob = viewModelScope.launch(Dispatchers.IO) {
             enqueueDownloadQueue(queueId, queueTitle, queueSubtitle, DownloadQueueStatus.Waiting)
             var terminalStatus: DownloadQueueStatus? = null
-            acquireDownloadSlot()
-            updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
-            _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+            var acquiredSlot = false
             try {
+                acquireDownloadSlot()
+                acquiredSlot = true
+                updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
+                _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
                 GlitchTipTelemetry.traceAsync("download.artwork", "download") {
                     val currentIllust = resolveDownloadIllust(filename)
                     val targetName = buildDownloadPath(filename, currentIllust)
@@ -81,9 +89,37 @@ abstract class IllustiaLibraryNavigationModule(
                 _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
             } finally {
                 terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
-                releaseDownloadSlot()
+                if (acquiredSlot) kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { releaseDownloadSlot() }
             }
         }
+        saveJob.invokeOnCompletion { keepAlive.close() }
+    }
+
+    fun saveImageToDocument(url: String, uri: android.net.Uri) {
+        val keepAlive = try {
+            com.yunfie.illustia.platform.ArtworkDownloadService.acquire(getApplication())
+        } catch (error: RuntimeException) {
+            _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val request = Request.Builder()
+                    .url(proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl))
+                    .header("Referer", "https://www.pixiv.net/")
+                    .build()
+                downloadClient.newCall(request).execute().use { response ->
+                    check(response.isSuccessful) { "HTTP ${response.code}" }
+                    getApplication<Application>().contentResolver.openOutputStream(uri, "wt").use { output ->
+                        checkNotNull(output)
+                        response.body.byteStream().use { it.copyTo(output) }
+                    }
+                }
+            } catch (error: Exception) {
+                if (isCancellation(error)) throw error
+                _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+            }
+        }.invokeOnCompletion { keepAlive.close() }
     }
 
     private fun resolveCheckUrl(

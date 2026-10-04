@@ -213,7 +213,7 @@ fun IllustCard(
         onClick = onClick,
         onLongClick = onLongClick,
         showBookmarkButton = showBookmarkButton && cardPreferences.showBookmarkButton,
-        modifier = modifier,
+        modifier = modifier.artworkDesktopMenu(illust),
         isSelected = isSelected,
         isMutedByTag = isMutedByTag,
         preferences = cardPreferences,
@@ -505,7 +505,7 @@ fun IllustListRow(
             if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
         }
 
-    val baseModifier = Modifier.fillMaxWidth()
+    val baseModifier = Modifier.fillMaxWidth().artworkDesktopMenu(illust)
     val finalModifier =
         if (cardPreferences.doubleTapToBookmark) {
             baseModifier

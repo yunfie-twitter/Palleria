@@ -1085,4 +1085,7 @@
     <string name="post_update_notice">Atualizado para Palleria %1$s</string>
     <string name="search_age_restriction">Restrição de idade</string>
     <string name="search_age_all">Todos</string>
+    <string name="desktop_open_new_tab">Abrir em uma nova aba do navegador</string>
+    <string name="desktop_bookmark_private">Favorito privado</string>
+    <string name="desktop_save_as">Salvar como</string>
 </resources>

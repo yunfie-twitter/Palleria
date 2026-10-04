@@ -918,4 +918,7 @@
     <string name="post_update_notice">已更新至 Palleria %1$s</string>
     <string name="search_age_restriction">年齡限制</string>
     <string name="search_age_all">全部</string>
+    <string name="desktop_open_new_tab">在瀏覽器新分頁中開啟</string>
+    <string name="desktop_bookmark_private">私人收藏</string>
+    <string name="desktop_save_as">另存新檔</string>
 </resources>

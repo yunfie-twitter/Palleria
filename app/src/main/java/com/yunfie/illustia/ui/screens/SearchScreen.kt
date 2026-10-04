@@ -103,6 +103,7 @@ private val SearchBookmarkFilterOptions = SearchBookmarkFilter.entries.toList()
 fun SearchScreen(
     state: SearchUiState,
     viewModel: IllustiaViewModel,
+    focusRequest: Int = 0,
     widgetSelectionMode: Boolean = false,
     isResultRoute: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
@@ -111,6 +112,9 @@ fun SearchScreen(
     onNavigateToResults: ((String) -> Unit)? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
+    LaunchedEffect(focusRequest) {
+        if (focusRequest > 0) searchExpanded = true
+    }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val suggestionStore = remember(repository) { SuggestionStore(repository) }
     val autocompleteSuggestions by suggestionStore.autoWords.collectAsStateWithLifecycle()
@@ -274,6 +278,7 @@ fun SearchScreen(
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(
+                        focusRequest = focusRequest,
                         value = state.activeSearchWord,
                         expanded = false,
                         suggestions = suggestions,
@@ -316,6 +321,7 @@ fun SearchScreen(
                         modifier = Modifier.height(56.dp),
                     )
                     SearchToolbar(
+                        focusRequest = focusRequest,
                         value = state.searchDraft,
                         expanded = false,
                         suggestions = suggestions,
@@ -334,6 +340,7 @@ fun SearchScreen(
                 }
             } else {
                 SearchToolbar(
+                        focusRequest = focusRequest,
                     value = state.searchDraft,
                     expanded = searchExpanded,
                     suggestions = suggestions,
@@ -391,6 +398,7 @@ fun SearchScreen(
 private fun SearchResultsArea(
     state: SearchUiState,
     viewModel: IllustiaViewModel,
+    focusRequest: Int = 0,
     widgetSelectionMode: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
@@ -530,6 +538,7 @@ private fun SearchResultsArea(
 fun SearchScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
+    focusRequest: Int = 0,
     widgetSelectionMode: Boolean = false,
     isResultRoute: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
@@ -539,6 +548,7 @@ fun SearchScreen(
 ) {
     SearchScreen(
         state = state.searchUiState,
+        focusRequest = focusRequest,
         viewModel = viewModel,
         widgetSelectionMode = widgetSelectionMode,
         isResultRoute = isResultRoute,
