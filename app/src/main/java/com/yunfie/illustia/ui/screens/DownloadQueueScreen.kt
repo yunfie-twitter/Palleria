@@ -54,6 +54,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -163,12 +164,14 @@ fun DownloadQueueScreen(
                 largeTitle = stringResource(R.string.download_queue_title),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                listState.smoothScrollToTop(scrollBehavior)
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 56.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            listState.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },

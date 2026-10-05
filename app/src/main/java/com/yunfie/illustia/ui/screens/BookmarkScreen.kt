@@ -38,6 +38,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -169,20 +170,22 @@ fun BookmarkScreen(
                 largeTitle = stringResource(R.string.nav_bookmarks_full),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                val targetState =
-                                    when (pagerState.currentPage) {
-                                        0 -> viewModel.bookmarkTimelineGridState
-                                        1 -> viewModel.bookmarkMainGridState
-                                        2 -> viewModel.bookmarkWatchlistGridState
-                                        3 -> viewModel.bookmarkFollowingGridState
-                                        else -> null
-                                    }
-                                targetState?.smoothScrollToTop(scrollBehavior)
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 0.dp,
+                        actionsWidth = 80.dp,
+                        hasBottomContent = true,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            val targetState =
+                                when (pagerState.currentPage) {
+                                    0 -> viewModel.bookmarkTimelineGridState
+                                    1 -> viewModel.bookmarkMainGridState
+                                    2 -> viewModel.bookmarkWatchlistGridState
+                                    3 -> viewModel.bookmarkFollowingGridState
+                                    else -> null
+                                }
+                            targetState?.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 actions = {

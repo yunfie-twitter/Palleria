@@ -41,6 +41,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -94,12 +95,14 @@ fun MoreScreen(
                 largeTitle = stringResource(R.string.nav_more),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                listState.smoothScrollToTop(scrollBehavior)
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 0.dp,
+                        actionsWidth = 0.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            listState.smoothScrollToTop(scrollBehavior)
                         }
                     },
             )

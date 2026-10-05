@@ -24,6 +24,7 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGrid
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
@@ -59,12 +60,14 @@ fun OfflineLibraryScreen(
                 largeTitle = stringResource(R.string.offline_library_title),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                gridState.smoothScrollToTop(scrollBehavior)
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 0.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            gridState.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
