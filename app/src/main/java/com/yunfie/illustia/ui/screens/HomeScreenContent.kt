@@ -115,13 +115,7 @@ internal fun FeedTabContent(
         highQualityImages = feedHighQuality,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && isPaginating
-    val shimmer =
-        if (showInitialSkeletons || showPaginationSkeletons) {
-            rememberIllustSkeletonShimmer()
-        } else {
-            null
-        }
+    val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -198,16 +192,18 @@ internal fun FeedTabContent(
                 )
             }
 
-            if (showPaginationSkeletons) {
+            if (settings.autoLoadMore && nextUrl != null) {
                 item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
                     Box(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 16.dp),
+                                .padding(vertical = if (isPaginating) 16.dp else 0.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                        if (isPaginating) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
                     }
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
@@ -261,13 +257,7 @@ internal fun FollowingTabContent(
         keyPrefix = "tl_",
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && isPaginating
-    val shimmer =
-        if (showInitialSkeletons || showPaginationSkeletons) {
-            rememberIllustSkeletonShimmer()
-        } else {
-            null
-        }
+    val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -344,16 +334,18 @@ internal fun FollowingTabContent(
                 )
             }
 
-            if (showPaginationSkeletons) {
+            if (settings.autoLoadMore && nextUrl != null) {
                 item(key = "timeline_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
                     Box(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 16.dp),
+                                .padding(vertical = if (isPaginating) 16.dp else 0.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                        if (isPaginating) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
                     }
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {

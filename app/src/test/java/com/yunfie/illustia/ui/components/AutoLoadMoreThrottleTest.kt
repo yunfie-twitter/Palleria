@@ -7,54 +7,57 @@ import io.kotest.matchers.shouldBe
 
 class AutoLoadMoreThrottleTest :
     StringSpec({
-        "enforces minimum cooldown between successful requests" {
+        "enforces minimum cooldown between rapid requests for the same url" {
             val lastTime = 10000L
-            // Only 400ms passed -> should delay by 800ms (1200 - 400)
+            // Only 100ms passed -> should delay by 150ms (250 - 100)
             AutoLoadMoreThrottle.calculateDelayMillis(
-                now = 10400L,
+                now = 10100L,
                 lastRequestTime = lastTime,
-                isSameUrl = false,
+                isSameUrl = true,
                 lastRequestFailed = false,
-            ) shouldBe 800L
+            ) shouldBe 150L
 
-            // 1200ms passed -> should not delay
+            // 250ms passed -> should not delay
             AutoLoadMoreThrottle.calculateDelayMillis(
-                now = 11200L,
+                now = 10250L,
                 lastRequestTime = lastTime,
-                isSameUrl = false,
+                isSameUrl = true,
                 lastRequestFailed = false,
             ) shouldBe 0L
+        }
 
-            // 2000ms passed -> should not delay
+        "allows immediate load when new nextUrl arrives" {
+            val lastTime = 10000L
+            // New URL should not be blocked by previous page cooldown
             AutoLoadMoreThrottle.calculateDelayMillis(
-                now = 12000L,
+                now = 10050L,
                 lastRequestTime = lastTime,
                 isSameUrl = false,
                 lastRequestFailed = false,
             ) shouldBe 0L
         }
 
-        "enforces 5-second failure backoff when the same nextUrl fails" {
+        "enforces 3-second failure backoff when the same nextUrl fails" {
             val lastTime = 10000L
-            // Immediately after failure (0ms passed) -> delay 5000ms
+            // Immediately after failure (0ms passed) -> delay 3000ms
             AutoLoadMoreThrottle.calculateDelayMillis(
                 now = 10000L,
                 lastRequestTime = lastTime,
                 isSameUrl = true,
                 lastRequestFailed = true,
-            ) shouldBe 5000L
+            ) shouldBe 3000L
 
-            // 2000ms passed -> still delay 3000ms
+            // 1000ms passed -> still delay 2000ms
             AutoLoadMoreThrottle.calculateDelayMillis(
-                now = 12000L,
+                now = 11000L,
                 lastRequestTime = lastTime,
                 isSameUrl = true,
                 lastRequestFailed = true,
-            ) shouldBe 3000L
+            ) shouldBe 2000L
 
-            // 5000ms passed -> delay 0ms
+            // 3000ms passed -> delay 0ms
             AutoLoadMoreThrottle.calculateDelayMillis(
-                now = 15000L,
+                now = 13000L,
                 lastRequestTime = lastTime,
                 isSameUrl = true,
                 lastRequestFailed = true,
