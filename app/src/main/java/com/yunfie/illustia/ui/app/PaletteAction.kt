@@ -58,13 +58,26 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Contacts
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Home
+import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Theme
+import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -73,29 +86,197 @@ internal enum class PaletteAction(
     @param:StringRes val title: Int,
     val icon: ImageVector,
     @param:StringRes val categoryRes: Int,
+    val keywords: List<String> = emptyList(),
 ) {
-    Home(R.string.command_palette_home, MiuixIcons.Home, R.string.command_palette_category_navigation),
-    Search(R.string.command_palette_search, MiuixIcons.Search, R.string.command_palette_category_action),
-    Ranking(R.string.nav_ranking, MiuixIcons.TopDownloads, R.string.command_palette_category_navigation),
-    Bookmarks(R.string.nav_bookmarks_full, MiuixIcons.FavoritesFill, R.string.command_palette_category_navigation),
-    Novel(R.string.nav_novel, MiuixIcons.Notes, R.string.command_palette_category_navigation),
-    Settings(R.string.command_palette_settings, MiuixIcons.Settings, R.string.command_palette_category_settings),
-    Flags(R.string.command_palette_flags, MiuixIcons.Tune, R.string.command_palette_category_settings),
-    Light(R.string.command_palette_light, MiuixIcons.Theme, R.string.command_palette_category_appearance),
-    Dark(R.string.command_palette_dark, MiuixIcons.Theme, R.string.command_palette_category_appearance),
-    System(R.string.command_palette_system, MiuixIcons.Theme, R.string.command_palette_category_appearance),
+    Home(
+        R.string.command_palette_home,
+        MiuixIcons.Home,
+        R.string.command_palette_category_navigation,
+        listOf("home", "feed"),
+    ),
+    Search(
+        R.string.command_palette_search,
+        MiuixIcons.Search,
+        R.string.command_palette_category_action,
+    ),
+    Ranking(
+        R.string.nav_ranking,
+        MiuixIcons.TopDownloads,
+        R.string.command_palette_category_navigation,
+        listOf("ranking", "top"),
+    ),
+    Bookmarks(
+        R.string.nav_bookmarks_full,
+        MiuixIcons.FavoritesFill,
+        R.string.command_palette_category_navigation,
+        listOf("bookmarks", "fav", "bm"),
+    ),
+    Novel(
+        R.string.nav_novel,
+        MiuixIcons.Notes,
+        R.string.command_palette_category_navigation,
+        listOf("novel", "book"),
+    ),
+    ShortsFeed(
+        R.string.command_palette_shorts_feed,
+        MiuixIcons.Photos,
+        R.string.command_palette_category_navigation,
+        listOf("shorts", "tiktok", "reel"),
+    ),
+    ViewHistory(
+        R.string.command_palette_view_history,
+        MiuixIcons.Timer,
+        R.string.command_palette_category_navigation,
+        listOf("history", "viewed", "rireki"),
+    ),
+    FavoriteTags(
+        R.string.command_palette_favorite_tags,
+        MiuixIcons.FavoritesFill,
+        R.string.command_palette_category_navigation,
+        listOf("tag", "favorites", "favtags"),
+    ),
+    DownloadQueue(
+        R.string.command_palette_download_queue,
+        MiuixIcons.Download,
+        R.string.command_palette_category_navigation,
+        listOf("downloads", "dl", "queue"),
+    ),
+    OfflineLibrary(
+        R.string.command_palette_offline_library,
+        MiuixIcons.Favorites,
+        R.string.command_palette_category_navigation,
+        listOf("offline", "saved", "hozon"),
+    ),
+    Notifications(
+        R.string.command_palette_notifications,
+        MiuixIcons.Messages,
+        R.string.command_palette_category_navigation,
+        listOf("notifications", "news", "tsuuchi"),
+    ),
+    PallaSyncDevices(
+        R.string.command_palette_pallasync_devices,
+        MiuixIcons.Share,
+        R.string.command_palette_category_settings,
+        listOf("pallasync", "devices", "sync"),
+    ),
+    PallaSyncSync(
+        R.string.command_palette_pallasync_sync,
+        MiuixIcons.Refresh,
+        R.string.command_palette_category_action,
+        listOf("sync now", "push", "sync"),
+    ),
+    SwitchAccount(
+        R.string.command_palette_switch_account,
+        MiuixIcons.Contacts,
+        R.string.command_palette_category_action,
+        listOf("account", "switch user", "login"),
+    ),
+    ClearCache(
+        R.string.command_palette_clear_cache,
+        MiuixIcons.Remove,
+        R.string.command_palette_category_action,
+        listOf("clear cache", "purge", "gc"),
+    ),
+    RefreshFeed(
+        R.string.command_palette_refresh_feed,
+        MiuixIcons.Refresh,
+        R.string.command_palette_category_action,
+        listOf("refresh", "reload", "sync"),
+    ),
+    OpenFromClipboard(
+        R.string.command_palette_open_clipboard,
+        MiuixIcons.Import,
+        R.string.command_palette_category_action,
+        listOf("id", "pixiv.net", "jump"),
+    ),
+    ToggleAi(
+        R.string.command_palette_toggle_ai,
+        MiuixIcons.Filter,
+        R.string.command_palette_category_appearance,
+        listOf("ai", "toggle ai", "filter"),
+    ),
+    ToggleR18(
+        R.string.command_palette_toggle_r18,
+        MiuixIcons.Show,
+        R.string.command_palette_category_appearance,
+        listOf("r18", "nsfw", "safe"),
+    ),
+    ToggleGridColumns(
+        R.string.command_palette_toggle_grid_columns,
+        MiuixIcons.Photos,
+        R.string.command_palette_category_appearance,
+        listOf("grid", "columns", "layout"),
+    ),
+    ToggleImageQuality(
+        R.string.command_palette_toggle_image_quality,
+        MiuixIcons.Background,
+        R.string.command_palette_category_appearance,
+        listOf("quality", "hd", "original"),
+    ),
+    ToggleUgoiraAutoPlay(
+        R.string.command_palette_toggle_ugoira_autoplay,
+        MiuixIcons.Timer,
+        R.string.command_palette_category_appearance,
+        listOf("ugoira", "autoplay", "gif"),
+    ),
+    MuteSettings(
+        R.string.command_palette_mute_settings,
+        MiuixIcons.Close,
+        R.string.command_palette_category_settings,
+        listOf("mute", "blocked", "ng"),
+    ),
+    AppData(
+        R.string.command_palette_app_data,
+        MiuixIcons.Tune,
+        R.string.command_palette_category_settings,
+        listOf("storage", "data", "appdata"),
+    ),
+    Settings(
+        R.string.command_palette_settings,
+        MiuixIcons.Settings,
+        R.string.command_palette_category_settings,
+        listOf("settings", "pref"),
+    ),
+    Flags(
+        R.string.command_palette_flags,
+        MiuixIcons.Tune,
+        R.string.command_palette_category_settings,
+        listOf("flags", "experiment"),
+    ),
+    Light(
+        R.string.command_palette_light,
+        MiuixIcons.Theme,
+        R.string.command_palette_category_appearance,
+        listOf("light", "theme"),
+    ),
+    Dark(
+        R.string.command_palette_dark,
+        MiuixIcons.Theme,
+        R.string.command_palette_category_appearance,
+        listOf("dark", "theme"),
+    ),
+    System(
+        R.string.command_palette_system,
+        MiuixIcons.Theme,
+        R.string.command_palette_category_appearance,
+        listOf("system", "theme"),
+    ),
 }
 
 internal fun matchingPaletteActions(
     query: String,
     labels: Map<PaletteAction, String>,
 ): List<PaletteAction> {
+    val trimmed = query.trim()
     val commands =
         PaletteAction.entries.filter {
             it != PaletteAction.Search &&
-                labels.getValue(it).contains(query.trim(), ignoreCase = true)
+                (
+                    labels.getValue(it).contains(trimmed, ignoreCase = true) ||
+                        it.keywords.any { kw -> kw.contains(trimmed, ignoreCase = true) }
+                )
         }
-    return if (query.isBlank()) commands else commands + PaletteAction.Search
+    return if (trimmed.isBlank()) commands else commands + PaletteAction.Search
 }
 
 @Composable
