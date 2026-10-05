@@ -43,6 +43,7 @@ import com.yunfie.illustia.ui.components.NotificationCardSkeleton
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
@@ -83,14 +84,14 @@ fun NotificationScreen(
                 largeTitle = stringResource(R.string.more_notifications),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    remember {
-                        Modifier.pointerInput(Unit) {
-                            detectTapGestures {
-                                performHaptic(AppHapticEffect.Click)
-                                coroutineScope.launch {
-                                    listState.smoothScrollToTop(scrollBehavior)
-                                }
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 56.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            listState.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },

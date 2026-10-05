@@ -280,3 +280,63 @@ suspend fun LazyListState.smoothScrollToTop(scrollBehavior: ScrollBehavior? = nu
     scrollBehavior?.state?.heightOffset = 0f
     scrollBehavior?.state?.contentOffset = 0f
 }
+
+private const val TOP_BAR_TAP_MAX_DURATION_MS = 500L
+
+/**
+ * Intercepts tap gestures on the app bar header during [PointerEventPass.Initial]
+ * before Miuix TopAppBar's internal detectTapGestures consumes them.
+ */
+@Composable
+fun Modifier.onTopBarTap(
+    navIconWidth: Dp = 64.dp,
+    actionsWidth: Dp = 120.dp,
+    hasBottomContent: Boolean = false,
+    bottomContentHeight: Dp = 56.dp,
+    onTap: () -> Unit,
+): Modifier {
+    val currentOnTap = rememberUpdatedState(onTap)
+    return pointerInput(navIconWidth, actionsWidth, hasBottomContent, bottomContentHeight) {
+        awaitEachGesture {
+            val down =
+                awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.pressed }
+                    ?: return@awaitEachGesture
+            val downPos = down.position
+            val width = size.width
+            val height = size.height
+
+            val navIconPx = navIconWidth.toPx()
+            val actionsPx = actionsWidth.toPx()
+            val bottomContentPx = if (hasBottomContent) bottomContentHeight.toPx() else 0f
+
+            val isInActionSlot =
+                downPos.x < navIconPx ||
+                    downPos.x > (width - actionsPx) ||
+                    (hasBottomContent && downPos.y > (height - bottomContentPx))
+
+            if (isInActionSlot) {
+                return@awaitEachGesture
+            }
+
+            var isTap = true
+            val downTime = System.currentTimeMillis()
+
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                val change = event.changes.firstOrNull { it.id == down.id }
+                if (change == null || !change.pressed) {
+                    val upTime = System.currentTimeMillis()
+                    if (isTap && (upTime - downTime) < TOP_BAR_TAP_MAX_DURATION_MS) {
+                        currentOnTap.value()
+                    }
+                    break
+                } else {
+                    val distance = (change.position - downPos).getDistance()
+                    if (distance > viewConfiguration.touchSlop) {
+                        isTap = false
+                    }
+                }
+            }
+        }
+    }
+}

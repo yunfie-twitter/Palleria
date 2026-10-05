@@ -66,6 +66,7 @@ import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.animatedGridPlacement
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -155,16 +156,16 @@ fun RankingScreen(
                 largeTitle = stringResource(R.string.nav_ranking),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    remember {
-                        Modifier.pointerInput(Unit) {
-                            detectTapGestures {
-                                performHaptic(AppHapticEffect.Click)
-                                coroutineScope.launch {
-                                    val currentMode = modes.getOrNull(pagerState.currentPage)
-                                    if (currentMode != null) {
-                                        viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
-                                    }
-                                }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 0.dp,
+                        actionsWidth = 56.dp,
+                        hasBottomContent = true,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            val currentMode = modes.getOrNull(pagerState.currentPage)
+                            if (currentMode != null) {
+                                viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },

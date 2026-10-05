@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
@@ -420,12 +421,14 @@ fun ViewHistoryScreen(
                 subtitle = if (hasSelection) stringResource(R.string.view_history_selected_count, selectedIds.size) else "",
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                gridState.smoothScrollToTop(scrollBehavior)
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 96.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            gridState.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 navigationIcon = {
