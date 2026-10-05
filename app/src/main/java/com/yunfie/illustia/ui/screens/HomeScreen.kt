@@ -204,6 +204,7 @@ fun HomeScreen(
                             }
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
+                        isBlurEnabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
