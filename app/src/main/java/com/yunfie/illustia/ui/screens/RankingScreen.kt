@@ -82,8 +82,6 @@ import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.TabRowColors
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -395,19 +393,11 @@ private fun RankingTabRow(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scheme = MiuixTheme.colorScheme
     TabRow(
         tabs = tabs,
         selectedTabIndex = pagerState.targetPage.coerceIn(0, (tabs.size - 1).coerceAtLeast(0)),
         onTabSelected = onTabSelected,
         modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
-        colors =
-            TabRowDefaults.tabRowColors(
-                backgroundColor = Color.Transparent,
-                contentColor = scheme.onSurfaceVariantSummary,
-                selectedBackgroundColor = scheme.surfaceContainerHigh,
-                selectedContentColor = scheme.onBackground,
-            ),
         minWidth = 92.dp,
         maxWidth = 148.dp,
     )
