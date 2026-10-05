@@ -36,12 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -81,6 +78,10 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -163,9 +164,7 @@ internal fun MainSurface(
         val useNavigationRail = LocalUseNavigationRail.current
         val isBlurEnabled = appState.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)
         val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        val contentSource = rememberGraphicsLayer()
-        val blurredNavLayer = rememberGraphicsLayer()
-        var containerHeightPx by remember { mutableIntStateOf(0) }
+        val navBackdrop = rememberLayerBackdrop()
 
         Scaffold(
             modifier = Modifier.nestedScroll(navigationScrollConnection),
@@ -200,7 +199,6 @@ internal fun MainSurface(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .onSizeChanged { containerHeightPx = it.height }
                         .padding(
                             top = paddingValues.calculateTopPadding(),
                             bottom =
@@ -219,10 +217,7 @@ internal fun MainSurface(
                             .fillMaxSize()
                             .then(
                                 if (isBlurEnabled && supportsBlur && !useNavigationRail) {
-                                    Modifier.drawWithContent {
-                                        contentSource.record { this@drawWithContent.drawContent() }
-                                        drawLayer(contentSource)
-                                    }
+                                    Modifier.layerBackdrop(navBackdrop)
                                 } else {
                                     Modifier
                                 },
@@ -326,19 +321,18 @@ internal fun MainSurface(
                             Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
-                                .clipToBounds()
-                                .drawWithContent {
-                                    val barTopPx = (containerHeightPx - size.height).coerceAtLeast(0f)
+                                .then(
                                     if (supportsBlur) {
-                                        val blurRadius = 16.dp.toPx()
-                                        blurredNavLayer.renderEffect = BlurEffect(blurRadius, blurRadius)
-                                        blurredNavLayer.record {
-                                            translate(left = 0f, top = -barTopPx) {
-                                                drawLayer(contentSource)
-                                            }
-                                        }
-                                        drawLayer(blurredNavLayer)
-                                    }
+                                        Modifier.progressiveTextureBlur(
+                                            backdrop = navBackdrop,
+                                            shape = RectangleShape,
+                                            blurRadius = 20f,
+                                            gradient = ProgressiveBlur.Bottom,
+                                        )
+                                    } else {
+                                        Modifier
+                                    },
+                                ).drawWithContent {
                                     val baseAlpha = if (supportsBlur) 0.72f else 0.92f
                                     drawRect(color = surfaceContainer.copy(alpha = baseAlpha))
                                     val dividerHeightPx = 1.dp.toPx()

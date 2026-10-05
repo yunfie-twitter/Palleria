@@ -103,6 +103,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_quick_peek_shared_element_transition_desc,
         defaultEnabled = false,
     ),
+    UgoiraAutoPlay(
+        key = "flag_ugoira_auto_play",
+        titleRes = R.string.flag_ugoira_auto_play_title,
+        descRes = R.string.flag_ugoira_auto_play_desc,
+        defaultEnabled = true,
+    ),
     ;
 
     companion object {

@@ -19,19 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Applied as lazy content padding, so scrolled items can move behind the header.
@@ -93,8 +91,7 @@ fun ScrollBlurOverlay(
     }
     val surface = MiuixTheme.colorScheme.surface
     val outline = MiuixTheme.colorScheme.outline
-    val source = rememberGraphicsLayer()
-    val blurred = rememberGraphicsLayer()
+    val backdrop = rememberLayerBackdrop()
     val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -113,16 +110,15 @@ fun ScrollBlurOverlay(
 
     Box(modifier = modifier.clipToBounds()) {
         Box(
-            Modifier.fillMaxSize().then(
-                if (supportsBlur) {
-                    Modifier.drawWithContent {
-                        source.record { this@drawWithContent.drawContent() }
-                        drawLayer(source)
-                    }
-                } else {
-                    Modifier
-                },
-            ),
+            Modifier
+                .fillMaxSize()
+                .then(
+                    if (supportsBlur) {
+                        Modifier.layerBackdrop(backdrop)
+                    } else {
+                        Modifier
+                    },
+                ),
         ) { content() }
 
         if (measuredHeaderHeight > 0) {
@@ -135,15 +131,18 @@ fun ScrollBlurOverlay(
                         Modifier
                             .fillMaxWidth()
                             .height(totalBackdropHeightDp)
-                            .clipToBounds()
-                            .drawWithContent {
+                            .then(
                                 if (supportsBlur && progress > 0f) {
-                                    val blurRadius = 16.dp.toPx() * progress
-                                    blurred.renderEffect = BlurEffect(blurRadius, blurRadius)
-                                    blurred.record { drawLayer(source) }
-                                    drawLayer(blurred)
-                                }
-
+                                    Modifier.progressiveTextureBlur(
+                                        backdrop = backdrop,
+                                        shape = RectangleShape,
+                                        blurRadius = 20f * progress,
+                                        gradient = ProgressiveBlur.Top,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            ).drawBehind {
                                 if (baseAlpha > 0f) {
                                     drawRect(color = surface.copy(alpha = baseAlpha))
                                 }
