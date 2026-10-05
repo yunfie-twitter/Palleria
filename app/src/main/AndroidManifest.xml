@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
+
     <!-- Desktop ChromeOS devices may have none of these peripherals. -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen.multitouch" android:required="false" />
