@@ -62,7 +62,6 @@ fun GeneralSettingsScreen(
     val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
     val hapticsEnabled = effectiveHapticMode != AppHapticMode.Off
 
-    val customAppIconFlag = state.settings.isFeatureEnabled(FeatureFlag.CustomAppIcon)
     val artworkDynamicThemeFlag = state.settings.isFeatureEnabled(FeatureFlag.ArtworkDynamicTheme)
     val navigationCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
     val shortsFeedFlag = state.settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
@@ -131,22 +130,20 @@ fun GeneralSettingsScreen(
                                 summary = stringResource(R.string.experimental_artwork_theme_desc),
                             )
                         }
-                        if (customAppIconFlag) {
-                            DividerLine()
-                            SettingDropdownRow(
-                                title = stringResource(R.string.experimental_app_icon),
-                                summary = stringResource(R.string.experimental_app_icon_desc),
-                                selected = state.settings.appIconVariant,
-                                values = listOf("default", "cat"),
-                                label = { variant ->
-                                    when (variant) {
-                                        "cat" -> stringResource(R.string.experimental_app_icon_cat)
-                                        else -> stringResource(R.string.experimental_app_icon_default)
-                                    }
-                                },
-                                onSelect = viewModel::updateAppIconVariant,
-                            )
-                        }
+                        DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.experimental_app_icon),
+                            summary = stringResource(R.string.experimental_app_icon_desc),
+                            selected = state.settings.appIconVariant,
+                            values = listOf("default", "cat"),
+                            label = { variant ->
+                                when (variant) {
+                                    "cat" -> stringResource(R.string.experimental_app_icon_cat)
+                                    else -> stringResource(R.string.experimental_app_icon_default)
+                                }
+                            },
+                            onSelect = viewModel::updateAppIconVariant,
+                        )
                         DividerLine()
                         SettingDropdownRow(
                             title = stringResource(R.string.general_language),

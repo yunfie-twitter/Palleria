@@ -384,7 +384,7 @@ internal fun BookmarkMainTab(
             isLoading = chrome.isBookmarkPaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreBookmarks,
         )
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -510,7 +510,7 @@ internal fun BookmarkTimelineTab(
             isLoading = chrome.isTimelinePaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreTimeline,
         )
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),

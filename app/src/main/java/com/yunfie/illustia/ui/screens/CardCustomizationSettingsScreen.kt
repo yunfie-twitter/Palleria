@@ -123,24 +123,20 @@ fun CardCustomizationSettingsScreen(
                             onCheckedChange = viewModel::updateDoubleTapToBookmark,
                             summary = stringResource(R.string.experimental_card_double_tap_to_bookmark_desc),
                         )
-                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeek)) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.setting_quick_peek_title),
-                                checked = state.settings.quickPeekEnabled,
-                                onCheckedChange = viewModel::updateQuickPeekEnabled,
-                                summary = stringResource(R.string.setting_quick_peek_desc),
-                            )
-                        }
-                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition)) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
-                                checked = state.settings.quickPeekSharedElementTransition,
-                                onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
-                                summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
-                            )
-                        }
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.setting_quick_peek_title),
+                            checked = state.settings.quickPeekEnabled,
+                            onCheckedChange = viewModel::updateQuickPeekEnabled,
+                            summary = stringResource(R.string.setting_quick_peek_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
+                            checked = state.settings.quickPeekSharedElementTransition,
+                            onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
+                            summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
+                        )
                     }
                 }
             }

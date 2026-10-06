@@ -80,12 +80,8 @@ internal fun AppOverlayHost(
     }
 
     appState.state.longPressedIllust?.let { illust ->
-        val isQuickPeekActive =
-            appState.state.settings.isFeatureEnabled(FeatureFlag.QuickPeek) &&
-                appState.state.settings.quickPeekEnabled
-        val useSharedTransition =
-            appState.state.settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition) &&
-                appState.state.settings.quickPeekSharedElementTransition
+        val isQuickPeekActive = appState.state.settings.quickPeekEnabled
+        val useSharedTransition = appState.state.settings.quickPeekSharedElementTransition
 
         if (isQuickPeekActive) {
             QuickPeekOverlay(
