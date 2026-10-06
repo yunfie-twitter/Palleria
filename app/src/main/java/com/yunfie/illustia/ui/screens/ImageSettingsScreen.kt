@@ -185,15 +185,13 @@ fun ImageSettingsScreen(
                             },
                             onSelect = viewModel::updateRelatedIllustColumnCount,
                         )
-                        if (state.settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns)) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.setting_grid_pinch_to_zoom_title),
-                                checked = state.settings.gridPinchToZoom,
-                                onCheckedChange = viewModel::updateGridPinchToZoom,
-                                summary = stringResource(R.string.setting_grid_pinch_to_zoom_desc),
-                            )
-                        }
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.setting_grid_pinch_to_zoom_title),
+                            checked = state.settings.gridPinchToZoom,
+                            onCheckedChange = viewModel::updateGridPinchToZoom,
+                            summary = stringResource(R.string.setting_grid_pinch_to_zoom_desc),
+                        )
                     }
                 }
             }
@@ -220,24 +218,27 @@ fun ImageSettingsScreen(
                                 onClick = onOpenWallpaperPlaylistSettings,
                             )
                         }
-                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeek)) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.setting_quick_peek_title),
-                                checked = state.settings.quickPeekEnabled,
-                                onCheckedChange = viewModel::updateQuickPeekEnabled,
-                                summary = stringResource(R.string.setting_quick_peek_desc),
-                            )
-                        }
-                        if (state.settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition)) {
-                            DividerLine()
-                            SettingSwitchRow(
-                                title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
-                                checked = state.settings.quickPeekSharedElementTransition,
-                                onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
-                                summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
-                            )
-                        }
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.setting_quick_peek_title),
+                            checked = state.settings.quickPeekEnabled,
+                            onCheckedChange = viewModel::updateQuickPeekEnabled,
+                            summary = stringResource(R.string.setting_quick_peek_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
+                            checked = state.settings.quickPeekSharedElementTransition,
+                            onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
+                            summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.flag_ugoira_auto_play_title),
+                            checked = state.settings.isFeatureEnabled(FeatureFlag.UgoiraAutoPlay),
+                            onCheckedChange = { viewModel.updateFeatureFlag(FeatureFlag.UgoiraAutoPlay, it) },
+                            summary = stringResource(R.string.flag_ugoira_auto_play_desc),
+                        )
                     }
                 }
             }
