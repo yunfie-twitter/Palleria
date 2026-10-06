@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -103,6 +104,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
+import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.items as lazyListItems
@@ -152,6 +154,9 @@ internal fun UserProfilePagerContent(
     showProfileHeader: Boolean,
     onIllustLongClick: ((Illust) -> Unit)? = null,
     onCollapseHeader: () -> Unit = {},
+    isOwnProfile: Boolean = false,
+    isProfileEditEnabled: Boolean = false,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     var showAvatarPreview by remember(user.id) { mutableStateOf(false) }
     val tabListState = rememberLazyListState()
@@ -218,6 +223,9 @@ internal fun UserProfilePagerContent(
                 onAvatarClick = { showAvatarPreview = true },
                 tabListState = tabListState,
                 onCollapseHeader = onCollapseHeader,
+                isOwnProfile = isOwnProfile,
+                isProfileEditEnabled = isProfileEditEnabled,
+                onEditProfile = onEditProfile,
             )
         }
         AnimatedVisibility(
@@ -317,6 +325,9 @@ private fun UserProfileHeader(
     onAvatarClick: () -> Unit,
     tabListState: LazyListState,
     onCollapseHeader: () -> Unit = {},
+    isOwnProfile: Boolean = false,
+    isProfileEditEnabled: Boolean = false,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     Column(
         Modifier
@@ -358,6 +369,9 @@ private fun UserProfileHeader(
             backgroundColor = backgroundColor,
             onAvatarClick = onAvatarClick,
             tabListState = tabListState,
+            isOwnProfile = isOwnProfile,
+            isProfileEditEnabled = isProfileEditEnabled,
+            onEditProfile = onEditProfile,
         )
     }
 }
@@ -669,6 +683,9 @@ private fun UserProfileInfo(
     backgroundColor: Color,
     onAvatarClick: () -> Unit,
     tabListState: LazyListState,
+    isOwnProfile: Boolean = false,
+    isProfileEditEnabled: Boolean = false,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 18.dp).offset(y = (-48).dp),
@@ -684,8 +701,14 @@ private fun UserProfileInfo(
                     .miuixClickable(onClick = onAvatarClick),
             )
             Spacer(Modifier.weight(1f))
-            Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {
-                if (isMuted) MutedUserPill() else FollowPill(user.isFollowed, followAnimationTrigger)
+            if (isOwnProfile && isProfileEditEnabled && onEditProfile != null) {
+                Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onEditProfile)) {
+                    EditUserPill()
+                }
+            } else {
+                Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {
+                    if (isMuted) MutedUserPill() else FollowPill(user.isFollowed, followAnimationTrigger)
+                }
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -764,6 +787,44 @@ private fun MutedUserPill() {
         contentAlignment = Alignment.Center,
     ) {
         Text(stringResource(R.string.detail_unmute), color = Color.White, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.body2)
+    }
+}
+
+@Composable
+private fun EditUserPill() {
+    val scheme = MiuixTheme.colorScheme
+    Box(
+        modifier =
+            Modifier
+                .squircleSurface(
+                    color = scheme.surfaceContainerHigh,
+                    cornerRadius = 24.dp,
+                ).squircleBorder(
+                    width = 1.dp,
+                    color = scheme.onSurface.copy(alpha = 0.15f),
+                    cornerRadius = 24.dp,
+                ).padding(horizontal = 18.dp, vertical = 11.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            androidx.compose.foundation.Image(
+                painter = painterResource(R.drawable.ic_edit_pen),
+                contentDescription = stringResource(R.string.user_profile_edit_title),
+                modifier = Modifier.size(16.dp),
+                colorFilter =
+                    androidx.compose.ui.graphics.ColorFilter
+                        .tint(scheme.onSurface),
+            )
+            Text(
+                text = stringResource(R.string.user_profile_edit_title),
+                color = scheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body2,
+            )
+        }
     }
 }
 

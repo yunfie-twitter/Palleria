@@ -326,7 +326,7 @@ internal fun MainSurface(
                                         Modifier.progressiveTextureBlur(
                                             backdrop = navBackdrop,
                                             shape = RectangleShape,
-                                            blurRadius = 20f,
+                                            blurRadius = 30f,
                                             gradient = ProgressiveBlur.Bottom,
                                         )
                                     } else {

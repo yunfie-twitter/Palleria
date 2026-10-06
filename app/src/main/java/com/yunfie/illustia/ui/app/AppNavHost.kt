@@ -76,6 +76,7 @@ import com.yunfie.illustia.ui.screens.ViewHistoryScreen
 import com.yunfie.illustia.ui.screens.WallpaperPlaylistSettingsScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
 import com.yunfie.illustia.ui.screens.profile.RelatedUsersScreen
+import com.yunfie.illustia.ui.screens.profile.UserProfileEditScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -638,6 +639,9 @@ internal fun AppNavHost(
                         onOpenRelatedUsers = {
                             onNavigate(AppRoute.RelatedUsers(user.id, user.name))
                         },
+                        onEditProfile = {
+                            onNavigate(AppRoute.UserProfileEdit(user.id))
+                        },
                         onToggleFollow = { viewModel.toggleFollow(user) },
                         onMuteUser = { viewModel.muteUser(user.id) },
                         onReport = { message, onComplete ->
@@ -659,6 +663,26 @@ internal fun AppNavHost(
                         // Popped entries can remain composed during their exit animation.
                         // Clearing their data must not emit a new navigation request.
                         if (shouldLoadUserProfile(route, backStack.lastOrNull(), appState.state.selectedUserId)) {
+                            viewModel.openUserPage(route.userId)
+                        }
+                    }
+                    UserProfileSkeletonScreen(
+                        onBack = onPopRoute,
+                    )
+                }
+            }
+            entry<AppRoute.UserProfileEdit> { route ->
+                val selectedUser = appState.state.selectedUser
+                if (selectedUser?.id == route.userId) {
+                    UserProfileEditScreen(
+                        user = selectedUser,
+                        viewModel = viewModel,
+                        onBack = onPopRoute,
+                    )
+                } else {
+                    val isActive = backStack.lastOrNull() == route
+                    LaunchedEffect(route.userId, isActive, appState.state.selectedUserId) {
+                        if (isActive && appState.state.selectedUserId != route.userId) {
                             viewModel.openUserPage(route.userId)
                         }
                     }

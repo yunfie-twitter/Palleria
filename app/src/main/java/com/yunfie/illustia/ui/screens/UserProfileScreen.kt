@@ -37,6 +37,8 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
@@ -68,6 +70,7 @@ fun UserProfileScreen(
     onLoadBookmarks: () -> Unit,
     onLoadMoreBookmarks: () -> Unit,
     onOpenRelatedUsers: (() -> Unit)? = null,
+    onEditProfile: (() -> Unit)? = null,
     onToggleFollow: () -> Unit,
     onMuteUser: () -> Unit,
     onReport: (String?, (Boolean) -> Unit) -> Unit,
@@ -100,6 +103,13 @@ fun UserProfileScreen(
     val processedIllusts = rememberUserWorks(user.id, illusts, sortOrder, typeFilter, isIllustActive)
     val processedBookmarks = rememberUserWorks(user.id, bookmarks, sortOrder, typeFilter, isBookmarkActive)
     var isHeaderCollapsed by rememberSaveable(user.id) { mutableStateOf(false) }
+
+    val isOwnProfile =
+        remember(user.id, settings.accounts, settings.activeAccountIndex, settings.bookmarkUserId) {
+            (settings.accounts.getOrNull(settings.activeAccountIndex)?.userId ?: settings.bookmarkUserId) == user.id ||
+                settings.accounts.any { it.userId == user.id }
+        }
+    val isProfileEditEnabled = settings.isFeatureEnabled(FeatureFlag.UserProfileEdit)
 
     val activeIsAtTop by remember(gridState, bookmarkGridState, infoListState) {
         derivedStateOf {
@@ -254,6 +264,9 @@ fun UserProfileScreen(
             showProfileHeader = !isContentScrolled,
             onIllustLongClick = onIllustLongClick,
             onCollapseHeader = { isHeaderCollapsed = true },
+            isOwnProfile = isOwnProfile,
+            isProfileEditEnabled = isProfileEditEnabled,
+            onEditProfile = onEditProfile,
         )
     }
 
