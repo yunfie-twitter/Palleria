@@ -22,6 +22,8 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -139,6 +141,13 @@ fun DownloadSettingsScreen(
                             selected = state.settings.simultaneousDownloads.coerceIn(1, 4),
                             label = { stringResource(R.string.data_items_count, it) },
                             onSelect = viewModel::updateSimultaneousDownloads,
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.flag_embed_metadata_title),
+                            checked = state.settings.isFeatureEnabled(FeatureFlag.EmbedMetadata),
+                            onCheckedChange = { viewModel.updateFeatureFlag(FeatureFlag.EmbedMetadata, it) },
+                            summary = stringResource(R.string.flag_embed_metadata_desc),
                         )
                     }
                 }

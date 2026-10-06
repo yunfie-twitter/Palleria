@@ -155,7 +155,7 @@ fun NovelScreen(
         enabled = settings.prefetchImages,
     )
     val columns = adaptiveIllustColumns(settings)
-    val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+    val pinchEnabled = settings.gridPinchToZoom
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val showPaginationSkeletons = settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All
     val shimmer =

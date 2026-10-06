@@ -118,8 +118,7 @@ internal fun SearchResultGrid(
     )
 
     val pinchEnabled =
-        state.settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) &&
-            state.settings.gridPinchToZoom && page == 0 && !isNovelResult
+        state.settings.gridPinchToZoom && page == 0 && !isNovelResult
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(if (page == 0 && !isNovelResult) illustColumns else 1),
