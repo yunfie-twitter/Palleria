@@ -30,6 +30,44 @@ class GridPinchGestureTest :
             val gesture = GridPinchGesture()
             gesture.update(2, Float.NaN) shouldBe GridPinchUpdate(true)
             gesture.update(2, 0f) shouldBe GridPinchUpdate(true)
+            gesture.update(2, -1f) shouldBe GridPinchUpdate(true)
+            gesture.update(2, Float.POSITIVE_INFINITY) shouldBe GridPinchUpdate(true)
             gesture.update(2, 1.3f) shouldBe GridPinchUpdate(true, -1)
+        }
+        test("continuous small zoom in events accumulate and trigger column reduction") {
+            val gesture = GridPinchGesture()
+            // 1.05^6 ~= 1.34 > 1.28
+            gesture.update(2, 1.05f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 1.05f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 1.05f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 1.05f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 1.05f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 1.05f) shouldBe GridPinchUpdate(true, -1)
+        }
+        test("continuous small zoom out events accumulate and trigger column addition") {
+            val gesture = GridPinchGesture()
+            // 0.95^5 ~= 0.773 < 0.78
+            gesture.update(2, 0.95f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 0.95f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 0.95f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 0.95f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(2, 0.95f) shouldBe GridPinchUpdate(true, 1)
+        }
+        test("three or more fingers trigger claim and work properly") {
+            val gesture = GridPinchGesture()
+            gesture.update(3, 1f) shouldBe GridPinchUpdate(true, 0)
+            gesture.update(4, 1.3f) shouldBe GridPinchUpdate(true, -1)
+            // One finger lifted -> 3 fingers
+            gesture.update(3, 1f) shouldBe GridPinchUpdate(true, 0)
+            // Lift all fingers
+            gesture.update(0, 1f) shouldBe GridPinchUpdate(true, 0)
+            // Next 1-finger touch is unowned
+            gesture.update(1, 1f) shouldBe GridPinchUpdate(false, 0)
+        }
+        test("multiple threshold triggers without lifting fingers") {
+            val gesture = GridPinchGesture()
+            gesture.update(2, 1.3f) shouldBe GridPinchUpdate(true, -1)
+            gesture.update(2, 1.3f) shouldBe GridPinchUpdate(true, -1)
+            gesture.update(2, 0.75f) shouldBe GridPinchUpdate(true, 1)
         }
     })
