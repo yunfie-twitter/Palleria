@@ -37,11 +37,8 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
-import com.yunfie.illustia.ui.components.ScrollBlurOverlay
 import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
 import com.yunfie.illustia.ui.screens.profile.UserProfileSmallTopAppBar
 import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
@@ -261,31 +258,23 @@ fun UserProfileScreen(
     }
 
     if (showHeaderControls) {
-        ScrollBlurOverlay(
-            enabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
-            fraction = { if (isContentScrolled) 1f else 0f },
-            modifier = contentModifier,
-            opaqueAtTop = false,
-            header = {
-                UserProfileSmallTopAppBar(
-                    useScrollBackdrop = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
-                    user = user,
-                    showWorkControls = pagerState.currentPage < 2,
-                    sortOrder = sortOrder,
-                    typeFilter = typeFilter,
-                    onSortOrderChange = { sortOrder = it },
-                    onTypeFilterChange = { typeFilter = it },
-                    onBack = onBack,
-                    onMuteUser = onMuteUser,
-                    onReport = onReport,
-                    onMessage = onMessage,
-                    onOpenRelatedUsers = onOpenRelatedUsers ?: {},
-                    onTitleClick = scrollToTop,
-                    compact = isContentScrolled,
-                )
-            },
-        ) {
+        Box(modifier = contentModifier) {
             content(Modifier.fillMaxSize())
+            UserProfileSmallTopAppBar(
+                user = user,
+                showWorkControls = pagerState.currentPage < 2,
+                sortOrder = sortOrder,
+                typeFilter = typeFilter,
+                onSortOrderChange = { sortOrder = it },
+                onTypeFilterChange = { typeFilter = it },
+                onBack = onBack,
+                onMuteUser = onMuteUser,
+                onReport = onReport,
+                onMessage = onMessage,
+                onOpenRelatedUsers = onOpenRelatedUsers ?: {},
+                onTitleClick = scrollToTop,
+                compact = isContentScrolled,
+            )
         }
     } else {
         content(contentModifier)

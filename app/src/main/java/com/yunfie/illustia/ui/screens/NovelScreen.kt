@@ -72,6 +72,7 @@ import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.animatedGridPlacement
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -154,7 +155,7 @@ fun NovelScreen(
         enabled = settings.prefetchImages,
     )
     val columns = adaptiveIllustColumns(settings)
-    val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+    val pinchEnabled = settings.gridPinchToZoom
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val showPaginationSkeletons = settings.autoLoadMore && isNovelPaginating && selectedFilter == NovelFilterTab.All
     val shimmer =
@@ -185,12 +186,14 @@ fun NovelScreen(
                 largeTitle = stringResource(R.string.nav_novel),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures {
-                            performHaptic(AppHapticEffect.Click)
-                            coroutineScope.launch {
-                                gridState.smoothScrollToTop(scrollBehavior)
-                            }
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 56.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            gridState.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 navigationIcon = {

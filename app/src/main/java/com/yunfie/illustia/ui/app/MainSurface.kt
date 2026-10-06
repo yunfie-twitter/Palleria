@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.app
 
 import android.app.Activity
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -25,18 +27,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -45,6 +53,8 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AppNavigationBar
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -68,6 +78,10 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -148,12 +162,16 @@ internal fun MainSurface(
         )
 
         val useNavigationRail = LocalUseNavigationRail.current
+        val isBlurEnabled = appState.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)
+        val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        val navBackdrop = rememberLayerBackdrop()
+
         Scaffold(
             modifier = Modifier.nestedScroll(navigationScrollConnection),
             containerColor = MiuixTheme.colorScheme.surface,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (!useNavigationRail && appState.settings.navigationStyle == "standard") {
+                if (!useNavigationRail && appState.settings.navigationStyle == "standard" && !isBlurEnabled) {
                     Box(
                         modifier = Modifier.background(MiuixTheme.colorScheme.surfaceContainer),
                     ) {
@@ -183,96 +201,172 @@ internal fun MainSurface(
                         .fillMaxSize()
                         .padding(
                             top = paddingValues.calculateTopPadding(),
-                            bottom = paddingValues.calculateBottomPadding(),
+                            bottom =
+                                if (isBlurEnabled && !useNavigationRail && appState.settings.navigationStyle == "standard") {
+                                    0.dp
+                                } else {
+                                    paddingValues.calculateBottomPadding()
+                                },
                             start = paddingValues.calculateStartPadding(LocalLayoutDirection.current),
                             end = paddingValues.calculateEndPadding(LocalLayoutDirection.current),
                         ),
             ) {
-                HorizontalPager(
-                    state = pagerState,
-                    beyondViewportPageCount = 0,
-                    userScrollEnabled =
-                        appState.settings.swipeToSwitchWorks &&
-                            !(selectedTab == AppTab.ShortsFeed && appState.settings.disableHorizontalSwipeInShortsFeed),
+                Box(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(MiuixTheme.colorScheme.surface),
-                ) { page ->
-                    when (tabs[page]) {
-                        AppTab.Home -> {
-                            HomeScreen(
-                                items = appState.homeItems,
-                                timelineItems = appState.timelineItems,
-                                loadState = appState.loadState,
-                                nextUrl = appState.homeChrome.homeNextUrl,
-                                timelineNextUrl = appState.homeChrome.timelineNextUrl,
-                                settings = appState.settings,
-                                currentAccount = appState.state.currentAccount,
-                                viewModel = viewModel,
-                                scrollBehavior = homeScrollBehavior,
-                                onSearch = onSearch,
-                                onOpenNovels = onOpenNovels,
-                                isHomeRefreshing = appState.homeChrome.isHomeRefreshing,
-                                isHomePaginating = appState.homeChrome.isHomePaginating,
-                                isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
-                                isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
-                                initialTab = appState.homeChrome.selectedTab,
-                            )
-                        }
+                            .then(
+                                if (isBlurEnabled && supportsBlur && !useNavigationRail) {
+                                    Modifier.layerBackdrop(navBackdrop)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        beyondViewportPageCount = 0,
+                        userScrollEnabled =
+                            appState.settings.swipeToSwitchWorks &&
+                                !(selectedTab == AppTab.ShortsFeed && appState.settings.disableHorizontalSwipeInShortsFeed),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(MiuixTheme.colorScheme.surface),
+                    ) { page ->
+                        when (tabs[page]) {
+                            AppTab.Home -> {
+                                HomeScreen(
+                                    items = appState.homeItems,
+                                    timelineItems = appState.timelineItems,
+                                    loadState = appState.loadState,
+                                    nextUrl = appState.homeChrome.homeNextUrl,
+                                    timelineNextUrl = appState.homeChrome.timelineNextUrl,
+                                    settings = appState.settings,
+                                    currentAccount = appState.state.currentAccount,
+                                    viewModel = viewModel,
+                                    scrollBehavior = homeScrollBehavior,
+                                    onSearch = onSearch,
+                                    onOpenNovels = onOpenNovels,
+                                    isHomeRefreshing = appState.homeChrome.isHomeRefreshing,
+                                    isHomePaginating = appState.homeChrome.isHomePaginating,
+                                    isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
+                                    isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
+                                    initialTab = appState.homeChrome.selectedTab,
+                                )
+                            }
 
-                        AppTab.Novel -> {
-                            Unit
-                        }
+                            AppTab.Novel -> {
+                                Unit
+                            }
 
-                        AppTab.Ranking -> {
-                            RankingScreen(
-                                items = appState.rankingItems,
-                                loadState = appState.loadState,
-                                nextUrl = appState.rankingChrome.rankingNextUrl,
-                                mode = appState.rankingChrome.rankingMode,
-                                settings = appState.settings,
-                                viewModel = viewModel,
-                            )
-                        }
+                            AppTab.Ranking -> {
+                                RankingScreen(
+                                    items = appState.rankingItems,
+                                    loadState = appState.loadState,
+                                    nextUrl = appState.rankingChrome.rankingNextUrl,
+                                    mode = appState.rankingChrome.rankingMode,
+                                    settings = appState.settings,
+                                    viewModel = viewModel,
+                                )
+                            }
 
-                        AppTab.Bookmarks -> {
-                            BookmarkScreen(
-                                settings = appState.settings,
-                                loadState = appState.loadState,
-                                bookmarkItems = appState.bookmarkItems,
-                                timelineItems = appState.timelineItems,
-                                followingUsers = appState.followingUsers,
-                                chrome = appState.bookmarkChrome,
-                                viewModel = viewModel,
-                                onOpenWatchlistSeries = onOpenWatchlistSeries,
-                            )
-                        }
+                            AppTab.Bookmarks -> {
+                                BookmarkScreen(
+                                    settings = appState.settings,
+                                    loadState = appState.loadState,
+                                    bookmarkItems = appState.bookmarkItems,
+                                    timelineItems = appState.timelineItems,
+                                    followingUsers = appState.followingUsers,
+                                    chrome = appState.bookmarkChrome,
+                                    viewModel = viewModel,
+                                    onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                )
+                            }
 
-                        AppTab.Search -> {
-                            SearchTabContent(
-                                onFocusRequestHandled = onSearchFocusHandled,
-                                focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
-                                viewModel = viewModel,
-                                onNavigateToResults = onNavigateToResults,
-                            )
-                        }
+                            AppTab.Search -> {
+                                SearchTabContent(
+                                    onFocusRequestHandled = onSearchFocusHandled,
+                                    focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
+                                    viewModel = viewModel,
+                                    onNavigateToResults = onNavigateToResults,
+                                )
+                            }
 
-                        AppTab.ShortsFeed -> {
-                            ShortsFeedScreen(
-                                items = appState.state.shortsFeedItems.visibleWith(appState.state),
-                                currentIllustId = appState.state.shortsFeedCurrentIllustId,
-                                viewModel = viewModel,
-                                onOpenComments = onOpenComments,
-                            )
-                        }
+                            AppTab.ShortsFeed -> {
+                                ShortsFeedScreen(
+                                    items = appState.state.shortsFeedItems.visibleWith(appState.state),
+                                    currentIllustId = appState.state.shortsFeedCurrentIllustId,
+                                    viewModel = viewModel,
+                                    onOpenComments = onOpenComments,
+                                )
+                            }
 
-                        AppTab.More -> {
-                            MoreScreen(
-                                state = appState.state,
-                                viewModel = viewModel,
-                                onOpenWatchlistSeries = onOpenWatchlistSeries,
-                            )
+                            AppTab.More -> {
+                                MoreScreen(
+                                    state = appState.state,
+                                    viewModel = viewModel,
+                                    onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (!useNavigationRail && appState.settings.navigationStyle == "standard" && isBlurEnabled) {
+                    val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
+                    val outline = MiuixTheme.colorScheme.outline
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .then(
+                                    if (supportsBlur) {
+                                        Modifier.progressiveTextureBlur(
+                                            backdrop = navBackdrop,
+                                            shape = RectangleShape,
+                                            blurRadius = 20f,
+                                            gradient = ProgressiveBlur.Bottom,
+                                        )
+                                    } else {
+                                        Modifier
+                                    },
+                                ).drawWithContent {
+                                    val baseAlpha = if (supportsBlur) 0.72f else 0.92f
+                                    drawRect(color = surfaceContainer.copy(alpha = baseAlpha))
+                                    val dividerHeightPx = 1.dp.toPx()
+                                    drawRect(
+                                        color = outline.copy(alpha = 0.08f),
+                                        topLeft =
+                                            androidx.compose.ui.geometry
+                                                .Offset(0f, 0f),
+                                        size =
+                                            androidx.compose.ui.geometry
+                                                .Size(size.width, dividerHeightPx),
+                                    )
+                                    drawContent()
+                                },
+                    ) {
+                        AppNavigationBar(
+                            settings = appState.settings,
+                            color = Color.Transparent,
+                            showDivider = false,
+                        ) {
+                            navigationTabs.forEach { tab ->
+                                val pageIndex = tabs.indexOf(tab)
+                                NavigationBarItem(
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                    selected = selectedTab == tab,
+                                    onClick = {
+                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                                        viewModel.closeAccountSwitcher()
+                                        onTabSelected(pageIndex, tab)
+                                    },
+                                    icon = tab.icon,
+                                    label = stringResource(tab.labelResId),
+                                )
+                            }
                         }
                     }
                 }
@@ -285,7 +379,14 @@ internal fun MainSurface(
                         modifier = Modifier.align(Alignment.BottomCenter),
                     ) {
                         FloatingNavigationBar(
-                            color = MiuixTheme.colorScheme.surfaceContainerHigh,
+                            color =
+                                if (isBlurEnabled) {
+                                    MiuixTheme.colorScheme.surfaceContainerHigh.copy(
+                                        alpha = if (supportsBlur) 0.78f else 0.92f,
+                                    )
+                                } else {
+                                    MiuixTheme.colorScheme.surfaceContainerHigh
+                                },
                             showDivider = true,
                         ) {
                             navigationTabs.forEach { tab ->

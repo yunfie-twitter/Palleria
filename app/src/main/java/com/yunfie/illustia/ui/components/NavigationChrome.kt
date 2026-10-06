@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -20,9 +21,13 @@ fun Modifier.appNavigationSafeArea(insets: WindowInsets = WindowInsets.navigatio
 @Composable
 fun AppNavigationBar(
     settings: AppSettings,
+    modifier: Modifier = Modifier,
+    color: Color = MiuixTheme.colorScheme.surfaceContainer,
+    showDivider: Boolean = true,
     content: @Composable RowScope.() -> Unit,
 ) {
     NavigationBar(
+        modifier = modifier,
         mode =
             if (settings.isFeatureEnabled(FeatureFlag.NavigationIconsOnly)) {
                 NavigationBarDisplayMode.IconOnly
@@ -30,8 +35,8 @@ fun AppNavigationBar(
                 NavigationBarDisplayMode.IconAndText
             },
         defaultWindowInsetsPadding = false,
-        color = MiuixTheme.colorScheme.surfaceContainer,
-        showDivider = true,
+        color = color,
+        showDivider = showDivider,
         content = content,
     )
 }

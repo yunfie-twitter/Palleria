@@ -17,11 +17,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
-const val DEFAULT_GRID_BUFFER = 16
-const val DEFAULT_LIST_BUFFER = 8
-const val AUTO_LOAD_COOLDOWN_MS = 1200L
-const val AUTO_LOAD_FAILURE_BACKOFF_MS = 5000L
-const val AUTO_LOAD_DEBOUNCE_MS = 200L
+const val DEFAULT_GRID_BUFFER = 48
+const val DEFAULT_LIST_BUFFER = 24
+const val AUTO_LOAD_COOLDOWN_MS = 250L
+const val AUTO_LOAD_FAILURE_BACKOFF_MS = 3000L
+const val AUTO_LOAD_DEBOUNCE_MS = 40L
 
 internal object AutoLoadMoreThrottle {
     fun calculateDelayMillis(
@@ -33,10 +33,10 @@ internal object AutoLoadMoreThrottle {
         failureBackoffMs: Long = AUTO_LOAD_FAILURE_BACKOFF_MS,
     ): Long {
         val elapsed = (now - lastRequestTime).coerceAtLeast(0L)
-        return if (isSameUrl && lastRequestFailed) {
-            (failureBackoffMs - elapsed).coerceAtLeast(0L)
-        } else {
-            (cooldownMs - elapsed).coerceAtLeast(0L)
+        return when {
+            isSameUrl && lastRequestFailed -> (failureBackoffMs - elapsed).coerceAtLeast(0L)
+            isSameUrl -> (cooldownMs - elapsed).coerceAtLeast(0L)
+            else -> 0L
         }
     }
 }
@@ -126,9 +126,10 @@ private fun AutoLoadMoreCore(
         wasLoading = currentIsLoading
     }
 
-    LaunchedEffect(isNearBottom) {
-        snapshotFlow { isNearBottom }
-            .distinctUntilChanged()
+    LaunchedEffect(currentEnabled) {
+        snapshotFlow {
+            currentEnabled && !currentIsLoading && currentNextUrl != null && isNearBottom
+        }.distinctUntilChanged()
             .filter { it }
             .collectLatest {
                 delay(AUTO_LOAD_DEBOUNCE_MS)

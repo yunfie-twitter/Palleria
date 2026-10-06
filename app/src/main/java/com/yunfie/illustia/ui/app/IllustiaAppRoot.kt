@@ -1,8 +1,10 @@
 package com.yunfie.illustia.ui.app
 
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +45,9 @@ import com.yunfie.illustia.IllustiaNavigationRequest
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
+import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
 import com.yunfie.illustia.platform.WindowSizeClass
@@ -57,6 +62,7 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalFastScrolling
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
+import com.yunfie.illustia.ui.components.LocalScrolling
 import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationSafeArea
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
@@ -113,7 +119,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var showCommandPalette by remember { mutableStateOf(false) }
     val paletteEnabled = settings.isFeatureEnabled(FeatureFlag.CommandPalette)
     val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
-    val (scrollRenderingConnection, fastScrolling) = rememberScrollRendering(settings.isFeatureEnabled(FeatureFlag.FastScrollRendering))
+    val (scrollRenderingConnection, fastScrolling, isScrolling) =
+        rememberScrollRendering(settings.isFeatureEnabled(FeatureFlag.FastScrollRendering))
     LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
         if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
     }
@@ -679,6 +686,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             .rememberArtworkDesktopActions(viewModel)
     CompositionLocalProvider(
         LocalFastScrolling provides fastScrolling,
+        LocalScrolling provides isScrolling,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
@@ -739,6 +747,206 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
 
                             PaletteAction.Novel -> {
                                 navigate(AppRoute.NovelList)
+                            }
+
+                            PaletteAction.ShortsFeed -> {
+                                backStack.clear()
+                                backStack.add(AppRoute.Main)
+                                selectedTab = AppTab.ShortsFeed
+                                coroutineScope.launch {
+                                    pagerState.scrollToPage(tabs.indexOf(AppTab.ShortsFeed).coerceAtLeast(0))
+                                }
+                            }
+
+                            PaletteAction.ViewHistory -> {
+                                navigate(AppRoute.ViewHistory)
+                            }
+
+                            PaletteAction.FavoriteTags -> {
+                                navigate(AppRoute.FavoriteTags)
+                            }
+
+                            PaletteAction.DownloadQueue -> {
+                                navigate(AppRoute.DownloadQueue)
+                            }
+
+                            PaletteAction.OfflineLibrary -> {
+                                navigate(AppRoute.OfflineLibrary)
+                            }
+
+                            PaletteAction.Notifications -> {
+                                navigate(AppRoute.Notifications)
+                            }
+
+                            PaletteAction.PallaSyncDevices -> {
+                                navigate(AppRoute.PallaSyncDevices)
+                            }
+
+                            PaletteAction.PallaSyncSync -> {
+                                coroutineScope.launch {
+                                    val syncManager = PalleriaSyncManager(context = context)
+                                    val success = syncManager.syncNow()
+                                    val message =
+                                        if (success) {
+                                            context.getString(R.string.command_palette_pallasync_sync_triggered)
+                                        } else {
+                                            context.getString(R.string.error_pallasync_sync_failed)
+                                        }
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+
+                            PaletteAction.SwitchAccount -> {
+                                viewModel.openAccountSwitcher()
+                            }
+
+                            PaletteAction.ClearCache -> {
+                                viewModel.clearAppCache()
+                                Toast
+                                    .makeText(
+                                        context,
+                                        context.getString(R.string.command_palette_cache_cleared),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                            }
+
+                            PaletteAction.RefreshFeed -> {
+                                viewModel.refreshHome(forceRefresh = true)
+                                viewModel.refreshBookmarks(forceRefresh = true)
+                                viewModel.refreshTimeline(forceRefresh = true)
+                                Toast
+                                    .makeText(
+                                        context,
+                                        context.getString(R.string.command_palette_feeds_refreshed),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                            }
+
+                            PaletteAction.OpenFromClipboard -> {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                val clipText =
+                                    clipboard
+                                        ?.primaryClip
+                                        ?.getItemAt(0)
+                                        ?.text
+                                        ?.toString()
+                                        ?.trim()
+                                val target = if (query.isNotBlank()) query.trim() else clipText
+                                if (!target.isNullOrBlank()) {
+                                    val numericId = target.toLongOrNull()
+                                    if (numericId != null) {
+                                        viewModel.openIllust(numericId)
+                                        navigate(AppRoute.Detail(numericId))
+                                    } else {
+                                        when (val event = NativeIntentRouter.parseText(target)) {
+                                            is NativeIntentEvent.Artwork -> {
+                                                viewModel.openIllust(event.id)
+                                                navigate(AppRoute.Detail(event.id))
+                                            }
+
+                                            is NativeIntentEvent.User -> {
+                                                viewModel.openUserPage(event.id)
+                                                navigate(AppRoute.UserProfile(event.id))
+                                            }
+
+                                            is NativeIntentEvent.Tag -> {
+                                                viewModel.submitSearch(event.tag)
+                                                navigate(AppRoute.SearchResults(event.tag))
+                                            }
+
+                                            else -> {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        context.getString(R.string.command_palette_invalid_link),
+                                                        Toast.LENGTH_SHORT,
+                                                    ).show()
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            context.getString(R.string.command_palette_no_clipboard_content),
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                }
+                            }
+
+                            PaletteAction.ToggleAi -> {
+                                val newHideAi = !state.settings.hideAiWorks
+                                viewModel.updateHideAiWorks(newHideAi)
+                                val msgRes =
+                                    if (newHideAi) {
+                                        R.string.command_palette_ai_hidden
+                                    } else {
+                                        R.string.command_palette_ai_shown
+                                    }
+                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
+                            }
+
+                            PaletteAction.ToggleR18 -> {
+                                val newAllowR18 = !state.settings.allowR18
+                                viewModel.updateAllowR18(newAllowR18)
+                                val msgRes =
+                                    if (newAllowR18) {
+                                        R.string.command_palette_r18_enabled
+                                    } else {
+                                        R.string.command_palette_r18_disabled
+                                    }
+                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
+                            }
+
+                            PaletteAction.ToggleGridColumns -> {
+                                val currentCols = state.settings.verticalColumnCount
+                                val nextCols =
+                                    when (currentCols) {
+                                        1 -> 2
+                                        2 -> 3
+                                        3 -> 4
+                                        else -> 2
+                                    }
+                                viewModel.updateVerticalColumnCount(nextCols)
+                                Toast
+                                    .makeText(
+                                        context,
+                                        context.getString(R.string.command_palette_grid_columns_changed, nextCols),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                            }
+
+                            PaletteAction.ToggleImageQuality -> {
+                                val newHighQuality = !state.settings.highQualityImages
+                                viewModel.updateHighQuality(newHighQuality)
+                                val msgRes =
+                                    if (newHighQuality) {
+                                        R.string.command_palette_high_quality_enabled
+                                    } else {
+                                        R.string.command_palette_high_quality_disabled
+                                    }
+                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
+                            }
+
+                            PaletteAction.ToggleUgoiraAutoPlay -> {
+                                val current = state.settings.isFeatureEnabled(FeatureFlag.UgoiraAutoPlay)
+                                val next = !current
+                                viewModel.updateFeatureFlag(FeatureFlag.UgoiraAutoPlay, next)
+                                val msgRes =
+                                    if (next) {
+                                        R.string.command_palette_ugoira_autoplay_enabled
+                                    } else {
+                                        R.string.command_palette_ugoira_autoplay_disabled
+                                    }
+                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
+                            }
+
+                            PaletteAction.MuteSettings -> {
+                                navigate(AppRoute.MuteSettings)
+                            }
+
+                            PaletteAction.AppData -> {
+                                navigate(AppRoute.AppData)
                             }
 
                             PaletteAction.Settings -> {

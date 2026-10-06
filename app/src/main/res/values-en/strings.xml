@@ -1149,4 +1149,51 @@
     <string name="command_palette_light">Use light theme</string>
     <string name="command_palette_dark">Use dark theme</string>
     <string name="command_palette_system">Use system theme</string>
+    <string name="command_palette_category_navigation">Navigation</string>
+    <string name="command_palette_category_settings">Settings</string>
+    <string name="command_palette_category_appearance">Appearance</string>
+    <string name="command_palette_category_action">Action</string>
+    <string name="command_palette_shortcut_navigate">Navigate</string>
+    <string name="command_palette_shortcut_select">Select</string>
+    <string name="command_palette_shortcut_close">Close</string>
+    <string name="command_palette_no_results">No matching commands</string>
+
+    <!-- Command Palette Extensions -->
+    <string name="command_palette_pallasync_devices">PallaSync connected devices</string>
+    <string name="command_palette_pallasync_sync">PallaSync sync now</string>
+    <string name="command_palette_switch_account">Switch account</string>
+    <string name="command_palette_clear_cache">Clear cache now</string>
+    <string name="command_palette_refresh_feed">Refresh all feeds</string>
+    <string name="command_palette_open_clipboard">Open work from ID / URL</string>
+    <string name="command_palette_toggle_ai">Toggle AI artwork visibility</string>
+    <string name="command_palette_toggle_r18">Toggle R-18 / sensitive filter</string>
+    <string name="command_palette_toggle_grid_columns">Change grid columns</string>
+    <string name="command_palette_toggle_image_quality">Toggle high quality images</string>
+    <string name="command_palette_toggle_ugoira_autoplay">Toggle Ugoira autoplay</string>
+    <string name="command_palette_view_history">View history</string>
+    <string name="command_palette_favorite_tags">Favorite tags</string>
+    <string name="command_palette_download_queue">Download manager</string>
+    <string name="command_palette_offline_library">Offline library</string>
+    <string name="command_palette_notifications">Notifications</string>
+    <string name="command_palette_mute_settings">Mute settings</string>
+    <string name="command_palette_app_data">Storage &amp; app data</string>
+    <string name="command_palette_shorts_feed">Shorts feed</string>
+
+    <string name="command_palette_cache_cleared">Cache cleared</string>
+    <string name="command_palette_feeds_refreshed">Feeds refreshed</string>
+    <string name="command_palette_no_clipboard_content">No Pixiv ID or URL in clipboard</string>
+    <string name="command_palette_invalid_link">Invalid Pixiv ID or URL</string>
+    <string name="command_palette_grid_columns_changed">Grid columns set to %1$d</string>
+    <string name="command_palette_high_quality_enabled">High quality enabled</string>
+    <string name="command_palette_high_quality_disabled">High quality disabled</string>
+    <string name="command_palette_ai_hidden">AI artworks hidden</string>
+    <string name="command_palette_ai_shown">AI artworks visible</string>
+    <string name="command_palette_r18_enabled">R-18 artworks visible</string>
+    <string name="command_palette_r18_disabled">R-18 artworks hidden</string>
+    <string name="command_palette_ugoira_autoplay_enabled">Ugoira autoplay enabled</string>
+    <string name="command_palette_ugoira_autoplay_disabled">Ugoira autoplay disabled</string>
+    <string name="command_palette_pallasync_sync_triggered">PallaSync sync triggered</string>
+
+    <string name="flag_ugoira_auto_play_title">Auto-play Ugoira</string>
+    <string name="flag_ugoira_auto_play_desc">Automatically plays animation when viewing Ugoira artworks.</string>
 </resources>

@@ -81,7 +81,6 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -385,7 +384,7 @@ internal fun BookmarkMainTab(
             isLoading = chrome.isBookmarkPaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreBookmarks,
         )
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -511,7 +510,7 @@ internal fun BookmarkTimelineTab(
             isLoading = chrome.isTimelinePaginating || loadState == LoadState.Loading,
             onLoadMore = viewModel::loadMoreTimeline,
         )
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -723,7 +722,6 @@ internal fun CompactBookmarkTabs(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scheme = MiuixTheme.colorScheme
     TabRowWithContour(
         tabs =
             listOf(
@@ -735,13 +733,6 @@ internal fun CompactBookmarkTabs(
         selectedTabIndex = selectedTab,
         onTabSelected = onSelect,
         modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
-        colors =
-            TabRowDefaults.tabRowColors(
-                backgroundColor = scheme.surfaceContainer.copy(alpha = 0.44f),
-                contentColor = scheme.onSurfaceVariantSummary,
-                selectedBackgroundColor = scheme.surfaceContainerHigh,
-                selectedContentColor = scheme.onBackground,
-            ),
         minWidth = 86.dp,
         maxWidth = 116.dp,
         height = 45.dp,

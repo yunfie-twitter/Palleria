@@ -115,13 +115,7 @@ internal fun FeedTabContent(
         highQualityImages = feedHighQuality,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && isPaginating
-    val shimmer =
-        if (showInitialSkeletons || showPaginationSkeletons) {
-            rememberIllustSkeletonShimmer()
-        } else {
-            null
-        }
+    val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -136,7 +130,7 @@ internal fun FeedTabContent(
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -198,13 +192,19 @@ internal fun FeedTabContent(
                 )
             }
 
-            if (showPaginationSkeletons) {
-                items(
-                    count = columns,
-                    key = { "home_paginating_skeleton_$it" },
-                    contentType = { "illust_skeleton" },
-                ) {
-                    IllustCardSkeleton(shimmerValue = shimmer)
+            if (settings.autoLoadMore && nextUrl != null) {
+                item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = if (isPaginating) 16.dp else 0.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isPaginating) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
@@ -257,13 +257,7 @@ internal fun FollowingTabContent(
         keyPrefix = "tl_",
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val showPaginationSkeletons = settings.autoLoadMore && isPaginating
-    val shimmer =
-        if (showInitialSkeletons || showPaginationSkeletons) {
-            rememberIllustSkeletonShimmer()
-        } else {
-            null
-        }
+    val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -278,7 +272,7 @@ internal fun FollowingTabContent(
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -340,13 +334,19 @@ internal fun FollowingTabContent(
                 )
             }
 
-            if (showPaginationSkeletons) {
-                items(
-                    count = columns,
-                    key = { "timeline_paginating_skeleton_$it" },
-                    contentType = { "illust_skeleton" },
-                ) {
-                    IllustCardSkeleton(shimmerValue = shimmer)
+            if (settings.autoLoadMore && nextUrl != null) {
+                item(key = "timeline_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = if (isPaginating) 16.dp else 0.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isPaginating) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
                 }
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {

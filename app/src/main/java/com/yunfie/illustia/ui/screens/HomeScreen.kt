@@ -33,6 +33,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
+import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
@@ -125,20 +126,20 @@ fun HomeScreen(
                 largeTitle = stringResource(R.string.nav_home),
                 scrollBehavior = scrollBehavior,
                 modifier =
-                    remember {
-                        Modifier.pointerInput(Unit) {
-                            detectTapGestures {
-                                performHaptic(AppHapticEffect.Click)
-                                coroutineScope.launch {
-                                    val currentTab = HomeTab.entries[pagerState.currentPage]
-                                    val gridState =
-                                        when (currentTab) {
-                                            HomeTab.Feed -> viewModel.homeFeedGridState
-                                            HomeTab.Following -> viewModel.homeTimelineGridState
-                                        }
-                                    gridState.smoothScrollToTop(scrollBehavior)
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 120.dp,
+                        hasBottomContent = true,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            val currentTab = HomeTab.entries[pagerState.currentPage]
+                            val gridState =
+                                when (currentTab) {
+                                    HomeTab.Feed -> viewModel.homeFeedGridState
+                                    HomeTab.Following -> viewModel.homeTimelineGridState
                                 }
-                            }
+                            gridState.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 navigationIcon = {
@@ -203,6 +204,7 @@ fun HomeScreen(
                             }
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
+                        isBlurEnabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
