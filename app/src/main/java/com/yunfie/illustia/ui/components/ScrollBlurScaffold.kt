@@ -22,16 +22,11 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurBlendMode
-import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -129,43 +124,6 @@ fun ScrollBlurOverlay(
         if (measuredHeaderHeight > 0) {
             val totalBackdropHeightDp = with(density) { measuredHeaderHeight.toDp() }
             val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.28f * progress).coerceIn(0f, 1f)
-            val isDarkTheme = surface.luminance() < 0.5f
-            val blurColors =
-                remember(isDarkTheme, surface) {
-                    if (isDarkTheme) {
-                        // Overlay Thick: 深みと重厚感のあるダークオーバーレイ
-                        BlurColors(
-                            blendColors =
-                                listOf(
-                                    BlendColorEntry(
-                                        color = surface.copy(alpha = 0.55f),
-                                        mode = BlurBlendMode.Overlay,
-                                    ),
-                                ),
-                            brightness = -0.05f,
-                            contrast = 1.05f,
-                            saturation = 1.1f,
-                        )
-                    } else {
-                        // Overlay Thin: 軽やかで透明感のあるライトオーバーレイ
-                        BlurColors(
-                            blendColors =
-                                listOf(
-                                    BlendColorEntry(
-                                        color = surface.copy(alpha = 0.25f),
-                                        mode = BlurBlendMode.Overlay,
-                                    ),
-                                ),
-                            brightness = 0.05f,
-                            contrast = 1.0f,
-                            saturation = 1.05f,
-                        )
-                    }
-                }
-            val highlight =
-                remember(isDarkTheme) {
-                    if (isDarkTheme) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight
-                }
 
             if (baseAlpha > 0f || (supportsBlur && progress > 0f)) {
                 Box(
@@ -180,8 +138,6 @@ fun ScrollBlurOverlay(
                                         shape = RectangleShape,
                                         blurRadius = 20f * progress,
                                         gradient = ProgressiveBlur.Top,
-                                        colors = blurColors,
-                                        highlight = highlight,
                                     )
                                 } else {
                                     Modifier

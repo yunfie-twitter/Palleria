@@ -78,11 +78,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurBlendMode
-import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -320,43 +316,6 @@ internal fun MainSurface(
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard" && isBlurEnabled) {
                     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
                     val outline = MiuixTheme.colorScheme.outline
-                    val isDarkTheme = surfaceContainer.luminance() < 0.5f
-                    val navBlurColors =
-                        remember(isDarkTheme, surfaceContainer) {
-                            if (isDarkTheme) {
-                                // Overlay Thick: 深みのあるダークオーバーレイ
-                                BlurColors(
-                                    blendColors =
-                                        listOf(
-                                            BlendColorEntry(
-                                                color = surfaceContainer.copy(alpha = 0.6f),
-                                                mode = BlurBlendMode.Overlay,
-                                            ),
-                                        ),
-                                    brightness = -0.05f,
-                                    contrast = 1.05f,
-                                    saturation = 1.1f,
-                                )
-                            } else {
-                                // Overlay Thin: 透明感のあるライトオーバーレイ
-                                BlurColors(
-                                    blendColors =
-                                        listOf(
-                                            BlendColorEntry(
-                                                color = surfaceContainer.copy(alpha = 0.28f),
-                                                mode = BlurBlendMode.Overlay,
-                                            ),
-                                        ),
-                                    brightness = 0.05f,
-                                    contrast = 1.0f,
-                                    saturation = 1.05f,
-                                )
-                            }
-                        }
-                    val navHighlight =
-                        remember(isDarkTheme) {
-                            if (isDarkTheme) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight
-                        }
                     Box(
                         modifier =
                             Modifier
@@ -369,8 +328,6 @@ internal fun MainSurface(
                                             shape = RectangleShape,
                                             blurRadius = 20f,
                                             gradient = ProgressiveBlur.Bottom,
-                                            colors = navBlurColors,
-                                            highlight = navHighlight,
                                         )
                                     } else {
                                         Modifier
