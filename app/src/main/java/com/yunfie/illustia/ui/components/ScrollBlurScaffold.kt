@@ -136,8 +136,13 @@ fun ScrollBlurOverlay(
                                     Modifier.progressiveTextureBlur(
                                         backdrop = backdrop,
                                         shape = RectangleShape,
-                                        blurRadius = 20f * progress,
-                                        gradient = ProgressiveBlur.Top,
+                                        blurRadius = 24f * progress,
+                                        gradient =
+                                            ProgressiveBlur(
+                                                angle = 90f,
+                                                startFraction = 0.25f,
+                                                endFraction = 1f,
+                                            ),
                                     )
                                 } else {
                                     Modifier

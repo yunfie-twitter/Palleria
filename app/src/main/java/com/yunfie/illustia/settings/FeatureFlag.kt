@@ -110,6 +110,18 @@ enum class FeatureFlag(
         descRes = R.string.flag_ugoira_auto_play_desc,
         defaultEnabled = true,
     ),
+    CommentStamps(
+        key = "flag_comment_stamps",
+        titleRes = R.string.flag_comment_stamps_title,
+        descRes = R.string.flag_comment_stamps_desc,
+        defaultEnabled = false,
+    ),
+    UserProfileEdit(
+        key = "flag_user_profile_edit",
+        titleRes = R.string.flag_user_profile_edit_title,
+        descRes = R.string.flag_user_profile_edit_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {

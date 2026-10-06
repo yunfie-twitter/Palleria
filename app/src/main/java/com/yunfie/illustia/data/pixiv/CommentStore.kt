@@ -106,6 +106,15 @@ class CommentStore(
         }
     }
 
+    suspend fun postStampComment(
+        stampId: Long,
+        replyToId: Long? = null,
+    ) {
+        if (type == CommentArtworkType.ILLUST) {
+            repository.addIllustStampComment(id, stampId, replyToId)
+        }
+    }
+
     private fun applyResponse(
         response: CommentResponse,
         append: Boolean = false,
