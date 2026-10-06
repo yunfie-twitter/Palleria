@@ -20,12 +20,13 @@ enum class FeatureFlag(
         key = "flag_command_palette",
         titleRes = R.string.flag_command_palette_title,
         descRes = R.string.flag_command_palette_desc,
+        defaultEnabled = true,
     ),
     CustomAppIcon(
         key = "flag_custom_app_icon",
         titleRes = R.string.flag_custom_app_icon_title,
         descRes = R.string.flag_custom_app_icon_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     NavigationCustomization(
         key = "flag_navigation_customization",
@@ -65,7 +66,7 @@ enum class FeatureFlag(
         key = "flag_embed_metadata",
         titleRes = R.string.flag_embed_metadata_title,
         descRes = R.string.flag_embed_metadata_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     CustomDownloadPath(
         key = "flag_custom_download_path",
@@ -89,19 +90,19 @@ enum class FeatureFlag(
         key = "flag_quick_peek",
         titleRes = R.string.flag_quick_peek_title,
         descRes = R.string.flag_quick_peek_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     GridPinchToZoomColumns(
         key = "flag_grid_pinch_to_zoom_columns",
         titleRes = R.string.flag_grid_pinch_to_zoom_title,
         descRes = R.string.flag_grid_pinch_to_zoom_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     QuickPeekSharedElementTransition(
         key = "flag_quick_peek_shared_element_transition",
         titleRes = R.string.flag_quick_peek_shared_element_transition_title,
         descRes = R.string.flag_quick_peek_shared_element_transition_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     UgoiraAutoPlay(
         key = "flag_ugoira_auto_play",

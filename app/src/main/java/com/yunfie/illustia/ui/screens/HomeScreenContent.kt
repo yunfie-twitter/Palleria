@@ -130,7 +130,7 @@ internal fun FeedTabContent(
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -272,7 +272,7 @@ internal fun FollowingTabContent(
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
-        val pinchEnabled = settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) && settings.gridPinchToZoom
+        val pinchEnabled = settings.gridPinchToZoom
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
