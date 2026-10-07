@@ -130,19 +130,21 @@ private fun TagPreviewHero(preview: TagPreview) {
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(
+                        .then(
                             if (preview.imageUrl != null) {
-                                Brush.verticalGradient(
+                                Modifier.cachedVerticalGradient(
                                     listOf(
                                         Color.Black.copy(alpha = 0.04f),
                                         Color.Black.copy(alpha = 0.82f),
                                     ),
                                 )
                             } else {
-                                Brush.linearGradient(
-                                    listOf(
-                                        MiuixTheme.colorScheme.primary,
-                                        MiuixTheme.colorScheme.primaryContainer,
+                                Modifier.background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            MiuixTheme.colorScheme.primary,
+                                            MiuixTheme.colorScheme.primaryContainer,
+                                        ),
                                     ),
                                 )
                             },

@@ -145,8 +145,7 @@ internal fun FeedTabContent(
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
                         onPinchGestureSuccess = viewModel::completePinchGridGuide,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 12.dp,
@@ -311,8 +310,7 @@ internal fun FollowingTabContent(
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
                         onPinchGestureSuccess = viewModel::completePinchGridGuide,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 12.dp,

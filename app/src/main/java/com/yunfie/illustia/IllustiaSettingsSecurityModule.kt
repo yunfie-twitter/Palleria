@@ -187,6 +187,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(highQualityImages = value) }
     }
 
+    fun updateWideColorGamut(value: Boolean) {
+        updateSettings { it.copy(wideColorGamutEnabled = value) }
+    }
+
     fun updateSmoothTransitions(value: Boolean) {
         updateSettings { it.copy(smoothTransitions = value) }
     }

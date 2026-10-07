@@ -33,6 +33,7 @@ class AppSettingsDefaultsTest {
 
         settings.hasCompletedQuickPeekGuide shouldBe false
         settings.hasCompletedPinchGridGuide shouldBe false
+        settings.wideColorGamutEnabled shouldBe true
     }
 
     @Test

@@ -43,6 +43,7 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Card
@@ -153,10 +154,8 @@ internal fun NovelCard(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
-                                ),
+                            .cachedVerticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
                             ),
                 )
                 if (cardPreferences.showR18Badge && novel.ageRestrictionBadgeText != null) {

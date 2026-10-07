@@ -1,5 +1,6 @@
 package com.yunfie.illustia.settings.store
 
+import android.content.Context
 import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
@@ -228,6 +229,7 @@ internal fun readFromDataStore(
         commandPaletteEnabled = preferences[COMMAND_PALETTE_ENABLED] ?: true,
         hasCompletedQuickPeekGuide = preferences[HAS_COMPLETED_QUICK_PEEK_GUIDE] ?: false,
         hasCompletedPinchGridGuide = preferences[HAS_COMPLETED_PINCH_GRID_GUIDE] ?: false,
+        wideColorGamutEnabled = preferences[WIDE_COLOR_GAMUT] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -397,6 +399,9 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         embedMetadata = preferences.getBoolean(KEY_EMBED_METADATA, true),
         ugoiraAutoPlay = preferences.getBoolean(KEY_UGOIRA_AUTO_PLAY, true),
         commandPaletteEnabled = preferences.getBoolean(KEY_COMMAND_PALETTE_ENABLED, true),
+        hasCompletedQuickPeekGuide = preferences.getBoolean(KEY_HAS_COMPLETED_QUICK_PEEK_GUIDE, false),
+        hasCompletedPinchGridGuide = preferences.getBoolean(KEY_HAS_COMPLETED_PINCH_GRID_GUIDE, false),
+        wideColorGamutEnabled = preferences.getBoolean(KEY_WIDE_COLOR_GAMUT, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -566,6 +571,7 @@ internal fun writeToDataStore(
     preferences[COMMAND_PALETTE_ENABLED] = settings.commandPaletteEnabled
     preferences[HAS_COMPLETED_QUICK_PEEK_GUIDE] = settings.hasCompletedQuickPeekGuide
     preferences[HAS_COMPLETED_PINCH_GRID_GUIDE] = settings.hasCompletedPinchGridGuide
+    preferences[WIDE_COLOR_GAMUT] = settings.wideColorGamutEnabled
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 
@@ -592,3 +598,8 @@ internal fun writeSensitiveSettings(
         editor.apply()
     }
 }
+
+internal fun readWideColorGamutSync(context: Context): Boolean =
+    context.applicationContext
+        .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(KEY_WIDE_COLOR_GAMUT, true)

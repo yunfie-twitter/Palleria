@@ -11,6 +11,7 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
@@ -118,6 +119,16 @@ class MainActivity : FragmentActivity() {
     private var appliedDarkTheme: Boolean? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (resources.configuration.isScreenWideColorGamut) {
+                val isWcgEnabled =
+                    com.yunfie.illustia.settings.store
+                        .readWideColorGamutSync(this)
+                if (isWcgEnabled) {
+                    window.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+                }
+            }
+        }
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
         if (DummyAppIconSwitcher.isPrivacyLauncherEnabled(applicationContext)) {
             setTheme(R.style.AppTheme_Splash_Calculator)
@@ -207,6 +218,8 @@ class MainActivity : FragmentActivity() {
             isAppearanceLightNavigationBars = !isDark
         }
         super.onCreate(savedInstanceState)
+        // OSデフォルトのWindow背景を破棄し、最下層のオーバードローを消滅させる
+        window.setBackgroundDrawable(null)
         // Keep the first frame protected until the async settings/lock state is known.
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         lastHandledClipboardText = null
@@ -218,6 +231,16 @@ class MainActivity : FragmentActivity() {
                 }
             val uiState by presentation.collectAsStateWithLifecycle(initialValue = viewModel.uiState.value.activityPresentation())
             val settings = uiState.settings
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && resources.configuration.isScreenWideColorGamut) {
+                LaunchedEffect(settings.wideColorGamutEnabled) {
+                    window.colorMode =
+                        if (settings.wideColorGamutEnabled) {
+                            ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+                        } else {
+                            ActivityInfo.COLOR_MODE_DEFAULT
+                        }
+                }
+            }
             val appLocked = uiState.appLocked
             val settingsLoaded = uiState.settingsLoaded
             val systemDark = isSystemInDarkTheme()

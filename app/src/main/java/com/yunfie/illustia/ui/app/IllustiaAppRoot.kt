@@ -692,6 +692,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
         LocalImageBlurPreview provides settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview),
+        com.yunfie.illustia.ui.components.LocalWideColorGamutEnabled provides settings.wideColorGamutEnabled,
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides
             ArtworkCardPreferences(

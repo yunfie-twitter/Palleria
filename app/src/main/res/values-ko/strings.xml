@@ -1008,4 +1008,9 @@
     <string name="guest_contextual_login_button">Pixiv로 로그인</string>
     <string name="guest_contextual_login_later">나중에</string>
     <string name="guest_mode_badge">게스트 모드</string>
+
+    <!-- Wide Color Gamut (Display P3) -->
+    <string name="settings_wide_color_gamut_title">광색역 디스플레이 (Display P3 / WCG)</string>
+    <string name="settings_wide_color_gamut_desc">지원되는 OLED 디스플레이에서 Display P3 및 AdobeRGB의 생생한 색상을 하드웨어 가속으로 렌더링합니다</string>
+    <string name="settings_wide_color_gamut_unsupported">사용 중인 기기는 광색역 디스플레이를 지원하지 않습니다</string>
 </resources>

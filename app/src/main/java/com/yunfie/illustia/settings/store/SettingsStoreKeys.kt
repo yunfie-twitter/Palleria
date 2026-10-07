@@ -227,4 +227,6 @@ internal const val KEY_HAS_COMPLETED_QUICK_PEEK_GUIDE = "hasCompletedQuickPeekGu
 internal const val KEY_HAS_COMPLETED_PINCH_GRID_GUIDE = "hasCompletedPinchGridGuide"
 internal val HAS_COMPLETED_QUICK_PEEK_GUIDE = booleanPreferencesKey(KEY_HAS_COMPLETED_QUICK_PEEK_GUIDE)
 internal val HAS_COMPLETED_PINCH_GRID_GUIDE = booleanPreferencesKey(KEY_HAS_COMPLETED_PINCH_GRID_GUIDE)
+internal const val KEY_WIDE_COLOR_GAMUT = "wideColorGamut"
+internal val WIDE_COLOR_GAMUT = booleanPreferencesKey(KEY_WIDE_COLOR_GAMUT)
 internal val FEATURE_FLAGS_JSON = stringPreferencesKey("featureFlags")

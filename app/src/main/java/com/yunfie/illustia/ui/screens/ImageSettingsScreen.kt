@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -44,6 +45,7 @@ fun ImageSettingsScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
+    val supportsWcg = remember(context) { PlatformCapabilities.supportsWideColorGamut(context) }
     val isDesktop =
         remember(context) {
             com.yunfie.illustia.platform.DesktopEnvironment
@@ -67,8 +69,7 @@ fun ImageSettingsScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 16.dp,
@@ -86,6 +87,19 @@ fun ImageSettingsScreen(
                             state.settings.highQualityImages,
                             viewModel::updateHighQuality,
                             stringResource(R.string.image_high_quality_desc),
+                        )
+                        DividerLine()
+                        SettingSwitchRow(
+                            title = stringResource(R.string.settings_wide_color_gamut_title),
+                            checked = state.settings.wideColorGamutEnabled && supportsWcg,
+                            onCheckedChange = { if (supportsWcg) viewModel.updateWideColorGamut(it) },
+                            summary =
+                                if (supportsWcg) {
+                                    stringResource(R.string.settings_wide_color_gamut_desc)
+                                } else {
+                                    stringResource(R.string.settings_wide_color_gamut_unsupported)
+                                },
+                            enabled = supportsWcg,
                         )
                         DividerLine()
                         SettingSwitchRow(

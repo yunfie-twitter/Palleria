@@ -92,6 +92,7 @@ import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
+import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
@@ -434,15 +435,13 @@ private fun WatchlistHeader(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Black.copy(alpha = 0.25f),
-                                            Color.Transparent,
-                                            backgroundColor.copy(alpha = 0.85f),
-                                        ),
-                                ),
+                            .cachedVerticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.25f),
+                                        Color.Transparent,
+                                        backgroundColor.copy(alpha = 0.85f),
+                                    ),
                             ),
                 )
             } else {
@@ -450,14 +449,12 @@ private fun WatchlistHeader(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            MiuixTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                            MiuixTheme.colorScheme.surfaceContainerHighest,
-                                        ),
-                                ),
+                            .cachedVerticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                        MiuixTheme.colorScheme.surfaceContainerHighest,
+                                    ),
                             ),
                 )
             }
