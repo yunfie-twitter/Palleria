@@ -142,5 +142,17 @@
     ],
     "version_name": "6.6.0",
     "version_code": 153
+  },
+  "405911060": {
+    "tag": "v6.7.0-beta.1",
+    "prerelease": true,
+    "files": [
+      "Palleria-v6.7.0-beta.1-release-arm64-v8a.apk",
+      "Palleria-v6.7.0-beta.1-release-armeabi-v7a.apk",
+      "Palleria-v6.7.0-beta.1-release-universal.apk",
+      "Palleria-v6.7.0-beta.1-release-x86_64.apk"
+    ],
+    "version_name": "6.7.0-beta.1",
+    "version_code": 153
   }
 }
