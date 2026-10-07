@@ -14,6 +14,8 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -183,16 +185,19 @@ abstract class IllustiaAuthFeedModule(
                 GlitchTipTelemetry.traceAsync("feed.home.refresh", "feed.home") {
                     loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
                 }
-                _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded) }
+                _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded, isOfflineCached = false) }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "feed_home_refresh")
                 _uiState.update {
+                    val staleCacheEnabled = it.settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache)
+                    val canUseStale = staleCacheEnabled && it.homeItems.isNotEmpty()
                     it.copy(
                         isHomeRefreshing = false,
-                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        isOfflineCached = canUseStale,
+                        loadState = if (canUseStale) LoadState.Loaded else LoadState.Error(loadFailureMessage(it, error)),
                     )
                 }
             }
@@ -946,6 +951,7 @@ abstract class IllustiaAuthFeedModule(
                         timelineNextUrl = page.nextUrl,
                         isTimelineRefreshing = false,
                         loadState = LoadState.Loaded,
+                        isOfflineCached = false,
                     )
                 }
             } catch (expectedFailure: Exception) {
@@ -954,9 +960,12 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "feed_timeline_refresh")
                 _uiState.update {
+                    val staleCacheEnabled = it.settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache)
+                    val canUseStale = staleCacheEnabled && it.timelineItems.isNotEmpty()
                     it.copy(
                         isTimelineRefreshing = false,
-                        loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        isOfflineCached = canUseStale,
+                        loadState = if (canUseStale) LoadState.Loaded else LoadState.Error(loadFailureMessage(it, error)),
                     )
                 }
             }

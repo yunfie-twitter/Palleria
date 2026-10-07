@@ -100,6 +100,7 @@ internal fun BookmarkWatchlistTab(
     onOpenWatchlistSeries: (Long) -> Unit,
     scrollBehavior: ScrollBehavior? = null,
     gridState: LazyGridState = rememberLazyGridState(),
+    onColumnsChange: (Int) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
 
@@ -116,13 +117,18 @@ internal fun BookmarkWatchlistTab(
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
         val shimmer = if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) rememberIllustSkeletonShimmer() else null
+        val columns = adaptiveIllustColumns(settings)
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(adaptiveProfileGridColumns()),
+            columns = GridCells.Fixed(columns),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
+                    .pinchToChangeColumns(
+                        enabled = settings.gridPinchToZoom,
+                        currentColumns = columns,
+                        onColumnsChange = onColumnsChange,
+                    ).then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
             contentPadding =
                 profileGridContentPadding(
                     top = LocalScrollHeaderInset.current + 8.dp,

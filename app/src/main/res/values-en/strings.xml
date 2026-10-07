@@ -1197,4 +1197,34 @@
 
     <string name="flag_ugoira_auto_play_title">Auto-play Ugoira</string>
     <string name="flag_ugoira_auto_play_desc">Automatically plays animation when viewing Ugoira artworks.</string>
+
+    <string name="flag_comment_stamps_title">Comment stamps &amp; stamp posting</string>
+    <string name="flag_comment_stamps_desc">Enables Pixiv official stamps list (GET /v1/stamps) and stamp comment posting (POST /v1/illust/comment/add)</string>
+    <string name="flag_user_profile_edit_title">Edit Profile</string>
+    <string name="flag_user_profile_edit_desc">Show edit button (pencil icon) on own profile page and allow editing profile (POST /v1/user/profile/edit)</string>
+    <string name="user_profile_edit_title">Edit Profile</string>
+    <string name="user_profile_edit_user_name">Nickname</string>
+    <string name="user_profile_edit_comment">Bio</string>
+    <string name="user_profile_edit_webpage">Website</string>
+    <string name="user_profile_edit_twitter">X (Twitter)</string>
+    <string name="user_profile_edit_gender">Gender</string>
+    <string name="user_profile_edit_gender_unknown">Private / Not set</string>
+    <string name="user_profile_edit_gender_male">Male</string>
+    <string name="user_profile_edit_gender_female">Female</string>
+    <string name="user_profile_edit_birthday">Birthday</string>
+    <string name="user_profile_edit_save">Save</string>
+    <string name="user_profile_edit_saving">Saving profile…</string>
+    <string name="user_profile_edit_saved">Profile updated</string>
+    <string name="user_profile_edit_failed">Failed to update profile</string>
+    <string name="comment_stamp_select">Stamps</string>
+    <string name="comment_stamp_empty">No stamps available</string>
+
+    <string name="flag_offline_stale_cache_title">Offline Cache (Stale-While-Revalidate)</string>
+    <string name="flag_offline_stale_cache_desc">Keep displaying cached feeds during network loss or errors with an offline status chip</string>
+    <string name="flag_bookmark_haptic_burst_title">Bookmark &amp; Like Haptic Burst</string>
+    <string name="flag_bookmark_haptic_burst_desc">Trigger rich clicky haptics and sparkling particle burst animations on bookmark and like actions</string>
+    <string name="flag_image_blur_preview_title">Blurred Image Preview</string>
+    <string name="flag_image_blur_preview_desc">Display a blurred low-resolution placeholder while loading and smoothly crossfade into the full image</string>
+    <string name="offline_cached_banner_label">Viewing offline cache</string>
+    <string name="offline_retry_button">Retry</string>
 </resources>

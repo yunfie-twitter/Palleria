@@ -86,9 +86,11 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.SettingRow
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.screens.UserResultCard
@@ -157,6 +159,7 @@ internal fun UserProfilePagerContent(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
+    onColumnsChange: (Int) -> Unit = {},
 ) {
     var showAvatarPreview by remember(user.id) { mutableStateOf(false) }
     val tabListState = rememberLazyListState()
@@ -276,6 +279,7 @@ internal fun UserProfilePagerContent(
                         gridState = worksGridState,
                         backgroundColor = backgroundColor,
                         onIllustLongClick = onIllustLongClick,
+                        onColumnsChange = onColumnsChange,
                     )
                 }
 
@@ -300,6 +304,7 @@ internal fun UserProfilePagerContent(
                             emptyLabel = stringResource(R.string.bookmark_empty),
                             keyPrefix = "user_bookmark",
                             onIllustLongClick = onIllustLongClick,
+                            onColumnsChange = onColumnsChange,
                         )
                     }
                 }
@@ -872,8 +877,9 @@ private fun UserIllustGridPage(
     autoLoadMore: Boolean = settings.autoLoadMore,
     active: Boolean = true,
     onIllustLongClick: ((Illust) -> Unit)? = null,
+    onColumnsChange: (Int) -> Unit = {},
 ) {
-    val columns = adaptiveProfileGridColumns()
+    val columns = adaptiveIllustColumns(settings)
 
     PrefetchIllustGridImages(
         items = illusts,
@@ -896,7 +902,14 @@ private fun UserIllustGridPage(
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize().background(backgroundColor),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .pinchToChangeColumns(
+                    enabled = settings.gridPinchToZoom,
+                    currentColumns = columns,
+                    onColumnsChange = onColumnsChange,
+                ).background(backgroundColor),
         contentPadding = profileGridContentPadding(),
         horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
         verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),

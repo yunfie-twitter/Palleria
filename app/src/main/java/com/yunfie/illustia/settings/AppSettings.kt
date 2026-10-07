@@ -165,6 +165,9 @@ data class AppSettings(
     val dohCustomUrl: String = "",
     val gridPinchToZoom: Boolean = true,
     val quickPeekSharedElementTransition: Boolean = true,
+    val embedMetadata: Boolean = true,
+    val ugoiraAutoPlay: Boolean = true,
+    val commandPaletteEnabled: Boolean = true,
     val featureFlags: Map<String, Boolean> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean

@@ -201,9 +201,14 @@ fun IllustCard(
         remember(illust.id, illust.isR18, illust.isR18G, cardPreferences.showR18Badge) {
             if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
         }
+    val lowResPlaceholderUrl =
+        remember(illust.id, previewUrl) {
+            illust.squareImageUrl.takeIf { it.isNotBlank() && it != previewUrl }
+        }
 
     IllustCardImpl(
         previewUrl = previewUrl,
+        lowResPlaceholderUrl = lowResPlaceholderUrl,
         title = illust.title,
         artistName = illust.artistName,
         tags = illust.tags,
@@ -227,6 +232,7 @@ fun IllustCard(
 @Composable
 private fun IllustCardImpl(
     previewUrl: String,
+    lowResPlaceholderUrl: String?,
     title: String,
     artistName: String,
     tags: List<String>,
@@ -297,6 +303,7 @@ private fun IllustCardImpl(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 IllustCardThumbnail(
                     previewUrl = previewUrl,
+                    lowResPlaceholderUrl = lowResPlaceholderUrl,
                     title = title,
                     badgeText = cardBadgeText,
                     ageRestrictionBadgeText = ageRestrictionBadgeText,
@@ -353,6 +360,7 @@ private fun IllustCardImpl(
 @Composable
 private fun IllustCardThumbnail(
     previewUrl: String,
+    lowResPlaceholderUrl: String? = null,
     title: String,
     badgeText: String?,
     ageRestrictionBadgeText: String?,
@@ -372,6 +380,7 @@ private fun IllustCardThumbnail(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
+                lowResPlaceholderUrl = lowResPlaceholderUrl,
             )
         }
         if (ageRestrictionBadgeText != null) {
@@ -662,6 +671,7 @@ fun HighlightCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
+                lowResPlaceholderUrl = illust.squareImageUrl.takeIf { it.isNotBlank() && it != illust.previewUrl },
             )
             if (cardPreferences.showR18Badge && illust.ageRestrictionBadgeText != null) {
                 Text(

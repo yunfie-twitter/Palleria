@@ -223,6 +223,9 @@ internal fun readFromDataStore(
         quickPeekEnabled = preferences[QUICK_PEEK_ENABLED] ?: true,
         gridPinchToZoom = preferences[GRID_PINCH_TO_ZOOM] ?: true,
         quickPeekSharedElementTransition = preferences[QUICK_PEEK_SHARED_ELEMENT_TRANSITION] ?: true,
+        embedMetadata = preferences[EMBED_METADATA] ?: true,
+        ugoiraAutoPlay = preferences[UGOIRA_AUTO_PLAY] ?: true,
+        commandPaletteEnabled = preferences[COMMAND_PALETTE_ENABLED] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -389,6 +392,9 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         quickPeekEnabled = preferences.getBoolean(KEY_QUICK_PEEK_ENABLED, true),
         gridPinchToZoom = preferences.getBoolean(KEY_GRID_PINCH_TO_ZOOM, true),
         quickPeekSharedElementTransition = preferences.getBoolean(KEY_QUICK_PEEK_SHARED_ELEMENT_TRANSITION, true),
+        embedMetadata = preferences.getBoolean(KEY_EMBED_METADATA, true),
+        ugoiraAutoPlay = preferences.getBoolean(KEY_UGOIRA_AUTO_PLAY, true),
+        commandPaletteEnabled = preferences.getBoolean(KEY_COMMAND_PALETTE_ENABLED, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
 
@@ -553,6 +559,9 @@ internal fun writeToDataStore(
     preferences[QUICK_PEEK_ENABLED] = settings.quickPeekEnabled
     preferences[GRID_PINCH_TO_ZOOM] = settings.gridPinchToZoom
     preferences[QUICK_PEEK_SHARED_ELEMENT_TRANSITION] = settings.quickPeekSharedElementTransition
+    preferences[EMBED_METADATA] = settings.embedMetadata
+    preferences[UGOIRA_AUTO_PLAY] = settings.ugoiraAutoPlay
+    preferences[COMMAND_PALETTE_ENABLED] = settings.commandPaletteEnabled
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

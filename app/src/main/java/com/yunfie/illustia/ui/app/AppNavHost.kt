@@ -655,6 +655,7 @@ internal fun AppNavHost(
                         gridState = viewModel.userProfileGridState(user.id),
                         bookmarkGridState = viewModel.userProfileBookmarkGridState(user.id),
                         onIllustLongClick = viewModel::onIllustLongPress,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
                         showHeaderControls = true,
                     )
                 } else {

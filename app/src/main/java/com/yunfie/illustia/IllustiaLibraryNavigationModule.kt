@@ -479,7 +479,7 @@ abstract class IllustiaLibraryNavigationModule(
             }
             val body = response.body
             val illust = resolveDownloadIllust(filename)
-            val embedMeta = _uiState.value.settings.isFeatureEnabled(FeatureFlag.EmbedMetadata)
+            val embedMeta = _uiState.value.settings.embedMetadata
             imageStore.save(
                 input = body.byteStream(),
                 name = filename,

@@ -172,6 +172,8 @@ fun QuickPeekOverlay(
                                 contentDescription = illust.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize(),
+                                lowResPlaceholderUrl =
+                                    illust.squareImageUrl.takeIf { it.isNotBlank() && it != illust.imageUrl },
                             )
 
                             // Top action: Bookmark badge

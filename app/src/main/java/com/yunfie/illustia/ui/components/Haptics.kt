@@ -24,6 +24,7 @@ enum class AppHapticEffect {
     Toggle,
     Success,
     Error,
+    BookmarkBurst,
 }
 
 @androidx.compose.runtime.Composable
@@ -75,6 +76,8 @@ fun performAppHapticFeedback(
                     when (effect) {
                         AppHapticEffect.Success -> vibrator.vibrate(longArrayOf(0L, 18L, 30L, 28L), -1)
 
+                        AppHapticEffect.BookmarkBurst -> vibrator.vibrate(longArrayOf(0L, 14L, 24L, 30L), -1)
+
                         AppHapticEffect.Error -> vibrator.vibrate(longArrayOf(0L, 30L, 32L, 42L), -1)
 
                         AppHapticEffect.Click,
@@ -101,6 +104,7 @@ private fun resolveVibrator(context: Context): Vibrator? =
     }
 
 @RequiresApi(Build.VERSION_CODES.R)
+@Suppress("MagicNumber")
 private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boolean {
     val primitivesSupported =
         when (effect) {
@@ -116,6 +120,14 @@ private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boo
                 areAllPrimitivesSupported(
                     VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
                     VibrationEffect.Composition.PRIMITIVE_CLICK,
+                )
+            }
+
+            AppHapticEffect.BookmarkBurst -> {
+                areAllPrimitivesSupported(
+                    VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
+                    VibrationEffect.Composition.PRIMITIVE_CLICK,
+                    VibrationEffect.Composition.PRIMITIVE_TICK,
                 )
             }
 
@@ -144,6 +156,13 @@ private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boo
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.95f, 20)
         }
 
+        AppHapticEffect.BookmarkBurst -> {
+            composition
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, 0.40f)
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f, 15)
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.75f, 30)
+        }
+
         AppHapticEffect.Error -> {
             composition
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, 0.7f)
@@ -169,7 +188,9 @@ private fun AppHapticEffect.predefinedEffect(mode: AppHapticMode): Int =
             VibrationEffect.EFFECT_TICK
         }
 
-        AppHapticEffect.Success -> {
+        AppHapticEffect.Success,
+        AppHapticEffect.BookmarkBurst,
+        -> {
             VibrationEffect.EFFECT_HEAVY_CLICK
         }
 
@@ -186,7 +207,9 @@ private fun AppHapticEffect.compatEffect(
     val strongAmplitude = if (hasAmplitudeControl) 220 else VibrationEffect.DEFAULT_AMPLITUDE
     val lightAmplitude = if (hasAmplitudeControl) 120 else VibrationEffect.DEFAULT_AMPLITUDE
     return when (this) {
-        AppHapticEffect.Success -> {
+        AppHapticEffect.Success,
+        AppHapticEffect.BookmarkBurst,
+        -> {
             if (hasAmplitudeControl) {
                 VibrationEffect.createWaveform(
                     longArrayOf(0L, 14L, 24L, 28L),

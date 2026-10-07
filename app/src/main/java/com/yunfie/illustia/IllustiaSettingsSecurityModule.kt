@@ -950,6 +950,18 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(quickPeekSharedElementTransition = enabled) }
     }
 
+    fun updateEmbedMetadata(enabled: Boolean) {
+        updateSettings { it.copy(embedMetadata = enabled) }
+    }
+
+    fun updateUgoiraAutoPlay(enabled: Boolean) {
+        updateSettings { it.copy(ugoiraAutoPlay = enabled) }
+    }
+
+    fun updateCommandPaletteEnabled(enabled: Boolean) {
+        updateSettings { it.copy(commandPaletteEnabled = enabled) }
+    }
+
     fun updateHorizontalColumnCount(value: Int) {
         updateSettings { it.copy(horizontalColumnCount = value.coerceIn(3, 6)) }
     }

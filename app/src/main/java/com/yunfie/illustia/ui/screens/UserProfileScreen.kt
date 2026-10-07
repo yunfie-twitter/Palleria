@@ -80,6 +80,7 @@ fun UserProfileScreen(
     gridState: LazyGridState,
     bookmarkGridState: LazyGridState = remember(user.id) { LazyGridState() },
     onIllustLongClick: (Illust) -> Unit = {},
+    onColumnsChange: (Int) -> Unit = {},
     showHeaderControls: Boolean = true,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
@@ -267,6 +268,7 @@ fun UserProfileScreen(
             isOwnProfile = isOwnProfile,
             isProfileEditEnabled = isProfileEditEnabled,
             onEditProfile = onEditProfile,
+            onColumnsChange = onColumnsChange,
         )
     }
 

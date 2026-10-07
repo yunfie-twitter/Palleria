@@ -27,12 +27,12 @@ class FeatureFlagTest {
                     mapOf(
                         FeatureFlag.ShortsFeed.key to true,
                         FeatureFlag.HideHomeNovelButton.key to false,
-                        FeatureFlag.CustomAppIcon.key to true,
+                        FeatureFlag.BookmarkHapticBurst.key to false,
                     ),
             )
         settings.isFeatureEnabled(FeatureFlag.ShortsFeed) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.CustomAppIcon) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.ArtworkDynamicTheme) shouldBe false
     }
 
