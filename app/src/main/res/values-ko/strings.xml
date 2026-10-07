@@ -960,13 +960,6 @@
     <string name="offline_cached_banner_label">오프라인 캐시 표시 중</string>
     <string name="offline_retry_button">다시 시도</string>
 
-    <string name="guide_quick_peek_title">길게 눌러 미리보기 (Quick Peek)</string>
-    <string name="guide_quick_peek_desc">카드를 길게 누르면 화면 이동 없이 상세 내용을 미리 볼 수 있습니다</string>
-    <string name="guide_pinch_grid_title">두 손가락으로 핀치하여 열 수 변경</string>
-    <string name="guide_pinch_grid_desc">그리드를 핀치 인/아웃하여 표시 열 수를 매끄럽게 변경할 수 있습니다</string>
-    <string name="guide_completed">완료!</string>
-    <string name="guide_skip">닫기</string>
-
     <string name="permission_notification_title">알림 권한 안내</string>
     <string name="permission_notification_desc">즐겨찾기 작가의 신작 및 다운로드 완료 알림을 전달하기 위해 필요합니다.</string>
     <string name="permission_storage_title">저장소 접근 권한 안내</string>
@@ -997,17 +990,6 @@
     <string name="setup_safety_all_age">전연령 (안전 모드)</string>
     <string name="setup_safety_r18">R-18 작품 표시</string>
     <string name="setup_safety_r18g">R-18 및 R-18G 작품 표시</string>
-
-    <!-- Zero-Config & Progressive Onboarding -->
-    <string name="onboarding_guest_explore_button">로그인 없이 둘러보기</string>
-    <string name="onboarding_network_smart_suggest_title">최적 연결 환경 감지</string>
-    <string name="onboarding_network_smart_suggest_desc">해당 지역에서는 공식 서버 직접 연결이 제한될 수 있습니다. 우회 모드(ECH/Proxy)로 최적화하시겠습니까?</string>
-    <string name="onboarding_network_smart_switch_btn">우회 모드로 최적화</string>
-    <string name="guest_contextual_login_title">Pixiv 계정에 저장</string>
-    <string name="guest_contextual_login_desc">이 작품을 북마크하거나 작가를 팔로우하려면 Pixiv 계정에 로그인하세요.</string>
-    <string name="guest_contextual_login_button">Pixiv로 로그인</string>
-    <string name="guest_contextual_login_later">나중에</string>
-    <string name="guest_mode_badge">게스트 모드</string>
 
     <!-- Wide Color Gamut (Display P3) -->
     <string name="settings_wide_color_gamut_title">광색역 디스플레이 (Display P3 / WCG)</string>

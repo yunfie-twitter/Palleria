@@ -227,8 +227,6 @@ internal fun readFromDataStore(
         embedMetadata = preferences[EMBED_METADATA] ?: true,
         ugoiraAutoPlay = preferences[UGOIRA_AUTO_PLAY] ?: true,
         commandPaletteEnabled = preferences[COMMAND_PALETTE_ENABLED] ?: true,
-        hasCompletedQuickPeekGuide = preferences[HAS_COMPLETED_QUICK_PEEK_GUIDE] ?: false,
-        hasCompletedPinchGridGuide = preferences[HAS_COMPLETED_PINCH_GRID_GUIDE] ?: false,
         wideColorGamutEnabled = preferences[WIDE_COLOR_GAMUT] ?: true,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
@@ -399,8 +397,6 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         embedMetadata = preferences.getBoolean(KEY_EMBED_METADATA, true),
         ugoiraAutoPlay = preferences.getBoolean(KEY_UGOIRA_AUTO_PLAY, true),
         commandPaletteEnabled = preferences.getBoolean(KEY_COMMAND_PALETTE_ENABLED, true),
-        hasCompletedQuickPeekGuide = preferences.getBoolean(KEY_HAS_COMPLETED_QUICK_PEEK_GUIDE, false),
-        hasCompletedPinchGridGuide = preferences.getBoolean(KEY_HAS_COMPLETED_PINCH_GRID_GUIDE, false),
         wideColorGamutEnabled = preferences.getBoolean(KEY_WIDE_COLOR_GAMUT, true),
         featureFlags = decodeFeatureFlags(preferences.getString("featureFlags", null)),
     )
@@ -569,8 +565,6 @@ internal fun writeToDataStore(
     preferences[EMBED_METADATA] = settings.embedMetadata
     preferences[UGOIRA_AUTO_PLAY] = settings.ugoiraAutoPlay
     preferences[COMMAND_PALETTE_ENABLED] = settings.commandPaletteEnabled
-    preferences[HAS_COMPLETED_QUICK_PEEK_GUIDE] = settings.hasCompletedQuickPeekGuide
-    preferences[HAS_COMPLETED_PINCH_GRID_GUIDE] = settings.hasCompletedPinchGridGuide
     preferences[WIDE_COLOR_GAMUT] = settings.wideColorGamutEnabled
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }

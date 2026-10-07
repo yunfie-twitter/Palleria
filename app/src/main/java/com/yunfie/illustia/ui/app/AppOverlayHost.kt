@@ -93,9 +93,6 @@ internal fun AppOverlayHost(
         val useSharedTransition = appState.state.settings.quickPeekSharedElementTransition
 
         if (isQuickPeekActive) {
-            LaunchedEffect(illust.id) {
-                viewModel.completeQuickPeekGuide()
-            }
             QuickPeekOverlay(
                 illust = illust,
                 useSharedElementTransition = useSharedTransition,
@@ -384,50 +381,5 @@ internal fun AppOverlayHost(
             },
             onDismiss = viewModel::dismissPermissionRationale,
         )
-    }
-
-    if (appState.state.showGuestContextualLoginDialog) {
-        OverlayDialog(
-            show = true,
-            title = stringResource(R.string.guest_contextual_login_title),
-            summary = stringResource(R.string.guest_contextual_login_desc),
-            backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-            onDismissRequest = viewModel::dismissGuestLoginPrompt,
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Button(
-                    onClick = {
-                        viewModel.dismissGuestLoginPrompt()
-                        viewModel.openWebLogin()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.guest_contextual_login_button),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-
-                Button(
-                    onClick = viewModel::dismissGuestLoginPrompt,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            color = MiuixTheme.colorScheme.surfaceContainer,
-                        ),
-                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.guest_contextual_login_later),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-        }
     }
 }

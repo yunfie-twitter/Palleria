@@ -31,8 +31,6 @@ class AppSettingsDefaultsTest {
         settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe true
 
-        settings.hasCompletedQuickPeekGuide shouldBe false
-        settings.hasCompletedPinchGridGuide shouldBe false
         settings.wideColorGamutEnabled shouldBe true
     }
 

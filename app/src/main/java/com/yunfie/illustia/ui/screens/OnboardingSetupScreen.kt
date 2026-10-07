@@ -1,40 +1,46 @@
 package com.yunfie.illustia.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,33 +48,18 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.PixivImageProxyOptions
 import com.yunfie.illustia.settings.AppLanguage
 import com.yunfie.illustia.settings.appLanguageLabelRes
-import com.yunfie.illustia.ui.components.miuixClickable
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val PING_TIMEOUT_MS = 3000
+private const val SETUP_TRANSITION_MILLIS = 300
 
-/**
- * Zero-Config Progressive Onboarding screen.
- * Instantly lands on the welcome screen with automatic OS language detection and
- * silent background connection diagnostics. Supports "Explore without login" (Guest Exploration).
- */
 @Composable
 fun OnboardingScreen(
     state: IllustiaUiState,
@@ -77,373 +68,216 @@ fun OnboardingScreen(
     showTokenLogin: Boolean = false,
     onTokenLoginDismiss: () -> Unit = {},
 ) {
-    var showLanguageDialog by remember { mutableStateOf(false) }
-    var showDetails by remember { mutableStateOf(false) }
-    var silentPingFailed by remember { mutableStateOf(false) }
-
-    // Silent background connection test: verify official Pixiv server access without blocking the UI
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            try {
-                val connection =
-                    (java.net.URL("https://app-api.pixiv.net/").openConnection() as java.net.HttpURLConnection).apply {
-                        connectTimeout = PING_TIMEOUT_MS
-                        readTimeout = PING_TIMEOUT_MS
-                        requestMethod = "HEAD"
-                        instanceFollowRedirects = false
-                    }
-                connection.connect()
-                val code = connection.responseCode
-                connection.disconnect()
-                silentPingFailed = code !in 200..499
-            } catch (_: Exception) {
-                silentPingFailed = true
-            }
-        }
+    // Start each new onboarding visit at language selection, even after settings migration.
+    // Save only the current visit so rotation and language changes do not reset progress.
+    var page by rememberSaveable { mutableIntStateOf(0) }
+    val transition = updateTransition(page, label = "onboarding-page")
+    val pageState = rememberSaveableStateHolder()
+    val canNavigate = transition.currentState == page && !transition.isRunning
+    val goBack: () -> Unit = {
+        if (transition.currentState == page && !transition.isRunning) page = (page - 1).coerceAtLeast(0)
     }
-
-    Scaffold(
-        containerColor = MiuixTheme.colorScheme.background,
-    ) { scaffoldPadding ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(scaffoldPadding),
-        ) {
-            // Top-right language switch button ("🌐")
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentAlignment = Alignment.TopEnd,
-            ) {
-                IconButton(
-                    onClick = { showLanguageDialog = true },
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Tune,
-                        contentDescription = stringResource(R.string.general_language),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            BoxWithConstraints(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 18.dp),
-            ) {
-                val useWideLayout = maxWidth >= 600.dp && maxWidth > maxHeight
-
-                if (useWideLayout) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(48.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        WelcomeBrand(modifier = Modifier.weight(1f))
-                        WelcomeActions(
-                            state = state,
-                            viewModel = viewModel,
-                            silentPingFailed = silentPingFailed,
-                            onSwitchEch = {
-                                viewModel.updatePixivNetworkMode("ech")
-                                viewModel.updatePixivImageProxyBaseUrl("https://i.pixiv.re")
-                                silentPingFailed = false
-                            },
-                            onGuestExplore = viewModel::startGuestExploration,
-                            onShowDetails = { showDetails = true },
-                            onRefreshTokenLogin = onRefreshTokenLogin,
-                            modifier = Modifier.weight(1f).widthIn(max = 560.dp),
-                        )
+    BackHandler(enabled = page > 0 && !showTokenLogin, onBack = goBack)
+    Column(Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
+        transition.AnimatedContent(
+            modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            transitionSpec = {
+                val direction =
+                    if (targetState > initialState) {
+                        AnimatedContentTransitionScope.SlideDirection.Start
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.End
                     }
-                } else {
-                    Column(
-                        modifier =
+                (
+                    slideIntoContainer(direction, tween(SETUP_TRANSITION_MILLIS, easing = FastOutSlowInEasing)) +
+                        fadeIn(tween(SETUP_TRANSITION_MILLIS))
+                ) togetherWith
+                    (
+                        slideOutOfContainer(direction, tween(SETUP_TRANSITION_MILLIS, easing = FastOutSlowInEasing)) +
+                            fadeOut(tween(SETUP_TRANSITION_MILLIS))
+                    )
+            },
+        ) { displayedPage ->
+            pageState.SaveableStateProvider(displayedPage) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    if (displayedPage == 2) {
+                        OnboardingLoginScreen(state, viewModel, onRefreshTokenLogin, showTokenLogin, onTokenLoginDismiss)
+                    } else {
+                        Column(
                             Modifier
-                                .align(Alignment.Center)
-                                .fillMaxWidth()
-                                .widthIn(max = 560.dp)
-                                .verticalScroll(rememberScrollState()),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        WelcomeBrand(modifier = Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(48.dp))
-                        WelcomeActions(
-                            state = state,
-                            viewModel = viewModel,
-                            silentPingFailed = silentPingFailed,
-                            onSwitchEch = {
-                                viewModel.updatePixivNetworkMode("ech")
-                                viewModel.updatePixivImageProxyBaseUrl("https://i.pixiv.re")
-                                silentPingFailed = false
-                            },
-                            onGuestExplore = viewModel::startGuestExploration,
-                            onShowDetails = { showDetails = true },
-                            onRefreshTokenLogin = onRefreshTokenLogin,
-                        )
+                                .widthIn(max = 680.dp)
+                                .fillMaxSize()
+                                .statusBarsPadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            Text(
+                                stringResource(if (displayedPage == 0) R.string.setup_language_title else R.string.setup_network_title),
+                                fontSize = 32.sp,
+                                lineHeight = 40.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MiuixTheme.colorScheme.onBackground,
+                            )
+                            if (displayedPage == 0) LanguageSetup(state, viewModel) else NetworkSetup(state, viewModel)
+                        }
                     }
                 }
             }
         }
-    }
-
-    // Quick Language Picker Dialog
-    if (showLanguageDialog) {
-        OverlayDialog(
-            show = true,
-            title = stringResource(R.string.general_language),
-            backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-            onDismissRequest = { showLanguageDialog = false },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                AppLanguage.entries.forEach { language ->
-                    RadioButtonPreference(
-                        title = stringResource(appLanguageLabelRes(language.value)),
-                        summary = language.languageTag,
-                        selected = state.settings.appLanguage == language.value,
-                        onClick = {
-                            viewModel.updateAppLanguage(language.value)
-                            showLanguageDialog = false
-                        },
-                    )
-                }
+        SetupNavigation(page, enabled = canNavigate, onBack = goBack, onNext = {
+            if (transition.currentState == page && !transition.isRunning && page < 2) {
+                if (page == 1) viewModel.completeOnboardingSetup()
+                page++
             }
-        }
-    }
-
-    // About / Disclaimer Dialog
-    if (showDetails) {
-        OverlayDialog(
-            show = true,
-            title = stringResource(R.string.about_title),
-            summary = stringResource(R.string.login_disclaimer),
-            backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-            onDismissRequest = { showDetails = false },
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = stringResource(R.string.login_web_description),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    style = MiuixTheme.textStyles.body1,
-                )
-                Button(
-                    onClick = { showDetails = false },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                    insideMargin = PaddingValues(vertical = 12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.action_close),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-        }
-    }
-
-    if (showTokenLogin) {
-        RefreshTokenLoginBottomSheet(
-            state = state,
-            viewModel = viewModel,
-            onDismiss = onTokenLoginDismiss,
-        )
+        })
     }
 }
 
 @Composable
-private fun WelcomeBrand(modifier: Modifier = Modifier) {
+private fun LanguageSetup(
+    state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
+) {
     Column(
-        modifier = modifier,
+        Modifier.fillMaxWidth().padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Image(
-            painter = painterResource(R.drawable.splashscreen_logo),
-            contentDescription = null,
-            modifier = Modifier.size(96.dp),
-        )
+        Image(painterResource(R.drawable.splashscreen_logo), contentDescription = null, modifier = Modifier.size(88.dp))
         Text(
-            text = stringResource(R.string.app_name),
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = 44.sp,
-            lineHeight = 48.sp,
+            stringResource(R.string.setup_welcome, stringResource(R.string.app_name)),
+            style = MiuixTheme.textStyles.title3,
             fontWeight = FontWeight.Bold,
-            letterSpacing = (-1.2).sp,
+            textAlign = TextAlign.Center,
         )
         Text(
-            text = stringResource(R.string.setup_intro),
+            stringResource(R.string.setup_intro),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             textAlign = TextAlign.Center,
             style = MiuixTheme.textStyles.body1,
         )
     }
-}
-
-@Composable
-private fun WelcomeActions(
-    state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
-    silentPingFailed: Boolean,
-    onSwitchEch: () -> Unit,
-    onGuestExplore: () -> Unit,
-    onShowDetails: () -> Unit,
-    onRefreshTokenLogin: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        // Smart Assist Suggestion Banner when silent ping fails (e.g. firewall/censorship detected)
-        AnimatedVisibility(
-            visible = silentPingFailed,
-            enter = fadeIn(tween(300)),
-            exit = fadeOut(tween(200)),
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                cornerRadius = 16.dp,
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.onboarding_network_smart_suggest_title),
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE65100),
-                    )
-                    Text(
-                        text = stringResource(R.string.onboarding_network_smart_suggest_desc),
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                    Button(
-                        onClick = onSwitchEch,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                        insideMargin = PaddingValues(vertical = 10.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.onboarding_network_smart_switch_btn),
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-            }
-        }
-
-        // 1. Primary Action: Pixiv Web Login
-        Button(
-            onClick = viewModel::openWebLogin,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColorsPrimary(),
-            insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.login_web_button),
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
+    SetupSectionLabel(stringResource(R.string.general_language))
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
+        AppLanguage.entries.forEach { language ->
+            RadioButtonPreference(
+                title = stringResource(appLanguageLabelRes(language.value)),
+                summary = language.languageTag,
+                selected = state.settings.appLanguage == language.value,
+                onClick = { viewModel.updateAppLanguage(language.value) },
             )
         }
-
-        Spacer(Modifier.height(12.dp))
-
-        // 2. Secondary Action: Progressive Onboarding ("Explore without login")
-        Button(
-            onClick = onGuestExplore,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            colors =
-                ButtonDefaults.buttonColors(
-                    color = MiuixTheme.colorScheme.surfaceContainer,
-                ),
-            insideMargin = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.onboarding_guest_explore_button),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MiuixTheme.colorScheme.primary,
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = MiuixTheme.colorScheme.dividerLine,
-            )
-            Text(
-                text = stringResource(R.string.login_or),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = MiuixTheme.colorScheme.dividerLine,
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BottomAction(
-                label = stringResource(R.string.login_details),
-                onClick = onShowDetails,
-                modifier = Modifier.weight(1f),
-            )
-            BottomAction(
-                label = stringResource(R.string.login_token_short),
-                onClick = onRefreshTokenLogin,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        CheckboxPreference(
-            title = stringResource(R.string.data_send_telemetry),
-            summary = stringResource(R.string.data_send_telemetry_desc),
-            checked = state.settings.sendTelemetry,
-            onCheckedChange = viewModel::updateSendTelemetry,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
 @Composable
-private fun BottomAction(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun NetworkSetup(
+    state: IllustiaUiState,
+    viewModel: IllustiaViewModel,
 ) {
-    Box(
-        modifier =
-            modifier
-                .height(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .miuixClickable(haptic = true, onClick = onClick)
-                .padding(horizontal = 6.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
+    SetupSectionLabel(stringResource(R.string.image_proxy_title))
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
+        RadioButtonPreference(
+            title = stringResource(R.string.setup_official_images),
+            summary = "i.pximg.net",
+            selected = state.settings.pixivImageProxyBaseUrl.isEmpty(),
+            onClick = { viewModel.updatePixivImageProxyBaseUrl("") },
         )
+        PixivImageProxyOptions.forEach { proxy ->
+            RadioButtonPreference(
+                title = proxy.name,
+                summary = proxy.baseUrl,
+                selected = state.settings.pixivImageProxyBaseUrl == proxy.baseUrl,
+                onClick = { viewModel.updatePixivImageProxyBaseUrl(proxy.baseUrl) },
+            )
+        }
+        val current = state.settings.pixivImageProxyBaseUrl
+        if (current.isNotBlank() && PixivImageProxyOptions.none { it.baseUrl == current }) {
+            RadioButtonPreference(
+                title = stringResource(R.string.image_proxy_custom),
+                summary = current,
+                selected = true,
+                onClick = {},
+            )
+        }
+    }
+    SetupSectionLabel(stringResource(R.string.image_pixiv_network_mode))
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
+        listOf(
+            Triple("standard", R.string.setup_standard, R.string.setup_standard_desc),
+            Triple("compat", R.string.setup_compat, R.string.setup_compat_desc),
+            Triple("ech", R.string.setup_ech, R.string.setup_ech_desc),
+        ).forEach { (mode, title, summary) ->
+            RadioButtonPreference(
+                title = stringResource(title),
+                summary = stringResource(summary),
+                selected = state.settings.pixivNetworkMode == mode,
+                onClick = { viewModel.updatePixivNetworkMode(mode) },
+            )
+        }
+    }
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(20.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.setup_help_title), fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.title4)
+            Text(stringResource(R.string.setup_help), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+        }
+    }
+}
+
+@Composable
+private fun SetupSectionLabel(title: String) {
+    Text(
+        title,
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+private fun SetupNavigation(
+    page: Int,
+    enabled: Boolean,
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+) {
+    val progress = stringResource(R.string.setup_progress, page + 1, 3)
+    Row(
+        Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.weight(1f)) {
+            if (page > 0) Button(onClick = onBack, enabled = enabled) { Text(stringResource(R.string.setup_previous)) }
+        }
+        Row(Modifier.semantics { contentDescription = progress }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(3) { index ->
+                val indicatorWidth by animateDpAsState(
+                    targetValue = if (page == index) 24.dp else 8.dp,
+                    animationSpec = tween(SETUP_TRANSITION_MILLIS),
+                    label = "onboarding-indicator-width",
+                )
+                val indicatorColor by animateColorAsState(
+                    targetValue =
+                        if (page == index) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.surfaceContainerHighest
+                        },
+                    animationSpec = tween(SETUP_TRANSITION_MILLIS),
+                    label = "onboarding-indicator-color",
+                )
+                Box(Modifier.size(width = indicatorWidth, height = 8.dp).background(indicatorColor, CircleShape))
+            }
+        }
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            if (page < 2) {
+                Button(onClick = onNext, enabled = enabled, colors = ButtonDefaults.buttonColorsPrimary()) {
+                    Text(stringResource(R.string.setup_next))
+                }
+            }
+        }
     }
 }
