@@ -89,10 +89,12 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
@@ -294,7 +296,7 @@ fun WatchlistSeriesScreen(
                     )
                 }
 
-                val columns = adaptiveProfileGridColumns()
+                val columns = adaptiveIllustColumns(settings)
                 val showInitialLoading = state.isLoading && state.mangaSeries.isEmpty()
                 val showPaginating = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
@@ -305,7 +307,11 @@ fun WatchlistSeriesScreen(
                         Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .background(Color.Transparent),
+                            .pinchToChangeColumns(
+                                enabled = settings.gridPinchToZoom,
+                                currentColumns = columns,
+                                onColumnsChange = viewModel::updateVerticalColumnCount,
+                            ).background(Color.Transparent),
                     contentPadding =
                         profileGridContentPadding(
                             top = if (!isContentScrolled) 8.dp else 12.dp,

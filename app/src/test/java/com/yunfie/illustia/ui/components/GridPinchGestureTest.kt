@@ -70,4 +70,27 @@ class GridPinchGestureTest :
             gesture.update(2, 1.3f) shouldBe GridPinchUpdate(true, -1)
             gesture.update(2, 0.75f) shouldBe GridPinchUpdate(true, 1)
         }
+        test("column change can be clamped correctly for history, profile and watchlist grids") {
+            var currentCols = 2
+            val minCols = 1
+            val maxCols = 8
+
+            // Pinch-in reduces columns
+            val gesture = GridPinchGesture()
+            val updateReduce = gesture.update(2, 1.3f)
+            updateReduce.columnDelta shouldBe -1
+            currentCols = (currentCols + updateReduce.columnDelta).coerceIn(minCols, maxCols)
+            currentCols shouldBe 1
+
+            // Cannot go below minCols
+            val updateReduceAgain = gesture.update(2, 1.3f)
+            currentCols = (currentCols + updateReduceAgain.columnDelta).coerceIn(minCols, maxCols)
+            currentCols shouldBe 1
+
+            // Pinch-out expands columns
+            val updateExpand = gesture.update(2, 0.75f)
+            updateExpand.columnDelta shouldBe 1
+            currentCols = (currentCols + updateExpand.columnDelta).coerceIn(minCols, maxCols)
+            currentCols shouldBe 2
+        }
     })

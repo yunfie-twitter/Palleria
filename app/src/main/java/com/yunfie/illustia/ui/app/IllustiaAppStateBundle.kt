@@ -20,6 +20,7 @@ internal class IllustiaAppStateBundle(
     val bookmarkItems = state.bookmarkItems
     val watchlistItems = state.watchlistItems
     val followingUsers = state.followingUsers
+    val isOfflineCached = state.isOfflineCached
 
     val homeChrome =
         HomeChromeState(
@@ -30,6 +31,7 @@ internal class IllustiaAppStateBundle(
             isHomePaginating = state.isHomePaginating,
             isTimelineRefreshing = state.isTimelineRefreshing,
             isTimelinePaginating = state.isTimelinePaginating,
+            isOfflineCached = state.isOfflineCached,
             selectedTab = state.homeSelectedTab,
         )
     val novelChrome =

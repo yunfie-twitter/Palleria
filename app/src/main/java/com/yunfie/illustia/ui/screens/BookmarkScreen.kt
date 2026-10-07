@@ -410,6 +410,7 @@ fun BookmarkScreen(
                             onOpenWatchlistSeries = onOpenWatchlistSeries,
                             scrollBehavior = scrollBehavior,
                             gridState = viewModel.bookmarkWatchlistGridState,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
                         )
                     }
 

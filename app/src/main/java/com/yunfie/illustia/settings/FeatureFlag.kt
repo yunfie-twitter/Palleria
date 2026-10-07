@@ -16,18 +16,6 @@ enum class FeatureFlag(
         titleRes = R.string.flag_fast_scroll_rendering_title,
         descRes = R.string.flag_fast_scroll_rendering_desc,
     ),
-    CommandPalette(
-        key = "flag_command_palette",
-        titleRes = R.string.flag_command_palette_title,
-        descRes = R.string.flag_command_palette_desc,
-        defaultEnabled = true,
-    ),
-    CustomAppIcon(
-        key = "flag_custom_app_icon",
-        titleRes = R.string.flag_custom_app_icon_title,
-        descRes = R.string.flag_custom_app_icon_desc,
-        defaultEnabled = true,
-    ),
     NavigationCustomization(
         key = "flag_navigation_customization",
         titleRes = R.string.flag_navigation_customization_title,
@@ -62,12 +50,6 @@ enum class FeatureFlag(
         descRes = R.string.flag_artwork_dynamic_theme_desc,
         defaultEnabled = false,
     ),
-    EmbedMetadata(
-        key = "flag_embed_metadata",
-        titleRes = R.string.flag_embed_metadata_title,
-        descRes = R.string.flag_embed_metadata_desc,
-        defaultEnabled = true,
-    ),
     CustomDownloadPath(
         key = "flag_custom_download_path",
         titleRes = R.string.flag_custom_download_path_title,
@@ -86,30 +68,6 @@ enum class FeatureFlag(
         descRes = R.string.flag_novel_tts_audiobook_desc,
         defaultEnabled = false,
     ),
-    QuickPeek(
-        key = "flag_quick_peek",
-        titleRes = R.string.flag_quick_peek_title,
-        descRes = R.string.flag_quick_peek_desc,
-        defaultEnabled = true,
-    ),
-    GridPinchToZoomColumns(
-        key = "flag_grid_pinch_to_zoom_columns",
-        titleRes = R.string.flag_grid_pinch_to_zoom_title,
-        descRes = R.string.flag_grid_pinch_to_zoom_desc,
-        defaultEnabled = true,
-    ),
-    QuickPeekSharedElementTransition(
-        key = "flag_quick_peek_shared_element_transition",
-        titleRes = R.string.flag_quick_peek_shared_element_transition_title,
-        descRes = R.string.flag_quick_peek_shared_element_transition_desc,
-        defaultEnabled = true,
-    ),
-    UgoiraAutoPlay(
-        key = "flag_ugoira_auto_play",
-        titleRes = R.string.flag_ugoira_auto_play_title,
-        descRes = R.string.flag_ugoira_auto_play_desc,
-        defaultEnabled = true,
-    ),
     CommentStamps(
         key = "flag_comment_stamps",
         titleRes = R.string.flag_comment_stamps_title,
@@ -121,6 +79,24 @@ enum class FeatureFlag(
         titleRes = R.string.flag_user_profile_edit_title,
         descRes = R.string.flag_user_profile_edit_desc,
         defaultEnabled = false,
+    ),
+    OfflineStaleCache(
+        key = "flag_offline_stale_cache",
+        titleRes = R.string.flag_offline_stale_cache_title,
+        descRes = R.string.flag_offline_stale_cache_desc,
+        defaultEnabled = true,
+    ),
+    BookmarkHapticBurst(
+        key = "flag_bookmark_haptic_burst",
+        titleRes = R.string.flag_bookmark_haptic_burst_title,
+        descRes = R.string.flag_bookmark_haptic_burst_desc,
+        defaultEnabled = true,
+    ),
+    ImageBlurPreview(
+        key = "flag_image_blur_preview",
+        titleRes = R.string.flag_image_blur_preview_title,
+        descRes = R.string.flag_image_blur_preview_desc,
+        defaultEnabled = true,
     ),
     ;
 

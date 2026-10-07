@@ -252,6 +252,7 @@ internal fun MainSurface(
                                     isHomePaginating = appState.homeChrome.isHomePaginating,
                                     isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
                                     isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
+                                    isOfflineCached = appState.homeChrome.isOfflineCached,
                                     initialTab = appState.homeChrome.selectedTab,
                                 )
                             }

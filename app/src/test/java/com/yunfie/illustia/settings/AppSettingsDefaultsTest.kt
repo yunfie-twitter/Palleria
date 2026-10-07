@@ -9,14 +9,10 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class AppSettingsDefaultsTest {
     @Test
-    fun `standardized features have defaultEnabled set to true in FeatureFlag`() {
-        FeatureFlag.CommandPalette.defaultEnabled shouldBe true
-        FeatureFlag.CustomAppIcon.defaultEnabled shouldBe true
-        FeatureFlag.EmbedMetadata.defaultEnabled shouldBe true
-        FeatureFlag.QuickPeek.defaultEnabled shouldBe true
-        FeatureFlag.GridPinchToZoomColumns.defaultEnabled shouldBe true
-        FeatureFlag.QuickPeekSharedElementTransition.defaultEnabled shouldBe true
-        FeatureFlag.UgoiraAutoPlay.defaultEnabled shouldBe true
+    fun `new UX feature flags have defaultEnabled set to true in FeatureFlag`() {
+        FeatureFlag.OfflineStaleCache.defaultEnabled shouldBe true
+        FeatureFlag.BookmarkHapticBurst.defaultEnabled shouldBe true
+        FeatureFlag.ImageBlurPreview.defaultEnabled shouldBe true
     }
 
     @Test
@@ -27,14 +23,13 @@ class AppSettingsDefaultsTest {
         settings.quickPeekSharedElementTransition shouldBe true
         settings.dynamicAmbientViewerEnabled shouldBe true
         settings.imageViewerSwipeToDismissEnabled shouldBe true
+        settings.embedMetadata shouldBe true
+        settings.ugoiraAutoPlay shouldBe true
+        settings.commandPaletteEnabled shouldBe true
 
-        settings.isFeatureEnabled(FeatureFlag.CommandPalette) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.CustomAppIcon) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.EmbedMetadata) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.QuickPeek) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.UgoiraAutoPlay) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe true
     }
 
     @Test
@@ -43,36 +38,24 @@ class AppSettingsDefaultsTest {
             AppSettings(
                 featureFlags =
                     mapOf(
-                        FeatureFlag.CommandPalette.key to false,
-                        FeatureFlag.CustomAppIcon.key to false,
-                        FeatureFlag.EmbedMetadata.key to false,
-                        FeatureFlag.QuickPeek.key to false,
-                        FeatureFlag.GridPinchToZoomColumns.key to false,
-                        FeatureFlag.QuickPeekSharedElementTransition.key to false,
-                        FeatureFlag.UgoiraAutoPlay.key to false,
+                        FeatureFlag.OfflineStaleCache.key to false,
+                        FeatureFlag.BookmarkHapticBurst.key to false,
+                        FeatureFlag.ImageBlurPreview.key to false,
                         FeatureFlag.ShortsFeed.key to true,
                     ),
             )
 
-        settings.isFeatureEnabled(FeatureFlag.CommandPalette) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.CustomAppIcon) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.EmbedMetadata) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.QuickPeek) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.GridPinchToZoomColumns) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.QuickPeekSharedElementTransition) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.UgoiraAutoPlay) shouldBe false
+        settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) shouldBe false
+        settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe false
+        settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.ShortsFeed) shouldBe true
     }
 
     @Test
     fun `FeatureFlag fromKey finds matching enum or returns null`() {
-        FeatureFlag.fromKey("flag_command_palette") shouldBe FeatureFlag.CommandPalette
-        FeatureFlag.fromKey("flag_custom_app_icon") shouldBe FeatureFlag.CustomAppIcon
-        FeatureFlag.fromKey("flag_embed_metadata") shouldBe FeatureFlag.EmbedMetadata
-        FeatureFlag.fromKey("flag_quick_peek") shouldBe FeatureFlag.QuickPeek
-        FeatureFlag.fromKey("flag_grid_pinch_to_zoom_columns") shouldBe FeatureFlag.GridPinchToZoomColumns
-        FeatureFlag.fromKey("flag_quick_peek_shared_element_transition") shouldBe FeatureFlag.QuickPeekSharedElementTransition
-        FeatureFlag.fromKey("flag_ugoira_auto_play") shouldBe FeatureFlag.UgoiraAutoPlay
+        FeatureFlag.fromKey("flag_offline_stale_cache") shouldBe FeatureFlag.OfflineStaleCache
+        FeatureFlag.fromKey("flag_bookmark_haptic_burst") shouldBe FeatureFlag.BookmarkHapticBurst
+        FeatureFlag.fromKey("flag_image_blur_preview") shouldBe FeatureFlag.ImageBlurPreview
         FeatureFlag.fromKey("non_existent_key").shouldBeNull()
     }
 

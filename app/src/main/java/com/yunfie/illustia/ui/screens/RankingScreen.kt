@@ -61,6 +61,7 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
+import com.yunfie.illustia.ui.components.OfflineCachedChip
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.StateBanner
@@ -327,9 +328,20 @@ private fun RankingGridContent(
                 }
             }
 
-            if (loadState is LoadState.Error) {
+            val isStaleCacheActive =
+                settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
+                    items.isNotEmpty() &&
+                    loadState is LoadState.Error
+
+            if (isStaleCacheActive) {
+                item(key = "ranking_${mode}_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
+                    OfflineCachedChip(
+                        onRetry = { viewModel.refreshRanking(mode, forceRefresh = true) },
+                    )
+                }
+            } else if (loadState is LoadState.Error) {
                 item(key = "ranking_${mode}_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState)
+                    StateBanner(loadState, onRetry = { viewModel.refreshRanking(mode, forceRefresh = true) })
                 }
             }
 
