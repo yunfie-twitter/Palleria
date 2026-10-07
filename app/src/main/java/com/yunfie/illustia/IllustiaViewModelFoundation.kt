@@ -188,31 +188,6 @@ abstract class IllustiaViewModelFoundation(
 
     abstract fun loadInitialHomeIfNeeded()
 
-    fun startGuestExploration() {
-        _uiState.update { it.copy(isGuestMode = true) }
-        viewModelScope.launch {
-            loadInitialHomeIfNeeded()
-        }
-    }
-
-    fun promptGuestLogin(feature: String = "bookmark") {
-        _uiState.update {
-            it.copy(
-                showGuestContextualLoginDialog = true,
-                guestContextualLoginFeature = feature,
-            )
-        }
-    }
-
-    fun dismissGuestLoginPrompt() {
-        _uiState.update {
-            it.copy(
-                showGuestContextualLoginDialog = false,
-                guestContextualLoginFeature = null,
-            )
-        }
-    }
-
     fun clearDetailSnapshots() {
         userProfileRequests.close()
         userProfileCache.clear()

@@ -411,7 +411,7 @@ fun ImageViewerScreen(
                                 onValueChange = { targetPage ->
                                     val targetIndex = (targetPage.toInt() - 1).coerceIn(0, imageUrls.lastIndex)
                                     if (targetIndex != currentPage) {
-                                        performHaptic(AppHapticEffect.Toggle)
+                                        performHaptic(AppHapticEffect.WheelTick)
                                         coroutineScope.launch {
                                             if (comicMode) {
                                                 comicListState.scrollToItem(
@@ -583,8 +583,15 @@ fun ImageViewerScreen(
                         onVerticalDrag = { change, dragAmount ->
                             if (dragAmount > 0f || dismissOffsetY.value > 0f) {
                                 change.consume()
+                                val currentOffset = dismissOffsetY.value
+                                val newOffset = (currentOffset + dragAmount).coerceAtLeast(0f)
+                                val wasOverThreshold = currentOffset >= dismissThresholdPx
+                                val isOverThreshold = newOffset >= dismissThresholdPx
+                                if (wasOverThreshold != isOverThreshold) {
+                                    performHaptic(AppHapticEffect.ThresholdSnap)
+                                }
                                 coroutineScope.launch {
-                                    dismissOffsetY.snapTo((dismissOffsetY.value + dragAmount).coerceAtLeast(0f))
+                                    dismissOffsetY.snapTo(newOffset)
                                 }
                             }
                         },

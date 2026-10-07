@@ -40,6 +40,7 @@ import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivStamp
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -51,6 +52,7 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
@@ -85,6 +87,7 @@ fun CommentScreen(
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val performHaptic = rememberHapticFeedbackAction()
     var commentText by remember { mutableStateOf("") }
     val hideCommentInput =
         remember(state.comments) {
@@ -248,10 +251,15 @@ fun CommentScreen(
                             onClick = {
                                 val text = commentText.trim()
                                 if (text.isNotEmpty()) {
+                                    performHaptic(AppHapticEffect.Click)
                                     scope.launch {
-                                        store.postComment(text)
-                                        commentText = ""
-                                        store.fetch()
+                                        runCatching {
+                                            store.postComment(text)
+                                        }.onSuccess {
+                                            performHaptic(AppHapticEffect.Success)
+                                            commentText = ""
+                                            store.fetch()
+                                        }
                                     }
                                 }
                             },
@@ -306,10 +314,15 @@ fun CommentScreen(
                                                 .size(64.dp)
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .miuixClickable {
+                                                    performHaptic(AppHapticEffect.Toggle)
                                                     scope.launch {
-                                                        store.postStampComment(stamp.id)
-                                                        showStampPicker = false
-                                                        store.fetch()
+                                                        runCatching {
+                                                            store.postStampComment(stamp.id)
+                                                        }.onSuccess {
+                                                            performHaptic(AppHapticEffect.Success)
+                                                            showStampPicker = false
+                                                            store.fetch()
+                                                        }
                                                     }
                                                 }.padding(4.dp),
                                         contentAlignment = Alignment.Center,

@@ -1293,13 +1293,6 @@
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 
-    <string name="guide_quick_peek_title">長押しでプレビュー（Quick Peek）</string>
-    <string name="guide_quick_peek_desc">カードを長押しすると、画面を移動せずに詳細を覗き見できます</string>
-    <string name="guide_pinch_grid_title">2本指でピンチして列数を変更</string>
-    <string name="guide_pinch_grid_desc">グリッドを2本指でピンチイン・アウトして、表示列数をシームレスに変えられます</string>
-    <string name="guide_completed">完了！</string>
-    <string name="guide_skip">閉じる</string>
-
     <string name="permission_notification_title">通知の許可について</string>
     <string name="permission_notification_desc">お気に入り作家の新着作品や、ダウンロード完了通知をお届けするために必要です。</string>
     <string name="permission_storage_title">ストレージへの保存について</string>
@@ -1330,17 +1323,6 @@
     <string name="setup_safety_all_age">全年齢のみ（セーフモード）</string>
     <string name="setup_safety_r18">R-18作品を表示</string>
     <string name="setup_safety_r18g">R-18 / R-18G作品を表示</string>
-
-    <!-- Zero-Config & Progressive Onboarding -->
-    <string name="onboarding_guest_explore_button">ログインせずに探索する</string>
-    <string name="onboarding_network_smart_suggest_title">最適な接続環境を検出</string>
-    <string name="onboarding_network_smart_suggest_desc">お住まいの地域では公式サーバーへの直接接続が制限されている可能性があります。規制回避モード（ECH/Proxy）に最適化しますか？</string>
-    <string name="onboarding_network_smart_switch_btn">規制回避モードに最適化</string>
-    <string name="guest_contextual_login_title">Pixivアカウントに保存</string>
-    <string name="guest_contextual_login_desc">この作品をお気に入り登録したり、作家をフォローするにはPixivアカウントにログインしてください。</string>
-    <string name="guest_contextual_login_button">Pixivでログイン</string>
-    <string name="guest_contextual_login_later">あとで</string>
-    <string name="guest_mode_badge">ゲスト探索中</string>
 
     <!-- Wide Color Gamut (Display P3) -->
     <string name="settings_wide_color_gamut_title">広色域表示（Display P3 / WCG）</string>

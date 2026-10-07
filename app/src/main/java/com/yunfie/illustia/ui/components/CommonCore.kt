@@ -168,6 +168,8 @@ fun Modifier.pinchToChangeColumns(
                                 performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
                                 onColumnsChangeState.value(next)
                                 onPinchGestureSuccessState.value?.invoke()
+                            } else {
+                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.BoundaryLimit)
                             }
                             scrollAccumulator = 0f
                         }
@@ -197,6 +199,8 @@ fun Modifier.pinchToChangeColumns(
                             performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
                             onColumnsChangeState.value(next)
                             onPinchGestureSuccessState.value?.invoke()
+                        } else {
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.BoundaryLimit)
                         }
                     }
                 } while (event.changes.any { it.pressed })

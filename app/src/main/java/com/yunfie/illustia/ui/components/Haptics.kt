@@ -25,6 +25,11 @@ enum class AppHapticEffect {
     Success,
     Error,
     BookmarkBurst,
+    BoundaryLimit,
+    ThresholdSnap,
+    WheelTick,
+    Peek,
+    Dismiss,
 }
 
 @androidx.compose.runtime.Composable
@@ -80,6 +85,15 @@ fun performAppHapticFeedback(
 
                         AppHapticEffect.Error -> vibrator.vibrate(longArrayOf(0L, 30L, 32L, 42L), -1)
 
+                        AppHapticEffect.BoundaryLimit -> vibrator.vibrate(if (mode == AppHapticMode.Rich) 36L else 24L)
+
+                        AppHapticEffect.ThresholdSnap,
+                        AppHapticEffect.WheelTick,
+                        AppHapticEffect.Dismiss,
+                        -> vibrator.vibrate(if (mode == AppHapticMode.Rich) 12L else 8L)
+
+                        AppHapticEffect.Peek -> vibrator.vibrate(if (mode == AppHapticMode.Rich) 26L else 16L)
+
                         AppHapticEffect.Click,
                         AppHapticEffect.Toggle,
                         -> vibrator.vibrate(if (mode == AppHapticMode.Rich) 28L else 16L)
@@ -104,43 +118,68 @@ private fun resolveVibrator(context: Context): Vibrator? =
     }
 
 @RequiresApi(Build.VERSION_CODES.R)
-@Suppress("MagicNumber")
-private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boolean {
-    val primitivesSupported =
-        when (effect) {
-            AppHapticEffect.Click -> {
-                areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)
-            }
+@Suppress("CyclomaticComplexMethod")
+private fun Vibrator.checkPrimitivesSupported(effect: AppHapticEffect): Boolean =
+    when (effect) {
+        AppHapticEffect.Click -> {
+            areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)
+        }
 
-            AppHapticEffect.Toggle -> {
+        AppHapticEffect.Toggle, AppHapticEffect.ThresholdSnap -> {
+            areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)
+        }
+
+        AppHapticEffect.WheelTick -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_LOW_TICK) ||
+                    areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)
+            } else {
                 areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)
             }
+        }
 
-            AppHapticEffect.Success -> {
-                areAllPrimitivesSupported(
-                    VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
-                    VibrationEffect.Composition.PRIMITIVE_CLICK,
-                )
-            }
-
-            AppHapticEffect.BookmarkBurst -> {
-                areAllPrimitivesSupported(
-                    VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
-                    VibrationEffect.Composition.PRIMITIVE_CLICK,
-                    VibrationEffect.Composition.PRIMITIVE_TICK,
-                )
-            }
-
-            AppHapticEffect.Error -> {
-                areAllPrimitivesSupported(
-                    VibrationEffect.Composition.PRIMITIVE_QUICK_FALL,
-                    VibrationEffect.Composition.PRIMITIVE_CLICK,
-                )
+        AppHapticEffect.BoundaryLimit -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD) ||
+                    areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)
+            } else {
+                areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)
             }
         }
-    if (!primitivesSupported) return false
 
-    val composition = VibrationEffect.startComposition()
+        AppHapticEffect.Peek, AppHapticEffect.Success -> {
+            areAllPrimitivesSupported(
+                VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
+                VibrationEffect.Composition.PRIMITIVE_CLICK,
+            )
+        }
+
+        AppHapticEffect.Dismiss -> {
+            areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL)
+        }
+
+        AppHapticEffect.BookmarkBurst -> {
+            areAllPrimitivesSupported(
+                VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
+                VibrationEffect.Composition.PRIMITIVE_CLICK,
+                VibrationEffect.Composition.PRIMITIVE_TICK,
+            )
+        }
+
+        AppHapticEffect.Error -> {
+            areAllPrimitivesSupported(
+                VibrationEffect.Composition.PRIMITIVE_QUICK_FALL,
+                VibrationEffect.Composition.PRIMITIVE_CLICK,
+            )
+        }
+    }
+
+@RequiresApi(Build.VERSION_CODES.R)
+@Suppress("CyclomaticComplexMethod", "MagicNumber")
+private fun Vibrator.composeEffectPrimitives(
+    composition: VibrationEffect.Composition,
+    effect: AppHapticEffect,
+) {
     when (effect) {
         AppHapticEffect.Click -> {
             composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.85f)
@@ -148,6 +187,40 @@ private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boo
 
         AppHapticEffect.Toggle -> {
             composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.75f)
+        }
+
+        AppHapticEffect.ThresholdSnap -> {
+            composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.65f)
+        }
+
+        AppHapticEffect.WheelTick -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_LOW_TICK)
+            ) {
+                composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, 0.65f)
+            } else {
+                composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.35f)
+            }
+        }
+
+        AppHapticEffect.BoundaryLimit -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD)
+            ) {
+                composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, 1.0f)
+            } else {
+                composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f)
+            }
+        }
+
+        AppHapticEffect.Peek -> {
+            composition
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, 0.55f)
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.95f, 15)
+        }
+
+        AppHapticEffect.Dismiss -> {
+            composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, 0.55f)
         }
 
         AppHapticEffect.Success -> {
@@ -169,6 +242,13 @@ private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boo
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.9f, 25)
         }
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.R)
+private fun Vibrator.vibrateCompositionIfSupported(effect: AppHapticEffect): Boolean {
+    if (!checkPrimitivesSupported(effect)) return false
+    val composition = VibrationEffect.startComposition()
+    composeEffectPrimitives(composition, effect)
     vibrate(composition.compose())
     return true
 }
@@ -184,12 +264,18 @@ private fun AppHapticEffect.predefinedEffect(mode: AppHapticMode): Int =
             }
         }
 
-        AppHapticEffect.Toggle -> {
+        AppHapticEffect.Toggle,
+        AppHapticEffect.ThresholdSnap,
+        AppHapticEffect.WheelTick,
+        AppHapticEffect.Dismiss,
+        -> {
             VibrationEffect.EFFECT_TICK
         }
 
         AppHapticEffect.Success,
         AppHapticEffect.BookmarkBurst,
+        AppHapticEffect.BoundaryLimit,
+        AppHapticEffect.Peek,
         -> {
             VibrationEffect.EFFECT_HEAVY_CLICK
         }
@@ -200,6 +286,7 @@ private fun AppHapticEffect.predefinedEffect(mode: AppHapticMode): Int =
     }
 
 @RequiresApi(Build.VERSION_CODES.O)
+@Suppress("CyclomaticComplexMethod", "MagicNumber")
 private fun AppHapticEffect.compatEffect(
     mode: AppHapticMode,
     hasAmplitudeControl: Boolean,
@@ -231,6 +318,27 @@ private fun AppHapticEffect.compatEffect(
             } else {
                 VibrationEffect.createWaveform(longArrayOf(0L, 28L, 30L, 40L), -1)
             }
+        }
+
+        AppHapticEffect.BoundaryLimit -> {
+            VibrationEffect.createOneShot(32L, strongAmplitude)
+        }
+
+        AppHapticEffect.Peek -> {
+            VibrationEffect.createOneShot(24L, strongAmplitude)
+        }
+
+        AppHapticEffect.ThresholdSnap -> {
+            VibrationEffect.createOneShot(12L, lightAmplitude)
+        }
+
+        AppHapticEffect.WheelTick -> {
+            val tickAmplitude = if (hasAmplitudeControl) (lightAmplitude * 0.7f).toInt().coerceAtLeast(1) else lightAmplitude
+            VibrationEffect.createOneShot(8L, tickAmplitude)
+        }
+
+        AppHapticEffect.Dismiss -> {
+            VibrationEffect.createOneShot(10L, lightAmplitude)
         }
 
         AppHapticEffect.Click,

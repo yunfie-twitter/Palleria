@@ -49,6 +49,7 @@ import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
@@ -444,6 +445,7 @@ internal fun IllustDetailHeader(
                                                     DropdownItem(
                                                         text = saveThisPageLabel,
                                                         onClick = {
+                                                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
                                                             val currentPage =
                                                                 pagerState.currentPage.coerceIn(
                                                                     0,
@@ -462,7 +464,10 @@ internal fun IllustDetailHeader(
                                                     ),
                                                     DropdownItem(
                                                         text = saveAllPagesLabel,
-                                                        onClick = { onSaveAllImages(imageUrls, "illustia_${illust.id}") },
+                                                        onClick = {
+                                                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                                            onSaveAllImages(imageUrls, "illustia_${illust.id}")
+                                                        },
                                                     ),
                                                 ),
                                         )
@@ -470,6 +475,7 @@ internal fun IllustDetailHeader(
                                         DropdownItem(
                                             text = saveActionLabel,
                                             onClick = {
+                                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
                                                 onSaveImage(
                                                     illust.originalImageUrl ?: illust.imageUrl,
                                                     "illustia_${illust.id}",

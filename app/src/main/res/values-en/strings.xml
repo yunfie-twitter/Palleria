@@ -1228,13 +1228,6 @@
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 
-    <string name="guide_quick_peek_title">Long press to preview (Quick Peek)</string>
-    <string name="guide_quick_peek_desc">Long press any card to peek at artwork details without leaving feed</string>
-    <string name="guide_pinch_grid_title">Pinch with 2 fingers to change columns</string>
-    <string name="guide_pinch_grid_desc">Pinch in or out on the grid to seamlessly adjust display columns</string>
-    <string name="guide_completed">Done!</string>
-    <string name="guide_skip">Dismiss</string>
-
     <string name="permission_notification_title">Notification Permission</string>
     <string name="permission_notification_desc">Needed to notify you about new artworks from favorite creators and download completions.</string>
     <string name="permission_storage_title">Storage Access</string>
@@ -1265,17 +1258,6 @@
     <string name="setup_safety_all_age">All Ages Only (Safe Mode)</string>
     <string name="setup_safety_r18">Include R-18</string>
     <string name="setup_safety_r18g">Include R-18 &amp; R-18G</string>
-
-    <!-- Zero-Config & Progressive Onboarding -->
-    <string name="onboarding_guest_explore_button">Explore without login</string>
-    <string name="onboarding_network_smart_suggest_title">Optimal Connection Detected</string>
-    <string name="onboarding_network_smart_suggest_desc">Direct connection to official servers may be restricted in your region. Would you like to optimize with bypass mode (ECH/Proxy)?</string>
-    <string name="onboarding_network_smart_switch_btn">Optimize with Bypass Mode</string>
-    <string name="guest_contextual_login_title">Save to your Pixiv account</string>
-    <string name="guest_contextual_login_desc">Log in with your Pixiv account to bookmark this artwork or follow this artist.</string>
-    <string name="guest_contextual_login_button">Log In with Pixiv</string>
-    <string name="guest_contextual_login_later">Later</string>
-    <string name="guest_mode_badge">Guest Mode</string>
 
     <!-- Wide Color Gamut (Display P3) -->
     <string name="settings_wide_color_gamut_title">Wide Color Gamut (Display P3 / WCG)</string>
