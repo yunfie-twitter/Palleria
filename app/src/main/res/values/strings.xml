@@ -1292,4 +1292,53 @@
     <string name="flag_image_blur_preview_desc">画像読み込み中に低解像度サムネイルをぼかし先行表示し、高解像度画像の読み込み完了時に滑らかにクロスフェードします</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
+
+    <string name="guide_quick_peek_title">長押しでプレビュー（Quick Peek）</string>
+    <string name="guide_quick_peek_desc">カードを長押しすると、画面を移動せずに詳細を覗き見できます</string>
+    <string name="guide_pinch_grid_title">2本指でピンチして列数を変更</string>
+    <string name="guide_pinch_grid_desc">グリッドを2本指でピンチイン・アウトして、表示列数をシームレスに変えられます</string>
+    <string name="guide_completed">完了！</string>
+    <string name="guide_skip">閉じる</string>
+
+    <string name="permission_notification_title">通知の許可について</string>
+    <string name="permission_notification_desc">お気に入り作家の新着作品や、ダウンロード完了通知をお届けするために必要です。</string>
+    <string name="permission_storage_title">ストレージへの保存について</string>
+    <string name="permission_storage_desc">高画質イラストの保存やライブ壁紙機能を利用するために必要です。</string>
+    <string name="permission_grant_button">許可する</string>
+    <string name="permission_later_button">今はしない</string>
+
+    <string name="setup_network_recommended_title">推奨設定（お住まいの地域に最適化）</string>
+    <string name="setup_network_recommended_desc">公式サーバーへの直接接続。通常はこちらで最高画質かつ高速にご利用いただけます。</string>
+    <string name="setup_network_custom_title">カスタム接続設定（プロキシ・接続方式）</string>
+    <string name="setup_network_ping_checking">接続確認中…</string>
+    <string name="setup_network_ping_ok">✅ 公式サーバーへの接続は良好です</string>
+    <string name="setup_network_ping_failed">⚠️ 公式サーバーへの接続が制限されている可能性があります</string>
+    <string name="setup_network_suggest_ech">アクセス規制を回避するモード（ECH/Proxy）に切り替えますか？</string>
+    <string name="setup_network_switch_ech_button">規制回避モードに切り替える</string>
+    <string name="setup_network_mode_standard_label">通常（高速・安定）</string>
+    <string name="setup_network_mode_ech_label">プライバシー保護・規制回避（ECH）</string>
+    <string name="setup_network_mode_compat_label">互換モード（接続が不安定な場合）</string>
+    <string name="setup_proxy_official_label">公式（最高画質・直接接続）</string>
+    <string name="setup_proxy_bypass_label">公式画像に接続できない場合・高速キャッシュ</string>
+
+    <string name="setup_theme_and_safety_title">外観とコンテンツ安全設定</string>
+    <string name="setup_theme_title">テーマ</string>
+    <string name="setup_theme_system">システム連動</string>
+    <string name="setup_theme_light">ライト</string>
+    <string name="setup_theme_dark">ダーク</string>
+    <string name="setup_safety_title">表示コンテンツの制限</string>
+    <string name="setup_safety_all_age">全年齢のみ（セーフモード）</string>
+    <string name="setup_safety_r18">R-18作品を表示</string>
+    <string name="setup_safety_r18g">R-18 / R-18G作品を表示</string>
+
+    <!-- Zero-Config & Progressive Onboarding -->
+    <string name="onboarding_guest_explore_button">ログインせずに探索する</string>
+    <string name="onboarding_network_smart_suggest_title">最適な接続環境を検出</string>
+    <string name="onboarding_network_smart_suggest_desc">お住まいの地域では公式サーバーへの直接接続が制限されている可能性があります。規制回避モード（ECH/Proxy）に最適化しますか？</string>
+    <string name="onboarding_network_smart_switch_btn">規制回避モードに最適化</string>
+    <string name="guest_contextual_login_title">Pixivアカウントに保存</string>
+    <string name="guest_contextual_login_desc">この作品をお気に入り登録したり、作家をフォローするにはPixivアカウントにログインしてください。</string>
+    <string name="guest_contextual_login_button">Pixivでログイン</string>
+    <string name="guest_contextual_login_later">あとで</string>
+    <string name="guest_mode_badge">ゲスト探索中</string>
 </resources>

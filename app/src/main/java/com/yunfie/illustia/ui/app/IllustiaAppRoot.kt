@@ -283,9 +283,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         navigate(AppRoute.SearchResults(tag))
     }
 
-    LaunchedEffect(state.settingsLoaded, state.settings.refreshToken) {
+    LaunchedEffect(state.settingsLoaded, state.settings.refreshToken, state.isGuestMode) {
         if (!state.settingsLoaded) return@LaunchedEffect
-        if (state.settings.refreshToken.isNotBlank()) {
+        if (state.settings.refreshToken.isNotBlank() || state.isGuestMode) {
             delay(120)
             viewModel.loadInitialHomeIfNeeded()
             if (backStack.lastOrNull() == AppRoute.Onboarding) {
@@ -985,7 +985,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     val isDesktop = remember(context) { DesktopEnvironment.isDesktop(context) }
                     val rootRailState = rememberNavigationRailState()
                     val isFullscreenRoute = backStack.lastOrNull() == AppRoute.ImageViewer
-                    val isPreLogin = state.settings.refreshToken.isBlank() || backStack.lastOrNull() == AppRoute.Onboarding
+                    val isPreLogin =
+                        (state.settings.refreshToken.isBlank() && !state.isGuestMode) ||
+                            backStack.lastOrNull() == AppRoute.Onboarding
                     BoxWithConstraints(
                         modifier =
                             Modifier

@@ -168,6 +168,8 @@ data class AppSettings(
     val embedMetadata: Boolean = true,
     val ugoiraAutoPlay: Boolean = true,
     val commandPaletteEnabled: Boolean = true,
+    val hasCompletedQuickPeekGuide: Boolean = false,
+    val hasCompletedPinchGridGuide: Boolean = false,
     val featureFlags: Map<String, Boolean> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean

@@ -15,7 +15,17 @@ fun pixivNetworkModeOptions(): List<String> =
 @Composable
 fun pixivNetworkModeLabel(value: String): String =
     when (NetworkMode.fromCode(value)) {
-        NetworkMode.Ech -> stringResource(R.string.pixiv_network_mode_ech)
-        NetworkMode.Compat -> stringResource(R.string.pixiv_network_mode_compat)
-        NetworkMode.Standard -> stringResource(R.string.pixiv_network_mode_standard)
+        NetworkMode.Ech -> {
+            stringResource(R.string.pixiv_network_mode_ech) + " - " + stringResource(R.string.setup_network_mode_ech_label)
+        }
+
+        NetworkMode.Compat -> {
+            stringResource(R.string.pixiv_network_mode_compat) + " - " +
+                stringResource(R.string.setup_network_mode_compat_label)
+        }
+
+        NetworkMode.Standard -> {
+            stringResource(R.string.pixiv_network_mode_standard) + " - " +
+                stringResource(R.string.setup_network_mode_standard_label)
+        }
     }

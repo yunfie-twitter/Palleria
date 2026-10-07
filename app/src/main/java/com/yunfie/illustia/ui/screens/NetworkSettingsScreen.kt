@@ -180,7 +180,20 @@ fun NetworkSettingsScreen(
 @Composable
 private fun pixivImageProxyLabel(value: String): String =
     when {
-        value.isBlank() -> stringResource(R.string.image_proxy_none)
-        value == "custom" -> stringResource(R.string.image_proxy_custom)
-        else -> PixivImageProxyOptions.firstOrNull { it.baseUrl == value }?.name ?: value
+        value.isBlank() -> {
+            stringResource(R.string.image_proxy_none) + " (" + stringResource(R.string.setup_proxy_official_label) + ")"
+        }
+
+        value == "custom" -> {
+            stringResource(R.string.image_proxy_custom)
+        }
+
+        value.contains("pixiv.cat") -> {
+            val name = PixivImageProxyOptions.firstOrNull { it.baseUrl == value }?.name ?: value
+            name + " (" + stringResource(R.string.setup_proxy_bypass_label) + ")"
+        }
+
+        else -> {
+            PixivImageProxyOptions.firstOrNull { it.baseUrl == value }?.name ?: value
+        }
     }

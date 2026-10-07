@@ -585,6 +585,13 @@ abstract class IllustiaDetailProfileModule(
     }
 
     fun toggleFollow(user: UserProfile) {
+        if (_uiState.value.isGuestMode &&
+            _uiState.value.settings.refreshToken
+                .isBlank()
+        ) {
+            promptGuestLogin("follow")
+            return
+        }
         runLoading {
             if (user.isFollowed) {
                 repository.unfollowUser(user.id)

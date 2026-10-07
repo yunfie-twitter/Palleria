@@ -39,6 +39,7 @@ import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.InteractiveGuideBanner
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.OfflineCachedChip
@@ -143,6 +144,7 @@ internal fun FeedTabContent(
                         enabled = pinchEnabled,
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
+                        onPinchGestureSuccess = viewModel::completePinchGridGuide,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection)
                     .background(MiuixTheme.colorScheme.surface),
             contentPadding =
@@ -155,6 +157,17 @@ internal fun FeedTabContent(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            val showInteractiveGuide = !settings.hasCompletedQuickPeekGuide || !settings.hasCompletedPinchGridGuide
+            if (showInteractiveGuide) {
+                item(key = "home_interactive_guide", span = { GridItemSpan(maxLineSpan) }, contentType = "interactive_guide") {
+                    InteractiveGuideBanner(
+                        quickPeekCompleted = settings.hasCompletedQuickPeekGuide,
+                        pinchGridCompleted = settings.hasCompletedPinchGridGuide,
+                        onDismiss = viewModel::dismissInteractiveGuides,
+                    )
+                }
+            }
+
             if (showInitialSkeletons) {
                 items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
                     IllustCardSkeleton(shimmerValue = shimmer)
@@ -297,6 +310,7 @@ internal fun FollowingTabContent(
                         enabled = pinchEnabled,
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
+                        onPinchGestureSuccess = viewModel::completePinchGridGuide,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection)
                     .background(MiuixTheme.colorScheme.surface),
             contentPadding =
