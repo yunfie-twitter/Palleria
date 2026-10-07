@@ -226,6 +226,8 @@ internal fun readFromDataStore(
         embedMetadata = preferences[EMBED_METADATA] ?: true,
         ugoiraAutoPlay = preferences[UGOIRA_AUTO_PLAY] ?: true,
         commandPaletteEnabled = preferences[COMMAND_PALETTE_ENABLED] ?: true,
+        hasCompletedQuickPeekGuide = preferences[HAS_COMPLETED_QUICK_PEEK_GUIDE] ?: false,
+        hasCompletedPinchGridGuide = preferences[HAS_COMPLETED_PINCH_GRID_GUIDE] ?: false,
         featureFlags = decodeFeatureFlags(preferences[FEATURE_FLAGS_JSON]),
     )
 }
@@ -562,6 +564,8 @@ internal fun writeToDataStore(
     preferences[EMBED_METADATA] = settings.embedMetadata
     preferences[UGOIRA_AUTO_PLAY] = settings.ugoiraAutoPlay
     preferences[COMMAND_PALETTE_ENABLED] = settings.commandPaletteEnabled
+    preferences[HAS_COMPLETED_QUICK_PEEK_GUIDE] = settings.hasCompletedQuickPeekGuide
+    preferences[HAS_COMPLETED_PINCH_GRID_GUIDE] = settings.hasCompletedPinchGridGuide
     preferences[FEATURE_FLAGS_JSON] = encodeFeatureFlags(settings.featureFlags)
 }
 

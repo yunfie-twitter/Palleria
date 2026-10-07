@@ -123,11 +123,20 @@ data class IllustiaUiState(
     val showLockRecoveryDialog: Boolean = false,
     val loadState: LoadState = LoadState.Idle,
     val message: String? = null,
+    val pendingPermissionRationale: PermissionRationaleType? = null,
+    val isGuestMode: Boolean = false,
+    val showGuestContextualLoginDialog: Boolean = false,
+    val guestContextualLoginFeature: String? = null,
     val privacyLocked: Boolean = false,
     val calculatorBuffer: String = "",
     val calculatorHistory: List<CalculatorHistoryEntry> = emptyList(),
     val isTransitioningToIllustia: Boolean = false,
 )
+
+enum class PermissionRationaleType {
+    Notification,
+    Storage,
+}
 
 data class CalculatorHistoryEntry(
     val expression: String,

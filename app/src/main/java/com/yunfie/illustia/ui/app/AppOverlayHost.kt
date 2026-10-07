@@ -1,6 +1,10 @@
 package com.yunfie.illustia.ui.app
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,8 +25,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
+import com.yunfie.illustia.PermissionRationaleType
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.ImageClipboardHelper
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -29,6 +36,7 @@ import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.PermissionRationaleDialog
 import com.yunfie.illustia.ui.components.QuickPeekOverlay
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
@@ -36,6 +44,7 @@ import com.yunfie.illustia.ui.screens.CommentScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -84,6 +93,9 @@ internal fun AppOverlayHost(
         val useSharedTransition = appState.state.settings.quickPeekSharedElementTransition
 
         if (isQuickPeekActive) {
+            LaunchedEffect(illust.id) {
+                viewModel.completeQuickPeekGuide()
+            }
             QuickPeekOverlay(
                 illust = illust,
                 useSharedElementTransition = useSharedTransition,
@@ -334,5 +346,88 @@ internal fun AppOverlayHost(
             },
             onDismiss = { showLockResetConfirmDialog = false },
         )
+    }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { _ ->
+            viewModel.dismissPermissionRationale()
+        }
+
+    appState.state.pendingPermissionRationale?.let { rationaleType ->
+        PermissionRationaleDialog(
+            type = rationaleType,
+            onGrant = {
+                viewModel.dismissPermissionRationale()
+                val perm =
+                    when (rationaleType) {
+                        PermissionRationaleType.Notification -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                Manifest.permission.POST_NOTIFICATIONS
+                            } else {
+                                null
+                            }
+                        }
+
+                        PermissionRationaleType.Storage -> {
+                            if (PlatformCapabilities.requiresLegacyStoragePermission()) {
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            } else {
+                                null
+                            }
+                        }
+                    }
+                if (perm != null) {
+                    permissionLauncher.launch(perm)
+                }
+            },
+            onDismiss = viewModel::dismissPermissionRationale,
+        )
+    }
+
+    if (appState.state.showGuestContextualLoginDialog) {
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.guest_contextual_login_title),
+            summary = stringResource(R.string.guest_contextual_login_desc),
+            backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+            onDismissRequest = viewModel::dismissGuestLoginPrompt,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Button(
+                    onClick = {
+                        viewModel.dismissGuestLoginPrompt()
+                        viewModel.openWebLogin()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.guest_contextual_login_button),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                Button(
+                    onClick = viewModel::dismissGuestLoginPrompt,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            color = MiuixTheme.colorScheme.surfaceContainer,
+                        ),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.guest_contextual_login_later),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
+        }
     }
 }

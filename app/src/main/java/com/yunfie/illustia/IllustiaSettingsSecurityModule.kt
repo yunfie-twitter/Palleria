@@ -131,14 +131,10 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun loadInitialHomeIfNeeded() {
+    override fun loadInitialHomeIfNeeded() {
         val state = _uiState.value
-        if (
-            state.settings.refreshToken.isBlank() ||
-            state.homeItems.isNotEmpty()
-        ) {
-            return
-        }
+        if (state.homeItems.isNotEmpty()) return
+        if (state.settings.refreshToken.isBlank() && !state.isGuestMode) return
         refreshHome()
     }
 
@@ -201,6 +197,35 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateHapticsEnabled(enabled: Boolean) {
         updateHapticMode(if (enabled) AppHapticMode.Rich.value else AppHapticMode.Off.value)
+    }
+
+    fun completeQuickPeekGuide() {
+        if (!_uiState.value.settings.hasCompletedQuickPeekGuide) {
+            updateSettings { it.copy(hasCompletedQuickPeekGuide = true) }
+        }
+    }
+
+    fun completePinchGridGuide() {
+        if (!_uiState.value.settings.hasCompletedPinchGridGuide) {
+            updateSettings { it.copy(hasCompletedPinchGridGuide = true) }
+        }
+    }
+
+    fun dismissInteractiveGuides() {
+        updateSettings {
+            it.copy(
+                hasCompletedQuickPeekGuide = true,
+                hasCompletedPinchGridGuide = true,
+            )
+        }
+    }
+
+    fun requestPermissionRationale(type: PermissionRationaleType) {
+        _uiState.update { it.copy(pendingPermissionRationale = type) }
+    }
+
+    fun dismissPermissionRationale() {
+        _uiState.update { it.copy(pendingPermissionRationale = null) }
     }
 
     fun updatePrefetchImages(value: Boolean) {

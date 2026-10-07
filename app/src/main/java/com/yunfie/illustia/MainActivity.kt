@@ -369,7 +369,6 @@ class MainActivity : FragmentActivity() {
                 this@MainActivity.lifecycleScope.launch {
                     reportFullyDrawn()
                     registerProcessLifecycleObserverIfNeeded()
-                    requestLegacyStoragePermissionIfNeeded()
                     enableHandoffIfSupported()
                     kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()

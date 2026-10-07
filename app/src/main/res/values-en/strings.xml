@@ -1227,4 +1227,53 @@
     <string name="flag_image_blur_preview_desc">Display a blurred low-resolution placeholder while loading and smoothly crossfade into the full image</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
+
+    <string name="guide_quick_peek_title">Long press to preview (Quick Peek)</string>
+    <string name="guide_quick_peek_desc">Long press any card to peek at artwork details without leaving feed</string>
+    <string name="guide_pinch_grid_title">Pinch with 2 fingers to change columns</string>
+    <string name="guide_pinch_grid_desc">Pinch in or out on the grid to seamlessly adjust display columns</string>
+    <string name="guide_completed">Done!</string>
+    <string name="guide_skip">Dismiss</string>
+
+    <string name="permission_notification_title">Notification Permission</string>
+    <string name="permission_notification_desc">Needed to notify you about new artworks from favorite creators and download completions.</string>
+    <string name="permission_storage_title">Storage Access</string>
+    <string name="permission_storage_desc">Needed to save high-resolution artworks and use the live wallpaper feature.</string>
+    <string name="permission_grant_button">Allow</string>
+    <string name="permission_later_button">Not Now</string>
+
+    <string name="setup_network_recommended_title">Recommended Settings (Optimized for your region)</string>
+    <string name="setup_network_recommended_desc">Direct connection to official servers. Best performance and original quality for most regions.</string>
+    <string name="setup_network_custom_title">Custom Connection Settings (Proxy / ECH)</string>
+    <string name="setup_network_ping_checking">Checking connection…</string>
+    <string name="setup_network_ping_ok">✅ Official server connection is healthy</string>
+    <string name="setup_network_ping_failed">⚠️ Official server may be restricted or blocked in your area</string>
+    <string name="setup_network_suggest_ech">Switch to restriction bypass mode (ECH / Proxy)?</string>
+    <string name="setup_network_switch_ech_button">Switch to Bypass Mode</string>
+    <string name="setup_network_mode_standard_label">Standard (Fast &amp; Stable)</string>
+    <string name="setup_network_mode_ech_label">Privacy &amp; Bypass (ECH)</string>
+    <string name="setup_network_mode_compat_label">Compatibility Mode (When unstable)</string>
+    <string name="setup_proxy_official_label">Official (Original Quality &amp; Direct)</string>
+    <string name="setup_proxy_bypass_label">When official images fail / Fast Cache</string>
+
+    <string name="setup_theme_and_safety_title">Appearance &amp; Content Safety</string>
+    <string name="setup_theme_title">Theme</string>
+    <string name="setup_theme_system">System Default</string>
+    <string name="setup_theme_light">Light</string>
+    <string name="setup_theme_dark">Dark</string>
+    <string name="setup_safety_title">Content Filtering</string>
+    <string name="setup_safety_all_age">All Ages Only (Safe Mode)</string>
+    <string name="setup_safety_r18">Include R-18</string>
+    <string name="setup_safety_r18g">Include R-18 &amp; R-18G</string>
+
+    <!-- Zero-Config & Progressive Onboarding -->
+    <string name="onboarding_guest_explore_button">Explore without login</string>
+    <string name="onboarding_network_smart_suggest_title">Optimal Connection Detected</string>
+    <string name="onboarding_network_smart_suggest_desc">Direct connection to official servers may be restricted in your region. Would you like to optimize with bypass mode (ECH/Proxy)?</string>
+    <string name="onboarding_network_smart_switch_btn">Optimize with Bypass Mode</string>
+    <string name="guest_contextual_login_title">Save to your Pixiv account</string>
+    <string name="guest_contextual_login_desc">Log in with your Pixiv account to bookmark this artwork or follow this artist.</string>
+    <string name="guest_contextual_login_button">Log In with Pixiv</string>
+    <string name="guest_contextual_login_later">Later</string>
+    <string name="guest_mode_badge">Guest Mode</string>
 </resources>

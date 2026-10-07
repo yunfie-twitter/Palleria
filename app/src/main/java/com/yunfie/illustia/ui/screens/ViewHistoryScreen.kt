@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -541,6 +542,7 @@ fun ViewHistoryScreen(
                 val isSelected = illust.id in selectedIds
                 IllustCard(
                     illust = illust,
+                    modifier = animatedGridPlacement(),
                     isSelected = isSelected,
                     onBookmark = {
                         performHaptic(AppHapticEffect.Toggle)

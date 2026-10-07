@@ -420,6 +420,13 @@ abstract class IllustiaBookmarkModule(
         illust: Illust,
         restrict: com.yunfie.illustia.models.Restrict? = null,
     ) {
+        if (_uiState.value.isGuestMode &&
+            _uiState.value.settings.refreshToken
+                .isBlank()
+        ) {
+            promptGuestLogin("bookmark")
+            return
+        }
         if (illust.isBookmarked) {
             _uiState.update { it.copy(pendingBookmarkRemoval = illust) }
             return
