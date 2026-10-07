@@ -693,7 +693,7 @@ fun HighlightCard(
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
                         .height(64.dp)
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))),
+                        .cachedVerticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))),
             )
             Text(
                 text = illust.title,

@@ -1276,4 +1276,9 @@
     <string name="guest_contextual_login_button">Log In with Pixiv</string>
     <string name="guest_contextual_login_later">Later</string>
     <string name="guest_mode_badge">Guest Mode</string>
+
+    <!-- Wide Color Gamut (Display P3) -->
+    <string name="settings_wide_color_gamut_title">Wide Color Gamut (Display P3 / WCG)</string>
+    <string name="settings_wide_color_gamut_desc">Render vibrant colors in Display P3 &amp; AdobeRGB using hardware color management on supported OLED displays</string>
+    <string name="settings_wide_color_gamut_unsupported">Your device does not support wide color gamut displays</string>
 </resources>

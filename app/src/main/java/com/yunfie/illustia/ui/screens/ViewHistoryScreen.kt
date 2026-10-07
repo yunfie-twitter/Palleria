@@ -490,8 +490,7 @@ fun ViewHistoryScreen(
                         enabled = state.settings.gridPinchToZoom,
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 16.dp,

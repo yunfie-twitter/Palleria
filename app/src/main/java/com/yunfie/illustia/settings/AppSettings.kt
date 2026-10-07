@@ -170,6 +170,7 @@ data class AppSettings(
     val commandPaletteEnabled: Boolean = true,
     val hasCompletedQuickPeekGuide: Boolean = false,
     val hasCompletedPinchGridGuide: Boolean = false,
+    val wideColorGamutEnabled: Boolean = true,
     val featureFlags: Map<String, Boolean> = emptyMap(),
 ) {
     val useHighQualityFeedImages: Boolean

@@ -227,8 +227,7 @@ fun NovelScreen(
                             enabled = pinchEnabled,
                             currentColumns = columns,
                             onColumnsChange = viewModel::updateVerticalColumnCount,
-                        ).background(MiuixTheme.colorScheme.surface)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                        ).nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     PaddingValues(
                         start = 12.dp,

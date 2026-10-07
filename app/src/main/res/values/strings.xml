@@ -1341,4 +1341,9 @@
     <string name="guest_contextual_login_button">Pixivでログイン</string>
     <string name="guest_contextual_login_later">あとで</string>
     <string name="guest_mode_badge">ゲスト探索中</string>
+
+    <!-- Wide Color Gamut (Display P3) -->
+    <string name="settings_wide_color_gamut_title">広色域表示（Display P3 / WCG）</string>
+    <string name="settings_wide_color_gamut_desc">対応有機ELディスプレイでDisplay P3・AdobeRGBの鮮烈な色彩をハードウェア描画します</string>
+    <string name="settings_wide_color_gamut_unsupported">お使いの端末は広色域表示に対応していません</string>
 </resources>

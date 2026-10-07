@@ -32,6 +32,7 @@ import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
 import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
+import com.yunfie.illustia.settings.store.KEY_WIDE_COLOR_GAMUT
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
 import com.yunfie.illustia.settings.store.MUTED_ILLUSTS_JSON
 import com.yunfie.illustia.settings.store.MUTED_TAGS_JSON
@@ -326,6 +327,7 @@ class SettingsStore internal constructor(
             .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
             .putBoolean(KEY_STARTUP_IS_LOGGED_IN, isLoggedIn)
             .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
+            .putBoolean(KEY_WIDE_COLOR_GAMUT, rebased.wideColorGamutEnabled)
             .apply()
     }
 
