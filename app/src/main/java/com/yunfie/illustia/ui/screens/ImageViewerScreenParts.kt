@@ -181,14 +181,36 @@ internal fun ZoomablePixivImage(
                         },
                     )
                 }.pointerInput(url) {
+                    var atMinLimit = false
+                    var atMaxLimit = false
                     detectZoomAndPanGestures(
                         isZoomed = { scale > 1.02f },
                         onGesture = { centroid, pan, zoom ->
                             if (!zoom.isFinite() || zoom <= 0f) return@detectZoomAndPanGestures
                             zoomAnimation[0]?.cancel()
                             val previousScale = scale
-                            val nextScale = (scale * zoom).coerceIn(1f, 6f)
+                            val unconstrainedScale = scale * zoom
+                            val nextScale = unconstrainedScale.coerceIn(1f, 6f)
                             if (!nextScale.isFinite() || scale <= 0f) return@detectZoomAndPanGestures
+
+                            if (unconstrainedScale <= 1f) {
+                                if (!atMinLimit && zoom < 1f) {
+                                    performHaptic(AppHapticEffect.BoundaryLimit)
+                                    atMinLimit = true
+                                }
+                            } else {
+                                atMinLimit = false
+                            }
+
+                            if (unconstrainedScale >= 6f) {
+                                if (!atMaxLimit && zoom > 1f) {
+                                    performHaptic(AppHapticEffect.BoundaryLimit)
+                                    atMaxLimit = true
+                                }
+                            } else {
+                                atMaxLimit = false
+                            }
+
                             val appliedZoom = nextScale / scale
                             val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
                             val focalPoint = centroid - viewportCenter
@@ -205,6 +227,8 @@ internal fun ZoomablePixivImage(
                             notifyZoomChanged(previousScale, scale)
                         },
                         onGestureEnd = {
+                            atMinLimit = false
+                            atMaxLimit = false
                             if (scale < 1.02f) {
                                 animateTo(1f, Offset.Zero)
                             } else {

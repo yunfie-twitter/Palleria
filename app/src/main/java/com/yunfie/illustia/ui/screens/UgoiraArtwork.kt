@@ -7,9 +7,13 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -57,6 +61,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
+import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.concurrent.ConcurrentHashMap
@@ -89,6 +94,9 @@ internal fun UgoiraArtwork(
     val decodedBitmaps = remember(playback) { ConcurrentHashMap<Int, ImageBitmap>() }
     var currentBitmap by remember(playback, reloadKey) { mutableStateOf<ImageBitmap?>(null) }
     var currentFrameIndex by remember(playback, reloadKey) { mutableIntStateOf(0) }
+    var isPlaying by remember(playback, reloadKey) { mutableStateOf(true) }
+    var showSeekBar by remember(playback, reloadKey) { mutableStateOf(false) }
+    var isSeeking by remember(playback, reloadKey) { mutableStateOf(false) }
     var scale by remember(previewUrl) { mutableFloatStateOf(1f) }
     var offset by remember(previewUrl) { mutableStateOf(Offset.Zero) }
     var localScale by remember(previewUrl) { mutableFloatStateOf(1f) }
@@ -266,12 +274,18 @@ internal fun UgoiraArtwork(
         }
     }
 
-    LaunchedEffect(playback, preferredConfig) {
+    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking) {
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
-        var index = 0
+        var index = currentFrameIndex
         var nextTargetTime = System.currentTimeMillis()
         while (isActive) {
+            if (!isPlaying || isSeeking) {
+                delay(60)
+                nextTargetTime = System.currentTimeMillis()
+                index = currentFrameIndex
+                continue
+            }
             val frame = frames[index]
             currentFrameIndex = index
             var bitmap = decodedBitmaps[index]
@@ -369,10 +383,34 @@ internal fun UgoiraArtwork(
                     }.then(
                         if (zoomEnabled) {
                             Modifier.pointerInput(previewUrl) {
+                                var atMinLimit = false
+                                var atMaxLimit = false
                                 detectTransformGestures { centroid, pan, zoom, _ ->
+                                    if (!zoom.isFinite() || zoom <= 0f) return@detectTransformGestures
                                     zoomAnimation[0]?.cancel()
                                     val previousScale = localScale
-                                    val nextScale = (localScale * zoom).coerceIn(1f, 6f)
+                                    val unconstrainedScale = localScale * zoom
+                                    val nextScale = unconstrainedScale.coerceIn(1f, 6f)
+                                    if (!nextScale.isFinite() || localScale <= 0f) return@detectTransformGestures
+
+                                    if (unconstrainedScale <= 1f) {
+                                        if (!atMinLimit && zoom < 1f) {
+                                            performHaptic(AppHapticEffect.BoundaryLimit)
+                                            atMinLimit = true
+                                        }
+                                    } else {
+                                        atMinLimit = false
+                                    }
+
+                                    if (unconstrainedScale >= 6f) {
+                                        if (!atMaxLimit && zoom > 1f) {
+                                            performHaptic(AppHapticEffect.BoundaryLimit)
+                                            atMaxLimit = true
+                                        }
+                                    } else {
+                                        atMaxLimit = false
+                                    }
+
                                     val appliedZoom = nextScale / localScale
                                     val viewportCenter =
                                         Offset(
@@ -447,20 +485,83 @@ internal fun UgoiraArtwork(
             }
 
             playback != null && playback.frames.isNotEmpty() -> {
-                Box(
+                Column(
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(12.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(Color.Black.copy(alpha = 0.45f))
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                            .padding(12.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = "UGOIRA ${currentFrameIndex + 1}/${playback.frames.size}",
-                        color = MiuixTheme.colorScheme.onSurface,
-                        style = MiuixTheme.textStyles.footnote1,
-                    )
+                    if (showSeekBar) {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.Black.copy(alpha = 0.65f))
+                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Slider(
+                                value = (currentFrameIndex + 1).toFloat(),
+                                onValueChange = { targetVal ->
+                                    isSeeking = true
+                                    val targetIndex = (targetVal.toInt() - 1).coerceIn(0, playback.frames.lastIndex)
+                                    if (targetIndex != currentFrameIndex) {
+                                        currentFrameIndex = targetIndex
+                                        decodedBitmaps[targetIndex]?.let { currentBitmap = it }
+                                        performHaptic(AppHapticEffect.WheelTick)
+                                    }
+                                },
+                                valueRange = 1f..playback.frames.size.toFloat(),
+                                steps = (playback.frames.size - 2).coerceAtLeast(0),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier =
+                            Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .clickable {
+                                        isPlaying = !isPlaying
+                                        performHaptic(AppHapticEffect.Toggle)
+                                    }.padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text = if (isPlaying) "⏸" else "▶",
+                                color = MiuixTheme.colorScheme.onSurface,
+                                style = MiuixTheme.textStyles.footnote1,
+                            )
+                        }
+
+                        Box(
+                            modifier =
+                                Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .clickable {
+                                        showSeekBar = !showSeekBar
+                                        performHaptic(AppHapticEffect.Click)
+                                    }.padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text = "UGOIRA ${currentFrameIndex + 1}/${playback.frames.size}",
+                                color = MiuixTheme.colorScheme.onSurface,
+                                style = MiuixTheme.textStyles.footnote1,
+                            )
+                        }
+                    }
                 }
             }
 
