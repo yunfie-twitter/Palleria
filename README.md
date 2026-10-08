@@ -47,9 +47,9 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 
 ## Highlights
 
-* ⚡ **High-Performance Rust Core**: Native UniFFI engine for accelerated Ugoira decoding, APNG/WebP/MP4 conversion, and zero-overhead data handling.
-* 🎨 **Modern Miuix & Material You UI**: Fluid animations, AMOLED & dynamic artwork themes, and customizable multi-column adaptive grids.
-* ✨ **Stealth Micro-UX Innovations**:
+*  **High-Performance Rust Core**: Native UniFFI engine for accelerated Ugoira decoding, APNG/WebP/MP4 conversion, and zero-overhead data handling.
+*  **Modern Miuix & Material You UI**: Fluid animations, AMOLED & dynamic artwork themes, and customizable multi-column adaptive grids.
+*  **Stealth Micro-UX Innovations**:
   * **Pre-DNS & Socket Warming**: Pre-resolves DNS and establishes TLS 1.3 socket pools during splash display for instantaneous first-image loading.
   * **Delta & ETag Sync**: Differential following feed synchronization that never re-downloads known artworks and pre-warms high-res images in background.
   * **Velocity-Landing Prefetch**: Predicts fling inertia stop points to fetch destination artworks ahead of time.
@@ -58,11 +58,11 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
   * **Courtesy Audio Fade**: 100ms logarithmic volume fade-out when earphones disconnect to protect ears and prevent public audio leaks.
   * **Tactile Haptic Feedback**: Boundary collision thuds (zoom & grid limits), dismiss threshold tick feedback, and bookmark tactile bursts.
   * **Wide Color Gamut (Display P3)**: 10-bit wide color gamut support for vibrant artwork reproduction on OLED screens.
-* 🔄 **PallaSync Cross-Device Synchronization**: End-to-end encrypted peer-to-peer sync of bookmarks, history, settings, and mutes across Android devices and browser extensions.
-* 📖 **Deep Reading Experience**: Dedicated Manga viewer and Novel reader with customizable typography, progress resume, and background Text-to-Speech (TTS) audiobook narration.
-* 📦 **Built-in Download & Updater**: Multi-threaded downloader with EXIF privacy stripping, template naming, and seamless background APK updates with Shizuku support.
-* 🛡️ **Privacy & Security**: PIN lock, biometric authentication, recents task snapshot stealth blur, and tracking URL cleaner.
-* 🌐 **Trilingual Localization**: Full Japanese (日本語), English, and Korean (한국어) language support.
+*  **PallaSync Cross-Device Synchronization**: End-to-end encrypted peer-to-peer sync of bookmarks, history, settings, and mutes across Android devices and browser extensions.
+*  **Deep Reading Experience**: Dedicated Manga viewer and Novel reader with customizable typography, progress resume, and background Text-to-Speech (TTS) audiobook narration.
+*  **Built-in Download & Updater**: Multi-threaded downloader with EXIF privacy stripping, template naming, and seamless background APK updates with Shizuku support.
+*  **Privacy & Security**: PIN lock, biometric authentication, recents task snapshot stealth blur, and tracking URL cleaner.
+*  **Trilingual Localization**: Full Japanese (日本語), English, and Korean (한국어) language support.
 
 ---
 
