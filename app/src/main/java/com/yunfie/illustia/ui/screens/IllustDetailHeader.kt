@@ -97,6 +97,7 @@ internal fun IllustDetailHeader(
     mutedArtworkSummary: String,
     showLikeAnimation: Boolean,
     expanded: Boolean = false,
+    smartDownloadNaming: Boolean = true,
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -263,7 +264,13 @@ internal fun IllustDetailHeader(
                                         onDoubleClick = onDoubleTapImage,
                                         onLongClick = {
                                             performAppHapticFeedback(context, haptic, hapticMode)
-                                            onSaveImage(imageUrls[page], "illustia_${illust.id}_p$page", confirmOnLongPressSave)
+                                            val saveName =
+                                                if (smartDownloadNaming) {
+                                                    com.yunfie.illustia.buildSmartDownloadFilename(illust, page, imageUrls.size)
+                                                } else {
+                                                    "illustia_${illust.id}_p$page"
+                                                }
+                                            onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
                                         },
                                     ),
                             crossfade = true,
@@ -453,9 +460,19 @@ internal fun IllustDetailHeader(
                                                                 illust.originalImagePages.getOrNull(currentPage)
                                                                     ?: imageUrls.getOrNull(currentPage)
                                                                     ?: (illust.originalImageUrl ?: illust.imageUrl)
+                                                            val saveName =
+                                                                if (smartDownloadNaming) {
+                                                                    com.yunfie.illustia.buildSmartDownloadFilename(
+                                                                        illust,
+                                                                        currentPage,
+                                                                        imageUrls.size,
+                                                                    )
+                                                                } else {
+                                                                    "illustia_${illust.id}_p$currentPage"
+                                                                }
                                                             onSaveImage(
                                                                 targetUrl,
-                                                                "illustia_${illust.id}_p$currentPage",
+                                                                saveName,
                                                                 !skipConfirmOnDetailSave,
                                                             )
                                                         },
@@ -464,7 +481,13 @@ internal fun IllustDetailHeader(
                                                         text = saveAllPagesLabel,
                                                         onClick = {
                                                             performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
-                                                            onSaveAllImages(imageUrls, "illustia_${illust.id}")
+                                                            val allPrefix =
+                                                                if (smartDownloadNaming) {
+                                                                    com.yunfie.illustia.buildSmartDownloadFilename(illust, 0, 1)
+                                                                } else {
+                                                                    "illustia_${illust.id}"
+                                                                }
+                                                            onSaveAllImages(imageUrls, allPrefix)
                                                         },
                                                     ),
                                                 ),
@@ -474,9 +497,15 @@ internal fun IllustDetailHeader(
                                             text = saveActionLabel,
                                             onClick = {
                                                 performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                                val saveName =
+                                                    if (smartDownloadNaming) {
+                                                        com.yunfie.illustia.buildSmartDownloadFilename(illust, 0, 1)
+                                                    } else {
+                                                        "illustia_${illust.id}"
+                                                    }
                                                 onSaveImage(
                                                     illust.originalImageUrl ?: illust.imageUrl,
-                                                    "illustia_${illust.id}",
+                                                    saveName,
                                                     !skipConfirmOnDetailSave,
                                                 )
                                             },

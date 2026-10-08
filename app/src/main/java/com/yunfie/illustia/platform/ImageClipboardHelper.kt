@@ -58,6 +58,7 @@ object ImageClipboardHelper {
             FileOutputStream(file).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, PNG_COMPRESS_QUALITY, out)
             }
+            PrivacyExifSanitizer.sanitizeFile(file)
 
             val uri =
                 FileProvider.getUriForFile(

@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -15,11 +16,14 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.content.ContextCompat
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.store.decodeStringMap
 import com.yunfie.illustia.settings.store.encodeStringMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.runBlocking
 import java.util.Locale
 
 /**
@@ -104,6 +108,7 @@ class NovelTtsService :
                 context = this,
                 onLoss = { pauseReading() },
                 onGain = { if (!isPlaying()) resumeReading() },
+                onBecomingNoisy = { handleBecomingNoisy() },
             )
         tts = TextToSpeech(applicationContext, this)
     }
@@ -335,6 +340,51 @@ class NovelTtsService :
         updateNotification()
     }
 
+    private fun handleBecomingNoisy() {
+        val app = applicationContext as? com.yunfie.illustia.IllustiaApplication
+        val isFadeEnabled =
+            runCatching {
+                runBlocking { app?.settingsStore?.readStartup() }
+            }.getOrNull()?.isFeatureEnabled(FeatureFlag.CourtesyAudioFade) != false
+        if (isFadeEnabled) {
+            courtesyFadeAndPauseReading()
+        } else {
+            pauseReading()
+        }
+    }
+
+    private fun courtesyFadeAndPauseReading() {
+        if (!isPlaying()) return
+        val am = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        val currentVol = am?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: 0
+        if (am == null || currentVol <= 0) {
+            pauseReading()
+            return
+        }
+        // 100msの指数関数減衰 (25ms, 50ms, 80ms) でポップノイズと外部音漏れを完全防止
+        mainHandler.postDelayed({
+            am.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                (currentVol * FADE_VOLUME_RATIO_STEP_1).toInt().coerceAtLeast(0),
+                0,
+            )
+        }, FADE_STEP_1_DELAY_MS)
+        mainHandler.postDelayed({
+            am.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                (currentVol * FADE_VOLUME_RATIO_STEP_2).toInt().coerceAtLeast(0),
+                0,
+            )
+        }, FADE_STEP_2_DELAY_MS)
+        mainHandler.postDelayed({
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+            pauseReading()
+            mainHandler.postDelayed({
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, currentVol, 0)
+            }, FADE_RESTORE_DELAY_MS)
+        }, FADE_STEP_3_DELAY_MS)
+    }
+
     private fun skipToNext() {
         if (currentParagraphIndex < paragraphs.size - 1) {
             progress.reset()
@@ -503,6 +553,13 @@ class NovelTtsService :
         private const val DEFAULT_PITCH = 1.0f
         private const val MIN_PITCH = 0.5f
         private const val MAX_PITCH = 2.0f
+
+        private const val FADE_STEP_1_DELAY_MS = 25L
+        private const val FADE_STEP_2_DELAY_MS = 50L
+        private const val FADE_STEP_3_DELAY_MS = 80L
+        private const val FADE_RESTORE_DELAY_MS = 60L
+        private const val FADE_VOLUME_RATIO_STEP_1 = 0.6f
+        private const val FADE_VOLUME_RATIO_STEP_2 = 0.25f
 
         const val ACTION_START_READING = "com.yunfie.illustia.tts.START_READING"
         const val ACTION_PLAY = "com.yunfie.illustia.tts.PLAY"

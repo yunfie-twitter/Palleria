@@ -1223,6 +1223,18 @@
     <string name="flag_offline_stale_cache_desc">Keep displaying cached feeds during network loss or errors with an offline status chip</string>
     <string name="flag_bookmark_haptic_burst_title">Bookmark &amp; Like Haptic Burst</string>
     <string name="flag_bookmark_haptic_burst_desc">Trigger rich clicky haptics and sparkling particle burst animations on bookmark and like actions</string>
+    <string name="flag_image_blur_preview_title">Blurred Image Preview</string>
+    <string name="flag_image_blur_preview_desc">Display a blurred low-resolution placeholder while loading and smoothly crossfade into the full image</string>
+    <string name="flag_task_snapshot_blur_title">Stealth Task Snapshot Blur</string>
+    <string name="flag_task_snapshot_blur_desc">Blurs app thumbnail in recent apps switcher to protect sensitive artwork and privacy</string>
+    <string name="flag_courtesy_audio_fade_title">Courtesy Audio Fade on Headset Disconnect</string>
+    <string name="flag_courtesy_audio_fade_desc">Exponentially fades out audio over 100ms on headset disconnect before pausing to prevent noise leakage</string>
+    <string name="flag_tracking_url_cleaner_title">Silent Tracking URL Cleaner</string>
+    <string name="flag_tracking_url_cleaner_desc">Automatically strips tracking query parameters (utm, s, etc.) when pasting Pixiv URLs</string>
+    <string name="flag_smart_download_naming_title">Smart Download Filename</string>
+    <string name="flag_smart_download_naming_desc">Automatically names saved files as \'[Artist] Title_p0\' for neat photo gallery organization</string>
+    <string name="flag_privacy_exif_stripper_title">Privacy Exif Stripper on Share</string>
+    <string name="flag_privacy_exif_stripper_desc">Strips GPS coordinates and device metadata before sharing images to prevent privacy leaks</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 

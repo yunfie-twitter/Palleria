@@ -45,8 +45,10 @@ object ImageMetadataWriter {
     ) {
         val pixivUrl = "https://www.pixiv.net/artworks/${illust.id}"
         val desc = "${illust.title} by ${illust.artistName} ($pixivUrl)"
-        val tagsFormatted = illust.tags.joinToString(", ")
-        val userComment = "{\"id\":${illust.id},\"artist\":\"${illust.artistName}\",\"tags\":\"$tagsFormatted\",\"url\":\"$pixivUrl\"}"
+        val tagsFormatted = illust.tags.joinToString(",")
+        val userComment =
+            "{\"id\":${illust.id},\"artist\":\"${illust.artistName}\",\"artistId\":${illust.artistId}," +
+                "\"tags\":\"$tagsFormatted\",\"url\":\"$pixivUrl\"}"
 
         exif.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, desc)
         exif.setAttribute(ExifInterface.TAG_ARTIST, illust.artistName)

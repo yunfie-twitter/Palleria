@@ -64,6 +64,7 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
 import com.yunfie.illustia.settings.appLanguageLocaleList
 import com.yunfie.illustia.settings.isAppDarkTheme
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.rememberAppThemeColors
 import com.yunfie.illustia.ui.IllustiaApp
 import com.yunfie.illustia.ui.components.PixivImageHeaders
@@ -440,12 +441,14 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
+        applyTaskSnapshotBlur(isEnteringBackground = false)
         applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
         openPixivUrlFromClipboardIfNeeded()
     }
 
     override fun onPause() {
         clearAdaptiveRefreshRateHint()
+        applyTaskSnapshotBlur(isEnteringBackground = true)
         super.onPause()
     }
 
@@ -576,6 +579,28 @@ class MainActivity : FragmentActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
                 setRecentsScreenshotEnabled(true)
+            }
+        }
+    }
+
+    private fun applyTaskSnapshotBlur(isEnteringBackground: Boolean) {
+        val settings = viewModel.uiState.value.settings
+        if (settings.secureWindow) return
+
+        val isBlurEnabled = settings.isFeatureEnabled(com.yunfie.illustia.settings.FeatureFlag.TaskSnapshotBlur)
+        if (!isBlurEnabled) return
+
+        if (isEnteringBackground) {
+            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
+                setRecentsScreenshotEnabled(false)
+            } else {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+        } else {
+            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
+                setRecentsScreenshotEnabled(true)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
         }
     }
