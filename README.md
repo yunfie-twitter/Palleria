@@ -113,7 +113,7 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 
 ## Features Overview
 
-### 🖼️ Artwork & Media Browsing
+###  Artwork & Media Browsing
 * **Explore**: Recommended feeds, daily/weekly/monthly rankings, and latest works from followed creators.
 * **Vertical Shorts Feed**: Immersive full-screen vertical swipe feed for discovering illustrations.
 * **Ugoira Animations**: Power-saving sliding-window decoder with inBitmap buffer recycling and export to WebP, APNG, GIF, or MP4.
@@ -121,24 +121,24 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 * **Novels & TTS Audiobook**: Customizable typography, series navigation, reading progress auto-save, and background TTS narration with sleep timer.
 * **Full-Screen Viewer**: Pinch-to-zoom (up to 6x) with boundary collision resistance, swipe-to-dismiss with tactile ticks, and quick peek previews.
 
-### 🔍 Search & Discovery
+###  Search & Discovery
 * **Comprehensive Search**: Search by tags, exact tag matching, titles, captions, or artists.
 * **Smart Filtering**: Filter by work type (Illustration, Manga, Ugoira, Novel), age restriction (All-ages, R-18, R-18G), bookmark count thresholds, and date ranges.
 * **Tag Watchlist**: Track your favorite tags and artists with one-tap quick access.
 
-### 📥 Downloads & Media Management
+###  Downloads & Media Management
 * **Smart Downloads**: Save individual pages or complete multi-page sets with configurable concurrent workers.
 * **Stealth Byte-Range Resume**: Automatic recovery from network interruptions via HTTP 206 `Range` requests.
 * **Custom Path & SAF**: Store images in custom SAF directories or standard Pictures gallery.
 * **Privacy EXIF Stripping**: Strips personal metadata from downloaded files before saving.
 * **Smart Filename Templates**: Format filenames using custom patterns (`{id}`, `{title}`, `{artist}`, `{page}`).
 
-### 🔄 PallaSync (Multi-Device Sync)
+###  PallaSync (Multi-Device Sync)
 * **Secure Synchronization**: End-to-end encrypted synchronization without third-party data tracking.
 * **Ecosystem Integration**: Sync bookmarks, view history, search history, settings, and mute rules between Palleria Android apps and the PallaSync browser extension.
 * **Pairing**: Quick pairing via QR codes or secure pairing phrases.
 
-### ⚙️ Micro-UX & Customization
+###  Micro-UX & Customization
 * **Theming**: System default, Light, Dark, AMOLED Pure Black, and Dynamic Color matching artwork accents.
 * **Adaptive Layouts**: 1 to 4 customizable grid columns for phones, foldables, and tablets.
 * **Mute Filters**: Filter unwanted tags, users, and artwork IDs across feeds and search results.
