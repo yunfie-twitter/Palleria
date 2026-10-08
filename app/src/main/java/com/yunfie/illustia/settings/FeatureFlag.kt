@@ -1,8 +1,11 @@
 package com.yunfie.illustia.settings
 
+import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
+import com.yunfie.illustia.settings.store.decodeFeatureFlags
 
 @Immutable
 enum class FeatureFlag(
@@ -152,6 +155,18 @@ enum class FeatureFlag(
         descRes = R.string.flag_byte_range_resume_desc,
         defaultEnabled = true,
     ),
+    PreDnsSocketWarming(
+        key = "flag_predns_socket_warming",
+        titleRes = R.string.flag_predns_socket_warming_title,
+        descRes = R.string.flag_predns_socket_warming_desc,
+        defaultEnabled = true,
+    ),
+    DeltaEtagSync(
+        key = "flag_delta_etag_sync",
+        titleRes = R.string.flag_delta_etag_sync_title,
+        descRes = R.string.flag_delta_etag_sync_desc,
+        defaultEnabled = true,
+    ),
     ;
 
     companion object {
@@ -160,3 +175,17 @@ enum class FeatureFlag(
 }
 
 fun AppSettings.isFeatureEnabled(flag: FeatureFlag): Boolean = featureFlags[flag.key] ?: flag.defaultEnabled
+
+fun readFeatureFlagSync(
+    context: Context,
+    flag: FeatureFlag,
+): Boolean {
+    val prefs =
+        context.applicationContext.getSharedPreferences(
+            LEGACY_PREFS_NAME,
+            Context.MODE_PRIVATE,
+        )
+    val raw = prefs.getString("featureFlags", null) ?: return flag.defaultEnabled
+    val flags = decodeFeatureFlags(raw)
+    return flags[flag.key] ?: flag.defaultEnabled
+}

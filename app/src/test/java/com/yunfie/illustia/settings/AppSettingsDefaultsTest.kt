@@ -22,6 +22,8 @@ class AppSettingsDefaultsTest {
         FeatureFlag.MangaAdaptivePreload.defaultEnabled shouldBe true
         FeatureFlag.VelocityLandingPrefetch.defaultEnabled shouldBe true
         FeatureFlag.ByteRangeResume.defaultEnabled shouldBe true
+        FeatureFlag.PreDnsSocketWarming.defaultEnabled shouldBe true
+        FeatureFlag.DeltaEtagSync.defaultEnabled shouldBe true
     }
 
     @Test
@@ -48,6 +50,8 @@ class AppSettingsDefaultsTest {
         settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.VelocityLandingPrefetch) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.ByteRangeResume) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.PreDnsSocketWarming) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.DeltaEtagSync) shouldBe true
 
         settings.wideColorGamutEnabled shouldBe true
     }

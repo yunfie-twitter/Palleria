@@ -135,6 +135,14 @@ class MainActivity : FragmentActivity() {
             setTheme(R.style.AppTheme_Splash_Calculator)
         }
         val splashScreen = installSplashScreen()
+        val app = application as? IllustiaApplication
+        if (app != null &&
+            com.yunfie.illustia.settings
+                .readFeatureFlagSync(this, com.yunfie.illustia.settings.FeatureFlag.PreDnsSocketWarming)
+        ) {
+            com.yunfie.illustia.data.NetworkWarmer
+                .warmUp(app.sharedHttpClient)
+        }
 
         // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウト＆ズームアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
