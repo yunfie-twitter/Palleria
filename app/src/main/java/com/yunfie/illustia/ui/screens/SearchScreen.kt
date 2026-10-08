@@ -329,7 +329,13 @@ fun SearchScreen(
                             }
                             onExpandedChange(expanded)
                         },
-                        onValueChange = onUpdateDraft,
+                        onValueChange = { input ->
+                            val isCleanerEnabled = state.settings.isFeatureEnabled(FeatureFlag.TrackingUrlCleaner)
+                            val sanitized =
+                                com.yunfie.illustia.nativebridge.NativeIntentRouter
+                                    .sanitizeSearchInput(input, isCleanerEnabled)
+                            onUpdateDraft(sanitized)
+                        },
                         onSearch = {
                             val target = state.searchDraft.ifBlank { state.activeSearchWord }
                             onSubmit(target)

@@ -353,6 +353,7 @@ internal fun AppNavHost(
                         prefetchImages = appState.state.settings.prefetchImages,
                         confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
                         skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
+                        smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
                         detailSectionOrder = appState.state.settings.detailSectionOrder,
                         relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
                         listState = viewModel.illustDetailListState(illust.id),

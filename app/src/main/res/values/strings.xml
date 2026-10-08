@@ -1290,6 +1290,16 @@
     <string name="flag_bookmark_haptic_burst_desc">ブックマークやいいね時に弾けるリッチな触覚フィードバックと華やかなパーティクルアニメーションを発火します</string>
     <string name="flag_image_blur_preview_title">ブラープレビュー（低解像度プレースホルダー）</string>
     <string name="flag_image_blur_preview_desc">画像読み込み中に低解像度サムネイルをぼかし先行表示し、高解像度画像の読み込み完了時に滑らかにクロスフェードします</string>
+    <string name="flag_task_snapshot_blur_title">タスク履歴ステルスブラー</string>
+    <string name="flag_task_snapshot_blur_desc">アプリ切替画面でのサムネイルをブラー処理し、周囲からの覗き見を防止します</string>
+    <string name="flag_courtesy_audio_fade_title">イヤホン切断時オーディオフェード</string>
+    <string name="flag_courtesy_audio_fade_desc">イヤホンやBluetooth切断時に音量を対数減衰させて一時停止し、音漏れやノイズを防止します</string>
+    <string name="flag_tracking_url_cleaner_title">URLトラッキングクリーナー</string>
+    <string name="flag_tracking_url_cleaner_desc">貼り付けられたPixiv URLから不要な追跡クエリ（utm, s等）を自動除去してクリーン化します</string>
+    <string name="flag_smart_download_naming_title">スマートファイル命名</string>
+    <string name="flag_smart_download_naming_desc">保存ファイル名を「[作家名] 作品タイトル_p0」形式で自動命名し、写真アプリでの整理を容易にします</string>
+    <string name="flag_privacy_exif_stripper_title">共有時プライバシーストリッパー</string>
+    <string name="flag_privacy_exif_stripper_desc">画像共有時にGPS位置情報や端末固有メタデータを自動消去し、プライバシー漏洩を防止します</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 

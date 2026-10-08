@@ -957,6 +957,16 @@
     <string name="flag_bookmark_haptic_burst_desc">북마크와 좋아요 시 경쾌한 햅틱 피드백과 화려한 파티클 버스트 애니메이션을 실행합니다</string>
     <string name="flag_image_blur_preview_title">블러 미리보기 (저해상도 플레이스홀더)</string>
     <string name="flag_image_blur_preview_desc">이미지 로딩 중 저해상도 썸네일을 블러 처리하여 먼저 표시하고 원본 이미지를 부드럽게 크로스페이드합니다</string>
+    <string name="flag_task_snapshot_blur_title">태스크 기록 스텔스 블러</string>
+    <string name="flag_task_snapshot_blur_desc">앱 전환 화면의 썸네일을 블러 처리하여 주변의 엿보기를 방지합니다</string>
+    <string name="flag_courtesy_audio_fade_title">이어폰 분리 시 오디오 페이드</string>
+    <string name="flag_courtesy_audio_fade_desc">이어폰이나 블루투스 분리 시 음량을 자연스럽게 감쇠하여 일시 정지하고 소리 누출을 방지합니다</string>
+    <string name="flag_tracking_url_cleaner_title">URL 트래킹 클리너</string>
+    <string name="flag_tracking_url_cleaner_desc">붙여넣은 Pixiv URL에서 불필요한 추적 파라미터를 자동으로 제거합니다</string>
+    <string name="flag_smart_download_naming_title">스마트 파일 이름 생성</string>
+    <string name="flag_smart_download_naming_desc">저장 파일 이름을 \'[작가명] 작품 제목_p0\' 형식으로 자동 지정하여 갤러리 정리를 쉽게 합니다</string>
+    <string name="flag_privacy_exif_stripper_title">공유 시 개인정보 Exif 제거</string>
+    <string name="flag_privacy_exif_stripper_desc">이미지 공유 시 GPS 위치 정보 및 기기 고유 메타데이터를 자동으로 삭제하여 개인정보를 보호합니다</string>
     <string name="offline_cached_banner_label">오프라인 캐시 표시 중</string>
     <string name="offline_retry_button">다시 시도</string>
 

@@ -98,6 +98,36 @@ enum class FeatureFlag(
         descRes = R.string.flag_image_blur_preview_desc,
         defaultEnabled = true,
     ),
+    TaskSnapshotBlur(
+        key = "flag_task_snapshot_blur",
+        titleRes = R.string.flag_task_snapshot_blur_title,
+        descRes = R.string.flag_task_snapshot_blur_desc,
+        defaultEnabled = true,
+    ),
+    CourtesyAudioFade(
+        key = "flag_courtesy_audio_fade",
+        titleRes = R.string.flag_courtesy_audio_fade_title,
+        descRes = R.string.flag_courtesy_audio_fade_desc,
+        defaultEnabled = true,
+    ),
+    TrackingUrlCleaner(
+        key = "flag_tracking_url_cleaner",
+        titleRes = R.string.flag_tracking_url_cleaner_title,
+        descRes = R.string.flag_tracking_url_cleaner_desc,
+        defaultEnabled = true,
+    ),
+    SmartDownloadNaming(
+        key = "flag_smart_download_naming",
+        titleRes = R.string.flag_smart_download_naming_title,
+        descRes = R.string.flag_smart_download_naming_desc,
+        defaultEnabled = true,
+    ),
+    PrivacyExifStripper(
+        key = "flag_privacy_exif_stripper",
+        titleRes = R.string.flag_privacy_exif_stripper_title,
+        descRes = R.string.flag_privacy_exif_stripper_desc,
+        defaultEnabled = true,
+    ),
     ;
 
     companion object {

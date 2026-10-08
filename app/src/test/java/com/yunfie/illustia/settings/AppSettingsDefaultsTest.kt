@@ -13,6 +13,11 @@ class AppSettingsDefaultsTest {
         FeatureFlag.OfflineStaleCache.defaultEnabled shouldBe true
         FeatureFlag.BookmarkHapticBurst.defaultEnabled shouldBe true
         FeatureFlag.ImageBlurPreview.defaultEnabled shouldBe true
+        FeatureFlag.TaskSnapshotBlur.defaultEnabled shouldBe true
+        FeatureFlag.CourtesyAudioFade.defaultEnabled shouldBe true
+        FeatureFlag.TrackingUrlCleaner.defaultEnabled shouldBe true
+        FeatureFlag.SmartDownloadNaming.defaultEnabled shouldBe true
+        FeatureFlag.PrivacyExifStripper.defaultEnabled shouldBe true
     }
 
     @Test
@@ -30,6 +35,11 @@ class AppSettingsDefaultsTest {
         settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.TaskSnapshotBlur) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.CourtesyAudioFade) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.TrackingUrlCleaner) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.PrivacyExifStripper) shouldBe true
 
         settings.wideColorGamutEnabled shouldBe true
     }
@@ -43,6 +53,7 @@ class AppSettingsDefaultsTest {
                         FeatureFlag.OfflineStaleCache.key to false,
                         FeatureFlag.BookmarkHapticBurst.key to false,
                         FeatureFlag.ImageBlurPreview.key to false,
+                        FeatureFlag.TaskSnapshotBlur.key to false,
                         FeatureFlag.ShortsFeed.key to true,
                     ),
             )
@@ -50,6 +61,7 @@ class AppSettingsDefaultsTest {
         settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe false
+        settings.isFeatureEnabled(FeatureFlag.TaskSnapshotBlur) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.ShortsFeed) shouldBe true
     }
 
@@ -58,6 +70,11 @@ class AppSettingsDefaultsTest {
         FeatureFlag.fromKey("flag_offline_stale_cache") shouldBe FeatureFlag.OfflineStaleCache
         FeatureFlag.fromKey("flag_bookmark_haptic_burst") shouldBe FeatureFlag.BookmarkHapticBurst
         FeatureFlag.fromKey("flag_image_blur_preview") shouldBe FeatureFlag.ImageBlurPreview
+        FeatureFlag.fromKey("flag_task_snapshot_blur") shouldBe FeatureFlag.TaskSnapshotBlur
+        FeatureFlag.fromKey("flag_courtesy_audio_fade") shouldBe FeatureFlag.CourtesyAudioFade
+        FeatureFlag.fromKey("flag_tracking_url_cleaner") shouldBe FeatureFlag.TrackingUrlCleaner
+        FeatureFlag.fromKey("flag_smart_download_naming") shouldBe FeatureFlag.SmartDownloadNaming
+        FeatureFlag.fromKey("flag_privacy_exif_stripper") shouldBe FeatureFlag.PrivacyExifStripper
         FeatureFlag.fromKey("non_existent_key").shouldBeNull()
     }
 
