@@ -28,7 +28,7 @@
 [![GitHub Downloads](https://img.shields.io/github/downloads/yunfie-twitter/Palleria/total?style=flat-square\&logo=github\&label=Downloads)](https://github.com/yunfie-twitter/Palleria/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/yunfie-twitter/Palleria?style=flat-square\&logo=github)](https://github.com/yunfie-twitter/Palleria/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/yunfie-twitter/Palleria?style=flat-square\&logo=github)](https://github.com/yunfie-twitter/Palleria/issues)
-
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/yunfie-twitter/palleria?utm_source=readme&utm_medium=badge)
 </p>
 
 ---
