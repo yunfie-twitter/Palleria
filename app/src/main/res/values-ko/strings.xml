@@ -955,8 +955,6 @@
     <string name="flag_offline_stale_cache_desc">네트워크 연결이 끊기거나 오류 발생 시에도 캐시된 피드를 계속 표시하고 오프라인 배너를 보여줍니다</string>
     <string name="flag_bookmark_haptic_burst_title">북마크 및 좋아요 햅틱 버스트</string>
     <string name="flag_bookmark_haptic_burst_desc">북마크와 좋아요 시 경쾌한 햅틱 피드백과 화려한 파티클 버스트 애니메이션을 실행합니다</string>
-    <string name="flag_image_blur_preview_title">블러 미리보기 (저해상도 플레이스홀더)</string>
-    <string name="flag_image_blur_preview_desc">이미지 로딩 중 저해상도 썸네일을 블러 처리하여 먼저 표시하고 원본 이미지를 부드럽게 크로스페이드합니다</string>
     <string name="offline_cached_banner_label">오프라인 캐시 표시 중</string>
     <string name="offline_retry_button">다시 시도</string>
 

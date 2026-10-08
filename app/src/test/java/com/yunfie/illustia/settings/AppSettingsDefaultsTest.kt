@@ -12,7 +12,6 @@ class AppSettingsDefaultsTest {
     fun `new UX feature flags have defaultEnabled set to true in FeatureFlag`() {
         FeatureFlag.OfflineStaleCache.defaultEnabled shouldBe true
         FeatureFlag.BookmarkHapticBurst.defaultEnabled shouldBe true
-        FeatureFlag.ImageBlurPreview.defaultEnabled shouldBe true
     }
 
     @Test
@@ -29,7 +28,6 @@ class AppSettingsDefaultsTest {
 
         settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe true
-        settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe true
 
         settings.wideColorGamutEnabled shouldBe true
     }
@@ -42,14 +40,12 @@ class AppSettingsDefaultsTest {
                     mapOf(
                         FeatureFlag.OfflineStaleCache.key to false,
                         FeatureFlag.BookmarkHapticBurst.key to false,
-                        FeatureFlag.ImageBlurPreview.key to false,
                         FeatureFlag.ShortsFeed.key to true,
                     ),
             )
 
         settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.BookmarkHapticBurst) shouldBe false
-        settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview) shouldBe false
         settings.isFeatureEnabled(FeatureFlag.ShortsFeed) shouldBe true
     }
 
@@ -57,7 +53,6 @@ class AppSettingsDefaultsTest {
     fun `FeatureFlag fromKey finds matching enum or returns null`() {
         FeatureFlag.fromKey("flag_offline_stale_cache") shouldBe FeatureFlag.OfflineStaleCache
         FeatureFlag.fromKey("flag_bookmark_haptic_burst") shouldBe FeatureFlag.BookmarkHapticBurst
-        FeatureFlag.fromKey("flag_image_blur_preview") shouldBe FeatureFlag.ImageBlurPreview
         FeatureFlag.fromKey("non_existent_key").shouldBeNull()
     }
 

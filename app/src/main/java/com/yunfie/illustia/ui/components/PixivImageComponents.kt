@@ -2,8 +2,6 @@ package com.yunfie.illustia.ui.components
 
 import android.graphics.Bitmap
 import android.os.Build
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -17,8 +15,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
@@ -45,8 +41,6 @@ val PixivImageHeaders =
         .set("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Illustia)")
         .build()
 
-val LocalImageBlurPreview = compositionLocalOf { true }
-
 val LocalWideColorGamutEnabled = compositionLocalOf { true }
 
 internal val LocalImageRefreshRequest = compositionLocalOf { 0 }
@@ -62,8 +56,6 @@ fun PixivImage(
     maxDecodeDimensionPx: Int? = null,
     allowRgb565: Boolean = false,
     showLoadingSpinner: Boolean = false,
-    lowResPlaceholderUrl: String? = null,
-    blurPreviewEnabled: Boolean = LocalImageBlurPreview.current,
     onSuccess: ((Bitmap) -> Unit)? = null,
     onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 ) {
@@ -75,28 +67,12 @@ fun PixivImage(
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
-    val showBlurPreview =
-        blurPreviewEnabled &&
-            !lowResPlaceholderUrl.isNullOrBlank() &&
-            lowResPlaceholderUrl != url &&
-            lowResPlaceholderUrl != effectiveUrl
 
     val hasSuccessListener = onSuccess != null
-    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || showBlurPreview
+    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
     var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
-
-    val mainAlpha by animateFloatAsState(
-        targetValue = if (isLoading && showBlurPreview) 0f else 1f,
-        animationSpec = tween(durationMillis = 260),
-        label = "pixivImageAlpha",
-    )
-    val placeholderAlpha by animateFloatAsState(
-        targetValue = if (isLoading && showBlurPreview) 1f else 0f,
-        animationSpec = tween(durationMillis = 260),
-        label = "pixivPlaceholderAlpha",
-    )
 
     val defaultMaxDimension =
         remember(context) {
@@ -203,59 +179,18 @@ fun PixivImage(
                 }.build()
         }
 
-    if (showLoadingSpinner || showBlurPreview) {
+    if (showLoadingSpinner) {
         Box(
             modifier = modifier,
             contentAlignment = Alignment.Center,
         ) {
-            if (showBlurPreview && (isLoading || placeholderAlpha > 0.01f)) {
-                val effectivePlaceholderUrl =
-                    remember(lowResPlaceholderUrl, proxyBaseUrl) {
-                        proxyPixivImageUrl(lowResPlaceholderUrl, proxyBaseUrl)
-                    }
-                if (effectivePlaceholderUrl.isNotBlank()) {
-                    val placeholderRequest =
-                        remember(effectivePlaceholderUrl) {
-                            ImageRequest
-                                .Builder(context)
-                                .data(effectivePlaceholderUrl)
-                                .httpHeaders(PixivImageHeaders)
-                                .diskCachePolicy(CachePolicy.ENABLED)
-                                .memoryCachePolicy(CachePolicy.ENABLED)
-                                .size(PlatformCapabilities.recommendedThumbnailDecodeDimension(context))
-                                .scale(Scale.FILL)
-                                .precision(Precision.INEXACT)
-                                .allowRgb565(true)
-                                .build()
-                        }
-                    AsyncImage(
-                        model = placeholderRequest,
-                        contentDescription = null,
-                        contentScale = contentScale,
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .graphicsLayer { alpha = placeholderAlpha }
-                                .blur(16.dp),
-                    )
-                }
-            }
             AsyncImage(
                 model = imageRequest,
                 contentDescription = contentDescription,
                 contentScale = contentScale,
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .then(
-                            if (showBlurPreview) {
-                                Modifier.graphicsLayer { alpha = mainAlpha }
-                            } else {
-                                Modifier
-                            },
-                        ),
+                modifier = Modifier.matchParentSize(),
             )
-            if (showLoadingSpinner && isLoading) {
+            if (isLoading) {
                 LoadingIndicator(
                     modifier = Modifier.size(36.dp),
                 )

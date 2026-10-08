@@ -92,12 +92,6 @@ enum class FeatureFlag(
         descRes = R.string.flag_bookmark_haptic_burst_desc,
         defaultEnabled = true,
     ),
-    ImageBlurPreview(
-        key = "flag_image_blur_preview",
-        titleRes = R.string.flag_image_blur_preview_title,
-        descRes = R.string.flag_image_blur_preview_desc,
-        defaultEnabled = true,
-    ),
     ;
 
     companion object {
