@@ -47,9 +47,9 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 
 ## Highlights
 
-* ⚡ **High-Performance Rust Core**: Native UniFFI engine for accelerated Ugoira decoding, APNG/WebP/MP4 conversion, and zero-overhead data handling.
-* 🎨 **Modern Miuix & Material You UI**: Fluid animations, AMOLED & dynamic artwork themes, and customizable multi-column adaptive grids.
-* ✨ **Stealth Micro-UX Innovations**:
+*  **High-Performance Rust Core**: Native UniFFI engine for accelerated Ugoira decoding, APNG/WebP/MP4 conversion, and zero-overhead data handling.
+*  **Modern Miuix & Material You UI**: Fluid animations, AMOLED & dynamic artwork themes, and customizable multi-column adaptive grids.
+*  **Stealth Micro-UX Innovations**:
   * **Pre-DNS & Socket Warming**: Pre-resolves DNS and establishes TLS 1.3 socket pools during splash display for instantaneous first-image loading.
   * **Delta & ETag Sync**: Differential following feed synchronization that never re-downloads known artworks and pre-warms high-res images in background.
   * **Velocity-Landing Prefetch**: Predicts fling inertia stop points to fetch destination artworks ahead of time.
@@ -58,11 +58,11 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
   * **Courtesy Audio Fade**: 100ms logarithmic volume fade-out when earphones disconnect to protect ears and prevent public audio leaks.
   * **Tactile Haptic Feedback**: Boundary collision thuds (zoom & grid limits), dismiss threshold tick feedback, and bookmark tactile bursts.
   * **Wide Color Gamut (Display P3)**: 10-bit wide color gamut support for vibrant artwork reproduction on OLED screens.
-* 🔄 **PallaSync Cross-Device Synchronization**: End-to-end encrypted peer-to-peer sync of bookmarks, history, settings, and mutes across Android devices and browser extensions.
-* 📖 **Deep Reading Experience**: Dedicated Manga viewer and Novel reader with customizable typography, progress resume, and background Text-to-Speech (TTS) audiobook narration.
-* 📦 **Built-in Download & Updater**: Multi-threaded downloader with EXIF privacy stripping, template naming, and seamless background APK updates with Shizuku support.
-* 🛡️ **Privacy & Security**: PIN lock, biometric authentication, recents task snapshot stealth blur, and tracking URL cleaner.
-* 🌐 **Trilingual Localization**: Full Japanese (日本語), English, and Korean (한국어) language support.
+*  **PallaSync Cross-Device Synchronization**: End-to-end encrypted peer-to-peer sync of bookmarks, history, settings, and mutes across Android devices and browser extensions.
+*  **Deep Reading Experience**: Dedicated Manga viewer and Novel reader with customizable typography, progress resume, and background Text-to-Speech (TTS) audiobook narration.
+*  **Built-in Download & Updater**: Multi-threaded downloader with EXIF privacy stripping, template naming, and seamless background APK updates with Shizuku support.
+*  **Privacy & Security**: PIN lock, biometric authentication, recents task snapshot stealth blur, and tracking URL cleaner.
+*  **Trilingual Localization**: Full Japanese (日本語), English, and Korean (한국어) language support.
 
 ---
 
@@ -113,7 +113,7 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 
 ## Features Overview
 
-### 🖼️ Artwork & Media Browsing
+###  Artwork & Media Browsing
 * **Explore**: Recommended feeds, daily/weekly/monthly rankings, and latest works from followed creators.
 * **Vertical Shorts Feed**: Immersive full-screen vertical swipe feed for discovering illustrations.
 * **Ugoira Animations**: Power-saving sliding-window decoder with inBitmap buffer recycling and export to WebP, APNG, GIF, or MP4.
@@ -121,24 +121,24 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 * **Novels & TTS Audiobook**: Customizable typography, series navigation, reading progress auto-save, and background TTS narration with sleep timer.
 * **Full-Screen Viewer**: Pinch-to-zoom (up to 6x) with boundary collision resistance, swipe-to-dismiss with tactile ticks, and quick peek previews.
 
-### 🔍 Search & Discovery
+###  Search & Discovery
 * **Comprehensive Search**: Search by tags, exact tag matching, titles, captions, or artists.
 * **Smart Filtering**: Filter by work type (Illustration, Manga, Ugoira, Novel), age restriction (All-ages, R-18, R-18G), bookmark count thresholds, and date ranges.
 * **Tag Watchlist**: Track your favorite tags and artists with one-tap quick access.
 
-### 📥 Downloads & Media Management
+###  Downloads & Media Management
 * **Smart Downloads**: Save individual pages or complete multi-page sets with configurable concurrent workers.
 * **Stealth Byte-Range Resume**: Automatic recovery from network interruptions via HTTP 206 `Range` requests.
 * **Custom Path & SAF**: Store images in custom SAF directories or standard Pictures gallery.
 * **Privacy EXIF Stripping**: Strips personal metadata from downloaded files before saving.
 * **Smart Filename Templates**: Format filenames using custom patterns (`{id}`, `{title}`, `{artist}`, `{page}`).
 
-### 🔄 PallaSync (Multi-Device Sync)
+###  PallaSync (Multi-Device Sync)
 * **Secure Synchronization**: End-to-end encrypted synchronization without third-party data tracking.
 * **Ecosystem Integration**: Sync bookmarks, view history, search history, settings, and mute rules between Palleria Android apps and the PallaSync browser extension.
 * **Pairing**: Quick pairing via QR codes or secure pairing phrases.
 
-### ⚙️ Micro-UX & Customization
+###  Micro-UX & Customization
 * **Theming**: System default, Light, Dark, AMOLED Pure Black, and Dynamic Color matching artwork accents.
 * **Adaptive Layouts**: 1 to 4 customizable grid columns for phones, foldables, and tablets.
 * **Mute Filters**: Filter unwanted tags, users, and artwork IDs across feeds and search results.
