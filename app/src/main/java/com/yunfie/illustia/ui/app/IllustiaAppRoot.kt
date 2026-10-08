@@ -60,7 +60,6 @@ import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalFastScrolling
-import com.yunfie.illustia.ui.components.LocalImageBlurPreview
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
 import com.yunfie.illustia.ui.components.LocalScrolling
@@ -691,7 +690,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
-        LocalImageBlurPreview provides settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview),
         com.yunfie.illustia.ui.components.LocalWideColorGamutEnabled provides settings.wideColorGamutEnabled,
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides
