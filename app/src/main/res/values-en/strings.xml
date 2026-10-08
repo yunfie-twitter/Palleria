@@ -1243,6 +1243,10 @@
     <string name="flag_velocity_landing_prefetch_desc">Predicts scroll stop position from flick velocity and prefetches target images instead of transient ones</string>
     <string name="flag_byte_range_resume_title">Stealth Download Resume</string>
     <string name="flag_byte_range_resume_desc">Resumes interrupted downloads from existing bytes via HTTP Range headers to save data and time</string>
+    <string name="flag_predns_socket_warming_title">Pre-DNS &amp; Socket Warming</string>
+    <string name="flag_predns_socket_warming_desc">Pre-resolves DNS and warms TCP/TLS socket pools in background behind splash to eliminate initial loading latency</string>
+    <string name="flag_delta_etag_sync_title">Delta ETag Sync</string>
+    <string name="flag_delta_etag_sync_desc">Uses ETags and delta caching during following sync to fetch only new artworks without duplicate downloads, enabling instant offline-ready access</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 

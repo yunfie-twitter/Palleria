@@ -975,6 +975,10 @@
     <string name="flag_velocity_landing_prefetch_desc">스크롤 속도로 정지 위치를 추정하여 통과 중인 항목 대신 착지지점 주변을 미리 불러옵니다</string>
     <string name="flag_byte_range_resume_title">스텔스 다운로드 재개</string>
     <string name="flag_byte_range_resume_desc">다운로드 중단 시 기존 바이트부터 재개(HTTP Range)하여 데이터와 시간을 절약합니다</string>
+    <string name="flag_predns_socket_warming_title">사전 DNS &amp; 소켓 워밍</string>
+    <string name="flag_predns_socket_warming_desc">스플래시 화면 뒤에서 Pixiv 서버에 대한 사전 DNS 확인 및 TCP/TLS 소켓 풀을 구성하여 첫 화면 지연을 제거합니다</string>
+    <string name="flag_delta_etag_sync_title">델타 ETag 동기화</string>
+    <string name="flag_delta_etag_sync_desc">팔로우 신작 동기화 시 ETag 및 차분(델타)만 가져와 캐시하여 데이터 낭비 없이 최신작을 즉시 표시합니다</string>
     <string name="offline_cached_banner_label">오프라인 캐시 표시 중</string>
     <string name="offline_retry_button">다시 시도</string>
 

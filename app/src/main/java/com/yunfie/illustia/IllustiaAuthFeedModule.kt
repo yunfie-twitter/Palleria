@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
+import com.yunfie.illustia.data.FollowDeltaSyncManager
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
 import com.yunfie.illustia.models.HomeFeedKind
@@ -953,6 +954,18 @@ abstract class IllustiaAuthFeedModule(
                         loadState = LoadState.Loaded,
                         isOfflineCached = false,
                     )
+                }
+                val currentSettings = _uiState.value.settings
+                if (currentSettings.isFeatureEnabled(FeatureFlag.DeltaEtagSync)) {
+                    val token = currentSettings.refreshToken
+                    if (token.isNotBlank()) {
+                        FollowDeltaSyncManager.recordSnapshotAndPrewarmDelta(
+                            context = getApplication<Application>().applicationContext,
+                            token = token,
+                            freshItems = page.items,
+                            proxyBaseUrl = currentSettings.pixivImageProxyBaseUrl,
+                        )
+                    }
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure

@@ -1308,6 +1308,10 @@
     <string name="flag_velocity_landing_prefetch_desc">スクロール速度から停止位置を推定し、通過中の画像ではなく着地点周辺を高精度に先行取得します</string>
     <string name="flag_byte_range_resume_title">ステルス・レジューム</string>
     <string name="flag_byte_range_resume_desc">ダウンロード中断時に保存済みバイトから再開（HTTP Range）し、通信量と時間を節約します</string>
+    <string name="flag_predns_socket_warming_title">事前DNS ＆ ソケット・ウォーミング</string>
+    <string name="flag_predns_socket_warming_desc">起動時スプラッシュの裏でPixivサーバーへのDNS事前解決とTCP/TLS接続プールを確立し、初速の表示待ちをゼロ化します</string>
+    <string name="flag_delta_etag_sync_title">デルタ・ETag同期</string>
+    <string name="flag_delta_etag_sync_desc">フォロー新着同期時にETagと既知作品差分（デルタ）のみを取得・先行キャッシュし、通信量を消費せずに最新作を即時表示します</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 
