@@ -7,6 +7,7 @@ import coil3.SingletonImageLoader
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository
+import com.yunfie.illustia.data.ResumableDownloader
 import com.yunfie.illustia.data.UgoiraMp4Encoder
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
@@ -227,47 +228,57 @@ abstract class IllustiaLibraryNavigationModule(
                     _uiState.update { it.copy(message = str(R.string.offline_capacity_limit_desc)) }
                     return@launch
                 }
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .header("Referer", "https://www.pixiv.net/")
-                        .header("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Palleria)")
-                        .build()
-                downloadClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) throw Exception(str(R.string.error_save_failed) + " (${response.code})")
-                    val body = response.body
-                    val contentType = body.contentType()?.toString()
-                    val file = saveOfflineFile(filename, requestUrl, contentType, body.byteStream())
-                    savedFile = file
-                    val pages =
-                        listOf(
-                            SavedIllustPageEntity().apply {
-                                illustId = targetIllust.id
-                                pageIndex = 0
-                                localPath = file.absolutePath
-                                sourceUrl = requestUrl
-                            },
-                        )
-                    settingsStore.saveSavedIllust(
-                        SavedIllustEntity().apply {
-                            illustId = targetIllust.id
-                            title = targetIllust.title
-                            artistName = targetIllust.artistName
-                            artistId = targetIllust.artistId
-                            thumbUrl = targetIllust.thumbnailUrl
-                            localCoverPath = file.absolutePath
-                            localPagePathsJson = "[\"${file.absolutePath.replace("\\", "\\\\")}\"]"
-                            pageCount = 1
-                            savedAt = System.currentTimeMillis()
-                            saveGroup = targetIllust.artistName
-                            xRestrict = if (targetIllust.isR18) 1 else 0
-                        },
-                        pages,
+                val resumeEnabled = _uiState.value.settings.isFeatureEnabled(FeatureFlag.ByteRangeResume)
+                val partFile = resolveDownloadPartFile(filename, requestUrl)
+                val headers =
+                    mapOf(
+                        "Referer" to "https://www.pixiv.net/",
+                        "User-Agent" to "PixivAndroidApp/6.184.0 (Android 14; Palleria)",
                     )
-                    loadSavedLibrary()
-                    _uiState.update { it.copy(message = str(R.string.detail_save_offline)) }
-                }
+                val result =
+                    ResumableDownloader.downloadToPartFile(
+                        client = downloadClient,
+                        url = requestUrl,
+                        partFile = partFile,
+                        resumeEnabled = resumeEnabled,
+                        headers = headers,
+                    )
+                val file =
+                    saveOfflineFile(
+                        filename = filename,
+                        sourceUrl = requestUrl,
+                        responseMimeType = result.contentType,
+                        input = partFile.inputStream().buffered(),
+                    )
+                savedFile = file
+                partFile.delete()
+                val pages =
+                    listOf(
+                        SavedIllustPageEntity().apply {
+                            illustId = targetIllust.id
+                            pageIndex = 0
+                            localPath = file.absolutePath
+                            sourceUrl = requestUrl
+                        },
+                    )
+                settingsStore.saveSavedIllust(
+                    SavedIllustEntity().apply {
+                        illustId = targetIllust.id
+                        title = targetIllust.title
+                        artistName = targetIllust.artistName
+                        artistId = targetIllust.artistId
+                        thumbUrl = targetIllust.thumbnailUrl
+                        localCoverPath = file.absolutePath
+                        localPagePathsJson = "[\"${file.absolutePath.replace("\\", "\\\\")}\"]"
+                        pageCount = 1
+                        savedAt = System.currentTimeMillis()
+                        saveGroup = targetIllust.artistName
+                        xRestrict = if (targetIllust.isR18) 1 else 0
+                    },
+                    pages,
+                )
+                loadSavedLibrary()
+                _uiState.update { it.copy(message = str(R.string.detail_save_offline)) }
             } catch (expectedFailure: Exception) {
                 val e = expectedFailure
                 try {
@@ -460,35 +471,58 @@ abstract class IllustiaLibraryNavigationModule(
             ?: _uiState.value.selectedIllust
             ?: _uiState.value.imageViewerIllust
 
+    private fun getDownloadPartsDir(): File = File(getApplication<Application>().cacheDir, "download_parts").apply { mkdirs() }
+
+    private fun resolveDownloadPartFile(
+        filename: String,
+        url: String,
+    ): File {
+        val hash = "${filename}_$url".hashCode().toUInt().toString(16)
+        val sanitized = filename.filter { it.isLetterOrDigit() || it == '_' || it == '-' }.take(20)
+        return File(getDownloadPartsDir(), "part_${sanitized}_$hash.part")
+    }
+
     private fun downloadImageToGallery(
         url: String,
         filename: String,
         clearOld: Boolean = false,
     ) {
         val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
-        val request =
-            Request
-                .Builder()
-                .url(requestUrl)
-                .header("Referer", "https://www.pixiv.net/")
-                .header("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Palleria)")
-                .build()
-        downloadClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw Exception(str(R.string.error_save_failed) + " (${response.code})")
-            }
-            val body = response.body
+        val resumeEnabled = _uiState.value.settings.isFeatureEnabled(FeatureFlag.ByteRangeResume)
+        val partFile = resolveDownloadPartFile(filename, requestUrl)
+        val headers =
+            mapOf(
+                "Referer" to "https://www.pixiv.net/",
+                "User-Agent" to "PixivAndroidApp/6.184.0 (Android 14; Palleria)",
+            )
+        val result =
+            ResumableDownloader.downloadToPartFile(
+                client = downloadClient,
+                url = requestUrl,
+                partFile = partFile,
+                resumeEnabled = resumeEnabled,
+                headers = headers,
+            )
+        try {
             val illust = resolveDownloadIllust(filename)
             val embedMeta = _uiState.value.settings.embedMetadata
-            imageStore.save(
-                input = body.byteStream(),
-                name = filename,
-                sourceUrl = requestUrl,
-                responseMimeType = body.contentType()?.toString(),
-                clearOld = clearOld,
-                illust = illust,
-                embedMetadata = embedMeta,
-            )
+            val saved =
+                partFile.inputStream().buffered().use { stream ->
+                    imageStore.save(
+                        input = stream,
+                        name = filename,
+                        sourceUrl = requestUrl,
+                        responseMimeType = result.contentType,
+                        clearOld = clearOld,
+                        illust = illust,
+                        embedMetadata = embedMeta,
+                    )
+                }
+            if (!saved) {
+                throw java.io.IOException(str(R.string.error_save_failed))
+            }
+        } finally {
+            partFile.delete()
         }
     }
 
@@ -584,13 +618,16 @@ abstract class IllustiaLibraryNavigationModule(
                 val cacheRoot = appContext.cacheDir
                 cacheRoot.listFiles()?.forEach { file ->
                     when {
-                        file.name == "image_cache" || file.name == "http_cache" -> {
+                        file.name == "image_cache" ||
+                            file.name == "http_cache" ||
+                            file.name == "download_parts" -> {
                             file.listFiles()?.forEach { child -> child.deleteRecursively() }
                         }
 
                         file.name.startsWith("ugoira_") ||
                             file.name.startsWith("temp_") ||
-                            file.name.endsWith(".tmp") -> {
+                            file.name.endsWith(".tmp") ||
+                            file.name.endsWith(".part") -> {
                             file.deleteRecursively()
                         }
                     }

@@ -967,6 +967,14 @@
     <string name="flag_smart_download_naming_desc">저장 파일 이름을 \'[작가명] 작품 제목_p0\' 형식으로 자동 지정하여 갤러리 정리를 쉽게 합니다</string>
     <string name="flag_privacy_exif_stripper_title">공유 시 개인정보 Exif 제거</string>
     <string name="flag_privacy_exif_stripper_desc">이미지 공유 시 GPS 위치 정보 및 기기 고유 메타데이터를 자동으로 삭제하여 개인정보를 보호합니다</string>
+    <string name="flag_ugoira_power_save_title">우고이라 절전 슬립 &amp; 딜레이</string>
+    <string name="flag_ugoira_power_save_desc">화면 밖에서 애니메이션을 완전 정지하고 빠른 스크롤 통과 시 불필요한 디코딩을 방지합니다</string>
+    <string name="flag_manga_adaptive_preload_title">만화 적응형 프리로드</string>
+    <string name="flag_manga_adaptive_preload_desc">페이지 넘김 방향 습관을 감지하여 프리로드 큐를 반전시켜 대기 시간을 없앱니다</string>
+    <string name="flag_velocity_landing_prefetch_title">착지 예측 프리페치</string>
+    <string name="flag_velocity_landing_prefetch_desc">스크롤 속도로 정지 위치를 추정하여 통과 중인 항목 대신 착지지점 주변을 미리 불러옵니다</string>
+    <string name="flag_byte_range_resume_title">스텔스 다운로드 재개</string>
+    <string name="flag_byte_range_resume_desc">다운로드 중단 시 기존 바이트부터 재개(HTTP Range)하여 데이터와 시간을 절약합니다</string>
     <string name="offline_cached_banner_label">오프라인 캐시 표시 중</string>
     <string name="offline_retry_button">다시 시도</string>
 

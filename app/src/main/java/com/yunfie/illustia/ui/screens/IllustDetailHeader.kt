@@ -98,6 +98,8 @@ internal fun IllustDetailHeader(
     showLikeAnimation: Boolean,
     expanded: Boolean = false,
     smartDownloadNaming: Boolean = true,
+    ugoiraPowerSave: Boolean = true,
+    mangaAdaptivePreload: Boolean = true,
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -222,6 +224,7 @@ internal fun IllustDetailHeader(
                         previewUrl = previewUrl,
                         contentDescription = illust.title,
                         loadPlayback = { loadUgoiraPlayback(illust.id) },
+                        powerSaveEnabled = ugoiraPowerSave,
                         onTap = { if (!maskMutedArtwork) onOpenImage(0) },
                         modifier =
                             Modifier
@@ -238,6 +241,12 @@ internal fun IllustDetailHeader(
                     }
                 }
             } else {
+                com.yunfie.illustia.ui.components.AdaptiveMangaPreloader(
+                    pagerState = pagerState,
+                    imageUrls = imageUrls,
+                    enabled = prefetchImages,
+                    adaptiveDirectionEnabled = mangaAdaptivePreload,
+                )
                 HorizontalPager(
                     state = pagerState,
                     modifier =

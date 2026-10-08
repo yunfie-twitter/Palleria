@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -46,6 +47,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.normalizedUgoiraDelayMillis
@@ -70,6 +74,9 @@ private const val MAX_CACHED_FRAMES = 24
 private const val MAX_CACHED_FRAMES_LOW = 8
 private const val PREFETCH_AHEAD = 18
 private const val KEEP_BEHIND = 4
+private const val UGOIRA_START_DELAY_MS = 150L
+private const val POWER_SAVE_IDLE_DELAY_MS = 150L
+private const val SEEKING_IDLE_DELAY_MS = 60L
 
 @Composable
 internal fun UgoiraArtwork(
@@ -78,13 +85,39 @@ internal fun UgoiraArtwork(
     loadPlayback: suspend () -> UgoiraPlayback,
     modifier: Modifier = Modifier,
     zoomEnabled: Boolean = false,
+    powerSaveEnabled: Boolean = true,
     onZoomChanged: (Boolean) -> Unit = {},
     onTap: (() -> Unit)? = null,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
     val animationScope = rememberCoroutineScope()
     var reloadKey by remember { mutableIntStateOf(0) }
-    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey) {
+
+    var isDelayElapsed by remember(reloadKey, powerSaveEnabled) { mutableStateOf(!powerSaveEnabled) }
+    LaunchedEffect(reloadKey, powerSaveEnabled) {
+        if (powerSaveEnabled) {
+            delay(UGOIRA_START_DELAY_MS)
+            isDelayElapsed = true
+        } else {
+            isDelayElapsed = true
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isLifecycleActive by remember { mutableStateOf(true) }
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                isLifecycleActive = event.targetState.isAtLeast(Lifecycle.State.RESUMED)
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey, isDelayElapsed) {
+        if (!isDelayElapsed) return@produceState
         value =
             withContext(Dispatchers.IO) {
                 runCatching { loadPlayback() }
@@ -274,76 +307,79 @@ internal fun UgoiraArtwork(
         }
     }
 
-    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking) {
+    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking, powerSaveEnabled, isLifecycleActive) {
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         var index = currentFrameIndex
         var nextTargetTime = System.currentTimeMillis()
         while (isActive) {
-            if (!isPlaying || isSeeking) {
-                delay(60)
+            if (powerSaveEnabled && !isLifecycleActive) {
+                delay(POWER_SAVE_IDLE_DELAY_MS)
+                nextTargetTime = System.currentTimeMillis()
+            } else if (!isPlaying || isSeeking) {
+                delay(SEEKING_IDLE_DELAY_MS)
                 nextTargetTime = System.currentTimeMillis()
                 index = currentFrameIndex
-                continue
-            }
-            val frame = frames[index]
-            currentFrameIndex = index
-            var bitmap = decodedBitmaps[index]
-            if (bitmap == null) {
-                bitmap =
-                    withContext(Dispatchers.IO) {
-                        val pooled = bitmapPool.poll()
-                        val options =
-                            if (pooled != null && pooled.isMutable && !pooled.isRecycled) {
-                                BitmapFactory.Options().apply {
-                                    inBitmap = pooled
-                                    inMutable = true
-                                    inPreferredConfig = preferredConfig
-                                }
-                            } else {
-                                BitmapFactory.Options().apply {
-                                    inMutable = true
-                                    inPreferredConfig = preferredConfig
-                                }
-                            }
-
-                        var androidBitmap =
-                            runCatching {
-                                BitmapFactory.decodeFile(frame.filePath, options)
-                            }.getOrNull()
-
-                        if (androidBitmap == null && pooled != null) {
-                            androidBitmap =
-                                runCatching {
-                                    val fbOptions =
-                                        BitmapFactory.Options().apply {
-                                            inMutable = true
-                                            inPreferredConfig = preferredConfig
-                                        }
-                                    BitmapFactory.decodeFile(frame.filePath, fbOptions)
-                                }.getOrNull()
-                        }
-                        androidBitmap?.asImageBitmap()
-                    }
-                if (bitmap != null) {
-                    decodedBitmaps[index] = bitmap
-                }
-            }
-            if (bitmap != null) {
-                currentBitmap = bitmap
-            }
-            val delayDuration = normalizedUgoiraDelayMillis(frame.delayMillis)
-            nextTargetTime += delayDuration
-            val waitTime = nextTargetTime - System.currentTimeMillis()
-            if (waitTime > 0) {
-                delay(waitTime)
             } else {
-                if (waitTime < -delayDuration) {
-                    nextTargetTime = System.currentTimeMillis()
+                val frame = frames[index]
+                currentFrameIndex = index
+                var bitmap = decodedBitmaps[index]
+                if (bitmap == null) {
+                    bitmap =
+                        withContext(Dispatchers.IO) {
+                            val pooled = bitmapPool.poll()
+                            val options =
+                                if (pooled != null && pooled.isMutable && !pooled.isRecycled) {
+                                    BitmapFactory.Options().apply {
+                                        inBitmap = pooled
+                                        inMutable = true
+                                        inPreferredConfig = preferredConfig
+                                    }
+                                } else {
+                                    BitmapFactory.Options().apply {
+                                        inMutable = true
+                                        inPreferredConfig = preferredConfig
+                                    }
+                                }
+
+                            var androidBitmap =
+                                runCatching {
+                                    BitmapFactory.decodeFile(frame.filePath, options)
+                                }.getOrNull()
+
+                            if (androidBitmap == null && pooled != null) {
+                                androidBitmap =
+                                    runCatching {
+                                        val fbOptions =
+                                            BitmapFactory.Options().apply {
+                                                inMutable = true
+                                                inPreferredConfig = preferredConfig
+                                            }
+                                        BitmapFactory.decodeFile(frame.filePath, fbOptions)
+                                    }.getOrNull()
+                            }
+                            androidBitmap?.asImageBitmap()
+                        }
+                    if (bitmap != null) {
+                        decodedBitmaps[index] = bitmap
+                    }
                 }
-                yield()
+                if (bitmap != null) {
+                    currentBitmap = bitmap
+                }
+                val delayDuration = normalizedUgoiraDelayMillis(frame.delayMillis)
+                nextTargetTime += delayDuration
+                val waitTime = nextTargetTime - System.currentTimeMillis()
+                if (waitTime > 0) {
+                    delay(waitTime)
+                } else {
+                    if (waitTime < -delayDuration) {
+                        nextTargetTime = System.currentTimeMillis()
+                    }
+                    yield()
+                }
+                index = (index + 1) % frames.size
             }
-            index = (index + 1) % frames.size
         }
     }
 

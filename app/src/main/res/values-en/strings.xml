@@ -1235,6 +1235,14 @@
     <string name="flag_smart_download_naming_desc">Automatically names saved files as \'[Artist] Title_p0\' for neat photo gallery organization</string>
     <string name="flag_privacy_exif_stripper_title">Privacy Exif Stripper on Share</string>
     <string name="flag_privacy_exif_stripper_desc">Strips GPS coordinates and device metadata before sharing images to prevent privacy leaks</string>
+    <string name="flag_ugoira_power_save_title">Ugoira Power Save &amp; Delay</string>
+    <string name="flag_ugoira_power_save_desc">Stops animations completely when off-screen and skips decoding during rapid scroll-throughs</string>
+    <string name="flag_manga_adaptive_preload_title">Adaptive Manga Preload</string>
+    <string name="flag_manga_adaptive_preload_desc">Detects page-turning direction patterns (e.g. reverse reading) and reverses prefetch queue accordingly</string>
+    <string name="flag_velocity_landing_prefetch_title">Velocity Landing Prefetch</string>
+    <string name="flag_velocity_landing_prefetch_desc">Predicts scroll stop position from flick velocity and prefetches target images instead of transient ones</string>
+    <string name="flag_byte_range_resume_title">Stealth Download Resume</string>
+    <string name="flag_byte_range_resume_desc">Resumes interrupted downloads from existing bytes via HTTP Range headers to save data and time</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 

@@ -693,6 +693,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalPreferLowDataImages provides preferLowDataImages,
         LocalImageBlurPreview provides settings.isFeatureEnabled(FeatureFlag.ImageBlurPreview),
         com.yunfie.illustia.ui.components.LocalWideColorGamutEnabled provides settings.wideColorGamutEnabled,
+        com.yunfie.illustia.ui.components.LocalVelocityLandingPrefetchEnabled provides
+            settings.isFeatureEnabled(FeatureFlag.VelocityLandingPrefetch),
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides
             ArtworkCardPreferences(

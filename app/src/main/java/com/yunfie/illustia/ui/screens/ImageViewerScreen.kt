@@ -131,6 +131,8 @@ fun ImageViewerScreen(
     ambientLightEnabled: Boolean = false,
     volumeKeyPageTurnerEnabled: Boolean = false,
     swipeToDismissEnabled: Boolean = true,
+    ugoiraPowerSave: Boolean = true,
+    mangaAdaptivePreload: Boolean = true,
 ) {
     val context = LocalContext.current
     if (!illust.isUgoira) {
@@ -650,6 +652,7 @@ fun ImageViewerScreen(
                         loadPlayback = { loadUgoiraPlayback(illust.id) },
                         modifier = Modifier.fillMaxSize(),
                         zoomEnabled = true,
+                        powerSaveEnabled = ugoiraPowerSave,
                         onZoomChanged = { isZoomed = it },
                         onTap = { showControls = !showControls },
                     )
@@ -680,6 +683,12 @@ fun ImageViewerScreen(
                         }
                     }
                 } else {
+                    com.yunfie.illustia.ui.components.AdaptiveMangaPreloader(
+                        pagerState = pagerState,
+                        imageUrls = imageUrls,
+                        enabled = prefetchImages,
+                        adaptiveDirectionEnabled = mangaAdaptivePreload,
+                    )
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),

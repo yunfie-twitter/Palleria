@@ -128,6 +128,30 @@ enum class FeatureFlag(
         descRes = R.string.flag_privacy_exif_stripper_desc,
         defaultEnabled = true,
     ),
+    UgoiraPowerSave(
+        key = "flag_ugoira_power_save",
+        titleRes = R.string.flag_ugoira_power_save_title,
+        descRes = R.string.flag_ugoira_power_save_desc,
+        defaultEnabled = true,
+    ),
+    MangaAdaptivePreload(
+        key = "flag_manga_adaptive_preload",
+        titleRes = R.string.flag_manga_adaptive_preload_title,
+        descRes = R.string.flag_manga_adaptive_preload_desc,
+        defaultEnabled = true,
+    ),
+    VelocityLandingPrefetch(
+        key = "flag_velocity_landing_prefetch",
+        titleRes = R.string.flag_velocity_landing_prefetch_title,
+        descRes = R.string.flag_velocity_landing_prefetch_desc,
+        defaultEnabled = true,
+    ),
+    ByteRangeResume(
+        key = "flag_byte_range_resume",
+        titleRes = R.string.flag_byte_range_resume_title,
+        descRes = R.string.flag_byte_range_resume_desc,
+        defaultEnabled = true,
+    ),
     ;
 
     companion object {
