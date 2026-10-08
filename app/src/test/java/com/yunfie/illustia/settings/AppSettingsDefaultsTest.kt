@@ -18,6 +18,10 @@ class AppSettingsDefaultsTest {
         FeatureFlag.TrackingUrlCleaner.defaultEnabled shouldBe true
         FeatureFlag.SmartDownloadNaming.defaultEnabled shouldBe true
         FeatureFlag.PrivacyExifStripper.defaultEnabled shouldBe true
+        FeatureFlag.UgoiraPowerSave.defaultEnabled shouldBe true
+        FeatureFlag.MangaAdaptivePreload.defaultEnabled shouldBe true
+        FeatureFlag.VelocityLandingPrefetch.defaultEnabled shouldBe true
+        FeatureFlag.ByteRangeResume.defaultEnabled shouldBe true
     }
 
     @Test
@@ -40,6 +44,10 @@ class AppSettingsDefaultsTest {
         settings.isFeatureEnabled(FeatureFlag.TrackingUrlCleaner) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming) shouldBe true
         settings.isFeatureEnabled(FeatureFlag.PrivacyExifStripper) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.VelocityLandingPrefetch) shouldBe true
+        settings.isFeatureEnabled(FeatureFlag.ByteRangeResume) shouldBe true
 
         settings.wideColorGamutEnabled shouldBe true
     }

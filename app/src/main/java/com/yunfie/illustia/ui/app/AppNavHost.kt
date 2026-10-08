@@ -354,6 +354,8 @@ internal fun AppNavHost(
                         confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
                         skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
                         smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
+                        ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                        mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                         detailSectionOrder = appState.state.settings.detailSectionOrder,
                         relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
                         listState = viewModel.illustDetailListState(illust.id),
@@ -393,6 +395,8 @@ internal fun AppNavHost(
                             ambientLightEnabled = appState.state.settings.dynamicAmbientViewerEnabled,
                             volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
                             swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
+                            ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                            mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                         )
                     }
                 }

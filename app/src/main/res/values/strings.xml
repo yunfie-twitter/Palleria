@@ -1300,6 +1300,14 @@
     <string name="flag_smart_download_naming_desc">保存ファイル名を「[作家名] 作品タイトル_p0」形式で自動命名し、写真アプリでの整理を容易にします</string>
     <string name="flag_privacy_exif_stripper_title">共有時プライバシーストリッパー</string>
     <string name="flag_privacy_exif_stripper_desc">画像共有時にGPS位置情報や端末固有メタデータを自動消去し、プライバシー漏洩を防止します</string>
+    <string name="flag_ugoira_power_save_title">うごイラ省電力スリープ &amp; ディレイ</string>
+    <string name="flag_ugoira_power_save_desc">画面外でアニメーションを完全停止し、高速スクロール通過時の不要なデコードを防止します</string>
+    <string name="flag_manga_adaptive_preload_title">マンガ適応型プリロード</string>
+    <string name="flag_manga_adaptive_preload_desc">ページめくりの方向癖（逆送りなど）を自動検知し、先読みキューを反転して待ち時間をゼロにします</string>
+    <string name="flag_velocity_landing_prefetch_title">着地予測プリフェッチ</string>
+    <string name="flag_velocity_landing_prefetch_desc">スクロール速度から停止位置を推定し、通過中の画像ではなく着地点周辺を高精度に先行取得します</string>
+    <string name="flag_byte_range_resume_title">ステルス・レジューム</string>
+    <string name="flag_byte_range_resume_desc">ダウンロード中断時に保存済みバイトから再開（HTTP Range）し、通信量と時間を節約します</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 
