@@ -283,8 +283,6 @@ internal fun IllustDetailHeader(
                                         },
                                     ),
                             crossfade = true,
-                            lowResPlaceholderUrl =
-                                illust.squareImageUrl.takeIf { page == 0 && it.isNotBlank() && it != imageUrls[page] },
                             onSuccess = { bitmap ->
                                 if (page == pagerState.currentPage) {
                                     scope.launch(Dispatchers.Default) {
