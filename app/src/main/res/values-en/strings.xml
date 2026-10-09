@@ -1198,8 +1198,6 @@
     <string name="flag_ugoira_auto_play_title">Auto-play Ugoira</string>
     <string name="flag_ugoira_auto_play_desc">Automatically plays animation when viewing Ugoira artworks.</string>
 
-    <string name="flag_comment_stamps_title">Comment stamps &amp; stamp posting</string>
-    <string name="flag_comment_stamps_desc">Enables Pixiv official stamps list (GET /v1/stamps) and stamp comment posting (POST /v1/illust/comment/add)</string>
     <string name="flag_user_profile_edit_title">Edit Profile</string>
     <string name="flag_user_profile_edit_desc">Show edit button (pencil icon) on own profile page and allow editing profile (POST /v1/user/profile/edit)</string>
     <string name="user_profile_edit_title">Edit Profile</string>
