@@ -16,6 +16,8 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
 import android.os.PersistableBundle
@@ -104,6 +106,7 @@ class MainActivity : FragmentActivity() {
         const val REFRESH_RATE_LOW_MIN = 30f
         const val REFRESH_RATE_NORMAL = 60f
         const val REFRESH_RATE_HIGH_MAX = 120f
+        const val TASK_SNAPSHOT_BLUR_RADIUS = 60f
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -118,6 +121,7 @@ class MainActivity : FragmentActivity() {
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
     private var appliedAppLanguage: String? = null
     private var appliedDarkTheme: Boolean? = null
+    private var isSnapshotBlurApplied = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -447,6 +451,11 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        applyTaskSnapshotBlur(isEnteringBackground = true)
+    }
+
     override fun onResume() {
         super.onResume()
         applyTaskSnapshotBlur(isEnteringBackground = false)
@@ -596,19 +605,35 @@ class MainActivity : FragmentActivity() {
         if (settings.secureWindow) return
 
         val isBlurEnabled = settings.isFeatureEnabled(com.yunfie.illustia.settings.FeatureFlag.TaskSnapshotBlur)
-        if (!isBlurEnabled) return
 
         if (isEnteringBackground) {
-            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
-                setRecentsScreenshotEnabled(false)
+            if (!isBlurEnabled) return
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val blurEffect =
+                    RenderEffect.createBlurEffect(
+                        TASK_SNAPSHOT_BLUR_RADIUS,
+                        TASK_SNAPSHOT_BLUR_RADIUS,
+                        Shader.TileMode.CLAMP,
+                    )
+                window.decorView.setRenderEffect(blurEffect)
+                isSnapshotBlurApplied = true
             } else {
                 window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                isSnapshotBlurApplied = true
             }
         } else {
-            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
-                setRecentsScreenshotEnabled(true)
-            } else {
-                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            if (isSnapshotBlurApplied) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    window.decorView.setRenderEffect(null)
+                } else {
+                    val appLocked = viewModel.uiState.value.appLocked
+                    if (!settings.secureWindow && !(appLocked && settings.appLockEnabled)) {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    }
+                }
+                isSnapshotBlurApplied = false
+            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                window.decorView.setRenderEffect(null)
             }
         }
     }
