@@ -71,12 +71,6 @@ enum class FeatureFlag(
         descRes = R.string.flag_novel_tts_audiobook_desc,
         defaultEnabled = false,
     ),
-    CommentStamps(
-        key = "flag_comment_stamps",
-        titleRes = R.string.flag_comment_stamps_title,
-        descRes = R.string.flag_comment_stamps_desc,
-        defaultEnabled = false,
-    ),
     UserProfileEdit(
         key = "flag_user_profile_edit",
         titleRes = R.string.flag_user_profile_edit_title,
@@ -105,7 +99,7 @@ enum class FeatureFlag(
         key = "flag_task_snapshot_blur",
         titleRes = R.string.flag_task_snapshot_blur_title,
         descRes = R.string.flag_task_snapshot_blur_desc,
-        defaultEnabled = true,
+        defaultEnabled = false,
     ),
     CourtesyAudioFade(
         key = "flag_courtesy_audio_fade",
