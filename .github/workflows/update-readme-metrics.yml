@@ -1,0 +1,47 @@
+name: Update README Metrics & Contributors
+
+on:
+  schedule:
+    # 毎日午前 3:00 JST (UTC 18:00) に自動更新
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-readme-metrics
+  cancel-in-progress: true
+
+jobs:
+  update-metrics:
+    name: Update README Metrics & Contributors
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Update README Metrics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/update_readme_metrics.py
+
+      - name: Commit and push changes if updated
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ -n $(git status --porcelain README.md) ]]; then
+            git add README.md
+            git commit -m "docs: update README metrics and contributors [skip ci]"
+            git push
+          else
+            echo "No changes in README.md"
+          fi

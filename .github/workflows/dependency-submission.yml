@@ -1,0 +1,31 @@
+name: Dependency Submission
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "gradle/libs.versions.toml"
+      - "**/build.gradle"
+      - "settings.gradle"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dependency-submission:
+    name: Submit Gradle Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+
+      - name: Submit Dependency Graph
+        uses: gradle/actions/dependency-submission@v3

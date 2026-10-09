@@ -1,0 +1,2914 @@
+[
+  {
+    "name": "androidx.activity:activity-compose",
+    "category": "Android / Gradle",
+    "version": "1.13.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.appcompat:appcompat",
+    "category": "Android / Gradle",
+    "version": "1.8.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.benchmark:benchmark-macro-junit4",
+    "category": "Android / Gradle",
+    "version": "1.5.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.biometric:biometric",
+    "category": "Android / Gradle",
+    "version": "1.4.0-alpha07",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.browser:browser",
+    "category": "Android / Gradle",
+    "version": "1.10.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.compose.foundation:foundation",
+    "category": "Android / Gradle",
+    "version": "bundled",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.compose.material:material",
+    "category": "Android / Gradle",
+    "version": "bundled",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.compose:compose-bom",
+    "category": "Android / Gradle",
+    "version": "2026.09.00",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.core:core-splashscreen",
+    "category": "Android / Gradle",
+    "version": "1.2.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.datastore:datastore-preferences",
+    "category": "Android / Gradle",
+    "version": "1.2.1",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.documentfile:documentfile",
+    "category": "Android / Gradle",
+    "version": "1.1.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.glance:glance-appwidget",
+    "category": "Android / Gradle",
+    "version": "1.1.1",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.glance:glance-material3",
+    "category": "Android / Gradle",
+    "version": "1.1.1",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-process",
+    "category": "Android / Gradle",
+    "version": "2.11.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-runtime-compose",
+    "category": "Android / Gradle",
+    "version": "2.11.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-viewmodel-compose",
+    "category": "Android / Gradle",
+    "version": "2.11.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-viewmodel-ktx",
+    "category": "Android / Gradle",
+    "version": "2.11.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.navigation3:navigation3-runtime",
+    "category": "Android / Gradle",
+    "version": "1.1.4",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.profileinstaller:profileinstaller",
+    "category": "Android / Gradle",
+    "version": "1.4.1",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.room:room-compiler",
+    "category": "Android / Gradle",
+    "version": "2.8.5",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.room:room-runtime",
+    "category": "Android / Gradle",
+    "version": "2.8.5",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.security:security-crypto",
+    "category": "Android / Gradle",
+    "version": "1.1.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.test.ext:junit",
+    "category": "Android / Gradle",
+    "version": "1.3.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.test.uiautomator:uiautomator",
+    "category": "Android / Gradle",
+    "version": "2.4.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.test:core",
+    "category": "Android / Gradle",
+    "version": "1.7.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.test:runner",
+    "category": "Android / Gradle",
+    "version": "1.7.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "androidx.work:work-runtime-ktx",
+    "category": "Android / Gradle",
+    "version": "2.12.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
+    "name": "com.android.tools:desugar_jdk_libs",
+    "category": "Android / Gradle",
+    "version": "2.1.5",
+    "author": "Open Source Contributors",
+    "license": "Apache-2.0",
+    "url": "https://search.maven.org/artifact/com.android.tools/desugar_jdk_libs"
+  },
+  {
+    "name": "com.google.zxing:core",
+    "category": "Android / Gradle",
+    "version": "3.5.4",
+    "author": "ZXing Authors",
+    "license": "Apache-2.0",
+    "url": "https://github.com/zxing/zxing"
+  },
+  {
+    "name": "com.journeyapps:zxing-android-embedded",
+    "category": "Android / Gradle",
+    "version": "4.3.0",
+    "author": "Journey Mobile",
+    "license": "Apache-2.0",
+    "url": "https://github.com/journeyapps/zxing-android-embedded"
+  },
+  {
+    "name": "com.squareup.okhttp3:okhttp",
+    "category": "Android / Gradle",
+    "version": "5.5.0",
+    "author": "Square, Inc.",
+    "license": "Apache-2.0",
+    "url": "https://square.github.io/okhttp/"
+  },
+  {
+    "name": "dev.rikka.shizuku:api",
+    "category": "Android / Gradle",
+    "version": "13.1.5",
+    "author": "RikkaApps",
+    "license": "Apache-2.0",
+    "url": "https://github.com/RikkaApps/Shizuku-API"
+  },
+  {
+    "name": "dev.rikka.shizuku:provider",
+    "category": "Android / Gradle",
+    "version": "13.1.5",
+    "author": "RikkaApps",
+    "license": "Apache-2.0",
+    "url": "https://github.com/RikkaApps/Shizuku-API"
+  },
+  {
+    "name": "io.coil-kt.coil3:coil-compose",
+    "category": "Android / Gradle",
+    "version": "3.6.3",
+    "author": "Coil Contributors",
+    "license": "Apache-2.0",
+    "url": "https://github.com/coil-kt/coil"
+  },
+  {
+    "name": "io.coil-kt.coil3:coil-gif",
+    "category": "Android / Gradle",
+    "version": "3.6.3",
+    "author": "Coil Contributors",
+    "license": "Apache-2.0",
+    "url": "https://github.com/coil-kt/coil"
+  },
+  {
+    "name": "io.coil-kt.coil3:coil-network-okhttp",
+    "category": "Android / Gradle",
+    "version": "3.6.3",
+    "author": "Coil Contributors",
+    "license": "Apache-2.0",
+    "url": "https://github.com/coil-kt/coil"
+  },
+  {
+    "name": "io.kotest:kotest-assertions-core",
+    "category": "Android / Gradle",
+    "version": "6.2.5",
+    "author": "Kotest",
+    "license": "Apache-2.0",
+    "url": "https://github.com/kotest/kotest"
+  },
+  {
+    "name": "io.kotest:kotest-property",
+    "category": "Android / Gradle",
+    "version": "6.2.5",
+    "author": "Kotest",
+    "license": "Apache-2.0",
+    "url": "https://github.com/kotest/kotest"
+  },
+  {
+    "name": "io.kotest:kotest-runner-junit5",
+    "category": "Android / Gradle",
+    "version": "6.2.5",
+    "author": "Kotest",
+    "license": "Apache-2.0",
+    "url": "https://github.com/kotest/kotest"
+  },
+  {
+    "name": "io.sentry:sentry-android",
+    "category": "Android / Gradle",
+    "version": "8.59.0",
+    "author": "Sentry",
+    "license": "MIT",
+    "url": "https://github.com/getsentry/sentry-java"
+  },
+  {
+    "name": "junit:junit",
+    "category": "Android / Gradle",
+    "version": "4.13.2",
+    "author": "JUnit.org",
+    "license": "EPL-2.0",
+    "url": "https://junit.org/"
+  },
+  {
+    "name": "net.java.dev.jna:jna",
+    "category": "Android / Gradle",
+    "version": "5.19.1",
+    "author": "Timothy Wall",
+    "license": "LGPL-2.1 / Apache-2.0",
+    "url": "https://github.com/java-native-access/jna"
+  },
+  {
+    "name": "org.jetbrains.kotlin:kotlin-bom",
+    "category": "Android / Gradle",
+    "version": "2.4.20",
+    "author": "JetBrains s.r.o.",
+    "license": "Apache-2.0",
+    "url": "https://kotlinlang.org/"
+  },
+  {
+    "name": "org.jetbrains.kotlinx:kotlinx-coroutines-android",
+    "category": "Android / Gradle",
+    "version": "1.11.0",
+    "author": "JetBrains s.r.o.",
+    "license": "Apache-2.0",
+    "url": "https://kotlinlang.org/"
+  },
+  {
+    "name": "org.jetbrains.kotlinx:kotlinx-serialization-json",
+    "category": "Android / Gradle",
+    "version": "1.11.0",
+    "author": "JetBrains s.r.o.",
+    "license": "Apache-2.0",
+    "url": "https://kotlinlang.org/"
+  },
+  {
+    "name": "org.junit.vintage:junit-vintage-engine",
+    "category": "Android / Gradle",
+    "version": "6.1.3",
+    "author": "Open Source Contributors",
+    "license": "Apache-2.0",
+    "url": "https://search.maven.org/artifact/org.junit.vintage/junit-vintage-engine"
+  },
+  {
+    "name": "org.robolectric:robolectric",
+    "category": "Android / Gradle",
+    "version": "4.17",
+    "author": "Google LLC / Robolectric Authors",
+    "license": "Apache-2.0",
+    "url": "https://robolectric.org/"
+  },
+  {
+    "name": "top.yukonga.miuix.kmp:miuix-blur-android",
+    "category": "Android / Gradle",
+    "version": "0.9.4",
+    "author": "yukonga",
+    "license": "Apache-2.0",
+    "url": "https://github.com/miuix-kotlin-multiplatform/miuix"
+  },
+  {
+    "name": "top.yukonga.miuix.kmp:miuix-icons-android",
+    "category": "Android / Gradle",
+    "version": "0.9.3",
+    "author": "yukonga",
+    "license": "Apache-2.0",
+    "url": "https://github.com/miuix-kotlin-multiplatform/miuix"
+  },
+  {
+    "name": "top.yukonga.miuix.kmp:miuix-navigation3-ui-android",
+    "category": "Android / Gradle",
+    "version": "0.9.3",
+    "author": "yukonga",
+    "license": "Apache-2.0",
+    "url": "https://github.com/miuix-kotlin-multiplatform/miuix"
+  },
+  {
+    "name": "top.yukonga.miuix.kmp:miuix-preference-android",
+    "category": "Android / Gradle",
+    "version": "0.9.3",
+    "author": "yukonga",
+    "license": "Apache-2.0",
+    "url": "https://github.com/miuix-kotlin-multiplatform/miuix"
+  },
+  {
+    "name": "top.yukonga.miuix.kmp:miuix-squircle-android",
+    "category": "Android / Gradle",
+    "version": "0.9.3",
+    "author": "yukonga",
+    "license": "Apache-2.0",
+    "url": "https://github.com/miuix-kotlin-multiplatform/miuix"
+  },
+  {
+    "name": "top.yukonga.miuix.kmp:miuix-ui-android",
+    "category": "Android / Gradle",
+    "version": "0.9.3",
+    "author": "yukonga",
+    "license": "Apache-2.0",
+    "url": "https://github.com/miuix-kotlin-multiplatform/miuix"
+  },
+  {
+    "name": "adler2",
+    "category": "Rust Crate",
+    "version": "2.0.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/adler2"
+  },
+  {
+    "name": "aead",
+    "category": "Rust Crate",
+    "version": "0.5.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/aead"
+  },
+  {
+    "name": "aes",
+    "category": "Rust Crate",
+    "version": "0.8.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/aes"
+  },
+  {
+    "name": "aes-gcm",
+    "category": "Rust Crate",
+    "version": "0.10.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/aes-gcm"
+  },
+  {
+    "name": "aho-corasick",
+    "category": "Rust Crate",
+    "version": "1.1.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/aho-corasick"
+  },
+  {
+    "name": "alloc-no-stdlib",
+    "category": "Rust Crate",
+    "version": "2.0.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/alloc-no-stdlib"
+  },
+  {
+    "name": "alloc-stdlib",
+    "category": "Rust Crate",
+    "version": "0.2.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/alloc-stdlib"
+  },
+  {
+    "name": "android_system_properties",
+    "category": "Rust Crate",
+    "version": "0.1.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/android_system_properties"
+  },
+  {
+    "name": "anes",
+    "category": "Rust Crate",
+    "version": "0.1.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/anes"
+  },
+  {
+    "name": "anstyle",
+    "category": "Rust Crate",
+    "version": "1.0.14",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/anstyle"
+  },
+  {
+    "name": "anyhow",
+    "category": "Rust Crate",
+    "version": "1.0.103",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/anyhow"
+  },
+  {
+    "name": "arbitrary",
+    "category": "Rust Crate",
+    "version": "1.4.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/arbitrary"
+  },
+  {
+    "name": "arrayvec",
+    "category": "Rust Crate",
+    "version": "0.7.8",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/arrayvec"
+  },
+  {
+    "name": "ascii",
+    "category": "Rust Crate",
+    "version": "1.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ascii"
+  },
+  {
+    "name": "askama",
+    "category": "Rust Crate",
+    "version": "0.13.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/askama"
+  },
+  {
+    "name": "askama_derive",
+    "category": "Rust Crate",
+    "version": "0.13.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/askama_derive"
+  },
+  {
+    "name": "askama_parser",
+    "category": "Rust Crate",
+    "version": "0.13.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/askama_parser"
+  },
+  {
+    "name": "async-compat",
+    "category": "Rust Crate",
+    "version": "0.2.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/async-compat"
+  },
+  {
+    "name": "async-compression",
+    "category": "Rust Crate",
+    "version": "0.4.42",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/async-compression"
+  },
+  {
+    "name": "atomic-waker",
+    "category": "Rust Crate",
+    "version": "1.1.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/atomic-waker"
+  },
+  {
+    "name": "autocfg",
+    "category": "Rust Crate",
+    "version": "1.5.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/autocfg"
+  },
+  {
+    "name": "base16ct",
+    "category": "Rust Crate",
+    "version": "0.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/base16ct"
+  },
+  {
+    "name": "base64",
+    "category": "Rust Crate",
+    "version": "0.22.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/base64"
+  },
+  {
+    "name": "base64ct",
+    "category": "Rust Crate",
+    "version": "1.8.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/base64ct"
+  },
+  {
+    "name": "basic-toml",
+    "category": "Rust Crate",
+    "version": "0.1.10",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/basic-toml"
+  },
+  {
+    "name": "bip39",
+    "category": "Rust Crate",
+    "version": "2.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/bip39"
+  },
+  {
+    "name": "bitcoin_hashes",
+    "category": "Rust Crate",
+    "version": "0.14.101",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/bitcoin_hashes"
+  },
+  {
+    "name": "bitflags",
+    "category": "Rust Crate",
+    "version": "2.13.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/bitflags"
+  },
+  {
+    "name": "block-buffer",
+    "category": "Rust Crate",
+    "version": "0.10.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/block-buffer"
+  },
+  {
+    "name": "brotli",
+    "category": "Rust Crate",
+    "version": "8.0.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/brotli"
+  },
+  {
+    "name": "brotli-decompressor",
+    "category": "Rust Crate",
+    "version": "5.0.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/brotli-decompressor"
+  },
+  {
+    "name": "bumpalo",
+    "category": "Rust Crate",
+    "version": "3.20.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/bumpalo"
+  },
+  {
+    "name": "bytes",
+    "category": "Rust Crate",
+    "version": "1.12.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/bytes"
+  },
+  {
+    "name": "camino",
+    "category": "Rust Crate",
+    "version": "1.2.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/camino"
+  },
+  {
+    "name": "cargo-platform",
+    "category": "Rust Crate",
+    "version": "0.1.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cargo-platform"
+  },
+  {
+    "name": "cargo_metadata",
+    "category": "Rust Crate",
+    "version": "0.19.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cargo_metadata"
+  },
+  {
+    "name": "cast",
+    "category": "Rust Crate",
+    "version": "0.3.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cast"
+  },
+  {
+    "name": "cc",
+    "category": "Rust Crate",
+    "version": "1.2.67",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cc"
+  },
+  {
+    "name": "cesu8",
+    "category": "Rust Crate",
+    "version": "1.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cesu8"
+  },
+  {
+    "name": "cfg-if",
+    "category": "Rust Crate",
+    "version": "1.0.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cfg-if"
+  },
+  {
+    "name": "cfg_aliases",
+    "category": "Rust Crate",
+    "version": "0.2.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cfg_aliases"
+  },
+  {
+    "name": "chacha20",
+    "category": "Rust Crate",
+    "version": "0.10.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/chacha20"
+  },
+  {
+    "name": "chacha20poly1305",
+    "category": "Rust Crate",
+    "version": "0.10.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/chacha20poly1305"
+  },
+  {
+    "name": "chrono",
+    "category": "Rust Crate",
+    "version": "0.4.45",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/chrono"
+  },
+  {
+    "name": "chunked_transfer",
+    "category": "Rust Crate",
+    "version": "1.5.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/chunked_transfer"
+  },
+  {
+    "name": "ciborium",
+    "category": "Rust Crate",
+    "version": "0.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ciborium"
+  },
+  {
+    "name": "ciborium-io",
+    "category": "Rust Crate",
+    "version": "0.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ciborium-io"
+  },
+  {
+    "name": "ciborium-ll",
+    "category": "Rust Crate",
+    "version": "0.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ciborium-ll"
+  },
+  {
+    "name": "cipher",
+    "category": "Rust Crate",
+    "version": "0.4.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cipher"
+  },
+  {
+    "name": "clap",
+    "category": "Rust Crate",
+    "version": "4.6.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/clap"
+  },
+  {
+    "name": "clap_builder",
+    "category": "Rust Crate",
+    "version": "4.6.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/clap_builder"
+  },
+  {
+    "name": "clap_derive",
+    "category": "Rust Crate",
+    "version": "4.6.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/clap_derive"
+  },
+  {
+    "name": "clap_lex",
+    "category": "Rust Crate",
+    "version": "1.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/clap_lex"
+  },
+  {
+    "name": "combine",
+    "category": "Rust Crate",
+    "version": "4.6.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/combine"
+  },
+  {
+    "name": "compression-codecs",
+    "category": "Rust Crate",
+    "version": "0.4.38",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/compression-codecs"
+  },
+  {
+    "name": "compression-core",
+    "category": "Rust Crate",
+    "version": "0.4.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/compression-core"
+  },
+  {
+    "name": "const-oid",
+    "category": "Rust Crate",
+    "version": "0.9.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/const-oid"
+  },
+  {
+    "name": "core-foundation-sys",
+    "category": "Rust Crate",
+    "version": "0.8.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/core-foundation-sys"
+  },
+  {
+    "name": "cpufeatures",
+    "category": "Rust Crate",
+    "version": "0.3.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/cpufeatures"
+  },
+  {
+    "name": "crc32fast",
+    "category": "Rust Crate",
+    "version": "1.5.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crc32fast"
+  },
+  {
+    "name": "criterion",
+    "category": "Rust Crate",
+    "version": "0.5.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/criterion"
+  },
+  {
+    "name": "criterion-plot",
+    "category": "Rust Crate",
+    "version": "0.5.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/criterion-plot"
+  },
+  {
+    "name": "crossbeam-deque",
+    "category": "Rust Crate",
+    "version": "0.8.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crossbeam-deque"
+  },
+  {
+    "name": "crossbeam-epoch",
+    "category": "Rust Crate",
+    "version": "0.9.20",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crossbeam-epoch"
+  },
+  {
+    "name": "crossbeam-utils",
+    "category": "Rust Crate",
+    "version": "0.8.22",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crossbeam-utils"
+  },
+  {
+    "name": "crunchy",
+    "category": "Rust Crate",
+    "version": "0.2.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crunchy"
+  },
+  {
+    "name": "crypto-bigint",
+    "category": "Rust Crate",
+    "version": "0.5.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crypto-bigint"
+  },
+  {
+    "name": "crypto-common",
+    "category": "Rust Crate",
+    "version": "0.1.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/crypto-common"
+  },
+  {
+    "name": "ctr",
+    "category": "Rust Crate",
+    "version": "0.9.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ctr"
+  },
+  {
+    "name": "curve25519-dalek",
+    "category": "Rust Crate",
+    "version": "4.1.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/curve25519-dalek"
+  },
+  {
+    "name": "curve25519-dalek-derive",
+    "category": "Rust Crate",
+    "version": "0.1.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/curve25519-dalek-derive"
+  },
+  {
+    "name": "der",
+    "category": "Rust Crate",
+    "version": "0.7.10",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/der"
+  },
+  {
+    "name": "derive_arbitrary",
+    "category": "Rust Crate",
+    "version": "1.4.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/derive_arbitrary"
+  },
+  {
+    "name": "digest",
+    "category": "Rust Crate",
+    "version": "0.10.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/digest"
+  },
+  {
+    "name": "displaydoc",
+    "category": "Rust Crate",
+    "version": "0.2.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/displaydoc"
+  },
+  {
+    "name": "ed25519",
+    "category": "Rust Crate",
+    "version": "2.2.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ed25519"
+  },
+  {
+    "name": "ed25519-dalek",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ed25519-dalek"
+  },
+  {
+    "name": "either",
+    "category": "Rust Crate",
+    "version": "1.16.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/either"
+  },
+  {
+    "name": "elliptic-curve",
+    "category": "Rust Crate",
+    "version": "0.13.8",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/elliptic-curve"
+  },
+  {
+    "name": "equivalent",
+    "category": "Rust Crate",
+    "version": "1.0.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/equivalent"
+  },
+  {
+    "name": "errno",
+    "category": "Rust Crate",
+    "version": "0.3.14",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/errno"
+  },
+  {
+    "name": "fastrand",
+    "category": "Rust Crate",
+    "version": "2.4.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/fastrand"
+  },
+  {
+    "name": "ff",
+    "category": "Rust Crate",
+    "version": "0.13.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ff"
+  },
+  {
+    "name": "fiat-crypto",
+    "category": "Rust Crate",
+    "version": "0.2.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/fiat-crypto"
+  },
+  {
+    "name": "find-msvc-tools",
+    "category": "Rust Crate",
+    "version": "0.1.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/find-msvc-tools"
+  },
+  {
+    "name": "flate2",
+    "category": "Rust Crate",
+    "version": "1.1.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/flate2"
+  },
+  {
+    "name": "form_urlencoded",
+    "category": "Rust Crate",
+    "version": "1.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/form_urlencoded"
+  },
+  {
+    "name": "fs-err",
+    "category": "Rust Crate",
+    "version": "2.11.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/fs-err"
+  },
+  {
+    "name": "futures-channel",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-channel"
+  },
+  {
+    "name": "futures-core",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-core"
+  },
+  {
+    "name": "futures-io",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-io"
+  },
+  {
+    "name": "futures-macro",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-macro"
+  },
+  {
+    "name": "futures-sink",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-sink"
+  },
+  {
+    "name": "futures-task",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-task"
+  },
+  {
+    "name": "futures-util",
+    "category": "Rust Crate",
+    "version": "0.3.32",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/futures-util"
+  },
+  {
+    "name": "generic-array",
+    "category": "Rust Crate",
+    "version": "0.14.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/generic-array"
+  },
+  {
+    "name": "getrandom",
+    "category": "Rust Crate",
+    "version": "0.2.17",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/getrandom"
+  },
+  {
+    "name": "ghash",
+    "category": "Rust Crate",
+    "version": "0.5.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ghash"
+  },
+  {
+    "name": "glob",
+    "category": "Rust Crate",
+    "version": "0.3.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/glob"
+  },
+  {
+    "name": "goblin",
+    "category": "Rust Crate",
+    "version": "0.8.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/goblin"
+  },
+  {
+    "name": "group",
+    "category": "Rust Crate",
+    "version": "0.13.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/group"
+  },
+  {
+    "name": "half",
+    "category": "Rust Crate",
+    "version": "2.7.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/half"
+  },
+  {
+    "name": "hashbrown",
+    "category": "Rust Crate",
+    "version": "0.17.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hashbrown"
+  },
+  {
+    "name": "heck",
+    "category": "Rust Crate",
+    "version": "0.5.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/heck"
+  },
+  {
+    "name": "hermit-abi",
+    "category": "Rust Crate",
+    "version": "0.5.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hermit-abi"
+  },
+  {
+    "name": "hex",
+    "category": "Rust Crate",
+    "version": "0.4.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hex"
+  },
+  {
+    "name": "hex-conservative",
+    "category": "Rust Crate",
+    "version": "0.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hex-conservative"
+  },
+  {
+    "name": "hkdf",
+    "category": "Rust Crate",
+    "version": "0.12.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hkdf"
+  },
+  {
+    "name": "hmac",
+    "category": "Rust Crate",
+    "version": "0.12.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hmac"
+  },
+  {
+    "name": "hpke",
+    "category": "Rust Crate",
+    "version": "0.12.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hpke"
+  },
+  {
+    "name": "http",
+    "category": "Rust Crate",
+    "version": "1.4.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/http"
+  },
+  {
+    "name": "http-body",
+    "category": "Rust Crate",
+    "version": "1.0.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/http-body"
+  },
+  {
+    "name": "http-body-util",
+    "category": "Rust Crate",
+    "version": "0.1.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/http-body-util"
+  },
+  {
+    "name": "httparse",
+    "category": "Rust Crate",
+    "version": "1.10.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/httparse"
+  },
+  {
+    "name": "httpdate",
+    "category": "Rust Crate",
+    "version": "1.0.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/httpdate"
+  },
+  {
+    "name": "hyper",
+    "category": "Rust Crate",
+    "version": "1.10.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hyper"
+  },
+  {
+    "name": "hyper-rustls",
+    "category": "Rust Crate",
+    "version": "0.27.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hyper-rustls"
+  },
+  {
+    "name": "hyper-util",
+    "category": "Rust Crate",
+    "version": "0.1.20",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/hyper-util"
+  },
+  {
+    "name": "iana-time-zone",
+    "category": "Rust Crate",
+    "version": "0.1.65",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/iana-time-zone"
+  },
+  {
+    "name": "iana-time-zone-haiku",
+    "category": "Rust Crate",
+    "version": "0.1.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/iana-time-zone-haiku"
+  },
+  {
+    "name": "icu_collections",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_collections"
+  },
+  {
+    "name": "icu_locale_core",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_locale_core"
+  },
+  {
+    "name": "icu_normalizer",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_normalizer"
+  },
+  {
+    "name": "icu_normalizer_data",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_normalizer_data"
+  },
+  {
+    "name": "icu_properties",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_properties"
+  },
+  {
+    "name": "icu_properties_data",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_properties_data"
+  },
+  {
+    "name": "icu_provider",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/icu_provider"
+  },
+  {
+    "name": "idna",
+    "category": "Rust Crate",
+    "version": "1.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/idna"
+  },
+  {
+    "name": "idna_adapter",
+    "category": "Rust Crate",
+    "version": "1.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/idna_adapter"
+  },
+  {
+    "name": "indexmap",
+    "category": "Rust Crate",
+    "version": "2.14.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/indexmap"
+  },
+  {
+    "name": "inout",
+    "category": "Rust Crate",
+    "version": "0.1.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/inout"
+  },
+  {
+    "name": "ipnet",
+    "category": "Rust Crate",
+    "version": "2.12.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ipnet"
+  },
+  {
+    "name": "is-terminal",
+    "category": "Rust Crate",
+    "version": "0.4.17",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/is-terminal"
+  },
+  {
+    "name": "itertools",
+    "category": "Rust Crate",
+    "version": "0.10.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/itertools"
+  },
+  {
+    "name": "itoa",
+    "category": "Rust Crate",
+    "version": "1.0.18",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/itoa"
+  },
+  {
+    "name": "jni",
+    "category": "Rust Crate",
+    "version": "0.21.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/jni"
+  },
+  {
+    "name": "jni-sys",
+    "category": "Rust Crate",
+    "version": "0.3.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/jni-sys"
+  },
+  {
+    "name": "jni-sys-macros",
+    "category": "Rust Crate",
+    "version": "0.4.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/jni-sys-macros"
+  },
+  {
+    "name": "js-sys",
+    "category": "Rust Crate",
+    "version": "0.3.103",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/js-sys"
+  },
+  {
+    "name": "libc",
+    "category": "Rust Crate",
+    "version": "0.2.186",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/libc"
+  },
+  {
+    "name": "linux-raw-sys",
+    "category": "Rust Crate",
+    "version": "0.12.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/linux-raw-sys"
+  },
+  {
+    "name": "litemap",
+    "category": "Rust Crate",
+    "version": "0.8.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/litemap"
+  },
+  {
+    "name": "log",
+    "category": "Rust Crate",
+    "version": "0.4.33",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/log"
+  },
+  {
+    "name": "lru-slab",
+    "category": "Rust Crate",
+    "version": "0.1.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/lru-slab"
+  },
+  {
+    "name": "md5",
+    "category": "Rust Crate",
+    "version": "0.7.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/md5"
+  },
+  {
+    "name": "memchr",
+    "category": "Rust Crate",
+    "version": "2.8.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/memchr"
+  },
+  {
+    "name": "minimal-lexical",
+    "category": "Rust Crate",
+    "version": "0.2.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/minimal-lexical"
+  },
+  {
+    "name": "miniz_oxide",
+    "category": "Rust Crate",
+    "version": "0.8.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/miniz_oxide"
+  },
+  {
+    "name": "mio",
+    "category": "Rust Crate",
+    "version": "1.2.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/mio"
+  },
+  {
+    "name": "nom",
+    "category": "Rust Crate",
+    "version": "7.1.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/nom"
+  },
+  {
+    "name": "num-traits",
+    "category": "Rust Crate",
+    "version": "0.2.19",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/num-traits"
+  },
+  {
+    "name": "once_cell",
+    "category": "Rust Crate",
+    "version": "1.21.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/once_cell"
+  },
+  {
+    "name": "oorandom",
+    "category": "Rust Crate",
+    "version": "11.1.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/oorandom"
+  },
+  {
+    "name": "opaque-debug",
+    "category": "Rust Crate",
+    "version": "0.3.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/opaque-debug"
+  },
+  {
+    "name": "p256",
+    "category": "Rust Crate",
+    "version": "0.13.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/p256"
+  },
+  {
+    "name": "pallasync-core",
+    "category": "Rust Crate",
+    "version": "0.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/pallasync-core"
+  },
+  {
+    "name": "palleria_pixiv_api",
+    "category": "Rust Crate",
+    "version": "0.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/palleria_pixiv_api"
+  },
+  {
+    "name": "pbkdf2",
+    "category": "Rust Crate",
+    "version": "0.12.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/pbkdf2"
+  },
+  {
+    "name": "percent-encoding",
+    "category": "Rust Crate",
+    "version": "2.3.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/percent-encoding"
+  },
+  {
+    "name": "pin-project-lite",
+    "category": "Rust Crate",
+    "version": "0.2.17",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/pin-project-lite"
+  },
+  {
+    "name": "pkcs8",
+    "category": "Rust Crate",
+    "version": "0.10.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/pkcs8"
+  },
+  {
+    "name": "plain",
+    "category": "Rust Crate",
+    "version": "0.2.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/plain"
+  },
+  {
+    "name": "plotters",
+    "category": "Rust Crate",
+    "version": "0.3.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/plotters"
+  },
+  {
+    "name": "plotters-backend",
+    "category": "Rust Crate",
+    "version": "0.3.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/plotters-backend"
+  },
+  {
+    "name": "plotters-svg",
+    "category": "Rust Crate",
+    "version": "0.3.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/plotters-svg"
+  },
+  {
+    "name": "poly1305",
+    "category": "Rust Crate",
+    "version": "0.8.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/poly1305"
+  },
+  {
+    "name": "polyval",
+    "category": "Rust Crate",
+    "version": "0.6.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/polyval"
+  },
+  {
+    "name": "potential_utf",
+    "category": "Rust Crate",
+    "version": "0.1.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/potential_utf"
+  },
+  {
+    "name": "ppv-lite86",
+    "category": "Rust Crate",
+    "version": "0.2.21",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ppv-lite86"
+  },
+  {
+    "name": "primeorder",
+    "category": "Rust Crate",
+    "version": "0.13.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/primeorder"
+  },
+  {
+    "name": "proc-macro2",
+    "category": "Rust Crate",
+    "version": "1.0.106",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/proc-macro2"
+  },
+  {
+    "name": "quinn",
+    "category": "Rust Crate",
+    "version": "0.11.11",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/quinn"
+  },
+  {
+    "name": "quinn-proto",
+    "category": "Rust Crate",
+    "version": "0.11.16",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/quinn-proto"
+  },
+  {
+    "name": "quinn-udp",
+    "category": "Rust Crate",
+    "version": "0.5.15",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/quinn-udp"
+  },
+  {
+    "name": "quote",
+    "category": "Rust Crate",
+    "version": "1.0.46",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/quote"
+  },
+  {
+    "name": "r-efi",
+    "category": "Rust Crate",
+    "version": "6.0.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/r-efi"
+  },
+  {
+    "name": "rand",
+    "category": "Rust Crate",
+    "version": "0.10.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rand"
+  },
+  {
+    "name": "rand_chacha",
+    "category": "Rust Crate",
+    "version": "0.3.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rand_chacha"
+  },
+  {
+    "name": "rand_core",
+    "category": "Rust Crate",
+    "version": "0.10.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rand_core"
+  },
+  {
+    "name": "rand_pcg",
+    "category": "Rust Crate",
+    "version": "0.10.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rand_pcg"
+  },
+  {
+    "name": "rayon",
+    "category": "Rust Crate",
+    "version": "1.12.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rayon"
+  },
+  {
+    "name": "rayon-core",
+    "category": "Rust Crate",
+    "version": "1.13.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rayon-core"
+  },
+  {
+    "name": "regex",
+    "category": "Rust Crate",
+    "version": "1.13.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/regex"
+  },
+  {
+    "name": "regex-automata",
+    "category": "Rust Crate",
+    "version": "0.4.16",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/regex-automata"
+  },
+  {
+    "name": "regex-syntax",
+    "category": "Rust Crate",
+    "version": "0.8.11",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/regex-syntax"
+  },
+  {
+    "name": "reqwest",
+    "category": "Rust Crate",
+    "version": "0.12.28",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/reqwest"
+  },
+  {
+    "name": "ring",
+    "category": "Rust Crate",
+    "version": "0.17.14",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ring"
+  },
+  {
+    "name": "rustc-hash",
+    "category": "Rust Crate",
+    "version": "2.1.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustc-hash"
+  },
+  {
+    "name": "rustc_version",
+    "category": "Rust Crate",
+    "version": "0.4.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustc_version"
+  },
+  {
+    "name": "rustix",
+    "category": "Rust Crate",
+    "version": "1.1.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustix"
+  },
+  {
+    "name": "rustls",
+    "category": "Rust Crate",
+    "version": "0.23.41",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustls"
+  },
+  {
+    "name": "rustls-pki-types",
+    "category": "Rust Crate",
+    "version": "1.15.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustls-pki-types"
+  },
+  {
+    "name": "rustls-webpki",
+    "category": "Rust Crate",
+    "version": "0.103.13",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustls-webpki"
+  },
+  {
+    "name": "rustversion",
+    "category": "Rust Crate",
+    "version": "1.0.23",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/rustversion"
+  },
+  {
+    "name": "ryu",
+    "category": "Rust Crate",
+    "version": "1.0.23",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ryu"
+  },
+  {
+    "name": "ryu-js",
+    "category": "Rust Crate",
+    "version": "0.2.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/ryu-js"
+  },
+  {
+    "name": "same-file",
+    "category": "Rust Crate",
+    "version": "1.0.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/same-file"
+  },
+  {
+    "name": "scroll",
+    "category": "Rust Crate",
+    "version": "0.12.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/scroll"
+  },
+  {
+    "name": "scroll_derive",
+    "category": "Rust Crate",
+    "version": "0.12.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/scroll_derive"
+  },
+  {
+    "name": "sec1",
+    "category": "Rust Crate",
+    "version": "0.7.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/sec1"
+  },
+  {
+    "name": "semver",
+    "category": "Rust Crate",
+    "version": "1.0.28",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/semver"
+  },
+  {
+    "name": "serde",
+    "category": "Rust Crate",
+    "version": "1.0.228",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/serde"
+  },
+  {
+    "name": "serde_core",
+    "category": "Rust Crate",
+    "version": "1.0.228",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/serde_core"
+  },
+  {
+    "name": "serde_derive",
+    "category": "Rust Crate",
+    "version": "1.0.228",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/serde_derive"
+  },
+  {
+    "name": "serde_jcs",
+    "category": "Rust Crate",
+    "version": "0.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/serde_jcs"
+  },
+  {
+    "name": "serde_json",
+    "category": "Rust Crate",
+    "version": "1.0.150",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/serde_json"
+  },
+  {
+    "name": "serde_urlencoded",
+    "category": "Rust Crate",
+    "version": "0.7.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/serde_urlencoded"
+  },
+  {
+    "name": "sha2",
+    "category": "Rust Crate",
+    "version": "0.10.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/sha2"
+  },
+  {
+    "name": "shlex",
+    "category": "Rust Crate",
+    "version": "2.0.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/shlex"
+  },
+  {
+    "name": "signature",
+    "category": "Rust Crate",
+    "version": "2.2.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/signature"
+  },
+  {
+    "name": "simd-adler32",
+    "category": "Rust Crate",
+    "version": "0.3.9",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/simd-adler32"
+  },
+  {
+    "name": "siphasher",
+    "category": "Rust Crate",
+    "version": "0.3.11",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/siphasher"
+  },
+  {
+    "name": "slab",
+    "category": "Rust Crate",
+    "version": "0.4.12",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/slab"
+  },
+  {
+    "name": "smallvec",
+    "category": "Rust Crate",
+    "version": "1.15.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/smallvec"
+  },
+  {
+    "name": "smawk",
+    "category": "Rust Crate",
+    "version": "0.3.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/smawk"
+  },
+  {
+    "name": "socket2",
+    "category": "Rust Crate",
+    "version": "0.6.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/socket2"
+  },
+  {
+    "name": "spki",
+    "category": "Rust Crate",
+    "version": "0.7.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/spki"
+  },
+  {
+    "name": "stable_deref_trait",
+    "category": "Rust Crate",
+    "version": "1.2.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/stable_deref_trait"
+  },
+  {
+    "name": "static_assertions",
+    "category": "Rust Crate",
+    "version": "1.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/static_assertions"
+  },
+  {
+    "name": "strsim",
+    "category": "Rust Crate",
+    "version": "0.11.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/strsim"
+  },
+  {
+    "name": "subtle",
+    "category": "Rust Crate",
+    "version": "2.6.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/subtle"
+  },
+  {
+    "name": "syn",
+    "category": "Rust Crate",
+    "version": "2.0.118",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/syn"
+  },
+  {
+    "name": "sync_wrapper",
+    "category": "Rust Crate",
+    "version": "1.0.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/sync_wrapper"
+  },
+  {
+    "name": "synstructure",
+    "category": "Rust Crate",
+    "version": "0.13.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/synstructure"
+  },
+  {
+    "name": "tempfile",
+    "category": "Rust Crate",
+    "version": "3.27.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tempfile"
+  },
+  {
+    "name": "textwrap",
+    "category": "Rust Crate",
+    "version": "0.16.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/textwrap"
+  },
+  {
+    "name": "thiserror",
+    "category": "Rust Crate",
+    "version": "2.0.18",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/thiserror"
+  },
+  {
+    "name": "thiserror-impl",
+    "category": "Rust Crate",
+    "version": "2.0.18",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/thiserror-impl"
+  },
+  {
+    "name": "tiny_http",
+    "category": "Rust Crate",
+    "version": "0.12.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tiny_http"
+  },
+  {
+    "name": "tinystr",
+    "category": "Rust Crate",
+    "version": "0.8.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tinystr"
+  },
+  {
+    "name": "tinytemplate",
+    "category": "Rust Crate",
+    "version": "1.2.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tinytemplate"
+  },
+  {
+    "name": "tinyvec",
+    "category": "Rust Crate",
+    "version": "1.12.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tinyvec"
+  },
+  {
+    "name": "tinyvec_macros",
+    "category": "Rust Crate",
+    "version": "0.1.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tinyvec_macros"
+  },
+  {
+    "name": "tokio",
+    "category": "Rust Crate",
+    "version": "1.52.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tokio"
+  },
+  {
+    "name": "tokio-macros",
+    "category": "Rust Crate",
+    "version": "2.7.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tokio-macros"
+  },
+  {
+    "name": "tokio-rustls",
+    "category": "Rust Crate",
+    "version": "0.26.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tokio-rustls"
+  },
+  {
+    "name": "tokio-util",
+    "category": "Rust Crate",
+    "version": "0.7.18",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tokio-util"
+  },
+  {
+    "name": "toml",
+    "category": "Rust Crate",
+    "version": "0.5.11",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/toml"
+  },
+  {
+    "name": "tower",
+    "category": "Rust Crate",
+    "version": "0.5.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tower"
+  },
+  {
+    "name": "tower-http",
+    "category": "Rust Crate",
+    "version": "0.6.11",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tower-http"
+  },
+  {
+    "name": "tower-layer",
+    "category": "Rust Crate",
+    "version": "0.3.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tower-layer"
+  },
+  {
+    "name": "tower-service",
+    "category": "Rust Crate",
+    "version": "0.3.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tower-service"
+  },
+  {
+    "name": "tracing",
+    "category": "Rust Crate",
+    "version": "0.1.44",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tracing"
+  },
+  {
+    "name": "tracing-core",
+    "category": "Rust Crate",
+    "version": "0.1.36",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/tracing-core"
+  },
+  {
+    "name": "try-lock",
+    "category": "Rust Crate",
+    "version": "0.2.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/try-lock"
+  },
+  {
+    "name": "typenum",
+    "category": "Rust Crate",
+    "version": "1.20.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/typenum"
+  },
+  {
+    "name": "unicode-ident",
+    "category": "Rust Crate",
+    "version": "1.0.24",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/unicode-ident"
+  },
+  {
+    "name": "unicode-normalization",
+    "category": "Rust Crate",
+    "version": "0.1.25",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/unicode-normalization"
+  },
+  {
+    "name": "uniffi",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi"
+  },
+  {
+    "name": "uniffi_bindgen",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_bindgen"
+  },
+  {
+    "name": "uniffi_build",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_build"
+  },
+  {
+    "name": "uniffi_core",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_core"
+  },
+  {
+    "name": "uniffi_internal_macros",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_internal_macros"
+  },
+  {
+    "name": "uniffi_macros",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_macros"
+  },
+  {
+    "name": "uniffi_meta",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_meta"
+  },
+  {
+    "name": "uniffi_pipeline",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_pipeline"
+  },
+  {
+    "name": "uniffi_udl",
+    "category": "Rust Crate",
+    "version": "0.29.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uniffi_udl"
+  },
+  {
+    "name": "universal-hash",
+    "category": "Rust Crate",
+    "version": "0.5.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/universal-hash"
+  },
+  {
+    "name": "untrusted",
+    "category": "Rust Crate",
+    "version": "0.9.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/untrusted"
+  },
+  {
+    "name": "url",
+    "category": "Rust Crate",
+    "version": "2.5.8",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/url"
+  },
+  {
+    "name": "utf8_iter",
+    "category": "Rust Crate",
+    "version": "1.0.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/utf8_iter"
+  },
+  {
+    "name": "uuid",
+    "category": "Rust Crate",
+    "version": "1.24.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/uuid"
+  },
+  {
+    "name": "version_check",
+    "category": "Rust Crate",
+    "version": "0.9.5",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/version_check"
+  },
+  {
+    "name": "walkdir",
+    "category": "Rust Crate",
+    "version": "2.5.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/walkdir"
+  },
+  {
+    "name": "want",
+    "category": "Rust Crate",
+    "version": "0.3.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/want"
+  },
+  {
+    "name": "wasi",
+    "category": "Rust Crate",
+    "version": "0.11.1+wasi-snapshot-preview1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasi"
+  },
+  {
+    "name": "wasm-bindgen",
+    "category": "Rust Crate",
+    "version": "0.2.126",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasm-bindgen"
+  },
+  {
+    "name": "wasm-bindgen-futures",
+    "category": "Rust Crate",
+    "version": "0.4.76",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasm-bindgen-futures"
+  },
+  {
+    "name": "wasm-bindgen-macro",
+    "category": "Rust Crate",
+    "version": "0.2.126",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasm-bindgen-macro"
+  },
+  {
+    "name": "wasm-bindgen-macro-support",
+    "category": "Rust Crate",
+    "version": "0.2.126",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasm-bindgen-macro-support"
+  },
+  {
+    "name": "wasm-bindgen-shared",
+    "category": "Rust Crate",
+    "version": "0.2.126",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasm-bindgen-shared"
+  },
+  {
+    "name": "wasm-streams",
+    "category": "Rust Crate",
+    "version": "0.4.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/wasm-streams"
+  },
+  {
+    "name": "web-sys",
+    "category": "Rust Crate",
+    "version": "0.3.103",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/web-sys"
+  },
+  {
+    "name": "web-time",
+    "category": "Rust Crate",
+    "version": "1.1.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/web-time"
+  },
+  {
+    "name": "webpki-roots",
+    "category": "Rust Crate",
+    "version": "1.0.8",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/webpki-roots"
+  },
+  {
+    "name": "weedle2",
+    "category": "Rust Crate",
+    "version": "5.0.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/weedle2"
+  },
+  {
+    "name": "winapi-util",
+    "category": "Rust Crate",
+    "version": "0.1.11",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/winapi-util"
+  },
+  {
+    "name": "windows-core",
+    "category": "Rust Crate",
+    "version": "0.62.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-core"
+  },
+  {
+    "name": "windows-implement",
+    "category": "Rust Crate",
+    "version": "0.60.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-implement"
+  },
+  {
+    "name": "windows-interface",
+    "category": "Rust Crate",
+    "version": "0.59.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-interface"
+  },
+  {
+    "name": "windows-link",
+    "category": "Rust Crate",
+    "version": "0.2.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-link"
+  },
+  {
+    "name": "windows-result",
+    "category": "Rust Crate",
+    "version": "0.4.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-result"
+  },
+  {
+    "name": "windows-strings",
+    "category": "Rust Crate",
+    "version": "0.5.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-strings"
+  },
+  {
+    "name": "windows-sys",
+    "category": "Rust Crate",
+    "version": "0.52.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-sys"
+  },
+  {
+    "name": "windows-targets",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows-targets"
+  },
+  {
+    "name": "windows_aarch64_gnullvm",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_aarch64_gnullvm"
+  },
+  {
+    "name": "windows_aarch64_msvc",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_aarch64_msvc"
+  },
+  {
+    "name": "windows_i686_gnu",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_i686_gnu"
+  },
+  {
+    "name": "windows_i686_gnullvm",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_i686_gnullvm"
+  },
+  {
+    "name": "windows_i686_msvc",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_i686_msvc"
+  },
+  {
+    "name": "windows_x86_64_gnu",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_x86_64_gnu"
+  },
+  {
+    "name": "windows_x86_64_gnullvm",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_x86_64_gnullvm"
+  },
+  {
+    "name": "windows_x86_64_msvc",
+    "category": "Rust Crate",
+    "version": "0.52.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/windows_x86_64_msvc"
+  },
+  {
+    "name": "winnow",
+    "category": "Rust Crate",
+    "version": "0.7.15",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/winnow"
+  },
+  {
+    "name": "writeable",
+    "category": "Rust Crate",
+    "version": "0.6.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/writeable"
+  },
+  {
+    "name": "x25519-dalek",
+    "category": "Rust Crate",
+    "version": "2.0.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/x25519-dalek"
+  },
+  {
+    "name": "yoke",
+    "category": "Rust Crate",
+    "version": "0.8.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/yoke"
+  },
+  {
+    "name": "yoke-derive",
+    "category": "Rust Crate",
+    "version": "0.8.2",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/yoke-derive"
+  },
+  {
+    "name": "zerocopy",
+    "category": "Rust Crate",
+    "version": "0.8.55",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerocopy"
+  },
+  {
+    "name": "zerocopy-derive",
+    "category": "Rust Crate",
+    "version": "0.8.55",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerocopy-derive"
+  },
+  {
+    "name": "zerofrom",
+    "category": "Rust Crate",
+    "version": "0.1.8",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerofrom"
+  },
+  {
+    "name": "zerofrom-derive",
+    "category": "Rust Crate",
+    "version": "0.1.7",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerofrom-derive"
+  },
+  {
+    "name": "zeroize",
+    "category": "Rust Crate",
+    "version": "1.9.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zeroize"
+  },
+  {
+    "name": "zeroize_derive",
+    "category": "Rust Crate",
+    "version": "1.5.0",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zeroize_derive"
+  },
+  {
+    "name": "zerotrie",
+    "category": "Rust Crate",
+    "version": "0.2.4",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerotrie"
+  },
+  {
+    "name": "zerovec",
+    "category": "Rust Crate",
+    "version": "0.11.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerovec"
+  },
+  {
+    "name": "zerovec-derive",
+    "category": "Rust Crate",
+    "version": "0.11.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zerovec-derive"
+  },
+  {
+    "name": "zip",
+    "category": "Rust Crate",
+    "version": "4.6.1",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zip"
+  },
+  {
+    "name": "zlib-rs",
+    "category": "Rust Crate",
+    "version": "0.6.6",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zlib-rs"
+  },
+  {
+    "name": "zmij",
+    "category": "Rust Crate",
+    "version": "1.0.22",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zmij"
+  },
+  {
+    "name": "zopfli",
+    "category": "Rust Crate",
+    "version": "0.8.3",
+    "author": "Rust Community",
+    "license": "MIT / Apache-2.0",
+    "url": "https://crates.io/crates/zopfli"
+  }
+]
