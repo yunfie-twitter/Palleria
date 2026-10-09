@@ -76,6 +76,7 @@ import com.yunfie.illustia.ui.screens.ViewHistoryScreen
 import com.yunfie.illustia.ui.screens.WallpaperPlaylistSettingsScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
 import com.yunfie.illustia.ui.screens.profile.RelatedUsersScreen
+import com.yunfie.illustia.ui.screens.profile.UserProfileEditScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -352,6 +353,9 @@ internal fun AppNavHost(
                         prefetchImages = appState.state.settings.prefetchImages,
                         confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
                         skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
+                        smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
+                        ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                        mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                         detailSectionOrder = appState.state.settings.detailSectionOrder,
                         relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
                         listState = viewModel.illustDetailListState(illust.id),
@@ -391,6 +395,8 @@ internal fun AppNavHost(
                             ambientLightEnabled = appState.state.settings.dynamicAmbientViewerEnabled,
                             volumeKeyPageTurnerEnabled = appState.state.settings.isFeatureEnabled(FeatureFlag.VolumeKeyPageTurner),
                             swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
+                            ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                            mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                         )
                     }
                 }
@@ -638,6 +644,9 @@ internal fun AppNavHost(
                         onOpenRelatedUsers = {
                             onNavigate(AppRoute.RelatedUsers(user.id, user.name))
                         },
+                        onEditProfile = {
+                            onNavigate(AppRoute.UserProfileEdit(user.id))
+                        },
                         onToggleFollow = { viewModel.toggleFollow(user) },
                         onMuteUser = { viewModel.muteUser(user.id) },
                         onReport = { message, onComplete ->
@@ -651,6 +660,7 @@ internal fun AppNavHost(
                         gridState = viewModel.userProfileGridState(user.id),
                         bookmarkGridState = viewModel.userProfileBookmarkGridState(user.id),
                         onIllustLongClick = viewModel::onIllustLongPress,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
                         showHeaderControls = true,
                     )
                 } else {
@@ -659,6 +669,26 @@ internal fun AppNavHost(
                         // Popped entries can remain composed during their exit animation.
                         // Clearing their data must not emit a new navigation request.
                         if (shouldLoadUserProfile(route, backStack.lastOrNull(), appState.state.selectedUserId)) {
+                            viewModel.openUserPage(route.userId)
+                        }
+                    }
+                    UserProfileSkeletonScreen(
+                        onBack = onPopRoute,
+                    )
+                }
+            }
+            entry<AppRoute.UserProfileEdit> { route ->
+                val selectedUser = appState.state.selectedUser
+                if (selectedUser?.id == route.userId) {
+                    UserProfileEditScreen(
+                        user = selectedUser,
+                        viewModel = viewModel,
+                        onBack = onPopRoute,
+                    )
+                } else {
+                    val isActive = backStack.lastOrNull() == route
+                    LaunchedEffect(route.userId, isActive, appState.state.selectedUserId) {
+                        if (isActive && appState.state.selectedUserId != route.userId) {
                             viewModel.openUserPage(route.userId)
                         }
                     }

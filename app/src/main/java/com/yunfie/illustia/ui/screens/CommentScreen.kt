@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +25,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +37,8 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.models.pixiv.Comment
+import com.yunfie.illustia.models.pixiv.PixivStamp
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -39,8 +47,10 @@ import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
@@ -52,6 +62,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -74,11 +85,26 @@ fun CommentScreen(
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val performHaptic = rememberHapticFeedbackAction()
     var commentText by remember { mutableStateOf("") }
     val hideCommentInput =
         remember(state.comments) {
             state.comments.any { it.isPixivCommentDisabledNotice() }
         }
+
+    var showStampPicker by remember { mutableStateOf(false) }
+    var stamps by remember { mutableStateOf<List<PixivStamp>>(emptyList()) }
+    var isLoadingStamps by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showStampPicker) {
+        if (showStampPicker && stamps.isEmpty()) {
+            isLoadingStamps = true
+            runCatching {
+                stamps = repository.stamps()
+            }
+            isLoadingStamps = false
+        }
+    }
 
     LaunchedEffect(store) {
         store.fetch()
@@ -199,14 +225,38 @@ fun CommentScreen(
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                         )
+                        if (type == CommentArtworkType.ILLUST) {
+                            IconButton(
+                                onClick = { showStampPicker = !showStampPicker },
+                                backgroundColor =
+                                    if (showStampPicker) {
+                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                    } else {
+                                        MiuixTheme.colorScheme.surfaceContainerHigh
+                                    },
+                                minWidth = 44.dp,
+                                minHeight = 44.dp,
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Favorites,
+                                    contentDescription = stringResource(R.string.comment_stamp_select),
+                                    tint = if (showStampPicker) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
                         IconButton(
                             onClick = {
                                 val text = commentText.trim()
                                 if (text.isNotEmpty()) {
+                                    performHaptic(AppHapticEffect.Click)
                                     scope.launch {
-                                        store.postComment(text)
-                                        commentText = ""
-                                        store.fetch()
+                                        runCatching {
+                                            store.postComment(text)
+                                        }.onSuccess {
+                                            performHaptic(AppHapticEffect.Success)
+                                            commentText = ""
+                                            store.fetch()
+                                        }
                                     }
                                 }
                             },
@@ -220,6 +270,69 @@ fun CommentScreen(
                                 contentDescription = stringResource(R.string.action_add),
                                 tint = MiuixTheme.colorScheme.onPrimary,
                             )
+                        }
+                    }
+                }
+
+                if (showStampPicker) {
+                    ElevatedPanel(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        contentPadding = PaddingValues(8.dp),
+                    ) {
+                        if (isLoadingStamps) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(28.dp))
+                            }
+                        } else if (stamps.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.comment_stamp_empty),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(4),
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp),
+                                contentPadding = PaddingValues(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(stamps, key = { it.id }) { stamp ->
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .size(64.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .miuixClickable {
+                                                    performHaptic(AppHapticEffect.Toggle)
+                                                    scope.launch {
+                                                        runCatching {
+                                                            store.postStampComment(stamp.id)
+                                                        }.onSuccess {
+                                                            performHaptic(AppHapticEffect.Success)
+                                                            showStampPicker = false
+                                                            store.fetch()
+                                                        }
+                                                    }
+                                                }.padding(4.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        PixivImage(
+                                            url = stamp.url,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Fit,
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -283,11 +396,25 @@ private fun CommentRow(
                     tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
-            Text(
-                text = comment.comment.orEmpty(),
-                color = MiuixTheme.colorScheme.onBackground,
-                style = MiuixTheme.textStyles.body2,
-            )
+            val stampUrl = comment.stamp?.stampUrl
+            if (!stampUrl.isNullOrBlank()) {
+                PixivImage(
+                    url = stampUrl,
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Fit,
+                )
+            }
+            if (!comment.comment.isNullOrBlank()) {
+                Text(
+                    text = comment.comment,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    style = MiuixTheme.textStyles.body2,
+                )
+            }
         }
     }
 }

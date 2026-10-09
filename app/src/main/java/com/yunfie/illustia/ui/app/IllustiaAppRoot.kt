@@ -62,7 +62,6 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalFastScrolling
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
-import com.yunfie.illustia.ui.components.LocalScrolling
 import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationSafeArea
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
@@ -117,9 +116,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val context = LocalContext.current
     val pendingShortcut by AppShortcutRouter.pending.collectAsStateWithLifecycle()
     var showCommandPalette by remember { mutableStateOf(false) }
-    val paletteEnabled = settings.isFeatureEnabled(FeatureFlag.CommandPalette)
+    val paletteEnabled = settings.commandPaletteEnabled
     val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
-    val (scrollRenderingConnection, fastScrolling, isScrolling) =
+    val (scrollRenderingConnection, fastScrolling, _) =
         rememberScrollRendering(settings.isFeatureEnabled(FeatureFlag.FastScrollRendering))
     LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
         if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
@@ -686,10 +685,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             .rememberArtworkDesktopActions(viewModel)
     CompositionLocalProvider(
         LocalFastScrolling provides fastScrolling,
-        LocalScrolling provides isScrolling,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
+        com.yunfie.illustia.ui.components.LocalWideColorGamutEnabled provides settings.wideColorGamutEnabled,
+        com.yunfie.illustia.ui.components.LocalVelocityLandingPrefetchEnabled provides
+            settings.isFeatureEnabled(FeatureFlag.VelocityLandingPrefetch),
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides
             ArtworkCardPreferences(
@@ -929,9 +930,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             }
 
                             PaletteAction.ToggleUgoiraAutoPlay -> {
-                                val current = state.settings.isFeatureEnabled(FeatureFlag.UgoiraAutoPlay)
+                                val current = state.settings.ugoiraAutoPlay
                                 val next = !current
-                                viewModel.updateFeatureFlag(FeatureFlag.UgoiraAutoPlay, next)
+                                viewModel.updateUgoiraAutoPlay(next)
                                 val msgRes =
                                     if (next) {
                                         R.string.command_palette_ugoira_autoplay_enabled

@@ -1,0 +1,51 @@
+name: Update Third-Party Licenses
+
+on:
+  schedule:
+    # 毎週月曜日の朝 9:00 JST (UTC 0:00) に自動更新
+    - cron: "0 0 * * 1"
+  push:
+    branches: ["main"]
+    paths:
+      - "gradle/libs.versions.toml"
+      - "rust/**/Cargo.lock"
+      - "scripts/generate_licenses.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-licenses-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-licenses:
+    name: Generate Open Source Licenses
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate licenses
+        run: python3 scripts/generate_licenses.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/assets/licenses.json THIRD_PARTY_LICENSES.md
+          if git diff --staged --quiet; then
+            echo "No license changes detected."
+          else
+            git commit -m "docs(licenses): update third-party open source licenses [skip ci]"
+            git push
+          fi

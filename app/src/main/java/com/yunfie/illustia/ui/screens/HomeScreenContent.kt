@@ -41,6 +41,7 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
+import com.yunfie.illustia.ui.components.OfflineCachedChip
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.StateBanner
@@ -103,6 +104,7 @@ internal fun FeedTabContent(
     viewModel: IllustiaViewModel,
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
+    isOfflineCached: Boolean = false,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
@@ -141,8 +143,7 @@ internal fun FeedTabContent(
                         enabled = pinchEnabled,
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 12.dp,
@@ -159,9 +160,20 @@ internal fun FeedTabContent(
                 }
             }
 
-            if (loadState is LoadState.Error) {
+            val isStaleCacheActive =
+                settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
+                    items.isNotEmpty() &&
+                    (loadState is LoadState.Error || isOfflineCached)
+
+            if (isStaleCacheActive) {
+                item(key = "home_feed_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
+                    OfflineCachedChip(
+                        onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                    )
+                }
+            } else if (loadState is LoadState.Error) {
                 item(key = "home_feed_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState)
+                    StateBanner(loadState, onRetry = { viewModel.refreshHome(forceRefresh = true) })
                 }
             }
 
@@ -244,6 +256,7 @@ internal fun FollowingTabContent(
     viewModel: IllustiaViewModel,
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
+    isOfflineCached: Boolean = false,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
@@ -283,8 +296,7 @@ internal fun FollowingTabContent(
                         enabled = pinchEnabled,
                         currentColumns = columns,
                         onColumnsChange = viewModel::updateVerticalColumnCount,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 12.dp,
@@ -301,9 +313,20 @@ internal fun FollowingTabContent(
                 }
             }
 
-            if (loadState is LoadState.Error) {
+            val isStaleCacheActive =
+                settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
+                    items.isNotEmpty() &&
+                    (loadState is LoadState.Error || isOfflineCached)
+
+            if (isStaleCacheActive) {
+                item(key = "home_following_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
+                    OfflineCachedChip(
+                        onRetry = { viewModel.refreshTimeline(forceRefresh = true) },
+                    )
+                }
+            } else if (loadState is LoadState.Error) {
                 item(key = "home_following_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState)
+                    StateBanner(loadState, onRetry = { viewModel.refreshTimeline(forceRefresh = true) })
                 }
             }
 

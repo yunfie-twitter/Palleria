@@ -28,6 +28,7 @@ class IllustiaAppStateBundleTest :
                     activeWatchlistTag = "tag",
                     followingUsersNextUrl = "users-next",
                     bookmarkSelectedTab = 2,
+                    isOfflineCached = true,
                 )
 
             val bundle = IllustiaAppStateBundle(state)
@@ -35,11 +36,13 @@ class IllustiaAppStateBundleTest :
             bundle.state shouldBe state
             bundle.settings shouldBe settings
             bundle.loadState shouldBe LoadState.Loading
+            bundle.isOfflineCached shouldBe true
             bundle.homeChrome shouldBe
                 HomeChromeState(
                     homeKind = HomeFeedKind.New,
                     homeNextUrl = "home-next",
                     timelineNextUrl = "timeline-next",
+                    isOfflineCached = true,
                 )
             bundle.novelChrome.novelNextUrl shouldBe "novel-next"
             bundle.rankingChrome.rankingMode shouldBe "week"

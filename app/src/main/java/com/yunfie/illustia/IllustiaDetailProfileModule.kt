@@ -10,8 +10,10 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.pixiv.AccountEditResult
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -22,6 +24,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /** Illustration detail, image viewer, user profile, follow, and mute interactions. */
+@Suppress("LargeClass")
 abstract class IllustiaDetailProfileModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
@@ -395,6 +398,39 @@ abstract class IllustiaDetailProfileModule(
             }
         }
     }
+
+    suspend fun updateUserProfile(profile: UserProfileEdit): AccountEditResult =
+        withContext(Dispatchers.IO) {
+            val result = repository.setUserProfile(profile)
+            if (result.isSucceeded) {
+                _uiState.update { current ->
+                    val existing = current.currentAccount
+                    val updatedAccount =
+                        existing?.copy(
+                            name = profile.userName,
+                            comment = profile.comment,
+                        )
+                    val selectedUser = current.selectedUser
+                    val updatedSelectedUser =
+                        if (selectedUser != null &&
+                            (selectedUser.id == existing?.id || current.settings.accounts.any { it.userId == selectedUser.id })
+                        ) {
+                            selectedUser.copy(
+                                name = profile.userName,
+                                comment = profile.comment,
+                            )
+                        } else {
+                            selectedUser
+                        }
+                    current.copy(
+                        currentAccount = updatedAccount,
+                        selectedUser = updatedSelectedUser,
+                    )
+                }
+                saveCurrentAccount()
+            }
+            result
+        }
 
     override fun openUserPage(userId: Long) = loadUserPage(userId, forceRefresh = false)
 

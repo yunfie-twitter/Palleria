@@ -61,6 +61,17 @@ internal fun buildCustomDownloadPath(
     return if (joined.endsWith(ext) || ext.isEmpty()) joined else "$joined$ext"
 }
 
+internal fun buildSmartDownloadFilename(
+    illust: Illust,
+    page: Int = 0,
+    pageCount: Int = 1,
+): String {
+    val artist = illust.artistName.sanitizeOptionalDownloadSegment() ?: "artist_${illust.artistId}"
+    val title = illust.title.sanitizeOptionalDownloadSegment() ?: "work_${illust.id}"
+    val pageSuffix = if (pageCount > 1 || page > 0) "_p$page" else ""
+    return "[$artist] $title$pageSuffix"
+}
+
 internal fun String.withImageExtension(
     sourceUrl: String,
     responseMimeType: String?,

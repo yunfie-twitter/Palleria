@@ -142,6 +142,9 @@ fun IllustDetailScreen(
     prefetchImages: Boolean,
     confirmOnLongPressSave: Boolean,
     skipConfirmOnDetailSave: Boolean,
+    smartDownloadNaming: Boolean = true,
+    ugoiraPowerSave: Boolean = true,
+    mangaAdaptivePreload: Boolean = true,
     detailSectionOrder: List<String>,
     relatedIllustColumnCount: Int = 3,
     listState: LazyListState = rememberLazyListState(),
@@ -225,7 +228,10 @@ fun IllustDetailScreen(
             summary = stringResource(if (isUgoira) R.string.detail_save_ugoira_confirm else R.string.detail_save_image_confirm),
             confirmText = stringResource(R.string.action_save),
             onConfirm = {
-                pendingSave?.let { (url, filename) -> onSaveImage(url, filename) }
+                pendingSave?.let { (url, filename) ->
+                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                    onSaveImage(url, filename)
+                }
                 pendingSave = null
             },
             onDismiss = { pendingSave = null },
@@ -255,6 +261,7 @@ fun IllustDetailScreen(
         if (requireConfirm) {
             pendingSave = url to filename
         } else {
+            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
             onSaveImage(url, filename)
         }
     }
@@ -296,12 +303,18 @@ fun IllustDetailScreen(
             prefetchImages = prefetchImages,
             confirmOnLongPressSave = confirmOnLongPressSave,
             skipConfirmOnDetailSave = skipConfirmOnDetailSave,
+            smartDownloadNaming = smartDownloadNaming,
+            ugoiraPowerSave = ugoiraPowerSave,
+            mangaAdaptivePreload = mangaAdaptivePreload,
             pixivUrl = pixivUrl,
             onBack = onBack,
             onOpenImage = onOpenImage,
             onDoubleTapImage = ::likeFromDoubleTap,
             onSaveImage = { url, name, confirm -> requestSave(url, name, confirm) },
-            onSaveAllImages = onSaveAllImages,
+            onSaveAllImages = { urls, prefix ->
+                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                onSaveAllImages(urls, prefix)
+            },
             onMuteIllust = onMuteIllust,
             onMuteUser = onMuteUser,
             onReport = onReport,

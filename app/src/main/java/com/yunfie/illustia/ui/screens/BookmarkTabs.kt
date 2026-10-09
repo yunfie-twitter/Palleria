@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -81,10 +82,12 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -97,6 +100,7 @@ internal fun BookmarkWatchlistTab(
     onOpenWatchlistSeries: (Long) -> Unit,
     scrollBehavior: ScrollBehavior? = null,
     gridState: LazyGridState = rememberLazyGridState(),
+    onColumnsChange: (Int) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
 
@@ -113,13 +117,18 @@ internal fun BookmarkWatchlistTab(
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
         val shimmer = if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) rememberIllustSkeletonShimmer() else null
+        val columns = adaptiveIllustColumns(settings)
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(adaptiveProfileGridColumns()),
+            columns = GridCells.Fixed(columns),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
+                    .pinchToChangeColumns(
+                        enabled = settings.gridPinchToZoom,
+                        currentColumns = columns,
+                        onColumnsChange = onColumnsChange,
+                    ).then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
             contentPadding =
                 profileGridContentPadding(
                     top = LocalScrollHeaderInset.current + 8.dp,
@@ -720,8 +729,51 @@ internal fun BookmarkFollowingTab(
 internal fun CompactBookmarkTabs(
     selectedTab: Int,
     onSelect: (Int) -> Unit,
+    isBlurEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
+    val colors =
+        if (isBlurEnabled) {
+            TabRowDefaults.tabRowColors(
+                backgroundColor =
+                    if (isDark) {
+                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f)
+                    } else {
+                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+                    },
+                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                selectedBackgroundColor =
+                    if (isDark) {
+                        Color.White.copy(alpha = 0.18f)
+                    } else {
+                        Color.White.copy(alpha = 0.95f)
+                    },
+                selectedContentColor = MiuixTheme.colorScheme.onSurface,
+            )
+        } else {
+            TabRowDefaults.tabRowColors(
+                backgroundColor = MiuixTheme.colorScheme.surfaceContainer,
+                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                selectedBackgroundColor =
+                    if (isDark) {
+                        Color.White.copy(alpha = 0.16f)
+                    } else {
+                        Color.White.copy(alpha = 0.92f)
+                    },
+                selectedContentColor = MiuixTheme.colorScheme.onSurface,
+            )
+        }
+    val borderModifier =
+        if (isBlurEnabled) {
+            Modifier.squircleBorder(
+                width = 0.75.dp,
+                color = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
+                cornerRadius = TabRowDefaults.TabRowWithContourCornerRadius,
+            )
+        } else {
+            Modifier
+        }
     TabRowWithContour(
         tabs =
             listOf(
@@ -732,9 +784,9 @@ internal fun CompactBookmarkTabs(
             ),
         selectedTabIndex = selectedTab,
         onTabSelected = onSelect,
-        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
+        modifier = modifier.then(borderModifier).pointerHoverIcon(PointerIcon.Hand),
+        colors = colors,
         minWidth = 86.dp,
         maxWidth = 116.dp,
-        height = 45.dp,
     )
 }

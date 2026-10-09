@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Palleria</string>
     <string name="palleria_account_label">Palleria</string>
@@ -1261,4 +1262,91 @@
 
     <string name="flag_ugoira_auto_play_title">うごイラの自動再生</string>
     <string name="flag_ugoira_auto_play_desc">作品詳細画面を開いた際にうごイラアニメーションを自動的に再生します。</string>
+
+    <string name="flag_user_profile_edit_title">プロフィール編集</string>
+    <string name="flag_user_profile_edit_desc">自分のプロフィール画面に編集ボタン（ペンマーク）を表示し、プロフィール編集 (POST /v1/user/profile/edit) を有効にします</string>
+    <string name="user_profile_edit_title">プロフィール編集</string>
+    <string name="user_profile_edit_user_name">ニックネーム</string>
+    <string name="user_profile_edit_comment">自己紹介</string>
+    <string name="user_profile_edit_webpage">Webサイト</string>
+    <string name="user_profile_edit_twitter">X (Twitter)</string>
+    <string name="user_profile_edit_gender">性別</string>
+    <string name="user_profile_edit_gender_unknown">非公開 / 未設定</string>
+    <string name="user_profile_edit_gender_male">男性</string>
+    <string name="user_profile_edit_gender_female">女性</string>
+    <string name="user_profile_edit_birthday">誕生日</string>
+    <string name="user_profile_edit_save">保存</string>
+    <string name="user_profile_edit_saving">プロフィールを保存中…</string>
+    <string name="user_profile_edit_saved">プロフィールを更新しました</string>
+    <string name="user_profile_edit_failed">プロフィールの更新に失敗しました</string>
+    <string name="comment_stamp_select">スタンプ</string>
+    <string name="comment_stamp_empty">利用可能なスタンプがありません</string>
+
+    <string name="flag_offline_stale_cache_title">オフラインキャッシュ（Stale-While-Revalidate）</string>
+    <string name="flag_offline_stale_cache_desc">電波喪失時や通信エラー時も直前にキャッシュした一覧を表示し続け、オフラインバナーを表示します</string>
+    <string name="flag_bookmark_haptic_burst_title">ブックマーク・いいね ハプティック・バースト</string>
+    <string name="flag_bookmark_haptic_burst_desc">ブックマークやいいね時に弾けるリッチな触覚フィードバックと華やかなパーティクルアニメーションを発火します</string>
+    <string name="flag_image_blur_preview_title">ブラープレビュー（低解像度プレースホルダー）</string>
+    <string name="flag_image_blur_preview_desc">画像読み込み中に低解像度サムネイルをぼかし先行表示し、高解像度画像の読み込み完了時に滑らかにクロスフェードします</string>
+    <string name="flag_task_snapshot_blur_title">タスク履歴ステルスブラー</string>
+    <string name="flag_task_snapshot_blur_desc">アプリ切替画面でのサムネイルをブラー処理し、周囲からの覗き見を防止します</string>
+    <string name="flag_courtesy_audio_fade_title">イヤホン切断時オーディオフェード</string>
+    <string name="flag_courtesy_audio_fade_desc">イヤホンやBluetooth切断時に音量を対数減衰させて一時停止し、音漏れやノイズを防止します</string>
+    <string name="flag_tracking_url_cleaner_title">URLトラッキングクリーナー</string>
+    <string name="flag_tracking_url_cleaner_desc">貼り付けられたPixiv URLから不要な追跡クエリ（utm, s等）を自動除去してクリーン化します</string>
+    <string name="flag_smart_download_naming_title">スマートファイル命名</string>
+    <string name="flag_smart_download_naming_desc">保存ファイル名を「[作家名] 作品タイトル_p0」形式で自動命名し、写真アプリでの整理を容易にします</string>
+    <string name="flag_privacy_exif_stripper_title">共有時プライバシーストリッパー</string>
+    <string name="flag_privacy_exif_stripper_desc">画像共有時にGPS位置情報や端末固有メタデータを自動消去し、プライバシー漏洩を防止します</string>
+    <string name="flag_ugoira_power_save_title">うごイラ省電力スリープ &amp; ディレイ</string>
+    <string name="flag_ugoira_power_save_desc">画面外でアニメーションを完全停止し、高速スクロール通過時の不要なデコードを防止します</string>
+    <string name="flag_manga_adaptive_preload_title">マンガ適応型プリロード</string>
+    <string name="flag_manga_adaptive_preload_desc">ページめくりの方向癖（逆送りなど）を自動検知し、先読みキューを反転して待ち時間をゼロにします</string>
+    <string name="flag_velocity_landing_prefetch_title">着地予測プリフェッチ</string>
+    <string name="flag_velocity_landing_prefetch_desc">スクロール速度から停止位置を推定し、通過中の画像ではなく着地点周辺を高精度に先行取得します</string>
+    <string name="flag_byte_range_resume_title">ステルス・レジューム</string>
+    <string name="flag_byte_range_resume_desc">ダウンロード中断時に保存済みバイトから再開（HTTP Range）し、通信量と時間を節約します</string>
+    <string name="flag_predns_socket_warming_title">事前DNS ＆ ソケット・ウォーミング</string>
+    <string name="flag_predns_socket_warming_desc">起動時スプラッシュの裏でPixivサーバーへのDNS事前解決とTCP/TLS接続プールを確立し、初速の表示待ちをゼロ化します</string>
+    <string name="flag_delta_etag_sync_title">デルタ・ETag同期</string>
+    <string name="flag_delta_etag_sync_desc">フォロー新着同期時にETagと既知作品差分（デルタ）のみを取得・先行キャッシュし、通信量を消費せずに最新作を即時表示します</string>
+    <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
+    <string name="offline_retry_button">再試行</string>
+
+    <string name="permission_notification_title">通知の許可について</string>
+    <string name="permission_notification_desc">お気に入り作家の新着作品や、ダウンロード完了通知をお届けするために必要です。</string>
+    <string name="permission_storage_title">ストレージへの保存について</string>
+    <string name="permission_storage_desc">高画質イラストの保存やライブ壁紙機能を利用するために必要です。</string>
+    <string name="permission_grant_button">許可する</string>
+    <string name="permission_later_button">今はしない</string>
+
+    <string name="setup_network_recommended_title">推奨設定（お住まいの地域に最適化）</string>
+    <string name="setup_network_recommended_desc">公式サーバーへの直接接続。通常はこちらで最高画質かつ高速にご利用いただけます。</string>
+    <string name="setup_network_custom_title">カスタム接続設定（プロキシ・接続方式）</string>
+    <string name="setup_network_ping_checking">接続確認中…</string>
+    <string name="setup_network_ping_ok">✅ 公式サーバーへの接続は良好です</string>
+    <string name="setup_network_ping_failed">⚠️ 公式サーバーへの接続が制限されている可能性があります</string>
+    <string name="setup_network_suggest_ech">アクセス規制を回避するモード（ECH/Proxy）に切り替えますか？</string>
+    <string name="setup_network_switch_ech_button">規制回避モードに切り替える</string>
+    <string name="setup_network_mode_standard_label">通常（高速・安定）</string>
+    <string name="setup_network_mode_ech_label">プライバシー保護・規制回避（ECH）</string>
+    <string name="setup_network_mode_compat_label">互換モード（接続が不安定な場合）</string>
+    <string name="setup_proxy_official_label">公式（最高画質・直接接続）</string>
+    <string name="setup_proxy_bypass_label">公式画像に接続できない場合・高速キャッシュ</string>
+
+    <string name="setup_theme_and_safety_title">外観とコンテンツ安全設定</string>
+    <string name="setup_theme_title">テーマ</string>
+    <string name="setup_theme_system">システム連動</string>
+    <string name="setup_theme_light">ライト</string>
+    <string name="setup_theme_dark">ダーク</string>
+    <string name="setup_safety_title">表示コンテンツの制限</string>
+    <string name="setup_safety_all_age">全年齢のみ（セーフモード）</string>
+    <string name="setup_safety_r18">R-18作品を表示</string>
+    <string name="setup_safety_r18g">R-18 / R-18G作品を表示</string>
+
+    <!-- Wide Color Gamut (Display P3) -->
+    <string name="settings_wide_color_gamut_title">広色域表示（Display P3 / WCG）</string>
+    <string name="settings_wide_color_gamut_desc">対応有機ELディスプレイでDisplay P3・AdobeRGBの鮮烈な色彩をハードウェア描画します</string>
+    <string name="settings_wide_color_gamut_unsupported">お使いの端末は広色域表示に対応していません</string>
+    <string name="about_open_source_licenses">オープンソースライセンス一覧</string>
 </resources>

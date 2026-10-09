@@ -11,10 +11,13 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
 import android.os.PersistableBundle
@@ -63,6 +66,7 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
 import com.yunfie.illustia.settings.appLanguageLocaleList
 import com.yunfie.illustia.settings.isAppDarkTheme
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.rememberAppThemeColors
 import com.yunfie.illustia.ui.IllustiaApp
 import com.yunfie.illustia.ui.components.PixivImageHeaders
@@ -102,6 +106,7 @@ class MainActivity : FragmentActivity() {
         const val REFRESH_RATE_LOW_MIN = 30f
         const val REFRESH_RATE_NORMAL = 60f
         const val REFRESH_RATE_HIGH_MAX = 120f
+        const val TASK_SNAPSHOT_BLUR_RADIUS = 60f
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -116,13 +121,32 @@ class MainActivity : FragmentActivity() {
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
     private var appliedAppLanguage: String? = null
     private var appliedDarkTheme: Boolean? = null
+    private var isSnapshotBlurApplied = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (resources.configuration.isScreenWideColorGamut) {
+                val isWcgEnabled =
+                    com.yunfie.illustia.settings.store
+                        .readWideColorGamutSync(this)
+                if (isWcgEnabled) {
+                    window.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+                }
+            }
+        }
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
         if (DummyAppIconSwitcher.isPrivacyLauncherEnabled(applicationContext)) {
             setTheme(R.style.AppTheme_Splash_Calculator)
         }
         val splashScreen = installSplashScreen()
+        val app = application as? IllustiaApplication
+        if (app != null &&
+            com.yunfie.illustia.settings
+                .readFeatureFlagSync(this, com.yunfie.illustia.settings.FeatureFlag.PreDnsSocketWarming)
+        ) {
+            com.yunfie.illustia.data.NetworkWarmer
+                .warmUp(app.sharedHttpClient)
+        }
 
         // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウト＆ズームアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
@@ -207,6 +231,8 @@ class MainActivity : FragmentActivity() {
             isAppearanceLightNavigationBars = !isDark
         }
         super.onCreate(savedInstanceState)
+        // OSデフォルトのWindow背景を破棄し、最下層のオーバードローを消滅させる
+        window.setBackgroundDrawable(null)
         // Keep the first frame protected until the async settings/lock state is known.
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         lastHandledClipboardText = null
@@ -218,6 +244,16 @@ class MainActivity : FragmentActivity() {
                 }
             val uiState by presentation.collectAsStateWithLifecycle(initialValue = viewModel.uiState.value.activityPresentation())
             val settings = uiState.settings
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && resources.configuration.isScreenWideColorGamut) {
+                LaunchedEffect(settings.wideColorGamutEnabled) {
+                    window.colorMode =
+                        if (settings.wideColorGamutEnabled) {
+                            ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+                        } else {
+                            ActivityInfo.COLOR_MODE_DEFAULT
+                        }
+                }
+            }
             val appLocked = uiState.appLocked
             val settingsLoaded = uiState.settingsLoaded
             val systemDark = isSystemInDarkTheme()
@@ -369,7 +405,6 @@ class MainActivity : FragmentActivity() {
                 this@MainActivity.lifecycleScope.launch {
                     reportFullyDrawn()
                     registerProcessLifecycleObserverIfNeeded()
-                    requestLegacyStoragePermissionIfNeeded()
                     enableHandoffIfSupported()
                     kotlinx.coroutines.delay(STARTUP_POST_WORK_DELAY_MS)
                     viewModel.loadDeferredStartupData()
@@ -416,14 +451,21 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        applyTaskSnapshotBlur(isEnteringBackground = true)
+    }
+
     override fun onResume() {
         super.onResume()
+        applyTaskSnapshotBlur(isEnteringBackground = false)
         applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
         openPixivUrlFromClipboardIfNeeded()
     }
 
     override fun onPause() {
         clearAdaptiveRefreshRateHint()
+        applyTaskSnapshotBlur(isEnteringBackground = true)
         super.onPause()
     }
 
@@ -554,6 +596,44 @@ class MainActivity : FragmentActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
                 setRecentsScreenshotEnabled(true)
+            }
+        }
+    }
+
+    private fun applyTaskSnapshotBlur(isEnteringBackground: Boolean) {
+        val settings = viewModel.uiState.value.settings
+        if (settings.secureWindow) return
+
+        val isBlurEnabled = settings.isFeatureEnabled(com.yunfie.illustia.settings.FeatureFlag.TaskSnapshotBlur)
+
+        if (isEnteringBackground) {
+            if (!isBlurEnabled) return
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val blurEffect =
+                    RenderEffect.createBlurEffect(
+                        TASK_SNAPSHOT_BLUR_RADIUS,
+                        TASK_SNAPSHOT_BLUR_RADIUS,
+                        Shader.TileMode.CLAMP,
+                    )
+                window.decorView.setRenderEffect(blurEffect)
+                isSnapshotBlurApplied = true
+            } else {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                isSnapshotBlurApplied = true
+            }
+        } else {
+            if (isSnapshotBlurApplied) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    window.decorView.setRenderEffect(null)
+                } else {
+                    val appLocked = viewModel.uiState.value.appLocked
+                    if (!settings.secureWindow && !(appLocked && settings.appLockEnabled)) {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    }
+                }
+                isSnapshotBlurApplied = false
+            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                window.decorView.setRenderEffect(null)
             }
         }
     }

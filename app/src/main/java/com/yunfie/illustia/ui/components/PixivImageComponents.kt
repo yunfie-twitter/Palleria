@@ -1,11 +1,13 @@
 package com.yunfie.illustia.ui.components
 
 import android.graphics.Bitmap
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,7 +24,9 @@ import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import coil3.request.allowRgb565
+import coil3.request.bitmapConfig
 import coil3.request.crossfade
 import coil3.size.Precision
 import coil3.size.Scale
@@ -37,7 +41,9 @@ val PixivImageHeaders =
         .set("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Illustia)")
         .build()
 
-internal val LocalImageRefreshRequest = androidx.compose.runtime.compositionLocalOf { 0 }
+val LocalWideColorGamutEnabled = compositionLocalOf { true }
+
+internal val LocalImageRefreshRequest = compositionLocalOf { 0 }
 
 @Composable
 fun PixivImage(
@@ -56,15 +62,18 @@ fun PixivImage(
     val refreshRequest = LocalImageRefreshRequest.current
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
+    val wideColorGamutEnabled = LocalWideColorGamutEnabled.current
     val effectiveUrl =
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
+
     val hasSuccessListener = onSuccess != null
     val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
     var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
+
     val defaultMaxDimension =
         remember(context) {
             val displayMetrics = context.resources.displayMetrics
@@ -80,6 +89,7 @@ fun PixivImage(
             maxDecodeDimensionPx,
             defaultMaxDimension,
             allowRgb565,
+            wideColorGamutEnabled,
             hasSuccessListener,
             hasLoadingListener,
         ) {
@@ -149,15 +159,26 @@ fun PixivImage(
                             scale(Scale.FIT)
                             precision(Precision.INEXACT)
                         }
-                        val shouldAllowRgb565 =
-                            allowRgb565 ||
-                                PlatformCapabilities.recommendedBitmapConfig(context) == Bitmap.Config.RGB_565
-                        if (shouldAllowRgb565) {
-                            allowRgb565(true)
+                        val supportsWcg = PlatformCapabilities.supportsWideColorGamut(context)
+                        if (wideColorGamutEnabled && supportsWcg && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            if (hasSuccessListener) {
+                                bitmapConfig(Bitmap.Config.RGBA_F16)
+                            } else {
+                                allowHardware(true)
+                                bitmapConfig(Bitmap.Config.HARDWARE)
+                            }
+                        } else {
+                            val shouldAllowRgb565 =
+                                allowRgb565 ||
+                                    PlatformCapabilities.recommendedBitmapConfig(context) == Bitmap.Config.RGB_565
+                            if (shouldAllowRgb565) {
+                                allowRgb565(true)
+                            }
                         }
                     }
                 }.build()
         }
+
     if (showLoadingSpinner) {
         Box(
             modifier = modifier,

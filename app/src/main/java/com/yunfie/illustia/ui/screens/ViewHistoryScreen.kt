@@ -36,7 +36,9 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.onTopBarTap
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
@@ -477,14 +479,18 @@ fun ViewHistoryScreen(
             )
         },
     ) { scaffoldPadding ->
+        val columns = adaptiveIllustColumns(state.settings)
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(adaptiveIllustColumns(state.settings)),
+            columns = GridCells.Fixed(columns),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
+                    .pinchToChangeColumns(
+                        enabled = state.settings.gridPinchToZoom,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     start = 16.dp,
@@ -535,6 +541,7 @@ fun ViewHistoryScreen(
                 val isSelected = illust.id in selectedIds
                 IllustCard(
                     illust = illust,
+                    modifier = animatedGridPlacement(),
                     isSelected = isSelected,
                     onBookmark = {
                         performHaptic(AppHapticEffect.Toggle)

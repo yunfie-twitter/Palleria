@@ -131,14 +131,10 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun loadInitialHomeIfNeeded() {
+    override fun loadInitialHomeIfNeeded() {
         val state = _uiState.value
-        if (
-            state.settings.refreshToken.isBlank() ||
-            state.homeItems.isNotEmpty()
-        ) {
-            return
-        }
+        if (state.homeItems.isNotEmpty()) return
+        if (state.settings.refreshToken.isBlank()) return
         refreshHome()
     }
 
@@ -191,6 +187,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(highQualityImages = value) }
     }
 
+    fun updateWideColorGamut(value: Boolean) {
+        updateSettings { it.copy(wideColorGamutEnabled = value) }
+    }
+
     fun updateSmoothTransitions(value: Boolean) {
         updateSettings { it.copy(smoothTransitions = value) }
     }
@@ -201,6 +201,14 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateHapticsEnabled(enabled: Boolean) {
         updateHapticMode(if (enabled) AppHapticMode.Rich.value else AppHapticMode.Off.value)
+    }
+
+    fun requestPermissionRationale(type: PermissionRationaleType) {
+        _uiState.update { it.copy(pendingPermissionRationale = type) }
+    }
+
+    fun dismissPermissionRationale() {
+        _uiState.update { it.copy(pendingPermissionRationale = null) }
     }
 
     fun updatePrefetchImages(value: Boolean) {
@@ -948,6 +956,18 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateQuickPeekSharedElementTransition(enabled: Boolean) {
         updateSettings { it.copy(quickPeekSharedElementTransition = enabled) }
+    }
+
+    fun updateEmbedMetadata(enabled: Boolean) {
+        updateSettings { it.copy(embedMetadata = enabled) }
+    }
+
+    fun updateUgoiraAutoPlay(enabled: Boolean) {
+        updateSettings { it.copy(ugoiraAutoPlay = enabled) }
+    }
+
+    fun updateCommandPaletteEnabled(enabled: Boolean) {
+        updateSettings { it.copy(commandPaletteEnabled = enabled) }
     }
 
     fun updateHorizontalColumnCount(value: Int) {

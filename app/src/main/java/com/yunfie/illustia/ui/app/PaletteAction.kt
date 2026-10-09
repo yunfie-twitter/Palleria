@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -293,6 +295,7 @@ internal fun CommandPalette(
     val actions = matchingPaletteActions(query, labels)
     val focus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    val performHaptic = rememberHapticFeedbackAction()
 
     fun execute() {
         actions.getOrNull(selectedIndex)?.let { onAction(it, query.trim()) }
@@ -332,16 +335,25 @@ internal fun CommandPalette(
                                 }
 
                                 Key.DirectionDown -> {
-                                    selectedIndex = (selectedIndex + 1).coerceAtMost(actions.lastIndex)
+                                    val nextIndex = (selectedIndex + 1).coerceAtMost(actions.lastIndex)
+                                    if (nextIndex != selectedIndex) {
+                                        performHaptic(AppHapticEffect.WheelTick)
+                                        selectedIndex = nextIndex
+                                    }
                                     true
                                 }
 
                                 Key.DirectionUp -> {
-                                    selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
+                                    val prevIndex = (selectedIndex - 1).coerceAtLeast(0)
+                                    if (prevIndex != selectedIndex) {
+                                        performHaptic(AppHapticEffect.WheelTick)
+                                        selectedIndex = prevIndex
+                                    }
                                     true
                                 }
 
                                 Key.Enter, Key.NumPadEnter -> {
+                                    performHaptic(AppHapticEffect.Click)
                                     execute()
                                     true
                                 }
@@ -492,8 +504,10 @@ internal fun CommandPalette(
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(itemBackground)
                                     .semantics { selected = isSelected }
-                                    .clickable { onAction(action, query.trim()) }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    .clickable {
+                                        performHaptic(AppHapticEffect.Click)
+                                        onAction(action, query.trim())
+                                    }.padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             // Icon Container

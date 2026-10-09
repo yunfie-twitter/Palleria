@@ -360,6 +360,7 @@ fun BookmarkScreen(
                             }
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
+                        isBlurEnabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
                     )
                 },
@@ -409,6 +410,7 @@ fun BookmarkScreen(
                             onOpenWatchlistSeries = onOpenWatchlistSeries,
                             scrollBehavior = scrollBehavior,
                             gridState = viewModel.bookmarkWatchlistGridState,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
                         )
                     }
 

@@ -358,6 +358,7 @@ fun BookmarkHeartButton(
     cornerRadius: Dp = size / 2,
     activeBackground: Color = MiuixTheme.colorScheme.surfaceContainerHigh,
     inactiveBackground: Color = Color.Transparent,
+    hapticBurstEnabled: Boolean = true,
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -432,7 +433,13 @@ fun BookmarkHeartButton(
                 onClick = {
                     userClicked = true
                     privateRequested = false
-                    performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                    val effect =
+                        if (hapticBurstEnabled && !isBookmarked) {
+                            AppHapticEffect.BookmarkBurst
+                        } else {
+                            AppHapticEffect.Toggle
+                        }
+                    performAppHapticFeedback(context, haptic, hapticMode, effect)
                     onClick()
                 },
                 onLongClick =
@@ -440,7 +447,13 @@ fun BookmarkHeartButton(
                         {
                             userClicked = true
                             privateRequested = true
-                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                            val effect =
+                                if (hapticBurstEnabled) {
+                                    AppHapticEffect.BookmarkBurst
+                                } else {
+                                    AppHapticEffect.Success
+                                }
+                            performAppHapticFeedback(context, haptic, hapticMode, effect)
                             onLongClick()
                         }
                     } else {
@@ -454,8 +467,9 @@ fun BookmarkHeartButton(
     ) {
         HeartBurst(
             visible = stage == BookmarkButtonStage.CHECK || stage == BookmarkButtonStage.PRIVATE_CHECK,
-            modifier = Modifier.size(size * 1.5f),
+            modifier = Modifier.size(size * 1.6f),
             color = scheme.error,
+            hapticBurstEnabled = hapticBurstEnabled,
         )
 
         AnimatedContent(
@@ -512,6 +526,7 @@ private fun HeartBurst(
     visible: Boolean,
     modifier: Modifier = Modifier,
     color: Color = MiuixTheme.colorScheme.error,
+    hapticBurstEnabled: Boolean = true,
 ) {
     val burstProgress =
         animateFloatAsState(
@@ -529,12 +544,13 @@ private fun HeartBurst(
                         val baseDistance = 16.dp.toPx()
                         val addDistance = 14.dp.toPx() * progress
                         val distance = baseDistance + addDistance
-                        val radius = (2.dp * (1f - progress)).toPx()
+                        val radius = (2.2.dp * (1f - progress)).toPx()
                         val alpha = ((1f - progress) * 1.5f).coerceIn(0f, 1f)
                         val burstColor = color.copy(alpha = color.alpha * alpha)
                         val centerX = size.width / 2f
                         val centerY = size.height / 2f
 
+                        // Main ring particles
                         for (i in 0 until 8) {
                             val angle = i * 45f
                             val rad = Math.toRadians(angle.toDouble())
@@ -545,6 +561,24 @@ private fun HeartBurst(
                                 radius = radius,
                                 center = Offset(cx, cy),
                             )
+                        }
+
+                        // Sparkling secondary outer burst particles if rich burst is enabled
+                        if (hapticBurstEnabled) {
+                            val sparkleDistance = baseDistance + (18.dp.toPx() * progress)
+                            val sparkleRadius = (1.4.dp * (1f - (progress * 0.9f))).toPx()
+                            val sparkleColor = color.copy(alpha = (color.alpha * alpha * 0.75f).coerceIn(0f, 1f))
+                            for (i in 0 until 8) {
+                                val angle = (i * 45f) + 22.5f
+                                val rad = Math.toRadians(angle.toDouble())
+                                val cx = centerX + (sparkleDistance * kotlin.math.cos(rad)).toFloat()
+                                val cy = centerY + (sparkleDistance * kotlin.math.sin(rad)).toFloat()
+                                drawCircle(
+                                    color = sparkleColor,
+                                    radius = sparkleRadius,
+                                    center = Offset(cx, cy),
+                                )
+                            }
                         }
                     }
                 },

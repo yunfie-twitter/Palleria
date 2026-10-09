@@ -89,10 +89,13 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
+import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
@@ -294,7 +297,7 @@ fun WatchlistSeriesScreen(
                     )
                 }
 
-                val columns = adaptiveProfileGridColumns()
+                val columns = adaptiveIllustColumns(settings)
                 val showInitialLoading = state.isLoading && state.mangaSeries.isEmpty()
                 val showPaginating = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
@@ -305,7 +308,11 @@ fun WatchlistSeriesScreen(
                         Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .background(Color.Transparent),
+                            .pinchToChangeColumns(
+                                enabled = settings.gridPinchToZoom,
+                                currentColumns = columns,
+                                onColumnsChange = viewModel::updateVerticalColumnCount,
+                            ).background(Color.Transparent),
                     contentPadding =
                         profileGridContentPadding(
                             top = if (!isContentScrolled) 8.dp else 12.dp,
@@ -428,15 +435,13 @@ private fun WatchlistHeader(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Black.copy(alpha = 0.25f),
-                                            Color.Transparent,
-                                            backgroundColor.copy(alpha = 0.85f),
-                                        ),
-                                ),
+                            .cachedVerticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.25f),
+                                        Color.Transparent,
+                                        backgroundColor.copy(alpha = 0.85f),
+                                    ),
                             ),
                 )
             } else {
@@ -444,14 +449,12 @@ private fun WatchlistHeader(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            MiuixTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                            MiuixTheme.colorScheme.surfaceContainerHighest,
-                                        ),
-                                ),
+                            .cachedVerticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                        MiuixTheme.colorScheme.surfaceContainerHighest,
+                                    ),
                             ),
                 )
             }

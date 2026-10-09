@@ -16,21 +16,25 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -43,6 +47,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,19 +56,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -85,9 +90,11 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.SettingRow
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.screens.UserResultCard
@@ -103,6 +110,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
+import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.items as lazyListItems
@@ -152,46 +160,13 @@ internal fun UserProfilePagerContent(
     showProfileHeader: Boolean,
     onIllustLongClick: ((Illust) -> Unit)? = null,
     onCollapseHeader: () -> Unit = {},
+    isOwnProfile: Boolean = false,
+    isProfileEditEnabled: Boolean = false,
+    onEditProfile: (() -> Unit)? = null,
+    onColumnsChange: (Int) -> Unit = {},
+    onAvatarClick: () -> Unit = {},
 ) {
-    var showAvatarPreview by remember(user.id) { mutableStateOf(false) }
     val tabListState = rememberLazyListState()
-    if (showAvatarPreview) {
-        Dialog(
-            onDismissRequest = { showAvatarPreview = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            var dialogVisible by remember { mutableStateOf(false) }
-            androidx.compose.runtime.LaunchedEffect(Unit) { dialogVisible = true }
-            AnimatedVisibility(
-                visible = dialogVisible,
-                enter = fadeIn(tween(240)) + scaleIn(tween(240), initialScale = 0.82f),
-                exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.82f),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.94f))
-                            .miuixClickable(onClick = { showAvatarPreview = false }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AvatarImage(
-                        url = user.profileImageUrl,
-                        name = user.name,
-                        size = 280.dp,
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        maxDecodeDimensionPx = 512,
-                    )
-                    HeaderOverlayIcon(
-                        icon = MiuixIcons.Close,
-                        onClick = { showAvatarPreview = false },
-                        modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(16.dp),
-                        contentColor = Color.White,
-                    )
-                }
-            }
-        }
-    }
     Column(modifier = modifier.background(backgroundColor)) {
         AnimatedVisibility(
             visible = showProfileHeader,
@@ -215,9 +190,12 @@ internal fun UserProfilePagerContent(
                 onUnmuteUser = onUnmuteUser,
                 followAnimationTrigger = followAnimationTrigger,
                 backgroundColor = backgroundColor,
-                onAvatarClick = { showAvatarPreview = true },
+                onAvatarClick = onAvatarClick,
                 tabListState = tabListState,
                 onCollapseHeader = onCollapseHeader,
+                isOwnProfile = isOwnProfile,
+                isProfileEditEnabled = isProfileEditEnabled,
+                onEditProfile = onEditProfile,
             )
         }
         AnimatedVisibility(
@@ -268,6 +246,7 @@ internal fun UserProfilePagerContent(
                         gridState = worksGridState,
                         backgroundColor = backgroundColor,
                         onIllustLongClick = onIllustLongClick,
+                        onColumnsChange = onColumnsChange,
                     )
                 }
 
@@ -292,6 +271,7 @@ internal fun UserProfilePagerContent(
                             emptyLabel = stringResource(R.string.bookmark_empty),
                             keyPrefix = "user_bookmark",
                             onIllustLongClick = onIllustLongClick,
+                            onColumnsChange = onColumnsChange,
                         )
                     }
                 }
@@ -317,6 +297,9 @@ private fun UserProfileHeader(
     onAvatarClick: () -> Unit,
     tabListState: LazyListState,
     onCollapseHeader: () -> Unit = {},
+    isOwnProfile: Boolean = false,
+    isProfileEditEnabled: Boolean = false,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     Column(
         Modifier
@@ -358,6 +341,9 @@ private fun UserProfileHeader(
             backgroundColor = backgroundColor,
             onAvatarClick = onAvatarClick,
             tabListState = tabListState,
+            isOwnProfile = isOwnProfile,
+            isProfileEditEnabled = isProfileEditEnabled,
+            onEditProfile = onEditProfile,
         )
     }
 }
@@ -669,6 +655,9 @@ private fun UserProfileInfo(
     backgroundColor: Color,
     onAvatarClick: () -> Unit,
     tabListState: LazyListState,
+    isOwnProfile: Boolean = false,
+    isProfileEditEnabled: Boolean = false,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 18.dp).offset(y = (-48).dp),
@@ -684,8 +673,14 @@ private fun UserProfileInfo(
                     .miuixClickable(onClick = onAvatarClick),
             )
             Spacer(Modifier.weight(1f))
-            Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {
-                if (isMuted) MutedUserPill() else FollowPill(user.isFollowed, followAnimationTrigger)
+            if (isOwnProfile && isProfileEditEnabled && onEditProfile != null) {
+                Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onEditProfile)) {
+                    EditUserPill()
+                }
+            } else {
+                Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {
+                    if (isMuted) MutedUserPill() else FollowPill(user.isFollowed, followAnimationTrigger)
+                }
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -768,6 +763,44 @@ private fun MutedUserPill() {
 }
 
 @Composable
+private fun EditUserPill() {
+    val scheme = MiuixTheme.colorScheme
+    Box(
+        modifier =
+            Modifier
+                .squircleSurface(
+                    color = scheme.surfaceContainerHigh,
+                    cornerRadius = 24.dp,
+                ).squircleBorder(
+                    width = 1.dp,
+                    color = scheme.onSurface.copy(alpha = 0.15f),
+                    cornerRadius = 24.dp,
+                ).padding(horizontal = 18.dp, vertical = 11.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            androidx.compose.foundation.Image(
+                painter = painterResource(R.drawable.ic_edit_pen),
+                contentDescription = stringResource(R.string.user_profile_edit_title),
+                modifier = Modifier.size(16.dp),
+                colorFilter =
+                    androidx.compose.ui.graphics.ColorFilter
+                        .tint(scheme.onSurface),
+            )
+            Text(
+                text = stringResource(R.string.user_profile_edit_title),
+                color = scheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body2,
+            )
+        }
+    }
+}
+
+@Composable
 private fun MutedUserContentNotice(onUnmuteUser: () -> Unit) {
     ElevatedPanel(contentPadding = PaddingValues(18.dp)) {
         Text(
@@ -811,8 +844,9 @@ private fun UserIllustGridPage(
     autoLoadMore: Boolean = settings.autoLoadMore,
     active: Boolean = true,
     onIllustLongClick: ((Illust) -> Unit)? = null,
+    onColumnsChange: (Int) -> Unit = {},
 ) {
-    val columns = adaptiveProfileGridColumns()
+    val columns = adaptiveIllustColumns(settings)
 
     PrefetchIllustGridImages(
         items = illusts,
@@ -835,7 +869,14 @@ private fun UserIllustGridPage(
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize().background(backgroundColor),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .pinchToChangeColumns(
+                    enabled = settings.gridPinchToZoom,
+                    currentColumns = columns,
+                    onColumnsChange = onColumnsChange,
+                ).background(backgroundColor),
         contentPadding = profileGridContentPadding(),
         horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
         verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
@@ -998,5 +1039,78 @@ private fun UserDetailsCard(user: UserProfile) {
         SettingRow(stringResource(R.string.user_id_label), user.id.toString()) {}
         DividerLine()
         SettingRow(stringResource(R.string.settings_account), "@${user.account}") {}
+    }
+}
+
+@Composable
+internal fun UserProfileAvatarPreviewOverlay(
+    visible: Boolean,
+    user: UserProfile,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(240)) + scaleIn(tween(240), initialScale = 0.85f),
+        exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.85f),
+        modifier = modifier,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.94f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .padding(horizontal = 32.dp)
+                        .sizeIn(maxWidth = 320.dp, maxHeight = 320.dp)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDismiss,
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!user.profileImageUrl.isNullOrBlank()) {
+                    PixivImage(
+                        url = user.profileImageUrl,
+                        contentDescription = user.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        thumbnail = false,
+                        maxDecodeDimensionPx = 1024,
+                    )
+                } else {
+                    Text(
+                        text = "no image",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.body1,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            HeaderOverlayIcon(
+                icon = MiuixIcons.Close,
+                onClick = onDismiss,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(16.dp),
+                contentColor = Color.White,
+            )
+        }
     }
 }

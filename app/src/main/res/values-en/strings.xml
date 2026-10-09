@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="palleria_account_label">Palleria</string>
     <string name="app_name">Palleria</string>
@@ -1196,4 +1197,91 @@
 
     <string name="flag_ugoira_auto_play_title">Auto-play Ugoira</string>
     <string name="flag_ugoira_auto_play_desc">Automatically plays animation when viewing Ugoira artworks.</string>
+
+    <string name="flag_user_profile_edit_title">Edit Profile</string>
+    <string name="flag_user_profile_edit_desc">Show edit button (pencil icon) on own profile page and allow editing profile (POST /v1/user/profile/edit)</string>
+    <string name="user_profile_edit_title">Edit Profile</string>
+    <string name="user_profile_edit_user_name">Nickname</string>
+    <string name="user_profile_edit_comment">Bio</string>
+    <string name="user_profile_edit_webpage">Website</string>
+    <string name="user_profile_edit_twitter">X (Twitter)</string>
+    <string name="user_profile_edit_gender">Gender</string>
+    <string name="user_profile_edit_gender_unknown">Private / Not set</string>
+    <string name="user_profile_edit_gender_male">Male</string>
+    <string name="user_profile_edit_gender_female">Female</string>
+    <string name="user_profile_edit_birthday">Birthday</string>
+    <string name="user_profile_edit_save">Save</string>
+    <string name="user_profile_edit_saving">Saving profile…</string>
+    <string name="user_profile_edit_saved">Profile updated</string>
+    <string name="user_profile_edit_failed">Failed to update profile</string>
+    <string name="comment_stamp_select">Stamps</string>
+    <string name="comment_stamp_empty">No stamps available</string>
+
+    <string name="flag_offline_stale_cache_title">Offline Cache (Stale-While-Revalidate)</string>
+    <string name="flag_offline_stale_cache_desc">Keep displaying cached feeds during network loss or errors with an offline status chip</string>
+    <string name="flag_bookmark_haptic_burst_title">Bookmark &amp; Like Haptic Burst</string>
+    <string name="flag_bookmark_haptic_burst_desc">Trigger rich clicky haptics and sparkling particle burst animations on bookmark and like actions</string>
+    <string name="flag_image_blur_preview_title">Blurred Image Preview</string>
+    <string name="flag_image_blur_preview_desc">Display a blurred low-resolution placeholder while loading and smoothly crossfade into the full image</string>
+    <string name="flag_task_snapshot_blur_title">Stealth Task Snapshot Blur</string>
+    <string name="flag_task_snapshot_blur_desc">Blurs app thumbnail in recent apps switcher to protect sensitive artwork and privacy</string>
+    <string name="flag_courtesy_audio_fade_title">Courtesy Audio Fade on Headset Disconnect</string>
+    <string name="flag_courtesy_audio_fade_desc">Exponentially fades out audio over 100ms on headset disconnect before pausing to prevent noise leakage</string>
+    <string name="flag_tracking_url_cleaner_title">Silent Tracking URL Cleaner</string>
+    <string name="flag_tracking_url_cleaner_desc">Automatically strips tracking query parameters (utm, s, etc.) when pasting Pixiv URLs</string>
+    <string name="flag_smart_download_naming_title">Smart Download Filename</string>
+    <string name="flag_smart_download_naming_desc">Automatically names saved files as \'[Artist] Title_p0\' for neat photo gallery organization</string>
+    <string name="flag_privacy_exif_stripper_title">Privacy Exif Stripper on Share</string>
+    <string name="flag_privacy_exif_stripper_desc">Strips GPS coordinates and device metadata before sharing images to prevent privacy leaks</string>
+    <string name="flag_ugoira_power_save_title">Ugoira Power Save &amp; Delay</string>
+    <string name="flag_ugoira_power_save_desc">Stops animations completely when off-screen and skips decoding during rapid scroll-throughs</string>
+    <string name="flag_manga_adaptive_preload_title">Adaptive Manga Preload</string>
+    <string name="flag_manga_adaptive_preload_desc">Detects page-turning direction patterns (e.g. reverse reading) and reverses prefetch queue accordingly</string>
+    <string name="flag_velocity_landing_prefetch_title">Velocity Landing Prefetch</string>
+    <string name="flag_velocity_landing_prefetch_desc">Predicts scroll stop position from flick velocity and prefetches target images instead of transient ones</string>
+    <string name="flag_byte_range_resume_title">Stealth Download Resume</string>
+    <string name="flag_byte_range_resume_desc">Resumes interrupted downloads from existing bytes via HTTP Range headers to save data and time</string>
+    <string name="flag_predns_socket_warming_title">Pre-DNS &amp; Socket Warming</string>
+    <string name="flag_predns_socket_warming_desc">Pre-resolves DNS and warms TCP/TLS socket pools in background behind splash to eliminate initial loading latency</string>
+    <string name="flag_delta_etag_sync_title">Delta ETag Sync</string>
+    <string name="flag_delta_etag_sync_desc">Uses ETags and delta caching during following sync to fetch only new artworks without duplicate downloads, enabling instant offline-ready access</string>
+    <string name="offline_cached_banner_label">Viewing offline cache</string>
+    <string name="offline_retry_button">Retry</string>
+
+    <string name="permission_notification_title">Notification Permission</string>
+    <string name="permission_notification_desc">Needed to notify you about new artworks from favorite creators and download completions.</string>
+    <string name="permission_storage_title">Storage Access</string>
+    <string name="permission_storage_desc">Needed to save high-resolution artworks and use the live wallpaper feature.</string>
+    <string name="permission_grant_button">Allow</string>
+    <string name="permission_later_button">Not Now</string>
+
+    <string name="setup_network_recommended_title">Recommended Settings (Optimized for your region)</string>
+    <string name="setup_network_recommended_desc">Direct connection to official servers. Best performance and original quality for most regions.</string>
+    <string name="setup_network_custom_title">Custom Connection Settings (Proxy / ECH)</string>
+    <string name="setup_network_ping_checking">Checking connection…</string>
+    <string name="setup_network_ping_ok">✅ Official server connection is healthy</string>
+    <string name="setup_network_ping_failed">⚠️ Official server may be restricted or blocked in your area</string>
+    <string name="setup_network_suggest_ech">Switch to restriction bypass mode (ECH / Proxy)?</string>
+    <string name="setup_network_switch_ech_button">Switch to Bypass Mode</string>
+    <string name="setup_network_mode_standard_label">Standard (Fast &amp; Stable)</string>
+    <string name="setup_network_mode_ech_label">Privacy &amp; Bypass (ECH)</string>
+    <string name="setup_network_mode_compat_label">Compatibility Mode (When unstable)</string>
+    <string name="setup_proxy_official_label">Official (Original Quality &amp; Direct)</string>
+    <string name="setup_proxy_bypass_label">When official images fail / Fast Cache</string>
+
+    <string name="setup_theme_and_safety_title">Appearance &amp; Content Safety</string>
+    <string name="setup_theme_title">Theme</string>
+    <string name="setup_theme_system">System Default</string>
+    <string name="setup_theme_light">Light</string>
+    <string name="setup_theme_dark">Dark</string>
+    <string name="setup_safety_title">Content Filtering</string>
+    <string name="setup_safety_all_age">All Ages Only (Safe Mode)</string>
+    <string name="setup_safety_r18">Include R-18</string>
+    <string name="setup_safety_r18g">Include R-18 &amp; R-18G</string>
+
+    <!-- Wide Color Gamut (Display P3) -->
+    <string name="settings_wide_color_gamut_title">Wide Color Gamut (Display P3 / WCG)</string>
+    <string name="settings_wide_color_gamut_desc">Render vibrant colors in Display P3 &amp; AdobeRGB using hardware color management on supported OLED displays</string>
+    <string name="settings_wide_color_gamut_unsupported">Your device does not support wide color gamut displays</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
 </resources>

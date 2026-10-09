@@ -88,6 +88,12 @@ class IllustiaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashHandler.instance.init(this)
+        if (com.yunfie.illustia.settings
+                .readFeatureFlagSync(this, com.yunfie.illustia.settings.FeatureFlag.PreDnsSocketWarming)
+        ) {
+            com.yunfie.illustia.data.NetworkWarmer
+                .warmUp(sharedHttpClient, scope = appScope)
+        }
         SingletonImageLoader.setSafe {
             val appContext = applicationContext
             val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
@@ -141,6 +147,8 @@ class IllustiaApplication : Application() {
             PalleriaAccount.reconcile(appContext, settings.accounts)
             AppUpdateNotificationHelper.createNotificationChannel(appContext)
             AppUpdateScheduler.schedulePeriodicCheck(appContext)
+            com.yunfie.illustia.data.FollowDeltaSyncScheduler
+                .schedulePeriodicSync(appContext)
             launch {
                 delay(WIDGET_PREVIEW_DELAY_MILLIS)
                 RankingWidgetProvider.publishPreview(appContext)

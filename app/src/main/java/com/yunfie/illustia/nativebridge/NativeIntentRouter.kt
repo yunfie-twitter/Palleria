@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.content.IntentCompat
 import java.net.URI
+import java.util.Locale
 
 sealed interface NativeIntentEvent {
     data class Artwork(
@@ -33,6 +34,22 @@ object NativeIntentRouter {
     private val CUSTOM_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net", "users", "illusts", "tags")
     private val ROUTE_CANDIDATE_PATTERN = Regex("""(?i)\b(?:https?://|pixiv://|palleria://)\S+""")
     private val URI_PATTERN = Regex("""^(?i)(https?|pixiv|palleria)://([^/?#]+)(?:/(.*))?$""")
+    private val TRACKING_PARAMS =
+        setOf(
+            "s",
+            "t",
+            "ref",
+            "ref_source",
+            "utm_source",
+            "utm_medium",
+            "utm_campaign",
+            "utm_term",
+            "utm_content",
+            "fbclid",
+            "gclid",
+            "igshid",
+            "msclkid",
+        )
     private val ROUTE_TRAILING_PUNCTUATION =
         charArrayOf(
             '.',
@@ -86,13 +103,49 @@ object NativeIntentRouter {
         return null
     }
 
+    fun cleanTrackingParameters(url: String): String {
+        if (!url.contains('?')) return url
+        val base = url.substringBefore('?')
+        val query = url.substringAfter('?').substringBefore('#')
+        val fragment = if (url.contains('#')) "#" + url.substringAfter('#') else ""
+        val cleanedQuery =
+            query
+                .split('&')
+                .filter { param ->
+                    val key = param.substringBefore('=').lowercase(Locale.ROOT).trim()
+                    key.isNotBlank() && key !in TRACKING_PARAMS && !key.startsWith("utm_")
+                }.joinToString("&")
+        return if (cleanedQuery.isBlank()) {
+            base + fragment
+        } else {
+            "$base?$cleanedQuery$fragment"
+        }
+    }
+
+    fun sanitizeSearchInput(
+        text: String,
+        enabled: Boolean = true,
+    ): String {
+        if (!enabled || text.isBlank()) return text
+        val trimmed = text.trim()
+        val cleaned = cleanTrackingParameters(trimmed)
+        // Pixiv の作品URLまたはユーザーURLが直接貼られた場合、ID を抽出して検索欄をすっきりさせる
+        val event = parseText(cleaned)
+        return when (event) {
+            is NativeIntentEvent.Artwork -> event.id.toString()
+            is NativeIntentEvent.User -> event.id.toString()
+            else -> cleaned
+        }
+    }
+
     fun parseText(value: String?): NativeIntentEvent? {
         val normalized = value?.trim().orEmpty()
         if (normalized.isEmpty()) return null
-        parseUri(normalized)?.let { return it }
+        val cleaned = cleanTrackingParameters(normalized)
+        parseUri(cleaned)?.let { return it }
         return ROUTE_CANDIDATE_PATTERN
-            .findAll(normalized)
-            .mapNotNull { match -> parseUri(match.value.trimEnd(*ROUTE_TRAILING_PUNCTUATION)) }
+            .findAll(cleaned)
+            .mapNotNull { match -> parseUri(cleanTrackingParameters(match.value.trimEnd(*ROUTE_TRAILING_PUNCTUATION))) }
             .firstOrNull()
     }
 

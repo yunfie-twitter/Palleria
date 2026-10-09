@@ -59,9 +59,11 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.squircle.squircleBackground
-import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
+
+private val IllustCardCornerShape = RoundedCornerShape(14.dp)
+private val IllustRowCornerShape = RoundedCornerShape(8.dp)
 
 /** Read the shared animation only during drawing, not during composition. */
 @Composable
@@ -363,7 +365,8 @@ private fun IllustCardThumbnail(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.75f)
-                .squircleSurface(MiuixTheme.colorScheme.surfaceContainer, 14.dp),
+                .clip(IllustCardCornerShape)
+                .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
         Box(modifier = Modifier.fillMaxSize().then(if (isMutedByTag) Modifier.blur(12.dp) else Modifier)) {
             PixivImage(
@@ -567,7 +570,8 @@ fun IllustListRow(
                 modifier =
                     Modifier
                         .size(68.dp)
-                        .squircleSurface(MiuixTheme.colorScheme.surfaceContainerHigh, 8.dp),
+                        .clip(IllustRowCornerShape)
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh),
             ) {
                 PixivImage(
                     url = illust.thumbnailUrl,
@@ -683,7 +687,7 @@ fun HighlightCard(
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
                         .height(64.dp)
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))),
+                        .cachedVerticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))),
             )
             Text(
                 text = illust.title,

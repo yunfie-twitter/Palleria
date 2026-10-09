@@ -264,6 +264,11 @@ internal object PlatformCapabilities {
     fun supportsHardwareBlur(context: Context): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && devicePerformanceTier(context) != DevicePerformanceTier.LOW
 
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
+    fun supportsWideColorGamut(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            context.resources.configuration.isScreenWideColorGamut
+
     fun recommendedBitmapConfig(context: Context): Bitmap.Config =
         if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
             Bitmap.Config.RGB_565

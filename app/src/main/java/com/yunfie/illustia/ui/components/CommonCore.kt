@@ -129,6 +129,20 @@ fun Modifier.pinchToChangeColumns(
     enabled: Boolean,
     currentColumns: Int,
     onColumnsChange: (Int) -> Unit,
+): Modifier =
+    pinchToChangeColumns(
+        enabled = enabled,
+        currentColumns = currentColumns,
+        onPinchGestureSuccess = null,
+        onColumnsChange = onColumnsChange,
+    )
+
+@Composable
+fun Modifier.pinchToChangeColumns(
+    enabled: Boolean,
+    currentColumns: Int,
+    onPinchGestureSuccess: (() -> Unit)? = null,
+    onColumnsChange: (Int) -> Unit,
 ): Modifier {
     if (!enabled) return this
     val context = LocalContext.current
@@ -137,6 +151,7 @@ fun Modifier.pinchToChangeColumns(
 
     val currentColumnsState = rememberUpdatedState(currentColumns)
     val onColumnsChangeState = rememberUpdatedState(onColumnsChange)
+    val onPinchGestureSuccessState = rememberUpdatedState(onPinchGestureSuccess)
 
     return this
         .pointerInput(enabled) {
@@ -148,7 +163,14 @@ fun Modifier.pinchToChangeColumns(
                         scrollAccumulator += event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
                         if (kotlin.math.abs(scrollAccumulator) >= 1f) {
                             val direction = if (scrollAccumulator > 0) 1 else -1
-                            onColumnsChangeState.value((currentColumnsState.value + direction).coerceIn(1, 4))
+                            val next = (currentColumnsState.value + direction).coerceIn(1, 4)
+                            if (next != currentColumnsState.value) {
+                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                onColumnsChangeState.value(next)
+                                onPinchGestureSuccessState.value?.invoke()
+                            } else {
+                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.BoundaryLimit)
+                            }
                             scrollAccumulator = 0f
                         }
                         event.changes.forEach { it.consume() }
@@ -174,8 +196,11 @@ fun Modifier.pinchToChangeColumns(
                     if (update.columnDelta != 0) {
                         val next = (currentColumnsState.value + update.columnDelta).coerceIn(1, 4)
                         if (next != currentColumnsState.value) {
-                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Toggle)
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
                             onColumnsChangeState.value(next)
+                            onPinchGestureSuccessState.value?.invoke()
+                        } else {
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.BoundaryLimit)
                         }
                     }
                 } while (event.changes.any { it.pressed })

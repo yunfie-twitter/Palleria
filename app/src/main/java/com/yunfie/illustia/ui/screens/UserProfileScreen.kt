@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.screens
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,8 +38,11 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
 import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
 import com.yunfie.illustia.ui.screens.profile.UserProfileSmallTopAppBar
 import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
@@ -68,6 +72,7 @@ fun UserProfileScreen(
     onLoadBookmarks: () -> Unit,
     onLoadMoreBookmarks: () -> Unit,
     onOpenRelatedUsers: (() -> Unit)? = null,
+    onEditProfile: (() -> Unit)? = null,
     onToggleFollow: () -> Unit,
     onMuteUser: () -> Unit,
     onReport: (String?, (Boolean) -> Unit) -> Unit,
@@ -77,6 +82,7 @@ fun UserProfileScreen(
     gridState: LazyGridState,
     bookmarkGridState: LazyGridState = remember(user.id) { LazyGridState() },
     onIllustLongClick: (Illust) -> Unit = {},
+    onColumnsChange: (Int) -> Unit = {},
     showHeaderControls: Boolean = true,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
@@ -91,6 +97,11 @@ fun UserProfileScreen(
     var followAnimationTrigger by remember(user.id) { mutableIntStateOf(0) }
     var sortOrder by rememberSaveable(user.id) { mutableStateOf(UserWorkSortOrder.Newest) }
     var typeFilter by rememberSaveable(user.id) { mutableStateOf(UserWorkTypeFilter.All) }
+    var showAvatarPreview by rememberSaveable(user.id) { mutableStateOf(false) }
+
+    BackHandler(enabled = showAvatarPreview) {
+        showAvatarPreview = false
+    }
 
     val infoListState = remember(user.id) { LazyListState() }
     val pagerState = rememberPagerState(pageCount = { 3 })
@@ -100,6 +111,13 @@ fun UserProfileScreen(
     val processedIllusts = rememberUserWorks(user.id, illusts, sortOrder, typeFilter, isIllustActive)
     val processedBookmarks = rememberUserWorks(user.id, bookmarks, sortOrder, typeFilter, isBookmarkActive)
     var isHeaderCollapsed by rememberSaveable(user.id) { mutableStateOf(false) }
+
+    val isOwnProfile =
+        remember(user.id, settings.accounts, settings.activeAccountIndex, settings.bookmarkUserId) {
+            (settings.accounts.getOrNull(settings.activeAccountIndex)?.userId ?: settings.bookmarkUserId) == user.id ||
+                settings.accounts.any { it.userId == user.id }
+        }
+    val isProfileEditEnabled = settings.isFeatureEnabled(FeatureFlag.UserProfileEdit)
 
     val activeIsAtTop by remember(gridState, bookmarkGridState, infoListState) {
         derivedStateOf {
@@ -148,12 +166,14 @@ fun UserProfileScreen(
         }
     }
 
-    DisposableEffect(isContentScrolled, isDarkTheme) {
+    DisposableEffect(isContentScrolled, isDarkTheme, showAvatarPreview) {
         val window = activity?.window
         if (window != null) {
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             insetsController.isAppearanceLightStatusBars =
-                if (isContentScrolled) {
+                if (showAvatarPreview) {
+                    false
+                } else if (isContentScrolled) {
                     !isDarkTheme
                 } else {
                     false
@@ -254,12 +274,17 @@ fun UserProfileScreen(
             showProfileHeader = !isContentScrolled,
             onIllustLongClick = onIllustLongClick,
             onCollapseHeader = { isHeaderCollapsed = true },
+            isOwnProfile = isOwnProfile,
+            isProfileEditEnabled = isProfileEditEnabled,
+            onEditProfile = onEditProfile,
+            onColumnsChange = onColumnsChange,
+            onAvatarClick = { showAvatarPreview = true },
         )
     }
 
-    if (showHeaderControls) {
-        Box(modifier = contentModifier) {
-            content(Modifier.fillMaxSize())
+    Box(modifier = contentModifier) {
+        content(Modifier.fillMaxSize())
+        if (showHeaderControls) {
             UserProfileSmallTopAppBar(
                 user = user,
                 showWorkControls = pagerState.currentPage < 2,
@@ -276,7 +301,10 @@ fun UserProfileScreen(
                 compact = isContentScrolled,
             )
         }
-    } else {
-        content(contentModifier)
+        UserProfileAvatarPreviewOverlay(
+            visible = showAvatarPreview,
+            user = user,
+            onDismiss = { showAvatarPreview = false },
+        )
     }
 }

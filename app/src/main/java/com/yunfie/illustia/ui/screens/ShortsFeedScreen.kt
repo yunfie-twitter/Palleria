@@ -36,6 +36,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -140,10 +141,8 @@ fun ShortsFeedScreen(
                             Modifier
                                 .align(Alignment.BottomCenter)
                                 .fillMaxWidth()
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
-                                    ),
+                                .cachedVerticalGradient(
+                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
                                 ).padding(start = 20.dp, end = 92.dp, top = 72.dp, bottom = 24.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {

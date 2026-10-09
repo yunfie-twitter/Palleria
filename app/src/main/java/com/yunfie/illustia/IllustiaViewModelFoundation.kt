@@ -186,6 +186,8 @@ abstract class IllustiaViewModelFoundation(
     internal val searchSnapshots = androidx.compose.runtime.mutableStateMapOf<String, SearchEntrySnapshot>()
     internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
+    abstract fun loadInitialHomeIfNeeded()
+
     fun clearDetailSnapshots() {
         userProfileRequests.close()
         userProfileCache.clear()

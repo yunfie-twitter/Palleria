@@ -252,6 +252,7 @@ internal fun MainSurface(
                                     isHomePaginating = appState.homeChrome.isHomePaginating,
                                     isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
                                     isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
+                                    isOfflineCached = appState.homeChrome.isOfflineCached,
                                     initialTab = appState.homeChrome.selectedTab,
                                 )
                             }
@@ -326,7 +327,7 @@ internal fun MainSurface(
                                         Modifier.progressiveTextureBlur(
                                             backdrop = navBackdrop,
                                             shape = RectangleShape,
-                                            blurRadius = 20f,
+                                            blurRadius = 30f,
                                             gradient = ProgressiveBlur.Bottom,
                                         )
                                     } else {

@@ -4,14 +4,14 @@ documentation:
       - any-glob-to-any-file:
           - "docs/**"
           - "**/*.md"
+          - "LICENSE"
+          - "NOTICE"
 
 github_actions:
   - changed-files:
       - any-glob-to-any-file:
-          - ".github/workflows/**"
-          - ".github/actions/**"
-          - ".github/scripts/**"
-          - ".github/labeler.yml"
+          - ".github/**"
+          - "scripts/**"
 
 dependencies:
   - changed-files:
@@ -33,3 +33,27 @@ i18n:
       - any-glob-to-any-file:
           - "**/src/**/res/values*/strings*.xml"
           - "fdroid/metadata/*/**"
+
+rust:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "rust/**"
+          - "**/*.rs"
+          - "**/uniffi.toml"
+
+java:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.java"
+          - "**/*.kt"
+          - "**/*.kts"
+
+javascript:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.js"
+          - "**/*.ts"
+          - "**/*.mjs"
+          - "**/*.cjs"
+          - "**/*.jsx"
+          - "**/*.tsx"

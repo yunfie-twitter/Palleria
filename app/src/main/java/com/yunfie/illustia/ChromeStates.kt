@@ -10,6 +10,7 @@ data class HomeChromeState(
     val isHomePaginating: Boolean = false,
     val isTimelineRefreshing: Boolean = false,
     val isTimelinePaginating: Boolean = false,
+    val isOfflineCached: Boolean = false,
     val selectedTab: Int = 0,
 )
 

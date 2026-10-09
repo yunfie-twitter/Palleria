@@ -151,6 +151,10 @@ internal sealed interface AppRoute : NavKey {
         val userId: Long,
     ) : AppRoute
 
+    data class UserProfileEdit(
+        val userId: Long,
+    ) : AppRoute
+
     data class RelatedUsers(
         val userId: Long,
         val userName: String = "",

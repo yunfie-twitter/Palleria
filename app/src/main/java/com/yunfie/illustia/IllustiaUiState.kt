@@ -59,6 +59,7 @@ data class IllustiaUiState(
     val isUserSearchPaginating: Boolean = false,
     val searchSelectedTab: Int = 0,
     val homeSelectedTab: Int = 0,
+    val isOfflineCached: Boolean = false,
     val timelineItems: List<Illust> = emptyList(),
     val timelineNextUrl: String? = null,
     val shortsFeedItems: List<Illust> = emptyList(),
@@ -122,11 +123,17 @@ data class IllustiaUiState(
     val showLockRecoveryDialog: Boolean = false,
     val loadState: LoadState = LoadState.Idle,
     val message: String? = null,
+    val pendingPermissionRationale: PermissionRationaleType? = null,
     val privacyLocked: Boolean = false,
     val calculatorBuffer: String = "",
     val calculatorHistory: List<CalculatorHistoryEntry> = emptyList(),
     val isTransitioningToIllustia: Boolean = false,
 )
+
+enum class PermissionRationaleType {
+    Notification,
+    Storage,
+}
 
 data class CalculatorHistoryEntry(
     val expression: String,
