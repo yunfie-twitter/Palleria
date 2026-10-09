@@ -63,18 +63,6 @@ class UserProfileEditFeatureTest {
     }
 
     @Test
-    fun `comment stamps feature flag controls stamp availability`() {
-        val defaultSettings = AppSettings()
-        defaultSettings.isFeatureEnabled(FeatureFlag.CommentStamps) shouldBe FeatureFlag.CommentStamps.defaultEnabled
-
-        val enabledSettings = AppSettings(featureFlags = mapOf(FeatureFlag.CommentStamps.key to true))
-        enabledSettings.isFeatureEnabled(FeatureFlag.CommentStamps) shouldBe true
-
-        val disabledSettings = AppSettings(featureFlags = mapOf(FeatureFlag.CommentStamps.key to false))
-        disabledSettings.isFeatureEnabled(FeatureFlag.CommentStamps) shouldBe false
-    }
-
-    @Test
     fun `user profile edit payload retains modified values`() {
         val editPayload =
             UserProfileEdit(

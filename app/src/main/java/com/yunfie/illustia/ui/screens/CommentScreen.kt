@@ -38,8 +38,6 @@ import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivStamp
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -94,7 +92,6 @@ fun CommentScreen(
             state.comments.any { it.isPixivCommentDisabledNotice() }
         }
 
-    val isStampsEnabled = settings.isFeatureEnabled(FeatureFlag.CommentStamps)
     var showStampPicker by remember { mutableStateOf(false) }
     var stamps by remember { mutableStateOf<List<PixivStamp>>(emptyList()) }
     var isLoadingStamps by remember { mutableStateOf(false) }
@@ -228,7 +225,7 @@ fun CommentScreen(
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                         )
-                        if (isStampsEnabled && type == CommentArtworkType.ILLUST) {
+                        if (type == CommentArtworkType.ILLUST) {
                             IconButton(
                                 onClick = { showStampPicker = !showStampPicker },
                                 backgroundColor =
@@ -277,7 +274,7 @@ fun CommentScreen(
                     }
                 }
 
-                if (showStampPicker && isStampsEnabled) {
+                if (showStampPicker) {
                     ElevatedPanel(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
                         contentPadding = PaddingValues(8.dp),

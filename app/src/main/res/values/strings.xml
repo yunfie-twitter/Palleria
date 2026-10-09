@@ -1263,8 +1263,6 @@
     <string name="flag_ugoira_auto_play_title">うごイラの自動再生</string>
     <string name="flag_ugoira_auto_play_desc">作品詳細画面を開いた際にうごイラアニメーションを自動的に再生します。</string>
 
-    <string name="flag_comment_stamps_title">コメント用スタンプ一覧・スタンプ投稿</string>
-    <string name="flag_comment_stamps_desc">コメント欄でPixiv公式スタンプの一覧取得 (GET /v1/stamps) およびスタンプ付きコメント投稿 (POST /v1/illust/comment/add) を有効にします</string>
     <string name="flag_user_profile_edit_title">プロフィール編集</string>
     <string name="flag_user_profile_edit_desc">自分のプロフィール画面に編集ボタン（ペンマーク）を表示し、プロフィール編集 (POST /v1/user/profile/edit) を有効にします</string>
     <string name="user_profile_edit_title">プロフィール編集</string>

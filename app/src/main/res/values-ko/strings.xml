@@ -930,8 +930,6 @@
     <string name="desktop_bookmark_private">비공개 북마크</string>
     <string name="desktop_save_as">다른 이름으로 저장</string>
 
-    <string name="flag_comment_stamps_title">댓글용 스탬프 목록 및 스탬프 등록</string>
-    <string name="flag_comment_stamps_desc">댓글 창에서 Pixiv 공식 스탬프 목록 가져오기(GET /v1/stamps) 및 스탬프 댓글 작성(POST /v1/illust/comment/add)을 활성화합니다</string>
     <string name="flag_user_profile_edit_title">프로필 편집</string>
     <string name="flag_user_profile_edit_desc">내 프로필 화면에 편집 버튼(연필 아이콘)을 표시하고 프로필 편집(POST /v1/user/profile/edit)을 활성화합니다</string>
     <string name="user_profile_edit_title">프로필 편집</string>
