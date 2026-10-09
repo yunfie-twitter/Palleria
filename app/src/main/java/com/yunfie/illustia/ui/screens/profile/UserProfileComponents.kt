@@ -16,21 +16,25 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -43,6 +47,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -63,8 +69,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -160,46 +164,9 @@ internal fun UserProfilePagerContent(
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
     onColumnsChange: (Int) -> Unit = {},
+    onAvatarClick: () -> Unit = {},
 ) {
-    var showAvatarPreview by remember(user.id) { mutableStateOf(false) }
     val tabListState = rememberLazyListState()
-    if (showAvatarPreview) {
-        Dialog(
-            onDismissRequest = { showAvatarPreview = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            var dialogVisible by remember { mutableStateOf(false) }
-            androidx.compose.runtime.LaunchedEffect(Unit) { dialogVisible = true }
-            AnimatedVisibility(
-                visible = dialogVisible,
-                enter = fadeIn(tween(240)) + scaleIn(tween(240), initialScale = 0.82f),
-                exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.82f),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.94f))
-                            .miuixClickable(onClick = { showAvatarPreview = false }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AvatarImage(
-                        url = user.profileImageUrl,
-                        name = user.name,
-                        size = 280.dp,
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        maxDecodeDimensionPx = 512,
-                    )
-                    HeaderOverlayIcon(
-                        icon = MiuixIcons.Close,
-                        onClick = { showAvatarPreview = false },
-                        modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(16.dp),
-                        contentColor = Color.White,
-                    )
-                }
-            }
-        }
-    }
     Column(modifier = modifier.background(backgroundColor)) {
         AnimatedVisibility(
             visible = showProfileHeader,
@@ -223,7 +190,7 @@ internal fun UserProfilePagerContent(
                 onUnmuteUser = onUnmuteUser,
                 followAnimationTrigger = followAnimationTrigger,
                 backgroundColor = backgroundColor,
-                onAvatarClick = { showAvatarPreview = true },
+                onAvatarClick = onAvatarClick,
                 tabListState = tabListState,
                 onCollapseHeader = onCollapseHeader,
                 isOwnProfile = isOwnProfile,
@@ -1072,5 +1039,78 @@ private fun UserDetailsCard(user: UserProfile) {
         SettingRow(stringResource(R.string.user_id_label), user.id.toString()) {}
         DividerLine()
         SettingRow(stringResource(R.string.settings_account), "@${user.account}") {}
+    }
+}
+
+@Composable
+internal fun UserProfileAvatarPreviewOverlay(
+    visible: Boolean,
+    user: UserProfile,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(240)) + scaleIn(tween(240), initialScale = 0.85f),
+        exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.85f),
+        modifier = modifier,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.94f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .padding(horizontal = 32.dp)
+                        .sizeIn(maxWidth = 320.dp, maxHeight = 320.dp)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDismiss,
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!user.profileImageUrl.isNullOrBlank()) {
+                    PixivImage(
+                        url = user.profileImageUrl,
+                        contentDescription = user.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        thumbnail = false,
+                        maxDecodeDimensionPx = 1024,
+                    )
+                } else {
+                    Text(
+                        text = "no image",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.body1,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            HeaderOverlayIcon(
+                icon = MiuixIcons.Close,
+                onClick = onDismiss,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(16.dp),
+                contentColor = Color.White,
+            )
+        }
     }
 }

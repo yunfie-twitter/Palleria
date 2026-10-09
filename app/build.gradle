@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 36
-        versionCode = 154
-        versionName = "6.7.0-beta.2"
+        versionCode = 155
+        versionName = "6.7.0-beta.3"
     }
 
     signingConfigs {
@@ -89,6 +89,15 @@ android {
             jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED'
             useJUnitPlatform()
         }
+    }
+
+    lint {
+        abortOnError false
+        sarifReport true
+        textReport true
+        htmlReport true
+        informational 'MissingTranslation'
+        warning 'StringFormatInvalid'
     }
 }
 

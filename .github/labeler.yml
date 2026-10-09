@@ -10,10 +10,8 @@ documentation:
 github_actions:
   - changed-files:
       - any-glob-to-any-file:
-          - ".github/workflows/**"
-          - ".github/actions/**"
-          - ".github/scripts/**"
-          - ".github/labeler.yml"
+          - ".github/**"
+          - "scripts/**"
 
 dependencies:
   - changed-files:

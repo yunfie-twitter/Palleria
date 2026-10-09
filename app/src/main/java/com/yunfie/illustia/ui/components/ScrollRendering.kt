@@ -1,7 +1,6 @@
 package com.yunfie.illustia.ui.components
 
 import android.os.SystemClock
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -139,15 +138,8 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
     )
 }
 
-/** Stable grid keys animate to their new cells; scrolling itself never starts a layout animation. */
+/** Static zero-cost modifier for grid item placement, avoiding layout animations and recomposition overhead during scroll. */
 @Composable
-fun LazyGridItemScope.animatedGridPlacement(): Modifier =
-    if (LocalScrolling.current || LocalFastScrolling.current) {
-        Modifier
-    } else {
-        Modifier
-            .animateItem(fadeInSpec = null, placementSpec = tween(GRID_ANIMATION_MILLIS), fadeOutSpec = null)
-    }
+fun LazyGridItemScope.animatedGridPlacement(): Modifier = Modifier
 
 private const val SCROLL_SETTLE_MILLIS = 180L
-private const val GRID_ANIMATION_MILLIS = 180
