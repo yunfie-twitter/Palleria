@@ -14,7 +14,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,7 +25,7 @@ import org.robolectric.annotation.Config
 class GridPlacementUiTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun columnChangeMovesExistingCardsThroughIntermediatePositions() {
+    @Test fun columnChangeUpdatesCardPositionsDirectlyWithoutAnimationLag() {
         val columns = mutableIntStateOf(2)
         compose.setContent {
             LazyVerticalGrid(columns = GridCells.Fixed(columns.intValue), modifier = Modifier.width(300.dp).height(300.dp)) {
@@ -40,26 +39,16 @@ class GridPlacementUiTest {
                 .onNodeWithTag("card1")
                 .getUnclippedBoundsInRoot()
                 .left.value
-        compose.mainClock.autoAdvance = false
+        assertEquals(150f, initial, 1f)
+
         compose.runOnIdle { columns.intValue = 3 }
-        // Run recomposition and the new grid measurement before sampling animation time.
-        compose.mainClock.advanceTimeByFrame()
         compose.waitForIdle()
-        compose.mainClock.advanceTimeByFrame()
-        compose.waitForIdle()
-        compose.mainClock.advanceTimeBy(64)
-        val intermediate =
-            compose
-                .onNodeWithTag("card1")
-                .getUnclippedBoundsInRoot()
-                .left.value
-        compose.mainClock.advanceTimeBy(300)
+
         val final =
             compose
                 .onNodeWithTag("card1")
                 .getUnclippedBoundsInRoot()
                 .left.value
         assertEquals(100f, final, 1f)
-        assertTrue("card should move gradually: $initial -> $intermediate -> $final", intermediate > final && intermediate < initial)
     }
 }
