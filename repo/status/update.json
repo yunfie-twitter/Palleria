@@ -15,10 +15,10 @@
     "--pretty"
   ],
   "disabled": [],
-  "endTimestamp": 1791459588744,
+  "endTimestamp": 1791537303148,
   "failedBuilds": {},
-  "jarsigner": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64/bin/jarsigner",
-  "keytool": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64/bin/keytool",
+  "jarsigner": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64/bin/jarsigner",
+  "keytool": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64/bin/keytool",
   "needsUpdate": [],
   "noPackages": [
     "com.yunfie.illustia"
@@ -27,14 +27,14 @@
     "com.yunfie.illustia"
   ],
   "stages": {
-    "delete_disabled_builds": 1791459297789,
-    "index.make repo": 1791459585158,
-    "prepare_apps repo": 1791459577201,
-    "process_apks": 1791459297789,
-    "read_added_date_from_all_apks": 1791459577200,
-    "remove_apks": 1791459577177,
-    "scan_repo_files": 1791459577174
+    "delete_disabled_builds": 1791537003080,
+    "index.make repo": 1791537298988,
+    "prepare_apps repo": 1791537291054,
+    "process_apks": 1791537003080,
+    "read_added_date_from_all_apks": 1791537291053,
+    "remove_apks": 1791537291029,
+    "scan_repo_files": 1791537291027
   },
-  "startTimestamp": 1791459297000,
+  "startTimestamp": 1791537002000,
   "subcommand": "update"
 }
