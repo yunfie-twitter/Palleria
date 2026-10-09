@@ -387,7 +387,7 @@
     <string name="app_lock_biometric_verify_title">Verifique biometria</string>
     <string name="app_lock_biometric_verify_subtitle">Autenticar para ativar o desbloqueio biométrico</string>
     <string name="app_lock_attempts_remaining">%d tentativas restantes</string>
-    <string name="app_lock_cooldown">Tente novamente em %,0f segundos</string>
+    <string name="app_lock_cooldown">Tente novamente em %.0f segundos</string>
     <string name="app_lock_forgot_pin">Esqueceu o PIN?</string>
     <string name="app_lock_recovery_title">Escolha o método de recuperação</string>
     <string name="app_lock_recovery_summary">Você não conseguiu inserir o PIN %1$d vezes. Verifique sua identidade ou redefina o aplicativo.</string>

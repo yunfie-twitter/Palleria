@@ -1,0 +1,65 @@
+name: Rust Memory Safety (ASan & Miri)
+
+on:
+  schedule:
+    # 毎週日曜日の深夜 5:00 JST (UTC 20:00) に定期実行
+    - cron: "0 20 * * 0"
+  pull_request:
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust-sanitizer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-sanitizer-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  address-sanitizer:
+    name: AddressSanitizer (ASan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install nightly Rust with rust-src
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Run ASan Tests (PallaSync Core)
+        env:
+          RUSTFLAGS: "-Zsanitizer=address"
+          RUST_BACKTRACE: "1"
+        run: |
+          cargo test --target x86_64-unknown-linux-gnu --manifest-path rust/pallasync-core/Cargo.toml --lib
+
+      - name: Run ASan Tests (Pixiv API)
+        env:
+          RUSTFLAGS: "-Zsanitizer=address"
+          RUST_BACKTRACE: "1"
+        run: |
+          cargo test --target x86_64-unknown-linux-gnu --manifest-path rust/pixiv-api/Cargo.toml --lib
+
+  miri:
+    name: Miri Undefined Behavior Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install nightly Rust with Miri
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+
+      - name: Run Miri on PallaSync Core
+        run: |
+          cargo miri test --manifest-path rust/pallasync-core/Cargo.toml --lib crypto

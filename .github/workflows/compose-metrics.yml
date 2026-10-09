@@ -1,0 +1,82 @@
+name: Compose Compiler Metrics & Stability
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/src/main/**"
+      - "app/build.gradle"
+      - "compose_compiler_config.conf"
+      - ".github/workflows/compose-metrics.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "app/src/main/**"
+      - "app/build.gradle"
+      - "compose_compiler_config.conf"
+      - ".github/workflows/compose-metrics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compose-metrics-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose-metrics:
+    name: Compose Stability & Recomposition Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
+      - name: Cache cargo-ndk
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: cargo-ndk-${{ runner.os }}-4.0.0
+
+      - name: Install cargo-ndk
+        run: |
+          if [ ! -f ~/.cargo/bin/cargo-ndk ]; then
+            cargo install cargo-ndk --locked
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Compile with Compose Compiler Metrics & Reports
+        run: |
+          ./gradlew :app:compileReleaseKotlin \
+            -PcomposeCompilerMetrics=true \
+            -PcomposeCompilerReports=true \
+            --stacktrace
+
+      - name: Parse Compose Metrics & Generate Summary
+        run: |
+          python scripts/parse_compose_metrics.py
+
+      - name: Upload Compose Compiler Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compose-metrics-reports
+          path: |
+            app/build/compose_metrics/
+            app/build/compose_reports/
+          retention-days: 3

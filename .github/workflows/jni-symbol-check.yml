@@ -1,0 +1,67 @@
+name: JNI ABI & Symbol Compatibility Check
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "rust/**"
+      - "app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncCore.kt"
+      - "scripts/check_jni_symbols.py"
+      - ".github/workflows/jni-symbol-check.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "rust/**"
+      - "app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncCore.kt"
+      - "scripts/check_jni_symbols.py"
+      - ".github/workflows/jni-symbol-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jni-symbol-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-symbols:
+    name: Verify JNI ABI & UniFFI Exports
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Source Declaration Symbol Check
+        run: |
+          python scripts/check_jni_symbols.py
+
+      - name: Build Crate Shared Libraries
+        run: |
+          cargo build --manifest-path rust/pallasync-core/Cargo.toml --release
+          cargo build --manifest-path rust/pixiv-api/Cargo.toml --release
+
+      - name: Verify Exported Dynamic ELF Symbols
+        run: |
+          echo "Inspecting libpallasync_core.so symbols..."
+          SO_PALLASYNC=$(find rust/target/release -name "libpallasync_core.so" | head -n 1)
+          if [ -n "$SO_PALLASYNC" ]; then
+            nm -D --defined-only "$SO_PALLASYNC" | grep "Java_com_yunfie_illustia" || (echo "Missing JNI symbols in libpallasync_core.so" && exit 1)
+          fi
+
+          echo "Inspecting libpalleria_pixiv_api.so UniFFI symbols..."
+          SO_PIXIV=$(find rust/target/release -name "libpalleria_pixiv_api.so" | head -n 1)
+          if [ -n "$SO_PIXIV" ]; then
+            nm -D --defined-only "$SO_PIXIV" | grep "uniffi_palleria_pixiv_api" || (echo "Missing UniFFI symbols in libpalleria_pixiv_api.so" && exit 1)
+          fi
+          echo "All required native symbols are properly exported."
