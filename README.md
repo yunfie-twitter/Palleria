@@ -258,6 +258,38 @@ $env:KEY_PASSWORD = "your-key-password"
 
 ---
 
+## Metrics & Community
+
+<!-- METRICS-STATS:START -->
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=yunfie-twitter&repo=Palleria&theme=transparent" alt="Palleria Repo Stats" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/yunfie-twitter/Palleria/stargazers">
+    <img src="https://img.shields.io/badge/Stars-10-blue.svg?style=for-the-badge&logo=github" alt="Stars: 10" />
+  </a>
+  <a href="https://github.com/yunfie-twitter/Palleria/releases">
+    <img src="https://img.shields.io/badge/Total%20Downloads-1000-2ea44f.svg?style=for-the-badge&logo=github" alt="Total Downloads: 1000" />
+  </a>
+  <a href="https://github.com/yunfie-twitter/Palleria/network/members">
+    <img src="https://img.shields.io/badge/Forks-4-orange.svg?style=for-the-badge&logo=github" alt="Forks: 4" />
+  </a>
+</p>
+<!-- METRICS-STATS:END -->
+
+---
+
+## Contributors
+
+<p align="center">
+  <a href="https://github.com/yunfie-twitter/Palleria/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=yunfie-twitter/Palleria" alt="Contributors" />
+  </a>
+</p>
+
+---
+
 ## Contributing
 
 Contributions, bug reports, feature suggestions, and localization improvements are very welcome!

@@ -1283,4 +1283,5 @@
     <string name="settings_wide_color_gamut_title">Wide Color Gamut (Display P3 / WCG)</string>
     <string name="settings_wide_color_gamut_desc">Render vibrant colors in Display P3 &amp; AdobeRGB using hardware color management on supported OLED displays</string>
     <string name="settings_wide_color_gamut_unsupported">Your device does not support wide color gamut displays</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
 </resources>

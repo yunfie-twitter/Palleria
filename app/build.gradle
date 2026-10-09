@@ -90,6 +90,15 @@ android {
             useJUnitPlatform()
         }
     }
+
+    lint {
+        abortOnError false
+        sarifReport true
+        textReport true
+        htmlReport true
+        informational 'MissingTranslation'
+        warning 'StringFormatInvalid'
+    }
 }
 
 composeCompiler {

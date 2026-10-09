@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,10 +36,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
@@ -44,6 +49,8 @@ import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.updater.UpdateCheckState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -51,8 +58,11 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 private const val FDROID_URL = "https://yunfi.f5.si/Illustia-dev/repo"
 
@@ -64,6 +74,7 @@ fun AboutScreen(
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val context = LocalContext.current
+    var showLicensesSheet by remember { mutableStateOf(false) }
     val updateState by viewModel.updateCheckState.collectAsStateWithLifecycle()
     val appVersion =
         remember {
@@ -410,6 +421,10 @@ fun AboutScreen(
                             if (index > 0) DividerLine()
                             SettingRow(lib, author) {}
                         }
+                        DividerLine()
+                        SettingLinkRow(stringResource(R.string.about_open_source_licenses)) {
+                            showLicensesSheet = true
+                        }
                     }
                 }
             }
@@ -434,6 +449,131 @@ fun AboutScreen(
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
                         style = MiuixTheme.textStyles.footnote1,
                     )
+                }
+            }
+        }
+    }
+
+    OpenSourceLicensesSheet(
+        show = showLicensesSheet,
+        onDismiss = { showLicensesSheet = false },
+    )
+}
+
+private data class ThirdPartyLicenseItem(
+    val name: String,
+    val category: String,
+    val version: String,
+    val author: String,
+    val license: String,
+    val url: String,
+)
+
+@Composable
+private fun OpenSourceLicensesSheet(
+    show: Boolean,
+    onDismiss: () -> Unit,
+) {
+    if (!show) return
+    val context = LocalContext.current
+    val licenses =
+        remember {
+            runCatching {
+                context.assets.open("licenses.json").bufferedReader().use { reader ->
+                    val jsonArray = org.json.JSONArray(reader.readText())
+                    val list = ArrayList<ThirdPartyLicenseItem>(jsonArray.length())
+                    for (i in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(i)
+                        list.add(
+                            ThirdPartyLicenseItem(
+                                name = obj.optString("name"),
+                                category = obj.optString("category"),
+                                version = obj.optString("version"),
+                                author = obj.optString("author"),
+                                license = obj.optString("license"),
+                                url = obj.optString("url"),
+                            ),
+                        )
+                    }
+                    list
+                }
+            }.getOrElse { emptyList() }
+        }
+
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val maxSheetHeight = (configuration.screenHeightDp.dp * 0.75f).coerceAtLeast(300.dp)
+
+    OverlayBottomSheet(
+        show = true,
+        modifier = Modifier.scrollEndHaptic(),
+        title = stringResource(R.string.about_open_source_licenses),
+        startAction = {
+            IconButton(onClick = onDismiss) {
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+            }
+        },
+        onDismissRequest = onDismiss,
+        backgroundColor = LocalBottomSheetBackgroundColor.current,
+        insideMargin = BottomSheetInsideMargin,
+    ) {
+        if (licenses.isEmpty()) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "No license information available",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.footnote1,
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxSheetHeight),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
+                items(
+                    count = licenses.size,
+                    key = { index -> "${licenses[index].name}_$index" },
+                ) { index ->
+                    val item = licenses[index]
+                    val summaryText =
+                        buildString {
+                            if (item.version.isNotEmpty()) {
+                                append("v")
+                                append(item.version)
+                                append(" • ")
+                            }
+                            append(item.license)
+                            if (item.author.isNotEmpty()) {
+                                append(" • ")
+                                append(item.author)
+                            }
+                        }
+                    if (item.url.isNotEmpty()) {
+                        SettingLinkRow(
+                            title = item.name,
+                            summary = summaryText,
+                        ) {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url)))
+                            }
+                        }
+                    } else {
+                        SettingRow(
+                            title = item.name,
+                            summary = summaryText,
+                        ) {}
+                    }
+                    if (index < licenses.lastIndex) {
+                        DividerLine()
+                    }
                 }
             }
         }
