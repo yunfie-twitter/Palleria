@@ -35,6 +35,7 @@ internal fun upcomingArtworkIndices(
 
 internal const val FAST_SCROLL_LANDING_OFFSET = 8
 internal const val FAST_SCROLL_INDEX_DELTA_THRESHOLD = 2
+internal const val INITIAL_PREFETCH_DELAY_MS = 500L
 
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
 internal fun calculatePrefetchRange(
@@ -88,6 +89,12 @@ fun PrefetchIllustGridImages(
         }
     }
 
+    var initialDelayPassed by remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(INITIAL_PREFETCH_DELAY_MS)
+        initialDelayPassed = true
+    }
+
     val lastVisibleIndexState =
         remember(gridState, indexByKey) {
             derivedStateOf {
@@ -130,7 +137,11 @@ fun PrefetchIllustGridImages(
     }
     val context = LocalPlatformContext.current
     val isLowSpec = remember(context) { PlatformCapabilities.isLowSpecDevice(context) }
-    val prefetchActive = enabled && (!isLowSpec || (!gridState.isScrollInProgress || (effectiveVelocityLanding && isFastScrolling)))
+    val canPrefetchInitial = initialDelayPassed || gridState.isScrollInProgress
+    val prefetchActive =
+        enabled &&
+            canPrefetchInitial &&
+            (!isLowSpec || (!gridState.isScrollInProgress || (effectiveVelocityLanding && isFastScrolling)))
     PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }
 
@@ -161,6 +172,12 @@ fun PrefetchNovelGridImages(
             isFastScrolling = false
             lastFirstVisibleIndex = gridState.firstVisibleItemIndex
         }
+    }
+
+    var initialDelayPassed by remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(INITIAL_PREFETCH_DELAY_MS)
+        initialDelayPassed = true
     }
 
     val lastVisibleIndexState =
@@ -207,6 +224,10 @@ fun PrefetchNovelGridImages(
     }
     val context = LocalPlatformContext.current
     val isLowSpec = remember(context) { PlatformCapabilities.isLowSpecDevice(context) }
-    val prefetchActive = enabled && (!isLowSpec || (!gridState.isScrollInProgress || (effectiveVelocityLanding && isFastScrolling)))
+    val canPrefetchInitial = initialDelayPassed || gridState.isScrollInProgress
+    val prefetchActive =
+        enabled &&
+            canPrefetchInitial &&
+            (!isLowSpec || (!gridState.isScrollInProgress || (effectiveVelocityLanding && isFastScrolling)))
     PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }

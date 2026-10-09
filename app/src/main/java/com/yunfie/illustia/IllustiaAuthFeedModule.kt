@@ -21,12 +21,14 @@ import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TARGET_INITIAL_SEARCH_COUNT = 30
 private const val MAX_SEARCH_PAGES_ACCUMULATION = 20
+private const val STARTUP_HOME_BACKGROUND_REFRESH_DELAY_MS = 1200L
 
 /** Authentication, native intents, search, feeds, timelines, and managed-data transfer. */
 @Suppress("LargeClass", "TooManyFunctions")
@@ -158,14 +160,25 @@ abstract class IllustiaAuthFeedModule(
             _uiState.update { it.copy(loadState = LoadState.Loading) }
             try {
                 val generation = repository.accountGeneration
-                repository.readHomeSnapshot(kind)?.let { cached ->
+                val snapshot = repository.readHomeSnapshot(kind)
+                val hasCachedItems = snapshot != null && snapshot.items.isNotEmpty()
+                if (hasCachedItems) {
+                    val currentSettings = _uiState.value.settings
+                    val initialItems =
+                        snapshot.items.visibleWithSettings(currentSettings).preferUnseenFeedItems(currentSettings)
                     _uiState.update {
                         if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
                         if (it.appLocked || it.privacyLocked) return@update it
-                        it.copy(homeItems = cached.items.visibleWithSettings(it.settings), homeNextUrl = null, loadState = LoadState.Loaded)
+                        it.copy(
+                            homeItems = initialItems,
+                            homeNextUrl = null,
+                            loadState = LoadState.Loaded,
+                        )
                     }
+                    // Allow visible snapshot cards a clean window to load and decode images without network contention
+                    delay(STARTUP_HOME_BACKGROUND_REFRESH_DELAY_MS)
                 }
-                loadHomeInternal(kind, forceRefresh = true)
+                loadHomeInternal(kind, forceRefresh = !hasCachedItems)
                 _uiState.update { it.copy(loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure

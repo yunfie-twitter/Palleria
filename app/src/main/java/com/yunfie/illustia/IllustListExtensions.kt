@@ -290,8 +290,12 @@ internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): Li
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
 }
 
+internal fun Illust.isMutedByTags(mutedTags: Set<String>): Boolean {
+    if (mutedTags.isEmpty()) return false
+    return tags.any { it in mutedTags }
+}
+
 internal fun Illust.isMutedByTags(settings: AppSettings): Boolean {
     if (settings.mutedTags.isEmpty()) return false
-    val mutedTags = settings.mutedTags.toHashSet()
-    return tags.any { it in mutedTags }
+    return tags.any { it in settings.mutedTags }
 }
