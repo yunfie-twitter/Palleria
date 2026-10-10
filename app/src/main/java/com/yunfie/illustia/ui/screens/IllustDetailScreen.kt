@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
@@ -348,8 +350,10 @@ fun IllustDetailScreen(
             onSearchTag = onSearchTag,
             onLongPressTag = onLongPressTag,
             sectionOrder = detailSectionOrder,
-            relatedContent = {
-                if (relatedIllusts.isNotEmpty()) {
+            relatedContent = { isNearViewport ->
+                if (!isNearViewport) {
+                    Spacer(Modifier.height(24.dp))
+                } else if (relatedIllusts.isNotEmpty()) {
                     RelatedIllustsList(
                         relatedIllusts = relatedIllusts,
                         onOpenIllust = onOpenIllust,

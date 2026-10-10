@@ -61,6 +61,9 @@ class HomeFeedSnapshotTest {
         assertNull(cache.read(HomeFeedKind.New, "one", 2000))
         assertNull(cache.read(HomeFeedKind.Recommended, "one", 0))
         assertNull(cache.read(HomeFeedKind.Recommended, "one", 86_401_001))
+        val hash = computeAccountKey("one")
+        assertEquals(listOf(illust), cache.readWithAccountHash(HomeFeedKind.Recommended, hash, 2000)?.items)
+        assertNull(cache.readWithAccountHash(HomeFeedKind.Recommended, "wrong-hash", 2000))
         cache.clear()
         assertNull(cache.read(HomeFeedKind.Recommended, "one", 2000))
     }
