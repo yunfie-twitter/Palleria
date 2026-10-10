@@ -245,9 +245,20 @@ fun PrefetchPixivImages(
         }
 
         val imageLoader = SingletonImageLoader.get(context)
+        val memoryCache = imageLoader.memoryCache
         for (i in prefetchUrls.indices) {
             val url = prefetchUrls[i]
             if (!activeRequests.containsKey(url)) {
+                // If the image is already in memory cache, no need to issue prefetch request.
+                if (memoryCache != null && memoryCache[coil3.memory.MemoryCache.Key(url)] != null) {
+                    continue
+                }
+
+                // Add a small delay between requests to throttle concurrent disk access and image decoding spikes.
+                if (i > 0) {
+                    kotlinx.coroutines.delay(30L)
+                }
+
                 val request =
                     ImageRequest
                         .Builder(context)

@@ -63,7 +63,7 @@ fun PrefetchIllustGridImages(
     enabled: Boolean,
     highQualityImages: Boolean,
     keyPrefix: String = "",
-    limit: Int = 12,
+    limit: Int = 6,
     velocityLandingEnabled: Boolean = true,
 ) {
     val preferLowDataImages = LocalPreferLowDataImages.current
@@ -93,6 +93,18 @@ fun PrefetchIllustGridImages(
     androidx.compose.runtime.LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(INITIAL_PREFETCH_DELAY_MS)
         initialDelayPassed = true
+    }
+
+    // Pause prefetch during scrolling across all devices to prevent disk cache contention and decoder jank.
+    // Settle 200ms after scrolling stops before resuming prefetch.
+    var isScrollSettled by remember { androidx.compose.runtime.mutableStateOf(!gridState.isScrollInProgress) }
+    androidx.compose.runtime.LaunchedEffect(gridState.isScrollInProgress) {
+        if (gridState.isScrollInProgress) {
+            isScrollSettled = false
+        } else {
+            kotlinx.coroutines.delay(200L)
+            isScrollSettled = true
+        }
     }
 
     val lastVisibleIndexState =
@@ -135,13 +147,7 @@ fun PrefetchIllustGridImages(
             }
         }
     }
-    val context = LocalPlatformContext.current
-    val isLowSpec = remember(context) { PlatformCapabilities.isLowSpecDevice(context) }
-    val canPrefetchInitial = initialDelayPassed || gridState.isScrollInProgress
-    val prefetchActive =
-        enabled &&
-            canPrefetchInitial &&
-            (!isLowSpec || (!gridState.isScrollInProgress || (effectiveVelocityLanding && isFastScrolling)))
+    val prefetchActive = enabled && initialDelayPassed && isScrollSettled
     PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }
 
@@ -150,7 +156,7 @@ fun PrefetchNovelGridImages(
     items: List<com.yunfie.illustia.models.NovelPreview>,
     gridState: LazyGridState,
     enabled: Boolean,
-    limit: Int = 12,
+    limit: Int = 6,
     velocityLandingEnabled: Boolean = true,
 ) {
     val indexByKey =
@@ -178,6 +184,18 @@ fun PrefetchNovelGridImages(
     androidx.compose.runtime.LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(INITIAL_PREFETCH_DELAY_MS)
         initialDelayPassed = true
+    }
+
+    // Pause prefetch during scrolling across all devices to prevent disk cache contention and decoder jank.
+    // Settle 200ms after scrolling stops before resuming prefetch.
+    var isScrollSettled by remember { androidx.compose.runtime.mutableStateOf(!gridState.isScrollInProgress) }
+    androidx.compose.runtime.LaunchedEffect(gridState.isScrollInProgress) {
+        if (gridState.isScrollInProgress) {
+            isScrollSettled = false
+        } else {
+            kotlinx.coroutines.delay(200L)
+            isScrollSettled = true
+        }
     }
 
     val lastVisibleIndexState =
@@ -222,12 +240,6 @@ fun PrefetchNovelGridImages(
             }
         }
     }
-    val context = LocalPlatformContext.current
-    val isLowSpec = remember(context) { PlatformCapabilities.isLowSpecDevice(context) }
-    val canPrefetchInitial = initialDelayPassed || gridState.isScrollInProgress
-    val prefetchActive =
-        enabled &&
-            canPrefetchInitial &&
-            (!isLowSpec || (!gridState.isScrollInProgress || (effectiveVelocityLanding && isFastScrolling)))
+    val prefetchActive = enabled && initialDelayPassed && isScrollSettled
     PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }
