@@ -109,6 +109,7 @@ internal fun FeedTabContent(
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
+    val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
     val gridState = viewModel.homeFeedGridState
     PrefetchIllustGridImages(
         items = items,
@@ -200,7 +201,7 @@ internal fun FeedTabContent(
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
-                    isMutedByTag = illust.isMutedByTags(settings),
+                    isMutedByTag = illust.isMutedByTags(mutedTagsSet),
                 )
             }
 
@@ -261,6 +262,7 @@ internal fun FollowingTabContent(
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
+    val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
     val gridState = viewModel.homeTimelineGridState
     PrefetchIllustGridImages(
         items = items,
@@ -353,7 +355,7 @@ internal fun FollowingTabContent(
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
-                    isMutedByTag = illust.isMutedByTags(settings),
+                    isMutedByTag = illust.isMutedByTags(mutedTagsSet),
                 )
             }
 

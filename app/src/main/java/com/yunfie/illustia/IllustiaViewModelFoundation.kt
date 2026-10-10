@@ -54,6 +54,7 @@ import com.yunfie.illustia.widget.RankingWidgetProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -78,6 +79,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
+private const val FEED_SEEN_STATE_UPDATE_DELAY_MS = 1500L
+private const val SMART_CACHE_WARM_DELAY_MS = 2000L
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -427,9 +430,11 @@ abstract class IllustiaViewModelFoundation(
             _uiState.update {
                 if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
                 if (it.appLocked || it.privacyLocked) return@update it
+                val visibleItems = items.visibleWithSettings(it.settings)
+                val nextHomeItems = if (it.homeItems == visibleItems) it.homeItems else visibleItems
                 it.copy(
                     sessionReady = true,
-                    homeItems = items.visibleWithSettings(it.settings),
+                    homeItems = nextHomeItems,
                     homeNextUrl = page.nextUrl,
                 )
             }
@@ -467,15 +472,20 @@ abstract class IllustiaViewModelFoundation(
             val merged = LinkedHashSet<Long>(shownIds.size + previous.seenFeedIllusts.size)
             merged.addAll(shownIds)
             merged.addAll(previous.seenFeedIllusts)
-            val next =
-                previous.copy(
-                    seenFeedIllusts = merged.take(MAX_SEEN_FEED_ILLUSTS),
-                )
-            if (next != previous) {
-                _uiState.update { state ->
-                    if (state.settings == previous) state.copy(settings = next) else state
-                }
+            val nextSeen = merged.take(MAX_SEEN_FEED_ILLUSTS)
+            if (nextSeen != previous.seenFeedIllusts) {
+                val next = previous.copy(seenFeedIllusts = nextSeen)
                 queueSettingsPersistence(next, previous)
+                viewModelScope.launch(Dispatchers.Default) {
+                    delay(FEED_SEEN_STATE_UPDATE_DELAY_MS)
+                    _uiState.update { state ->
+                        if (state.settings.seenFeedIllusts != nextSeen) {
+                            state.copy(settings = state.settings.copy(seenFeedIllusts = nextSeen))
+                        } else {
+                            state
+                        }
+                    }
+                }
             }
         }
     }
@@ -491,22 +501,25 @@ abstract class IllustiaViewModelFoundation(
         }
         val loader = SingletonImageLoader.get(context)
         val proxyBaseUrl = settings.pixivImageProxyBaseUrl
-        items
-            .asSequence()
-            .take(settings.smartCacheItemCount.coerceIn(MIN_SMART_CACHE_PREFETCH, MAX_SMART_CACHE_PREFETCH))
-            .map { illust ->
-                illust.mediumImagePages.firstOrNull() ?: illust.mediumImageUrl.ifBlank { illust.imageUrl }
-            }.filter(String::isNotBlank)
-            .distinct()
-            .forEach { url ->
-                val request =
-                    ImageRequest
-                        .Builder(context)
-                        .data(proxyPixivImageUrl(url, proxyBaseUrl))
-                        .httpHeaders(PixivImageHeaders)
-                        .build()
-                loader.enqueue(request)
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            delay(SMART_CACHE_WARM_DELAY_MS)
+            items
+                .asSequence()
+                .take(settings.smartCacheItemCount.coerceIn(MIN_SMART_CACHE_PREFETCH, MAX_SMART_CACHE_PREFETCH))
+                .map { illust ->
+                    illust.mediumImagePages.firstOrNull() ?: illust.mediumImageUrl.ifBlank { illust.imageUrl }
+                }.filter(String::isNotBlank)
+                .distinct()
+                .forEach { url ->
+                    val request =
+                        ImageRequest
+                            .Builder(context)
+                            .data(proxyPixivImageUrl(url, proxyBaseUrl))
+                            .httpHeaders(PixivImageHeaders)
+                            .build()
+                    loader.enqueue(request)
+                }
+        }
     }
 
     protected fun AppSettings.resolveLoggedInAccount(): UserProfile? {
