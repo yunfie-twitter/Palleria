@@ -84,4 +84,8 @@
 -keepclassmembers class com.my.kizzyrpc.** { *; }
 -keep class org.java_websocket.** { *; }
 -keepclassmembers class org.java_websocket.** { *; }
-
+# Shizuku Process Reflection
+-keepclassmembers class rikka.shizuku.Shizuku {
+    private static *** newProcess(...);
+}
+-keep class rikka.shizuku.** { *; }

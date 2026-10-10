@@ -25,6 +25,7 @@ class AppUpdateDownloadWorker(
     private val context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
+    @Suppress("LongMethod")
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             val releaseJson =
@@ -50,9 +51,23 @@ class AppUpdateDownloadWorker(
 
             try {
                 _progressFlow.value = DownloadProgressEvent.Progress(0f, 0L, release.apkSize)
+                setProgress(
+                    workDataOf(
+                        KEY_PROGRESS to 0f,
+                        KEY_DOWNLOADED_BYTES to 0L,
+                        KEY_TOTAL_BYTES to release.apkSize,
+                    ),
+                )
                 val downloadResult =
                     updater.downloadApk(release) { progress, downloaded, total ->
                         _progressFlow.value = DownloadProgressEvent.Progress(progress, downloaded, total)
+                        setProgressAsync(
+                            workDataOf(
+                                KEY_PROGRESS to progress,
+                                KEY_DOWNLOADED_BYTES to downloaded,
+                                KEY_TOTAL_BYTES to total,
+                            ),
+                        )
                         AppUpdateNotificationHelper.showDownloadProgress(
                             context = context,
                             release = release,
@@ -145,6 +160,9 @@ class AppUpdateDownloadWorker(
 
     companion object {
         const val EXTRA_RELEASE_INFO = "extra_release_info"
+        const val KEY_PROGRESS = "progress"
+        const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
+        const val KEY_TOTAL_BYTES = "total_bytes"
         private const val NOTIFICATION_ID_PROGRESS = 8104
         const val WORK_NAME = "AppUpdateDownload"
 

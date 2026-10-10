@@ -86,6 +86,9 @@ class AppUpdaterRepositoryTest :
             val list = listOf(armV7Asset, universalAsset, arm64Asset)
 
             AppUpdaterRepository.selectBestApkAsset(list, arrayOf("arm64-v8a")) shouldBe arm64Asset
+            AppUpdaterRepository.selectBestApkAsset(list, arrayOf("arm64")) shouldBe arm64Asset
+            AppUpdaterRepository.selectBestApkAsset(list, arrayOf("aarch64")) shouldBe arm64Asset
+            AppUpdaterRepository.selectBestApkAsset(list, arrayOf("armeabi-v7a")) shouldBe armV7Asset
             AppUpdaterRepository.selectBestApkAsset(list, arrayOf("x86_64", "universal")) shouldBe universalAsset
             AppUpdaterRepository.selectBestApkAsset(list, arrayOf("mips")) shouldBe universalAsset
         }

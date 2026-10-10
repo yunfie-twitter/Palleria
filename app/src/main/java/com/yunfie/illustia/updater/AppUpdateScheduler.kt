@@ -47,15 +47,19 @@ object AppUpdateScheduler {
     private fun cancelLegacyAlarm(context: Context) {
         runCatching {
             val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
-            val intent = Intent(context, AppUpdateReceiver::class.java).setAction(ACTION_CHECK_UPDATES)
+            val intent =
+                Intent(ACTION_CHECK_UPDATES).setPackage(context.packageName)
             val operation =
                 PendingIntent.getBroadcast(
                     context,
                     REQUEST_CODE,
                     intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
                 )
-            alarmManager.cancel(operation)
+            if (operation != null) {
+                alarmManager.cancel(operation)
+                operation.cancel()
+            }
         }
     }
 }

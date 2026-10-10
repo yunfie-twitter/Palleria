@@ -33,8 +33,8 @@ private const val HTTP_FORBIDDEN = 403
 private const val SHIZUKU_MIN_API_VERSION = 11
 private const val SHIZUKU_DEFAULT_REQUEST_CODE = 1001
 private const val THREAD_JOIN_TIMEOUT_MS = 5000L
-private const val PROGRESS_THROTTLE_INTERVAL_MS = 100L
-private const val PROGRESS_THROTTLE_DELTA = 0.01f
+private const val PROGRESS_THROTTLE_INTERVAL_MS = 500L
+private const val PROGRESS_THROTTLE_DELTA = 0.02f
 
 @Suppress("TooManyFunctions")
 class AppUpdaterRepository(
@@ -44,7 +44,7 @@ class AppUpdaterRepository(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val updatesDir: File
-        get() = File(context.cacheDir, "updates").apply { if (!exists()) mkdirs() }
+        get() = File(context.filesDir, "updates").apply { if (!exists()) mkdirs() }
 
     private var activeDownloadCall: okhttp3.Call? = null
     private val downloadLock = Any()
@@ -53,7 +53,7 @@ class AppUpdaterRepository(
         runCatching {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName.orEmpty()
-        }.getOrNull()?.ifBlank { "6.5.0-beta.6" } ?: "6.5.0-beta.6"
+        }.getOrNull()?.ifBlank { "" } ?: ""
 
     fun cleanUpdateApks() {
         runCatching {
@@ -72,6 +72,7 @@ class AppUpdaterRepository(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     suspend fun fetchLatestRelease(includePrerelease: Boolean = false): Result<AppReleaseInfo?> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -98,28 +99,29 @@ class AppUpdaterRepository(
 
                 val request = requestBuilder.build()
 
-                httpClient.newCall(request).execute().use { response ->
-                    if (response.code == HTTP_NOT_MODIFIED) {
+                val response = httpClient.newCall(request).execute()
+                response.use { resp ->
+                    if (resp.code == HTTP_NOT_MODIFIED) {
                         val cachedBody = prefs.getString(bodyKey, null)
                         if (!cachedBody.isNullOrBlank()) {
                             return@runCatching parseResponseBody(cachedBody)
                         }
                     }
 
-                    if (!response.isSuccessful) {
-                        val body = response.body.string()
-                        if (response.code == HTTP_NOT_FOUND) return@runCatching null
-                        if (response.code == HTTP_FORBIDDEN) {
+                    if (!resp.isSuccessful) {
+                        val body = resp.body.string()
+                        if (resp.code == HTTP_NOT_FOUND) return@runCatching null
+                        if (resp.code == HTTP_FORBIDDEN || resp.code == HTTP_NOT_MODIFIED) {
                             val cachedBody = prefs.getString(bodyKey, null)
                             if (!cachedBody.isNullOrBlank()) {
                                 return@runCatching parseResponseBody(cachedBody)
                             }
                         }
-                        throw IllegalStateException("GitHub API error (${response.code}): $body")
+                        throw IllegalStateException("GitHub API error (${resp.code}): $body")
                     }
 
-                    val bodyString = response.body.string()
-                    val newEtag = response.header("ETag")
+                    val bodyString = resp.body.string()
+                    val newEtag = resp.header("ETag")
                     prefs
                         .edit()
                         .apply {
@@ -136,10 +138,11 @@ class AppUpdaterRepository(
         val element = json.parseToJsonElement(bodyString)
         return when (element) {
             is JsonArray -> {
-                element.firstNotNullOfOrNull { item ->
-                    val obj = runCatching { item.jsonObject }.getOrNull() ?: return@firstNotNullOfOrNull null
-                    parseReleaseObject(obj)
-                }
+                element
+                    .mapNotNull { item ->
+                        val obj = runCatching { item.jsonObject }.getOrNull() ?: return@mapNotNull null
+                        parseReleaseObject(obj)
+                    }.maxWithOrNull { r1, r2 -> compareVersions(r1.versionName, r2.versionName) }
             }
 
             is JsonObject -> {
@@ -447,14 +450,81 @@ class AppUpdaterRepository(
         require(canonicalApk.exists() && canonicalApk.isFile && canonicalApk.length() > 0) {
             "Valid APK file required: ${apkFile.absolutePath}"
         }
-        val archiveInfo = context.packageManager.getPackageArchiveInfo(canonicalApk.absolutePath, 0)
+        val flags =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                PackageManager.GET_SIGNING_CERTIFICATES
+            } else {
+                @Suppress("DEPRECATION")
+                PackageManager.GET_SIGNATURES
+            }
+        val archiveInfo = context.packageManager.getPackageArchiveInfo(canonicalApk.absolutePath, flags)
         require(archiveInfo != null && archiveInfo.packageName == context.packageName) {
             "APK package (${archiveInfo?.packageName}) does not match app (${context.packageName})"
+        }
+
+        // Verify that the signing certificate of the downloaded APK matches the currently running app
+        validateApkSignature(archiveInfo)
+    }
+
+    private fun validateApkSignature(archiveInfo: android.content.pm.PackageInfo) {
+        runCatching {
+            val currentAppFlags =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    PackageManager.GET_SIGNING_CERTIFICATES
+                } else {
+                    @Suppress("DEPRECATION")
+                    PackageManager.GET_SIGNATURES
+                }
+            val currentPackageInfo = context.packageManager.getPackageInfo(context.packageName, currentAppFlags)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val currentCerts =
+                    currentPackageInfo.signingInfo?.apkContentsSigners?.map { it.toByteArray().toList() }
+                        ?: currentPackageInfo.signingInfo?.signingCertificateHistory?.map { it.toByteArray().toList() }
+                        ?: emptyList()
+                val targetCerts =
+                    archiveInfo.signingInfo?.apkContentsSigners?.map { it.toByteArray().toList() }
+                        ?: archiveInfo.signingInfo?.signingCertificateHistory?.map { it.toByteArray().toList() }
+                        ?: emptyList()
+
+                if (currentCerts.isNotEmpty() && targetCerts.isNotEmpty()) {
+                    val matches = targetCerts.any { target -> currentCerts.any { current -> current == target } }
+                    require(matches) { "APK signature mismatch with currently installed app" }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                val currentSigs = currentPackageInfo.signatures?.map { it.toByteArray().toList() } ?: emptyList()
+
+                @Suppress("DEPRECATION")
+                val targetSigs = archiveInfo.signatures?.map { it.toByteArray().toList() } ?: emptyList()
+
+                if (currentSigs.isNotEmpty() && targetSigs.isNotEmpty()) {
+                    val matches = targetSigs.any { target -> currentSigs.any { current -> current == target } }
+                    require(matches) { "APK signature mismatch with currently installed app" }
+                }
+            }
+        }.onFailure { e ->
+            if (e is IllegalArgumentException) throw e
         }
     }
 
     private fun installViaStandardIntent(apkFile: File) {
         validateApkFile(apkFile)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val manageIntent =
+                    Intent(
+                        android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        android.net.Uri.parse("package:${context.packageName}"),
+                    ).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                context.startActivity(manageIntent)
+                return
+            }
+        }
+
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
         val intent =
             Intent(Intent.ACTION_VIEW).apply {
@@ -491,8 +561,6 @@ class AppUpdaterRepository(
                 "pm",
                 "install-create",
                 "-r",
-                "-d",
-                "-t",
                 "-i",
                 context.packageName,
                 "-S",
@@ -510,8 +578,6 @@ class AppUpdaterRepository(
                 "pm",
                 "install-create",
                 "-r",
-                "-d",
-                "-t",
                 "-S",
                 fileSize.toString(),
             )
@@ -694,7 +760,7 @@ class AppUpdaterRepository(
             return null
         }
 
-        @Suppress("ReturnCount")
+        @Suppress("ReturnCount", "CyclomaticComplexMethod")
         fun selectBestApkAsset(
             apkAssets: List<JsonObject>,
             supportedAbis: Array<String> = Build.SUPPORTED_ABIS,
@@ -702,8 +768,33 @@ class AppUpdaterRepository(
             if (apkAssets.isEmpty()) return null
             if (apkAssets.size == 1) return apkAssets.first()
 
+            fun getAbiAliases(abi: String): List<String> {
+                val normalized = abi.lowercase()
+                return when {
+                    normalized.contains("arm64") || normalized.contains("aarch64") || normalized.contains("v8a") -> {
+                        listOf("arm64-v8a", "arm64", "aarch64", "v8a")
+                    }
+
+                    normalized.contains("armeabi-v7a") || normalized.contains("armv7") || normalized.contains("v7a") -> {
+                        listOf("armeabi-v7a", "armv7", "armeabi", "v7a")
+                    }
+
+                    normalized.contains("x86_64") -> {
+                        listOf("x86_64", "x64")
+                    }
+
+                    normalized.contains("x86") -> {
+                        listOf("x86")
+                    }
+
+                    else -> {
+                        listOf(normalized)
+                    }
+                }
+            }
+
             for (abi in supportedAbis) {
-                val normalizedAbi = abi.lowercase()
+                val aliases = getAbiAliases(abi)
                 val match =
                     apkAssets.firstOrNull { asset ->
                         val name =
@@ -712,7 +803,7 @@ class AppUpdaterRepository(
                                 ?.content
                                 .orEmpty()
                                 .lowercase()
-                        name.contains(normalizedAbi)
+                        aliases.any { alias -> name.contains(alias) }
                     }
                 if (match != null) return match
             }
