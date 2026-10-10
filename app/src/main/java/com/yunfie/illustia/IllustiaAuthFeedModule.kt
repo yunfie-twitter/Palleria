@@ -139,8 +139,28 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun selectHomeKind(kind: HomeFeedKind) {
-        _uiState.update { it.copy(homeKind = kind) }
+        _uiState.update { it.copy(homeKind = kind, pendingHomeItems = emptyList(), pendingHomeNextUrl = null) }
         refreshHome()
+    }
+
+    fun applyPendingHomeItems() {
+        viewModelScope.launch(Dispatchers.Default) {
+            var mergedItems: List<Illust> = emptyList()
+            _uiState.update { state ->
+                if (state.pendingHomeItems.isEmpty()) return@update state
+                mergedItems =
+                    state.pendingHomeItems
+                        .visibleWithSettings(state.settings)
+                        .appendIllusts(state.homeItems)
+                state.copy(
+                    homeItems = mergedItems,
+                    homeNextUrl = state.pendingHomeNextUrl ?: state.homeNextUrl,
+                    pendingHomeItems = emptyList(),
+                    pendingHomeNextUrl = null,
+                )
+            }
+            rememberFeedItems(mergedItems)
+        }
     }
 
     fun selectRankingMode(mode: String) {
@@ -185,11 +205,21 @@ abstract class IllustiaAuthFeedModule(
                         if (it.homeItems.isEmpty()) it.copy(loadState = LoadState.Loading) else it
                     }
                 }
-                loadHomeInternal(kind, forceRefresh = !hasCachedItems)
-                _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                _uiState.update { it.copy(isHomeRefreshing = hasCachedItems) }
+                loadHomeInternal(
+                    kind,
+                    forceRefresh = !hasCachedItems,
+                    deferIncomingIfScrolled = hasCachedItems,
+                )
+                _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(loadState = if (it.homeItems.isEmpty()) LoadState.Idle else LoadState.Loaded) }
+                _uiState.update {
+                    it.copy(
+                        isHomeRefreshing = false,
+                        loadState = if (it.homeItems.isEmpty()) LoadState.Idle else LoadState.Loaded,
+                    )
+                }
             }
         }
     }
