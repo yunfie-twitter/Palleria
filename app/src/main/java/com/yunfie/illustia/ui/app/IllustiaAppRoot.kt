@@ -61,7 +61,6 @@ import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
-import com.yunfie.illustia.ui.components.LocalDeferCardImageRequests
 import com.yunfie.illustia.ui.components.LocalFastScrolling
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
@@ -124,8 +123,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val paletteEnabled = settings.commandPaletteEnabled
     val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
     val fastScrollRenderingEnabled = settings.isFeatureEnabled(FeatureFlag.FastScrollRendering)
-    val (scrollRenderingConnection, fastScrolling, fastScrollingState) =
-        rememberScrollRendering(enabled = fastScrollRenderingEnabled, trackImageLoads = true)
+    val (scrollRenderingConnection, fastScrolling) = rememberScrollRendering(enabled = fastScrollRenderingEnabled)
     LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
         if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
     }
@@ -709,7 +707,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             .rememberArtworkDesktopActions(viewModel)
     CompositionLocalProvider(
         LocalFastScrolling provides (fastScrolling && fastScrollRenderingEnabled),
-        LocalDeferCardImageRequests provides fastScrollingState,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,

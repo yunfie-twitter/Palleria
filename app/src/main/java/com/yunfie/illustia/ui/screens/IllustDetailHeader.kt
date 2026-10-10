@@ -210,7 +210,6 @@ internal fun IllustDetailHeader(
             modifier
                 .then(if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainer),
-        contentAlignment = Alignment.Center,
     ) {
         if (showImage) {
             if (illust.type == "ugoira") {
