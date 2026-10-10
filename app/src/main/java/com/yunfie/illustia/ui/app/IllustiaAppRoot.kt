@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +51,7 @@ import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
@@ -59,6 +61,7 @@ import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.LocalDeferCardImageRequests
 import com.yunfie.illustia.ui.components.LocalFastScrolling
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
@@ -83,6 +86,8 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+
+private const val ARTWORK_PREDICTIVE_POP_SETTLE_MS = 550L
 
 internal val LocalUseNavigationRail = androidx.compose.runtime.staticCompositionLocalOf { false }
 
@@ -118,13 +123,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var showCommandPalette by remember { mutableStateOf(false) }
     val paletteEnabled = settings.commandPaletteEnabled
     val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
-    val (scrollRenderingConnection, fastScrolling) =
-        rememberScrollRendering(settings.isFeatureEnabled(FeatureFlag.FastScrollRendering))
+    val fastScrollRenderingEnabled = settings.isFeatureEnabled(FeatureFlag.FastScrollRendering)
+    val (scrollRenderingConnection, fastScrolling, fastScrollingState) =
+        rememberScrollRendering(enabled = fastScrollRenderingEnabled, trackImageLoads = true)
     LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
         if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
     }
     var searchFocusRequest by remember { mutableStateOf(0) }
     var viewerRefreshRequest by remember { mutableStateOf(0) }
+    var artworkPopSettling by remember { mutableStateOf(false) }
+    var artworkPopGeneration by remember { mutableIntStateOf(0) }
     val discordRpcManager =
         remember(state.settings.discordRpcEnabled) {
             if (state.settings.discordRpcEnabled) {
@@ -179,9 +187,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             is AppRoute.Detail -> {
                 if (backStack.none { it == removed }) {
                     detailSnapshots.remove(removed.illustId)
-                }
-                if (revealed !is AppRoute.Detail) {
-                    viewModel.closeIllust()
                 }
             }
 
@@ -271,7 +276,26 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             else -> {
-                if (removed is AppRoute.Detail) viewModel.closeIllust()
+                Unit
+            }
+        }
+        if (revealed !is AppRoute.Detail && removed is AppRoute.Detail) {
+            val transitionDelay =
+                if (settings.smoothTransitions && PlatformCapabilities.supportsRichAnimations(context)) {
+                    ARTWORK_PREDICTIVE_POP_SETTLE_MS
+                } else {
+                    0L
+                }
+            if (transitionDelay > 0L) {
+                val generation = ++artworkPopGeneration
+                artworkPopSettling = true
+                coroutineScope.launch {
+                    delay(transitionDelay)
+                    if (artworkPopGeneration == generation) artworkPopSettling = false
+                }
+                viewModel.closeIllustAfterTransition(removed.illustId, transitionDelay)
+            } else {
+                viewModel.closeIllust()
             }
         }
     }
@@ -684,7 +708,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         com.yunfie.illustia.ui.components
             .rememberArtworkDesktopActions(viewModel)
     CompositionLocalProvider(
-        LocalFastScrolling provides fastScrolling,
+        LocalFastScrolling provides (fastScrolling && fastScrollRenderingEnabled),
+        LocalDeferCardImageRequests provides fastScrollingState,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
@@ -1050,6 +1075,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                         selectedTab = selectedTab,
                                         pagerState = pagerState,
                                         homeScrollBehavior = homeScrollBehavior,
+                                        artworkPopSettling = artworkPopSettling,
                                         showTokenLogin = showTokenLogin,
                                         onShowTokenLoginChange = { showTokenLogin = it },
                                         selectedWatchlistSeriesId = selectedWatchlistSeriesIds.lastOrNull(),

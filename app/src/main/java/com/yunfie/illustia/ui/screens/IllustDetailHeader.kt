@@ -99,6 +99,7 @@ internal fun IllustDetailHeader(
     expanded: Boolean = false,
     smartDownloadNaming: Boolean = true,
     ugoiraPowerSave: Boolean = true,
+    isActive: Boolean = true,
     mangaAdaptivePreload: Boolean = true,
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -227,6 +228,7 @@ internal fun IllustDetailHeader(
                         contentDescription = illust.title,
                         loadPlayback = { loadUgoiraPlayback(illust.id) },
                         powerSaveEnabled = ugoiraPowerSave,
+                        isActive = isActive,
                         onTap = { if (!maskMutedArtwork) onOpenImage(0) },
                         modifier =
                             Modifier
