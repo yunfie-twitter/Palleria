@@ -23,6 +23,25 @@ class PallaSyncHttpClassificationTest :
             classifyPallaSyncHttpStatus(200) shouldBe null
         }
 
+        "parseDeviceIdsResponseBody accepts wrapped and legacy device arrays" {
+            parseDeviceIdsResponseBody(json, """{"devices":[{"device_id":"wrapped"}]}""") shouldBe
+                PallaSyncHttpResult.Success(listOf("""{"device_id":"wrapped"}"""))
+            parseDeviceIdsResponseBody(json, """[{"device_id":"legacy"}]""") shouldBe
+                PallaSyncHttpResult.Success(listOf("""{"device_id":"legacy"}"""))
+        }
+
+        "parseDeviceIdsResponseBody distinguishes a missing devices field" {
+            parseDeviceIdsResponseBody(json, """{"other":[]}""") shouldBe
+                PallaSyncHttpResult.ProtocolError("Device response devices field was missing")
+        }
+
+        "parseDeviceIdsResponseBody rejects malformed JSON and non-array device values" {
+            parseDeviceIdsResponseBody(json, "not-json") shouldBe
+                PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
+            parseDeviceIdsResponseBody(json, """{"devices":{}}""") shouldBe
+                PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
+        }
+
         "parseRecordsResponseBody succeeds on empty genesis response" {
             val emptyBody = """{"records":[],"next_cursor":null,"server_time_ms":1726930000000}"""
             val result = parseRecordsResponseBody(json, emptyBody, nextSeqHeader = null, hasMoreHeader = null, afterSeq = 0L)

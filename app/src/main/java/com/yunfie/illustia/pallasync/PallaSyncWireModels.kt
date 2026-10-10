@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -106,6 +107,27 @@ internal sealed interface PallaSyncHttpResult<out T> {
         val message: String,
         val statusCode: Int? = null,
     ) : PallaSyncHttpResult<Nothing>
+}
+
+internal fun parseDeviceIdsResponseBody(
+    json: Json,
+    body: String,
+): PallaSyncHttpResult<List<String>> {
+    val parsed =
+        runCatching { json.parseToJsonElement(body) }
+            .getOrElse { return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON") }
+    val array =
+        if (parsed is JsonObject) {
+            val devices =
+                parsed["devices"]
+                    ?: return PallaSyncHttpResult.ProtocolError("Device response devices field was missing")
+            runCatching { devices.jsonArray }
+                .getOrElse { return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON") }
+        } else {
+            runCatching { parsed.jsonArray }
+                .getOrElse { return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON") }
+        }
+    return PallaSyncHttpResult.Success(array.map { it.toString() })
 }
 
 internal fun classifyPallaSyncHttpStatus(
