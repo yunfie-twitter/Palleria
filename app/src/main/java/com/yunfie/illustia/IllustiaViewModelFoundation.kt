@@ -454,9 +454,11 @@ abstract class IllustiaViewModelFoundation(
                 val shouldDeferIncoming =
                     deferIncomingIfScrolled &&
                         it.homeItems.isNotEmpty() &&
-                        (homeFeedGridState.firstVisibleItemIndex > 0 ||
-                            homeFeedGridState.firstVisibleItemScrollOffset > 0 ||
-                            homeFeedGridState.isScrollInProgress)
+                        (
+                            homeFeedGridState.firstVisibleItemIndex > 0 ||
+                                homeFeedGridState.firstVisibleItemScrollOffset > 0 ||
+                                homeFeedGridState.isScrollInProgress
+                        )
                 if (shouldDeferIncoming) {
                     val pendingItems = newHomeItemsToStage(visibleItems, it.homeItems, it.pendingHomeItems)
                     if (pendingItems.isEmpty()) {
@@ -511,7 +513,15 @@ abstract class IllustiaViewModelFoundation(
             val merged = LinkedHashSet<Long>(shownIds.size + previous.seenFeedIllusts.size)
             merged.addAll(shownIds)
             merged.addAll(previous.seenFeedIllusts)
-            val nextSeen = merged.take(MAX_SEEN_FEED_ILLUSTS)
+            val maxLimit =
+                if (com.yunfie.illustia.platform.PlatformCapabilities
+                        .isLowRamDevice(getApplication())
+                ) {
+                    600
+                } else {
+                    MAX_SEEN_FEED_ILLUSTS
+                }
+            val nextSeen = merged.take(maxLimit)
             if (nextSeen != previous.seenFeedIllusts) {
                 val next = previous.copy(seenFeedIllusts = nextSeen)
                 queueSettingsPersistence(next, previous)

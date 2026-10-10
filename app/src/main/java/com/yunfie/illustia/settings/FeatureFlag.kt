@@ -170,16 +170,31 @@ enum class FeatureFlag(
 
 fun AppSettings.isFeatureEnabled(flag: FeatureFlag): Boolean = featureFlags[flag.key] ?: flag.defaultEnabled
 
+private val featureFlagCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
+fun updateFeatureFlagCache(flags: Map<String, Boolean>) {
+    featureFlagCache.putAll(flags)
+}
+
+@Suppress("ReturnCount")
 fun readFeatureFlagSync(
     context: Context,
     flag: FeatureFlag,
 ): Boolean {
+    featureFlagCache[flag.key]?.let { return it }
     val prefs =
         context.applicationContext.getSharedPreferences(
             LEGACY_PREFS_NAME,
             Context.MODE_PRIVATE,
         )
-    val raw = prefs.getString("featureFlags", null) ?: return flag.defaultEnabled
+    val raw = prefs.getString("featureFlags", null)
+    if (raw == null) {
+        featureFlagCache[flag.key] = flag.defaultEnabled
+        return flag.defaultEnabled
+    }
     val flags = decodeFeatureFlags(raw)
-    return flags[flag.key] ?: flag.defaultEnabled
+    featureFlagCache.putAll(flags)
+    val resolved = flags[flag.key] ?: flag.defaultEnabled
+    featureFlagCache[flag.key] = resolved
+    return resolved
 }

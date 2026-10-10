@@ -167,8 +167,8 @@ class PlatformCapabilitiesTest {
     }
 
     @Test
-    fun `resolvePerformanceTier classifies mid range devices as MEDIUM`() {
-        // 4 GB RAM, 8 cores, 256 MB heap, ES 3.2, modern SoC (e.g. Pixel 4a LTE / mid-range)
+    fun `resolvePerformanceTier classifies lower mid range devices as MEDIUM_LOW`() {
+        // 4 GB RAM, 8 cores, 256 MB large heap, ES 3.2, modern SoC
         val profile =
             DeviceHardwareProfile(
                 totalMemBytes = 3_900_000_000L,
@@ -179,12 +179,19 @@ class PlatformCapabilitiesTest {
                 glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
                 socOrHardware = "qcom sm7150",
             )
-        PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.MEDIUM
+        PlatformCapabilities.resolvePerformanceTier(profile) shouldBe DevicePerformanceTier.MEDIUM_LOW
+
+        PlatformCapabilities.resolvePerformanceTier(
+            profile.copy(
+                totalMemBytes = 5_000_000_000L,
+                largeMemoryClassMb = 384,
+            ),
+        ) shouldBe DevicePerformanceTier.MEDIUM
     }
 
     @Test
-    fun `resolvePerformanceTier classifies 6GB+ devices and flagships as HIGH`() {
-        // 6 GB RAM, 8 cores, 384 MB heap, ES 3.2, modern SoC (e.g. Pixel 6a)
+    fun `resolvePerformanceTier distinguishes medium high devices from flagships`() {
+        // 6 GB RAM, 8 cores, 384 MB large heap, ES 3.2, modern SoC (e.g. Pixel 6a)
         val pixel6aProfile =
             DeviceHardwareProfile(
                 totalMemBytes = 6_000_000_000L,
@@ -195,7 +202,16 @@ class PlatformCapabilitiesTest {
                 glEsVersion = PlatformCapabilities.GL_ES_VERSION_3_2,
                 socOrHardware = "google tensor gs101",
             )
-        PlatformCapabilities.resolvePerformanceTier(pixel6aProfile) shouldBe DevicePerformanceTier.HIGH
+        PlatformCapabilities.resolvePerformanceTier(pixel6aProfile) shouldBe DevicePerformanceTier.MEDIUM_HIGH
+
+        // 8 GB RAM, 8 cores, 512 MB large heap is representative of an upper-midrange device.
+        PlatformCapabilities.resolvePerformanceTier(
+            pixel6aProfile.copy(
+                totalMemBytes = 8_589_934_592L,
+                largeMemoryClassMb = 512,
+                socOrHardware = "mediatek mt6855",
+            ),
+        ) shouldBe DevicePerformanceTier.MEDIUM_HIGH
 
         // 12 GB RAM, 8 cores, 512 MB large memory class, ES 3.2
         val flagshipProfile =
@@ -232,7 +248,28 @@ class PlatformCapabilitiesTest {
     }
 
     @Test
-    fun `medium and high tier recommendations adapt correctly`() {
+    fun `medium low recommendations reduce visual and memory work`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        PlatformCapabilities.setPerformanceTierForTesting(DevicePerformanceTier.MEDIUM_LOW)
+
+        PlatformCapabilities.isLowRamDevice(context).shouldBeFalse()
+        PlatformCapabilities.isLowSpecDevice(context).shouldBeTrue()
+        PlatformCapabilities.recommendedBitmapConfig(context) shouldBe Bitmap.Config.ARGB_8888
+        PlatformCapabilities.maxImageDecodeDimension(context) shouldBe 1280
+        PlatformCapabilities.recommendedThumbnailDecodeDimension(context) shouldBe 448
+        PlatformCapabilities.recommendedPrefetchItemCount(context) shouldBe 3
+        PlatformCapabilities.supportsRichAnimations(context).shouldBeFalse()
+        PlatformCapabilities.supportsImageCrossfade(context).shouldBeFalse()
+        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.14
+        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 10
+        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 3
+        PlatformCapabilities.recommendedUgoiraMaxCachedFrames(context) shouldBe 12
+        PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 800L
+        PlatformCapabilities.supportsHardwareBlur(context).shouldBeFalse()
+    }
+
+    @Test
+    fun `medium and higher tier recommendations adapt correctly`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
         PlatformCapabilities.setPerformanceTierForTesting(DevicePerformanceTier.MEDIUM)
@@ -247,7 +284,18 @@ class PlatformCapabilitiesTest {
         PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.20
         PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 18
         PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 4
+        PlatformCapabilities.recommendedUgoiraMaxCachedFrames(context) shouldBe 24
         PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 500L
+
+        PlatformCapabilities.setPerformanceTierForTesting(DevicePerformanceTier.MEDIUM_HIGH)
+        PlatformCapabilities.maxImageDecodeDimension(context) shouldBe 2048
+        PlatformCapabilities.recommendedPrefetchItemCount(context) shouldBe 5
+        PlatformCapabilities.supportsRichAnimations(context).shouldBeTrue()
+        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.22
+        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 24
+        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 5
+        PlatformCapabilities.recommendedUgoiraMaxCachedFrames(context) shouldBe 36
+        PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 400L
 
         PlatformCapabilities.setPerformanceTierForTesting(DevicePerformanceTier.HIGH)
         PlatformCapabilities.recommendedBitmapConfig(context) shouldBe Bitmap.Config.ARGB_8888
@@ -256,9 +304,10 @@ class PlatformCapabilitiesTest {
         PlatformCapabilities.recommendedPrefetchItemCount(context) shouldBe 6
         PlatformCapabilities.supportsRichAnimations(context).shouldBeTrue()
         PlatformCapabilities.supportsImageCrossfade(context).shouldBeTrue()
-        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.20
-        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 18
-        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 4
-        PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 500L
+        PlatformCapabilities.recommendedCoilMemoryCachePercent(context) shouldBe 0.25
+        PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) shouldBe 32
+        PlatformCapabilities.recommendedUgoiraKeepBehind(context) shouldBe 6
+        PlatformCapabilities.recommendedUgoiraMaxCachedFrames(context) shouldBe 48
+        PlatformCapabilities.recommendedDataStoreDebounceMs(context) shouldBe 300L
     }
 }

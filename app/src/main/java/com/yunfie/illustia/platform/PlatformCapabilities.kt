@@ -11,7 +11,9 @@ import androidx.annotation.ChecksSdkIntAtLeast
  */
 internal enum class DevicePerformanceTier {
     LOW,
+    MEDIUM_LOW,
     MEDIUM,
+    MEDIUM_HIGH,
     HIGH,
 }
 
@@ -44,35 +46,62 @@ internal object PlatformCapabilities {
 
     // Performance tier thresholds calibrated for Palleria's lightweight memory footprint (~100-500MB max)
     private const val RAM_THRESHOLD_LOW_BYTES = 3_221_225_472L // 3.0 GB (devices with <=3GB RAM)
-    private const val RAM_THRESHOLD_HIGH_BYTES = 5_368_709_120L // 5.0 GB (devices with >=6GB RAM)
+    private const val RAM_THRESHOLD_MEDIUM_HIGH_BYTES = 5_368_709_120L // 5.0 GiB
+    private const val RAM_THRESHOLD_HIGH_BYTES = 12_884_901_888L // 12.0 GB
     private const val LOW_LARGE_HEAP_THRESHOLD_MB = 192
-    private const val HIGH_LARGE_HEAP_THRESHOLD_MB = 384
+    private const val MEDIUM_HIGH_LARGE_HEAP_THRESHOLD_MB = 320
+    private const val HIGH_MEMORY_CLASS_THRESHOLD_MB = 384
+    private const val HIGH_LARGE_HEAP_THRESHOLD_MB = 512
 
     private const val LOW_TIER_MAX_CORES = 4
     private const val HIGH_TIER_MIN_CORES = 8
+    private const val MEDIUM_LOW_MAX_CORES = 6
 
     private const val MAX_DECODE_DIMENSION_LOW = 1080
+    private const val MAX_DECODE_DIMENSION_MEDIUM_LOW = 1280
     private const val MAX_DECODE_DIMENSION_MEDIUM = 1536
+    private const val MAX_DECODE_DIMENSION_MEDIUM_HIGH = 2048
     private const val MAX_DECODE_DIMENSION_HIGH = 2560
 
     private const val PREFETCH_COUNT_LOW = 2
+    private const val PREFETCH_COUNT_MEDIUM_LOW = 3
     private const val PREFETCH_COUNT_MEDIUM = 4
+    private const val PREFETCH_COUNT_MEDIUM_HIGH = 5
     private const val PREFETCH_COUNT_HIGH = 6
 
     private const val DATASTORE_DEBOUNCE_LOW_MS = 1200L
-    private const val DATASTORE_DEBOUNCE_DEFAULT_MS = 500L
+    private const val DATASTORE_DEBOUNCE_MEDIUM_LOW_MS = 800L
+    private const val DATASTORE_DEBOUNCE_MEDIUM_MS = 500L
+    private const val DATASTORE_DEBOUNCE_MEDIUM_HIGH_MS = 400L
+    private const val DATASTORE_DEBOUNCE_HIGH_MS = 300L
 
     private const val MAX_DECODE_DIMENSION_THUMBNAIL_LOW = 384
+    private const val MAX_DECODE_DIMENSION_THUMBNAIL_MEDIUM_LOW = 448
     private const val MAX_DECODE_DIMENSION_THUMBNAIL_DEFAULT = 512
 
     private const val COIL_MEMORY_CACHE_PERCENT_LOW = 0.10
-    private const val COIL_MEMORY_CACHE_PERCENT_DEFAULT = 0.20
+    private const val COIL_MEMORY_CACHE_PERCENT_MEDIUM_LOW = 0.14
+    private const val COIL_MEMORY_CACHE_PERCENT_MEDIUM = 0.20
+    private const val COIL_MEMORY_CACHE_PERCENT_MEDIUM_HIGH = 0.22
+    private const val COIL_MEMORY_CACHE_PERCENT_HIGH = 0.25
 
     private const val UGOIRA_PREFETCH_AHEAD_LOW = 6
-    private const val UGOIRA_PREFETCH_AHEAD_DEFAULT = 18
+    private const val UGOIRA_PREFETCH_AHEAD_MEDIUM_LOW = 10
+    private const val UGOIRA_PREFETCH_AHEAD_MEDIUM = 18
+    private const val UGOIRA_PREFETCH_AHEAD_MEDIUM_HIGH = 24
+    private const val UGOIRA_PREFETCH_AHEAD_HIGH = 32
 
     private const val UGOIRA_KEEP_BEHIND_LOW = 2
-    private const val UGOIRA_KEEP_BEHIND_DEFAULT = 4
+    private const val UGOIRA_KEEP_BEHIND_MEDIUM_LOW = 3
+    private const val UGOIRA_KEEP_BEHIND_MEDIUM = 4
+    private const val UGOIRA_KEEP_BEHIND_MEDIUM_HIGH = 5
+    private const val UGOIRA_KEEP_BEHIND_HIGH = 6
+
+    private const val UGOIRA_FRAME_CACHE_LOW = 8
+    private const val UGOIRA_FRAME_CACHE_MEDIUM_LOW = 12
+    private const val UGOIRA_FRAME_CACHE_MEDIUM = 24
+    private const val UGOIRA_FRAME_CACHE_MEDIUM_HIGH = 36
+    private const val UGOIRA_FRAME_CACHE_HIGH = 48
 
     private val KNOWN_LOW_TIER_SOCS =
         setOf(
@@ -210,6 +239,7 @@ internal object PlatformCapabilities {
         )
     }
 
+    @Suppress("CyclomaticComplexMethod")
     internal fun resolvePerformanceTier(profile: DeviceHardwareProfile): DevicePerformanceTier {
         val isGlConstrained = profile.glEsVersion < GL_ES_VERSION_3_2
         val isArchitectureConstrained = !profile.is64Bit || profile.isLowRamDevice || isGlConstrained
@@ -222,14 +252,27 @@ internal object PlatformCapabilities {
 
         val isLowTier = isArchitectureConstrained || isKnownLowSoc || isHardwareConstrained
 
-        val isHighRam = profile.totalMemBytes >= RAM_THRESHOLD_HIGH_BYTES
-        val isHighHeap = profile.largeMemoryClassMb >= HIGH_LARGE_HEAP_THRESHOLD_MB
-        val isHighCores = profile.cores >= HIGH_TIER_MIN_CORES
-        val isHighTier = isHighRam && isHighHeap && isHighCores
+        val isMediumLowTier =
+            profile.totalMemBytes < 4_831_838_208L || // below 4.5 GB
+                profile.largeMemoryClassMb <= 256 ||
+                profile.cores <= MEDIUM_LOW_MAX_CORES
+
+        val isMediumHighTier =
+            profile.totalMemBytes >= RAM_THRESHOLD_MEDIUM_HIGH_BYTES &&
+                profile.largeMemoryClassMb >= MEDIUM_HIGH_LARGE_HEAP_THRESHOLD_MB &&
+                profile.cores >= HIGH_TIER_MIN_CORES
+
+        val isHighTier =
+            profile.totalMemBytes >= RAM_THRESHOLD_HIGH_BYTES &&
+                profile.memoryClassMb >= HIGH_MEMORY_CLASS_THRESHOLD_MB &&
+                profile.largeMemoryClassMb >= HIGH_LARGE_HEAP_THRESHOLD_MB &&
+                profile.cores >= HIGH_TIER_MIN_CORES
 
         return when {
             isLowTier -> DevicePerformanceTier.LOW
             isHighTier -> DevicePerformanceTier.HIGH
+            isMediumHighTier -> DevicePerformanceTier.MEDIUM_HIGH
+            isMediumLowTier -> DevicePerformanceTier.MEDIUM_LOW
             else -> DevicePerformanceTier.MEDIUM
         }
     }
@@ -258,11 +301,13 @@ internal object PlatformCapabilities {
 
     fun isLowRamDevice(context: Context): Boolean = devicePerformanceTier(context) == DevicePerformanceTier.LOW
 
-    fun isLowSpecDevice(context: Context): Boolean = devicePerformanceTier(context) == DevicePerformanceTier.LOW
+    fun isLowSpecDevice(context: Context): Boolean =
+        devicePerformanceTier(context) in setOf(DevicePerformanceTier.LOW, DevicePerformanceTier.MEDIUM_LOW)
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.S)
     fun supportsHardwareBlur(context: Context): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && devicePerformanceTier(context) != DevicePerformanceTier.LOW
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            devicePerformanceTier(context) !in setOf(DevicePerformanceTier.LOW, DevicePerformanceTier.MEDIUM_LOW)
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
     fun supportsWideColorGamut(context: Context): Boolean =
@@ -279,54 +324,77 @@ internal object PlatformCapabilities {
     fun maxImageDecodeDimension(context: Context): Int =
         when (devicePerformanceTier(context)) {
             DevicePerformanceTier.LOW -> MAX_DECODE_DIMENSION_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> MAX_DECODE_DIMENSION_MEDIUM_LOW
             DevicePerformanceTier.MEDIUM -> MAX_DECODE_DIMENSION_MEDIUM
+            DevicePerformanceTier.MEDIUM_HIGH -> MAX_DECODE_DIMENSION_MEDIUM_HIGH
             DevicePerformanceTier.HIGH -> MAX_DECODE_DIMENSION_HIGH
         }
 
     fun recommendedThumbnailDecodeDimension(context: Context): Int =
-        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
-            MAX_DECODE_DIMENSION_THUMBNAIL_LOW
-        } else {
-            MAX_DECODE_DIMENSION_THUMBNAIL_DEFAULT
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> MAX_DECODE_DIMENSION_THUMBNAIL_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> MAX_DECODE_DIMENSION_THUMBNAIL_MEDIUM_LOW
+            else -> MAX_DECODE_DIMENSION_THUMBNAIL_DEFAULT
         }
 
     fun recommendedPrefetchItemCount(context: Context): Int =
         when (devicePerformanceTier(context)) {
             DevicePerformanceTier.LOW -> PREFETCH_COUNT_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> PREFETCH_COUNT_MEDIUM_LOW
             DevicePerformanceTier.MEDIUM -> PREFETCH_COUNT_MEDIUM
+            DevicePerformanceTier.MEDIUM_HIGH -> PREFETCH_COUNT_MEDIUM_HIGH
             DevicePerformanceTier.HIGH -> PREFETCH_COUNT_HIGH
         }
 
-    fun supportsRichAnimations(context: Context): Boolean = devicePerformanceTier(context) != DevicePerformanceTier.LOW
+    fun supportsRichAnimations(context: Context): Boolean =
+        devicePerformanceTier(context) !in setOf(DevicePerformanceTier.LOW, DevicePerformanceTier.MEDIUM_LOW)
 
-    fun supportsImageCrossfade(context: Context): Boolean = devicePerformanceTier(context) != DevicePerformanceTier.LOW
+    fun supportsImageCrossfade(context: Context): Boolean =
+        devicePerformanceTier(context) !in setOf(DevicePerformanceTier.LOW, DevicePerformanceTier.MEDIUM_LOW)
 
     fun recommendedCoilMemoryCachePercent(context: Context): Double =
-        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
-            COIL_MEMORY_CACHE_PERCENT_LOW
-        } else {
-            COIL_MEMORY_CACHE_PERCENT_DEFAULT
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> COIL_MEMORY_CACHE_PERCENT_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> COIL_MEMORY_CACHE_PERCENT_MEDIUM_LOW
+            DevicePerformanceTier.MEDIUM -> COIL_MEMORY_CACHE_PERCENT_MEDIUM
+            DevicePerformanceTier.MEDIUM_HIGH -> COIL_MEMORY_CACHE_PERCENT_MEDIUM_HIGH
+            DevicePerformanceTier.HIGH -> COIL_MEMORY_CACHE_PERCENT_HIGH
         }
 
     fun recommendedUgoiraPrefetchAhead(context: Context): Int =
-        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
-            UGOIRA_PREFETCH_AHEAD_LOW
-        } else {
-            UGOIRA_PREFETCH_AHEAD_DEFAULT
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> UGOIRA_PREFETCH_AHEAD_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> UGOIRA_PREFETCH_AHEAD_MEDIUM_LOW
+            DevicePerformanceTier.MEDIUM -> UGOIRA_PREFETCH_AHEAD_MEDIUM
+            DevicePerformanceTier.MEDIUM_HIGH -> UGOIRA_PREFETCH_AHEAD_MEDIUM_HIGH
+            DevicePerformanceTier.HIGH -> UGOIRA_PREFETCH_AHEAD_HIGH
         }
 
     fun recommendedUgoiraKeepBehind(context: Context): Int =
-        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
-            UGOIRA_KEEP_BEHIND_LOW
-        } else {
-            UGOIRA_KEEP_BEHIND_DEFAULT
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> UGOIRA_KEEP_BEHIND_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> UGOIRA_KEEP_BEHIND_MEDIUM_LOW
+            DevicePerformanceTier.MEDIUM -> UGOIRA_KEEP_BEHIND_MEDIUM
+            DevicePerformanceTier.MEDIUM_HIGH -> UGOIRA_KEEP_BEHIND_MEDIUM_HIGH
+            DevicePerformanceTier.HIGH -> UGOIRA_KEEP_BEHIND_HIGH
+        }
+
+    fun recommendedUgoiraMaxCachedFrames(context: Context): Int =
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> UGOIRA_FRAME_CACHE_LOW
+            DevicePerformanceTier.MEDIUM_LOW -> UGOIRA_FRAME_CACHE_MEDIUM_LOW
+            DevicePerformanceTier.MEDIUM -> UGOIRA_FRAME_CACHE_MEDIUM
+            DevicePerformanceTier.MEDIUM_HIGH -> UGOIRA_FRAME_CACHE_MEDIUM_HIGH
+            DevicePerformanceTier.HIGH -> UGOIRA_FRAME_CACHE_HIGH
         }
 
     fun recommendedDataStoreDebounceMs(context: Context): Long =
-        if (devicePerformanceTier(context) == DevicePerformanceTier.LOW) {
-            DATASTORE_DEBOUNCE_LOW_MS
-        } else {
-            DATASTORE_DEBOUNCE_DEFAULT_MS
+        when (devicePerformanceTier(context)) {
+            DevicePerformanceTier.LOW -> DATASTORE_DEBOUNCE_LOW_MS
+            DevicePerformanceTier.MEDIUM_LOW -> DATASTORE_DEBOUNCE_MEDIUM_LOW_MS
+            DevicePerformanceTier.MEDIUM -> DATASTORE_DEBOUNCE_MEDIUM_MS
+            DevicePerformanceTier.MEDIUM_HIGH -> DATASTORE_DEBOUNCE_MEDIUM_HIGH_MS
+            DevicePerformanceTier.HIGH -> DATASTORE_DEBOUNCE_HIGH_MS
         }
 
     internal fun setPerformanceTierForTesting(tier: DevicePerformanceTier?) {

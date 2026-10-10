@@ -52,6 +52,7 @@ import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -61,7 +62,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Contacts
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
 @Composable
@@ -140,117 +140,117 @@ internal fun FeedTabContent(
     ) {
         val pinchEnabled = settings.gridPinchToZoom
         Box(Modifier.fillMaxSize()) {
-        LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Fixed(columns),
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .pinchToChangeColumns(
-                        enabled = pinchEnabled,
-                        currentColumns = columns,
-                        onColumnsChange = viewModel::updateVerticalColumnCount,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding =
-                PaddingValues(
-                    start = 12.dp,
-                    end = 12.dp,
-                    top = LocalScrollHeaderInset.current + 12.dp,
-                    bottom = adaptiveMainNavigationContentPadding(),
-                ),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (showInitialSkeletons) {
-                items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
-                    IllustCardSkeleton(shimmerValue = shimmer)
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Fixed(columns),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .pinchToChangeColumns(
+                            enabled = pinchEnabled,
+                            currentColumns = columns,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
+                        ).nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding =
+                    PaddingValues(
+                        start = 12.dp,
+                        end = 12.dp,
+                        top = LocalScrollHeaderInset.current + 12.dp,
+                        bottom = adaptiveMainNavigationContentPadding(),
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (showInitialSkeletons) {
+                    items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
+                        IllustCardSkeleton(shimmerValue = shimmer)
+                    }
                 }
-            }
 
-            val isStaleCacheActive =
-                settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
-                    items.isNotEmpty() &&
-                    (loadState is LoadState.Error || isOfflineCached)
+                val isStaleCacheActive =
+                    settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
+                        items.isNotEmpty() &&
+                        (loadState is LoadState.Error || isOfflineCached)
 
-            if (isStaleCacheActive) {
-                item(key = "home_feed_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
-                    OfflineCachedChip(
-                        onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                if (isStaleCacheActive) {
+                    item(key = "home_feed_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
+                        OfflineCachedChip(
+                            onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                        )
+                    }
+                } else if (loadState is LoadState.Error) {
+                    item(key = "home_feed_error_banner", span = { GridItemSpan(maxLineSpan) }) {
+                        StateBanner(loadState, onRetry = { viewModel.refreshHome(forceRefresh = true) })
+                    }
+                }
+
+                if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+                    item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
+                        EmptyState(stringResource(R.string.home_feed_loading))
+                    }
+                }
+
+                gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                    val illustId = illust.id
+                    val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                    val onBookmarkLongClick =
+                        remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
+                    val onClick = remember(illust) { { viewModel.openIllust(illust) } }
+                    val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+
+                    IllustCard(
+                        modifier = animatedGridPlacement(),
+                        illust = illust,
+                        onBookmark = onBookmark,
+                        onBookmarkLongClick = onBookmarkLongClick,
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                        highQualityImages = feedHighQuality,
+                        showAiBadge = showAiBadge,
+                        isMutedByTag = illust.isMutedByTags(mutedTagsSet),
                     )
                 }
-            } else if (loadState is LoadState.Error) {
-                item(key = "home_feed_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState, onRetry = { viewModel.refreshHome(forceRefresh = true) })
-                }
-            }
 
-            if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
-                item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.home_feed_loading))
-                }
-            }
-
-            gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
-                val illustId = illust.id
-                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
-                val onBookmarkLongClick =
-                    remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
-                val onClick = remember(illust) { { viewModel.openIllust(illust) } }
-                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
-
-                IllustCard(
-                    modifier = animatedGridPlacement(),
-                    illust = illust,
-                    onBookmark = onBookmark,
-                    onBookmarkLongClick = onBookmarkLongClick,
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                    highQualityImages = feedHighQuality,
-                    showAiBadge = showAiBadge,
-                    isMutedByTag = illust.isMutedByTags(mutedTagsSet),
-                )
-            }
-
-            if (settings.autoLoadMore && nextUrl != null) {
-                item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = if (isPaginating) 16.dp else 0.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (isPaginating) {
-                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                if (settings.autoLoadMore && nextUrl != null) {
+                    item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = if (isPaginating) 16.dp else 0.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (isPaginating) {
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
+                            }
                         }
                     }
-                }
-            } else if (!settings.autoLoadMore && nextUrl != null) {
-                item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
-                    Button(
-                        onClick = viewModel::loadMoreHome,
-                        enabled = !isPaginating,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                        colors = overlayActionButtonColors(),
-                    ) {
-                        if (isPaginating) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                } else if (!settings.autoLoadMore && nextUrl != null) {
+                    item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                        Button(
+                            onClick = viewModel::loadMoreHome,
+                            enabled = !isPaginating,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                            colors = overlayActionButtonColors(),
+                        ) {
+                            if (isPaginating) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(R.string.action_load_more))
+                                }
+                            } else {
                                 Text(stringResource(R.string.action_load_more))
                             }
-                        } else {
-                            Text(stringResource(R.string.action_load_more))
                         }
                     }
                 }
             }
-        }
             if (pendingHomeItemsCount > 0) {
                 Button(
                     onClick = {

@@ -26,7 +26,7 @@ internal suspend fun readRoomSettingsData(
         )
     }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 internal suspend fun writeRoomSettingsData(
     database: IllustiaDatabase,
     dao: SettingsDao,
@@ -49,42 +49,64 @@ internal suspend fun writeRoomSettingsData(
         database.runInTransaction(
             Runnable {
                 if (searchHistoryChanged) {
-                    dao.clearSearchHistory()
-                    dao.insertSearchHistory(
-                        settings.searchHistory.take(MAX_SEARCH_HISTORY).mapIndexed { index, query ->
-                            SearchHistoryEntity(query, index)
-                        },
-                    )
+                    val targetItems = settings.searchHistory.take(MAX_SEARCH_HISTORY)
+                    val baseItems = baseSettings?.searchHistory ?: emptyList()
+                    val hasRemovedItems = targetItems.isEmpty() || baseItems.any { it !in targetItems }
+                    if (hasRemovedItems) {
+                        dao.clearSearchHistory()
+                    }
+                    if (targetItems.isNotEmpty()) {
+                        dao.insertSearchHistory(
+                            targetItems.mapIndexed { index, query ->
+                                SearchHistoryEntity(query, index)
+                            },
+                        )
+                    }
                 }
 
                 if (favoriteTagsChanged) {
-                    dao.clearFavoriteTags()
-                    dao.insertFavoriteTags(
-                        settings.favoriteTags.mapIndexed { index, tag ->
-                            FavoriteTagEntity(tag, index)
-                        },
-                    )
+                    val targetTags = settings.favoriteTags
+                    val baseTags = baseSettings?.favoriteTags ?: emptyList()
+                    val hasRemovedTags = targetTags.isEmpty() || baseTags.any { it !in targetTags }
+                    if (hasRemovedTags) {
+                        dao.clearFavoriteTags()
+                    }
+                    if (targetTags.isNotEmpty()) {
+                        dao.insertFavoriteTags(
+                            targetTags.mapIndexed { index, tag ->
+                                FavoriteTagEntity(tag, index)
+                            },
+                        )
+                    }
                 }
 
                 if (viewHistoryChanged) {
-                    dao.clearViewHistory()
-                    dao.insertViewHistory(
-                        settings.viewHistory.take(MAX_VIEW_HISTORY).mapIndexed { index, illust ->
-                            ViewHistoryEntity(
-                                illust.id,
-                                illust.title,
-                                illust.artistName,
-                                illust.imageUrl,
-                                illust.pageCount,
-                                illust.type,
-                                index,
-                                illust.isBookmarked,
-                                illust.xRestrict,
-                                encodeStringList(illust.tags),
-                                illust.illustAiType,
-                            )
-                        },
-                    )
+                    val targetIllusts = settings.viewHistory.take(MAX_VIEW_HISTORY)
+                    val targetIds = targetIllusts.map { it.id }.toSet()
+                    val baseIds = baseSettings?.viewHistory?.map { it.id } ?: emptyList()
+                    val hasRemovedIllusts = targetIllusts.isEmpty() || baseIds.any { it !in targetIds }
+                    if (hasRemovedIllusts) {
+                        dao.clearViewHistory()
+                    }
+                    if (targetIllusts.isNotEmpty()) {
+                        dao.insertViewHistory(
+                            targetIllusts.mapIndexed { index, illust ->
+                                ViewHistoryEntity(
+                                    illust.id,
+                                    illust.title,
+                                    illust.artistName,
+                                    illust.imageUrl,
+                                    illust.pageCount,
+                                    illust.type,
+                                    index,
+                                    illust.isBookmarked,
+                                    illust.xRestrict,
+                                    encodeStringList(illust.tags),
+                                    illust.illustAiType,
+                                )
+                            },
+                        )
+                    }
                 }
 
                 if (accountsChanged) {

@@ -98,8 +98,8 @@ class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
         const val STARTUP_POST_WORK_DELAY_MS = 400L
-        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 280L
-        const val SPLASH_MIN_ANIMATION_DURATION_MS = 100L
+        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 140L
+        const val SPLASH_MIN_ANIMATION_DURATION_MS = 60L
         const val SPLASH_ICON_EXIT_TARGET_SCALE = 1.15f
         const val SPLASH_EASING_CONTROL_X1 = 0.4f
         const val SPLASH_EASING_CONTROL_X2 = 0.2f

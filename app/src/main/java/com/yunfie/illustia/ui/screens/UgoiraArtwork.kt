@@ -70,8 +70,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.concurrent.ConcurrentHashMap
 
-private const val MAX_CACHED_FRAMES = 24
-private const val MAX_CACHED_FRAMES_LOW = 8
 private const val PREFETCH_AHEAD = 18
 private const val KEEP_BEHIND = 4
 private const val UGOIRA_START_DELAY_MS = 150L
@@ -205,10 +203,7 @@ internal fun UgoiraArtwork(
     }
     val context = LocalContext.current
     val preferredConfig = remember(context) { PlatformCapabilities.recommendedBitmapConfig(context) }
-    val maxCachedFrames =
-        remember(context) {
-            if (PlatformCapabilities.isLowRamDevice(context)) MAX_CACHED_FRAMES_LOW else MAX_CACHED_FRAMES
-        }
+    val maxCachedFrames = remember(context) { PlatformCapabilities.recommendedUgoiraMaxCachedFrames(context) }
     val prefetchAhead = remember(context) { PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) }
     val keepBehind = remember(context) { PlatformCapabilities.recommendedUgoiraKeepBehind(context) }
 
