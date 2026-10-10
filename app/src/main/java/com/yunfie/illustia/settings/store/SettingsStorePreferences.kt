@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.yunfie.illustia.settings.store
 
 import android.content.Context
@@ -595,7 +597,19 @@ internal fun writeSensitiveSettings(
     }
 }
 
-internal fun readWideColorGamutSync(context: Context): Boolean =
-    context.applicationContext
-        .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-        .getBoolean(KEY_WIDE_COLOR_GAMUT, true)
+@Volatile
+private var cachedWideColorGamut: Boolean? = null
+
+internal fun updateWideColorGamutCache(enabled: Boolean) {
+    cachedWideColorGamut = enabled
+}
+
+internal fun readWideColorGamutSync(context: Context): Boolean {
+    cachedWideColorGamut?.let { return it }
+    val enabled =
+        context.applicationContext
+            .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_WIDE_COLOR_GAMUT, true)
+    cachedWideColorGamut = enabled
+    return enabled
+}

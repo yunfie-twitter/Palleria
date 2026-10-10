@@ -8,7 +8,7 @@ import com.yunfie.illustia.NovelChromeState
 import com.yunfie.illustia.RankingChromeState
 
 @Immutable
-internal class IllustiaAppStateBundle(
+internal data class IllustiaAppStateBundle(
     val state: IllustiaUiState,
 ) {
     val settings = state.settings
