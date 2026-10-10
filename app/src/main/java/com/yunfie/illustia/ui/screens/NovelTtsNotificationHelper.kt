@@ -68,7 +68,7 @@ internal object NovelTtsNotificationHelper {
         return Notification
             .Builder(service, CHANNEL_ID)
             .setStyle(mediaStyle)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(contentText)
             .setSubText(service.getString(R.string.app_name))

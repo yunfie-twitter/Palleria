@@ -60,5 +60,6 @@ sealed interface UpdateCheckState {
 
     data class Error(
         val message: String,
+        val release: AppReleaseInfo? = null,
     ) : UpdateCheckState
 }

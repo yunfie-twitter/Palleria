@@ -195,6 +195,7 @@ internal fun readFromDataStore(
         notifyNewVersion = preferences[NOTIFY_NEW_VERSION] ?: true,
         autoDownloadUpdates = preferences[AUTO_DOWNLOAD_UPDATES] ?: false,
         autoDownloadWifiOnly = preferences[AUTO_DOWNLOAD_WIFI_ONLY] ?: true,
+        checkUpdatesInBackground = preferences[CHECK_UPDATES_IN_BACKGROUND] ?: true,
         lastSeenAppVersionCode = preferences[LAST_SEEN_APP_VERSION_CODE] ?: 0,
         discordRpcEnabled = preferences[DISCORD_RPC_ENABLED] ?: false,
         discordApplicationId = preferences[DISCORD_APPLICATION_ID] ?: "1544652855233744926",
@@ -533,6 +534,7 @@ internal fun writeToDataStore(
     preferences[NOTIFY_NEW_VERSION] = settings.notifyNewVersion
     preferences[AUTO_DOWNLOAD_UPDATES] = settings.autoDownloadUpdates
     preferences[AUTO_DOWNLOAD_WIFI_ONLY] = settings.autoDownloadWifiOnly
+    preferences[CHECK_UPDATES_IN_BACKGROUND] = settings.checkUpdatesInBackground
     preferences[LAST_SEEN_APP_VERSION_CODE] = settings.lastSeenAppVersionCode
     preferences[DISCORD_RPC_ENABLED] = settings.discordRpcEnabled
     preferences[DISCORD_APPLICATION_ID] = settings.discordApplicationId

@@ -15,7 +15,7 @@ class UpdateFileValidationTest {
     fun rejectsSiblingDirectoriesWithTheUpdatesPrefix() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repository = AppUpdaterRepository(context)
-        val siblingFile = File(context.cacheDir, "updates-untrusted/update.apk")
+        val siblingFile = File(context.filesDir, "updates-untrusted/update.apk")
 
         shouldThrow<IllegalArgumentException> {
             repository.validateApkFile(siblingFile)
@@ -26,7 +26,7 @@ class UpdateFileValidationTest {
     fun rejectsTraversalOutsideTheUpdatesDirectory() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repository = AppUpdaterRepository(context)
-        val escapedFile = File(context.cacheDir, "updates/../updates-untrusted/update.apk")
+        val escapedFile = File(context.filesDir, "updates/../updates-untrusted/update.apk")
 
         shouldThrow<IllegalArgumentException> {
             repository.validateApkFile(escapedFile)
@@ -37,7 +37,7 @@ class UpdateFileValidationTest {
     fun allowsPathsInsideTheUpdatesDirectoryToReachFileValidation() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repository = AppUpdaterRepository(context)
-        val updateFile = File(context.cacheDir, "updates/nonexistent-update.apk")
+        val updateFile = File(context.filesDir, "updates/nonexistent-update.apk")
 
         shouldThrow<IllegalArgumentException> {
             repository.validateApkFile(updateFile)

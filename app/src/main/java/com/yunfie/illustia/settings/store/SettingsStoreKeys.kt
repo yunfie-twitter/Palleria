@@ -190,6 +190,7 @@ internal val INCLUDE_PRERELEASE_UPDATES = booleanPreferencesKey("includePrerelea
 internal val NOTIFY_NEW_VERSION = booleanPreferencesKey("notifyNewVersion")
 internal val AUTO_DOWNLOAD_UPDATES = booleanPreferencesKey("autoDownloadUpdates")
 internal val AUTO_DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("autoDownloadWifiOnly")
+internal val CHECK_UPDATES_IN_BACKGROUND = booleanPreferencesKey("checkUpdatesInBackground")
 internal val LAST_SEEN_APP_VERSION_CODE = intPreferencesKey("lastSeenAppVersionCode")
 internal val AUTO_LOAD_MORE_SPEC_MIGRATED = booleanPreferencesKey("autoLoadMoreSpecMigrated")
 internal val DISCORD_RPC_ENABLED = booleanPreferencesKey("discordRpcEnabled")

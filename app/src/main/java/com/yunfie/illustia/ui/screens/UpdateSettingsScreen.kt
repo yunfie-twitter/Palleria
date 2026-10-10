@@ -230,6 +230,15 @@ fun UpdateSettingsScreen(
                             checked = state.settings.notifyNewVersion,
                             onCheckedChange = viewModel::updateNotifyNewVersion,
                         )
+                        if (state.settings.notifyNewVersion) {
+                            DividerLine()
+                            SettingSwitchRow(
+                                title = stringResource(R.string.update_check_background),
+                                summary = stringResource(R.string.update_check_background_desc),
+                                checked = state.settings.checkUpdatesInBackground,
+                                onCheckedChange = viewModel::updateCheckUpdatesInBackground,
+                            )
+                        }
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.update_auto_download),
