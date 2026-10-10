@@ -383,6 +383,7 @@ internal fun UgoiraArtwork(
             modifier
                 .fillMaxSize()
                 .background(Color.Black),
+        contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier =
@@ -481,6 +482,7 @@ internal fun UgoiraArtwork(
                             translationX = offset.x
                             translationY = offset.y
                         },
+                contentAlignment = Alignment.Center,
             ) {
                 val contentScale = if (zoomEnabled) ContentScale.Fit else ContentScale.FillWidth
                 val bmp = currentBitmap
