@@ -1,0 +1,87 @@
+name: Cleanup PR Artifacts
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+  pull-requests: read
+
+concurrency:
+  group: cleanup-pr-artifacts-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    name: Delete PR Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Delete Artifacts for Closed PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const headBranch = context.payload.pull_request.head.ref;
+            const headSha = context.payload.pull_request.head.sha;
+            const defaultBranch = context.payload.repository.default_branch;
+
+            console.log(`Processing artifact cleanup for closed PR #${prNumber}`);
+            console.log(`Head branch: ${headBranch}, Head SHA: ${headSha}`);
+
+            // Fetch commit SHAs in this PR to match artifacts across all commits in the PR lifecycle
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+            const commitShas = new Set(commits.map(c => c.sha));
+            if (headSha) {
+              commitShas.add(headSha);
+            }
+            console.log(`Tracking ${commitShas.size} commit SHA(s) from PR #${prNumber}.`);
+
+            // Fetch all artifacts in the repository
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            console.log(`Found ${artifacts.length} total repository artifacts. Scanning for PR matches...`);
+
+            let deletedCount = 0;
+            let freedBytes = 0;
+
+            for (const artifact of artifacts) {
+              if (artifact.expired) continue;
+
+              const run = artifact.workflow_run;
+              if (!run) continue;
+
+              // Ensure we do not delete artifacts that belong to the default branch (e.g. main)
+              const isNotDefaultBranch = run.head_branch !== defaultBranch;
+              const matchesBranch = Boolean(headBranch && run.head_branch === headBranch && isNotDefaultBranch);
+              const matchesCommit = Boolean(run.head_sha && commitShas.has(run.head_sha) && isNotDefaultBranch);
+
+              if (matchesBranch || matchesCommit) {
+                console.log(`Deleting artifact "${artifact.name}" (ID: ${artifact.id}, Size: ${artifact.size_in_bytes} bytes, Run: ${run.id})...`);
+                try {
+                  await github.rest.actions.deleteArtifact({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    artifact_id: artifact.id,
+                  });
+                  deletedCount++;
+                  freedBytes += artifact.size_in_bytes || 0;
+                } catch (error) {
+                  console.warn(`Failed to delete artifact ${artifact.id}: ${error.message}`);
+                }
+              }
+            }
+
+            const freedMb = (freedBytes / (1024 * 1024)).toFixed(2);
+            console.log(`Finished PR #${prNumber} cleanup: deleted ${deletedCount} artifact(s), freed ~${freedMb} MB.`);

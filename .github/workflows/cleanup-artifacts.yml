@@ -1,0 +1,73 @@
+name: Cleanup Old Artifacts
+
+on:
+  schedule:
+    # 毎日深夜 4:30 JST (UTC 19:30) に定期実行
+    - cron: "30 19 * * *"
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: "Delete artifacts older than N days"
+        required: true
+        default: "3"
+        type: string
+
+permissions:
+  actions: write
+
+concurrency:
+  group: cleanup-old-artifacts
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    name: Delete Stale Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Delete Artifacts Older Than Retention Period
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const retentionDaysInput = "${{ github.event.inputs.retention_days }}";
+            const retentionDays = parseInt(retentionDaysInput || "3", 10);
+            const now = Date.now();
+            const cutoffTime = now - (retentionDays * 24 * 60 * 60 * 1000);
+            const cutoffDate = new Date(cutoffTime);
+
+            console.log(`Starting cleanup of artifacts created before ${cutoffDate.toISOString()} (${retentionDays} day(s) retention)...`);
+
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            console.log(`Total artifacts found in repository: ${artifacts.length}`);
+
+            let deletedCount = 0;
+            let freedBytes = 0;
+
+            for (const artifact of artifacts) {
+              if (artifact.expired) continue;
+
+              const createdAt = new Date(artifact.created_at).getTime();
+              if (createdAt < cutoffTime) {
+                console.log(`Deleting expired artifact: "${artifact.name}" (ID: ${artifact.id}, Size: ${artifact.size_in_bytes} bytes, Created: ${artifact.created_at})`);
+                try {
+                  await github.rest.actions.deleteArtifact({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    artifact_id: artifact.id,
+                  });
+                  deletedCount++;
+                  freedBytes += artifact.size_in_bytes || 0;
+                } catch (error) {
+                  console.warn(`Failed to delete artifact ${artifact.id}: ${error.message}`);
+                }
+              }
+            }
+
+            const freedMb = (freedBytes / (1024 * 1024)).toFixed(2);
+            console.log(`Cleanup complete: deleted ${deletedCount} artifact(s), freed ~${freedMb} MB.`);
