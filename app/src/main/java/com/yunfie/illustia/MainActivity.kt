@@ -576,7 +576,6 @@ class MainActivity : FragmentActivity() {
                     viewModel.handleClipboardText(text)
                 }
             }
-        }
     }
 
     private fun applySecureWindow(secure: Boolean) {

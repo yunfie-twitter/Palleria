@@ -20,9 +20,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,9 +49,9 @@ import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
-import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
+import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
@@ -276,25 +276,26 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
 
             else -> {
-                if (removed is AppRoute.Detail) {
-                    val transitionDelay =
-                        if (settings.smoothTransitions && PlatformCapabilities.supportsRichAnimations(context)) {
-                            ARTWORK_PREDICTIVE_POP_SETTLE_MS
-                        } else {
-                            0L
-                        }
-                    if (transitionDelay > 0L) {
-                        val generation = ++artworkPopGeneration
-                        artworkPopSettling = true
-                        coroutineScope.launch {
-                            delay(transitionDelay)
-                            if (artworkPopGeneration == generation) artworkPopSettling = false
-                        }
-                        viewModel.closeIllustAfterTransition(removed.illustId, transitionDelay)
-                    } else {
-                        viewModel.closeIllust()
-                    }
+                Unit
+            }
+        }
+        if (revealed !is AppRoute.Detail && removed is AppRoute.Detail) {
+            val transitionDelay =
+                if (settings.smoothTransitions && PlatformCapabilities.supportsRichAnimations(context)) {
+                    ARTWORK_PREDICTIVE_POP_SETTLE_MS
+                } else {
+                    0L
                 }
+            if (transitionDelay > 0L) {
+                val generation = ++artworkPopGeneration
+                artworkPopSettling = true
+                coroutineScope.launch {
+                    delay(transitionDelay)
+                    if (artworkPopGeneration == generation) artworkPopSettling = false
+                }
+                viewModel.closeIllustAfterTransition(removed.illustId, transitionDelay)
+            } else {
+                viewModel.closeIllust()
             }
         }
     }

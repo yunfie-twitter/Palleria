@@ -50,8 +50,8 @@ import com.yunfie.illustia.settings.store.SECURE_PREFS_NAME
 import com.yunfie.illustia.settings.store.SEND_TELEMETRY
 import com.yunfie.illustia.settings.store.SETTINGS_VERSION
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
-import com.yunfie.illustia.settings.store.decodeAccounts
 import com.yunfie.illustia.settings.store.decodeAccountTokens
+import com.yunfie.illustia.settings.store.decodeAccounts
 import com.yunfie.illustia.settings.store.decodeLongList
 import com.yunfie.illustia.settings.store.decodeStringList
 import com.yunfie.illustia.settings.store.illustFromEntity

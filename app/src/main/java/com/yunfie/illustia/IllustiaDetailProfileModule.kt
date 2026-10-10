@@ -239,7 +239,10 @@ abstract class IllustiaDetailProfileModule(
         _uiState.update { it.copy(selectedIllust = null, selectedIllustUser = null, selectedIllustFirstComment = null) }
     }
 
-    fun closeIllustAfterTransition(illustId: Long, delayMillis: Long) {
+    fun closeIllustAfterTransition(
+        illustId: Long,
+        delayMillis: Long,
+    ) {
         detailExtrasJob?.cancel()
         detailExtrasJob =
             viewModelScope.launch {

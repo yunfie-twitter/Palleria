@@ -139,18 +139,13 @@ class IllustiaApplication : Application() {
             val settings = repository.readStartupMaintenanceSettings()
             setTelemetryEnabled(settings.sendTelemetry)
             val accounts = repository.readAccountsForStartupMaintenance()
-            val recoveredPallaSync =
-                if (settings.pallaSyncEnabled) {
-                    runCatching {
-                        pallaSyncCoordinator.recoverInterruptedActivation()
-                    }.getOrDefault(false)
-                } else {
-                    false
-                }
             PalleriaAccount.reconcile(appContext, accounts)
             AppUpdateNotificationHelper.createNotificationChannel(appContext)
             delay(BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS)
-            if (settings.checkUpdatesInBackground && (settings.notifyNewVersion || settings.autoDownloadUpdates)) {
+            val currentSettings = repository.readStartupMaintenanceSettings()
+            if (currentSettings.checkUpdatesInBackground &&
+                (currentSettings.notifyNewVersion || currentSettings.autoDownloadUpdates)
+            ) {
                 AppUpdateScheduler.schedulePeriodicCheck(appContext)
             } else {
                 AppUpdateScheduler.cancelPeriodicCheck(appContext)
@@ -162,7 +157,10 @@ class IllustiaApplication : Application() {
                 RankingWidgetProvider.publishPreview(appContext)
                 IllustWidgetProvider.publishPreview(appContext)
             }
-            setPallaSyncEnabled(recoveredPallaSync || settings.pallaSyncEnabled)
+            if (currentSettings.pallaSyncEnabled) {
+                runCatching { pallaSyncCoordinator.recoverInterruptedActivation() }
+            }
+            setPallaSyncEnabled(currentSettings.pallaSyncEnabled)
             // Mark the end of the cold-start window. finish() is a no-op when
             // startupTransaction is null (telemetry disabled or not yet enabled).
             startupTransaction?.finish(SpanStatus.OK)
