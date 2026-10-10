@@ -209,6 +209,7 @@ internal fun IllustDetailHeader(
             modifier
                 .then(if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainer),
+        contentAlignment = Alignment.Center,
     ) {
         if (showImage) {
             if (illust.type == "ugoira") {
@@ -219,6 +220,7 @@ internal fun IllustDetailHeader(
                         } else {
                             Modifier.fillMaxWidth().heightIn(min = 320.dp)
                         },
+                    contentAlignment = Alignment.Center,
                 ) {
                     UgoiraArtwork(
                         previewUrl = previewUrl,
@@ -327,7 +329,12 @@ internal fun IllustDetailHeader(
             }
         } else {
             Box(
-                modifier = if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+                modifier =
+                    if (expanded) {
+                        Modifier.fillMaxSize()
+                    } else {
+                        Modifier.fillMaxWidth().heightIn(min = 320.dp)
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 LoadingIndicator()
