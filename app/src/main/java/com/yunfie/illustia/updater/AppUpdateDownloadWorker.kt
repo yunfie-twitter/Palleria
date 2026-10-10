@@ -3,7 +3,6 @@ package com.yunfie.illustia.updater
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
-import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
@@ -26,6 +25,7 @@ class AppUpdateDownloadWorker(
     private val context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
+    @Suppress("LongMethod")
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             val releaseJson =
@@ -51,9 +51,23 @@ class AppUpdateDownloadWorker(
 
             try {
                 _progressFlow.value = DownloadProgressEvent.Progress(0f, 0L, release.apkSize)
+                setProgress(
+                    workDataOf(
+                        KEY_PROGRESS to 0f,
+                        KEY_DOWNLOADED_BYTES to 0L,
+                        KEY_TOTAL_BYTES to release.apkSize,
+                    ),
+                )
                 val downloadResult =
                     updater.downloadApk(release) { progress, downloaded, total ->
                         _progressFlow.value = DownloadProgressEvent.Progress(progress, downloaded, total)
+                        setProgressAsync(
+                            workDataOf(
+                                KEY_PROGRESS to progress,
+                                KEY_DOWNLOADED_BYTES to downloaded,
+                                KEY_TOTAL_BYTES to total,
+                            ),
+                        )
                         AppUpdateNotificationHelper.showDownloadProgress(
                             context = context,
                             release = release,
@@ -111,6 +125,7 @@ class AppUpdateDownloadWorker(
             // Cancel unique work so that if the process is killed by Shizuku installation,
             // WorkManager will not re-trigger this worker indefinitely.
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            AppUpdateNotificationHelper.showInstalling(context, release)
             val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
             if (installResult.isSuccess) {
                 AppUpdateNotificationHelper.showUpdateInstalled(context, release)
@@ -122,30 +137,32 @@ class AppUpdateDownloadWorker(
     }
 
     private fun createForegroundInfo(release: AppReleaseInfo): ForegroundInfo {
-        AppUpdateNotificationHelper.createNotificationChannel(context)
         val notification =
-            NotificationCompat
-                .Builder(context, AppUpdateNotificationHelper.CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(context.getString(R.string.update_download_progress_title, release.versionName))
-                .setContentText("Starting download...")
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .build()
+            AppUpdateNotificationHelper.buildProgressNotification(
+                context = context,
+                release = release,
+                progress = 0,
+                downloadedBytes = 0L,
+                totalBytes = release.apkSize,
+                cancelPendingIntent = WorkManager.getInstance(context).createCancelPendingIntent(id),
+            )
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
-                NOTIFICATION_ID_PROGRESS,
+                AppUpdateNotificationHelper.NOTIFICATION_ID_PROGRESS,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
         } else {
-            ForegroundInfo(NOTIFICATION_ID_PROGRESS, notification)
+            ForegroundInfo(AppUpdateNotificationHelper.NOTIFICATION_ID_PROGRESS, notification)
         }
     }
 
     companion object {
         const val EXTRA_RELEASE_INFO = "extra_release_info"
+        const val KEY_PROGRESS = "progress"
+        const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
+        const val KEY_TOTAL_BYTES = "total_bytes"
         private const val NOTIFICATION_ID_PROGRESS = 8104
         const val WORK_NAME = "AppUpdateDownload"
 

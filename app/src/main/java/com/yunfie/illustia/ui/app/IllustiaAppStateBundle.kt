@@ -8,7 +8,7 @@ import com.yunfie.illustia.NovelChromeState
 import com.yunfie.illustia.RankingChromeState
 
 @Immutable
-internal class IllustiaAppStateBundle(
+internal data class IllustiaAppStateBundle(
     val state: IllustiaUiState,
 ) {
     val settings = state.settings
@@ -33,6 +33,7 @@ internal class IllustiaAppStateBundle(
             isTimelinePaginating = state.isTimelinePaginating,
             isOfflineCached = state.isOfflineCached,
             selectedTab = state.homeSelectedTab,
+            pendingHomeItemsCount = state.pendingHomeItems.size,
         )
     val novelChrome =
         NovelChromeState(

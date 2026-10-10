@@ -15,6 +15,7 @@
 
     <!-- Navigation -->
     <string name="nav_home">ホーム</string>
+    <string name="home_new_items_available">新着作品 %1$d 件を表示</string>
     <string name="nav_novel">小説</string>
     <string name="nav_ranking">ランキング</string>
     <string name="nav_bookmarks">ブクマ</string>
@@ -1052,6 +1053,8 @@
     <string name="update_include_prerelease_desc">プレリリース版やテストバージョンの更新も取得します</string>
     <string name="update_notify_new_version">新規バージョンの通知</string>
     <string name="update_notify_new_version_desc">新しいバージョンがリリースされた際に通知でお知らせします</string>
+    <string name="update_check_background">定期バックグラウンド確認</string>
+    <string name="update_check_background_desc">12時間ごとにバックグラウンドで新バージョンのリリースを確認します</string>
     <string name="update_auto_download">アップデートの自動取得</string>
     <string name="update_auto_download_desc">新しいバージョンをバックグラウンドで自動取得します（Shizuku選択時は自動インストールまで実行）</string>
     <string name="feature_flags_title">機能フラグ (Feature Flags)</string>

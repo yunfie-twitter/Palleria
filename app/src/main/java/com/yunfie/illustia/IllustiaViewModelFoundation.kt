@@ -54,6 +54,7 @@ import com.yunfie.illustia.widget.RankingWidgetProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -78,6 +79,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
+private const val FEED_SEEN_STATE_UPDATE_DELAY_MS = 1500L
+private const val SMART_CACHE_WARM_DELAY_MS = 2000L
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -313,6 +316,7 @@ abstract class IllustiaViewModelFoundation(
                 } else {
                     startupSettings
                 }
+            SettingsStore.updateImageCacheSizeMbCache(normalizedStartupSettings.imageCacheSizeMb)
             val shouldLock = normalizedStartupSettings.appLockEnabled && settingsStore.hasPinSet()
             _uiState.update {
                 it.withSettings(normalizedStartupSettings).copy(
@@ -360,6 +364,25 @@ abstract class IllustiaViewModelFoundation(
     }
 
     protected fun observeAppUpdateDownloadWorkerProgress() {
+        val workManager = WorkManager.getInstance(getApplication())
+        viewModelScope.launch {
+            workManager.getWorkInfosForUniqueWorkFlow(AppUpdateDownloadWorker.WORK_NAME).collect { workInfos ->
+                val workInfo = workInfos.firstOrNull() ?: return@collect
+                if (workInfo.state == androidx.work.WorkInfo.State.RUNNING) {
+                    val progress = workInfo.progress.getFloat(AppUpdateDownloadWorker.KEY_PROGRESS, -1f)
+                    val downloaded = workInfo.progress.getLong(AppUpdateDownloadWorker.KEY_DOWNLOADED_BYTES, 0L)
+                    val total = workInfo.progress.getLong(AppUpdateDownloadWorker.KEY_TOTAL_BYTES, 0L)
+                    if (progress >= 0f && _updateCheckState.value !is UpdateCheckState.Downloading) {
+                        _updateCheckState.value =
+                            UpdateCheckState.Downloading(
+                                progress = progress,
+                                downloadedBytes = downloaded,
+                                totalBytes = total,
+                            )
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             AppUpdateDownloadWorker.progressFlow.collect { event ->
                 when (event) {
@@ -381,7 +404,7 @@ abstract class IllustiaViewModelFoundation(
                     }
 
                     is AppUpdateDownloadWorker.DownloadProgressEvent.Failed -> {
-                        _updateCheckState.value = UpdateCheckState.Error(event.error)
+                        _updateCheckState.value = UpdateCheckState.Error(event.error, event.release)
                         _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
                     }
 
@@ -409,6 +432,7 @@ abstract class IllustiaViewModelFoundation(
     protected suspend fun loadHomeInternal(
         kind: HomeFeedKind,
         forceRefresh: Boolean = false,
+        deferIncomingIfScrolled: Boolean = false,
     ) {
         GlitchTipTelemetry.traceAsync("feed.home.load", "feed.home") {
             val generation = repository.accountGeneration
@@ -427,10 +451,33 @@ abstract class IllustiaViewModelFoundation(
             _uiState.update {
                 if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
                 if (it.appLocked || it.privacyLocked) return@update it
+                val visibleItems = items.visibleWithSettings(it.settings)
+                val shouldDeferIncoming =
+                    deferIncomingIfScrolled &&
+                        it.homeItems.isNotEmpty() &&
+                        (
+                            homeFeedGridState.firstVisibleItemIndex > 0 ||
+                                homeFeedGridState.firstVisibleItemScrollOffset > 0 ||
+                                homeFeedGridState.isScrollInProgress
+                        )
+                if (shouldDeferIncoming) {
+                    val pendingItems = newHomeItemsToStage(visibleItems, it.homeItems, it.pendingHomeItems)
+                    if (pendingItems.isEmpty()) {
+                        return@update it.copy(homeNextUrl = page.nextUrl)
+                    }
+                    return@update it.copy(
+                        sessionReady = true,
+                        pendingHomeItems = pendingItems,
+                        pendingHomeNextUrl = page.nextUrl,
+                    )
+                }
+                val nextHomeItems = if (it.homeItems == visibleItems) it.homeItems else visibleItems
                 it.copy(
                     sessionReady = true,
-                    homeItems = items.visibleWithSettings(it.settings),
+                    homeItems = nextHomeItems,
                     homeNextUrl = page.nextUrl,
+                    pendingHomeItems = emptyList(),
+                    pendingHomeNextUrl = null,
                 )
             }
             if (repository.accountGeneration == generation) rememberFeedItems(items)
@@ -467,15 +514,28 @@ abstract class IllustiaViewModelFoundation(
             val merged = LinkedHashSet<Long>(shownIds.size + previous.seenFeedIllusts.size)
             merged.addAll(shownIds)
             merged.addAll(previous.seenFeedIllusts)
-            val next =
-                previous.copy(
-                    seenFeedIllusts = merged.take(MAX_SEEN_FEED_ILLUSTS),
-                )
-            if (next != previous) {
-                _uiState.update { state ->
-                    if (state.settings == previous) state.copy(settings = next) else state
+            val maxLimit =
+                if (com.yunfie.illustia.platform.PlatformCapabilities
+                        .isLowRamDevice(getApplication())
+                ) {
+                    600
+                } else {
+                    MAX_SEEN_FEED_ILLUSTS
                 }
+            val nextSeen = merged.take(maxLimit)
+            if (nextSeen != previous.seenFeedIllusts) {
+                val next = previous.copy(seenFeedIllusts = nextSeen)
                 queueSettingsPersistence(next, previous)
+                viewModelScope.launch(Dispatchers.Default) {
+                    delay(FEED_SEEN_STATE_UPDATE_DELAY_MS)
+                    _uiState.update { state ->
+                        if (state.settings.seenFeedIllusts != nextSeen) {
+                            state.copy(settings = state.settings.copy(seenFeedIllusts = nextSeen))
+                        } else {
+                            state
+                        }
+                    }
+                }
             }
         }
     }
@@ -491,22 +551,25 @@ abstract class IllustiaViewModelFoundation(
         }
         val loader = SingletonImageLoader.get(context)
         val proxyBaseUrl = settings.pixivImageProxyBaseUrl
-        items
-            .asSequence()
-            .take(settings.smartCacheItemCount.coerceIn(MIN_SMART_CACHE_PREFETCH, MAX_SMART_CACHE_PREFETCH))
-            .map { illust ->
-                illust.mediumImagePages.firstOrNull() ?: illust.mediumImageUrl.ifBlank { illust.imageUrl }
-            }.filter(String::isNotBlank)
-            .distinct()
-            .forEach { url ->
-                val request =
-                    ImageRequest
-                        .Builder(context)
-                        .data(proxyPixivImageUrl(url, proxyBaseUrl))
-                        .httpHeaders(PixivImageHeaders)
-                        .build()
-                loader.enqueue(request)
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            delay(SMART_CACHE_WARM_DELAY_MS)
+            items
+                .asSequence()
+                .take(settings.smartCacheItemCount.coerceIn(MIN_SMART_CACHE_PREFETCH, MAX_SMART_CACHE_PREFETCH))
+                .map { illust ->
+                    illust.mediumImagePages.firstOrNull() ?: illust.mediumImageUrl.ifBlank { illust.imageUrl }
+                }.filter(String::isNotBlank)
+                .distinct()
+                .forEach { url ->
+                    val request =
+                        ImageRequest
+                            .Builder(context)
+                            .data(proxyPixivImageUrl(url, proxyBaseUrl))
+                            .httpHeaders(PixivImageHeaders)
+                            .build()
+                    loader.enqueue(request)
+                }
+        }
     }
 
     protected fun AppSettings.resolveLoggedInAccount(): UserProfile? {
@@ -1005,10 +1068,22 @@ abstract class IllustiaViewModelFoundation(
         _updateCheckState.value = UpdateCheckState.Idle
     }
 
+    fun updateCheckUpdatesInBackground(enabled: Boolean) {
+        updateSettings { it.copy(checkUpdatesInBackground = enabled) }
+        val context = getApplication<Application>().applicationContext
+        if (enabled && (_uiState.value.settings.notifyNewVersion || _uiState.value.settings.autoDownloadUpdates)) {
+            com.yunfie.illustia.updater.AppUpdateScheduler
+                .schedulePeriodicCheck(context)
+        } else {
+            com.yunfie.illustia.updater.AppUpdateScheduler
+                .cancelPeriodicCheck(context)
+        }
+    }
+
     fun updateNotifyNewVersion(enabled: Boolean) {
         updateSettings { it.copy(notifyNewVersion = enabled) }
         val context = getApplication<Application>().applicationContext
-        if (enabled || _uiState.value.settings.autoDownloadUpdates) {
+        if (_uiState.value.settings.checkUpdatesInBackground && (enabled || _uiState.value.settings.autoDownloadUpdates)) {
             com.yunfie.illustia.updater.AppUpdateScheduler
                 .schedulePeriodicCheck(context)
         } else {
@@ -1020,7 +1095,7 @@ abstract class IllustiaViewModelFoundation(
     fun updateAutoDownloadUpdates(enabled: Boolean) {
         updateSettings { it.copy(autoDownloadUpdates = enabled) }
         val context = getApplication<Application>().applicationContext
-        if (enabled || _uiState.value.settings.notifyNewVersion) {
+        if (_uiState.value.settings.checkUpdatesInBackground && (enabled || _uiState.value.settings.notifyNewVersion)) {
             com.yunfie.illustia.updater.AppUpdateScheduler
                 .schedulePeriodicCheck(context)
         } else {

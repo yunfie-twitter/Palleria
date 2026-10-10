@@ -53,9 +53,11 @@ private const val CACHE_TTL_LONG_MILLIS = 30 * 60 * 1000L // 30 minutes
 private const val CACHE_TTL_HOUR_MILLIS = 60 * 60 * 1000L // 1 hour
 private const val HTTP_TOO_MANY_REQUESTS = 429
 
+@Suppress("LargeClass")
 class IllustiaRepository(
     private val settingsStore: SettingsStore,
 ) {
+    @Volatile
     private var session: PixivSession? = null
     private val sessionMutex = Mutex()
     private val homeSnapshot = HomeFeedSnapshot(settingsStore.homeCacheDirectory())
@@ -63,14 +65,12 @@ class IllustiaRepository(
     private val credentialsRevision = AtomicLong()
     internal val accountGeneration: Long get() = accountRevision.get()
 
-    internal suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? =
-        sessionMutex.withLock {
-            val auth = settingsStore.readAuth()
-            val filters = settingsStore.readFeedSettings()
-            homeSnapshot.read(kind, auth.refreshToken)?.let { page ->
-                page.copy(items = page.items.visibleWithSettings(filters))
-            }
-        }
+    internal suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? {
+        val accountHash = settingsStore.readStartupAccountHash()
+        val snapshot = if (accountHash.isNotBlank()) homeSnapshot.readWithAccountHash(kind, accountHash) else null
+        val filters = cachedSettings ?: settingsStore.readFeedSettings()
+        return snapshot?.let { it.copy(items = it.items.visibleWithSettings(filters)) }
+    }
 
     internal suspend fun readFeedSettings(): AppSettings = settingsStore.readFeedSettings()
 
@@ -159,6 +159,10 @@ class IllustiaRepository(
     }
 
     suspend fun readStartupSettings(): AppSettings = settingsStore.readStartup()
+
+    internal suspend fun readStartupMaintenanceSettings() = settingsStore.readStartupMaintenanceSettings()
+
+    internal suspend fun readAccountsForStartupMaintenance() = settingsStore.readAccountsForStartupMaintenance()
 
     suspend fun saveSettings(
         settings: AppSettings,
@@ -657,8 +661,26 @@ class IllustiaRepository(
             }
         }
 
-    private suspend fun requireSession(): PixivSession =
-        sessionMutex.withLock {
+    private suspend fun requireSession(): PixivSession {
+        val currentSession = session
+        if (currentSession != null &&
+            (
+                currentSession.expiresAtMillis == 0L ||
+                    currentSession.expiresAtMillis > System.currentTimeMillis() + SESSION_EXPIRY_SKEW_MILLIS
+            )
+        ) {
+            return currentSession
+        }
+        return sessionMutex.withLock {
+            val lockedSession = session
+            if (lockedSession != null &&
+                (
+                    lockedSession.expiresAtMillis == 0L ||
+                        lockedSession.expiresAtMillis > System.currentTimeMillis() + SESSION_EXPIRY_SKEW_MILLIS
+                )
+            ) {
+                return@withLock lockedSession
+            }
             val auth = settingsStore.readAuth()
             require(
                 auth.refreshToken.isNotBlank() && auth.refreshToken != STARTUP_LOGGED_IN_TOKEN,
@@ -671,6 +693,7 @@ class IllustiaRepository(
                 ?: auth.session?.also { session = it }
                 ?: loginInternal(auth.refreshToken)
         }
+    }
 
     private suspend inline fun <T> withSessionRetry(crossinline block: suspend (PixivSession) -> T): T {
         val generation = accountGeneration

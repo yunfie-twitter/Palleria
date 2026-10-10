@@ -35,6 +35,20 @@ class IllustStateReducerTest :
                 .withUpdatedIllust(updated)
                 .bookmarkItems shouldBe emptyList()
         }
+
+        "stages only newly refreshed works without duplicates" {
+            val current = listOf(reducerIllust(isBookmarked = false).copy(id = 1L))
+            val pending = listOf(reducerIllust(isBookmarked = false).copy(id = 2L))
+            val refreshed =
+                listOf(
+                    reducerIllust(isBookmarked = false).copy(id = 3L),
+                    current.single(),
+                    pending.single().copy(title = "Latest"),
+                )
+
+            newHomeItemsToStage(refreshed, current, pending).map { it.id } shouldBe listOf(3L, 2L)
+            newHomeItemsToStage(refreshed, current, pending).last().title shouldBe "Latest"
+        }
     })
 
 private fun reducerIllust(isBookmarked: Boolean): Illust =

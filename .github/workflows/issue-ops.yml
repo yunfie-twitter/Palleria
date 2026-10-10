@@ -1,0 +1,98 @@
+name: Issue Ops & Triage
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  triage:
+    name: Issue Quality & Triage Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate Bug Report & Greet Contributors
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const action = context.payload.action;
+            const labels = issue.labels ? issue.labels.map(l => l.name) : [];
+            const isBug = labels.includes('bug') || issue.title.startsWith('[Bug]');
+            const isGoodFirst = labels.includes('good first issue');
+
+            // 1. Check for Good First Issue welcome comment
+            if (action === 'labeled' && context.payload.label?.name === 'good first issue') {
+              const welcomeComment = `### 🌱 Good First Issue\n\nThis issue has been marked as **good first issue**! It's a great entry point for new contributors.\n\n- Read our [Contributing Guidelines](https://github.com/yunfie-twitter/Palleria#contributing) to set up your Android Studio & Rust environment.\n- Feel free to ask questions here if you need guidance!\n- When ready, open a Pull Request linking to this issue (\`Fixes #${issue.number}\`).`;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: welcomeComment,
+              });
+              return;
+            }
+
+            // 2. Validate newly opened bug reports
+            if (action === 'opened' && isBug) {
+              const body = issue.body || '';
+              const lowerBody = body.toLowerCase();
+
+              // Crash keywords in Japanese and English
+              const crashKeywords = ['クラッシュ', '強制終了', '落ちる', 'crash', 'fatal', 'anr', 'exception'];
+              const mentionsCrash = crashKeywords.some(kw => lowerBody.includes(kw));
+
+              // Log signatures: stack trace, exception name, logcat markers
+              const logSignatures = [
+                'fatal exception',
+                'at com.',
+                'at android.',
+                'at top.yukonga.',
+                'exception:',
+                'caused by:',
+                'stacktrace',
+                'logcat',
+                'nullpointerexception',
+                'illegalstateexception'
+              ];
+              const hasLogs = logSignatures.some(sig => lowerBody.includes(sig));
+
+              // Environment info check
+              const envPlaceholderRegex = /Pixel 7 \/ Android 14 \/ v1\.2\.3/i;
+              const hasEnvKeywords = lowerBody.includes('android') || lowerBody.includes('pixel') || lowerBody.includes('galaxy') || lowerBody.includes('xperia') || lowerBody.includes('xiaomi');
+              const envMissingOrDefault = !hasEnvKeywords || envPlaceholderRegex.test(body);
+
+              const missingItems = [];
+              if (mentionsCrash && !hasLogs) {
+                missingItems.push('- **クラッシュログ (Logcat / スタックトレース)**: PC と接続した `adb logcat -d *:E` や開発者オプションのバグレポート');
+              }
+              if (envMissingOrDefault) {
+                missingItems.push('- **詳細な動作環境**: お使いの端末名、Android OS バージョン、アプリのバージョン (vX.Y.Z)');
+              }
+
+              if (missingItems.length > 0) {
+                const commentBody = `### 🤖 Issue Triage Bot: 追加情報のお願い\n\nバグ報告ありがとうございます！\n問題の調査・修正を円滑に進めるため、以下の追加情報をコメントにて追記していただけますでしょうか？\n\n${missingItems.join('\n')}\n\nご協力よろしくお願いいたします！✨`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: commentBody,
+                });
+
+                // Add triage label if available
+                try {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    labels: ['help wanted'],
+                  });
+                } catch (e) {
+                  console.log('Note: Could not add help wanted label:', e.message);
+                }
+              }
+            }

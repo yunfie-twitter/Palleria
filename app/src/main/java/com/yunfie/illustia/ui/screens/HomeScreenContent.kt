@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +52,7 @@ import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -105,16 +107,19 @@ internal fun FeedTabContent(
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
     isOfflineCached: Boolean = false,
+    pendingHomeItemsCount: Int = 0,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
+    val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
     val gridState = viewModel.homeFeedGridState
     PrefetchIllustGridImages(
         items = items,
         gridState = gridState,
         enabled = settings.prefetchImages,
         highQualityImages = feedHighQuality,
+        limit = 6,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
@@ -127,120 +132,135 @@ internal fun FeedTabContent(
     )
 
     val columns = adaptiveIllustColumns(settings)
+    val scope = rememberCoroutineScope()
     PullToRefresh(
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val pinchEnabled = settings.gridPinchToZoom
-        LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Fixed(columns),
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .pinchToChangeColumns(
-                        enabled = pinchEnabled,
-                        currentColumns = columns,
-                        onColumnsChange = viewModel::updateVerticalColumnCount,
-                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding =
-                PaddingValues(
-                    start = 12.dp,
-                    end = 12.dp,
-                    top = LocalScrollHeaderInset.current + 12.dp,
-                    bottom = adaptiveMainNavigationContentPadding(),
-                ),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (showInitialSkeletons) {
-                items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
-                    IllustCardSkeleton(shimmerValue = shimmer)
+        Box(Modifier.fillMaxSize()) {
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Fixed(columns),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .pinchToChangeColumns(
+                            enabled = pinchEnabled,
+                            currentColumns = columns,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
+                        ).nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding =
+                    PaddingValues(
+                        start = 12.dp,
+                        end = 12.dp,
+                        top = LocalScrollHeaderInset.current + 12.dp,
+                        bottom = adaptiveMainNavigationContentPadding(),
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (showInitialSkeletons) {
+                    items(6, key = { "home_feed_skeleton_$it" }, contentType = { "illust_skeleton" }) {
+                        IllustCardSkeleton(shimmerValue = shimmer)
+                    }
                 }
-            }
 
-            val isStaleCacheActive =
-                settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
-                    items.isNotEmpty() &&
-                    (loadState is LoadState.Error || isOfflineCached)
+                val isStaleCacheActive =
+                    settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache) &&
+                        items.isNotEmpty() &&
+                        (loadState is LoadState.Error || isOfflineCached)
 
-            if (isStaleCacheActive) {
-                item(key = "home_feed_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
-                    OfflineCachedChip(
-                        onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                if (isStaleCacheActive) {
+                    item(key = "home_feed_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
+                        OfflineCachedChip(
+                            onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                        )
+                    }
+                } else if (loadState is LoadState.Error) {
+                    item(key = "home_feed_error_banner", span = { GridItemSpan(maxLineSpan) }) {
+                        StateBanner(loadState, onRetry = { viewModel.refreshHome(forceRefresh = true) })
+                    }
+                }
+
+                if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+                    item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
+                        EmptyState(stringResource(R.string.home_feed_loading))
+                    }
+                }
+
+                gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                    val illustId = illust.id
+                    val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                    val onBookmarkLongClick =
+                        remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
+                    val onClick = remember(illust) { { viewModel.openIllust(illust) } }
+                    val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+
+                    IllustCard(
+                        modifier = animatedGridPlacement(),
+                        illust = illust,
+                        onBookmark = onBookmark,
+                        onBookmarkLongClick = onBookmarkLongClick,
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                        highQualityImages = feedHighQuality,
+                        showAiBadge = showAiBadge,
+                        isMutedByTag = illust.isMutedByTags(mutedTagsSet),
                     )
                 }
-            } else if (loadState is LoadState.Error) {
-                item(key = "home_feed_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState, onRetry = { viewModel.refreshHome(forceRefresh = true) })
-                }
-            }
 
-            if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
-                item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.home_feed_loading))
-                }
-            }
-
-            gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
-                val illustId = illust.id
-                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
-                val onBookmarkLongClick =
-                    remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
-                val onClick = remember(illust) { { viewModel.openIllust(illust) } }
-                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
-
-                IllustCard(
-                    modifier = animatedGridPlacement(),
-                    illust = illust,
-                    onBookmark = onBookmark,
-                    onBookmarkLongClick = onBookmarkLongClick,
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                    highQualityImages = feedHighQuality,
-                    showAiBadge = showAiBadge,
-                    isMutedByTag = illust.isMutedByTags(settings),
-                )
-            }
-
-            if (settings.autoLoadMore && nextUrl != null) {
-                item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = if (isPaginating) 16.dp else 0.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (isPaginating) {
-                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                if (settings.autoLoadMore && nextUrl != null) {
+                    item(key = "home_paginating_indicator", span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = if (isPaginating) 16.dp else 0.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (isPaginating) {
+                                LoadingIndicator(modifier = Modifier.size(24.dp))
+                            }
                         }
                     }
-                }
-            } else if (!settings.autoLoadMore && nextUrl != null) {
-                item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
-                    Button(
-                        onClick = viewModel::loadMoreHome,
-                        enabled = !isPaginating,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                        colors = overlayActionButtonColors(),
-                    ) {
-                        if (isPaginating) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                } else if (!settings.autoLoadMore && nextUrl != null) {
+                    item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                        Button(
+                            onClick = viewModel::loadMoreHome,
+                            enabled = !isPaginating,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                            colors = overlayActionButtonColors(),
+                        ) {
+                            if (isPaginating) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(R.string.action_load_more))
+                                }
+                            } else {
                                 Text(stringResource(R.string.action_load_more))
                             }
-                        } else {
-                            Text(stringResource(R.string.action_load_more))
                         }
                     }
+                }
+            }
+            if (pendingHomeItemsCount > 0) {
+                Button(
+                    onClick = {
+                        viewModel.applyPendingHomeItems()
+                        scope.launch { gridState.animateScrollToItem(0) }
+                    },
+                    modifier = Modifier.align(Alignment.TopCenter).padding(12.dp),
+                    colors = overlayActionButtonColors(),
+                ) {
+                    Text(stringResource(R.string.home_new_items_available, pendingHomeItemsCount))
                 }
             }
         }
@@ -261,6 +281,7 @@ internal fun FollowingTabContent(
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
+    val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
     val gridState = viewModel.homeTimelineGridState
     PrefetchIllustGridImages(
         items = items,
@@ -268,6 +289,7 @@ internal fun FollowingTabContent(
         enabled = settings.prefetchImages,
         highQualityImages = feedHighQuality,
         keyPrefix = "tl_",
+        limit = 6,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
@@ -353,7 +375,7 @@ internal fun FollowingTabContent(
                     onLongClick = onLongClick,
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
-                    isMutedByTag = illust.isMutedByTags(settings),
+                    isMutedByTag = illust.isMutedByTags(mutedTagsSet),
                 )
             }
 

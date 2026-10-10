@@ -138,6 +138,7 @@ data class AppSettings(
     val notifyNewVersion: Boolean = true,
     val autoDownloadUpdates: Boolean = false,
     val autoDownloadWifiOnly: Boolean = true,
+    val checkUpdatesInBackground: Boolean = true,
     val lastSeenAppVersionCode: Int = 0,
     val discordRpcEnabled: Boolean = false,
     val discordToken: String = "",

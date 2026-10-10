@@ -1,0 +1,42 @@
+name: Localization Lint
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/src/**/res/values*/strings*.xml"
+      - "scripts/lint_localization.py"
+      - ".github/workflows/localization-lint.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**/src/**/res/values*/strings*.xml"
+      - "scripts/lint_localization.py"
+      - ".github/workflows/localization-lint.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: localization-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-strings:
+    name: Validate Localization Syntax & Formats
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Localization Lint
+        run: |
+          python scripts/lint_localization.py

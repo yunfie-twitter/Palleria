@@ -71,6 +71,7 @@ import com.yunfie.illustia.settings.rememberAppThemeColors
 import com.yunfie.illustia.ui.IllustiaApp
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -98,8 +99,8 @@ class MainActivity : FragmentActivity() {
     private companion object {
         const val LEGACY_STORAGE_PERMISSION_REQUEST_CODE = 25
         const val STARTUP_POST_WORK_DELAY_MS = 400L
-        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 280L
-        const val SPLASH_MIN_ANIMATION_DURATION_MS = 100L
+        const val SPLASH_EXIT_ANIMATION_DURATION_MS = 140L
+        const val SPLASH_MIN_ANIMATION_DURATION_MS = 60L
         const val SPLASH_ICON_EXIT_TARGET_SCALE = 1.15f
         const val SPLASH_EASING_CONTROL_X1 = 0.4f
         const val SPLASH_EASING_CONTROL_X2 = 0.2f
@@ -122,31 +123,14 @@ class MainActivity : FragmentActivity() {
     private var appliedAppLanguage: String? = null
     private var appliedDarkTheme: Boolean? = null
     private var isSnapshotBlurApplied = false
+    private var clipboardDetectionJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            if (resources.configuration.isScreenWideColorGamut) {
-                val isWcgEnabled =
-                    com.yunfie.illustia.settings.store
-                        .readWideColorGamutSync(this)
-                if (isWcgEnabled) {
-                    window.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
-                }
-            }
-        }
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
         if (DummyAppIconSwitcher.isPrivacyLauncherEnabled(applicationContext)) {
             setTheme(R.style.AppTheme_Splash_Calculator)
         }
         val splashScreen = installSplashScreen()
-        val app = application as? IllustiaApplication
-        if (app != null &&
-            com.yunfie.illustia.settings
-                .readFeatureFlagSync(this, com.yunfie.illustia.settings.FeatureFlag.PreDnsSocketWarming)
-        ) {
-            com.yunfie.illustia.data.NetworkWarmer
-                .warmUp(app.sharedHttpClient)
-        }
 
         // core-splashscreen の互換実装を使い、API 25 以降で同じフェードアウト＆ズームアウトにする。
         splashScreen.setOnExitAnimationListener { splashScreenView ->
@@ -464,6 +448,8 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onPause() {
+        clipboardDetectionJob?.cancel()
+        clipboardDetectionJob = null
         clearAdaptiveRefreshRateHint()
         applyTaskSnapshotBlur(isEnteringBackground = true)
         super.onPause()
@@ -569,20 +555,27 @@ class MainActivity : FragmentActivity() {
 
     private fun openPixivUrlFromClipboardIfNeeded() {
         if (!viewModel.uiState.value.settings.autoDetectClipboard) return
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val text =
-            runCatching {
-                clipboard.primaryClip
-                    ?.takeIf { it.itemCount > 0 }
-                    ?.getItemAt(0)
-                    ?.coerceToText(this)
-                    ?.toString()
-                    ?.trim()
-            }.getOrNull().orEmpty()
-        if (text.isNotBlank() && text != lastHandledClipboardText && NativeIntentRouter.parseText(text) != null) {
-            lastHandledClipboardText = text
-            viewModel.handleClipboardText(text)
-        }
+        clipboardDetectionJob?.cancel()
+        clipboardDetectionJob =
+            lifecycleScope.launch {
+                val text =
+                    withContext(Dispatchers.IO) {
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        runCatching {
+                            clipboard.primaryClip
+                                ?.takeIf { it.itemCount > 0 }
+                                ?.getItemAt(0)
+                                ?.coerceToText(this@MainActivity)
+                                ?.toString()
+                                ?.trim()
+                        }.getOrNull().orEmpty()
+                    }
+                if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return@launch
+                if (text.isNotBlank() && text != lastHandledClipboardText && NativeIntentRouter.parseText(text) != null) {
+                    lastHandledClipboardText = text
+                    viewModel.handleClipboardText(text)
+                }
+            }
     }
 
     private fun applySecureWindow(secure: Boolean) {
@@ -726,7 +719,7 @@ class MainActivity : FragmentActivity() {
         appliedRefreshRateHint = null
     }
 
-    private fun updateRecentsTaskDescription(settings: com.yunfie.illustia.settings.AppSettings) {
+    private suspend fun updateRecentsTaskDescription(settings: com.yunfie.illustia.settings.AppSettings) {
         if (!settings.privacyModeEnabled) return
 
         val title =
@@ -744,10 +737,12 @@ class MainActivity : FragmentActivity() {
             }
 
         val iconBitmap =
-            if (iconRes != 0) {
-                BitmapFactory.decodeResource(resources, iconRes)
-            } else {
-                BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+            withContext(Dispatchers.IO) {
+                if (iconRes != 0) {
+                    BitmapFactory.decodeResource(resources, iconRes)
+                } else {
+                    BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+                }
             }
 
         val taskDesc = ActivityManager.TaskDescription(title, iconBitmap)

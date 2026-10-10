@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,7 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalNavigationPrefetchEnabled
 import com.yunfie.illustia.ui.screens.AboutScreen
 import com.yunfie.illustia.ui.screens.AccountLoginMethodScreen
 import com.yunfie.illustia.ui.screens.AccountSettingsScreen
@@ -94,6 +96,7 @@ internal fun AppNavHost(
     selectedTab: AppTab,
     pagerState: androidx.compose.foundation.pager.PagerState,
     homeScrollBehavior: ScrollBehavior,
+    artworkPopSettling: Boolean = false,
     showTokenLogin: Boolean,
     onShowTokenLoginChange: (Boolean) -> Unit,
     selectedWatchlistSeriesId: Long?,
@@ -292,6 +295,7 @@ internal fun AppNavHost(
                     val illust = snapshot.illust
                     IllustDetailScreen(
                         illust = illust,
+                        isActive = backStack.lastOrNull() == route,
                         relatedIllusts = snapshot.relatedIllusts,
                         firstComment = snapshot.firstComment,
                         onBack = onPopRoute,
@@ -741,14 +745,16 @@ internal fun AppNavHost(
             backStack = backStack,
             entryProvider = entryProvider,
         )
-    NavDisplay(
-        entries = entries,
-        onBack = onPopRoute,
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.surface),
-    )
+    CompositionLocalProvider(LocalNavigationPrefetchEnabled provides !artworkPopSettling) {
+        NavDisplay(
+            entries = entries,
+            onBack = onPopRoute,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MiuixTheme.colorScheme.surface),
+        )
+    }
 
     AppOverlayHost(
         appState = appState,

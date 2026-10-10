@@ -12,7 +12,9 @@ import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.updater.AppUpdateNotificationHelper
 import com.yunfie.illustia.updater.AppUpdateScheduler
 import com.yunfie.illustia.widget.IllustWidgetProvider
@@ -24,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val WIDGET_PREVIEW_DELAY_MILLIS = 6_000L
+private const val BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS = 4_000L
 
 class IllustiaApplication : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -88,11 +90,13 @@ class IllustiaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashHandler.instance.init(this)
-        if (com.yunfie.illustia.settings
-                .readFeatureFlagSync(this, com.yunfie.illustia.settings.FeatureFlag.PreDnsSocketWarming)
-        ) {
-            com.yunfie.illustia.data.NetworkWarmer
-                .warmUp(sharedHttpClient, scope = appScope)
+        appScope.launch {
+            val startupSettings = repository.readStartupSettings()
+            SettingsStore.updateImageCacheSizeMbCache(startupSettings.imageCacheSizeMb)
+            if (startupSettings.isFeatureEnabled(FeatureFlag.PreDnsSocketWarming)) {
+                com.yunfie.illustia.data.NetworkWarmer
+                    .warmUp(sharedHttpClient, scope = appScope)
+            }
         }
         SingletonImageLoader.setSafe {
             val appContext = applicationContext
@@ -132,21 +136,20 @@ class IllustiaApplication : Application() {
 
         appScope.launch {
             val appContext = applicationContext
-            val settings = repository.readSettings()
-            val recoveredPallaSync =
-                if (settings.pallaSyncEnabled) {
-                    runCatching {
-                        pallaSyncCoordinator.recoverInterruptedActivation()
-                    }.getOrDefault(false)
-                } else {
-                    false
-                }
-            withContext(Dispatchers.Main.immediate) {
-                setTelemetryEnabled(settings.sendTelemetry)
-            }
-            PalleriaAccount.reconcile(appContext, settings.accounts)
+            val settings = repository.readStartupMaintenanceSettings()
+            setTelemetryEnabled(settings.sendTelemetry)
+            val accounts = repository.readAccountsForStartupMaintenance()
+            PalleriaAccount.reconcile(appContext, accounts)
             AppUpdateNotificationHelper.createNotificationChannel(appContext)
-            AppUpdateScheduler.schedulePeriodicCheck(appContext)
+            delay(BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS)
+            val currentSettings = repository.readStartupMaintenanceSettings()
+            if (currentSettings.checkUpdatesInBackground &&
+                (currentSettings.notifyNewVersion || currentSettings.autoDownloadUpdates)
+            ) {
+                AppUpdateScheduler.schedulePeriodicCheck(appContext)
+            } else {
+                AppUpdateScheduler.cancelPeriodicCheck(appContext)
+            }
             com.yunfie.illustia.data.FollowDeltaSyncScheduler
                 .schedulePeriodicSync(appContext)
             launch {
@@ -154,7 +157,10 @@ class IllustiaApplication : Application() {
                 RankingWidgetProvider.publishPreview(appContext)
                 IllustWidgetProvider.publishPreview(appContext)
             }
-            setPallaSyncEnabled(recoveredPallaSync || settings.pallaSyncEnabled)
+            if (currentSettings.pallaSyncEnabled) {
+                runCatching { pallaSyncCoordinator.recoverInterruptedActivation() }
+            }
+            setPallaSyncEnabled(currentSettings.pallaSyncEnabled)
             // Mark the end of the cold-start window. finish() is a no-op when
             // startupTransaction is null (telemetry disabled or not yet enabled).
             startupTransaction?.finish(SpanStatus.OK)

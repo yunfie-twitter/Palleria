@@ -865,7 +865,7 @@ private fun UserIllustGridPage(
     )
 
     val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
-    val showRetry = !loaded && !isPaginating
+    val showRetry = !loaded && !isPaginating && active
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
@@ -901,7 +901,7 @@ private fun UserIllustGridPage(
                 ) {
                     IllustCardSkeleton(shimmerValue = shimmer)
                 }
-            } else {
+            } else if (loaded) {
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
             }
         }

@@ -11,7 +11,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.yunfie.illustia.data.computeAccountKey
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.pallasync.PallaSyncEventWriter
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.buildSettingsSyncEvents
@@ -21,15 +23,19 @@ import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import com.yunfie.illustia.settings.db.SavedIllustWithPages
 import com.yunfie.illustia.settings.db.SettingsDao
+import com.yunfie.illustia.settings.store.AUTO_DOWNLOAD_UPDATES
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE
 import com.yunfie.illustia.settings.store.AUTO_LOAD_MORE_SPEC_MIGRATED
 import com.yunfie.illustia.settings.store.BOOKMARK_USER_ID
+import com.yunfie.illustia.settings.store.CHECK_UPDATES_IN_BACKGROUND
 import com.yunfie.illustia.settings.store.CURRENT_SETTINGS_VERSION
 import com.yunfie.illustia.settings.store.CollectionSeparatedDataStore
 import com.yunfie.illustia.settings.store.DATASTORE_NAME
+import com.yunfie.illustia.settings.store.KEY_ACCOUNTS
 import com.yunfie.illustia.settings.store.KEY_ACCOUNT_TOKENS
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
 import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
+import com.yunfie.illustia.settings.store.KEY_STARTUP_ACCOUNT_HASH
 import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.KEY_WIDE_COLOR_GAMUT
@@ -37,11 +43,15 @@ import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
 import com.yunfie.illustia.settings.store.MUTED_ILLUSTS_JSON
 import com.yunfie.illustia.settings.store.MUTED_TAGS_JSON
 import com.yunfie.illustia.settings.store.MUTED_USERS_JSON
+import com.yunfie.illustia.settings.store.NOTIFY_NEW_VERSION
 import com.yunfie.illustia.settings.store.PALLA_SYNC_ENABLED
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
 import com.yunfie.illustia.settings.store.SECURE_PREFS_NAME
+import com.yunfie.illustia.settings.store.SEND_TELEMETRY
 import com.yunfie.illustia.settings.store.SETTINGS_VERSION
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
+import com.yunfie.illustia.settings.store.decodeAccountTokens
+import com.yunfie.illustia.settings.store.decodeAccounts
 import com.yunfie.illustia.settings.store.decodeLongList
 import com.yunfie.illustia.settings.store.decodeStringList
 import com.yunfie.illustia.settings.store.illustFromEntity
@@ -81,6 +91,14 @@ internal data class SettingsSyncUpdate(
 internal data class PallaSyncEnabledUpdate(
     val revision: Long,
     val enabled: Boolean,
+)
+
+internal data class StartupMaintenanceSettings(
+    val pallaSyncEnabled: Boolean,
+    val sendTelemetry: Boolean,
+    val checkUpdatesInBackground: Boolean,
+    val notifyNewVersion: Boolean,
+    val autoDownloadUpdates: Boolean,
 )
 
 class SettingsStore internal constructor(
@@ -151,7 +169,11 @@ class SettingsStore internal constructor(
                 startupDataStoreFor(appContext).edit { preferences ->
                     session.userId?.let { preferences[BOOKMARK_USER_ID] = it }
                 }
-                legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, true).apply()
+                legacyPreferences
+                    .edit()
+                    .putBoolean(KEY_STARTUP_IS_LOGGED_IN, true)
+                    .putString(KEY_STARTUP_ACCOUNT_HASH, computeAccountKey(session.refreshToken))
+                    .apply()
                 cachedStartupSettings = null
             }
         }
@@ -190,6 +212,47 @@ class SettingsStore internal constructor(
             }
         }
 
+    internal suspend fun readStartupMaintenanceSettings(): StartupMaintenanceSettings {
+        ensureMigrated()
+        return withContext(Dispatchers.IO) {
+            val preferences = startupDataStoreFor(appContext).data.first()
+            StartupMaintenanceSettings(
+                pallaSyncEnabled = preferences[PALLA_SYNC_ENABLED] ?: false,
+                sendTelemetry = preferences[SEND_TELEMETRY] ?: false,
+                checkUpdatesInBackground = preferences[CHECK_UPDATES_IN_BACKGROUND] ?: true,
+                notifyNewVersion = preferences[NOTIFY_NEW_VERSION] ?: true,
+                autoDownloadUpdates = preferences[AUTO_DOWNLOAD_UPDATES] ?: false,
+            )
+        }
+    }
+
+    internal suspend fun readAccountsForStartupMaintenance(): List<StoredAccount> {
+        ensureMigrated()
+        return withContext(Dispatchers.IO) {
+            val tokensByUserId =
+                sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, null)?.let(::decodeAccountTokens).orEmpty()
+            val fallbackAccounts =
+                sensitivePreferences.getString(KEY_ACCOUNTS, null)?.let(::decodeAccounts).orEmpty()
+            val fallbackTokens = fallbackAccounts.associate { it.userId to it.refreshToken }
+            val roomAccounts = dao.getAccounts()
+            if (roomAccounts.isEmpty()) {
+                fallbackAccounts
+            } else {
+                roomAccounts.mapNotNull { account ->
+                    val token = tokensByUserId[account.userId] ?: fallbackTokens[account.userId]
+                    if (token.isNullOrBlank()) return@mapNotNull null
+                    StoredAccount(
+                        name = account.name.orEmpty(),
+                        account = account.account.orEmpty(),
+                        profileImageUrl = account.profileImageUrl,
+                        refreshToken = token,
+                        userId = account.userId,
+                    )
+                }
+            }
+        }
+    }
+
     private fun isStartupLoggedIn(): Boolean {
         if (legacyPreferences.contains(KEY_STARTUP_IS_LOGGED_IN)) {
             return legacyPreferences.getBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
@@ -197,6 +260,23 @@ class SettingsStore internal constructor(
         val loggedIn = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty().isNotBlank()
         legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, loggedIn).apply()
         return loggedIn
+    }
+
+    internal fun readStartupAccountHash(): String {
+        val cached = legacyPreferences.getString(KEY_STARTUP_ACCOUNT_HASH, "").orEmpty()
+        if (cached.isNotBlank()) return cached
+        val token = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty()
+        return when {
+            token.isNotBlank() && token != STARTUP_LOGGED_IN_TOKEN -> {
+                val hash = computeAccountKey(token)
+                legacyPreferences.edit().putString(KEY_STARTUP_ACCOUNT_HASH, hash).apply()
+                hash
+            }
+
+            else -> {
+                ""
+            }
+        }
     }
 
     suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings {
@@ -320,15 +400,27 @@ class SettingsStore internal constructor(
         val isLoggedIn =
             (rebased.refreshToken.isNotBlank() && rebased.refreshToken != STARTUP_LOGGED_IN_TOKEN) ||
                 persisted.refreshToken.isNotBlank()
-        legacyPreferences
-            .edit()
-            .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
-            .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
-            .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
-            .putBoolean(KEY_STARTUP_IS_LOGGED_IN, isLoggedIn)
-            .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
-            .putBoolean(KEY_WIDE_COLOR_GAMUT, rebased.wideColorGamutEnabled)
-            .apply()
+        val editor =
+            legacyPreferences
+                .edit()
+                .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
+                .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
+                .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
+                .putBoolean(KEY_STARTUP_IS_LOGGED_IN, isLoggedIn)
+                .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
+                .putBoolean(KEY_WIDE_COLOR_GAMUT, rebased.wideColorGamutEnabled)
+        val token =
+            when {
+                rebased.refreshToken.isNotBlank() && rebased.refreshToken != STARTUP_LOGGED_IN_TOKEN -> rebased.refreshToken
+                persisted.refreshToken.isNotBlank() && persisted.refreshToken != STARTUP_LOGGED_IN_TOKEN -> persisted.refreshToken
+                else -> null
+            }
+        if (token != null) {
+            editor.putString(KEY_STARTUP_ACCOUNT_HASH, computeAccountKey(token))
+        } else if (!isLoggedIn) {
+            editor.remove(KEY_STARTUP_ACCOUNT_HASH)
+        }
+        editor.apply()
     }
 
     suspend fun writeFromSync(settings: AppSettings) {

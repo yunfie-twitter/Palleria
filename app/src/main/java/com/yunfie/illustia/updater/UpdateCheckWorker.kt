@@ -17,7 +17,7 @@ class UpdateCheckWorker(
         val store = SettingsStore(appContext)
         val settings = store.read()
 
-        if (settings.notifyNewVersion || settings.autoDownloadUpdates) {
+        if (settings.checkUpdatesInBackground && (settings.notifyNewVersion || settings.autoDownloadUpdates)) {
             val updater = AppUpdaterRepository(appContext)
             val releaseResult = updater.fetchLatestRelease(includePrerelease = settings.includePrereleaseUpdates)
             val release = releaseResult.getOrNull() ?: return Result.retry()
@@ -51,8 +51,11 @@ class UpdateCheckWorker(
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         val caps = cm?.activeNetwork?.let { cm.getNetworkCapabilities(it) }
         return caps?.let {
-            it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            val isWifiOrEthernet =
+                it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            val isUnmetered = it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+            isWifiOrEthernet && isUnmetered
         } ?: false
     }
 }

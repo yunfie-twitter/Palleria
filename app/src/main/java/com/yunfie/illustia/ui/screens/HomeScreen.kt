@@ -13,8 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -68,6 +70,7 @@ fun HomeScreen(
     isTimelinePaginating: Boolean = false,
     isOfflineCached: Boolean = false,
     initialTab: Int = 0,
+    pendingHomeItemsCount: Int = 0,
 ) {
     val pagerState =
         rememberPagerState(
@@ -219,9 +222,19 @@ fun HomeScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,
         ) {
+            var hasVisitedFollowingTab by remember {
+                mutableStateOf(pagerState.currentPage == HomeTab.Following.ordinal)
+            }
+            LaunchedEffect(pagerState.currentPage) {
+                if (pagerState.currentPage == HomeTab.Following.ordinal) {
+                    hasVisitedFollowingTab = true
+                }
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 0,
             ) { page ->
                 when (HomeTab.entries[page]) {
                     HomeTab.Feed -> {
@@ -234,22 +247,25 @@ fun HomeScreen(
                             isRefreshing = isHomeRefreshing,
                             isPaginating = isHomePaginating,
                             isOfflineCached = isOfflineCached,
+                            pendingHomeItemsCount = pendingHomeItemsCount,
                             scrollBehavior = scrollBehavior,
                         )
                     }
 
                     HomeTab.Following -> {
-                        FollowingTabContent(
-                            items = timelineItems,
-                            loadState = loadState,
-                            nextUrl = timelineNextUrl,
-                            settings = settings,
-                            viewModel = viewModel,
-                            isRefreshing = isTimelineRefreshing,
-                            isPaginating = isTimelinePaginating,
-                            isOfflineCached = isOfflineCached,
-                            scrollBehavior = scrollBehavior,
-                        )
+                        if (hasVisitedFollowingTab || pagerState.currentPage == HomeTab.Following.ordinal) {
+                            FollowingTabContent(
+                                items = timelineItems,
+                                loadState = loadState,
+                                nextUrl = timelineNextUrl,
+                                settings = settings,
+                                viewModel = viewModel,
+                                isRefreshing = isTimelineRefreshing,
+                                isPaginating = isTimelinePaginating,
+                                isOfflineCached = isOfflineCached,
+                                scrollBehavior = scrollBehavior,
+                            )
+                        }
                     }
                 }
             }

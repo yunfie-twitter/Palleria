@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 36
-        versionCode = 155
-        versionName = "6.7.0-beta.3"
+        versionCode = 160
+        versionName = "6.7.0-beta.8"
     }
 
     signingConfigs {
@@ -103,6 +103,12 @@ android {
 
 composeCompiler {
     stabilityConfigurationFile = rootProject.file("compose_compiler_config.conf")
+    if (project.findProperty("composeCompilerMetrics") == "true") {
+        metricsDestination = layout.buildDirectory.dir("compose_metrics")
+    }
+    if (project.findProperty("composeCompilerReports") == "true") {
+        reportsDestination = layout.buildDirectory.dir("compose_reports")
+    }
 }
 
 ktlint {

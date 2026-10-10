@@ -219,10 +219,22 @@ fun RankingScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,
         ) {
+            val visitedPages = remember { mutableSetOf(pagerState.currentPage) }
+            LaunchedEffect(pagerState.currentPage) {
+                visitedPages.add(pagerState.currentPage)
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 0,
             ) { page ->
+                val isPageActiveOrVisited = page == pagerState.currentPage || page in visitedPages
+                if (!isPageActiveOrVisited) {
+                    Box(modifier = Modifier.fillMaxSize())
+                    return@HorizontalPager
+                }
+
                 val pageMode = modes[page]
                 val pageItems = rankingState.rankingModeItems[pageMode] ?: if (pageMode == mode) items else emptyList()
                 val pageLoadState = rankingState.rankingModeLoadStates[pageMode] ?: if (pageMode == mode) loadState else LoadState.Idle

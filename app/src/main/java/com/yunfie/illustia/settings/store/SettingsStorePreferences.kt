@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.yunfie.illustia.settings.store
 
 import android.content.Context
@@ -195,6 +197,7 @@ internal fun readFromDataStore(
         notifyNewVersion = preferences[NOTIFY_NEW_VERSION] ?: true,
         autoDownloadUpdates = preferences[AUTO_DOWNLOAD_UPDATES] ?: false,
         autoDownloadWifiOnly = preferences[AUTO_DOWNLOAD_WIFI_ONLY] ?: true,
+        checkUpdatesInBackground = preferences[CHECK_UPDATES_IN_BACKGROUND] ?: true,
         lastSeenAppVersionCode = preferences[LAST_SEEN_APP_VERSION_CODE] ?: 0,
         discordRpcEnabled = preferences[DISCORD_RPC_ENABLED] ?: false,
         discordApplicationId = preferences[DISCORD_APPLICATION_ID] ?: "1544652855233744926",
@@ -533,6 +536,7 @@ internal fun writeToDataStore(
     preferences[NOTIFY_NEW_VERSION] = settings.notifyNewVersion
     preferences[AUTO_DOWNLOAD_UPDATES] = settings.autoDownloadUpdates
     preferences[AUTO_DOWNLOAD_WIFI_ONLY] = settings.autoDownloadWifiOnly
+    preferences[CHECK_UPDATES_IN_BACKGROUND] = settings.checkUpdatesInBackground
     preferences[LAST_SEEN_APP_VERSION_CODE] = settings.lastSeenAppVersionCode
     preferences[DISCORD_RPC_ENABLED] = settings.discordRpcEnabled
     preferences[DISCORD_APPLICATION_ID] = settings.discordApplicationId
@@ -593,7 +597,19 @@ internal fun writeSensitiveSettings(
     }
 }
 
-internal fun readWideColorGamutSync(context: Context): Boolean =
-    context.applicationContext
-        .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-        .getBoolean(KEY_WIDE_COLOR_GAMUT, true)
+@Volatile
+private var cachedWideColorGamut: Boolean? = null
+
+internal fun updateWideColorGamutCache(enabled: Boolean) {
+    cachedWideColorGamut = enabled
+}
+
+internal fun readWideColorGamutSync(context: Context): Boolean {
+    cachedWideColorGamut?.let { return it }
+    val enabled =
+        context.applicationContext
+            .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_WIDE_COLOR_GAMUT, true)
+    cachedWideColorGamut = enabled
+    return enabled
+}

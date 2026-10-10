@@ -239,6 +239,24 @@ abstract class IllustiaDetailProfileModule(
         _uiState.update { it.copy(selectedIllust = null, selectedIllustUser = null, selectedIllustFirstComment = null) }
     }
 
+    fun closeIllustAfterTransition(
+        illustId: Long,
+        delayMillis: Long,
+    ) {
+        detailExtrasJob?.cancel()
+        detailExtrasJob =
+            viewModelScope.launch {
+                delay(delayMillis)
+                _uiState.update {
+                    if (it.selectedIllust?.id == illustId) {
+                        it.copy(selectedIllust = null, selectedIllustUser = null, selectedIllustFirstComment = null)
+                    } else {
+                        it
+                    }
+                }
+            }
+    }
+
     fun restoreIllustDetail(
         illust: Illust,
         user: UserProfile?,

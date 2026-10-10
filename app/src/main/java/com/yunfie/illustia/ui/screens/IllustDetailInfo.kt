@@ -21,6 +21,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -28,6 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
@@ -74,9 +79,12 @@ internal fun IllustDetailInfo(
     onSearchTag: (String) -> Unit,
     onLongPressTag: (String) -> Unit,
     sectionOrder: List<String>,
-    relatedContent: @Composable () -> Unit,
+    relatedContent: @Composable (isNearViewport: Boolean) -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val relatedSectionTriggerPx = with(LocalDensity.current) { screenHeightDp.dp.toPx() * 1.5f }
+    val relatedSectionReady = remember(illust.id) { mutableStateOf(false) }
     var followAnimationTrigger by remember(illust.artistId) { mutableIntStateOf(0) }
     val customUriHandler =
         remember(uriHandler) {
@@ -296,7 +304,18 @@ internal fun IllustDetailInfo(
                         }
 
                         "related" -> {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(
+                                modifier =
+                                    Modifier.onGloballyPositioned { coordinates ->
+                                        if (
+                                            !relatedSectionReady.value &&
+                                            coordinates.boundsInWindow().top <= relatedSectionTriggerPx
+                                        ) {
+                                            relatedSectionReady.value = true
+                                        }
+                                    },
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
                                 Spacer(Modifier.height(8.dp))
                                 Text(
                                     text = stringResource(R.string.detail_related),
@@ -305,7 +324,7 @@ internal fun IllustDetailInfo(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
-                                relatedContent()
+                                relatedContent(relatedSectionReady.value)
                             }
                         }
                     }

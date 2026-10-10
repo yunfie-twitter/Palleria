@@ -86,6 +86,7 @@ internal suspend fun clearSensitiveSettings(
         .remove(KEY_ACCOUNT_TOKENS)
         .putBoolean(KEY_STARTUP_IS_LOGGED_IN, false)
         .putBoolean(KEY_STARTUP_HAS_PIN, false)
+        .remove(KEY_STARTUP_ACCOUNT_HASH)
         .apply()
     database.runInTransaction {
         dao.clearAccounts()
