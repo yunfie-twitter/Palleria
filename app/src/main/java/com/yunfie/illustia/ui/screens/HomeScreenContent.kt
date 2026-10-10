@@ -116,6 +116,7 @@ internal fun FeedTabContent(
         gridState = gridState,
         enabled = settings.prefetchImages,
         highQualityImages = feedHighQuality,
+        limit = 6,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
@@ -270,6 +271,7 @@ internal fun FollowingTabContent(
         enabled = settings.prefetchImages,
         highQualityImages = feedHighQuality,
         keyPrefix = "tl_",
+        limit = 6,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
     val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null

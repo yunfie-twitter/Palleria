@@ -118,7 +118,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var showCommandPalette by remember { mutableStateOf(false) }
     val paletteEnabled = settings.commandPaletteEnabled
     val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
-    val (scrollRenderingConnection, fastScrolling, _) =
+    val (scrollRenderingConnection, fastScrolling) =
         rememberScrollRendering(settings.isFeatureEnabled(FeatureFlag.FastScrollRendering))
     LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
         if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
