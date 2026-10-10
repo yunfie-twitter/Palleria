@@ -160,6 +160,10 @@ class IllustiaRepository(
 
     suspend fun readStartupSettings(): AppSettings = settingsStore.readStartup()
 
+    internal suspend fun readStartupMaintenanceSettings() = settingsStore.readStartupMaintenanceSettings()
+
+    internal suspend fun readAccountsForStartupMaintenance() = settingsStore.readAccountsForStartupMaintenance()
+
     suspend fun saveSettings(
         settings: AppSettings,
         baseSettings: AppSettings? = null,

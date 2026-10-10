@@ -15,6 +15,7 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import kotlinx.coroutines.flow.collect
 
 val LocalVelocityLandingPrefetchEnabled = compositionLocalOf { true }
+val LocalNavigationPrefetchEnabled = androidx.compose.runtime.staticCompositionLocalOf { true }
 
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
 internal fun upcomingArtworkIndices(

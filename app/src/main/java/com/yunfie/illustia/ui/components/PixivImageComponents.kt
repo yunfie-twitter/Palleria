@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,7 @@ val PixivImageHeaders =
         .build()
 
 val LocalWideColorGamutEnabled = compositionLocalOf { true }
+val LocalDeferCardImageRequests = compositionLocalOf<State<Boolean>> { mutableStateOf(false) }
 
 internal val LocalImageRefreshRequest = compositionLocalOf { 0 }
 
@@ -53,6 +55,7 @@ fun PixivImage(
     modifier: Modifier = Modifier,
     crossfade: Boolean = false,
     thumbnail: Boolean = false,
+    deferCardImageRequest: Boolean = false,
     maxDecodeDimensionPx: Int? = null,
     allowRgb565: Boolean = false,
     showLoadingSpinner: Boolean = false,
@@ -63,6 +66,8 @@ fun PixivImage(
     val context = LocalPlatformContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
     val wideColorGamutEnabled = LocalWideColorGamutEnabled.current
+    val shouldDeferCardImageRequest =
+        thumbnail && deferCardImageRequest && LocalDeferCardImageRequests.current.value
     val effectiveUrl =
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
@@ -179,13 +184,14 @@ fun PixivImage(
                 }.build()
         }
 
+    val imageModel = if (shouldDeferCardImageRequest) null else imageRequest
     if (showLoadingSpinner) {
         Box(
             modifier = modifier,
             contentAlignment = Alignment.Center,
         ) {
             AsyncImage(
-                model = imageRequest,
+                model = imageModel,
                 contentDescription = contentDescription,
                 contentScale = contentScale,
                 modifier = Modifier.matchParentSize(),
@@ -198,7 +204,7 @@ fun PixivImage(
         }
     } else {
         AsyncImage(
-            model = imageRequest,
+            model = imageModel,
             contentDescription = contentDescription,
             contentScale = contentScale,
             modifier = modifier,

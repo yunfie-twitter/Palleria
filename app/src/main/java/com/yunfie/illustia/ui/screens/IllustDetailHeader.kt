@@ -99,6 +99,7 @@ internal fun IllustDetailHeader(
     expanded: Boolean = false,
     smartDownloadNaming: Boolean = true,
     ugoiraPowerSave: Boolean = true,
+    isActive: Boolean = true,
     mangaAdaptivePreload: Boolean = true,
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -209,6 +210,7 @@ internal fun IllustDetailHeader(
             modifier
                 .then(if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainer),
+        contentAlignment = Alignment.Center,
     ) {
         if (showImage) {
             if (illust.type == "ugoira") {
@@ -219,12 +221,14 @@ internal fun IllustDetailHeader(
                         } else {
                             Modifier.fillMaxWidth().heightIn(min = 320.dp)
                         },
+                    contentAlignment = Alignment.Center,
                 ) {
                     UgoiraArtwork(
                         previewUrl = previewUrl,
                         contentDescription = illust.title,
                         loadPlayback = { loadUgoiraPlayback(illust.id) },
                         powerSaveEnabled = ugoiraPowerSave,
+                        isActive = isActive,
                         onTap = { if (!maskMutedArtwork) onOpenImage(0) },
                         modifier =
                             Modifier
@@ -327,7 +331,12 @@ internal fun IllustDetailHeader(
             }
         } else {
             Box(
-                modifier = if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+                modifier =
+                    if (expanded) {
+                        Modifier.fillMaxSize()
+                    } else {
+                        Modifier.fillMaxWidth().heightIn(min = 320.dp)
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 LoadingIndicator()

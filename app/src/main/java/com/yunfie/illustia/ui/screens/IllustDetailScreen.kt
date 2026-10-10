@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
@@ -111,6 +112,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun IllustDetailScreen(
     illust: Illust,
+    isActive: Boolean = true,
     relatedIllusts: List<Illust>,
     firstComment: Comment?,
     onBack: () -> Unit,
@@ -302,11 +304,12 @@ fun IllustDetailScreen(
             illust = illust,
             highQualityImages = highQualityImages,
             detailQuality = detailQuality,
-            prefetchImages = prefetchImages,
+            prefetchImages = prefetchImages && isActive,
             confirmOnLongPressSave = confirmOnLongPressSave,
             skipConfirmOnDetailSave = skipConfirmOnDetailSave,
             smartDownloadNaming = smartDownloadNaming,
             ugoiraPowerSave = ugoiraPowerSave,
+            isActive = isActive,
             mangaAdaptivePreload = mangaAdaptivePreload,
             pixivUrl = pixivUrl,
             onBack = onBack,
@@ -361,7 +364,15 @@ fun IllustDetailScreen(
                         configuredColumns = relatedIllustColumnCount,
                     )
                 } else {
-                    LoadingIndicator(modifier = Modifier.padding(vertical = 24.dp))
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator()
+                    }
                 }
             },
         )
@@ -389,7 +400,7 @@ fun IllustDetailScreen(
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
         ) {
-            if (PlatformCapabilities.supportsHardwareBlur(context)) {
+            if (isActive && PlatformCapabilities.supportsHardwareBlur(context)) {
                 PixivImage(
                     url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
                     contentDescription = null,

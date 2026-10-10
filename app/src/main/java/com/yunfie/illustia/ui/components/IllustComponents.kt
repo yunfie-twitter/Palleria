@@ -375,6 +375,7 @@ private fun IllustCardThumbnail(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
+                deferCardImageRequest = true,
             )
         }
         if (ageRestrictionBadgeText != null) {

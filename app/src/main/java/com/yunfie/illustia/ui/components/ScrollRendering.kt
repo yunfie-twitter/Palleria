@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ val LocalFastScrolling = compositionLocalOf { false }
 internal data class ScrollRenderingResult(
     val connection: NestedScrollConnection,
     val isFastScrolling: Boolean,
+    val fastScrollingState: State<Boolean>,
 )
 
 internal class ScrollSpeedTracker {
@@ -47,13 +49,16 @@ internal class ScrollSpeedTracker {
 }
 
 @Composable
-internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
+internal fun rememberScrollRendering(
+    enabled: Boolean,
+    trackImageLoads: Boolean = false,
+): ScrollRenderingResult {
     val density = LocalDensity.current.density
     val scope = rememberCoroutineScope()
     val fast = remember(enabled) { mutableStateOf(false) }
 
     val connection =
-        remember(enabled, density) {
+        remember(enabled, trackImageLoads, density) {
             object : NestedScrollConnection {
                 val speed = ScrollSpeedTracker()
                 var fastResetJob: Job? = null
@@ -64,7 +69,10 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (enabled && speed.isFast(consumed.y / density, SystemClock.uptimeMillis())) {
+                    if (
+                        (enabled || trackImageLoads) &&
+                        speed.isFast(consumed.y / density, SystemClock.uptimeMillis())
+                    ) {
                         lastFastScrollAtMillis = SystemClock.uptimeMillis()
                         if (!fast.value) fast.value = true
                         if (fastResetJob?.isActive != true) {
@@ -93,6 +101,7 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
     return ScrollRenderingResult(
         connection = connection,
         isFastScrolling = fast.value,
+        fastScrollingState = fast,
     )
 }
 
