@@ -49,16 +49,13 @@ internal class ScrollSpeedTracker {
 }
 
 @Composable
-internal fun rememberScrollRendering(
-    enabled: Boolean,
-    trackImageLoads: Boolean = false,
-): ScrollRenderingResult {
+internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
     val density = LocalDensity.current.density
     val scope = rememberCoroutineScope()
     val fast = remember(enabled) { mutableStateOf(false) }
 
     val connection =
-        remember(enabled, trackImageLoads, density) {
+        remember(enabled, density) {
             object : NestedScrollConnection {
                 val speed = ScrollSpeedTracker()
                 var fastResetJob: Job? = null
@@ -70,8 +67,7 @@ internal fun rememberScrollRendering(
                     source: NestedScrollSource,
                 ): Offset {
                     if (
-                        (enabled || trackImageLoads) &&
-                        speed.isFast(consumed.y / density, SystemClock.uptimeMillis())
+                        enabled && speed.isFast(consumed.y / density, SystemClock.uptimeMillis())
                     ) {
                         lastFastScrollAtMillis = SystemClock.uptimeMillis()
                         if (!fast.value) fast.value = true
