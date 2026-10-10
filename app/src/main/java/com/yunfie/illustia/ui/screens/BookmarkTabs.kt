@@ -261,7 +261,7 @@ private fun WatchlistSeriesCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "${series.publishedContentCount}隧ｱ",
+                            text = "${series.publishedContentCount}話",
                             color = MiuixTheme.colorScheme.onBackground,
                             style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Black,

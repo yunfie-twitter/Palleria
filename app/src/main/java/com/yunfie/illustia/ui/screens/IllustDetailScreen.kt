@@ -112,6 +112,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun IllustDetailScreen(
     illust: Illust,
+    isActive: Boolean = true,
     relatedIllusts: List<Illust>,
     firstComment: Comment?,
     onBack: () -> Unit,
@@ -303,11 +304,12 @@ fun IllustDetailScreen(
             illust = illust,
             highQualityImages = highQualityImages,
             detailQuality = detailQuality,
-            prefetchImages = prefetchImages,
+            prefetchImages = prefetchImages && isActive,
             confirmOnLongPressSave = confirmOnLongPressSave,
             skipConfirmOnDetailSave = skipConfirmOnDetailSave,
             smartDownloadNaming = smartDownloadNaming,
             ugoiraPowerSave = ugoiraPowerSave,
+            isActive = isActive,
             mangaAdaptivePreload = mangaAdaptivePreload,
             pixivUrl = pixivUrl,
             onBack = onBack,
@@ -398,7 +400,7 @@ fun IllustDetailScreen(
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
         ) {
-            if (PlatformCapabilities.supportsHardwareBlur(context)) {
+            if (isActive && PlatformCapabilities.supportsHardwareBlur(context)) {
                 PixivImage(
                     url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
                     contentDescription = null,

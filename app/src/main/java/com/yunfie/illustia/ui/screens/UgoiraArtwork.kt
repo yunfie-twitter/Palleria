@@ -84,6 +84,7 @@ internal fun UgoiraArtwork(
     modifier: Modifier = Modifier,
     zoomEnabled: Boolean = false,
     powerSaveEnabled: Boolean = true,
+    isActive: Boolean = true,
     onZoomChanged: (Boolean) -> Unit = {},
     onTap: (() -> Unit)? = null,
 ) {
@@ -114,8 +115,8 @@ internal fun UgoiraArtwork(
         }
     }
 
-    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey, isDelayElapsed) {
-        if (!isDelayElapsed) return@produceState
+    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey, isDelayElapsed, isActive) {
+        if (!isDelayElapsed || !isActive) return@produceState
         value =
             withContext(Dispatchers.IO) {
                 runCatching { loadPlayback() }
@@ -197,7 +198,7 @@ internal fun UgoiraArtwork(
     }
 
     val bitmapPool = remember(playback) { java.util.concurrent.ConcurrentLinkedQueue<Bitmap>() }
-    if (playback != null && playback.frames.isNotEmpty()) {
+    if (isActive && playback != null && playback.frames.isNotEmpty()) {
         com.yunfie.illustia.platform
             .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost)
     }
@@ -209,7 +210,8 @@ internal fun UgoiraArtwork(
 
     // フレームのデコードは ConcurrentHashMap に書き込む。
     // メモリ上限を超えないよう、フレーム数が多い場合は再生位置前後のスライディングウィンドウで管理する。
-    LaunchedEffect(playback, maxCachedFrames, prefetchAhead, keepBehind, preferredConfig) {
+    LaunchedEffect(playback, maxCachedFrames, prefetchAhead, keepBehind, preferredConfig, isActive) {
+        if (!isActive) return@LaunchedEffect
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         withContext(Dispatchers.IO) {
@@ -302,7 +304,8 @@ internal fun UgoiraArtwork(
         }
     }
 
-    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking, powerSaveEnabled, isLifecycleActive) {
+    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking, powerSaveEnabled, isLifecycleActive, isActive) {
+        if (!isActive) return@LaunchedEffect
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         var index = currentFrameIndex

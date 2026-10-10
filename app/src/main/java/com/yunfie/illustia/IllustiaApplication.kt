@@ -12,7 +12,9 @@ import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.updater.AppUpdateNotificationHelper
 import com.yunfie.illustia.updater.AppUpdateScheduler
 import com.yunfie.illustia.widget.IllustWidgetProvider
@@ -24,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val WIDGET_PREVIEW_DELAY_MILLIS = 6_000L
+private const val BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS = 4_000L
 
 class IllustiaApplication : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -88,11 +90,13 @@ class IllustiaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashHandler.instance.init(this)
-        if (com.yunfie.illustia.settings
-                .readFeatureFlagSync(this, com.yunfie.illustia.settings.FeatureFlag.PreDnsSocketWarming)
-        ) {
-            com.yunfie.illustia.data.NetworkWarmer
-                .warmUp(sharedHttpClient, scope = appScope)
+        appScope.launch {
+            val startupSettings = repository.readStartupSettings()
+            SettingsStore.updateImageCacheSizeMbCache(startupSettings.imageCacheSizeMb)
+            if (startupSettings.isFeatureEnabled(FeatureFlag.PreDnsSocketWarming)) {
+                com.yunfie.illustia.data.NetworkWarmer
+                    .warmUp(sharedHttpClient, scope = appScope)
+            }
         }
         SingletonImageLoader.setSafe {
             val appContext = applicationContext
@@ -132,7 +136,9 @@ class IllustiaApplication : Application() {
 
         appScope.launch {
             val appContext = applicationContext
-            val settings = repository.readSettings()
+            val settings = repository.readStartupMaintenanceSettings()
+            setTelemetryEnabled(settings.sendTelemetry)
+            val accounts = repository.readAccountsForStartupMaintenance()
             val recoveredPallaSync =
                 if (settings.pallaSyncEnabled) {
                     runCatching {
@@ -141,11 +147,9 @@ class IllustiaApplication : Application() {
                 } else {
                     false
                 }
-            withContext(Dispatchers.Main.immediate) {
-                setTelemetryEnabled(settings.sendTelemetry)
-            }
-            PalleriaAccount.reconcile(appContext, settings.accounts)
+            PalleriaAccount.reconcile(appContext, accounts)
             AppUpdateNotificationHelper.createNotificationChannel(appContext)
+            delay(BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS)
             if (settings.checkUpdatesInBackground && (settings.notifyNewVersion || settings.autoDownloadUpdates)) {
                 AppUpdateScheduler.schedulePeriodicCheck(appContext)
             } else {

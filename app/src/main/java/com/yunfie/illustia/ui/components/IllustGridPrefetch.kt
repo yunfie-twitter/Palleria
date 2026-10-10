@@ -13,6 +13,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.platform.PlatformCapabilities
 
 val LocalVelocityLandingPrefetchEnabled = compositionLocalOf { true }
+val LocalNavigationPrefetchEnabled = androidx.compose.runtime.staticCompositionLocalOf { true }
 
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
 internal fun upcomingArtworkIndices(
@@ -147,7 +148,7 @@ fun PrefetchIllustGridImages(
             }
         }
     }
-    val prefetchActive = enabled && initialDelayPassed && isScrollSettled
+    val prefetchActive = enabled && initialDelayPassed && isScrollSettled && LocalNavigationPrefetchEnabled.current
     PrefetchPixivImages(urls, enabled = prefetchActive, limit = limit)
 }
 

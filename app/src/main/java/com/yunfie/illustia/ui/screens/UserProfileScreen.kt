@@ -39,6 +39,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -91,7 +92,13 @@ fun UserProfileScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val context = LocalContext.current
     val activity = context as? Activity
-    val isDarkTheme = backgroundColor.luminance() < 0.5f
+    val profileBackgroundColor =
+        if (settings.useDynamicColor && isDynamicColorAvailable()) {
+            backgroundColor
+        } else {
+            MiuixTheme.colorScheme.surface
+        }
+    val isDarkTheme = profileBackgroundColor.luminance() < 0.5f
 
     var showUnfollowConfirm by remember(user.id) { mutableStateOf(false) }
     var followAnimationTrigger by remember(user.id) { mutableIntStateOf(0) }
@@ -223,6 +230,9 @@ fun UserProfileScreen(
         if (index != pagerState.currentPage) {
             performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
         }
+        if (index == 1 && !isMuted && !bookmarksLoaded) {
+            onLoadBookmarks()
+        }
         coroutineScope.launch { pagerState.animateScrollToPage(index) }
     }
     val scrollToTop: () -> Unit = {
@@ -239,7 +249,7 @@ fun UserProfileScreen(
         modifier
             .then(if (contentHeight != null) Modifier.height(contentHeight) else Modifier.fillMaxSize())
             .nestedScroll(profileScrollConnection)
-            .background(backgroundColor)
+            .background(profileBackgroundColor)
 
     val content: @Composable (Modifier) -> Unit = { pageModifier ->
         UserProfilePagerContent(
@@ -264,7 +274,7 @@ fun UserProfileScreen(
             isMuted = isMuted,
             onUnmuteUser = onUnmuteUser,
             followAnimationTrigger = followAnimationTrigger,
-            backgroundColor = backgroundColor,
+            backgroundColor = profileBackgroundColor,
             pagerState = pagerState,
             worksGridState = gridState,
             bookmarksGridState = bookmarkGridState,
