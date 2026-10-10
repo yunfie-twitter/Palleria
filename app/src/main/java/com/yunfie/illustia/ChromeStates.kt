@@ -12,6 +12,7 @@ data class HomeChromeState(
     val isTimelinePaginating: Boolean = false,
     val isOfflineCached: Boolean = false,
     val selectedTab: Int = 0,
+    val pendingHomeItemsCount: Int = 0,
 )
 
 data class NovelChromeState(

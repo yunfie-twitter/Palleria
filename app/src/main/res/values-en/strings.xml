@@ -15,6 +15,7 @@
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
+    <string name="home_new_items_available">Show %1$d new works</string>
     <string name="nav_novel">Novels</string>
     <string name="nav_ranking">Ranking</string>
     <string name="nav_bookmarks">Bookmarks</string>

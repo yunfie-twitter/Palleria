@@ -33,6 +33,7 @@ internal class IllustiaAppStateBundle(
             isTimelinePaginating = state.isTimelinePaginating,
             isOfflineCached = state.isOfflineCached,
             selectedTab = state.homeSelectedTab,
+            pendingHomeItemsCount = state.pendingHomeItems.size,
         )
     val novelChrome =
         NovelChromeState(

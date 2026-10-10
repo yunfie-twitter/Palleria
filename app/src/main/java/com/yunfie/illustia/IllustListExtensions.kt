@@ -50,6 +50,19 @@ internal fun List<Illust>.appendIllusts(next: List<Illust>): List<Illust> {
     }
 }
 
+internal fun newHomeItemsToStage(
+    refreshedItems: List<Illust>,
+    currentItems: List<Illust>,
+    pendingItems: List<Illust>,
+): List<Illust> {
+    val existingIds = HashSet<Long>(currentItems.size + pendingItems.size + refreshedItems.size)
+    currentItems.forEach { existingIds.add(it.id) }
+    val staged = ArrayList<Illust>(refreshedItems.size + pendingItems.size)
+    refreshedItems.forEach { if (existingIds.add(it.id)) staged.add(it) }
+    pendingItems.forEach { if (existingIds.add(it.id)) staged.add(it) }
+    return staged
+}
+
 private fun Illust.isRestricted(
     filterR18: Boolean,
     filterR18G: Boolean,
@@ -123,6 +136,7 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
 
     return updated.copy(
         homeItems = updated.homeItems.filterRestricted(filterR18, filterR18G, filterAi),
+        pendingHomeItems = updated.pendingHomeItems.filterRestricted(filterR18, filterR18G, filterAi),
         searchItems = updated.searchItems.filterRestricted(filterR18, filterR18G, filterAi),
         timelineItems = updated.timelineItems.filterRestricted(filterR18, filterR18G, filterAi),
         shortsFeedItems = updated.shortsFeedItems.filterRestricted(filterR18, filterR18G, filterAi),
@@ -141,6 +155,7 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState {
     val updatedHome = homeItems.replaceIllustIfPresent(updated)
+    val updatedPendingHome = pendingHomeItems.replaceIllustIfPresent(updated)
     val updatedSearch = searchItems.replaceIllustIfPresent(updated)
     val updatedTimeline = timelineItems.replaceIllustIfPresent(updated)
     val updatedShortsFeed = shortsFeedItems.replaceIllustIfPresent(updated)
@@ -176,6 +191,7 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
 
     val unchanged =
         updatedHome === homeItems &&
+            updatedPendingHome === pendingHomeItems &&
             updatedSearch === searchItems &&
             updatedTimeline === timelineItems &&
             updatedShortsFeed === shortsFeedItems &&
@@ -196,6 +212,7 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
 
     return copy(
         homeItems = updatedHome,
+        pendingHomeItems = updatedPendingHome,
         searchItems = updatedSearch,
         timelineItems = updatedTimeline,
         shortsFeedItems = updatedShortsFeed,

@@ -70,6 +70,7 @@ fun HomeScreen(
     isTimelinePaginating: Boolean = false,
     isOfflineCached: Boolean = false,
     initialTab: Int = 0,
+    pendingHomeItemsCount: Int = 0,
 ) {
     val pagerState =
         rememberPagerState(
@@ -246,6 +247,7 @@ fun HomeScreen(
                             isRefreshing = isHomeRefreshing,
                             isPaginating = isHomePaginating,
                             isOfflineCached = isOfflineCached,
+                            pendingHomeItemsCount = pendingHomeItemsCount,
                             scrollBehavior = scrollBehavior,
                         )
                     }

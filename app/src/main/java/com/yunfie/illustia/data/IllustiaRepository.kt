@@ -63,14 +63,12 @@ class IllustiaRepository(
     private val credentialsRevision = AtomicLong()
     internal val accountGeneration: Long get() = accountRevision.get()
 
-    internal suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? =
-        sessionMutex.withLock {
-            val auth = settingsStore.readAuth()
-            val filters = settingsStore.readFeedSettings()
-            homeSnapshot.read(kind, auth.refreshToken)?.let { page ->
-                page.copy(items = page.items.visibleWithSettings(filters))
-            }
-        }
+    internal suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? {
+        val accountHash = settingsStore.readStartupAccountHash()
+        val snapshot = if (accountHash.isNotBlank()) homeSnapshot.readWithAccountHash(kind, accountHash) else null
+        val filters = cachedSettings ?: settingsStore.readFeedSettings()
+        return snapshot?.let { it.copy(items = it.items.visibleWithSettings(filters)) }
+    }
 
     internal suspend fun readFeedSettings(): AppSettings = settingsStore.readFeedSettings()
 

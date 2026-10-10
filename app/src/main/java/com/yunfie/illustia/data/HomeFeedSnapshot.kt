@@ -10,6 +10,11 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
 
+internal fun computeAccountKey(token: String): String =
+    MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") {
+        "%02x".format(it)
+    }
+
 /** A bounded, disposable first-page snapshot. Never contains OAuth credentials. */
 internal class HomeFeedSnapshot(
     private val directory: File,
@@ -25,26 +30,28 @@ internal class HomeFeedSnapshot(
 
     private fun file(kind: HomeFeedKind) = AtomicFile(File(directory, "${kind.name}.json"))
 
-    private fun accountKey(token: String) =
-        MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") {
-            "%02x".format(it)
-        }
+    @Synchronized
+    fun readWithAccountHash(
+        kind: HomeFeedKind,
+        accountHash: String,
+        now: Long = System.currentTimeMillis(),
+    ): PageResult<Illust>? =
+        runCatching {
+            if (accountHash.isBlank()) return null
+            val source = file(kind)
+            if (source.baseFile.length() > MAX_BYTES) return null
+            val snapshot = json.decodeFromString<Snapshot>(source.readFully().decodeToString())
+            if (snapshot.account != accountHash || now - snapshot.savedAt !in 0..MAX_AGE) return null
+            // Pagination belongs to the fresh response, not yesterday's first page.
+            PageResult(snapshot.items.take(MAX_ITEMS), null)
+        }.getOrNull()
 
     @Synchronized
     fun read(
         kind: HomeFeedKind,
         token: String,
         now: Long = System.currentTimeMillis(),
-    ): PageResult<Illust>? =
-        runCatching {
-            if (token.isBlank()) return null
-            val source = file(kind)
-            if (source.baseFile.length() > MAX_BYTES) return null
-            val snapshot = json.decodeFromString<Snapshot>(source.readFully().decodeToString())
-            if (snapshot.account != accountKey(token) || now - snapshot.savedAt !in 0..MAX_AGE) return null
-            // Pagination belongs to the fresh response, not yesterday's first page.
-            PageResult(snapshot.items.take(MAX_ITEMS), null)
-        }.getOrNull()
+    ): PageResult<Illust>? = readWithAccountHash(kind, computeAccountKey(token), now)
 
     @Synchronized
     fun write(
@@ -55,7 +62,7 @@ internal class HomeFeedSnapshot(
     ) {
         if (token.isBlank()) return
         runCatching {
-            val bytes = json.encodeToString(Snapshot(accountKey(token), now, page.items.take(MAX_ITEMS))).toByteArray()
+            val bytes = json.encodeToString(Snapshot(computeAccountKey(token), now, page.items.take(MAX_ITEMS))).toByteArray()
             if (bytes.size > MAX_BYTES) return
             directory.mkdirs()
             val target = file(kind)

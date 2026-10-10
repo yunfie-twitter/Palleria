@@ -431,6 +431,7 @@ abstract class IllustiaViewModelFoundation(
     protected suspend fun loadHomeInternal(
         kind: HomeFeedKind,
         forceRefresh: Boolean = false,
+        deferIncomingIfScrolled: Boolean = false,
     ) {
         GlitchTipTelemetry.traceAsync("feed.home.load", "feed.home") {
             val generation = repository.accountGeneration
@@ -450,11 +451,30 @@ abstract class IllustiaViewModelFoundation(
                 if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
                 if (it.appLocked || it.privacyLocked) return@update it
                 val visibleItems = items.visibleWithSettings(it.settings)
+                val shouldDeferIncoming =
+                    deferIncomingIfScrolled &&
+                        it.homeItems.isNotEmpty() &&
+                        (homeFeedGridState.firstVisibleItemIndex > 0 ||
+                            homeFeedGridState.firstVisibleItemScrollOffset > 0 ||
+                            homeFeedGridState.isScrollInProgress)
+                if (shouldDeferIncoming) {
+                    val pendingItems = newHomeItemsToStage(visibleItems, it.homeItems, it.pendingHomeItems)
+                    if (pendingItems.isEmpty()) {
+                        return@update it.copy(homeNextUrl = page.nextUrl)
+                    }
+                    return@update it.copy(
+                        sessionReady = true,
+                        pendingHomeItems = pendingItems,
+                        pendingHomeNextUrl = page.nextUrl,
+                    )
+                }
                 val nextHomeItems = if (it.homeItems == visibleItems) it.homeItems else visibleItems
                 it.copy(
                     sessionReady = true,
                     homeItems = nextHomeItems,
                     homeNextUrl = page.nextUrl,
+                    pendingHomeItems = emptyList(),
+                    pendingHomeNextUrl = null,
                 )
             }
             if (repository.accountGeneration == generation) rememberFeedItems(items)

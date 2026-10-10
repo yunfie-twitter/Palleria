@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +61,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Contacts
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
 @Composable
@@ -105,6 +107,7 @@ internal fun FeedTabContent(
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
     isOfflineCached: Boolean = false,
+    pendingHomeItemsCount: Int = 0,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
 ) {
     val feedHighQuality = settings.useHighQualityFeedImages
@@ -129,12 +132,14 @@ internal fun FeedTabContent(
     )
 
     val columns = adaptiveIllustColumns(settings)
+    val scope = rememberCoroutineScope()
     PullToRefresh(
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val pinchEnabled = settings.gridPinchToZoom
+        Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),
@@ -243,6 +248,19 @@ internal fun FeedTabContent(
                             Text(stringResource(R.string.action_load_more))
                         }
                     }
+                }
+            }
+        }
+            if (pendingHomeItemsCount > 0) {
+                Button(
+                    onClick = {
+                        viewModel.applyPendingHomeItems()
+                        scope.launch { gridState.animateScrollToItem(0) }
+                    },
+                    modifier = Modifier.align(Alignment.TopCenter).padding(12.dp),
+                    colors = overlayActionButtonColors(),
+                ) {
+                    Text(stringResource(R.string.home_new_items_available, pendingHomeItemsCount))
                 }
             }
         }

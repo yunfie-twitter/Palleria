@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.yunfie.illustia.data.computeAccountKey
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.pallasync.PallaSyncEventWriter
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
@@ -30,6 +31,7 @@ import com.yunfie.illustia.settings.store.DATASTORE_NAME
 import com.yunfie.illustia.settings.store.KEY_ACCOUNT_TOKENS
 import com.yunfie.illustia.settings.store.KEY_APP_LANGUAGE
 import com.yunfie.illustia.settings.store.KEY_REFRESH_TOKEN
+import com.yunfie.illustia.settings.store.KEY_STARTUP_ACCOUNT_HASH
 import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.KEY_WIDE_COLOR_GAMUT
@@ -151,7 +153,11 @@ class SettingsStore internal constructor(
                 startupDataStoreFor(appContext).edit { preferences ->
                     session.userId?.let { preferences[BOOKMARK_USER_ID] = it }
                 }
-                legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, true).apply()
+                legacyPreferences
+                    .edit()
+                    .putBoolean(KEY_STARTUP_IS_LOGGED_IN, true)
+                    .putString(KEY_STARTUP_ACCOUNT_HASH, computeAccountKey(session.refreshToken))
+                    .apply()
                 cachedStartupSettings = null
             }
         }
@@ -197,6 +203,23 @@ class SettingsStore internal constructor(
         val loggedIn = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty().isNotBlank()
         legacyPreferences.edit().putBoolean(KEY_STARTUP_IS_LOGGED_IN, loggedIn).apply()
         return loggedIn
+    }
+
+    internal fun readStartupAccountHash(): String {
+        val cached = legacyPreferences.getString(KEY_STARTUP_ACCOUNT_HASH, "").orEmpty()
+        if (cached.isNotBlank()) return cached
+        val token = sensitivePreferences.getString(KEY_REFRESH_TOKEN, "").orEmpty()
+        return when {
+            token.isNotBlank() && token != STARTUP_LOGGED_IN_TOKEN -> {
+                val hash = computeAccountKey(token)
+                legacyPreferences.edit().putString(KEY_STARTUP_ACCOUNT_HASH, hash).apply()
+                hash
+            }
+
+            else -> {
+                ""
+            }
+        }
     }
 
     suspend fun readStartupWithRecentHistory(limit: Int = STARTUP_VIEW_HISTORY_LIMIT): AppSettings {
@@ -320,15 +343,27 @@ class SettingsStore internal constructor(
         val isLoggedIn =
             (rebased.refreshToken.isNotBlank() && rebased.refreshToken != STARTUP_LOGGED_IN_TOKEN) ||
                 persisted.refreshToken.isNotBlank()
-        legacyPreferences
-            .edit()
-            .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
-            .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
-            .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
-            .putBoolean(KEY_STARTUP_IS_LOGGED_IN, isLoggedIn)
-            .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
-            .putBoolean(KEY_WIDE_COLOR_GAMUT, rebased.wideColorGamutEnabled)
-            .apply()
+        val editor =
+            legacyPreferences
+                .edit()
+                .putInt(KEY_IMAGE_CACHE_SIZE_MB, rebased.imageCacheSizeMb)
+                .putString(KEY_APP_LANGUAGE, rebased.appLanguage)
+                .putBoolean(KEY_STARTUP_PRIVACY_MODE, rebased.privacyModeEnabled)
+                .putBoolean(KEY_STARTUP_IS_LOGGED_IN, isLoggedIn)
+                .putBoolean(KEY_STARTUP_HAS_PIN, rebased.appLockEnabled && hasPinSet())
+                .putBoolean(KEY_WIDE_COLOR_GAMUT, rebased.wideColorGamutEnabled)
+        val token =
+            when {
+                rebased.refreshToken.isNotBlank() && rebased.refreshToken != STARTUP_LOGGED_IN_TOKEN -> rebased.refreshToken
+                persisted.refreshToken.isNotBlank() && persisted.refreshToken != STARTUP_LOGGED_IN_TOKEN -> persisted.refreshToken
+                else -> null
+            }
+        if (token != null) {
+            editor.putString(KEY_STARTUP_ACCOUNT_HASH, computeAccountKey(token))
+        } else if (!isLoggedIn) {
+            editor.remove(KEY_STARTUP_ACCOUNT_HASH)
+        }
+        editor.apply()
     }
 
     suspend fun writeFromSync(settings: AppSettings) {

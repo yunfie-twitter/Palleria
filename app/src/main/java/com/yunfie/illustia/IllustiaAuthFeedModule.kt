@@ -139,8 +139,28 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun selectHomeKind(kind: HomeFeedKind) {
-        _uiState.update { it.copy(homeKind = kind) }
+        _uiState.update { it.copy(homeKind = kind, pendingHomeItems = emptyList(), pendingHomeNextUrl = null) }
         refreshHome()
+    }
+
+    fun applyPendingHomeItems() {
+        viewModelScope.launch(Dispatchers.Default) {
+            var mergedItems: List<Illust> = emptyList()
+            _uiState.update { state ->
+                if (state.pendingHomeItems.isEmpty()) return@update state
+                mergedItems =
+                    state.pendingHomeItems
+                        .visibleWithSettings(state.settings)
+                        .appendIllusts(state.homeItems)
+                state.copy(
+                    homeItems = mergedItems,
+                    homeNextUrl = state.pendingHomeNextUrl ?: state.homeNextUrl,
+                    pendingHomeItems = emptyList(),
+                    pendingHomeNextUrl = null,
+                )
+            }
+            rememberFeedItems(mergedItems)
+        }
     }
 
     fun selectRankingMode(mode: String) {
@@ -154,50 +174,71 @@ abstract class IllustiaAuthFeedModule(
         loadRankingModeIfNeeded(mode)
     }
 
+    private suspend fun tryApplyHomeSnapshot(kind: HomeFeedKind): Boolean {
+        val snapshot = repository.readHomeSnapshot(kind)
+        if (snapshot == null || snapshot.items.isEmpty()) return false
+        val generation = repository.accountGeneration
+        val currentSettings = _uiState.value.settings
+        val initialItems =
+            snapshot.items.visibleWithSettings(currentSettings).preferUnseenFeedItems(currentSettings)
+        _uiState.update {
+            if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
+            if (it.appLocked || it.privacyLocked) return@update it
+            it.copy(
+                homeItems = initialItems,
+                homeNextUrl = null,
+                loadState = LoadState.Loaded,
+            )
+        }
+        return true
+    }
+
     override fun prefetchHomeFeedOnStartup(kind: HomeFeedKind) {
         viewModelScope.launch(Dispatchers.IO) {
             if (_uiState.value.homeItems.isNotEmpty() || _uiState.value.loadState == LoadState.Loading) return@launch
-            _uiState.update { it.copy(loadState = LoadState.Loading) }
             try {
-                val generation = repository.accountGeneration
-                val snapshot = repository.readHomeSnapshot(kind)
-                val hasCachedItems = snapshot != null && snapshot.items.isNotEmpty()
+                val hasCachedItems = tryApplyHomeSnapshot(kind)
                 if (hasCachedItems) {
-                    val currentSettings = _uiState.value.settings
-                    val initialItems =
-                        snapshot.items.visibleWithSettings(currentSettings).preferUnseenFeedItems(currentSettings)
-                    _uiState.update {
-                        if (repository.accountGeneration != generation || it.homeKind != kind) return@update it
-                        if (it.appLocked || it.privacyLocked) return@update it
-                        it.copy(
-                            homeItems = initialItems,
-                            homeNextUrl = null,
-                            loadState = LoadState.Loaded,
-                        )
-                    }
-                    // Allow visible snapshot cards a clean window to load and decode images without network contention
                     delay(STARTUP_HOME_BACKGROUND_REFRESH_DELAY_MS)
+                } else {
+                    _uiState.update {
+                        if (it.homeItems.isEmpty()) it.copy(loadState = LoadState.Loading) else it
+                    }
                 }
-                loadHomeInternal(kind, forceRefresh = !hasCachedItems)
-                _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                _uiState.update { it.copy(isHomeRefreshing = hasCachedItems) }
+                loadHomeInternal(
+                    kind,
+                    forceRefresh = !hasCachedItems,
+                    deferIncomingIfScrolled = hasCachedItems,
+                )
+                _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(loadState = if (it.homeItems.isEmpty()) LoadState.Idle else LoadState.Loaded) }
+                _uiState.update {
+                    it.copy(
+                        isHomeRefreshing = false,
+                        loadState = if (it.homeItems.isEmpty()) LoadState.Idle else LoadState.Loaded,
+                    )
+                }
             }
         }
     }
 
     override fun refreshHome(forceRefresh: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
+            val kind = _uiState.value.homeKind
+            val shouldTryCache = !forceRefresh && _uiState.value.homeItems.isEmpty()
+            val hasCached = if (shouldTryCache) tryApplyHomeSnapshot(kind) else false
             _uiState.update {
-                it.copy(
-                    isHomeRefreshing = forceRefresh,
-                    loadState = if (it.homeItems.isEmpty()) LoadState.Loading else it.loadState,
-                )
+                when {
+                    hasCached -> it
+                    it.homeItems.isEmpty() -> it.copy(loadState = LoadState.Loading, isHomeRefreshing = false)
+                    else -> it.copy(isHomeRefreshing = forceRefresh)
+                }
             }
             try {
                 GlitchTipTelemetry.traceAsync("feed.home.refresh", "feed.home") {
-                    loadHomeInternal(_uiState.value.homeKind, forceRefresh = forceRefresh)
+                    loadHomeInternal(kind, forceRefresh = forceRefresh)
                 }
                 _uiState.update { it.copy(isHomeRefreshing = false, loadState = LoadState.Loaded, isOfflineCached = false) }
             } catch (expectedFailure: Exception) {

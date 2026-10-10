@@ -25,6 +25,8 @@ data class IllustiaUiState(
     val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
     val homeItems: List<Illust> = emptyList(),
     val homeNextUrl: String? = null,
+    val pendingHomeItems: List<Illust> = emptyList(),
+    val pendingHomeNextUrl: String? = null,
     val novelItems: List<NovelPreview> = emptyList(),
     val novelNextUrl: String? = null,
     val selectedNovel: NovelPreview? = null,
