@@ -1052,6 +1052,8 @@
     <string name="update_include_prerelease_desc">Receive updates for pre-release and development versions</string>
     <string name="update_notify_new_version">Notify on new version</string>
     <string name="update_notify_new_version_desc">Show system notifications when a new version is released</string>
+    <string name="update_check_background">Check in background</string>
+    <string name="update_check_background_desc">Periodically check for new versions in the background every 12 hours</string>
     <string name="update_auto_download">Auto-download updates</string>
     <string name="update_auto_download_desc">Automatically download updates in the background (auto-installs if Shizuku is enabled)</string>
     <string name="flag_embed_metadata_title">Embed Image EXIF / Metadata</string>

@@ -354,7 +354,14 @@ fun AboutScreen(
                                         style = MiuixTheme.textStyles.footnote1,
                                     )
                                     Button(
-                                        onClick = { viewModel.checkForUpdates(silent = false) },
+                                        onClick = {
+                                            val targetRelease = currentUpdate.release
+                                            if (targetRelease != null) {
+                                                viewModel.downloadUpdate(targetRelease)
+                                            } else {
+                                                viewModel.checkForUpdates(silent = false)
+                                            }
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColorsPrimary(),
                                     ) {

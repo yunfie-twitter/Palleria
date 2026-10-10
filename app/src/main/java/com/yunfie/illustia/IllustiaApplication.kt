@@ -146,7 +146,11 @@ class IllustiaApplication : Application() {
             }
             PalleriaAccount.reconcile(appContext, settings.accounts)
             AppUpdateNotificationHelper.createNotificationChannel(appContext)
-            AppUpdateScheduler.schedulePeriodicCheck(appContext)
+            if (settings.checkUpdatesInBackground && (settings.notifyNewVersion || settings.autoDownloadUpdates)) {
+                AppUpdateScheduler.schedulePeriodicCheck(appContext)
+            } else {
+                AppUpdateScheduler.cancelPeriodicCheck(appContext)
+            }
             com.yunfie.illustia.data.FollowDeltaSyncScheduler
                 .schedulePeriodicSync(appContext)
             launch {
