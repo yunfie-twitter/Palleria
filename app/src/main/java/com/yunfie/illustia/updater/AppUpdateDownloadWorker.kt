@@ -3,7 +3,6 @@ package com.yunfie.illustia.updater
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
-import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
@@ -111,6 +110,7 @@ class AppUpdateDownloadWorker(
             // Cancel unique work so that if the process is killed by Shizuku installation,
             // WorkManager will not re-trigger this worker indefinitely.
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            AppUpdateNotificationHelper.showInstalling(context, release)
             val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
             if (installResult.isSuccess) {
                 AppUpdateNotificationHelper.showUpdateInstalled(context, release)
@@ -122,25 +122,24 @@ class AppUpdateDownloadWorker(
     }
 
     private fun createForegroundInfo(release: AppReleaseInfo): ForegroundInfo {
-        AppUpdateNotificationHelper.createNotificationChannel(context)
         val notification =
-            NotificationCompat
-                .Builder(context, AppUpdateNotificationHelper.CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(context.getString(R.string.update_download_progress_title, release.versionName))
-                .setContentText("Starting download...")
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .build()
+            AppUpdateNotificationHelper.buildProgressNotification(
+                context = context,
+                release = release,
+                progress = 0,
+                downloadedBytes = 0L,
+                totalBytes = release.apkSize,
+                cancelPendingIntent = WorkManager.getInstance(context).createCancelPendingIntent(id),
+            )
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
-                NOTIFICATION_ID_PROGRESS,
+                AppUpdateNotificationHelper.NOTIFICATION_ID_PROGRESS,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
         } else {
-            ForegroundInfo(NOTIFICATION_ID_PROGRESS, notification)
+            ForegroundInfo(AppUpdateNotificationHelper.NOTIFICATION_ID_PROGRESS, notification)
         }
     }
 
