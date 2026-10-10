@@ -112,23 +112,25 @@ internal sealed interface PallaSyncHttpResult<out T> {
 internal fun parseDeviceIdsResponseBody(
     json: Json,
     body: String,
-): PallaSyncHttpResult<List<String>> {
-    val parsed =
-        runCatching { json.parseToJsonElement(body) }
-            .getOrElse { return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON") }
-    val array =
-        if (parsed is JsonObject) {
-            val devices =
-                parsed["devices"]
-                    ?: return PallaSyncHttpResult.ProtocolError("Device response devices field was missing")
-            runCatching { devices.jsonArray }
-                .getOrElse { return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON") }
-        } else {
-            runCatching { parsed.jsonArray }
-                .getOrElse { return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON") }
-        }
-    return PallaSyncHttpResult.Success(array.map { it.toString() })
-}
+): PallaSyncHttpResult<List<String>> =
+    runCatching {
+        val parsed = json.parseToJsonElement(body)
+        val array =
+            when (parsed) {
+                is JsonObject -> {
+                    val devices = parsed["devices"]
+                        ?: return PallaSyncHttpResult.ProtocolError("Device response devices field was missing")
+                    devices.jsonArray
+                }
+
+                else -> {
+                    parsed.jsonArray
+                }
+            }
+        PallaSyncHttpResult.Success(array.map { it.toString() })
+    }.getOrElse {
+        PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
+    }
 
 internal fun classifyPallaSyncHttpStatus(
     statusCode: Int,
