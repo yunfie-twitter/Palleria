@@ -64,7 +64,7 @@ jobs:
             --stacktrace
 
       - name: Create Pull Request for Updated Baseline Profile
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "perf(profile): update generated baseline profile"
           title: "perf(profile): update generated baseline profile"
