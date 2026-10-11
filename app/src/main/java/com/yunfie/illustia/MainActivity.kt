@@ -435,6 +435,22 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) {
+            applyTaskSnapshotBlur(isEnteringBackground = true)
+        } else {
+            applyTaskSnapshotBlur(isEnteringBackground = false)
+        }
+    }
+
+    override fun onTopResumedActivityChanged(isTopResumedActivity: Boolean) {
+        super.onTopResumedActivityChanged(isTopResumedActivity)
+        if (!isTopResumedActivity) {
+            applyTaskSnapshotBlur(isEnteringBackground = true)
+        }
+    }
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         applyTaskSnapshotBlur(isEnteringBackground = true)
@@ -601,6 +617,9 @@ class MainActivity : FragmentActivity() {
 
         if (isEnteringBackground) {
             if (!isBlurEnabled) return
+            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
+                setRecentsScreenshotEnabled(false)
+            }
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 val blurEffect =
                     RenderEffect.createBlurEffect(
@@ -609,15 +628,20 @@ class MainActivity : FragmentActivity() {
                         Shader.TileMode.CLAMP,
                     )
                 window.decorView.setRenderEffect(blurEffect)
+                window.decorView.invalidate()
                 isSnapshotBlurApplied = true
             } else {
                 window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 isSnapshotBlurApplied = true
             }
         } else {
+            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
+                setRecentsScreenshotEnabled(true)
+            }
             if (isSnapshotBlurApplied) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                     window.decorView.setRenderEffect(null)
+                    window.decorView.invalidate()
                 } else {
                     val appLocked = viewModel.uiState.value.appLocked
                     if (!settings.secureWindow && !(appLocked && settings.appLockEnabled)) {
