@@ -11,14 +11,14 @@ class PallaSyncUrlsTest :
 
             normalized.toString() shouldBe "https://example.com/relay"
             PallaSyncUrls.records(normalized, "chain", null, 42L, 999).toString() shouldBe
-                "https://example.com/relay/pallasync/v2/chains/chain/records?limit=500&after_seq=42"
+                "https://example.com/relay/pallasync/v3/chains/chain/records?limit=500&after_seq=42"
         }
 
         "path values are encoded as segments rather than concatenated" {
             val base = normalizedUrl("https://example.com")
 
             PallaSyncUrls.recordsEndpoint(base, "a/b").toString() shouldBe
-                "https://example.com/pallasync/v2/chains/a%2Fb/records"
+                "https://example.com/pallasync/v3/chains/a%2Fb/records"
         }
 
         "query fragment credentials and unsupported schemes are rejected" {
