@@ -27,3 +27,11 @@ SSHで実機Dockerを確認したところ、`pallasync-pallasync-1` は3090でh
 この修正は接続・登録直後の応答処理に関するものです。クライアント全体の完全準拠を宣言するものではありません。既存コードには、§7.13/§11.7の署名済みprivacy検証と明示同意、§11.6の復旧source選択、§17.9の継続的なrelay-key pin、§17.7の削除権限証拠の検証など、別途実装が必要な部分が残っています。healthのfingerprint一致だけをidentity trustやprivacy同意の代わりに扱いません。
 
 修正前のインストール済みv7.0.0-beta.1にこの変更は反映されません。更新ビルドが必要です。このPCではNDK未導入のためAPK生成は未完了で、接続されたAndroid端末もなかったため実端末の有効化操作は検証していません。
+
+## 初期レコード生成のJNI検証
+
+続く初期同期では、`Could not prepare initial sync items; the current chain was retained: Native sync record creation failed` が発生しました。KotlinのJSON encoderは通常、値がデフォルトと等しいpropertyを省略します。そのため空の`context`や、delete/clearで空になる`body`がRustの`InnerRecord`/`Operation`へ渡らず、必須memberの解析が失敗してJNIがnullを返していました。
+
+§7.3ではこれらは空でも必須です。`PallaSyncOperation.context`と`body`、`PallaSyncInnerRecord.prev_record_hash`と`operations`を常にencodeするよう指定しました。初期同期と通常outboxは同じモデルを使うため、両方の経路に適用されます。既存チェーンを保持する失敗処理とRustの必須member検査は維持しています。
+
+`buildPallaSyncCoreHost`をJVM単体テストの依存に追加し、NDKを必要とせず現行RustのJNI libraryをロードして検証します。実際の初期検索履歴イベントとdelete/clearについて、KotlinのJSON生成→JNI解析→暗号化・署名→署名検証・復号を実行し、元のInnerRecordとの一致を確認します。修正前には同じテストでnative生成のnullを再現できました。この検証は前回のRustのみで生成したrecordの検証に追加したものです。

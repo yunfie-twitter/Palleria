@@ -221,6 +221,27 @@ def pallaSyncInputs = files(
     new File(pallaSyncCoreCrateDir, "Cargo.lock"),
 )
 
+// Exercise the Kotlin -> JNI boundary in JVM tests without requiring an Android NDK.
+def pallaSyncHostLibraryName = hostOperatingSystem.isWindows()
+    ? "pallasync_core.dll"
+    : hostOperatingSystem.isMacOsX()
+        ? "libpallasync_core.dylib"
+        : "libpallasync_core.so"
+def pallaSyncHostLibrary = new File(rustTargetDir, "debug/${pallaSyncHostLibraryName}")
+def buildPallaSyncCoreHost = tasks.register("buildPallaSyncCoreHost", Exec) {
+    workingDir pallaSyncCoreCrateDir
+    environment "CARGO_TARGET_DIR", rustTargetDir
+    commandLine cargoExecutable, "build", "--locked", "--lib"
+    inputs.files(pallaSyncInputs)
+    outputs.file(pallaSyncHostLibrary)
+}
+
+tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+    dependsOn buildPallaSyncCoreHost
+    systemProperty "java.library.path", pallaSyncHostLibrary.parentFile.absolutePath +
+        File.pathSeparator + System.getProperty("java.library.path")
+}
+
 def buildPallaSyncCoreAndroid = tasks.register("buildPallaSyncCoreAndroid", Exec) {
     workingDir pallaSyncCoreCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir

@@ -1,5 +1,7 @@
 package com.yunfie.illustia.pallasync
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -130,20 +132,26 @@ internal data class PallaSyncWireRecord(
 }
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 internal data class PallaSyncInnerRecord(
     val collection: String,
     @SerialName("device_seq") val deviceSeq: Long,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("prev_record_hash") val prevRecordHash: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val operations: List<PallaSyncOperation> = emptyList(),
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 internal data class PallaSyncOperation(
     @SerialName("entity_id") val entityId: String,
     val operation: String, // "upsert", "delete", "clear"
     val lamport: Long,
     @SerialName("created_at_ms") val createdAtMs: Long,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val context: JsonObject = JsonObject(emptyMap()),
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val body: JsonObject = JsonObject(emptyMap()),
 )
 
