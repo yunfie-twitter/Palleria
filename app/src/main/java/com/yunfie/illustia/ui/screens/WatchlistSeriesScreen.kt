@@ -81,6 +81,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.isDynamicColorAvailable
+import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.EmptyState
@@ -201,11 +202,12 @@ fun WatchlistSeriesScreen(
     }
 
     val backgroundColor =
-        if (settings.useDynamicColor && isDynamicColorAvailable()) {
-            MiuixTheme.colorScheme.background
-        } else {
-            MiuixTheme.colorScheme.surface
-        }
+        resolvePageBackgroundColor(
+            useDynamicColor = settings.useDynamicColor,
+            dynamicColorAvailable = isDynamicColorAvailable(),
+            dynamicBackgroundColor = MiuixTheme.colorScheme.background,
+            fallbackBackgroundColor = MiuixTheme.colorScheme.surface,
+        )
     val isDarkTheme = backgroundColor.luminance() < 0.5f
 
     DisposableEffect(isContentScrolled, isDarkTheme) {
