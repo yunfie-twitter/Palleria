@@ -66,6 +66,7 @@ internal class PalleriaSyncCoordinator(
         Json {
             ignoreUnknownKeys = true
         }
+    private var relayLimits = PALLASYNC_HARD_LIMITS
 
     @Volatile
     private var backgroundSyncJob: Job? = null
@@ -75,7 +76,7 @@ internal class PalleriaSyncCoordinator(
         private const val NORMAL_POLL_DELAY_MS = 5_000L
         private const val MAX_RETRY_DELAY_MS = 5 * 60_000L
         private const val PROTOCOL_ERROR_DELAY_MS = 30_000L
-        private val JSON_MEDIA_TYPE = "application/vnd.palleria.sync.v2+json".toMediaType()
+        private val JSON_MEDIA_TYPE = PALLASYNC_MEDIA_TYPE.toMediaType()
 
         val syncLogs = MutableStateFlow<List<String>>(emptyList())
 
@@ -264,45 +265,11 @@ internal class PalleriaSyncCoordinator(
             }
         val aud = PallaSyncUrls.extractOrigin(baseUrl)
 
-        val healthRequest =
-            Request
-                .Builder()
-                .url(PallaSyncUrls.health(baseUrl))
-                .header("Accept", JSON_MEDIA_TYPE.toString())
-                .get()
-                .build()
-        when (
-            val health =
-                remote.execute(healthRequest) { response ->
-                    val contentType = response.header("Content-Type")?.substringBefore(';')?.trim()
-                    if (contentType != JSON_MEDIA_TYPE.toString() && contentType != PALLASYNC_MEDIA_TYPE) {
-                        return@execute PallaSyncHttpResult.ProtocolError(
-                            "PallaSync health response used an unexpected media type",
-                        )
-                    }
-                    val body =
-                        response.body?.string()
-                            ?: return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response was empty")
-                    val healthBody =
-                        runCatching { json.decodeFromString<PallaSyncHealth>(body) }.getOrNull()
-                            ?: return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response was invalid")
-                    if (healthBody.status != "ok" ||
-                        (
-                            healthBody.protocolVersion != PALLASYNC_PROTOCOL_VERSION &&
-                                healthBody.protocolVersion != PALLASYNC_LEGACY_PROTOCOL_VERSION
-                        )
-                    ) {
-                        return@execute PallaSyncHttpResult.ProtocolError(
-                            "PallaSync health response advertised an incompatible protocol",
-                        )
-                    }
-                    PallaSyncHttpResult.Success(Unit)
-                }
-        ) {
+        when (val health = refreshRelayHealth(baseUrl)) {
             is PallaSyncHttpResult.Success -> Unit
-            PallaSyncHttpResult.Gone -> return null.also { log("The PallaSync service is unavailable") }
             is PallaSyncHttpResult.Retryable -> return null.also { log(health.message) }
             is PallaSyncHttpResult.ProtocolError -> return null.also { log(health.message) }
+            PallaSyncHttpResult.Gone -> return null
         }
 
         val chainId: String
@@ -648,9 +615,7 @@ internal class PalleriaSyncCoordinator(
                 crypto.createSyncRecord(
                     chainId = state.chainId,
                     generation = 0,
-                    recordId =
-                        com.yunfie.illustia.pallasync.util.UuidV7
-                            .generateString(),
+                    recordId = newPallaSyncRecordId(),
                     deviceId = deviceId,
                     epoch = 0,
                     collectionTag = null,
@@ -785,16 +750,32 @@ internal class PalleriaSyncCoordinator(
                         is PallaSyncHttpResult.Success -> normalized.value
                         else -> return@withLock false
                     }
+                when (val health = refreshRelayHealth(baseUrl)) {
+                    is PallaSyncHttpResult.Success -> Unit
+                    else -> return@withLock false
+                }
+                val records =
+                    runCatching { json.parseToJsonElement(recordsJsonArray).jsonArray }.getOrNull()
+                        ?: return@withLock false
+                val objects = records.map { it.jsonObject }
+                val submitted = objects.associateBy { it["record_id"]!!.jsonPrimitive.content }
+                if (!validSubmittedBatch(objects, submitted)) return@withLock false
+                val body = "{\"records\":$records}"
+                val path = "/pallasync/v3/chains/$chainId/records"
+                val token =
+                    makeCapabilityToken(baseUrl, chainId, "POST", path, "", body)
+                        ?: return@withLock false
                 val request =
                     Request
                         .Builder()
                         .url(PallaSyncUrls.recordsEndpoint(baseUrl, chainId))
                         .header("Accept", JSON_MEDIA_TYPE.toString())
-                        .post(recordsJsonArray.toRequestBody(JSON_MEDIA_TYPE))
+                        .header("Authorization", "PallaSync $token")
+                        .post(body.toRequestBody(JSON_MEDIA_TYPE))
                         .build()
-                when (remote.executeUnit(request)) {
+                when (val result = executeRecordUpload(request, submitted)) {
                     is PallaSyncHttpResult.Success -> {
-                        true
+                        result.value.rejected.isEmpty()
                     }
 
                     PallaSyncHttpResult.Gone -> {
@@ -906,6 +887,45 @@ internal class PalleriaSyncCoordinator(
             SyncCycleOutcome.Success
         }
 
+    private fun refreshRelayHealth(baseUrl: HttpUrl): PallaSyncHttpResult<Unit> {
+        val request =
+            Request
+                .Builder()
+                .url(PallaSyncUrls.health(baseUrl))
+                .header("Accept", JSON_MEDIA_TYPE.toString())
+                .get()
+                .build()
+        return when (
+            val result =
+                remote.execute(request) { response ->
+                    if (response.header("Content-Type")?.substringBefore(';')?.trim() != PALLASYNC_MEDIA_TYPE) {
+                        return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response used an unexpected media type")
+                    }
+                    val body =
+                        response.body?.string()
+                            ?: return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response was empty")
+                    parseHealthResponseBody(body, PallaSyncUrls.extractOrigin(baseUrl))
+                }
+        ) {
+            is PallaSyncHttpResult.Success -> {
+                relayLimits = result.value.limits
+                PallaSyncHttpResult.Success(Unit)
+            }
+
+            PallaSyncHttpResult.Gone -> {
+                PallaSyncHttpResult.ProtocolError("Relay health unavailable")
+            }
+
+            is PallaSyncHttpResult.Retryable -> {
+                result
+            }
+
+            is PallaSyncHttpResult.ProtocolError -> {
+                result
+            }
+        }
+    }
+
     private fun makeCapabilityToken(
         baseUrl: HttpUrl,
         chainId: String,
@@ -935,96 +955,100 @@ internal class PalleriaSyncCoordinator(
         )
     }
 
+    private fun executeRecordUpload(
+        request: Request,
+        submitted: Map<String, JsonObject>,
+    ): PallaSyncHttpResult<PallaSyncPostRecordsResponse> =
+        remote.execute(request) { response ->
+            val body =
+                response.body?.string()
+                    ?: return@execute PallaSyncHttpResult.ProtocolError("Record upload response body was empty")
+            parseRecordUploadResponseBody(json, body, submitted)
+        }
+
     private suspend fun processOutboxLocked(
         baseUrl: HttpUrl,
         chainId: String,
     ): PallaSyncHttpResult<Unit> {
+        when (val health = refreshRelayHealth(baseUrl)) {
+            is PallaSyncHttpResult.Success -> Unit
+            else -> return health
+        }
         val dao = db.pallaSyncDao()
-        dao.deleteAcceptedEvents()
         val events = dao.getQueuedEvents().filter { it.chainId == chainId }
-        if (events.isEmpty()) return PallaSyncHttpResult.Success(Unit)
-        val batchRecordsJson = events.joinToString(separator = ",", prefix = "[", postfix = "]") { it.eventJson }
-        val batchBody = "{\"records\":$batchRecordsJson}"
-        val path = "/pallasync/v3/chains/$chainId/records"
-        val batchToken = makeCapabilityToken(baseUrl, chainId, "POST", path, "", batchBody)
-        val batchRequestBuilder =
-            Request
-                .Builder()
-                .url(PallaSyncUrls.recordsEndpoint(baseUrl, chainId))
-                .header("Accept", JSON_MEDIA_TYPE.toString())
-        if (batchToken != null) {
-            batchRequestBuilder.header("Authorization", "PallaSync $batchToken")
-        }
-        val batchRequest = batchRequestBuilder.post(batchBody.toRequestBody(JSON_MEDIA_TYPE)).build()
-
-        return when (val result = remote.executeUnit(batchRequest)) {
-            is PallaSyncHttpResult.Success -> {
-                events.forEach { dao.deleteOutboxEvent(it.id) }
-                log("Uploaded and removed ${events.size} accepted sync record(s) in a single batch")
-                PallaSyncHttpResult.Success(Unit)
+        var offset = 0
+        while (offset < events.size) {
+            val count = recordUploadBatchSize(events.drop(offset).map { it.eventJson }, relayLimits)
+            if (count == 0) return PallaSyncHttpResult.ProtocolError("Queued record exceeds the relay request limit; retained locally")
+            val batch = events.drop(offset).take(count)
+            val objects = batch.map { json.parseToJsonElement(it.eventJson).jsonObject }
+            val submitted = objects.associateBy { it["record_id"]!!.jsonPrimitive.content }
+            if (submitted.size !=
+                batch.size
+            ) {
+                return PallaSyncHttpResult.ProtocolError("Queued records contained duplicate IDs; retained locally")
             }
-
-            is PallaSyncHttpResult.ProtocolError -> {
-                if (result.statusCode == 400) {
-                    log("Batch upload failed, falling back to sequential upload to isolate the bad record")
-                    uploadSequentialOutboxEvents(baseUrl, chainId, events)
-                } else {
-                    result
-                }
-            }
-
-            else -> {
-                result
-            }
-        }
-    }
-
-    private suspend fun uploadSequentialOutboxEvents(
-        baseUrl: HttpUrl,
-        chainId: String,
-        events: List<OutboxEntity>,
-    ): PallaSyncHttpResult<Unit> {
-        val dao = db.pallaSyncDao()
-        val path = "/pallasync/v3/chains/$chainId/records"
-        var accepted = 0
-        var errorResult: PallaSyncHttpResult<Unit>? = null
-        var index = 0
-
-        while (index < events.size && errorResult == null) {
-            val event = events[index++]
-            val singleBody = "{\"records\":[${event.eventJson}]}"
-            val singleToken = makeCapabilityToken(baseUrl, chainId, "POST", path, "", singleBody)
-            val singleRequestBuilder =
+            val body = "{\"records\":${batch.joinToString(separator = ",", prefix = "[", postfix = "]") { it.eventJson }}}"
+            val path = "/pallasync/v3/chains/$chainId/records"
+            val token =
+                makeCapabilityToken(baseUrl, chainId, "POST", path, "", body)
+                    ?: return PallaSyncHttpResult.ProtocolError("Active PallaSync keys are missing")
+            val request =
                 Request
                     .Builder()
                     .url(PallaSyncUrls.recordsEndpoint(baseUrl, chainId))
                     .header("Accept", JSON_MEDIA_TYPE.toString())
-            if (singleToken != null) {
-                singleRequestBuilder.header("Authorization", "PallaSync $singleToken")
+                    .header("Authorization", "PallaSync $token")
+                    .post(body.toRequestBody(JSON_MEDIA_TYPE))
+                    .build()
+            val outcome =
+                when (val result = executeRecordUpload(request, submitted)) {
+                    is PallaSyncHttpResult.Success -> result.value
+                    PallaSyncHttpResult.Gone -> return PallaSyncHttpResult.Gone
+                    is PallaSyncHttpResult.Retryable -> return result
+                    is PallaSyncHttpResult.ProtocolError -> return result
+                }
+            val eventsById = batch.zip(objects).associate { (event, obj) -> obj["record_id"]!!.jsonPrimitive.content to event }
+            when (val reconciled = reconcileUploadOutcome(outcome, eventsById)) {
+                is PallaSyncHttpResult.Success -> Unit
+                else -> return reconciled
             }
-            val request = singleRequestBuilder.post(singleBody.toRequestBody(JSON_MEDIA_TYPE)).build()
-            when (val result = remote.executeUnit(request)) {
-                is PallaSyncHttpResult.Success -> {
-                    dao.deleteOutboxEvent(event.id)
-                    accepted += 1
-                }
+            offset += count
+        }
+        return PallaSyncHttpResult.Success(Unit)
+    }
 
-                is PallaSyncHttpResult.ProtocolError -> {
-                    if (result.statusCode == 400) {
-                        dao.updateOutboxEvent(event.copy(status = "rejected"))
-                        log("Quarantined an unrecoverable local sync record: ${result.message}")
-                    } else {
-                        errorResult = result
-                    }
-                }
+    private fun validSubmittedBatch(
+        objects: List<JsonObject>,
+        submitted: Map<String, JsonObject>,
+    ): Boolean =
+        objects.isNotEmpty() && submitted.size == objects.size &&
+            recordUploadBatchSize(objects.map { it.toString() }, relayLimits) == objects.size
 
-                else -> {
-                    errorResult = result
-                }
+    private suspend fun reconcileUploadOutcome(
+        outcome: PallaSyncPostRecordsResponse,
+        eventsById: Map<String, OutboxEntity>,
+    ): PallaSyncHttpResult<Unit> {
+        val dao = db.pallaSyncDao()
+        outcome.accepted.forEach { dao.deleteOutboxEvent(eventsById.getValue(it.recordId).id) }
+        outcome.rejected.filterNot { it.retryable }.forEach {
+            dao.updateOutboxEvent(eventsById.getValue(it.recordId).copy(status = "rejected"))
+        }
+        if (outcome.accepted.isNotEmpty()) log("Uploaded ${outcome.accepted.size} accepted sync record(s)")
+        val details = outcome.rejected.joinToString { it.code }
+        return when {
+            outcome.rejected.isEmpty() -> {
+                PallaSyncHttpResult.Success(Unit)
+            }
+
+            outcome.rejected.any { it.retryable } -> {
+                PallaSyncHttpResult.Retryable("Relay rejected records ($details); unaccepted records were retained locally")
+            }
+
+            else -> {
+                PallaSyncHttpResult.ProtocolError("Relay rejected records ($details); unaccepted records were retained locally")
             }
         }
-        if (accepted > 0) log("Uploaded and removed $accepted accepted sync record(s)")
-        return errorResult ?: PallaSyncHttpResult.Success(Unit)
     }
 
     private suspend fun fetchDevicesLocked(
@@ -1032,30 +1056,48 @@ internal class PalleriaSyncCoordinator(
         chainId: String,
     ): PallaSyncHttpResult<Unit> {
         val path = "/pallasync/v3/chains/$chainId/devices"
-        val token = makeCapabilityToken(baseUrl, chainId, "GET", path, "", "")
-        val requestBuilder =
-            Request
-                .Builder()
-                .url(PallaSyncUrls.devices(baseUrl, chainId))
-                .header("Accept", JSON_MEDIA_TYPE.toString())
-        if (token != null) {
-            requestBuilder.header("Authorization", "PallaSync $token")
-        }
-        val request = requestBuilder.get().build()
-        val responseResult =
-            remote.execute(request) { response ->
-                val body =
-                    response.body?.string()
-                        ?: return@execute PallaSyncHttpResult.ProtocolError("Device response body was empty")
-                parseDeviceIdsResponseBody(json, body)
+        val registry = mutableListOf<PallaSyncRegistryEntry>()
+        var cursor: String? = null
+        val seenCursors = mutableSetOf<String>()
+        var expectedLogId: String? = null
+        do {
+            val url = PallaSyncUrls.devices(baseUrl, chainId, cursor, minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit))
+            val token =
+                makeCapabilityToken(baseUrl, chainId, "GET", path, url.encodedQuery.orEmpty(), "")
+                    ?: return PallaSyncHttpResult.ProtocolError("Active PallaSync keys are missing")
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .header("Accept", JSON_MEDIA_TYPE.toString())
+                    .header("Authorization", "PallaSync $token")
+                    .get()
+                    .build()
+            val page =
+                when (
+                    val result =
+                        remote.execute(request) { response ->
+                            val body =
+                                response.body?.string()
+                                    ?: return@execute PallaSyncHttpResult.ProtocolError("Device response body was empty")
+                            parseDevicesResponseBody(json, body)
+                        }
+                ) {
+                    is PallaSyncHttpResult.Success -> result.value
+                    PallaSyncHttpResult.Gone -> return PallaSyncHttpResult.Gone
+                    is PallaSyncHttpResult.Retryable -> return result
+                    is PallaSyncHttpResult.ProtocolError -> return result
+                }
+            if (expectedLogId != null && page.logId != expectedLogId) {
+                return PallaSyncHttpResult.ProtocolError("Device registry changed log while paging")
             }
-        val rawDevices =
-            when (responseResult) {
-                is PallaSyncHttpResult.Success -> responseResult.value
-                PallaSyncHttpResult.Gone -> return PallaSyncHttpResult.Gone
-                is PallaSyncHttpResult.Retryable -> return responseResult
-                is PallaSyncHttpResult.ProtocolError -> return responseResult
+            expectedLogId = page.logId
+            registry += page.items
+            cursor = page.nextCursor
+            if (cursor != null && !seenCursors.add(cursor)) {
+                return PallaSyncHttpResult.ProtocolError("Device registry repeated its cursor")
             }
+        } while (cursor != null)
 
         val dao = db.pallaSyncDao()
         val keys =
@@ -1065,7 +1107,8 @@ internal class PalleriaSyncCoordinator(
         val activeDeviceIds = mutableSetOf<String>()
         var shouldSelfHeal = false
 
-        rawDevices.forEach { rawDevice ->
+        registry.forEach { entry ->
+            val rawDevice = entry.deviceRecord.toString()
             val device =
                 runCatching { json.decodeFromString<PallaSyncWireDevice>(rawDevice) }
                     .getOrElse {
@@ -1079,6 +1122,10 @@ internal class PalleriaSyncCoordinator(
                 )
             ) {
                 log("Ignored a device record for the wrong chain or protocol")
+                return@forEach
+            }
+            if (entry.status == "revoked") {
+                if (device.deviceId == myDeviceId) return PallaSyncHttpResult.ProtocolError("The active device is revoked; sync paused")
                 return@forEach
             }
             activeDeviceIds += device.deviceId
@@ -1519,9 +1566,7 @@ internal class PalleriaSyncCoordinator(
                     crypto.createSyncRecord(
                         chainId = state.chainId,
                         generation = 0,
-                        recordId =
-                            com.yunfie.illustia.pallasync.util.UuidV7
-                                .generateString(),
+                        recordId = newPallaSyncRecordId(),
                         deviceId = deviceId,
                         epoch = 0,
                         collectionTag = null,
