@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.cachedVerticalGradient
@@ -68,6 +69,18 @@ fun ShortsFeedScreen(
             initialPage = initialPage,
             pageCount = { items.size },
         )
+
+    LaunchedEffect(viewModel) {
+        viewModel.tabScrollToTopRequests.collect { tab ->
+            if (tab == AppTab.ShortsFeed) {
+                if (pagerState.currentPage > 0) {
+                    pagerState.animateScrollToPage(0)
+                } else {
+                    viewModel.refreshShortsFeed()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(pagerState, items) {
         var isFirstCollection = true
