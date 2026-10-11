@@ -1,23 +1,22 @@
 // ffi_jni.rs
-// JNI bindings for PallaSync v2.1 Android
+// JNI bindings for PallaSync Protocol 3.0 Android
 
-use crate::crypto::{self};
-use crate::models::{DeviceRecord, SyncRecord};
+use crate::crypto;
+use crate::models::{
+    DeviceMetaPlaintext, DeviceRecord, EnrollmentCertificate, EpochKeyEnvelope, InnerRecord,
+    SyncRecord,
+};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::{jboolean, jlong, jstring};
-use std::time::{SystemTime, UNIX_EPOCH};
+use jni::sys::{jboolean, jint, jlong, jstring};
+use x25519_dalek::{PublicKey as X25519PublicKey, StaticSecret};
 
 fn read_string<'local>(env: &mut JNIEnv<'local>, value: &JString<'local>) -> Option<String> {
+    if value.is_null() {
+        return None;
+    }
     env.get_string(value).ok().map(Into::into)
-}
-
-fn now_ms() -> Option<i64> {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .ok()
-        .map(|duration| duration.as_millis() as i64)
 }
 
 #[unsafe(no_mangle)]
@@ -35,46 +34,135 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_generate
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_deriveKeys<'local>(
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_generateDeviceKeys<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    _class: JClass<'local>,
+) -> jstring {
+    let (signing_key, kex_bytes) = crypto::generate_device_keys();
+    let signing_key_b64 = URL_SAFE_NO_PAD.encode(signing_key.to_bytes());
+    let public_key_b64 = URL_SAFE_NO_PAD.encode(signing_key.verifying_key().as_bytes());
+
+    let static_secret = StaticSecret::from(kex_bytes);
+    let x_pub = X25519PublicKey::from(&static_secret);
+    let kex_private_b64 = URL_SAFE_NO_PAD.encode(kex_bytes);
+    let kex_public_b64 = URL_SAFE_NO_PAD.encode(x_pub.as_bytes());
+
+    #[derive(serde::Serialize)]
+    struct DeviceKeysOutput<'a> {
+        signing_key: &'a str,
+        public_key: &'a str,
+        kex_private_key: &'a str,
+        kex_public_key: &'a str,
+    }
+
+    let output = DeviceKeysOutput {
+        signing_key: &signing_key_b64,
+        public_key: &public_key_b64,
+        kex_private_key: &kex_private_b64,
+        kex_public_key: &kex_public_b64,
+    };
+
+    let Ok(json_str) = serde_json::to_string(&output) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(json_str) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_deriveRootKeys<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     seed_phrase: JString<'local>,
+    passphrase: JString<'local>,
 ) -> jstring {
     let Some(seed_str) = read_string(&mut env, &seed_phrase) else {
         return std::ptr::null_mut();
     };
-    let derived = match crypto::derive_keys_from_seed(&seed_str) {
-        Ok(keys) => keys,
-        Err(_) => return std::ptr::null_mut(),
+    let pass_str = read_string(&mut env, &passphrase).unwrap_or_default();
+
+    let Ok(root_keys) = crypto::derive_root_keys(&seed_str, &pass_str) else {
+        return std::ptr::null_mut();
     };
 
-    let enc_key_b64 = URL_SAFE_NO_PAD.encode(&derived.encryption_key);
-    let sign_key_b64 = URL_SAFE_NO_PAD.encode(derived.signing_key.to_bytes());
-    let pub_key_b64 = URL_SAFE_NO_PAD.encode(derived.signing_key.verifying_key().as_bytes());
+    let admin_key_b64 = URL_SAFE_NO_PAD.encode(root_keys.admin_key.to_bytes());
+    let recovery_kek_b64 = URL_SAFE_NO_PAD.encode(root_keys.recovery_kek);
 
     #[derive(serde::Serialize)]
-    struct DerivedKeysOutput<'a> {
+    struct RootKeysOutput<'a> {
         chain_id: &'a str,
         chain_salt: &'a str,
-        encryption_key: &'a str,
-        signing_key: &'a str,
-        public_key: &'a str,
+        admin_public_key: &'a str,
+        admin_signing_key: &'a str,
+        recovery_kek: &'a str,
     }
 
-    let output = DerivedKeysOutput {
-        chain_id: &derived.chain_id,
-        chain_salt: &derived.chain_salt,
-        encryption_key: &enc_key_b64,
-        signing_key: &sign_key_b64,
-        public_key: &pub_key_b64,
+    let output = RootKeysOutput {
+        chain_id: &root_keys.chain_id,
+        chain_salt: &root_keys.chain_salt,
+        admin_public_key: &root_keys.admin_public_key,
+        admin_signing_key: &admin_key_b64,
+        recovery_kek: &recovery_kek_b64,
     };
 
-    let result_str = match serde_json::to_string(&output) {
-        Ok(s) => s,
-        Err(_) => return std::ptr::null_mut(),
+    let Ok(json_str) = serde_json::to_string(&output) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(json_str) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_deriveEpochKeys<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    epoch_secret_b64: JString<'local>,
+    chain_id: JString<'local>,
+    epoch: jlong,
+) -> jstring {
+    let (Some(secret_str), Some(chain_id_str)) = (
+        read_string(&mut env, &epoch_secret_b64),
+        read_string(&mut env, &chain_id),
+    ) else {
+        return std::ptr::null_mut();
     };
 
-    match env.new_string(result_str) {
+    let Ok(secret_bytes) = crypto::decode_key_32(&secret_str, "epoch secret") else {
+        return std::ptr::null_mut();
+    };
+    let Ok(chain_id_digest) = crypto::decode_key_32(&chain_id_str, "chain_id") else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(keys) = crypto::derive_epoch_keys(&chain_id_digest, epoch as u32, &secret_bytes) else {
+        return std::ptr::null_mut();
+    };
+
+    #[derive(serde::Serialize)]
+    struct EpochKeysOutput<'a> {
+        record_key: String,
+        device_meta_key: String,
+        collection_tag_key: String,
+        epoch_commitment: &'a str,
+    }
+
+    let output = EpochKeysOutput {
+        record_key: URL_SAFE_NO_PAD.encode(keys.record_key),
+        device_meta_key: URL_SAFE_NO_PAD.encode(keys.device_meta_key),
+        collection_tag_key: URL_SAFE_NO_PAD.encode(keys.collection_tag_key),
+        epoch_commitment: &keys.epoch_commitment_b64u,
+    };
+
+    let Ok(json_str) = serde_json::to_string(&output) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(json_str) {
         Ok(output) => output.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
@@ -85,60 +173,61 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createSy
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     chain_id: JString<'local>,
+    generation: jint,
     record_id: JString<'local>,
-    collection_name: JString<'local>,
-    action: JString<'local>,
-    payload_json: JString<'local>,
     device_id: JString<'local>,
-    encryption_key: JString<'local>,
-    signing_key: JString<'local>,
-    lamport: jlong,
+    epoch: jint,
+    collection_tag: JString<'local>,
+    inner_record_json: JString<'local>,
+    record_key_b64: JString<'local>,
+    signing_key_b64: JString<'local>,
 ) -> jstring {
     let (
         Some(chain_id_str),
         Some(record_id_str),
-        Some(collection_name_str),
-        Some(action_str),
-        Some(payload_str),
         Some(device_id_str),
-        Some(encryption_key_str),
+        Some(inner_record_str),
+        Some(record_key_str),
         Some(signing_key_str),
     ) = (
         read_string(&mut env, &chain_id),
         read_string(&mut env, &record_id),
-        read_string(&mut env, &collection_name),
-        read_string(&mut env, &action),
-        read_string(&mut env, &payload_json),
         read_string(&mut env, &device_id),
-        read_string(&mut env, &encryption_key),
-        read_string(&mut env, &signing_key),
+        read_string(&mut env, &inner_record_json),
+        read_string(&mut env, &record_key_b64),
+        read_string(&mut env, &signing_key_b64),
     )
     else {
         return std::ptr::null_mut();
     };
-    let Ok(encryption_key) = crypto::decode_encryption_key(&encryption_key_str) else {
+
+    let collection_tag_opt = read_string(&mut env, &collection_tag);
+
+    let Ok(inner_record) = serde_json::from_str::<InnerRecord>(&inner_record_str) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(record_key) = crypto::decode_key_32(&record_key_str, "record key") else {
         return std::ptr::null_mut();
     };
     let Ok(signing_key) = crypto::decode_signing_key(&signing_key_str) else {
         return std::ptr::null_mut();
     };
-    let Some(created_at_ms) = now_ms() else {
-        return std::ptr::null_mut();
-    };
-    let Ok(record) = crypto::create_sync_record_at(
+
+    let Ok(record) = crypto::create_sync_record(
         &chain_id_str,
+        generation as u32,
         &record_id_str,
-        &collection_name_str,
-        &action_str,
-        payload_str.as_bytes(),
         &device_id_str,
-        &encryption_key,
+        epoch as u32,
+        collection_tag_opt.as_deref(),
+        &inner_record,
+        &record_key,
         &signing_key,
-        lamport,
-        created_at_ms,
+        false,
     ) else {
         return std::ptr::null_mut();
     };
+
     let Ok(serialized) = serde_json::to_string(&record) else {
         return std::ptr::null_mut();
     };
@@ -155,31 +244,30 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptS
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     record_json: JString<'local>,
-    encryption_key: JString<'local>,
+    record_key_b64: JString<'local>,
 ) -> jstring {
-    let (Some(record_str), Some(encryption_key_str)) = (
+    let (Some(record_str), Some(key_str)) = (
         read_string(&mut env, &record_json),
-        read_string(&mut env, &encryption_key),
+        read_string(&mut env, &record_key_b64),
     ) else {
         return std::ptr::null_mut();
     };
-    let record: SyncRecord = match serde_json::from_str(&record_str) {
-        Ok(r) => r,
-        Err(_) => return std::ptr::null_mut(),
+
+    let Ok(record) = serde_json::from_str::<SyncRecord>(&record_str) else {
+        return std::ptr::null_mut();
     };
-    let encryption_key = match crypto::decode_encryption_key(&encryption_key_str) {
-        Ok(key) => key,
-        Err(_) => return std::ptr::null_mut(),
+    let Ok(record_key) = crypto::decode_key_32(&key_str, "record key") else {
+        return std::ptr::null_mut();
     };
-    let plaintext = match crypto::decrypt_sync_record(&record, &encryption_key) {
-        Ok(p) => p,
-        Err(_) => return std::ptr::null_mut(),
+
+    let Ok(inner) = crypto::decrypt_sync_record(&record, &record_key) else {
+        return std::ptr::null_mut();
     };
-    let plaintext_str = match String::from_utf8(plaintext) {
-        Ok(value) => value,
-        Err(_) => return std::ptr::null_mut(),
+
+    let Ok(output_str) = serde_json::to_string(&inner) else {
+        return std::ptr::null_mut();
     };
-    match env.new_string(plaintext_str) {
+    match env.new_string(output_str) {
         Ok(output) => output.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
@@ -208,46 +296,69 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createDe
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     chain_id: JString<'local>,
+    generation: jint,
     device_id: JString<'local>,
+    device_signing_key_b64: JString<'local>,
+    device_kex_public_key_b64: JString<'local>,
     device_name: JString<'local>,
-    encryption_key: JString<'local>,
-    signing_key: JString<'local>,
+    key_protection: JString<'local>,
+    meta_epoch: jint,
+    device_meta_key_b64: JString<'local>,
+    enrollment_certificate_json: JString<'local>,
 ) -> jstring {
     let (
         Some(chain_id_str),
         Some(device_id_str),
-        Some(device_name_str),
-        Some(encryption_key_str),
         Some(signing_key_str),
+        Some(kex_pub_str),
+        Some(name_str),
+        Some(protection_str),
+        Some(meta_key_str),
+        Some(enrollment_json),
     ) = (
         read_string(&mut env, &chain_id),
         read_string(&mut env, &device_id),
+        read_string(&mut env, &device_signing_key_b64),
+        read_string(&mut env, &device_kex_public_key_b64),
         read_string(&mut env, &device_name),
-        read_string(&mut env, &encryption_key),
-        read_string(&mut env, &signing_key),
+        read_string(&mut env, &key_protection),
+        read_string(&mut env, &device_meta_key_b64),
+        read_string(&mut env, &enrollment_certificate_json),
     )
     else {
         return std::ptr::null_mut();
     };
-    let Ok(encryption_key) = crypto::decode_encryption_key(&encryption_key_str) else {
-        return std::ptr::null_mut();
-    };
+
     let Ok(signing_key) = crypto::decode_signing_key(&signing_key_str) else {
         return std::ptr::null_mut();
     };
-    let Some(created_at_ms) = now_ms() else {
+    let Ok(meta_key) = crypto::decode_key_32(&meta_key_str, "device meta key") else {
         return std::ptr::null_mut();
     };
-    let Ok(record) = crypto::create_device_record_at(
+    let Ok(enrollment) = serde_json::from_str::<EnrollmentCertificate>(&enrollment_json) else {
+        return std::ptr::null_mut();
+    };
+
+    let device_meta = DeviceMetaPlaintext {
+        name: name_str,
+        key_protection: protection_str,
+        ext: None,
+    };
+
+    let Ok(record) = crypto::create_device_record(
         &chain_id_str,
+        generation as u32,
         &device_id_str,
-        device_name_str.as_bytes(),
-        &encryption_key,
         &signing_key,
-        created_at_ms,
+        &kex_pub_str,
+        &device_meta,
+        meta_epoch as u32,
+        &meta_key,
+        enrollment,
     ) else {
         return std::ptr::null_mut();
     };
+
     let Ok(serialized) = serde_json::to_string(&record) else {
         return std::ptr::null_mut();
     };
@@ -277,45 +388,31 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptD
 >(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
-    encrypted_device_name: JString<'local>,
-    device_id: JString<'local>,
-    encryption_key: JString<'local>,
+    record_json: JString<'local>,
+    device_meta_key_b64: JString<'local>,
 ) -> jstring {
-    let (Some(encrypted_name_str), Some(device_id_str), Some(encryption_key_str)) = (
-        read_string(&mut env, &encrypted_device_name),
-        read_string(&mut env, &device_id),
-        read_string(&mut env, &encryption_key),
+    let (Some(record_str), Some(key_str)) = (
+        read_string(&mut env, &record_json),
+        read_string(&mut env, &device_meta_key_b64),
     ) else {
         return std::ptr::null_mut();
     };
-    let encryption_key = match crypto::decode_encryption_key(&encryption_key_str) {
-        Ok(key) => key,
-        Err(_) => return std::ptr::null_mut(),
+
+    let Ok(record) = serde_json::from_str::<DeviceRecord>(&record_str) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(meta_key) = crypto::decode_key_32(&key_str, "device meta key") else {
+        return std::ptr::null_mut();
     };
 
-    // Try decoding as full DeviceRecord if it contains JSON
-    if encrypted_name_str.trim_start().starts_with('{') {
-        if let Ok(record) = serde_json::from_str::<DeviceRecord>(&encrypted_name_str) {
-            if let Ok(plaintext) = crypto::decrypt_device_record_v21(&record, &encryption_key) {
-                if let Ok(s) = String::from_utf8(plaintext) {
-                    if let Ok(output) = env.new_string(s) {
-                        return output.into_raw();
-                    }
-                }
-            }
-        }
-    }
-
-    let plaintext =
-        match crypto::decrypt_device_name(&encrypted_name_str, &device_id_str, &encryption_key) {
-            Ok(p) => p,
-            Err(_) => return std::ptr::null_mut(),
-        };
-    let plaintext_str = match String::from_utf8(plaintext) {
-        Ok(s) => s,
-        Err(_) => return std::ptr::null_mut(),
+    let Ok(plaintext) = crypto::decrypt_device_meta(&record, &meta_key) else {
+        return std::ptr::null_mut();
     };
-    match env.new_string(plaintext_str) {
+
+    let Ok(output_str) = serde_json::to_string(&plaintext) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(output_str) {
         Ok(output) => output.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
@@ -327,43 +424,51 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createCa
 >(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
+    aud: JString<'local>,
     chain_id: JString<'local>,
+    signer_kind: JString<'local>,
     device_id: JString<'local>,
     method: JString<'local>,
     path: JString<'local>,
     query: JString<'local>,
     body_json: JString<'local>,
-    signing_key: JString<'local>,
+    signing_key_b64: JString<'local>,
     ttl_ms: jlong,
 ) -> jstring {
     let (
+        Some(aud_str),
         Some(chain_id_str),
-        Some(device_id_str),
+        Some(signer_kind_str),
         Some(method_str),
         Some(path_str),
         Some(query_str),
         Some(body_str),
         Some(signing_key_str),
     ) = (
+        read_string(&mut env, &aud),
         read_string(&mut env, &chain_id),
-        read_string(&mut env, &device_id),
+        read_string(&mut env, &signer_kind),
         read_string(&mut env, &method),
         read_string(&mut env, &path),
         read_string(&mut env, &query),
         read_string(&mut env, &body_json),
-        read_string(&mut env, &signing_key),
+        read_string(&mut env, &signing_key_b64),
     )
     else {
         return std::ptr::null_mut();
     };
+
+    let device_id_opt = read_string(&mut env, &device_id);
 
     let Ok(signing_key) = crypto::decode_signing_key(&signing_key_str) else {
         return std::ptr::null_mut();
     };
 
     let Ok(token_str) = crypto::create_capability_token(
+        &aud_str,
         &chain_id_str,
-        &device_id_str,
+        &signer_kind_str,
+        device_id_opt.as_deref(),
         &method_str,
         &path_str,
         &query_str,
@@ -375,6 +480,352 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createCa
     };
 
     match env.new_string(token_str) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_unwrapDeviceEpochEnvelope<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    envelope_json: JString<'local>,
+    device_kex_private_key_b64: JString<'local>,
+    chain_id: JString<'local>,
+) -> jstring {
+    let (Some(envelope_str), Some(kex_str), Some(chain_id_str)) = (
+        read_string(&mut env, &envelope_json),
+        read_string(&mut env, &device_kex_private_key_b64),
+        read_string(&mut env, &chain_id),
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(envelope) = serde_json::from_str::<EpochKeyEnvelope>(&envelope_str) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(kex_private_key) = crypto::decode_key_32(&kex_str, "X25519 private key") else {
+        return std::ptr::null_mut();
+    };
+    let Ok(chain_id_digest) = crypto::decode_key_32(&chain_id_str, "chain_id") else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(secret) = crypto::unwrap_device_epoch_envelope(
+        &envelope,
+        &kex_private_key,
+        &chain_id_digest,
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let output = URL_SAFE_NO_PAD.encode(secret);
+    match env.new_string(output) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_wrapDeviceEpochEnvelope<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    envelope_id: JString<'local>,
+    chain_id: JString<'local>,
+    generation: jint,
+    epoch: jint,
+    previous_epoch_hash: JString<'local>,
+    epoch_commitment: JString<'local>,
+    recipient_device_id: JString<'local>,
+    recipient_kex_public_key_b64: JString<'local>,
+    signer_kind: JString<'local>,
+    signer_device_id: JString<'local>,
+    signing_key_b64: JString<'local>,
+    epoch_secret_b64: JString<'local>,
+) -> jstring {
+    let (
+        Some(envelope_id_str),
+        Some(chain_id_str),
+        Some(commitment_str),
+        Some(recipient_device_str),
+        Some(recipient_kex_pub_str),
+        Some(signer_kind_str),
+        Some(signing_key_str),
+        Some(secret_str),
+    ) = (
+        read_string(&mut env, &envelope_id),
+        read_string(&mut env, &chain_id),
+        read_string(&mut env, &epoch_commitment),
+        read_string(&mut env, &recipient_device_id),
+        read_string(&mut env, &recipient_kex_public_key_b64),
+        read_string(&mut env, &signer_kind),
+        read_string(&mut env, &signing_key_b64),
+        read_string(&mut env, &epoch_secret_b64),
+    )
+    else {
+        return std::ptr::null_mut();
+    };
+
+    let prev_hash_opt = read_string(&mut env, &previous_epoch_hash);
+    let signer_device_opt = read_string(&mut env, &signer_device_id);
+
+    let Ok(signing_key) = crypto::decode_signing_key(&signing_key_str) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(secret) = crypto::decode_key_32(&secret_str, "epoch secret") else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(envelope) = crypto::wrap_device_epoch_envelope(
+        &envelope_id_str,
+        &chain_id_str,
+        generation as u32,
+        epoch as u32,
+        prev_hash_opt.as_deref(),
+        &commitment_str,
+        &recipient_device_str,
+        &recipient_kex_pub_str,
+        &signer_kind_str,
+        signer_device_opt.as_deref(),
+        &signing_key,
+        &secret,
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(serialized) = serde_json::to_string(&envelope) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(serialized) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_wrapRecoveryEpochEnvelope<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    envelope_id: JString<'local>,
+    chain_id: JString<'local>,
+    generation: jint,
+    epoch: jint,
+    previous_epoch_hash: JString<'local>,
+    epoch_commitment: JString<'local>,
+    signer_kind: JString<'local>,
+    signer_device_id: JString<'local>,
+    signing_key_b64: JString<'local>,
+    recovery_kek_b64: JString<'local>,
+    epoch_secret_b64: JString<'local>,
+) -> jstring {
+    let (
+        Some(envelope_id_str),
+        Some(chain_id_str),
+        Some(commitment_str),
+        Some(signer_kind_str),
+        Some(signing_key_str),
+        Some(kek_str),
+        Some(secret_str),
+    ) = (
+        read_string(&mut env, &envelope_id),
+        read_string(&mut env, &chain_id),
+        read_string(&mut env, &epoch_commitment),
+        read_string(&mut env, &signer_kind),
+        read_string(&mut env, &signing_key_b64),
+        read_string(&mut env, &recovery_kek_b64),
+        read_string(&mut env, &epoch_secret_b64),
+    )
+    else {
+        return std::ptr::null_mut();
+    };
+
+    let prev_hash_opt = read_string(&mut env, &previous_epoch_hash);
+    let signer_device_opt = read_string(&mut env, &signer_device_id);
+
+    let Ok(signing_key) = crypto::decode_signing_key(&signing_key_str) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(kek) = crypto::decode_key_32(&kek_str, "recovery kek") else {
+        return std::ptr::null_mut();
+    };
+    let Ok(secret) = crypto::decode_key_32(&secret_str, "epoch secret") else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(envelope) = crypto::wrap_recovery_epoch_envelope(
+        &envelope_id_str,
+        &chain_id_str,
+        generation as u32,
+        epoch as u32,
+        prev_hash_opt.as_deref(),
+        &commitment_str,
+        &signer_kind_str,
+        signer_device_opt.as_deref(),
+        &signing_key,
+        &kek,
+        &secret,
+        None,
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(serialized) = serde_json::to_string(&envelope) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(serialized) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_unwrapRecoveryEpochEnvelope<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    envelope_json: JString<'local>,
+    recovery_kek_b64: JString<'local>,
+    chain_id: JString<'local>,
+) -> jstring {
+    let (Some(envelope_str), Some(kek_str), Some(chain_id_str)) = (
+        read_string(&mut env, &envelope_json),
+        read_string(&mut env, &recovery_kek_b64),
+        read_string(&mut env, &chain_id),
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(envelope) = serde_json::from_str::<EpochKeyEnvelope>(&envelope_str) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(kek) = crypto::decode_key_32(&kek_str, "recovery kek") else {
+        return std::ptr::null_mut();
+    };
+    let Ok(chain_id_digest) = crypto::decode_key_32(&chain_id_str, "chain_id") else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(secret) = crypto::unwrap_recovery_epoch_envelope(&envelope, &kek, &chain_id_digest) else {
+        return std::ptr::null_mut();
+    };
+
+    let output = URL_SAFE_NO_PAD.encode(secret);
+    match env.new_string(output) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createGenesisBundle<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    seed_phrase: JString<'local>,
+    passphrase: JString<'local>,
+    device_name: JString<'local>,
+    key_protection: JString<'local>,
+    aud: JString<'local>,
+) -> jstring {
+    let (
+        Some(seed_str),
+        Some(name_str),
+        Some(prot_str),
+        Some(aud_str),
+    ) = (
+        read_string(&mut env, &seed_phrase),
+        read_string(&mut env, &device_name),
+        read_string(&mut env, &key_protection),
+        read_string(&mut env, &aud),
+    ) else {
+        return std::ptr::null_mut();
+    };
+    let pass_str = read_string(&mut env, &passphrase).unwrap_or_default();
+
+    let Ok(bundle) = crypto::create_genesis_bundle(
+        &seed_str,
+        &pass_str,
+        &name_str,
+        &prot_str,
+        &aud_str,
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(serialized) = serde_json::to_string(&bundle) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(serialized) {
+        Ok(output) => output.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createMnemonicEnrollmentBundle<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    seed_phrase: JString<'local>,
+    passphrase: JString<'local>,
+    device_name: JString<'local>,
+    key_protection: JString<'local>,
+    generation: jint,
+    epoch: jint,
+    recovery_envelope_json: JString<'local>,
+    expected_parameters_hash: JString<'local>,
+    expected_epoch_hash: JString<'local>,
+    aud: JString<'local>,
+) -> jstring {
+    let (
+        Some(seed_str),
+        Some(name_str),
+        Some(prot_str),
+        Some(env_str),
+        Some(params_hash_str),
+        Some(epoch_hash_str),
+        Some(aud_str),
+    ) = (
+        read_string(&mut env, &seed_phrase),
+        read_string(&mut env, &device_name),
+        read_string(&mut env, &key_protection),
+        read_string(&mut env, &recovery_envelope_json),
+        read_string(&mut env, &expected_parameters_hash),
+        read_string(&mut env, &expected_epoch_hash),
+        read_string(&mut env, &aud),
+    ) else {
+        return std::ptr::null_mut();
+    };
+    let pass_str = read_string(&mut env, &passphrase).unwrap_or_default();
+
+    let Ok(bundle) = crypto::create_mnemonic_enrollment_bundle(
+        &seed_str,
+        &pass_str,
+        &name_str,
+        &prot_str,
+        generation as u32,
+        epoch as u32,
+        &env_str,
+        &params_hash_str,
+        &epoch_hash_str,
+        &aud_str,
+    ) else {
+        return std::ptr::null_mut();
+    };
+
+    let Ok(serialized) = serde_json::to_string(&bundle) else {
+        return std::ptr::null_mut();
+    };
+    match env.new_string(serialized) {
         Ok(output) => output.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }

@@ -256,56 +256,13 @@ internal class PalleriaSyncCoordinator(
         isGenesis: Boolean,
         serverUrl: String?,
     ): Pair<String, HttpUrl>? {
-        val keysObject =
-            runCatching {
-                val derived =
-                    crypto.deriveKeys(seedPhrase)
-                        ?: error("Native key derivation failed")
-                json.parseToJsonElement(derived).jsonObject
-            }.getOrElse {
-                log("Could not derive PallaSync keys from the seed phrase")
-                return null
-            }
-        val chainId =
-            keysObject.string("chain_id") ?: return null.also {
-                log("Derived PallaSync keys did not contain a chain ID")
-            }
-        val encryptionKey =
-            keysObject.string("encryption_key") ?: return null.also {
-                log("Derived PallaSync keys did not contain an encryption key")
-            }
-        val signingKey =
-            keysObject.string("signing_key") ?: return null.also {
-                log("Derived PallaSync keys did not contain a signing key")
-            }
-        val publicKey =
-            keysObject.string("public_key") ?: return null.also {
-                log("Derived PallaSync keys did not contain a public key")
-            }
         val baseUrl =
             when (val normalized = PallaSyncUrls.normalize(serverUrl ?: getServerUrl())) {
                 is PallaSyncHttpResult.Success -> normalized.value
                 is PallaSyncHttpResult.ProtocolError -> return null.also { log(normalized.message) }
                 else -> return null
             }
-
-        val deviceId =
-            keystore.getDeviceId()
-                ?: com.yunfie.illustia.pallasync.util.UuidV7
-                    .generateString()
-        val deviceRecord =
-            runCatching {
-                crypto.createDeviceRecord(
-                    chainId = chainId,
-                    deviceId = deviceId,
-                    deviceName = deviceName,
-                    encryptionKeyBase64 = encryptionKey,
-                    signingKeyBase64 = signingKey,
-                ) ?: error("Native device record creation failed")
-            }.getOrElse {
-                log("Could not create this device's signed join record: ${it.message}")
-                return null
-            }
+        val aud = PallaSyncUrls.extractOrigin(baseUrl)
 
         val healthRequest =
             Request
@@ -318,7 +275,7 @@ internal class PalleriaSyncCoordinator(
             val health =
                 remote.execute(healthRequest) { response ->
                     val contentType = response.header("Content-Type")?.substringBefore(';')?.trim()
-                    if (contentType != JSON_MEDIA_TYPE.toString()) {
+                    if (contentType != JSON_MEDIA_TYPE.toString() && contentType != PALLASYNC_MEDIA_TYPE) {
                         return@execute PallaSyncHttpResult.ProtocolError(
                             "PallaSync health response used an unexpected media type",
                         )
@@ -348,30 +305,40 @@ internal class PalleriaSyncCoordinator(
             is PallaSyncHttpResult.ProtocolError -> return null.also { log(health.message) }
         }
 
+        val chainId: String
+        val deviceId: String
+        val candidateKeys: PallaSyncKeySnapshot
+
         if (isGenesis) {
-            val chainSalt =
-                keysObject.string("chain_salt") ?: return null.also {
-                    log("Derived PallaSync keys did not contain a chain salt")
+            val genesisBundleJson =
+                runCatching {
+                    crypto.createGenesisBundle(
+                        seedPhrase = seedPhrase,
+                        passphrase = "",
+                        deviceName = deviceName,
+                        keyProtection = "os-keystore",
+                        aud = aud,
+                    ) ?: error("Native genesis bundle creation failed")
+                }.getOrElse {
+                    log("Could not create PallaSync genesis bundle: ${it.message}")
+                    return null
                 }
-            val chainParams =
-                JsonObject(
-                    mapOf(
-                        "protocol_version" to JsonPrimitive(PALLASYNC_PROTOCOL_VERSION),
-                        "chain_id" to JsonPrimitive(chainId),
-                        "chain_salt" to JsonPrimitive(chainSalt),
-                        "created_at_ms" to JsonPrimitive(System.currentTimeMillis()),
-                        "creator_device_id" to JsonPrimitive(deviceId),
-                        "creator_public_key" to JsonPrimitive(publicKey),
-                        "admin_public_key" to JsonPrimitive(publicKey),
-                        "signature" to JsonPrimitive(""),
-                    ),
-                ).toString()
+            val bundle =
+                runCatching { json.decodeFromString<PallaSyncGenesisBundle>(genesisBundleJson) }
+                    .getOrElse {
+                        log("Could not decode genesis bundle: ${it.message}")
+                        return null
+                    }
+            chainId = bundle.chainId
+            deviceId = bundle.deviceId
+
             val createChainRequest =
                 Request
                     .Builder()
                     .url(PallaSyncUrls.chains(baseUrl))
                     .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .post(chainParams.toRequestBody(JSON_MEDIA_TYPE))
+                    .header("Authorization", "PallaSync ${bundle.adminCapabilityToken}")
+                    .post(bundle.genesisRequestBodyJson.toRequestBody(JSON_MEDIA_TYPE))
                     .build()
             when (val created = remote.executeUnit(createChainRequest)) {
                 is PallaSyncHttpResult.Success -> Unit
@@ -379,35 +346,192 @@ internal class PalleriaSyncCoordinator(
                 is PallaSyncHttpResult.ProtocolError -> return null.also { log(created.message) }
                 PallaSyncHttpResult.Gone -> return null.also { log("The PallaSync service is unavailable") }
             }
-        }
 
-        val joinRequest =
-            Request
-                .Builder()
-                .url(PallaSyncUrls.enrollDevice(baseUrl, chainId))
-                .header("Accept", JSON_MEDIA_TYPE.toString())
-                .post(deviceRecord.toRequestBody(JSON_MEDIA_TYPE))
-                .build()
-        when (val posted = remote.executeUnit(joinRequest)) {
-            is PallaSyncHttpResult.Success -> Unit
+            candidateKeys =
+                PallaSyncKeySnapshot(
+                    chainId = bundle.chainId,
+                    seedPhrase = seedPhrase,
+                    encryptionKeyBase64Url = bundle.recordKey,
+                    signingKeyBase64Url = bundle.deviceSigningKey,
+                    publicKeyBase64Url = bundle.devicePublicKey,
+                    kexPrivateKeyBase64Url = bundle.deviceKexPrivateKey,
+                    kexPublicKeyBase64Url = bundle.deviceKexPublicKey,
+                    deviceMetaKeyBase64Url = bundle.deviceMetaKey,
+                )
+        } else {
+            val rootKeysJson =
+                crypto.deriveRootKeys(seedPhrase, "")
+                    ?: return null.also { log("Native root key derivation failed") }
+            val rootKeys =
+                runCatching { json.parseToJsonElement(rootKeysJson).jsonObject }
+                    .getOrNull() ?: return null.also { log("Could not parse derived root keys") }
+            val derivedChainId =
+                rootKeys["chain_id"]?.jsonPrimitive?.content
+                    ?: return null.also { log("Derived keys did not contain a chain ID") }
+            chainId = derivedChainId
 
-            PallaSyncHttpResult.Gone -> return null.also {
-                log("The requested PallaSync chain has been deleted")
+            val paramsPath = "/pallasync/v3/chains/$chainId/parameters"
+            val adminTokenForParams =
+                crypto.createCapabilityToken(
+                    chainId = chainId,
+                    deviceId = null,
+                    method = "GET",
+                    path = paramsPath,
+                    query = "",
+                    bodyJson = "",
+                    signingKeyBase64 = rootKeys["admin_private_key"]?.jsonPrimitive?.content ?: "",
+                    ttlMs = 120_000L,
+                    aud = aud,
+                    signerKind = "admin",
+                ) ?: return null.also { log("Could not generate admin capability token for parameters") }
+
+            val paramsRequest =
+                Request
+                    .Builder()
+                    .url(PallaSyncUrls.parameters(baseUrl, chainId))
+                    .header("Accept", JSON_MEDIA_TYPE.toString())
+                    .header("Authorization", "PallaSync $adminTokenForParams")
+                    .get()
+                    .build()
+            val paramsObj =
+                when (
+                    val res =
+                        remote.execute(paramsRequest) { resp ->
+                            val body = resp.body?.string() ?: return@execute PallaSyncHttpResult.ProtocolError("Empty parameters response")
+                            val parsed =
+                                runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull()
+                                    ?: return@execute PallaSyncHttpResult.ProtocolError("Invalid parameters response")
+                            PallaSyncHttpResult.Success(parsed)
+                        }
+                ) {
+                    is PallaSyncHttpResult.Success -> res.value
+                    PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
+                    is PallaSyncHttpResult.Retryable -> return null.also { log(res.message) }
+                    is PallaSyncHttpResult.ProtocolError -> return null.also { log(res.message) }
+                }
+            val parametersHash = paramsObj["parameters_hash"]?.jsonPrimitive?.content.orEmpty()
+            val epochHash = paramsObj["epoch_hash"]?.jsonPrimitive?.content.orEmpty()
+            val generation = paramsObj["generation"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+
+            val recoveryPath = "/pallasync/v3/chains/$chainId/epochs/0/recovery-envelope"
+            val adminTokenForRecovery =
+                crypto.createCapabilityToken(
+                    chainId = chainId,
+                    deviceId = null,
+                    method = "GET",
+                    path = recoveryPath,
+                    query = "",
+                    bodyJson = "",
+                    signingKeyBase64 = rootKeys["admin_private_key"]?.jsonPrimitive?.content ?: "",
+                    ttlMs = 120_000L,
+                    aud = aud,
+                    signerKind = "admin",
+                ) ?: return null.also { log("Could not generate admin token for recovery envelope") }
+
+            val recoveryUrl =
+                baseUrl
+                    .newBuilder()
+                    .addPathSegment("pallasync")
+                    .addPathSegment("v3")
+                    .addPathSegment("chains")
+                    .addPathSegment(chainId)
+                    .addPathSegment("epochs")
+                    .addPathSegment("0")
+                    .addPathSegment("recovery-envelope")
+                    .build()
+            val recoveryRequest =
+                Request
+                    .Builder()
+                    .url(recoveryUrl)
+                    .header("Accept", JSON_MEDIA_TYPE.toString())
+                    .header("Authorization", "PallaSync $adminTokenForRecovery")
+                    .get()
+                    .build()
+            val recoveryEnvelopeJson =
+                when (
+                    val res =
+                        remote.execute(recoveryRequest) { resp ->
+                            val body =
+                                resp.body?.string() ?: return@execute PallaSyncHttpResult.ProtocolError("Empty recovery envelope response")
+                            val parsed = runCatching { json.parseToJsonElement(body).jsonObject["envelope"] }.getOrNull()
+                            PallaSyncHttpResult.Success(parsed?.toString() ?: body)
+                        }
+                ) {
+                    is PallaSyncHttpResult.Success -> res.value
+                    PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
+                    is PallaSyncHttpResult.Retryable -> return null.also { log(res.message) }
+                    is PallaSyncHttpResult.ProtocolError -> return null.also { log(res.message) }
+                }
+
+            val enrollmentBundleJson =
+                runCatching {
+                    crypto.createMnemonicEnrollmentBundle(
+                        seedPhrase = seedPhrase,
+                        passphrase = "",
+                        deviceName = deviceName,
+                        keyProtection = "os-keystore",
+                        generation = generation,
+                        epoch = 0,
+                        recoveryEnvelopeJson = recoveryEnvelopeJson,
+                        expectedParametersHash = parametersHash,
+                        expectedEpochHash = epochHash,
+                        aud = aud,
+                    ) ?: error("Native mnemonic enrollment bundle creation failed")
+                }.getOrElse {
+                    log("Could not create mnemonic enrollment bundle: ${it.message}")
+                    return null
+                }
+            val bundle =
+                runCatching { json.decodeFromString<PallaSyncMnemonicEnrollmentBundle>(enrollmentBundleJson) }
+                    .getOrElse {
+                        log("Could not decode enrollment bundle: ${it.message}")
+                        return null
+                    }
+            deviceId = bundle.deviceId
+
+            val enrollRequest =
+                Request
+                    .Builder()
+                    .url(PallaSyncUrls.enrollDevice(baseUrl, chainId))
+                    .header("Accept", JSON_MEDIA_TYPE.toString())
+                    .header("Authorization", "PallaSync ${bundle.adminCapabilityToken}")
+                    .post(bundle.enrollRequestBodyJson.toRequestBody(JSON_MEDIA_TYPE))
+                    .build()
+            when (val enrolled = remote.executeUnit(enrollRequest)) {
+                is PallaSyncHttpResult.Success -> Unit
+                is PallaSyncHttpResult.Retryable -> return null.also { log(enrolled.message) }
+                is PallaSyncHttpResult.ProtocolError -> return null.also { log(enrolled.message) }
+                PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
             }
 
-            is PallaSyncHttpResult.Retryable -> return null.also { log(posted.message) }
+            val ackRequest =
+                Request
+                    .Builder()
+                    .url(PallaSyncUrls.deviceKeysAck(baseUrl, chainId, deviceId))
+                    .header("Accept", JSON_MEDIA_TYPE.toString())
+                    .header("Authorization", "PallaSync ${bundle.deviceKeysAckToken}")
+                    .post(bundle.keysAckRequestBodyJson.toRequestBody(JSON_MEDIA_TYPE))
+                    .build()
+            when (val acked = remote.executeUnit(ackRequest)) {
+                is PallaSyncHttpResult.Success -> Unit
+                is PallaSyncHttpResult.Retryable -> return null.also { log(acked.message) }
+                is PallaSyncHttpResult.ProtocolError -> return null.also { log(acked.message) }
+                PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
+            }
 
-            is PallaSyncHttpResult.ProtocolError -> return null.also { log(posted.message) }
+            candidateKeys =
+                PallaSyncKeySnapshot(
+                    chainId = bundle.chainId,
+                    seedPhrase = seedPhrase,
+                    encryptionKeyBase64Url = bundle.recordKey,
+                    signingKeyBase64Url = bundle.deviceSigningKey,
+                    publicKeyBase64Url = bundle.devicePublicKey,
+                    kexPrivateKeyBase64Url = bundle.deviceKexPrivateKey,
+                    kexPublicKeyBase64Url = bundle.deviceKexPublicKey,
+                    deviceMetaKeyBase64Url = bundle.deviceMetaKey,
+                )
         }
 
-        val candidateKeys =
-            PallaSyncKeySnapshot(
-                chainId = chainId,
-                seedPhrase = seedPhrase,
-                encryptionKeyBase64Url = encryptionKey,
-                signingKeyBase64Url = signingKey,
-                publicKeyBase64Url = publicKey,
-            )
         val initialState =
             ChainStateEntity(
                 chainId = chainId,
@@ -504,29 +628,35 @@ internal class PalleriaSyncCoordinator(
 
         events.forEach { event ->
             val lamport = state.lamport + 1
-            val payload =
-                DataPayload(
-                    schema = event.schema,
-                    entity_id = event.entityId,
+            val operation =
+                PallaSyncOperation(
+                    entityId = event.entityId,
                     operation = event.operation,
-                    context = emptyMap(),
                     lamport = lamport,
-                    created_at_ms = System.currentTimeMillis(),
-                    body = event.body,
+                    createdAtMs = System.currentTimeMillis(),
+                    context = event.context,
+                    body = (event.body as? JsonObject) ?: JsonObject(emptyMap()),
+                )
+            val innerRecord =
+                PallaSyncInnerRecord(
+                    collection = event.schema,
+                    deviceSeq = lamport,
+                    prevRecordHash = null,
+                    operations = listOf(operation),
                 )
             val recordJson =
                 crypto.createSyncRecord(
                     chainId = state.chainId,
+                    generation = 0,
                     recordId =
                         com.yunfie.illustia.pallasync.util.UuidV7
                             .generateString(),
-                    collectionName = event.schema,
-                    action = event.operation,
-                    payloadJson = json.encodeToString(payload),
                     deviceId = deviceId,
-                    encryptionKeyBase64 = keys.encryptionKeyBase64Url,
+                    epoch = 0,
+                    collectionTag = null,
+                    innerRecordJson = json.encodeToString(innerRecord),
+                    recordKeyBase64 = keys.encryptionKeyBase64Url,
                     signingKeyBase64 = keys.signingKeyBase64Url,
-                    lamport = lamport,
                 ) ?: error("Native sync record creation failed")
             state = state.copy(lamport = lamport)
             outbox +=
@@ -777,24 +907,31 @@ internal class PalleriaSyncCoordinator(
         }
 
     private fun makeCapabilityToken(
+        baseUrl: HttpUrl,
         chainId: String,
         method: String,
         path: String,
         query: String = "",
         bodyJson: String = "",
+        signerKind: String = "device",
     ): String? {
         val keys = keysForChainLocked(chainId)
         val deviceId = keystore.getDeviceId()
-        if (keys == null || deviceId == null) return null
+        if (keys == null || (signerKind == "device" && deviceId == null)) {
+            return null
+        }
+        val aud = PallaSyncUrls.extractOrigin(baseUrl)
         return crypto.createCapabilityToken(
             chainId = chainId,
-            deviceId = deviceId,
+            deviceId = if (signerKind == "device") deviceId else null,
             method = method,
             path = path,
             query = query,
             bodyJson = bodyJson,
             signingKeyBase64 = keys.signingKeyBase64Url,
-            ttlMs = 300_000L,
+            ttlMs = 120_000L,
+            aud = aud,
+            signerKind = signerKind,
         )
     }
 
@@ -808,8 +945,8 @@ internal class PalleriaSyncCoordinator(
         if (events.isEmpty()) return PallaSyncHttpResult.Success(Unit)
         val batchRecordsJson = events.joinToString(separator = ",", prefix = "[", postfix = "]") { it.eventJson }
         val batchBody = "{\"records\":$batchRecordsJson}"
-        val path = "/pallasync/v2/chains/$chainId/records"
-        val batchToken = makeCapabilityToken(chainId, "POST", path, "", batchBody)
+        val path = "/pallasync/v3/chains/$chainId/records"
+        val batchToken = makeCapabilityToken(baseUrl, chainId, "POST", path, "", batchBody)
         val batchRequestBuilder =
             Request
                 .Builder()
@@ -848,7 +985,7 @@ internal class PalleriaSyncCoordinator(
         events: List<OutboxEntity>,
     ): PallaSyncHttpResult<Unit> {
         val dao = db.pallaSyncDao()
-        val path = "/pallasync/v2/chains/$chainId/records"
+        val path = "/pallasync/v3/chains/$chainId/records"
         var accepted = 0
         var errorResult: PallaSyncHttpResult<Unit>? = null
         var index = 0
@@ -856,7 +993,7 @@ internal class PalleriaSyncCoordinator(
         while (index < events.size && errorResult == null) {
             val event = events[index++]
             val singleBody = "{\"records\":[${event.eventJson}]}"
-            val singleToken = makeCapabilityToken(chainId, "POST", path, "", singleBody)
+            val singleToken = makeCapabilityToken(baseUrl, chainId, "POST", path, "", singleBody)
             val singleRequestBuilder =
                 Request
                     .Builder()
@@ -894,8 +1031,8 @@ internal class PalleriaSyncCoordinator(
         baseUrl: HttpUrl,
         chainId: String,
     ): PallaSyncHttpResult<Unit> {
-        val path = "/pallasync/v2/chains/$chainId/devices"
-        val token = makeCapabilityToken(chainId, "GET", path, "", "")
+        val path = "/pallasync/v3/chains/$chainId/devices"
+        val token = makeCapabilityToken(baseUrl, chainId, "GET", path, "", "")
         val requestBuilder =
             Request
                 .Builder()
@@ -945,23 +1082,15 @@ internal class PalleriaSyncCoordinator(
                 return@forEach
             }
             activeDeviceIds += device.deviceId
-            if (device.devicePublicKey != keys.publicKeyBase64Url) {
-                log("Ignored a device record outside the active chain key")
-                if (device.deviceId == myDeviceId) shouldSelfHeal = true
-                return@forEach
-            }
             if (!runCatching { crypto.verifyDeviceRecord(rawDevice) }.getOrDefault(false)) {
                 log("Ignored an invalid device signature for ${device.deviceId.take(8)}")
                 if (device.deviceId == myDeviceId) shouldSelfHeal = true
-                // Older relay UPSERTs mixed a new signature with the previous timestamp. Keep
-                // only the already-trusted chain public key so valid historical sync records can
-                // still be checked while each affected device re-registers itself.
                 dao.insertDevice(
                     PallaSyncDeviceEntity(
                         deviceId = device.deviceId,
                         chainId = chainId,
                         deviceName = "Device ${device.deviceId.take(4)}",
-                        publicKey = keys.publicKeyBase64Url,
+                        publicKey = device.devicePublicKey,
                         joinedAtMs = device.createdAtMs,
                     ),
                 )
@@ -970,19 +1099,12 @@ internal class PalleriaSyncCoordinator(
 
             val decryptedName =
                 runCatching {
-                    crypto.decryptDeviceRecord(
-                        encryptedDeviceName = rawDevice,
-                        deviceId = device.deviceId,
-                        encryptionKeyBase64 = keys.encryptionKeyBase64Url,
-                    )
+                    crypto
+                        .decryptDeviceRecord(
+                            recordJson = rawDevice,
+                            deviceMetaKeyBase64 = keys.deviceMetaKeyBase64Url,
+                        )?.let { json.decodeFromString<PallaSyncDeviceMetaPlaintext>(it).name }
                 }.getOrNull()
-                    ?: runCatching {
-                        crypto.decryptDeviceRecord(
-                            encryptedDeviceName = device.encryptedDeviceName,
-                            deviceId = device.deviceId,
-                            encryptionKeyBase64 = keys.encryptionKeyBase64Url,
-                        )
-                    }.getOrNull()
             if (decryptedName.isNullOrBlank() && device.deviceId == myDeviceId) {
                 shouldSelfHeal = true
             }
@@ -1004,43 +1126,7 @@ internal class PalleriaSyncCoordinator(
             .forEach { dao.deleteDevice(it.deviceId) }
 
         if (shouldSelfHeal && myDeviceId != null) {
-            val record =
-                runCatching {
-                    crypto.createDeviceRecord(
-                        chainId = chainId,
-                        deviceId = myDeviceId,
-                        deviceName = Build.MODEL,
-                        encryptionKeyBase64 = keys.encryptionKeyBase64Url,
-                        signingKeyBase64 = keys.signingKeyBase64Url,
-                    ) ?: error("Native device record creation failed")
-                }.getOrElse {
-                    return PallaSyncHttpResult.ProtocolError("Could not create a self-healing device record")
-                }
-            val healRequest =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.enrollDevice(baseUrl, chainId))
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .post(record.toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
-            when (val healed = remote.executeUnit(healRequest)) {
-                is PallaSyncHttpResult.Success -> {
-                    dao.insertDevice(
-                        PallaSyncDeviceEntity(
-                            deviceId = myDeviceId,
-                            chainId = chainId,
-                            deviceName = Build.MODEL,
-                            publicKey = keys.publicKeyBase64Url,
-                            joinedAtMs = System.currentTimeMillis(),
-                        ),
-                    )
-                    log("Re-registered this device's signed record")
-                }
-
-                else -> {
-                    return healed
-                }
-            }
+            log("Device registration mismatch detected for this device ($myDeviceId)")
         }
         return PallaSyncHttpResult.Success(Unit)
     }
@@ -1077,9 +1163,9 @@ internal class PalleriaSyncCoordinator(
         chainId: String,
         afterSeq: Long,
     ): PallaSyncHttpResult<PallaSyncRecordsPage> {
-        val path = "/pallasync/v2/chains/$chainId/records"
+        val path = "/pallasync/v3/chains/$chainId/records"
         val query = "after_seq=$afterSeq&limit=$PALLASYNC_PAGE_SIZE"
-        val token = makeCapabilityToken(chainId, "GET", path, query, "")
+        val token = makeCapabilityToken(baseUrl, chainId, "GET", path, query, "")
         val requestBuilder =
             Request
                 .Builder()
@@ -1090,18 +1176,11 @@ internal class PalleriaSyncCoordinator(
         }
         val request = requestBuilder.get().build()
         return remote.execute(request) { response ->
-            val nextSeqHeader = response.header(PALLASYNC_NEXT_SEQ_HEADER)?.toLongOrNull()
-            val hasMoreHeader =
-                when (response.header(PALLASYNC_HAS_MORE_HEADER)?.lowercase(Locale.ROOT)) {
-                    "true" -> true
-                    "false" -> false
-                    else -> null
-                }
             val body =
                 response.body?.string()
                     ?: return@execute PallaSyncHttpResult.ProtocolError("Relay page body was empty")
 
-            parseRecordsResponseBody(json, body, nextSeqHeader, hasMoreHeader, afterSeq)
+            parseRecordsResponseBody(json, body, afterSeq)
         }
     }
 
@@ -1170,20 +1249,23 @@ internal class PalleriaSyncCoordinator(
                 quarantine("Record payload could not be decrypted")
                 return@forEach
             }
-            val payload = runCatching { json.decodeFromString<DataPayload>(payloadJson) }.getOrNull()
-            if (payload == null || payload.schema != wire.collectionName || payload.operation != wire.action) {
-                quarantine("Decrypted payload metadata did not match its signed envelope")
-                return@forEach
-            }
-            if (payload.lamport < 0L) {
-                quarantine("Decrypted payload contained a negative Lamport clock")
-                return@forEach
-            }
+            val innerRecord = runCatching { json.decodeFromString<PallaSyncInnerRecord>(payloadJson) }.getOrNull()
+            val maxLamport =
+                if (innerRecord != null) {
+                    innerRecord.operations.maxOfOrNull { it.lamport } ?: 0L
+                } else {
+                    val payload = runCatching { json.decodeFromString<DataPayload>(payloadJson) }.getOrNull()
+                    if (payload == null || payload.lamport < 0L) {
+                        quarantine("Decrypted payload metadata was invalid")
+                        return@forEach
+                    }
+                    payload.lamport
+                }
             decryptedCandidates +=
                 DecryptedCandidate(
                     recordId = recordId,
                     relaySeq = relaySeq,
-                    lamport = payload.lamport,
+                    lamport = maxLamport,
                     rawRecordJson = pageRecord.rawJson,
                     payloadJson = payloadJson,
                 )
@@ -1291,11 +1373,10 @@ internal class PalleriaSyncCoordinator(
                     }
                     page.records.forEach { pageRecord ->
                         val record = pageRecord.wireRecord ?: return@forEach
-                        if (record.chainId != state.chainId ||
-                            record.protocolVersion != PALLASYNC_PROTOCOL_VERSION ||
-                            record.deviceId != deviceId ||
-                            record.collectionName !in setOf(VIEW_HISTORY_SCHEMA_V1, VIEW_HISTORY_SCHEMA_V2)
-                        ) {
+                        val isCompatibleProtocol =
+                            record.protocolVersion == PALLASYNC_PROTOCOL_VERSION ||
+                                record.protocolVersion == PALLASYNC_LEGACY_PROTOCOL_VERSION
+                        if (record.chainId != state.chainId || !isCompatibleProtocol || record.deviceId != deviceId) {
                             return@forEach
                         }
                         if (!runCatching {
@@ -1308,13 +1389,29 @@ internal class PalleriaSyncCoordinator(
                             runCatching {
                                 crypto.decryptSyncRecord(pageRecord.rawJson, keys.encryptionKeyBase64Url)
                             }.getOrNull() ?: return@forEach
-                        val payload =
-                            runCatching { json.decodeFromString<DataPayload>(decrypted) }.getOrNull()
-                                ?: return@forEach
-                        if (payload.schema != record.collectionName || payload.operation != record.action) {
-                            return@forEach
+                        val innerRecord = runCatching { json.decodeFromString<PallaSyncInnerRecord>(decrypted) }.getOrNull()
+                        if (innerRecord != null) {
+                            if (innerRecord.collection in setOf(VIEW_HISTORY_SCHEMA_V1, VIEW_HISTORY_SCHEMA_V2, VIEW_HISTORY_SCHEMA_V3)) {
+                                innerRecord.operations.forEach { op ->
+                                    val payload =
+                                        DataPayload(
+                                            schema = innerRecord.collection,
+                                            entity_id = op.entityId,
+                                            operation = op.operation,
+                                            context = emptyMap(),
+                                            lamport = op.lamport,
+                                            created_at_ms = op.createdAtMs,
+                                            body = op.body,
+                                        )
+                                    applyViewHistoryPayload(history, payload)
+                                }
+                            }
+                        } else {
+                            val payload = runCatching { json.decodeFromString<DataPayload>(decrypted) }.getOrNull() ?: return@forEach
+                            if (payload.schema in setOf(VIEW_HISTORY_SCHEMA_V1, VIEW_HISTORY_SCHEMA_V2, VIEW_HISTORY_SCHEMA_V3)) {
+                                applyViewHistoryPayload(history, payload)
+                            }
                         }
-                        applyViewHistoryPayload(history, payload)
                     }
                     afterSeq = page.nextSeq
                 } while (page.hasMore)
@@ -1338,7 +1435,7 @@ internal class PalleriaSyncCoordinator(
                 }
             }
 
-            VIEW_HISTORY_SCHEMA_V2 -> {
+            VIEW_HISTORY_SCHEMA_V2, VIEW_HISTORY_SCHEMA_V3 -> {
                 if (!payload.entity_id.startsWith("viewed:")) return
                 val id = payload.entity_id.removePrefix("viewed:").toLongOrNull() ?: return
                 if (payload.operation == SYNC_OPERATION_DELETE) {
@@ -1402,29 +1499,35 @@ internal class PalleriaSyncCoordinator(
         val outbox =
             events.map { event ->
                 val lamport = nextState.lamport + 1
-                val payload =
-                    DataPayload(
-                        schema = event.schema,
-                        entity_id = event.entityId,
+                val operation =
+                    PallaSyncOperation(
+                        entityId = event.entityId,
                         operation = event.operation,
-                        context = emptyMap(),
                         lamport = lamport,
-                        created_at_ms = System.currentTimeMillis(),
-                        body = event.body,
+                        createdAtMs = System.currentTimeMillis(),
+                        context = event.context,
+                        body = (event.body as? JsonObject) ?: JsonObject(emptyMap()),
+                    )
+                val innerRecord =
+                    PallaSyncInnerRecord(
+                        collection = event.schema,
+                        deviceSeq = lamport,
+                        prevRecordHash = null,
+                        operations = listOf(operation),
                     )
                 val recordJson =
                     crypto.createSyncRecord(
                         chainId = state.chainId,
+                        generation = 0,
                         recordId =
                             com.yunfie.illustia.pallasync.util.UuidV7
                                 .generateString(),
-                        collectionName = event.schema,
-                        action = event.operation,
-                        payloadJson = json.encodeToString(payload),
                         deviceId = deviceId,
-                        encryptionKeyBase64 = keys.encryptionKeyBase64Url,
+                        epoch = 0,
+                        collectionTag = null,
+                        innerRecordJson = json.encodeToString(innerRecord),
+                        recordKeyBase64 = keys.encryptionKeyBase64Url,
                         signingKeyBase64 = keys.signingKeyBase64Url,
-                        lamport = lamport,
                     ) ?: error("Native sync record creation failed")
                 nextState = nextState.copy(lamport = lamport)
                 OutboxEntity(
@@ -1482,7 +1585,7 @@ internal class PalleriaSyncCoordinator(
 
     private fun resolvedSnapshotChainId(snapshot: PallaSyncKeySnapshot): String? {
         return snapshot.chainId ?: runCatching {
-            val derived = crypto.deriveKeys(snapshot.seedPhrase) ?: return@runCatching null
+            val derived = crypto.deriveRootKeys(snapshot.seedPhrase, "") ?: return@runCatching null
             json.parseToJsonElement(derived).jsonObject.string("chain_id")
         }.getOrNull()
     }

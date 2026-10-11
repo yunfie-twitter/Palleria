@@ -43,20 +43,20 @@ class PallaSyncSettingsEventsTest :
                     .map { Triple(it.schema, it.entityId, it.operation) }
 
             operations.shouldContainAll(
-                Triple(FAVORITE_TAG_SCHEMA_V2, "old", SYNC_OPERATION_DELETE),
-                Triple(FAVORITE_TAG_SCHEMA_V2, "new", SYNC_OPERATION_UPSERT),
-                Triple(SEARCH_HISTORY_SCHEMA_V2, "old query", SYNC_OPERATION_DELETE),
-                Triple(SEARCH_HISTORY_SCHEMA_V2, "new query", SYNC_OPERATION_UPSERT),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "tag:old mute", SYNC_OPERATION_DELETE),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "tag:new mute", SYNC_OPERATION_UPSERT),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "user:1", SYNC_OPERATION_DELETE),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "user:11", SYNC_OPERATION_UPSERT),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "illust:2", SYNC_OPERATION_DELETE),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "illust:12", SYNC_OPERATION_UPSERT),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "seen:3", SYNC_OPERATION_DELETE),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "seen:13", SYNC_OPERATION_UPSERT),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "viewed:4", SYNC_OPERATION_DELETE),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "viewed:14", SYNC_OPERATION_UPSERT),
+                Triple(FAVORITE_TAG_SCHEMA_V3, "old", SYNC_OPERATION_DELETE),
+                Triple(FAVORITE_TAG_SCHEMA_V3, "new", SYNC_OPERATION_UPSERT),
+                Triple(SEARCH_HISTORY_SCHEMA_V3, "old query", SYNC_OPERATION_DELETE),
+                Triple(SEARCH_HISTORY_SCHEMA_V3, "new query", SYNC_OPERATION_UPSERT),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "tag:old mute", SYNC_OPERATION_DELETE),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "tag:new mute", SYNC_OPERATION_UPSERT),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "user:1", SYNC_OPERATION_DELETE),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "user:11", SYNC_OPERATION_UPSERT),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "illust:2", SYNC_OPERATION_DELETE),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "illust:12", SYNC_OPERATION_UPSERT),
+                Triple(VIEW_HISTORY_SCHEMA_V3, "seen:3", SYNC_OPERATION_DELETE),
+                Triple(VIEW_HISTORY_SCHEMA_V3, "seen:13", SYNC_OPERATION_UPSERT),
+                Triple(VIEW_HISTORY_SCHEMA_V3, "viewed:4", SYNC_OPERATION_DELETE),
+                Triple(VIEW_HISTORY_SCHEMA_V3, "viewed:14", SYNC_OPERATION_UPSERT),
             )
         }
 
@@ -66,7 +66,7 @@ class PallaSyncSettingsEventsTest :
 
             val historyEvents =
                 buildSettingsSyncEvents(previous, next)
-                    .filter { it.schema == SEARCH_HISTORY_SCHEMA_V2 }
+                    .filter { it.schema == SEARCH_HISTORY_SCHEMA_V3 }
 
             historyEvents.map { it.operation } shouldBe listOf(SYNC_OPERATION_UPSERT)
             historyEvents.map { it.entityId } shouldBe listOf("gamma")
@@ -89,8 +89,8 @@ class PallaSyncSettingsEventsTest :
             buildSettingsSyncEvents(previous, next)
                 .map { Triple(it.schema, it.entityId, it.operation) } shouldBe
                 listOf(
-                    Triple(SEARCH_HISTORY_SCHEMA_V2, "new", SYNC_OPERATION_UPSERT),
-                    Triple(VIEW_HISTORY_SCHEMA_V2, "viewed:41", SYNC_OPERATION_UPSERT),
+                    Triple(SEARCH_HISTORY_SCHEMA_V3, "new", SYNC_OPERATION_UPSERT),
+                    Triple(VIEW_HISTORY_SCHEMA_V3, "viewed:41", SYNC_OPERATION_UPSERT),
                 )
         }
 

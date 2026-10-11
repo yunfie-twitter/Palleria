@@ -43,28 +43,34 @@ class PallaSyncHttpClassificationTest :
         }
 
         "parseRecordsResponseBody succeeds on empty genesis response" {
-            val emptyBody = """{"records":[],"next_cursor":null,"server_time_ms":1726930000000}"""
-            val result = parseRecordsResponseBody(json, emptyBody, nextSeqHeader = null, hasMoreHeader = null, afterSeq = 0L)
+            val emptyBody = """{"items":[],"has_more":false,"scan_through_seq":0}"""
+            val result = parseRecordsResponseBody(json, emptyBody, afterSeq = 0L)
             result shouldBe PallaSyncHttpResult.Success(PallaSyncRecordsPage(records = emptyList(), nextSeq = 0L, hasMore = false))
         }
 
         "parseRecordsResponseBody parses object response with records and nextCursor" {
             val body = """{
-                "records": [{
-                    "protocol_version": "2.1",
-                    "chain_id": "test-chain",
-                    "record_id": "018f0c2a-7b9d-7000-8000-000000000001",
-                    "collection_name": "palleria.favorite_tag/2",
-                    "action": "upsert",
-                    "encrypted_payload": "YWJj",
-                    "device_id": "018f0c2a-7b9d-7000-8000-000000000002",
-                    "created_at_ms": 1726930000000,
-                    "signature": "c2ln"
+                "items": [{
+                    "relay_seq": 10,
+                    "received_at_ms": 1726930000000,
+                    "kind": "record",
+                    "object": {
+                        "version": "3.0",
+                        "chain_id": "test-chain",
+                        "generation": 0,
+                        "record_id": "018f0c2a-7b9d-7000-8000-000000000001",
+                        "device_id": "018f0c2a-7b9d-7000-8000-000000000002",
+                        "epoch": 0,
+                        "payload_nonce": "YWJj",
+                        "encrypted_payload": "YWJj",
+                        "signature": "c2ln"
+                    }
                 }],
                 "next_cursor": "10",
-                "server_time_ms": 1726930000000
+                "has_more": true,
+                "scan_through_seq": 10
             }"""
-            val result = parseRecordsResponseBody(json, body, nextSeqHeader = null, hasMoreHeader = null, afterSeq = 0L)
+            val result = parseRecordsResponseBody(json, body, afterSeq = 0L)
             (result is PallaSyncHttpResult.Success) shouldBe true
             val page = (result as PallaSyncHttpResult.Success).value
             page.records.size shouldBe 1
@@ -78,27 +84,27 @@ class PallaSyncHttpClassificationTest :
 
         "parseRecordsResponseBody parses legacy array response" {
             val body = """[{
-                "protocol_version": "2.1",
+                "version": "3.0",
                 "chain_id": "test-chain",
+                "generation": 0,
                 "record_id": "018f0c2a-7b9d-7000-8000-000000000001",
-                "collection_name": "palleria.favorite_tag/2",
-                "action": "upsert",
-                "encrypted_payload": "YWJj",
                 "device_id": "018f0c2a-7b9d-7000-8000-000000000002",
-                "created_at_ms": 1726930000000,
+                "epoch": 0,
+                "payload_nonce": "YWJj",
+                "encrypted_payload": "YWJj",
                 "signature": "c2ln"
             }]"""
-            val result = parseRecordsResponseBody(json, body, nextSeqHeader = 5L, hasMoreHeader = true, afterSeq = 0L)
+            val result = parseRecordsResponseBody(json, body, afterSeq = 0L)
             (result is PallaSyncHttpResult.Success) shouldBe true
             val page = (result as PallaSyncHttpResult.Success).value
             page.records.size shouldBe 1
-            page.nextSeq shouldBe 5L
-            page.hasMore shouldBe true
+            page.nextSeq shouldBe 1L
+            page.hasMore shouldBe false
         }
 
         "parseRecordsResponseBody returns ProtocolError on non-JSON response" {
             val body = "<html>502 Bad Gateway</html>"
-            val result = parseRecordsResponseBody(json, body, nextSeqHeader = null, hasMoreHeader = null, afterSeq = 0L)
+            val result = parseRecordsResponseBody(json, body, afterSeq = 0L)
             result shouldBe PallaSyncHttpResult.ProtocolError("Relay page was not valid JSON")
         }
     })

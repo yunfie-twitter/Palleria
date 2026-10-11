@@ -5,12 +5,19 @@ import kotlinx.serialization.json.JsonElement
 
 internal const val FAVORITE_TAG_SCHEMA_V1 = "palleria.favorite_tag/1"
 internal const val FAVORITE_TAG_SCHEMA_V2 = "palleria.favorite_tag/2"
+internal const val FAVORITE_TAG_SCHEMA_V3 = "palleria.favorite_tag/3"
 internal const val SEARCH_HISTORY_SCHEMA_V1 = "palleria.search_history/1"
 internal const val SEARCH_HISTORY_SCHEMA_V2 = "palleria.search_history/2"
+internal const val SEARCH_HISTORY_SCHEMA_V3 = "palleria.search_history/3"
 internal const val MUTE_SETTINGS_SCHEMA_V1 = "palleria.mute_settings/1"
 internal const val MUTE_SETTINGS_SCHEMA_V2 = "palleria.mute_settings/2"
+internal const val MUTE_SETTINGS_SCHEMA_V3 = "palleria.mute_settings/3"
 internal const val VIEW_HISTORY_SCHEMA_V1 = "palleria.view_history/1"
 internal const val VIEW_HISTORY_SCHEMA_V2 = "palleria.view_history/2"
+internal const val VIEW_HISTORY_SCHEMA_V3 = "palleria.view_history/3"
+internal const val DEVICE_LIFECYCLE_SCHEMA_V3 = "pallasync.device/3"
+internal const val AUDIT_SCHEMA_V3 = "pallasync.audit/3"
+internal const val CHAIN_SCHEMA_V3 = "palleria.chain/3"
 
 internal const val SYNC_OPERATION_UPSERT = "upsert"
 internal const val SYNC_OPERATION_DELETE = "delete"
@@ -66,6 +73,7 @@ internal data class PallaSyncPendingEvent(
     val entityId: String,
     val operation: String,
     val body: JsonElement,
+    val context: kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(emptyMap()),
 )
 
 internal sealed interface PallaSyncApplyResult {

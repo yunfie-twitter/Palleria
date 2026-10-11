@@ -45,12 +45,27 @@ class PallaSyncEventApplier internal constructor(
         withContext(Dispatchers.IO) {
             if (payloadJsonStrings.isEmpty()) return@withContext emptyList()
 
-            val parsedPayloads =
+            val parsedPayloads: List<Result<List<DataPayload>>> =
                 kotlinx.coroutines.coroutineScope {
                     payloadJsonStrings
                         .map { encoded ->
                             async(Dispatchers.Default) {
-                                runCatching { json.decodeFromString<DataPayload>(encoded) }
+                                runCatching {
+                                    val inner = json.decodeFromString<PallaSyncInnerRecord>(encoded)
+                                    inner.operations.map { op ->
+                                        DataPayload(
+                                            schema = inner.collection,
+                                            entity_id = op.entityId,
+                                            operation = op.operation,
+                                            context = emptyMap(),
+                                            lamport = op.lamport,
+                                            created_at_ms = op.createdAtMs,
+                                            body = op.body,
+                                        )
+                                    }
+                                }.recoverCatching {
+                                    listOf(json.decodeFromString<DataPayload>(encoded))
+                                }
                             }
                         }.awaitAll()
                 }
@@ -61,8 +76,16 @@ class PallaSyncEventApplier internal constructor(
                 parsedPayloads.forEach { parsed ->
                     val outcome =
                         parsed
-                            .mapCatching { payload ->
-                                applyPayload(current, payload)
+                            .mapCatching { payloads ->
+                                var state = current
+                                for (payload in payloads) {
+                                    val res = applyPayload(state, payload)
+                                    state = res.collections
+                                    if (res.result is PallaSyncApplyResult.Quarantined) {
+                                        return@mapCatching FoldResult(state, res.result)
+                                    }
+                                }
+                                FoldResult(state, PallaSyncApplyResult.Applied)
                             }.fold(
                                 onSuccess = { it },
                                 onFailure = { error ->
@@ -87,10 +110,13 @@ class PallaSyncEventApplier internal constructor(
         payload: DataPayload,
     ): FoldResult =
         when (payload.schema) {
-            FAVORITE_TAG_SCHEMA_V2 -> applyFavoriteTag(current, payload)
-            SEARCH_HISTORY_SCHEMA_V2 -> applySearchHistory(current, payload)
-            MUTE_SETTINGS_SCHEMA_V2 -> applyMuteSetting(current, payload)
-            VIEW_HISTORY_SCHEMA_V2 -> applyViewHistory(current, payload)
+            FAVORITE_TAG_SCHEMA_V3, FAVORITE_TAG_SCHEMA_V2, "favorite_tag" -> applyFavoriteTag(current, payload)
+            SEARCH_HISTORY_SCHEMA_V3, SEARCH_HISTORY_SCHEMA_V2, "search_history" -> applySearchHistory(current, payload)
+            MUTE_SETTINGS_SCHEMA_V3, MUTE_SETTINGS_SCHEMA_V2, "mute_settings" -> applyMuteSetting(current, payload)
+            VIEW_HISTORY_SCHEMA_V3, VIEW_HISTORY_SCHEMA_V2, "view_history" -> applyViewHistory(current, payload)
+            DEVICE_LIFECYCLE_SCHEMA_V3, "device" -> current.applied()
+            AUDIT_SCHEMA_V3, "audit" -> current.applied()
+            CHAIN_SCHEMA_V3, "chain" -> current.applied()
             FAVORITE_TAG_SCHEMA_V1 -> applyLegacyFavoriteTags(current, payload)
             SEARCH_HISTORY_SCHEMA_V1 -> applyLegacySearchHistory(current, payload)
             MUTE_SETTINGS_SCHEMA_V1 -> applyLegacyMuteSettings(current, payload)
@@ -102,11 +128,15 @@ class PallaSyncEventApplier internal constructor(
         current: SyncedCollectionsSnapshot,
         payload: DataPayload,
     ): FoldResult {
-        val tag =
-            payload.body.objectString("tag")
-                ?: return current.quarantined("favorite_tag body is missing tag")
-        if (tag.isBlank() || payload.entity_id != tag) {
-            return current.quarantined("favorite_tag entity/body mismatch")
+        val tag = payload.entity_id
+        if (tag.isBlank()) {
+            return current.quarantined("favorite_tag entity is blank")
+        }
+        if (payload.operation == SYNC_OPERATION_UPSERT) {
+            val bodyTag = payload.body.objectString("tag")
+            if (bodyTag != null && bodyTag != tag) {
+                return current.quarantined("favorite_tag entity/body mismatch")
+            }
         }
         val tags =
             when (payload.operation) {
@@ -122,6 +152,10 @@ class PallaSyncEventApplier internal constructor(
                     current.favoriteTags.filterNot { it == tag }
                 }
 
+                "clear" -> {
+                    emptyList()
+                }
+
                 else -> {
                     return current.invalidOperation(payload)
                 }
@@ -133,11 +167,15 @@ class PallaSyncEventApplier internal constructor(
         current: SyncedCollectionsSnapshot,
         payload: DataPayload,
     ): FoldResult {
-        val query =
-            payload.body.objectString("query")
-                ?: return current.quarantined("search_history body is missing query")
-        if (query.isBlank() || payload.entity_id != query) {
-            return current.quarantined("search_history entity/body mismatch")
+        val query = payload.entity_id
+        if (query.isBlank()) {
+            return current.quarantined("search_history entity is blank")
+        }
+        if (payload.operation == SYNC_OPERATION_UPSERT) {
+            val bodyQuery = payload.body.objectString("query")
+            if (bodyQuery != null && bodyQuery != query) {
+                return current.quarantined("search_history entity/body mismatch")
+            }
         }
         val history =
             when (payload.operation) {
@@ -148,6 +186,10 @@ class PallaSyncEventApplier internal constructor(
 
                 SYNC_OPERATION_DELETE -> {
                     current.searchHistory.filterNot { it == query }
+                }
+
+                "clear" -> {
+                    emptyList()
                 }
 
                 else -> {
@@ -161,16 +203,21 @@ class PallaSyncEventApplier internal constructor(
         current: SyncedCollectionsSnapshot,
         payload: DataPayload,
     ): FoldResult {
+        if (payload.operation == "clear") {
+            return current.copy(mutedTags = emptyList(), mutedUsers = emptyList(), mutedIllusts = emptyList()).applied()
+        }
         val separator = payload.entity_id.indexOf(':')
         if (separator <= 0 || separator == payload.entity_id.lastIndex) {
             return current.quarantined("Invalid mute entity_id")
         }
         val kind = payload.entity_id.substring(0, separator)
         val value = payload.entity_id.substring(separator + 1)
-        val bodyKind = payload.body.objectString("kind")
-        val bodyValue = payload.body.objectString("value")
-        if ((bodyKind != null && bodyKind != kind) || (bodyValue != null && bodyValue != value)) {
-            return current.quarantined("mute_settings entity/body mismatch")
+        if (payload.operation == SYNC_OPERATION_UPSERT) {
+            val bodyKind = payload.body.objectString("kind")
+            val bodyValue = payload.body.objectString("value")
+            if ((bodyKind != null && bodyKind != kind) || (bodyValue != null && bodyValue != value)) {
+                return current.quarantined("mute_settings entity/body mismatch")
+            }
         }
 
         return when (kind) {
@@ -207,10 +254,14 @@ class PallaSyncEventApplier internal constructor(
         }
     }
 
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
     private fun applyViewHistory(
         current: SyncedCollectionsSnapshot,
         payload: DataPayload,
     ): FoldResult {
+        if (payload.operation == "clear") {
+            return current.copy(seenFeedIllusts = emptyList(), viewHistory = emptyList()).applied()
+        }
         val separator = payload.entity_id.indexOf(':')
         if (separator <= 0 || separator == payload.entity_id.lastIndex) {
             return current.quarantined("Invalid view_history entity_id")
