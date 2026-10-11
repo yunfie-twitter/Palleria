@@ -262,5 +262,17 @@
     ],
     "version_name": "6.7.0-pre.1",
     "version_code": 161
+  },
+  "409098586": {
+    "tag": "v6.7.0-pre.2",
+    "prerelease": true,
+    "files": [
+      "Palleria-v6.7.0-pre.2-release-arm64-v8a.apk",
+      "Palleria-v6.7.0-pre.2-release-armeabi-v7a.apk",
+      "Palleria-v6.7.0-pre.2-release-universal.apk",
+      "Palleria-v6.7.0-pre.2-release-x86_64.apk"
+    ],
+    "version_name": "6.7.0-pre.2",
+    "version_code": 162
   }
 }
