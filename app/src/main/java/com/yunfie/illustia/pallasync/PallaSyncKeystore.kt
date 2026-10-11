@@ -3,13 +3,22 @@ package com.yunfie.illustia.pallasync
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import java.util.UUID
 
+/**
+ * Snapshot of local device keys and active epoch keys.
+ * Note: Per PallaSync Protocol 3.0 §5.5 (C-02), the root mnemonic, admin key,
+ * and root_seed MUST NOT be persisted to non-volatile storage.
+ */
 data class PallaSyncKeySnapshot(
     val chainId: String? = null,
-    val seedPhrase: String,
-    val encryptionKeyBase64Url: String,
-    val signingKeyBase64Url: String,
-    val publicKeyBase64Url: String,
+    val seedPhrase: String = "", // Memory-only; never persisted to disk
+    val encryptionKeyBase64Url: String, // record_key
+    val signingKeyBase64Url: String, // device_signing_key (Ed25519)
+    val publicKeyBase64Url: String, // device_public_key (Ed25519)
+    val kexPrivateKeyBase64Url: String = "", // device_kex_key (X25519)
+    val kexPublicKeyBase64Url: String = "", // device_kex_public_key (X25519)
+    val deviceMetaKeyBase64Url: String = "", // device_meta_key
 )
 
 class PallaSyncKeystore(
@@ -29,12 +38,6 @@ class PallaSyncKeystore(
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
-
-    fun saveRootPrivateKey(seedBase64Url: String) {
-        sharedPrefs.edit().putString("root_private_seed", seedBase64Url).apply()
-    }
-
-    fun getRootPrivateKey(): String? = sharedPrefs.getString("root_private_seed", null)
 
     fun saveDevicePrivateKey(seedBase64Url: String) {
         sharedPrefs.edit().putString("device_private_seed", seedBase64Url).apply()
@@ -70,12 +73,11 @@ class PallaSyncKeystore(
         sharedPrefs.edit().putString("device_id", deviceId).apply()
     }
 
-    fun getDeviceId(): String? {
+    /** Returns or generates a canonical UUIDv4 device ID (§7.4, §3.4). */
+    fun getDeviceId(): String {
         var id = sharedPrefs.getString("device_id", null)
         if (id == null) {
-            id =
-                com.yunfie.illustia.pallasync.util.UuidV7
-                    .generateString()
+            id = UUID.randomUUID().toString().lowercase()
             saveDeviceId(id)
         }
         return id
@@ -87,19 +89,17 @@ class PallaSyncKeystore(
 
     fun getEpochKey(): String? = sharedPrefs.getString("epoch_key", null)
 
-    fun savePairingPrivateKey(privateKeyBase64Url: String) {
-        sharedPrefs.edit().putString("pairing_private_key", privateKeyBase64Url).apply()
+    fun saveDeviceMetaKey(deviceMetaKeyBase64Url: String) {
+        sharedPrefs.edit().putString("device_meta_key", deviceMetaKeyBase64Url).apply()
     }
 
-    fun getPairingPrivateKey(): String? = sharedPrefs.getString("pairing_private_key", null)
+    fun getDeviceMetaKey(): String? = sharedPrefs.getString("device_meta_key", null)
 
     /**
      * Commits all active-chain key material in one encrypted preference edit.
-     * The synchronous result lets the coordinator avoid activating Room state
-     * when durable key storage failed.
+     * Mnemonic is never persisted per §5.5.
      */
     fun saveActiveChainKeys(snapshot: PallaSyncKeySnapshot): Boolean {
-        require(snapshot.seedPhrase.isNotBlank()) { "seed phrase is blank" }
         require(snapshot.encryptionKeyBase64Url.isNotBlank()) { "encryption key is blank" }
         require(snapshot.signingKeyBase64Url.isNotBlank()) { "signing key is blank" }
         require(snapshot.publicKeyBase64Url.isNotBlank()) { "public key is blank" }
@@ -107,10 +107,19 @@ class PallaSyncKeystore(
         val editor =
             sharedPrefs
                 .edit()
-                .putString("seed_phrase", snapshot.seedPhrase)
+                .remove("seed_phrase") // Explicitly purge any legacy stored mnemonic
                 .putString("epoch_key", snapshot.encryptionKeyBase64Url)
                 .putString("device_private_seed", snapshot.signingKeyBase64Url)
                 .putString("device_sign_public", snapshot.publicKeyBase64Url)
+        if (snapshot.kexPrivateKeyBase64Url.isNotBlank()) {
+            editor.putString("device_hpke_private", snapshot.kexPrivateKeyBase64Url)
+        }
+        if (snapshot.kexPublicKeyBase64Url.isNotBlank()) {
+            editor.putString("device_hpke_public", snapshot.kexPublicKeyBase64Url)
+        }
+        if (snapshot.deviceMetaKeyBase64Url.isNotBlank()) {
+            editor.putString("device_meta_key", snapshot.deviceMetaKeyBase64Url)
+        }
         if (snapshot.chainId.isNullOrBlank()) {
             editor.remove("active_chain_id")
         } else {
@@ -120,16 +129,18 @@ class PallaSyncKeystore(
     }
 
     fun getActiveChainKeys(): PallaSyncKeySnapshot? {
-        val seedPhrase = getSeedPhrase()?.takeIf { it.isNotBlank() } ?: return null
         val encryptionKey = getEpochKey()?.takeIf { it.isNotBlank() } ?: return null
         val signingKey = getDevicePrivateKey()?.takeIf { it.isNotBlank() } ?: return null
         val publicKey = getDeviceSignPublicKey()?.takeIf { it.isNotBlank() } ?: return null
         return PallaSyncKeySnapshot(
             chainId = sharedPrefs.getString("active_chain_id", null),
-            seedPhrase = seedPhrase,
+            seedPhrase = "",
             encryptionKeyBase64Url = encryptionKey,
             signingKeyBase64Url = signingKey,
             publicKeyBase64Url = publicKey,
+            kexPrivateKeyBase64Url = getDeviceHpkePrivateKey().orEmpty(),
+            kexPublicKeyBase64Url = getDeviceHpkePublicKey().orEmpty(),
+            deviceMetaKeyBase64Url = getDeviceMetaKey().orEmpty(),
         )
     }
 
@@ -139,10 +150,12 @@ class PallaSyncKeystore(
         return sharedPrefs
             .edit()
             .putString("pending_chain_id", snapshot.chainId)
-            .putString("pending_seed_phrase", snapshot.seedPhrase)
             .putString("pending_epoch_key", snapshot.encryptionKeyBase64Url)
             .putString("pending_signing_key", snapshot.signingKeyBase64Url)
             .putString("pending_public_key", snapshot.publicKeyBase64Url)
+            .putString("pending_kex_private", snapshot.kexPrivateKeyBase64Url)
+            .putString("pending_kex_public", snapshot.kexPublicKeyBase64Url)
+            .putString("pending_meta_key", snapshot.deviceMetaKeyBase64Url)
             .commit()
     }
 
@@ -152,10 +165,7 @@ class PallaSyncKeystore(
                 ?: return null
         return PallaSyncKeySnapshot(
             chainId = chainId,
-            seedPhrase =
-                sharedPrefs
-                    .getString("pending_seed_phrase", null)
-                    ?.takeIf { it.isNotBlank() } ?: return null,
+            seedPhrase = "",
             encryptionKeyBase64Url =
                 sharedPrefs
                     .getString("pending_epoch_key", null)
@@ -168,6 +178,9 @@ class PallaSyncKeystore(
                 sharedPrefs
                     .getString("pending_public_key", null)
                     ?.takeIf { it.isNotBlank() } ?: return null,
+            kexPrivateKeyBase64Url = sharedPrefs.getString("pending_kex_private", "").orEmpty(),
+            kexPublicKeyBase64Url = sharedPrefs.getString("pending_kex_public", "").orEmpty(),
+            deviceMetaKeyBase64Url = sharedPrefs.getString("pending_meta_key", "").orEmpty(),
         )
     }
 
@@ -177,15 +190,20 @@ class PallaSyncKeystore(
         return sharedPrefs
             .edit()
             .putString("active_chain_id", pending.chainId)
-            .putString("seed_phrase", pending.seedPhrase)
             .putString("epoch_key", pending.encryptionKeyBase64Url)
             .putString("device_private_seed", pending.signingKeyBase64Url)
             .putString("device_sign_public", pending.publicKeyBase64Url)
+            .putString("device_hpke_private", pending.kexPrivateKeyBase64Url)
+            .putString("device_hpke_public", pending.kexPublicKeyBase64Url)
+            .putString("device_meta_key", pending.deviceMetaKeyBase64Url)
             .remove("pending_chain_id")
             .remove("pending_seed_phrase")
             .remove("pending_epoch_key")
             .remove("pending_signing_key")
             .remove("pending_public_key")
+            .remove("pending_kex_private")
+            .remove("pending_kex_public")
+            .remove("pending_meta_key")
             .commit()
     }
 
@@ -197,6 +215,9 @@ class PallaSyncKeystore(
             .remove("pending_epoch_key")
             .remove("pending_signing_key")
             .remove("pending_public_key")
+            .remove("pending_kex_private")
+            .remove("pending_kex_public")
+            .remove("pending_meta_key")
             .commit()
 
     fun clearActiveChainKeys(): Boolean =
@@ -206,6 +227,9 @@ class PallaSyncKeystore(
             .remove("epoch_key")
             .remove("device_private_seed")
             .remove("device_sign_public")
+            .remove("device_hpke_private")
+            .remove("device_hpke_public")
+            .remove("device_meta_key")
             .remove("active_chain_id")
             .commit()
 
@@ -217,10 +241,4 @@ class PallaSyncKeystore(
         }
         editor.commit()
     }
-
-    fun saveSeedPhrase(seedPhrase: String) {
-        sharedPrefs.edit().putString("seed_phrase", seedPhrase).apply()
-    }
-
-    fun getSeedPhrase(): String? = sharedPrefs.getString("seed_phrase", null)
 }

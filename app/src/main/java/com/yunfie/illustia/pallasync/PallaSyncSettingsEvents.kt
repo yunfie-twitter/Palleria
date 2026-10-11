@@ -23,13 +23,35 @@ internal fun buildSettingsSyncEvents(
     next: SyncedCollectionsSnapshot,
 ): List<PallaSyncPendingEvent> =
     buildList {
-        addStringSetChanges(
-            schema = FAVORITE_TAG_SCHEMA_V2,
-            previous = previous.favoriteTags,
-            next = next.favoriteTags,
-            entityId = { it },
-            body = { value -> buildJsonObject { put("tag", value) } },
-        )
+        val previousTags = previous.favoriteTags.distinct()
+        val nextTags = next.favoriteTags.distinct()
+        val previousTagSet = previousTags.toSet()
+        val nextTagSet = nextTags.toSet()
+
+        previousTags.filterNot(nextTagSet::contains).forEach { tag ->
+            add(
+                PallaSyncPendingEvent(
+                    schema = FAVORITE_TAG_SCHEMA_V3,
+                    entityId = tag,
+                    operation = SYNC_OPERATION_DELETE,
+                    body = buildJsonObject {},
+                ),
+            )
+        }
+
+        nextTags.forEachIndexed { index, tag ->
+            if (tag !in previousTagSet || previousTags.indexOf(tag) != index) {
+                add(
+                    PallaSyncPendingEvent(
+                        schema = FAVORITE_TAG_SCHEMA_V3,
+                        entityId = tag,
+                        operation = SYNC_OPERATION_UPSERT,
+                        body = buildJsonObject { put("tag", tag) },
+                        context = buildJsonObject { put("order_key", index.toString()) },
+                    ),
+                )
+            }
+        }
 
         if (previous.searchHistory != next.searchHistory) {
             val nextQueries = next.searchHistory.distinct()
@@ -40,10 +62,10 @@ internal fun buildSettingsSyncEvents(
                 .forEach { query ->
                     add(
                         PallaSyncPendingEvent(
-                            schema = SEARCH_HISTORY_SCHEMA_V2,
+                            schema = SEARCH_HISTORY_SCHEMA_V3,
                             entityId = query,
                             operation = SYNC_OPERATION_DELETE,
-                            body = buildJsonObject { put("query", query) },
+                            body = buildJsonObject {},
                         ),
                     )
                 }
@@ -54,7 +76,7 @@ internal fun buildSettingsSyncEvents(
                 .forEach { query ->
                     add(
                         PallaSyncPendingEvent(
-                            schema = SEARCH_HISTORY_SCHEMA_V2,
+                            schema = SEARCH_HISTORY_SCHEMA_V3,
                             entityId = query,
                             operation = SYNC_OPERATION_UPSERT,
                             body = buildJsonObject { put("query", query) },
@@ -139,25 +161,6 @@ internal suspend fun PalleriaSyncManager.enqueueInitialSettings(settings: AppSet
     enqueueDataEvents(events)
 }
 
-private fun MutableList<PallaSyncPendingEvent>.addStringSetChanges(
-    schema: String,
-    previous: List<String>,
-    next: List<String>,
-    entityId: (String) -> String,
-    body: (String) -> kotlinx.serialization.json.JsonElement,
-) {
-    val previousValues = previous.distinct()
-    val nextValues = next.distinct()
-    val previousSet = previousValues.toSet()
-    val nextSet = nextValues.toSet()
-    previousValues.filterNot(nextSet::contains).forEach { value ->
-        add(PallaSyncPendingEvent(schema, entityId(value), SYNC_OPERATION_DELETE, body(value)))
-    }
-    nextValues.filterNot(previousSet::contains).forEach { value ->
-        add(PallaSyncPendingEvent(schema, entityId(value), SYNC_OPERATION_UPSERT, body(value)))
-    }
-}
-
 private fun <T> MutableList<PallaSyncPendingEvent>.addMuteChanges(
     kind: String,
     previous: List<T>,
@@ -181,10 +184,15 @@ private fun seenIllustEvent(
     operation: String,
 ): PallaSyncPendingEvent =
     PallaSyncPendingEvent(
-        schema = VIEW_HISTORY_SCHEMA_V2,
+        schema = VIEW_HISTORY_SCHEMA_V3,
         entityId = "seen:$id",
         operation = operation,
-        body = buildJsonObject { put("id", id) },
+        body =
+            if (operation == SYNC_OPERATION_DELETE) {
+                buildJsonObject {}
+            } else {
+                buildJsonObject { put("id", id) }
+            },
     )
 
 private fun muteEvent(
@@ -193,13 +201,17 @@ private fun muteEvent(
     operation: String,
 ): PallaSyncPendingEvent =
     PallaSyncPendingEvent(
-        schema = MUTE_SETTINGS_SCHEMA_V2,
+        schema = MUTE_SETTINGS_SCHEMA_V3,
         entityId = "$kind:$value",
         operation = operation,
         body =
-            buildJsonObject {
-                put("kind", kind)
-                put("value", value)
+            if (operation == SYNC_OPERATION_DELETE) {
+                buildJsonObject {}
+            } else {
+                buildJsonObject {
+                    put("kind", kind)
+                    put("value", value)
+                }
             },
     )
 
@@ -208,25 +220,29 @@ private fun viewedIllustEvent(
     operation: String,
 ): PallaSyncPendingEvent =
     PallaSyncPendingEvent(
-        schema = VIEW_HISTORY_SCHEMA_V2,
+        schema = VIEW_HISTORY_SCHEMA_V3,
         entityId = "viewed:${illust.id}",
         operation = operation,
         body =
-            buildJsonObject {
-                put("id", illust.id)
-                put("title", illust.title)
-                put("artistName", illust.artistName)
-                put("imageUrl", illust.imageUrl)
-                put("pageCount", illust.pageCount)
-                put("type", illust.type)
-                put("isBookmarked", illust.isBookmarked)
-                put("xRestrict", illust.xRestrict)
-                put("illustAiType", illust.illustAiType)
-                put(
-                    "tags",
-                    kotlinx.serialization.json.buildJsonArray {
-                        illust.tags.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
-                    },
-                )
+            if (operation == SYNC_OPERATION_DELETE) {
+                buildJsonObject {}
+            } else {
+                buildJsonObject {
+                    put("id", illust.id)
+                    put("title", illust.title)
+                    put("artistName", illust.artistName)
+                    put("imageUrl", illust.imageUrl)
+                    put("pageCount", illust.pageCount)
+                    put("type", illust.type)
+                    put("isBookmarked", illust.isBookmarked)
+                    put("xRestrict", illust.xRestrict)
+                    put("illustAiType", illust.illustAiType)
+                    put(
+                        "tags",
+                        kotlinx.serialization.json.buildJsonArray {
+                            illust.tags.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                        },
+                    )
+                }
             },
     )

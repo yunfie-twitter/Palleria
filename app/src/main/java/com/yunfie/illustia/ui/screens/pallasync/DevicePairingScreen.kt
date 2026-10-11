@@ -75,13 +75,8 @@ fun DevicePairingScreen(
     var isJoining by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            val keystore = syncManager.getPallaSyncKeystore()
-            val existingSeed = keystore.getSeedPhrase()
-            if (existingSeed != null) {
-                seedPhrase = existingSeed
-            }
-        }
+        // Per PallaSync Protocol 3.0 §5.5 (C-02, Zero-Persistence Rule),
+        // mnemonic seed phrases are never persisted to disk.
     }
 
     val qrLauncher =
