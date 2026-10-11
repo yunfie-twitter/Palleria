@@ -6,12 +6,12 @@ import okhttp3.HttpUrl
 
 class PallaSyncUrlsTest :
     StringSpec({
-        "normalization trims whitespace and endpoint construction preserves a base path" {
-            val normalized = normalizedUrl("  https://example.com/relay///  ")
+        "normalization accepts a relay origin and builds only the v3 API path" {
+            val normalized = normalizedUrl("  https://example.com///  ")
 
-            normalized.toString() shouldBe "https://example.com/relay"
+            normalized.toString() shouldBe "https://example.com/"
             PallaSyncUrls.records(normalized, "chain", null, 42L, 999).toString() shouldBe
-                "https://example.com/relay/pallasync/v3/chains/chain/records?limit=500&after_seq=42"
+                "https://example.com/pallasync/v3/chains/chain/records?limit=500&after_seq=42"
         }
 
         "path values are encoded as segments rather than concatenated" {
@@ -27,10 +27,18 @@ class PallaSyncUrlsTest :
                 "https://example.com/#fragment",
                 "https://user:password@example.com",
                 "ftp://example.com",
+                "http://example.com",
+                "https://example.com/pallasync/v3",
                 "   ",
             ).forEach { raw ->
                 (PallaSyncUrls.normalize(raw) is PallaSyncHttpResult.ProtocolError) shouldBe true
             }
+        }
+
+        "device pagination includes the cursor in the signed query" {
+            val url = PallaSyncUrls.devices(normalizedUrl("https://example.com"), "chain", "a_b", 8)
+            url.encodedPath shouldBe "/pallasync/v3/chains/chain/devices"
+            url.encodedQuery shouldBe "limit=8&cursor=a_b"
         }
     })
 

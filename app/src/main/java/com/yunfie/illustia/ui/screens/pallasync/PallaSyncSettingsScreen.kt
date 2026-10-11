@@ -328,26 +328,26 @@ fun PallaSyncSettingsScreen(
                         }
                     }
                 }
+            }
 
-                item {
-                    val logs by PalleriaSyncManager.syncLogs.collectAsStateWithLifecycle()
-                    Section(stringResource(R.string.pallasync_sync_logs)) {
-                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
-                            if (logs.isEmpty()) {
-                                Text(
-                                    stringResource(R.string.pallasync_no_logs),
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                                )
-                            } else {
-                                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
-                                    logs.forEach { logMsg ->
-                                        Text(
-                                            logMsg,
-                                            style = MiuixTheme.textStyles.body2,
-                                            color = MiuixTheme.colorScheme.onBackgroundVariant,
-                                        )
-                                    }
+            item {
+                val logs by PalleriaSyncManager.syncLogs.collectAsStateWithLifecycle()
+                Section(stringResource(R.string.pallasync_sync_logs)) {
+                    ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                        if (logs.isEmpty()) {
+                            Text(
+                                stringResource(R.string.pallasync_no_logs),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            )
+                        } else {
+                            Column(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
+                                logs.forEach { logMsg ->
+                                    Text(
+                                        logMsg,
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                    )
                                 }
                             }
                         }
