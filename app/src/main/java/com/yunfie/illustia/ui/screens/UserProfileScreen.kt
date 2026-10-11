@@ -41,6 +41,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
@@ -93,11 +94,12 @@ fun UserProfileScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val profileBackgroundColor =
-        if (settings.useDynamicColor && isDynamicColorAvailable()) {
-            backgroundColor
-        } else {
-            MiuixTheme.colorScheme.surface
-        }
+        resolvePageBackgroundColor(
+            useDynamicColor = settings.useDynamicColor,
+            dynamicColorAvailable = isDynamicColorAvailable(),
+            dynamicBackgroundColor = backgroundColor,
+            fallbackBackgroundColor = MiuixTheme.colorScheme.surface,
+        )
     val isDarkTheme = profileBackgroundColor.luminance() < 0.5f
 
     var showUnfollowConfirm by remember(user.id) { mutableStateOf(false) }
