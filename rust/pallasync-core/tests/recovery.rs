@@ -1,3 +1,4 @@
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use pallasync_core::{
     recovery::{self, RecoveryInput},
     root_session::{self, Operation},
@@ -69,4 +70,49 @@ fn root_handle_is_bound_to_named_operation_and_cannot_activate_undistributed_set
     );
     root_session::end(handle);
     assert!(root_session::identity(handle).is_err());
+}
+
+#[test]
+fn delete_request_is_a_root_signed_cas_bound_admin_operation() {
+    let handle =
+        root_session::begin(MNEMONIC.as_bytes(), b"", Operation::Delete, None, None).unwrap();
+    let identity = root_session::identity(handle).unwrap();
+    let body: serde_json::Value = serde_json::from_str(
+        &root_session::delete_request(
+            handle,
+            3,
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            1_791_684_000_000,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let admin = &body["admin_operation"];
+    assert_eq!(admin["action"], "delete_chain");
+    assert_eq!(admin["generation"], 3);
+    assert_eq!(
+        admin["target_hash"],
+        object_hash(&json!({
+            "deletion_id": body["deletion_id"],
+            "expected_parameters_hash": body["expected_parameters_hash"],
+            "expected_epoch_hash": body["expected_epoch_hash"],
+        }))
+    );
+    let key_bytes = URL_SAFE_NO_PAD
+        .decode(identity["admin_public_key"].as_str().unwrap())
+        .unwrap();
+    let key = ed25519_dalek::VerifyingKey::from_bytes(&key_bytes.try_into().unwrap()).unwrap();
+    let unsigned = pallasync_core::models::unsigned_record_jcs(admin).unwrap();
+    assert!(
+        pallasync_core::crypto::verify_with_context(
+            &key,
+            pallasync_core::crypto::CTX_ADMIN_OP,
+            &unsigned,
+            admin["signature"].as_str().unwrap(),
+        )
+        .unwrap()
+    );
+    root_session::end(handle);
 }

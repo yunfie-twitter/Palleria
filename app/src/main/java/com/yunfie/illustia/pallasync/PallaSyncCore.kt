@@ -545,6 +545,23 @@ object PallaSyncCore {
 
     external fun rootIdentity(handle: Long): String
 
+    /** Creates a §10.15 CAS-bound AdminOperation while the root stays native. */
+    external fun createDeleteRequest(
+        handle: Long,
+        generation: Int,
+        deletionId: String,
+        parametersHash: String,
+        epochHash: String,
+        createdAtMs: Long,
+    ): String
+
+    external fun validateDeletionProof(
+        body: ByteArray,
+        pinJson: String,
+        authorityJson: String,
+        submittedRequestJson: String,
+    ): String
+
     external fun rootCapabilityToken(
         handle: Long,
         operation: String,

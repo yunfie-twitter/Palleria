@@ -3,6 +3,12 @@
 規範は依頼者が指定した `PallaSync-Protocol/docs/v3.0.md` だけです。
 本記録・コード・試験・設定は仕様を変更しません。全機能の適合完了はまだ宣言しません。
 
+§7.10/§10.15/§17.7/§17.11に従い、root seedを名前付きRust session内に保持したままCAS-bound AdminOperationを送信します。202/410単独では消去せず、同じsessionでGET `/deletion`を取得し、Rustが固定relay pin・既存authority・ローカル要求署名・CAS head・ledger hash・DeleteReceipt署名・transparency entryを照合します。証明をRoomへ保存してreadbackを確認した後、当該chainのRoom状態・outbox・同期鍵とpinを消去し、署名済み証拠は保持します。証明が取得/検証できない場合は鍵と状態を保持し`deletion_unverified`として返します。
+
+検証: Rust `cargo fmt --check`、`cargo test --locked`、`cargo clippy --locked --all-targets -- -D warnings`成功。Android `compileDebugKotlin`、`compileDebugUnitTestKotlin`、`ktlintCheck`、`detekt`、全`testDebugUnitTest`成功。削除時のRoom試験では署名済み証拠だけを残し、要求証拠と当該chainの行を消す境界を追加確認しました。
+
+実サーバーを使ったGET `/deletion` end-to-end試験、commit境界の障害注入、独立したオフライン媒体への証拠export確認はまだ実施していません。従って全適合済みとは扱いません。
+
 2026-10-13、追加実装の前に依頼どおり両リポジトリの作業をcommitしました。
 Palleriaは`470b5131`、PallaSyncは`6c9f51f`です。これらは途中の実装を保存するcommitであり、
 全適合・最終APK・本番更新・新規PRの完了を表しません。

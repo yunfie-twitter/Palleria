@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.SignedEventEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -26,6 +27,55 @@ class PallaSyncProtocolStoreTest {
     private val deviceA = "11111111-1111-4111-8111-111111111111"
     private val deviceB = "ffffffff-ffff-4fff-8fff-ffffffffffff"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `verified deletion retains signed proof while erasing chain rows and other evidence`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                val dao = db.pallaSyncDao()
+                dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val request =
+                    ProtectedEvidenceEntity(
+                        "https://relay.example",
+                        "key",
+                        chain,
+                        log,
+                        "delete_request",
+                        0,
+                        "request-hash",
+                        "{\"request\":true}",
+                    )
+                val proof =
+                    ProtectedEvidenceEntity(
+                        "https://relay.example",
+                        "key",
+                        chain,
+                        log,
+                        "delete_receipt",
+                        9,
+                        "proof-hash",
+                        "{\"proof\":true}",
+                    )
+                protocol.retainEvidence(request)
+                db.withTransaction {
+                    protocol.retainDeletionProof(proof)
+                    protocol.eraseChainState(chain)
+                    dao.clearVerifiedDeletedChain(chain)
+                }
+                dao.getChainState(chain) shouldBe null
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_request", 0) shouldBe emptyList()
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 9) shouldBe listOf("{\"proof\":true}")
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `provisional acceptance binds a position without applying effects twice`() =

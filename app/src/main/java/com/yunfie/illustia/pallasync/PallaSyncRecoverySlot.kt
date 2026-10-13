@@ -16,6 +16,7 @@ import java.util.UUID
 /** §§7.11.3/18.8: one protected slot for this physical app storage domain, across all chains.
  * A second install/OS backup is never counted as an independent physical holder.
  */
+@Suppress("TooManyFunctions")
 internal class PallaSyncRecoverySlot(
     private val prefs: SharedPreferences,
 ) {
@@ -201,6 +202,29 @@ internal class PallaSyncRecoverySlot(
         ) { "C_LOCAL_STORAGE_FULL" }
         // Keep the physical instance ID; an erase does not create another independent holder.
     }
+
+    /** §17.11: remove a protected share only when its signed manifest names the deleted chain. */
+    fun eraseForVerifiedChainDeletion(chainId: String): Pair<String, String>? =
+        synchronized(lock) {
+            val current = read() ?: return@synchronized null
+            val manifestChain =
+                current.packageObject
+                    .getValue("manifest")
+                    .jsonObject
+                    .getValue("chain_id")
+                    .jsonPrimitive.content
+            if (manifestChain != chainId) return@synchronized null
+            erase(current, explicitlyConfirmed = true)
+            current.keyAlias to current.setId
+        }
+
+    fun discardDeletedChainPublicEvidence(setId: String) =
+        synchronized(lock) {
+            check(read()?.setId != setId) { "C_RECOVERY_SHARE_INVALID" }
+            check(prefs.edit().remove(EVIDENCE + setId).commit() && prefs.getString(EVIDENCE + setId, null) == null) {
+                "C_LOCAL_STORAGE_FULL"
+            }
+        }
 
     private fun write(entry: Entry): Entry {
         val editor = prefs.edit()

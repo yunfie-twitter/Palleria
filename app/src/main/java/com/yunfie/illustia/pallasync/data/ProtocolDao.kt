@@ -324,6 +324,83 @@ interface ProtocolDao {
         sequence: Long,
     ): List<String>
 
+    @Query("SELECT signed_json FROM ps_evidence WHERE chain_id=:chainId AND log_id=:logId AND kind=:kind ORDER BY sequence DESC LIMIT 1")
+    suspend fun latestEvidence(
+        chainId: String,
+        logId: String,
+        kind: String,
+    ): String?
+
+    @Query("DELETE FROM ps_registry WHERE chain_id=:chain")
+    suspend fun deleteRegistry(chain: String)
+
+    @Query("DELETE FROM ps_epochs WHERE chain_id=:chain")
+    suspend fun deleteEpochs(chain: String)
+
+    @Query("DELETE FROM ps_events WHERE chain_id=:chain")
+    suspend fun deleteEvents(chain: String)
+
+    @Query("DELETE FROM ps_authors WHERE chain_id=:chain")
+    suspend fun deleteAuthors(chain: String)
+
+    @Query("DELETE FROM ps_entities WHERE chain_id=:chain")
+    suspend fun deleteEntities(chain: String)
+
+    @Query("DELETE FROM ps_registers WHERE chain_id=:chain")
+    suspend fun deleteRegisters(chain: String)
+
+    @Query("DELETE FROM ps_history WHERE chain_id=:chain")
+    suspend fun deleteHistory(chain: String)
+
+    @Query("DELETE FROM ps_quarantine WHERE chain_id=:chain")
+    suspend fun deleteQuarantine(chain: String)
+
+    @Query("DELETE FROM ps_projections WHERE chain_id=:chain")
+    suspend fun deleteProjections(chain: String)
+
+    @Query("DELETE FROM ps_log WHERE chain_id=:chain")
+    suspend fun deleteLog(chain: String)
+
+    @Query("DELETE FROM ps_snapshots WHERE chain_id=:chain")
+    suspend fun deleteSnapshots(chain: String)
+
+    @Query("DELETE FROM ps_authority WHERE chain_id=:chain")
+    suspend fun deleteAuthority(chain: String)
+
+    @Query("DELETE FROM ps_migrations WHERE target_chain=:chain OR source_identity=:chain")
+    suspend fun deleteChainMigrations(chain: String)
+
+    @Query("DELETE FROM ps_evidence WHERE chain_id=:chain AND kind!='delete_receipt'")
+    suspend fun deleteNonDeletionEvidence(chain: String)
+
+    @Transaction
+    suspend fun retainDeletionProof(proof: ProtectedEvidenceEntity) {
+        retainEvidence(proof)
+        check(
+            evidenceAt(proof.origin, proof.relayKeyId, proof.chainId, proof.logId, proof.kind, proof.sequence).contains(proof.signedJson),
+        ) {
+            "C_LOCAL_STORAGE_FULL"
+        }
+    }
+
+    @Transaction
+    suspend fun eraseChainState(chainId: String) {
+        deleteRegistry(chainId)
+        deleteEpochs(chainId)
+        deleteEvents(chainId)
+        deleteAuthors(chainId)
+        deleteEntities(chainId)
+        deleteRegisters(chainId)
+        deleteHistory(chainId)
+        deleteQuarantine(chainId)
+        deleteProjections(chainId)
+        deleteLog(chainId)
+        deleteSnapshots(chainId)
+        deleteAuthority(chainId)
+        deleteChainMigrations(chainId)
+        deleteNonDeletionEvidence(chainId)
+    }
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun quarantine(evidence: QuarantineEvidenceEntity)
 

@@ -123,6 +123,11 @@ class PalleriaSyncManager(
 
     suspend fun deleteChain(callApi: Boolean = true): Boolean = coordinator.deleteChain(callApi)
 
+    internal suspend fun requestChainDeletion(
+        mnemonic: String,
+        passphrase: String = "",
+    ): PallaSyncDeletionRequestResult = coordinator.requestChainDeletion(mnemonic, passphrase)
+
     suspend fun fetchDevices(
         serverUrl: String,
         chainId: String,

@@ -164,6 +164,186 @@ pub fn validate_receipt(receipt: &Value, pin: &RelayPin) -> Result {
     )?;
     pin.verify(receipt, CTX_RECEIPT)
 }
+
+/// Validate the post-delete proof against the previously committed authority and the exact
+/// locally submitted root authorization. A valid relay signature alone never authorizes erasure.
+pub fn validate_deletion_proof(
+    proof: &Value,
+    pin: &RelayPin,
+    authority: &crate::authority::Authority,
+    request: &Value,
+) -> Result<Value> {
+    pin.validate()?;
+    require(
+        authority.pin.chain_id == pin.chain_id
+            && authority.pin.log_id == pin.log_id
+            && authority.pin.origin == pin.origin
+            && authority.pin.public_key == pin.public_key,
+        "C_RELAY_KEY_MISMATCH",
+    )?;
+    fields(
+        proof,
+        &[
+            ("ledger", "object"),
+            ("parameters", "object"),
+            ("epoch", "object"),
+            ("enrollment_chain", "array"),
+            ("admin_operation", "object?"),
+            ("device_authorization", "object?"),
+            ("delete_receipt", "object"),
+            ("deletion_transparency_entry", "object"),
+        ],
+        &[],
+    )?;
+    require(
+        !proof["admin_operation"].is_null()
+            && proof["device_authorization"].is_null()
+            && a(proof, "enrollment_chain").is_empty(),
+        "C_DELETION_UNVERIFIED",
+    )?;
+
+    let parameters = &proof["parameters"];
+    let epoch = &proof["epoch"];
+    wire::validate(parameters, "parameters").map_err(|_| schema())?;
+    wire::validate(epoch, "epoch").map_err(|_| schema())?;
+    let known_parameters = authority
+        .parameters
+        .as_ref()
+        .ok_or(ClientError("C_DELETION_UNVERIFIED"))?;
+    let known_epoch = &authority.current_epoch()?.record;
+    require(
+        parameters == known_parameters && epoch == known_epoch,
+        "C_DELETION_UNVERIFIED",
+    )?;
+
+    fields(
+        request,
+        &[
+            ("deletion_id", "uuid"),
+            ("expected_parameters_hash", "b32"),
+            ("expected_epoch_hash", "b32"),
+            ("admin_operation", "object"),
+        ],
+        &[],
+    )?;
+    require(
+        proof["admin_operation"] == request["admin_operation"]
+            && s(&request["admin_operation"], "action") == "delete_chain",
+        "C_DELETION_UNVERIFIED",
+    )?;
+    let action_payload = json!({
+        "deletion_id": request["deletion_id"],
+        "expected_parameters_hash": request["expected_parameters_hash"],
+        "expected_epoch_hash": request["expected_epoch_hash"],
+    });
+    crate::admin_action::verify(
+        &request["admin_operation"],
+        &action_payload,
+        parameters,
+        epoch,
+    )?;
+    require(
+        s(&request["admin_operation"], "chain_id") == pin.chain_id
+            && authority.admin_public_key == s(parameters, "admin_public_key"),
+        "C_DELETION_UNVERIFIED",
+    )?;
+
+    let ledger = &proof["ledger"];
+    fields(
+        ledger,
+        &[
+            ("chain_id", "b32"),
+            ("deletion_id", "uuid"),
+            ("authorized_parameters_hash", "b32"),
+            ("authorized_epoch_hash", "b32"),
+            ("authorization_hash", "b32"),
+            ("requested_at_ms", "int"),
+            ("completed_at_ms", "int?"),
+            ("assurance", "crypto-shred|backup-expiry"),
+            ("delete_after_ms", "int?"),
+            ("receipt_hash", "b32"),
+        ],
+        &[],
+    )?;
+    require(
+        n(ledger, "requested_at_ms") > 0
+            && (ledger["completed_at_ms"].is_null()
+                || n(ledger, "completed_at_ms") >= n(ledger, "requested_at_ms"))
+            && (ledger["delete_after_ms"].is_null()
+                || n(ledger, "delete_after_ms") >= n(ledger, "requested_at_ms")),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    let mut unsigned_ledger = ledger.clone();
+    unsigned_ledger
+        .as_object_mut()
+        .ok_or_else(schema)?
+        .remove("receipt_hash");
+    let operation = &request["admin_operation"];
+    require(
+        s(ledger, "chain_id") == pin.chain_id
+            && ledger["deletion_id"] == request["deletion_id"]
+            && s(ledger, "authorized_parameters_hash") == object_hash(parameters)
+            && s(ledger, "authorized_epoch_hash") == object_hash(epoch)
+            && s(ledger, "authorization_hash") == object_hash(operation)
+            && s(ledger, "receipt_hash") == object_hash(&unsigned_ledger),
+        "C_DELETION_UNVERIFIED",
+    )?;
+
+    let receipt = &proof["delete_receipt"];
+    fields(
+        receipt,
+        &[
+            ("type", "PALLASYNC-DELETE-RECEIPT-v3"),
+            ("version", "3.0"),
+            ("chain_id", "b32"),
+            ("deletion_id", "uuid"),
+            ("log_id", "uuid"),
+            ("relay_key_id", "b32"),
+            ("authorized_parameters_hash", "b32"),
+            ("authorized_epoch_hash", "b32"),
+            ("authorization_hash", "b32"),
+            ("requested_at_ms", "int"),
+            ("completed_at_ms", "int?"),
+            ("assurance", "crypto-shred|backup-expiry"),
+            ("delete_after_ms", "int?"),
+            ("ledger_receipt_hash", "b32"),
+            ("transparency_id", "uuid"),
+            ("transparency_index", "int"),
+            ("transparency_hash", "b32"),
+            ("relay_signature", "b64"),
+        ],
+        &[],
+    )?;
+    pin.verify(receipt, CTX_DELETE)?;
+    require(
+        n(receipt, "transparency_index") > 0
+            && receipt["chain_id"] == ledger["chain_id"]
+            && receipt["deletion_id"] == ledger["deletion_id"]
+            && receipt["authorized_parameters_hash"] == ledger["authorized_parameters_hash"]
+            && receipt["authorized_epoch_hash"] == ledger["authorized_epoch_hash"]
+            && receipt["authorization_hash"] == ledger["authorization_hash"]
+            && receipt["requested_at_ms"] == ledger["requested_at_ms"]
+            && receipt["completed_at_ms"] == ledger["completed_at_ms"]
+            && receipt["assurance"] == ledger["assurance"]
+            && receipt["delete_after_ms"] == ledger["delete_after_ms"]
+            && receipt["ledger_receipt_hash"] == ledger["receipt_hash"],
+        "C_DELETION_UNVERIFIED",
+    )?;
+
+    let entry = &proof["deletion_transparency_entry"];
+    validate_transparency(entry, pin)?;
+    require(
+        s(entry, "operation") == "delete"
+            // The relay may issue a later signed completion receipt. It updates the
+            // minimal ledger hash but keeps the immutable original transparency entry.
+            && (!ledger["completed_at_ms"].is_null() || entry["object_hash"] == object_hash(ledger))
+            && receipt["transparency_id"] == entry["transparency_id"]
+            && receipt["transparency_index"] == entry["entry_index"]
+            && receipt["transparency_hash"] == object_hash(entry),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    Ok(proof.clone())
+}
 /// Validates the exact submitted object and the complete original LogEntry.
 /// Inclusion in a pinned prefix is a separate operation; callers retain this evidence.
 pub fn verify_receipt(

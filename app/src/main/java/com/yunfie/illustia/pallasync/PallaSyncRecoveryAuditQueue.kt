@@ -87,6 +87,22 @@ internal class PallaSyncRecoveryAuditQueue(
                 .toList()
         }
 
+    fun eraseChain(chainId: String) =
+        synchronized(lock) {
+            val owned =
+                prefs.all.keys.filter { key ->
+                    key.startsWith(PREFIX) &&
+                        runCatching {
+                            Json
+                                .decodeFromString<Pending>(
+                                    checkNotNull(prefs.getString(key, null)),
+                                ).chainId == chainId
+                        }.getOrDefault(false)
+                }
+            check(prefs.edit().also { editor -> owned.forEach(editor::remove) }.commit()) { "C_LOCAL_STORAGE_FULL" }
+            check(owned.none(prefs::contains)) { "C_LOCAL_STORAGE_FULL" }
+        }
+
     /** Remove only after an idempotent Room handoff commits, including after uncertain prior publication. */
     suspend fun drain(
         chainId: String,

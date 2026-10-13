@@ -228,6 +228,23 @@ interface PallaSyncDao {
     @Query("DELETE FROM pallasync_inbox WHERE chain_id = :chainId")
     suspend fun clearInboxRecords(chainId: String)
 
+    @Query("DELETE FROM pallasync_outbox WHERE chain_id=:chainId")
+    suspend fun clearOutboxForChain(chainId: String)
+
+    @Query("DELETE FROM pallasync_chain_state WHERE chainId=:chainId")
+    suspend fun clearChainState(chainId: String)
+
+    @Query("DELETE FROM pallasync_devices WHERE chainId=:chainId")
+    suspend fun clearDevicesForChain(chainId: String)
+
+    @Transaction
+    suspend fun clearVerifiedDeletedChain(chainId: String) {
+        clearOutboxForChain(chainId)
+        clearChainState(chainId)
+        clearDevicesForChain(chainId)
+        clearInboxRecords(chainId)
+    }
+
     @Query("UPDATE pallasync_chain_state SET write_state='archived' WHERE chainId!=:chainId")
     suspend fun archiveOtherChainStates(chainId: String)
 

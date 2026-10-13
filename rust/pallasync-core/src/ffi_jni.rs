@@ -1335,6 +1335,35 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_objectHa
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateDeletionProof<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    body: JByteArray<'local>,
+    pin: JString<'local>,
+    authority: JString<'local>,
+    request: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let bytes = env
+            .convert_byte_array(&body)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let proof =
+            crate::strict::jcs::parse(&bytes).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin_value = public_value(&mut env, &pin)?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(pin_value).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let authority: crate::authority::Authority =
+            serde_json::from_value(public_value(&mut env, &authority)?)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let request = public_value(&mut env, &request)?;
+        crate::attestations::validate_deletion_proof(&proof, &pin, &authority, &request)
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_generateSeedPhrase<
     'local,
 >(
@@ -1396,6 +1425,50 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_rootIden
             .unwrap_or(std::ptr::null_mut()),
         Err(e) => {
             let _ = env.throw_new("java/lang/IllegalStateException", e.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createDeleteRequest<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    generation: jint,
+    deletion_id: JString<'local>,
+    parameters_hash: JString<'local>,
+    epoch_hash: JString<'local>,
+    created_at_ms: jlong,
+) -> jstring {
+    let result = (|| {
+        let deletion_id =
+            read_string(&mut env, &deletion_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let parameters_hash =
+            read_string(&mut env, &parameters_hash).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let epoch_hash =
+            read_string(&mut env, &epoch_hash).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        if generation < 0 || created_at_ms < 0 {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        crate::root_session::delete_request(
+            handle as u64,
+            generation as u32,
+            &deletion_id,
+            &parameters_hash,
+            &epoch_hash,
+            created_at_ms,
+        )
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value)
+            .map(|s| s.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
             std::ptr::null_mut()
         }
     }

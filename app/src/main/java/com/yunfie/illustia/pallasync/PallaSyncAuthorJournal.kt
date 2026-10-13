@@ -23,6 +23,8 @@ internal class PallaSyncAuthorJournal(
             values: Map<String, String>,
             removed: Set<String> = emptySet(),
         ): Boolean
+
+        fun keys(): Set<String> = emptySet()
     }
 
     private class EncryptedStorage(
@@ -38,6 +40,8 @@ internal class PallaSyncAuthorJournal(
             )
 
         override fun read(key: String): String? = preferences.getString(key, null)
+
+        override fun keys(): Set<String> = preferences.all.keys
 
         override fun commit(
             values: Map<String, String>,
@@ -209,4 +213,10 @@ internal class PallaSyncAuthorJournal(
         state: ChainStateEntity,
         device: String,
     ): String = "${state.chainId}.$device.${state.generation}"
+
+    fun eraseChain(chainId: String) {
+        val owned = storage.keys().filter { it.startsWith("$chainId.") }.toSet()
+        check(owned.isEmpty() || storage.commit(emptyMap(), owned)) { "C_LOCAL_STORAGE_FULL" }
+        check(storage.keys().none { it.startsWith("$chainId.") }) { "C_LOCAL_STORAGE_FULL" }
+    }
 }

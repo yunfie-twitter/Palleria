@@ -89,6 +89,27 @@ internal class PallaSyncRecoverySetStore(
             }
         }
 
+    fun eraseChain(chainId: String) =
+        synchronized(lock) {
+            val owned =
+                prefs.all.keys.filter { it.startsWith(PREFIX) }.filter { key ->
+                    runCatching {
+                        read(key.removePrefix(PREFIX))
+                            ?.manifest
+                            ?.get("chain_id")
+                            ?.jsonPrimitive
+                            ?.content == chainId
+                    }.getOrDefault(false)
+                }
+            val ids = owned.map { it.removePrefix(PREFIX) }.toSet()
+            ids.forEach(PallaSyncCore::cancelRecoverySetSessions)
+            val editor = prefs.edit()
+            owned.forEach(editor::remove)
+            if (prefs.getString(SELECTED, null) in ids) editor.remove(SELECTED)
+            check(editor.commit()) { "C_LOCAL_STORAGE_FULL" }
+            check(owned.none(prefs::contains)) { "C_LOCAL_STORAGE_FULL" }
+        }
+
     /** Authenticated public holder evidence is not a fresh credential/readback availability check. */
     fun observeHolder(holder: PallaSyncRecoverySlot.Entry): Entry =
         synchronized(lock) {

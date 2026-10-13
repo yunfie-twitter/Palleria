@@ -245,6 +245,60 @@ pub fn identity(handle: u64) -> Result<Value> {
     Ok(json!({"chain_id":session.roots.chain_id,"admin_public_key":session.roots.admin_public_key}))
 }
 
+/// Build the specification-bound administrator request for §10.15 deletion.
+/// The root key remains inside the named native session and only the signed
+/// public request body crosses JNI.
+pub fn delete_request(
+    handle: u64,
+    generation: u32,
+    deletion_id: &str,
+    expected_parameters_hash: &str,
+    expected_epoch_hash: &str,
+    created_at_ms: i64,
+) -> Result<String> {
+    with(handle, Operation::Delete, |session| {
+        let payload = json!({
+            "deletion_id": deletion_id,
+            "expected_parameters_hash": expected_parameters_hash,
+            "expected_epoch_hash": expected_epoch_hash,
+        });
+        let target_hash = crate::strict::verify::object_hash(&payload);
+        let mut operation = json!({
+            "operation_id": uuid::Uuid::new_v4().to_string(),
+            "chain_id": session.roots.chain_id,
+            "generation": generation,
+            "action": "delete_chain",
+            "expected_parameters_hash": expected_parameters_hash,
+            "expected_epoch_hash": expected_epoch_hash,
+            "target_hash": target_hash,
+            "created_at_ms": created_at_ms,
+            "signature": "",
+        });
+        let canonical = crate::models::unsigned_record_jcs(&operation)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        operation["signature"] = serde_json::Value::String(crate::crypto::sign_with_context(
+            &session.roots.admin_key,
+            crate::crypto::CTX_ADMIN_OP,
+            &canonical,
+        ));
+        if !crate::public_wire::check_type(&operation["expected_parameters_hash"], "b32")
+            || !crate::public_wire::check_type(&operation["expected_epoch_hash"], "b32")
+        {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        if !crate::public_wire::uuid(deletion_id) {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        let body = json!({
+            "deletion_id": deletion_id,
+            "expected_parameters_hash": expected_parameters_hash,
+            "expected_epoch_hash": expected_epoch_hash,
+            "admin_operation": operation,
+        });
+        serde_json::to_string(&body).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })
+}
+
 fn canonical_number(value: &str, maximum: u64, positive: bool) -> bool {
     value
         .parse::<u64>()

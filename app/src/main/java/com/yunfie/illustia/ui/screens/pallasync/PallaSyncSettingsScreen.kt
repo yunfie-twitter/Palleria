@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -73,6 +74,8 @@ fun PallaSyncSettingsScreen(
     var tempUrl by remember { mutableStateOf("") }
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showDeleteRootInput by remember { mutableStateOf(false) }
+    var deletingChain by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var isCreatingChain by remember { mutableStateOf(false) }
     var showTrustDialog by remember { mutableStateOf(false) }
@@ -165,16 +168,41 @@ fun PallaSyncSettingsScreen(
             destructive = true,
             onConfirm = {
                 showDeleteConfirm = false
+                showDeleteRootInput = true
+            },
+            onDismiss = { showDeleteConfirm = false },
+        )
+    }
+
+    if (showDeleteRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_delete_chain),
+            explanation = stringResource(R.string.pallasync_delete_chain_confirm),
+            busy = deletingChain,
+            onDismiss = { showDeleteRootInput = false },
+            onConfirm = { mnemonic, passphrase ->
+                deletingChain = true
                 scope.launch {
-                    if (syncManager.deleteChain()) {
-                        viewModel.updatePallaSyncEnabled(false)
-                        Toast.makeText(context, R.string.msg_pallasync_chain_deleted, Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, R.string.error_pallasync_delete_chain_failed, Toast.LENGTH_SHORT).show()
+                    try {
+                        when (syncManager.requestChainDeletion(mnemonic, passphrase)) {
+                            PallaSyncDeletionRequestResult.VERIFIED_AND_ERASED -> {
+                                Toast.makeText(context, R.string.msg_pallasync_chain_deleted, Toast.LENGTH_LONG).show()
+                            }
+
+                            PallaSyncDeletionRequestResult.PENDING_EVIDENCE -> {
+                                Toast.makeText(context, R.string.pallasync_v3_epoch_deletion_unverified, Toast.LENGTH_LONG).show()
+                            }
+
+                            PallaSyncDeletionRequestResult.FAILED -> {
+                                Toast.makeText(context, R.string.error_pallasync_delete_chain_failed, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } finally {
+                        deletingChain = false
+                        showDeleteRootInput = false
                     }
                 }
             },
-            onDismiss = { showDeleteConfirm = false },
         )
     }
 

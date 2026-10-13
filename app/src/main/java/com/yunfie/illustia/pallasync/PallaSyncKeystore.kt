@@ -529,6 +529,39 @@ class PallaSyncKeystore(
             .remove("active_chain_id")
             .commit()
 
+    /** Remove secret material and trust pins only for the chain whose signed proof was retained. */
+    internal fun clearVerifiedDeletedChain(chainId: String): Boolean {
+        val editor = sharedPrefs.edit()
+        if (sharedPrefs.getString("active_chain_id", null) == chainId) {
+            listOf(
+                "seed_phrase",
+                "epoch_key",
+                "epoch_secret",
+                "collection_tag_key",
+                "key_epoch_number",
+                "device_private_seed",
+                "device_sign_public",
+                "device_hpke_private",
+                "device_hpke_public",
+                "device_meta_key",
+                "active_chain_id",
+                "device_certificate",
+            ).forEach(editor::remove)
+        }
+        if (sharedPrefs.getString("pending_chain_id", null) == chainId) {
+            sharedPrefs.all.keys
+                .filter { it.startsWith("pending_") }
+                .forEach(editor::remove)
+        }
+        listOf("authority.$chainId.hash", "authority.$chainId.transition", "transparency.$chainId", "identity.$chainId")
+            .forEach(editor::remove)
+        sharedPrefs.all.keys
+            .filter { it.startsWith("archive.$chainId.") }
+            .forEach(editor::remove)
+        return editor.commit() && sharedPrefs.getString("active_chain_id", null) != chainId &&
+            sharedPrefs.getString("authority.$chainId.hash", null) == null
+    }
+
     fun clearAllKeys() {
         val deviceId = sharedPrefs.getString("device_id", null)
         val editor = sharedPrefs.edit().clear()

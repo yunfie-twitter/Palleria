@@ -47,6 +47,13 @@ internal class PallaSyncProjection(
         }
     }
 
+    suspend fun clearAfterVerifiedDeletion() {
+        collections.update {
+            com.yunfie.illustia.settings
+                .SyncedCollectionsSnapshot()
+        }
+    }
+
     private suspend fun read(
         chain: String,
         dao: ProtocolDao,

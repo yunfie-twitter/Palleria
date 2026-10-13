@@ -51,12 +51,34 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
+import java.util.Base64
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+private const val MAX_PROTOCOL_COUNTER = 4_294_967_295L
+
+private data class DeletionContext(
+    val state: ChainStateEntity,
+    val parametersHash: String,
+    val epochHash: String,
+    val authorityText: String,
+    val admin: String,
+    val base: HttpUrl,
+    val origin: String,
+    val logId: String,
+    val relayKeyId: String,
+)
+
 /** Application-scoped implementation of PallaSync state transitions and polling. */
+internal enum class PallaSyncDeletionRequestResult {
+    VERIFIED_AND_ERASED,
+    PENDING_EVIDENCE,
+    FAILED,
+}
+
 internal class PalleriaSyncCoordinator(
     client: OkHttpClient = OkHttpClient(),
     context: Context,
@@ -1035,38 +1057,248 @@ internal class PalleriaSyncCoordinator(
                     clearLocalChainLocked()
                     return@withLock true
                 }
+                log("C_DELETION_UNVERIFIED: chain deletion requires the explicit root-authorized flow")
+                false
+            }
+        }
+    }
 
-                val baseUrl =
-                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
-                        is PallaSyncHttpResult.Success -> normalized.value
-                        is PallaSyncHttpResult.ProtocolError -> return@withLock false.also { log(normalized.message) }
-                        else -> return@withLock false
-                    }
-                val request =
-                    Request
-                        .Builder()
-                        .url(PallaSyncUrls.chain(baseUrl, activeChain.chainId))
-                        .header("Accept", JSON_MEDIA_TYPE.toString())
-                        .delete()
-                        .build()
-                when (val result = remote.executeUnit(request)) {
-                    is PallaSyncHttpResult.Success,
-                    PallaSyncHttpResult.Gone,
-                    -> {
-                        goneLocked()
-                        false
-                    }
-
-                    is PallaSyncHttpResult.Retryable -> {
-                        false.also { log(result.message) }
-                    }
-
-                    is PallaSyncHttpResult.ProtocolError -> {
-                        false.also { log(result.message) }
-                    }
+    /** §10.15: submit a root-authorized deletion request bound to the verified CAS heads. */
+    suspend fun requestChainDeletion(
+        mnemonic: String,
+        passphrase: String = "",
+    ): PallaSyncDeletionRequestResult =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val context = deletionContext() ?: return@withLock PallaSyncDeletionRequestResult.FAILED
+                try {
+                    PallaSyncRootSession
+                        .beginText(
+                            mnemonic,
+                            passphrase,
+                            PallaSyncRootSession.Operation.DELETE,
+                            expectedChain = context.state.chainId,
+                            expectedAdmin = context.admin,
+                            requestGuard = policy::requireCurrent,
+                            clock = policy.retry::correctedTime,
+                        ).use { root ->
+                            submitDeletionAndErase(root, context)
+                        }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: IllegalStateException) {
+                    deletionFailure(failure)
+                } catch (failure: IllegalArgumentException) {
+                    deletionFailure(failure)
+                } catch (failure: SQLiteException) {
+                    deletionFailure(failure)
                 }
             }
         }
+
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private suspend fun deletionContext(): DeletionContext? =
+        try {
+            createDeletionContext()
+        } catch (_: Exception) {
+            log("C_DELETION_UNVERIFIED: local chain authority or relay context is unavailable")
+            null
+        }
+
+    private suspend fun createDeletionContext(): DeletionContext {
+        val state = checkNotNull(activeChainStateLocked()) { "C_DELETION_UNVERIFIED" }
+        check(state.generation in 0..MAX_PROTOCOL_COUNTER) { "C_DELETION_UNVERIFIED" }
+        val parametersHash = checkNotNull(state.parametersHash) { "C_DELETION_UNVERIFIED" }
+        val epochHash = checkNotNull(state.epochHash) { "C_DELETION_UNVERIFIED" }
+        val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_DELETION_UNVERIFIED" }
+        val authority = Json.parseToJsonElement(authorityText).jsonObject
+        val pin = checkNotNull(authority["pin"]?.jsonObject) { "C_DELETION_UNVERIFIED" }
+        val admin = checkNotNull(authority["admin_public_key"]?.jsonPrimitive?.content) { "C_DELETION_UNVERIFIED" }
+        val normalized = PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success
+        val base = checkNotNull(normalized?.value) { "C_DELETION_UNVERIFIED" }
+        val origin = PallaSyncUrls.extractOrigin(base)
+        val logId = state.logId ?: checkNotNull(pin["log_id"]?.jsonPrimitive?.content) { "C_DELETION_UNVERIFIED" }
+        val publicKey = checkNotNull(pin["public_key"]?.jsonPrimitive?.content) { "C_DELETION_UNVERIFIED" }
+        val relayKeyId =
+            Base64.getUrlEncoder().withoutPadding().encodeToString(
+                MessageDigest.getInstance("SHA-256").digest(Base64.getUrlDecoder().decode(publicKey)),
+            )
+        return DeletionContext(state, parametersHash, epochHash, authorityText, admin, base, origin, logId, relayKeyId)
+    }
+
+    private suspend fun submitDeletionAndErase(
+        root: PallaSyncRootSession,
+        context: DeletionContext,
+    ): PallaSyncDeletionRequestResult {
+        val body = prepareDeletionRequest(root, context)
+        val chainUrl = PallaSyncUrls.chain(context.base, context.state.chainId)
+        val deletionUrl = chainUrl.newBuilder().addPathSegment("deletion").build()
+        val deleteToken =
+            checkNotNull(
+                root.token(context.origin, "DELETE", chainUrl.encodedPath, body = body.toByteArray()),
+            ) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+        val deleteRequest =
+            Request
+                .Builder()
+                .url(chainUrl)
+                .header("Accept", JSON_MEDIA_TYPE.toString())
+                .header("Authorization", "PallaSync $deleteToken")
+                .delete(body.toRequestBody(JSON_MEDIA_TYPE))
+                .build()
+        val deleteResult = remote.executeUnit(deleteRequest)
+        if (deleteResult !is PallaSyncHttpResult.Success) log("Deletion response did not confirm erasure; checking signed proof")
+        val getToken = checkNotNull(root.token(context.origin, "GET", deletionUrl.encodedPath)) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+        val getRequest =
+            Request
+                .Builder()
+                .url(deletionUrl)
+                .header("Accept", JSON_MEDIA_TYPE.toString())
+                .header("Authorization", "PallaSync $getToken")
+                .get()
+                .build()
+        val proofBytes =
+            when (val result = remote.execute(getRequest) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }) {
+                is PallaSyncHttpResult.Success -> result.value
+
+                else -> return PallaSyncDeletionRequestResult.PENDING_EVIDENCE.also {
+                    log("C_DELETION_UNVERIFIED: signed deletion proof is not available; local data retained")
+                }
+            }
+        val evidence = validateDeletionProof(context, body, proofBytes)
+        persistAndErase(context, evidence)
+        return PallaSyncDeletionRequestResult.VERIFIED_AND_ERASED
+    }
+
+    private suspend fun prepareDeletionRequest(
+        root: PallaSyncRootSession,
+        context: DeletionContext,
+    ): String {
+        val previous = db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_request")
+        val reusable =
+            previous?.takeIf { saved ->
+                runCatching {
+                    val value = Json.parseToJsonElement(saved).jsonObject
+                    value["expected_parameters_hash"]?.jsonPrimitive?.content == context.parametersHash &&
+                        value["expected_epoch_hash"]?.jsonPrimitive?.content == context.epochHash
+                }.getOrDefault(false)
+            }
+        val body =
+            reusable ?: run {
+                check(previous == null) { "C_DELETION_UNVERIFIED" }
+                PallaSyncCore.createDeleteRequest(
+                    root.handle,
+                    context.state.generation.toInt(),
+                    UUID.randomUUID().toString(),
+                    context.parametersHash,
+                    context.epochHash,
+                    policy.retry.correctedTime(context.origin),
+                )
+            }
+        if (previous == null) {
+            val hash = checkNotNull(PallaSyncCore.objectHash(body)) { "C_DELETION_UNVERIFIED" }
+            val requestEvidence =
+                ProtectedEvidenceEntity(
+                    context.origin,
+                    context.relayKeyId,
+                    context.state.chainId,
+                    context.logId,
+                    "delete_request",
+                    0,
+                    hash,
+                    body,
+                )
+            db.protocolDao().retainEvidence(requestEvidence)
+            check(
+                db
+                    .protocolDao()
+                    .evidenceAt(
+                        context.origin,
+                        context.relayKeyId,
+                        context.state.chainId,
+                        context.logId,
+                        "delete_request",
+                        0,
+                    ).contains(body),
+            ) {
+                "C_LOCAL_STORAGE_FULL"
+            }
+        }
+        return body
+    }
+
+    private fun validateDeletionProof(
+        context: DeletionContext,
+        body: String,
+        bytes: ByteArray,
+    ): ProtectedEvidenceEntity {
+        val pinJson =
+            buildJsonObject {
+                put("origin", context.origin)
+                put("chain_id", context.state.chainId)
+                put("public_key", policy.trustedRelayKey(context.origin))
+                put("log_id", context.logId)
+            }.toString()
+        PallaSyncCore.validateDeletionProof(bytes, pinJson, context.authorityText, body)
+        val proofText = bytes.toString(Charsets.UTF_8)
+        val receipt =
+            Json
+                .parseToJsonElement(proofText)
+                .jsonObject
+                .getValue("delete_receipt")
+                .jsonObject
+        check(receipt.getValue("relay_key_id").jsonPrimitive.content == context.relayKeyId) { "C_RELAY_KEY_MISMATCH" }
+        val sequence =
+            receipt
+                .getValue("transparency_index")
+                .jsonPrimitive.content
+                .toLong()
+        val hash = checkNotNull(PallaSyncCore.objectHash(proofText)) { "C_DELETION_UNVERIFIED" }
+        return ProtectedEvidenceEntity(
+            context.origin,
+            context.relayKeyId,
+            context.state.chainId,
+            context.logId,
+            "delete_receipt",
+            sequence,
+            hash,
+            proofText,
+        )
+    }
+
+    private suspend fun persistAndErase(
+        context: DeletionContext,
+        evidence: ProtectedEvidenceEntity,
+    ) {
+        db.transaction { db.protocolDao().retainDeletionProof(evidence) }
+        eraseChainRecoveryMaterial(context.state.chainId)
+        db.transaction {
+            db.protocolDao().eraseChainState(context.state.chainId)
+            db.pallaSyncDao().clearVerifiedDeletedChain(context.state.chainId)
+        }
+        check(keystore.clearVerifiedDeletedChain(context.state.chainId)) { "C_LOCAL_STORAGE_FULL" }
+        SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(false)
+        stopBackgroundSync()
+        projection.clearAfterVerifiedDeletion()
+        log("Signed deletion proof verified and retained; chain-local keys and state erased")
+    }
+
+    private fun eraseChainRecoveryMaterial(chain: String) {
+        val slot = PallaSyncRecoverySlot(appContext)
+        slot.eraseForVerifiedChainDeletion(chain)?.let { (alias, setId) ->
+            PallaSyncRecoveryKeyProtector(appContext).delete(alias)
+            slot.keyErased(alias)
+            slot.discardDeletedChainPublicEvidence(setId)
+        }
+        PallaSyncRecoverySetStore(appContext).eraseChain(chain)
+        recoveryAudits.eraseChain(chain)
+        PallaSyncAuthorJournal(appContext).eraseChain(chain)
+    }
+
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun deletionFailure(failure: Exception): PallaSyncDeletionRequestResult {
+        val code = (failure as? IllegalStateException)?.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_DELETION_UNVERIFIED"
+        log("$code: deletion could not be verified or erased; recoverable local data retained")
+        return PallaSyncDeletionRequestResult.FAILED
     }
 
     suspend fun fetchDevices(
