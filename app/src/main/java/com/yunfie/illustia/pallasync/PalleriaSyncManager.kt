@@ -128,6 +128,13 @@ class PalleriaSyncManager(
         passphrase: String = "",
     ): PallaSyncDeletionRequestResult = coordinator.requestChainDeletion(mnemonic, passphrase)
 
+    internal suspend fun pendingDeletionProof(): String? = coordinator.pendingDeletionProof()
+
+    internal suspend fun completeDeletionAfterExport(
+        proof: String,
+        explicitlyConfirmedOfflineCopy: Boolean,
+    ): Boolean = coordinator.completeDeletionAfterExport(proof, explicitlyConfirmedOfflineCopy)
+
     suspend fun fetchDevices(
         serverUrl: String,
         chainId: String,

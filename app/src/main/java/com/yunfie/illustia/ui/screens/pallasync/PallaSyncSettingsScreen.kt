@@ -1,6 +1,8 @@
 package com.yunfie.illustia.ui.screens.pallasync
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +42,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,6 +58,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.io.IOException
 
 @Composable
 fun PallaSyncSettingsScreen(
@@ -76,6 +80,9 @@ fun PallaSyncSettingsScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
     var deletingChain by remember { mutableStateOf(false) }
+    var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
+    var exportedDeletionProof by remember { mutableStateOf<String?>(null) }
+    var showOfflineDeletionCopyConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var isCreatingChain by remember { mutableStateOf(false) }
     var showTrustDialog by remember { mutableStateOf(false) }
@@ -84,8 +91,49 @@ fun PallaSyncSettingsScreen(
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
 
+    val deletionProofExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val proof = pendingDeletionProof
+            if (uri == null || proof == null) {
+                Toast.makeText(context, R.string.pallasync_delete_export_required, Toast.LENGTH_LONG).show()
+            } else {
+                deletingChain = true
+                scope.launch {
+                    try {
+                        val readBack =
+                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val bytes = proof.toByteArray(Charsets.UTF_8)
+                                checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
+                                    output.write(bytes)
+                                    output.flush()
+                                }
+                                val returned =
+                                    checkNotNull(
+                                        context.contentResolver.openInputStream(uri),
+                                    ) { "C_DELETION_UNVERIFIED" }.use { it.readBytes() }
+                                check(returned.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
+                                returned.toString(Charsets.UTF_8)
+                            }
+                        exportedDeletionProof = readBack
+                        showOfflineDeletionCopyConfirm = true
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        deletingChain = false
+                    }
+                }
+            }
+        }
+
     LaunchedEffect(state.settings.pallaSyncEnabled) {
         hasLocalChain = syncManager.hasLocalChain()
+        pendingDeletionProof = syncManager.pendingDeletionProof()
         if (state.settings.pallaSyncEnabled) {
             val db =
                 com.yunfie.illustia.pallasync.data.PallaSyncDatabase
@@ -185,8 +233,14 @@ fun PallaSyncSettingsScreen(
                 scope.launch {
                     try {
                         when (syncManager.requestChainDeletion(mnemonic, passphrase)) {
-                            PallaSyncDeletionRequestResult.VERIFIED_AND_ERASED -> {
-                                Toast.makeText(context, R.string.msg_pallasync_chain_deleted, Toast.LENGTH_LONG).show()
+                            PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT -> {
+                                val proof = syncManager.pendingDeletionProof()
+                                if (proof == null) {
+                                    Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                                } else {
+                                    pendingDeletionProof = proof
+                                    deletionProofExporter.launch("pallasync-deletion-evidence.json")
+                                }
                             }
 
                             PallaSyncDeletionRequestResult.PENDING_EVIDENCE -> {
@@ -202,6 +256,43 @@ fun PallaSyncSettingsScreen(
                         showDeleteRootInput = false
                     }
                 }
+            },
+        )
+    }
+
+    if (showOfflineDeletionCopyConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_delete_export_title),
+            summary = stringResource(R.string.pallasync_delete_export_written_confirm),
+            confirmText = stringResource(R.string.action_delete),
+            destructive = true,
+            onConfirm = {
+                showOfflineDeletionCopyConfirm = false
+                val proof = exportedDeletionProof
+                if (proof == null) {
+                    Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                } else {
+                    deletingChain = true
+                    scope.launch {
+                        try {
+                            if (syncManager.completeDeletionAfterExport(proof, explicitlyConfirmedOfflineCopy = true)) {
+                                viewModel.updatePallaSyncEnabled(false)
+                                Toast.makeText(context, R.string.msg_pallasync_chain_deleted, Toast.LENGTH_LONG).show()
+                                pendingDeletionProof = null
+                                exportedDeletionProof = null
+                            } else {
+                                Toast.makeText(context, R.string.error_pallasync_delete_chain_failed, Toast.LENGTH_LONG).show()
+                            }
+                        } finally {
+                            deletingChain = false
+                        }
+                    }
+                }
+            },
+            onDismiss = {
+                showOfflineDeletionCopyConfirm = false
+                Toast.makeText(context, R.string.pallasync_delete_export_required, Toast.LENGTH_LONG).show()
             },
         )
     }
@@ -333,6 +424,14 @@ fun PallaSyncSettingsScreen(
                                 showUrlDialog = true
                             },
                         )
+                        if (pendingDeletionProof != null) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_delete_export_title),
+                                summary = stringResource(R.string.pallasync_delete_export_required),
+                                onClick = { deletionProofExporter.launch("pallasync-deletion-evidence.json") },
+                            )
+                        }
                         DividerLine()
                         SettingLinkRow(
                             title = stringResource(R.string.pallasync_pair_device),

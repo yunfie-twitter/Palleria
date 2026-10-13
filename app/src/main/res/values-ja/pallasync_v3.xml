@@ -31,6 +31,10 @@
     <string name="pallasync_v3_epoch_integrity_paused">検証証拠の矛盾が見つかりました。同期を停止し、証拠を保持しています。</string>
     <string name="pallasync_v3_epoch_device_revoked">この端末は失効しています。保存済みデータは保持されています。</string>
     <string name="pallasync_v3_epoch_deletion_unverified">削除の認可を検証できていません。保存済みの鍵とデータは保持されています。</string>
+    <string name="pallasync_delete_export_title">削除証拠をオフライン保存</string>
+    <string name="pallasync_delete_export_written_confirm">証明ファイルを書き出し、バイト単位で読み戻して確認しました。別のオフライン媒体に保存したことを確認してください。確認後、この端末の鍵とチェーンデータを消去します。</string>
+    <string name="pallasync_delete_export_required">証明は検証済みで端末内に保持されています。端末データはまだ消去していません。オフライン媒体へ保存し、確認して続行してください。</string>
+    <string name="pallasync_delete_export_failed">証拠ファイルを保存・検証できませんでした。この端末の鍵とデータは保持されています。</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

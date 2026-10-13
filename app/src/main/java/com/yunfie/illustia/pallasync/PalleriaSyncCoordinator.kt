@@ -74,7 +74,7 @@ private data class DeletionContext(
 
 /** Application-scoped implementation of PallaSync state transitions and polling. */
 internal enum class PallaSyncDeletionRequestResult {
-    VERIFIED_AND_ERASED,
+    PROOF_READY_FOR_EXPORT,
     PENDING_EVIDENCE,
     FAILED,
 }
@@ -296,8 +296,17 @@ internal class PalleriaSyncCoordinator(
                 operationMutex.withLock {
                     val state = activeChainStateLocked() ?: return@withLock false
                     try {
+                        val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId))
+                        val authority = Json.parseToJsonElement(authorityText).jsonObject
+                        val logId =
+                            state.logId
+                                ?: authority
+                                    .getValue("pin")
+                                    .jsonObject
+                                    .getValue("log_id")
+                                    .jsonPrimitive.content
+                        check(db.protocolDao().latestEvidence(state.chainId, logId, "delete_receipt") == null) { "C_DELETION_UNVERIFIED" }
                         requireProtectedAuthority(state.chainId)
-                        val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
                         val pinnedOrigin =
                             authority
                                 .getValue("pin")
@@ -1165,8 +1174,10 @@ internal class PalleriaSyncCoordinator(
                 }
             }
         val evidence = validateDeletionProof(context, body, proofBytes)
-        persistAndErase(context, evidence)
-        return PallaSyncDeletionRequestResult.VERIFIED_AND_ERASED
+        db.protocolDao().retainDeletionProof(evidence)
+        SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(false)
+        stopBackgroundSync()
+        return PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT
     }
 
     private suspend fun prepareDeletionRequest(
@@ -1281,6 +1292,55 @@ internal class PalleriaSyncCoordinator(
         projection.clearAfterVerifiedDeletion()
         log("Signed deletion proof verified and retained; chain-local keys and state erased")
     }
+
+    suspend fun pendingDeletionProof(): String? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = activeChainStateLocked() ?: return@withLock null
+                val authorityText = db.protocolDao().currentAuthority(state.chainId) ?: return@withLock null
+                val authority = runCatching { Json.parseToJsonElement(authorityText).jsonObject }.getOrNull() ?: return@withLock null
+                val logId =
+                    state.logId ?: authority["pin"]
+                        ?.jsonObject
+                        ?.get("log_id")
+                        ?.jsonPrimitive
+                        ?.content ?: return@withLock null
+                db.protocolDao().latestEvidence(state.chainId, logId, "delete_receipt")
+            }
+        }
+
+    suspend fun completeDeletionAfterExport(
+        exportedProof: String,
+        explicitlyConfirmedOfflineCopy: Boolean,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                if (!explicitlyConfirmedOfflineCopy) return@withLock false
+                try {
+                    val context = deletionContext() ?: return@withLock false
+                    val savedProof = db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_receipt")
+                    check(savedProof == exportedProof) { "C_DELETION_UNVERIFIED" }
+                    val request =
+                        checkNotNull(db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_request")) {
+                            "C_DELETION_UNVERIFIED"
+                        }
+                    val evidence = validateDeletionProof(context, request, exportedProof.toByteArray(Charsets.UTF_8))
+                    persistAndErase(context, evidence)
+                    true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: IllegalStateException) {
+                    deletionFailure(failure)
+                    false
+                } catch (failure: IllegalArgumentException) {
+                    deletionFailure(failure)
+                    false
+                } catch (failure: SQLiteException) {
+                    deletionFailure(failure)
+                    false
+                }
+            }
+        }
 
     private fun eraseChainRecoveryMaterial(chain: String) {
         val slot = PallaSyncRecoverySlot(appContext)

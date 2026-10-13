@@ -898,7 +898,7 @@
     <string name="msg_pallasync_chain_left">同期チェーンから離れました</string>
     <string name="pallasync_delete_chain">チェーンの削除</string>
     <string name="pallasync_delete_chain_desc">この端末の同期データをすべて削除します</string>
-    <string name="pallasync_delete_chain_confirm">チェーンを削除しますか？\n同期データと設定が初期化されます。</string>
+    <string name="pallasync_delete_chain_confirm">チェーンの削除を申請しますか？\n端末を消去する前に、検証済み削除証明を別のオフライン媒体へ保存する必要があります。</string>
     <string name="msg_pallasync_chain_deleted">チェーンを削除しました。</string>
     <string name="pallasync_server_url_dialog_title">サーバー URL の入力</string>
     <string name="pallasync_server_url_dialog_desc">PallaSync サーバーのベースURLを入力してください</string>

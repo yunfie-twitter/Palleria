@@ -898,7 +898,7 @@
     <string name="msg_pallasync_chain_left">Left the sync chain</string>
     <string name="pallasync_delete_chain">Delete chain</string>
     <string name="pallasync_delete_chain_desc">Delete all sync data from this device</string>
-    <string name="pallasync_delete_chain_confirm">Delete this chain?\nSync data and settings will be reset.</string>
+    <string name="pallasync_delete_chain_confirm">Request chain deletion?\nBefore this device is erased, you must save the verified deletion proof to a separate offline medium.</string>
     <string name="msg_pallasync_chain_deleted">Chain deleted.</string>
     <string name="pallasync_server_url_dialog_title">Enter server URL</string>
     <string name="pallasync_server_url_dialog_desc">Enter the base URL of the PallaSync server</string>
