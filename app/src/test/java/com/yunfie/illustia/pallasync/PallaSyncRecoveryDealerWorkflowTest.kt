@@ -119,7 +119,20 @@ class PallaSyncRecoveryDealerWorkflowTest {
         replacement.beginThresholdTest(true)
         repeat(2) { index -> collect(replacement, replacementPackages[index], index) }
         replacement.finishThresholdTest(true)
-        replacement.activate(4)
+        val replacementId = replacement.evidence.id
+        owner.usePrepared { it.activate(4) }
+
+        val activatedButUnfinished = checkNotNull(store.read(replacementId))
+        activatedButUnfinished.state shouldBe "active"
+        activatedButUnfinished.replacementPending shouldBe true
+        checkNotNull(store.read(previous.id)).state shouldBe "active"
+        replacement.close()
+        owner.close()
+
+        val resumed =
+            PallaSyncRootSession.beginText(phrase, "", PallaSyncRootSession.Operation.RECOVERY_ROTATE).use { root ->
+                store.finishReplacement(activatedButUnfinished, root, 5)
+            }
 
         val retired = checkNotNull(store.read(previous.id))
         retired.state shouldBe "retired"
@@ -127,13 +140,12 @@ class PallaSyncRecoveryDealerWorkflowTest {
             .last()
             .jsonObject
             .getValue("replacement_set_id")
-            .jsonPrimitive.content shouldBe replacement.evidence.id
-        replacement.evidence.state shouldBe "active"
-        replacement.evidence.replacementPending shouldBe false
+            .jsonPrimitive.content shouldBe replacementId
+        resumed.state shouldBe "active"
+        resumed.replacementPending shouldBe false
         retired.usable shouldBe 3
-        replacement.evidence.usable shouldBe 3
+        resumed.usable shouldBe 3
         initialFlow.close()
-        replacement.close()
     }
 
     private fun responder(
