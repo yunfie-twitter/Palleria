@@ -25,6 +25,8 @@ internal class PallaSyncPeerApprover(
     private val journal: PallaSyncPeerJournal,
     private val relay: PallaSyncPeerRelay,
 ) {
+    private val secureRandom = SecureRandom()
+
     suspend fun offer(
         base: HttpUrl,
         explicitlyRequested: Boolean,
@@ -33,7 +35,7 @@ internal class PallaSyncPeerApprover(
         val device = checkNotNull(keys.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val authority = authority(base, checkNotNull(device.chainId))
         val now = policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base))
-        val random = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        val random = ByteArray(32).also { secureRandom.nextBytes(it) }
         val body =
             buildJsonObject {
                 put("request_id", UUID.randomUUID().toString())
