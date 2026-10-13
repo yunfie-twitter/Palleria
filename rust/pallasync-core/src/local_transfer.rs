@@ -182,8 +182,15 @@ pub(crate) fn force_pair_expiry_for_test(handle: u64) {
     }
 }
 pub fn end_all() {
-    if let Ok(mut map) = sessions().lock() {
+    let handles = if let Ok(mut map) = sessions().lock() {
+        let handles = map.keys().copied().collect::<Vec<_>>();
         map.clear();
+        handles
+    } else {
+        Vec::new()
+    };
+    for handle in handles {
+        crate::recovery_flow::discard_holder(handle);
     }
 }
 pub(crate) fn invalidate_recovery_set(set_id: &str) {

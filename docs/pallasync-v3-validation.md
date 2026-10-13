@@ -153,6 +153,8 @@ Draft PR CIでJNI declaration checkが失敗したため確認しました。Rus
 
 Secret Scanの`generic-api-key`検出は固定公開テストベクターのfieldだけでした。値は表示せず、15個の正確なJSON/markdown fixture pathに限る`.gitleaks.toml` allowlistを加え、他のpathとruleは標準scanに残します。TOML parseとdiff checkは成功し、CI scan結果を次commitで確認します。
 
+CI ASanがexpiry中にholderのlocked RSWK stateが残るraceを検出しました。並列unit testの`local_transfer::end_all`がsessionを削除する時も、対応するholder handleを収集してRSWK holder stateを破棄するよう修正しました。Rustの再検証と新しいASan runはcommit後に行います。
+
 同じsource/APKの独立Python+Android interopは190.27秒で成功しました（PallaSync/target/qualification-android-resume-interop.log）。実Android端末承認・JNI/Room・HTTP、独立PythonによるSAS/署名/HPKE検証、epoch bundle/recovery envelope/receipt、epoch再base、initial sync/outbox、application payload boundary、origin bindingを確認しました。隔離relayを使ったこれらの対象試験は全50 ITではありません。
 
 全適合は未達です。IT-01〜IT-50、Appendix A/C/D全体、三者独立復旧・完全な移行／snapshot・大規模履歴・物理holderの独立保管・実ディスク障害試験、本番更新は未完了です。v2.1 ChainParameters.signatureの検証方式も§4.1に定義がないため追加していません。`docs/pallasync-v3-acceptance.json`の`conformance_claim`はfalseのまま維持します。
