@@ -149,7 +149,9 @@ Nativeのaudit schemaではwhole-set／ceremonyのholder_kind=nullを§8.6どお
 
 置換host試験は「新status active・replacement pending」の永続commit直後にroot ownerをcloseし、その後fresh native root sessionでstore CASを再開する境界も検証します（3つのrecovery dealer workflow testが成功。詳細log: app/build/pallasync-recovery-replacement-resume-host.log）。これはOSプロセスkillや物理ディスク障害注入ではありません。
 
-Draft PR CIでJNI declaration checkが失敗したため確認しました。Rust JNI exportは`ffi_jni.rs`以外の`src/**/*.rs`にも分割されていますが、check scriptが単一ファイルしか走査していませんでした。scannerを全Rust sourceへ拡張し、Kotlin external 103件とRust export 103件、12個のビルド済みshared librariesのsymbol inspectionがローカルで成功しました。CI rerunはcommit後に確認します。
+Draft PR CIでJNI declaration checkが失敗したため確認しました。Rust JNI exportは`ffi_jni.rs`以外の`src/**/*.rs`にも分割されていますが、check scriptが単一ファイルしか走査していませんでした。scannerを全Rust sourceへ拡張し、Kotlin external 103件とRust export 103件、12個のビルド済みshared librariesのsymbol inspectionがローカルで成功しました。
+
+Secret Scanの`generic-api-key`検出は固定公開テストベクターのfieldだけでした。値は表示せず、15個の正確なJSON/markdown fixture pathに限る`.gitleaks.toml` allowlistを加え、他のpathとruleは標準scanに残します。TOML parseとdiff checkは成功し、CI scan結果を次commitで確認します。
 
 同じsource/APKの独立Python+Android interopは190.27秒で成功しました（PallaSync/target/qualification-android-resume-interop.log）。実Android端末承認・JNI/Room・HTTP、独立PythonによるSAS/署名/HPKE検証、epoch bundle/recovery envelope/receipt、epoch再base、initial sync/outbox、application payload boundary、origin bindingを確認しました。隔離relayを使ったこれらの対象試験は全50 ITではありません。
 
