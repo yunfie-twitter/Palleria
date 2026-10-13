@@ -75,9 +75,14 @@ fun PallaSyncSettingsScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var isCreatingChain by remember { mutableStateOf(false) }
+    var showTrustDialog by remember { mutableStateOf(false) }
+    var showPolicyDialog by remember { mutableStateOf(false) }
+    var generatedMnemonic by remember { mutableStateOf<String?>(null) }
+    var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
 
     LaunchedEffect(state.settings.pallaSyncEnabled) {
+        hasLocalChain = syncManager.hasLocalChain()
         if (state.settings.pallaSyncEnabled) {
             val db =
                 com.yunfie.illustia.pallasync.data.PallaSyncDatabase
@@ -96,7 +101,7 @@ fun PallaSyncSettingsScreen(
 
             launch(kotlinx.coroutines.Dispatchers.IO) {
                 kotlinx.coroutines.delay(1000)
-                val chainState = dao.getAllChainStates().firstOrNull()
+                val chainState = dao.getActiveChainStates().firstOrNull()
                 if (chainState != null) {
                     val serverUrl = syncManager.getServerUrl()
                     syncManager.fetchDevices(serverUrl, chainState.chainId)
@@ -193,6 +198,44 @@ fun PallaSyncSettingsScreen(
         )
     }
 
+    if (showTrustDialog) {
+        PallaSyncTrustDialog(
+            origin = state.settings.pallaSyncServerUrl,
+            sourceKind = "new_chain_local_state",
+            sourceLabel = stringResource(R.string.pallasync_v3_local_source),
+            onDismiss = { showTrustDialog = false },
+            onAccepted = {
+                showTrustDialog = false
+                scope.launch {
+                    isCreatingChain = true
+                    try {
+                        val phrase = syncManager.generateGenesisMnemonic()
+                        if (phrase.isBlank()) {
+                            Toast.makeText(context, R.string.error_pallasync_create_chain_failed, Toast.LENGTH_SHORT).show()
+                        } else {
+                            generatedMnemonic = phrase
+                        }
+                    } finally {
+                        isCreatingChain = false
+                    }
+                }
+            },
+        )
+    }
+    if (showPolicyDialog) {
+        PallaSyncAcceptedPolicyDialog(
+            origin = state.settings.pallaSyncServerUrl,
+            onDismiss = { showPolicyDialog = false },
+            onWithdrawn = {
+                syncManager.stopBackgroundSync()
+                showPolicyDialog = false
+            },
+        )
+    }
+    generatedMnemonic?.let { phrase ->
+        PallaSyncGenesisDialog(syncManager, phrase, state.settings.pallaSyncServerUrl, onDismiss = { generatedMnemonic = null })
+    }
+
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -230,25 +273,28 @@ fun PallaSyncSettingsScreen(
                             onCheckedChange = { enabled ->
                                 if (enabled && !state.settings.pallaSyncEnabled && !isCreatingChain) {
                                     scope.launch {
-                                        isCreatingChain = true
-                                        val seedPhrase =
-                                            try {
-                                                syncManager.initializeGenesis(
-                                                    state.settings.pallaSyncServerUrl,
-                                                )
-                                            } finally {
-                                                isCreatingChain = false
+                                        if (syncManager.hasLocalChain()) {
+                                            if (syncManager.resumeBoundChain()) {
+                                                viewModel.updatePallaSyncEnabled(true)
+                                            } else {
+                                                Toast.makeText(context, R.string.pallasync_v3_root_paused, Toast.LENGTH_LONG).show()
                                             }
-                                        if (seedPhrase.isBlank()) {
-                                            Toast.makeText(context, R.string.error_pallasync_create_chain_failed, Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            showTrustDialog = true
                                         }
                                     }
                                 } else if (!enabled && state.settings.pallaSyncEnabled) {
-                                    showLeaveConfirm = true
+                                    syncManager.stopBackgroundSync()
+                                    viewModel.updatePallaSyncEnabled(false)
                                 }
                             },
                             enabled = !isCreatingChain,
                             summary = stringResource(R.string.pallasync_enable_desc),
+                        )
+                        DividerLine()
+                        SettingLinkRow(
+                            title = stringResource(R.string.pallasync_v3_privacy),
+                            onClick = { showPolicyDialog = true },
                         )
                         DividerLine()
                         SettingLinkRow(
@@ -291,6 +337,10 @@ fun PallaSyncSettingsScreen(
                 }
             }
 
+            if (state.settings.pallaSyncEnabled || hasLocalChain) {
+                item { PallaSyncEpochControls(syncManager, state.settings.pallaSyncEnabled) }
+                item { PallaSyncRecoveryControls(syncManager) }
+            }
             if (state.settings.pallaSyncEnabled) {
                 if (devices.isNotEmpty()) {
                     item {

@@ -416,7 +416,7 @@ internal interface SyncedCollectionsStore {
     suspend fun update(transform: (SyncedCollectionsSnapshot) -> SyncedCollectionsSnapshot): SyncedCollectionsSnapshot
 }
 
-private class SettingsSyncedCollectionsStore(
+internal class SettingsSyncedCollectionsStore(
     context: Context,
 ) : SyncedCollectionsStore {
     private val store = SettingsStore(context, IncomingSyncEventWriter)

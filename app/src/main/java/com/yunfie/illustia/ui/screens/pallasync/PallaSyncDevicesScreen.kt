@@ -58,7 +58,7 @@ fun PallaSyncDevicesScreen(
         val dao = PallaSyncDatabase.getDatabase(context).pallaSyncDao()
         devices = withContext(Dispatchers.IO) { dao.getAllDevices() }
 
-        val chainState = withContext(Dispatchers.IO) { dao.getAllChainStates() }.firstOrNull()
+        val chainState = withContext(Dispatchers.IO) { dao.getActiveChainStates() }.firstOrNull()
         if (chainState != null) {
             syncManager.fetchDevices(syncManager.getServerUrl(), chainState.chainId)
             devices = withContext(Dispatchers.IO) { dao.getAllDevices() }

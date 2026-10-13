@@ -5,53 +5,589 @@ import androidx.annotation.Keep
 @Keep
 @Suppress("TooManyFunctions")
 object PallaSyncCore {
+    external fun createRecoveryResult(
+        pair: Long,
+        result: String,
+        code: String?,
+    ): String
+
+    external fun receiveRecoveryResult(
+        pair: Long,
+        packetJson: String,
+    ): String
+
+    external fun validateRecoveryPackage(
+        packageJson: String,
+        adminPublicKey: String,
+        knownStatusHash: String?,
+    ): String
+
+    external fun retryRecoveryTransfer(
+        pair: Long,
+        messageSequence: Long,
+    ): String
+
+    external fun encodeRecoveryPortable(
+        packageJson: String,
+        adminPublicKey: String,
+        knownStatusHash: String?,
+    ): ByteArray
+
+    external fun decodeRecoveryPortable(
+        encoded: ByteArray,
+        adminPublicKey: String,
+        knownStatusHash: String?,
+    ): String
+
+    external fun recoveryPackageFragments(
+        packageJson: String,
+        adminPublicKey: String,
+        knownStatusHash: String?,
+        partBytes: Int,
+    ): Array<String>
+
+    external fun assembleRecoveryFragments(
+        fragments: Array<String>,
+        adminPublicKey: String,
+        knownStatusHash: String?,
+    ): String?
+
+    external fun advanceRecoveryStatus(
+        root: Long,
+        operation: String,
+        manifestJson: String,
+        statusesJson: String,
+        knownHead: String,
+        state: String,
+        replacementSetId: String?,
+        nowMs: Long,
+    ): String
+
+    external fun touchRecoveryCollection(collector: Long)
+
+    external fun cancelRecoverySetSessions(setId: String)
+
+    external fun validateRecoverySetState(
+        manifestJson: String,
+        statusesJson: String,
+        trustedAdmin: String,
+        knownHead: String?,
+    ): String
+
+    external fun prepareRecoverySet(
+        root: Long,
+        operation: String,
+        generation: Long,
+        threshold: Long,
+        holdersJson: String,
+        nowMs: Long,
+    ): String
+
+    external fun beginRecoveryTransfer(
+        manifestJson: String,
+        adminPublicKey: String,
+        ceremonyId: String,
+        sessionId: String,
+        side: String,
+        role: String,
+        purpose: String,
+    ): PallaSyncRecoveryCandidate
+
+    external fun bindRecoveryTransfer(
+        handle: Long,
+        descriptorJson: String,
+    ): String
+
+    external fun confirmRecoveryTransfer(
+        handle: Long,
+        sas: String,
+        explicitlyConfirmed: Boolean,
+    )
+
+    external fun endRecoveryTransfer(handle: Long)
+
+    external fun distributeRecoveryShare(
+        root: Long,
+        operation: String,
+        pair: Long,
+        shareIndex: Long,
+    ): String
+
+    external fun receiveRecoveryDealer(
+        root: Long,
+        operation: String,
+        pair: Long,
+        packetJson: String,
+    ): String
+
+    external fun receiveRecoveryHolder(
+        pair: Long,
+        packetJson: String,
+        holderInstanceId: String,
+        holderDeviceId: String?,
+        protection: String,
+        storageReady: Boolean,
+        replacementConfirmed: Boolean,
+        occupied: Boolean,
+        nowMs: Long,
+    ): String
+
+    external fun recoveryHolderPackage(
+        pair: Long,
+        statusesJson: String,
+        credential: ByteArray?,
+    ): String
+
+    external fun recoveryHolderWrapKey(pair: Long): ByteArray
+
+    external fun recoveryHolderPersisted(
+        pair: Long,
+        packageJson: String,
+        readbackKey: ByteArray,
+    ): String
+
+    external fun releaseRecoveryShare(
+        pair: Long,
+        packageJson: String,
+        wrapKey: ByteArray,
+        authenticated: Boolean,
+        consented: Boolean,
+        locallyCompromised: Boolean,
+        emergencyNewRoot: Boolean,
+    ): String
+
+    external fun beginRecoveryCollection(
+        manifestJson: String,
+        statusesJson: String,
+        adminPublicKey: String,
+        knownStatusHash: String?,
+        ceremonyId: String,
+        operation: String,
+        setupRoot: Long,
+        explicitlyConfirmed: Boolean,
+        locallyCompromised: Boolean,
+        emergencyNewRoot: Boolean,
+    ): Long
+
+    external fun receiveRecoveryCollector(
+        collector: Long,
+        pair: Long,
+        packetJson: String,
+    ): String
+
+    external fun collectOwnRecoveryShare(
+        collector: Long,
+        packageJson: String,
+        wrapKey: ByteArray,
+        holderInstanceId: String,
+        authenticated: Boolean,
+        consented: Boolean,
+        locallyCompromised: Boolean,
+    ): String
+
+    external fun finishRecoveryCollection(
+        collector: Long,
+        explicitlyConfirmed: Boolean,
+    ): PallaSyncRecoveryCompletion
+
+    external fun endRecoveryCollection(collector: Long)
+
+    external fun activateRecoverySet(
+        root: Long,
+        operation: String,
+        nowMs: Long,
+    ): String
+
+    external fun unlockOfflineRecoveryKey(
+        packageJson: String,
+        credential: ByteArray,
+    ): ByteArray
+
+    external fun validatePeerResponse(
+        body: ByteArray,
+        bindingJson: String,
+        kind: String,
+        limit: Long,
+    ): String
+
+    external fun validatePeerApproval(
+        handle: Long,
+        authorityJson: String,
+        bodyJson: String,
+        nowMs: Long,
+    ): String
+
+    external fun createPeerOffer(
+        authorityJson: String,
+        deviceId: String,
+        requestJson: String,
+        nowMs: Long,
+    ): String
+
+    external fun beginPeerSubject(
+        offerJson: String,
+        authorityJson: String,
+        explicitlySelected: Boolean,
+        nowMs: Long,
+    ): PallaSyncPeerCandidate
+
+    external fun beginPeerApprover(
+        offerJson: String,
+        authorityJson: String,
+        signingSeed: ByteArray,
+        kexSecret: ByteArray,
+        nowMs: Long,
+    ): Long
+
+    external fun bindPeerRequest(
+        handle: Long,
+        requestJson: String,
+        nowMs: Long,
+    ): String
+
+    external fun peerSas(
+        handle: Long,
+        nowMs: Long,
+    ): String
+
+    external fun confirmPeerSas(
+        handle: Long,
+        observed: String,
+        confirmed: Boolean,
+        nowMs: Long,
+    )
+
+    external fun peerCertificate(
+        handle: Long,
+        nowMs: Long,
+    ): String
+
+    external fun acceptPeerCertificate(
+        handle: Long,
+        certificateJson: String,
+        nowMs: Long,
+    )
+
+    external fun endPeerSession(handle: Long)
+
+    external fun preparePeerEnvelope(
+        handle: Long,
+        authorityJson: String,
+        epoch: Long,
+        secret: ByteArray,
+        nowMs: Long,
+    ): String
+
+    external fun preparePeerSubject(
+        handle: Long,
+        authorityJson: String,
+        envelopeJson: String,
+        metadataJson: String,
+        nowMs: Long,
+    ): PallaSyncPreparedKeys
+
+    external fun validateCurrentKeyRecipient(
+        authority: String,
+        device: String,
+    ): Boolean
+
+    external fun deriveEpochMaterial(
+        context: String,
+        secret: ByteArray,
+    ): PallaSyncEpochMaterial
+
+    external fun openOwnEpochEnvelope(
+        authority: String,
+        entry: String,
+        receipt: String,
+        device: String,
+        privateKey: ByteArray,
+    ): ByteArray
+
+    external fun prepareEpochBundle(
+        root: Long,
+        operation: String,
+        authorityJson: String,
+        requestJson: String,
+        deviceSeed: ByteArray,
+    ): PallaSyncPreparedEpoch
+
+    external fun validateRetainedLogLink(
+        entryJson: String,
+        receiptJson: String,
+        pinJson: String,
+        after: Long,
+        previous: String,
+    ): String
+
+    external fun recoverEpochSecret(
+        root: Long,
+        operation: String,
+        authorityJson: String,
+        body: ByteArray,
+        epoch: Long,
+    ): ByteArray
+
+    external fun verifyDeviceKeyDelivery(
+        handle: Long,
+        envelopeJson: String,
+        kexPrivate: ByteArray,
+    ): Boolean
+
+    external fun validateOwnEnvelopePage(
+        body: ByteArray,
+        expectedJson: String,
+        authorityJson: String,
+    ): String
+
+    external fun beginEpochSession(
+        contextJson: String,
+        epochSecret: ByteArray,
+    ): Long
+
+    external fun endEpochSession(handle: Long)
+
+    external fun epochCollectionTag(
+        handle: Long,
+        collection: String,
+    ): String?
+
+    external fun decryptEpochRecord(
+        handle: Long,
+        recordJson: String,
+    ): String
+
+    external fun decryptEpochDevice(
+        handle: Long,
+        recordJson: String,
+    ): String
+
+    external fun validateInitialHistoryCut(
+        authorityJson: String,
+        body: ByteArray,
+    ): String
+
+    external fun validateReceiptResponse(
+        body: ByteArray,
+        entryJson: String,
+        pinJson: String,
+    ): String
+
+    external fun validateRecoveryEnvelopeResponse(
+        body: ByteArray,
+        authorityJson: String,
+        epoch: Long,
+    ): String
+
+    external fun validateEnrollmentAcceptance(
+        body: ByteArray,
+        submittedJson: String,
+        pinJson: String,
+    ): String
+
+    external fun validateKeysAck(
+        body: ByteArray,
+        device: String,
+        epochHash: String,
+    ): String
+
+    external fun validateEpochAcceptance(
+        response: ByteArray,
+        submitted: String,
+        pin: String,
+    ): String
+
+    external fun validateRevocationAcceptance(
+        response: ByteArray,
+        submitted: String,
+        pin: String,
+        device: String,
+    ): String
+
+    external fun deviceCapabilityToken(
+        handle: Long,
+        bindingJson: String,
+        body: ByteArray,
+        issuedAtMs: Long,
+    ): String
+
+    external fun beginAuthorityHistory(
+        body: ByteArray,
+        identityJson: String,
+        origin: String,
+        relayKey: String,
+    ): String
+
+    external fun advanceAuthorityHistory(
+        authorityJson: String,
+        entryJson: String,
+        receiptJson: String,
+    ): String
+
+    external fun bindAuthorityActionPayload(
+        authorityJson: String,
+        operationJson: String,
+        payloadJson: String,
+    ): String
+
+    external fun validateLogPage(
+        body: ByteArray,
+        pinJson: String,
+        generation: Long,
+        afterSeq: Long,
+        limit: Int,
+    ): String
+
+    external fun beginDeviceSession(
+        signingSeed: ByteArray,
+        recordKey: ByteArray,
+    ): Long
+
+    external fun endDeviceSession(handle: Long)
+
+    external fun decryptOwnPreparedRecord(
+        handle: Long,
+        recordJson: String,
+    ): String
+
+    external fun prepareRecordFrame(inner: ByteArray): ByteArray
+
+    external fun requireNormalDataBoundary(input: ByteArray)
+
+    external fun createPreparedRecord(
+        handle: Long,
+        contextJson: String,
+        frame: ByteArray,
+        nonce: ByteArray,
+    ): String
+
+    external fun validateLogHead(body: ByteArray): String
+
+    external fun compareLogHeads(
+        logJson: String,
+        signedHeadJson: String,
+        pinJson: String,
+        generation: Long,
+    ): Boolean
+
+    external fun validateRecordAuthority(
+        authorityJson: String,
+        recordJson: String,
+        relaySeq: Long,
+    ): Boolean
+
     init {
         System.loadLibrary("pallasync_core")
+        PallaSyncSecretLifecycle.nativeReady()
     }
+
+    external fun validateProblem(
+        body: ByteArray,
+        status: Int,
+    ): String
+
+    external fun validateKnownDevice(
+        authorityJson: String,
+        deviceJson: String,
+    ): String
+
+    external fun observeTransparencyHead(
+        body: ByteArray,
+        pinJson: String,
+    ): String
+
+    external fun validateTransparencyHead(
+        body: ByteArray,
+        pinJson: String,
+        checkpointJson: String,
+    ): String
+
+    external fun validateTransparencyPage(
+        body: ByteArray,
+        pinJson: String,
+        anchorJson: String,
+        headJson: String,
+        limit: Int,
+    ): String
+
+    external fun validateReceiptInclusion(
+        receiptJson: String,
+        entryJson: String,
+        pinJson: String,
+        anchorJson: String,
+    ): Boolean
+
+    external fun validateRecordsPage(
+        body: ByteArray,
+        pinJson: String,
+        generation: Long,
+        afterSeq: Long,
+        limit: Int,
+    ): String
 
     /** Generates a 24-word BIP39 English seed phrase. */
     external fun generateSeedPhrase(): String
 
-    /**
-     * Generates a fresh device keypair (Ed25519 signing key and X25519 KEX key).
-     * Returns JSON: {"signing_key": "...", "public_key": "...", "kex_private_key": "...", "kex_public_key": "..."}
-     */
-    external fun generateDeviceKeys(): String
+    external fun beginRootSession(
+        mnemonic: ByteArray,
+        passphrase: ByteArray,
+        operation: String,
+        expectedChain: String?,
+        expectedAdmin: String?,
+    ): Long
 
-    /**
-     * Derives root keys and deterministic chain ID from mnemonic and optional passphrase (§5.1, §5.2).
-     * Returns JSON: {"chain_id": "...", "chain_salt": "...", "admin_public_key": "...", "admin_signing_key": "...", "recovery_kek": "..."}
-     */
-    external fun deriveRootKeys(
-        seedPhrase: String,
-        passphrase: String = "",
+    external fun rootIdentity(handle: Long): String
+
+    external fun rootCapabilityToken(
+        handle: Long,
+        operation: String,
+        aud: String,
+        method: String,
+        path: String,
+        query: String,
+        body: ByteArray,
+        issuedAtMs: Long,
     ): String?
 
-    /**
-     * Derives epoch keys from an epoch secret (§5.3).
-     * Returns JSON: {"record_key": "...", "device_meta_key": "...", "collection_tag_key": "...", "epoch_commitment": "..."}
-     */
-    external fun deriveEpochKeys(
-        epochSecretBase64: String,
-        chainId: String,
-        epoch: Long,
-    ): String?
+    external fun touchRootSession(handle: Long)
 
-    /**
-     * Encrypts and frames an InnerRecord into a padded SyncRecord signed envelope (§7.1, §7.2, §7.3, §14.3).
-     * Returns JSON representation of SyncRecord.
-     */
-    external fun createSyncRecord(
-        chainId: String,
-        generation: Int,
-        recordId: String,
-        deviceId: String,
-        epoch: Int,
-        collectionTag: String?,
-        innerRecordJson: String,
-        recordKeyBase64: String,
-        signingKeyBase64: String,
-    ): String?
+    external fun endRootSession(handle: Long)
+
+    external fun endSecretSessions()
+
+    external fun setSecretForeground(foreground: Boolean)
+
+    external fun objectHash(valueJson: String): String?
+
+    external fun validateRecordUpload(
+        body: ByteArray,
+        submitted: String,
+        pin: String,
+    ): String
+
+    external fun validateGenesisAcceptance(
+        body: ByteArray,
+        genesis: String,
+        identity: String,
+        origin: String,
+        key: String,
+    ): String
+
+    external fun validateHealth(
+        health: ByteArray,
+        origin: String,
+    ): String
+
+    external fun validatePolicy(
+        markdown: ByteArray,
+        disclosure: ByteArray,
+        health: ByteArray,
+        origin: String,
+        pinnedKey: String,
+        highestRevision: Long,
+        highestHash: String,
+        nowMs: Long,
+    ): String
 
     /** Verifies the SyncRecord Ed25519 signature (§7.1, §4.1). */
     external fun verifySyncRecord(
@@ -59,139 +595,33 @@ object PallaSyncCore {
         devicePublicKeyBase64: String,
     ): Boolean
 
-    /**
-     * Decrypts a SyncRecord and returns the InnerRecord JSON representation.
-     */
-    external fun decryptSyncRecord(
-        recordJson: String,
-        recordKeyBase64: String,
-    ): String?
-
-    /**
-     * Creates a signed DeviceRecord with padded and encrypted metadata (§7.4).
-     * Returns JSON representation of DeviceRecord.
-     */
-    external fun createDeviceRecord(
-        chainId: String,
-        generation: Int,
-        deviceId: String,
-        deviceSigningKeyBase64: String,
-        deviceKexPublicKeyBase64: String,
-        deviceName: String,
-        keyProtection: String,
-        metaEpoch: Int,
-        deviceMetaKeyBase64: String,
-        enrollmentCertificateJson: String,
-    ): String?
-
     /** Verifies a device record against its embedded public key. */
     external fun verifyDeviceRecord(recordJson: String): Boolean
 
-    /** Decrypts encrypted_device_meta and returns DeviceMetaPlaintext JSON. */
-    external fun decryptDeviceRecord(
-        recordJson: String,
-        deviceMetaKeyBase64: String,
-    ): String?
-
-    /**
-     * Creates a Base64URL-encoded capability token for Authorization header (§6).
-     */
-    external fun createCapabilityToken(
-        aud: String,
-        chainId: String,
-        signerKind: String,
-        deviceId: String?,
-        method: String,
-        path: String,
-        query: String,
-        bodyJson: String,
-        signingKeyBase64: String,
-        ttlMs: Long,
-    ): String?
-
-    /**
-     * Unwraps an HPKE device EpochKeyEnvelope using the device's X25519 private key (§7.7).
-     * Returns raw 32-byte epoch_secret encoded in Base64URL.
-     */
-    external fun unwrapDeviceEpochEnvelope(
-        envelopeJson: String,
-        deviceKexPrivateKeyBase64: String,
-        chainId: String,
-    ): String?
-
-    /**
-     * Wraps an epoch secret into an HPKE device EpochKeyEnvelope (§7.7).
-     * Returns JSON representation of EpochKeyEnvelope.
-     */
-    external fun wrapDeviceEpochEnvelope(
-        envelopeId: String,
-        chainId: String,
-        generation: Int,
-        epoch: Int,
-        previousEpochHash: String?,
-        epochCommitment: String,
-        recipientDeviceId: String,
-        recipientKexPublicKeyBase64: String,
-        signerKind: String,
-        signerDeviceId: String?,
-        signingKeyBase64: String,
-        epochSecretBase64: String,
-    ): String?
-
-    /**
-     * Wraps an epoch secret into an XChaCha20-Poly1305 recovery EpochKeyEnvelope (§7.7).
-     * Returns JSON representation of EpochKeyEnvelope.
-     */
-    external fun wrapRecoveryEpochEnvelope(
-        envelopeId: String,
-        chainId: String,
-        generation: Int,
-        epoch: Int,
-        previousEpochHash: String?,
-        epochCommitment: String,
-        signerKind: String,
-        signerDeviceId: String?,
-        signingKeyBase64: String,
-        recoveryKekBase64: String,
-        epochSecretBase64: String,
-    ): String?
-
-    /**
-     * Unwraps an XChaCha20-Poly1305 recovery EpochKeyEnvelope using recovery_kek (§7.7).
-     * Returns raw 32-byte epoch_secret encoded in Base64URL.
-     */
-    external fun unwrapRecoveryEpochEnvelope(
-        envelopeJson: String,
-        recoveryKekBase64: String,
-        chainId: String,
-    ): String?
-
     /**
      * Creates a complete Genesis Bundle (§10.2).
-     * Returns JSON with keys, parameters, device_record, epoch, envelopes, and admin_capability_token.
+     * Returns owned mutable keys and a public signed genesis request.
      */
     external fun createGenesisBundle(
-        seedPhrase: String,
-        passphrase: String = "",
+        rootSession: Long,
         deviceName: String,
         keyProtection: String = "os-keystore",
         aud: String,
-    ): String?
+    ): PallaSyncPreparedKeys
 
     /**
      * Creates a complete Mnemonic Enrollment Bundle (§10.4, §10.8).
-     * Returns JSON with keys, enroll_request_body_json, admin_capability_token, keys_ack_request_body_json, device_keys_ack_token.
+     * Returns owned mutable keys and public enrollment/acknowledgement requests.
      */
     external fun createMnemonicEnrollmentBundle(
-        seedPhrase: String,
-        passphrase: String = "",
+        rootSession: Long,
         deviceName: String,
         keyProtection: String = "os-keystore",
-        generation: Int,
-        epoch: Int,
+        generation: Long,
+        epoch: Long,
         recoveryEnvelopeJson: String,
         expectedParametersHash: String,
         expectedEpochHash: String,
         aud: String,
-    ): String?
+    ): PallaSyncPreparedKeys
 }

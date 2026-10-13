@@ -1,6 +1,7 @@
 package com.yunfie.illustia.pallasync
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import android.os.Build
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.GlitchTipTelemetry.span
@@ -9,14 +10,19 @@ import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
+import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
+import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
+import com.yunfie.illustia.pallasync.data.SignedEventEntity
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -32,15 +38,19 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -51,31 +61,70 @@ internal class PalleriaSyncCoordinator(
     client: OkHttpClient = OkHttpClient(),
     context: Context,
     private val coordinatorScope: CoroutineScope? = null,
+    suppliedPolicy: PallaSyncPolicyGate? = null,
+    suppliedStore: PallaSyncLocalStore? = null,
+    private val rebaseFault: (PallaSyncOutboxRebase.Boundary) -> Unit = {},
 ) : PallaSyncEventWriter {
     private val appContext = context.applicationContext
     private val scope = coordinatorScope ?: CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val operationMutex = Mutex()
     private val jobLock = Any()
-    private val remote = PallaSyncRemoteService(client)
-    private val localStore = PallaSyncLocalStore(appContext)
+
+    private val policy by lazy { suppliedPolicy ?: PallaSyncPolicyGate(appContext) }
+    private val remote by lazy { PallaSyncRemoteService(client, policy) }
+    private val localStore = suppliedStore ?: PallaSyncLocalStore(appContext)
     private val db = localStore
-    private val crypto = PallaSyncCryptoService()
+    private val crypto by lazy { PallaSyncCryptoService(policy) }
     private val keystore by lazy { PallaSyncKeystore(appContext) }
-    private val recordProcessor = PallaSyncRecordProcessor(appContext)
+    private val consistencyProbe by lazy { PallaSyncConsistencyProbe(db, remote, policy, keystore, ::makeCapabilityToken) }
+    private val projection = PallaSyncProjection(appContext)
+    private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
+    private val localIntents by lazy { PallaSyncLocalIntents(db, localAuthor, ::orderLocalEvents) }
+    private val membership by lazy { PallaSyncMembershipReader(db) }
+    private val liveHistory by lazy { PallaSyncLiveHistory(db, remote, keystore, consistencyProbe, ::makeCapabilityToken) }
+    private val epochLifecycle by lazy {
+        PallaSyncEpochLifecycle(db, keystore, remote, policy, crypto, PallaSyncEpochJournal(appContext), localAuthor)
+    }
+    private val outboxRebase by lazy { PallaSyncOutboxRebase(db, localAuthor, keystore, rebaseFault) }
+    private val epochStatus by lazy { PallaSyncEpochStatusReader(db, keystore, policy.retry::correctedTime) }
     private val json =
         Json {
             ignoreUnknownKeys = true
         }
     private var relayLimits = PALLASYNC_HARD_LIMITS
+    private var nextProbeAt = 0L
+    private var foregroundRevision = -1L
 
     @Volatile
     private var backgroundSyncJob: Job? = null
 
+    suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = membership.read(items)
+
+    internal suspend fun recoveryChainContext(): PallaSyncRecoveryChainContext? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = db.dao.getActiveChainState() ?: return@withLock null
+                requireProtectedAuthority(state.chainId)
+                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                val parameters = authority.getValue("parameters").jsonObject
+                PallaSyncRecoveryChainContext(
+                    state.chainId,
+                    parameters.getValue("admin_public_key").jsonPrimitive.content,
+                    parameters
+                        .getValue("generation")
+                        .jsonPrimitive.content
+                        .toLong(),
+                    checkNotNull(keystore.boundDeviceId(state.chainId)) { "C_MISSING_DEPENDENCY" },
+                )
+            }
+        }
+
     companion object {
         private const val DEFAULT_SERVER_URL = "https://api.yunfi.f5.si"
         private const val NORMAL_POLL_DELAY_MS = 5_000L
-        private const val MAX_RETRY_DELAY_MS = 5 * 60_000L
         private const val PROTOCOL_ERROR_DELAY_MS = 30_000L
+        private const val PROBE_INTERVAL_MS = 15 * 60_000L
+        private const val PROBE_JITTER_MS = PROBE_INTERVAL_MS / 5
         private val JSON_MEDIA_TYPE = PALLASYNC_MEDIA_TYPE.toMediaType()
 
         val syncLogs = MutableStateFlow<List<String>>(emptyList())
@@ -93,17 +142,26 @@ internal class PalleriaSyncCoordinator(
             if (backgroundSyncJob?.isActive == true) {
                 return
             }
+            nextProbeAt = 0L
             backgroundSyncJob =
                 scope.launch {
-                    var retryDelayMs = NORMAL_POLL_DELAY_MS
                     while (currentCoroutineContext().isActive) {
                         val outcome =
                             runCatching {
                                 operationMutex.withLock { synchronizeOnceLocked() }
                             }.getOrElse { expectedFailure ->
                                 val error = expectedFailure
-                                log("Sync cycle failed without advancing the relay cursor: ${error.message}")
-                                SyncCycleOutcome.Retryable
+                                log(
+                                    error.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) }
+                                        ?: "PallaSync cycle failed; retained state requires another check",
+                                )
+                                if (error.message ==
+                                    "C_RELAY_POLICY_UNAVAILABLE"
+                                ) {
+                                    SyncCycleOutcome.Retryable
+                                } else {
+                                    SyncCycleOutcome.ProtocolError
+                                }
                             }
 
                         val waitMs =
@@ -111,14 +169,16 @@ internal class PalleriaSyncCoordinator(
                                 SyncCycleOutcome.Success,
                                 SyncCycleOutcome.Idle,
                                 -> {
-                                    retryDelayMs = NORMAL_POLL_DELAY_MS
                                     NORMAL_POLL_DELAY_MS
                                 }
 
                                 SyncCycleOutcome.Retryable -> {
-                                    val current = retryDelayMs
-                                    retryDelayMs = (retryDelayMs * 2).coerceAtMost(MAX_RETRY_DELAY_MS)
-                                    current
+                                    val base = PallaSyncUrls.normalize(getServerUrl())
+                                    if (base is PallaSyncHttpResult.Success) {
+                                        policy.retry.remaining(PallaSyncUrls.extractOrigin(base.value)).coerceAtLeast(1)
+                                    } else {
+                                        NORMAL_POLL_DELAY_MS
+                                    }
                                 }
 
                                 SyncCycleOutcome.ProtocolError -> {
@@ -177,41 +237,255 @@ internal class PalleriaSyncCoordinator(
     suspend fun recoverInterruptedActivation(): Boolean {
         return withContext(Dispatchers.IO) {
             operationMutex.withLock {
+                val pending = keystore.pendingActivation() ?: return@withLock false
                 val state =
                     activeChainStateLocked() ?: run {
-                        keystore.clearPendingChainKeys()
                         return@withLock false
                     }
+                if (state.chainId != pending || state.writeState == "activation_preparing") return@withLock false
                 if (keysForChainLocked(state.chainId) == null) return@withLock false
                 SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(true)
+                keystore.completeActivation(pending)
                 true
             }
         }
     }
 
-    suspend fun initializeGenesis(serverUrl: String? = null): String {
-        val seedPhrase = withContext(Dispatchers.Default) { crypto.generateSeedPhrase() }
-        val joined =
-            joinChainInternal(
-                seedPhrase = seedPhrase,
-                deviceName = Build.MODEL,
-                isGenesis = true,
-                serverUrl = serverUrl,
-            )
-        return if (joined) seedPhrase else ""
+    suspend fun generateGenesisMnemonic(): String = withContext(Dispatchers.Default) { crypto.generateSeedPhrase() }
+
+    suspend fun hasLocalChain(): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock { db.dao.getActiveChainStates().isNotEmpty() }
+        }
+
+    suspend fun getPendingLocalEditCount(): Long =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val chain = activeChainStateLocked()?.chainId
+                if (chain == null) 0 else db.protocolDao().pendingMigrationCount(PallaSyncLocalIntents.journalId(chain))
+            }
+        }
+
+    /** §§11.1/11.7: explicit resume preserves the existing identity, archive and queued work. */
+    suspend fun resumeBoundChain(startWorker: Boolean = true): Boolean {
+        val enabled =
+            withContext(Dispatchers.IO) {
+                operationMutex.withLock {
+                    val state = activeChainStateLocked() ?: return@withLock false
+                    try {
+                        requireProtectedAuthority(state.chainId)
+                        val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                        val pinnedOrigin =
+                            authority
+                                .getValue("pin")
+                                .jsonObject
+                                .getValue("origin")
+                                .jsonPrimitive.content
+                        val selected = normalizeServerUrl(getServerUrl()) ?: return@withLock false
+                        check(selected == pinnedOrigin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                        policy.requireCurrent(pinnedOrigin)
+                        check(keysForChainLocked(state.chainId) != null) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                        SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(true)
+                        resumeLocalIntentsLocked()
+                        true
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: IllegalStateException) {
+                        val code = error.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_MISSING_DEPENDENCY"
+                        log("$code: resumption paused with the existing chain retained")
+                        false
+                    } catch (_: IOException) {
+                        log("C_RELAY_POLICY_UNAVAILABLE: resumption paused with the existing chain retained")
+                        false
+                    } catch (_: SQLiteException) {
+                        log("C_LOCAL_STORAGE_FULL: resumption paused with the existing chain retained")
+                        false
+                    }
+                }
+            }
+        if (enabled && startWorker) startBackgroundSync()
+        return enabled
     }
+
+    suspend fun getEpochStatus(): PallaSyncEpochStatus? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val chain = activeChainStateLocked()?.chainId ?: return@withLock null
+                try {
+                    epochStatus.read(chain)
+                } catch (failure: IllegalStateException) {
+                    val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_MISSING_DEPENDENCY"
+                    log("Epoch status unavailable: $code")
+                    null
+                }
+            }
+        }
+
+    suspend fun rotateEpoch(
+        mnemonic: String,
+        reason: String = "manual",
+        revoked: List<String> = emptyList(),
+        admin: Boolean = false,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean =
+        withEpochRoot(
+            mnemonic,
+            passphrase,
+            cancellation,
+            if (admin &&
+                revoked.isNotEmpty()
+            ) {
+                PallaSyncRootSession.Operation.REVOKE
+            } else {
+                PallaSyncRootSession.Operation.ROTATE
+            },
+        ) { root, base ->
+            epochLifecycle.rotate(root, base, reason, revoked, admin) == PallaSyncEpochLifecycle.Outcome.UPDATED
+        }
+
+    suspend fun refreshEpochs(
+        mnemonic: String,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean =
+        withEpochRoot(mnemonic, passphrase, cancellation, PallaSyncRootSession.Operation.ROTATE) { root, base ->
+            epochLifecycle.refresh(root, base)
+            true
+        }
+
+    /** §§11.4/13: consume a collected root for this named operation, with the same policy and authority guards. */
+    internal suspend fun rotateRecoveredEpoch(
+        completion: PallaSyncRecoveryCompletion,
+        cancellation: PallaSyncRootCancellation,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val root =
+                    completion.takeRoot(
+                        PallaSyncRootSession.Operation.ROTATE,
+                        policy::requireCurrent,
+                        policy.retry::correctedTime,
+                    )
+                try {
+                    cancellation.attach(root)
+                    val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    requireProtectedAuthority(state.chainId)
+                    val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                    check(
+                        root.identity.chainId == state.chainId &&
+                            root.identity.adminPublicKey == authority.getValue("admin_public_key").jsonPrimitive.content,
+                    ) {
+                        "C_RECOVERY_ROOT_MISMATCH"
+                    }
+                    val base =
+                        when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                            is PallaSyncHttpResult.Success -> normalized.value
+                            else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                        }
+                    val changed =
+                        useRoot(root) {
+                            epochLifecycle.rotate(it, base, "manual", emptyList(), true) == PallaSyncEpochLifecycle.Outcome.UPDATED
+                        }
+                    outboxRebase.resume(state.chainId, checkNotNull(keysForChainLocked(state.chainId)))
+                    changed
+                } finally {
+                    root.close()
+                    cancellation.release(root)
+                    completion.close()
+                }
+            }
+        }
+
+    private suspend fun withEpochRoot(
+        mnemonic: String,
+        passphrase: String,
+        cancellation: PallaSyncRootCancellation?,
+        operation: PallaSyncRootSession.Operation,
+        action: suspend (PallaSyncRootSession, HttpUrl) -> Boolean,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                try {
+                    val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    requireProtectedAuthority(state.chainId)
+                    val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                    val base =
+                        when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                            is PallaSyncHttpResult.Success -> normalized.value
+                            else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                        }
+                    val root =
+                        PallaSyncRootSession
+                            .beginText(
+                                mnemonic,
+                                passphrase,
+                                operation,
+                                state.chainId,
+                                authority.getValue("admin_public_key").jsonPrimitive.content,
+                                policy::requireCurrent,
+                                policy.retry::correctedTime,
+                            )
+                    val completed = useRoot(root, cancellation) { action(it, base) }
+                    // Large rebase work requires normal epoch keys only; end root first.
+                    outboxRebase.resume(state.chainId, checkNotNull(keysForChainLocked(state.chainId)))
+                    completed
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: PallaSyncInitialHistory.Failure) {
+                    val code =
+                        when (val result = failure.result) {
+                            is PallaSyncHttpResult.ProtocolError -> result.message
+                            is PallaSyncHttpResult.Retryable -> result.message
+                            else -> "C_MISSING_DEPENDENCY"
+                        }
+                    log("Epoch operation paused [${epochLifecycle.stage}]: $code")
+                    false
+                } catch (failure: IllegalStateException) {
+                    val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"
+                    log("Epoch operation paused [${epochLifecycle.stage}]: $code")
+                    false
+                }
+            }
+        }
+
+    private suspend fun <T> useRoot(
+        root: PallaSyncRootSession,
+        cancellation: PallaSyncRootCancellation? = null,
+        action: suspend (PallaSyncRootSession) -> T,
+    ): T =
+        root.use {
+            try {
+                cancellation?.attach(it)
+                currentCoroutineContext().ensureActive()
+                action(it)
+            } finally {
+                cancellation?.release(it)
+            }
+        }
+
+    suspend fun createGenesis(
+        seedPhrase: String,
+        serverUrl: String? = null,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = joinChainInternal(seedPhrase, Build.MODEL, isGenesis = true, serverUrl, passphrase, cancellation)
 
     suspend fun joinChain(
         seedPhrase: String,
         deviceName: String = Build.MODEL,
         serverUrl: String? = null,
-    ): Boolean = joinChainInternal(seedPhrase, deviceName, isGenesis = false, serverUrl = serverUrl)
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = joinChainInternal(seedPhrase, deviceName, isGenesis = false, serverUrl, passphrase, cancellation)
 
     private suspend fun joinChainInternal(
         seedPhrase: String,
         deviceName: String,
         isGenesis: Boolean,
         serverUrl: String?,
+        passphrase: String,
+        cancellation: PallaSyncRootCancellation?,
     ): Boolean {
         var activatedChainId: String? = null
         val joined =
@@ -219,7 +493,7 @@ internal class PalleriaSyncCoordinator(
                 withContext(Dispatchers.IO) {
                     operationMutex.withLock {
                         val activated =
-                            joinChainLocked(seedPhrase.trim(), deviceName, isGenesis, serverUrl)
+                            joinChainLocked(seedPhrase.trim(), passphrase, deviceName, isGenesis, serverUrl, cancellation)
                                 ?: return@withLock false
                         val chainId = activated.first
                         val activatedBaseUrl = activated.second
@@ -228,6 +502,7 @@ internal class PalleriaSyncCoordinator(
                             setPallaSyncServerUrlFromCoordinator(activatedBaseUrl.toString().trimEnd('/'))
                             setPallaSyncEnabledFromCoordinator(true)
                         }
+                        if (keystore.pendingActivation() == chainId) keystore.completeActivation(chainId)
                         when (synchronizeOnceLocked(activatedBaseUrl)) {
                             SyncCycleOutcome.Gone -> {
                                 false
@@ -242,7 +517,9 @@ internal class PalleriaSyncCoordinator(
                 }
             }.getOrElse { expectedFailure ->
                 val error = expectedFailure
-                log("Initial PallaSync cycle failed; background retry will continue: ${error.message}")
+                if (error is CancellationException) throw error
+                val code = error.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"
+                log("Initial PallaSync cycle paused: $code")
                 activatedChainId != null
             }
         if (joined) {
@@ -253,310 +530,382 @@ internal class PalleriaSyncCoordinator(
 
     private suspend fun joinChainLocked(
         seedPhrase: String,
+        passphrase: String,
+        deviceName: String,
+        isGenesis: Boolean,
+        serverUrl: String?,
+        cancellation: PallaSyncRootCancellation?,
+    ): Pair<String, HttpUrl>? =
+        PallaSyncRootSession
+            .beginText(
+                seedPhrase,
+                passphrase,
+                if (isGenesis) PallaSyncRootSession.Operation.GENESIS else PallaSyncRootSession.Operation.ENROLLMENT,
+                requestGuard = policy::requireCurrent,
+                clock = policy.retry::correctedTime,
+            ).let { root -> useRoot(root, cancellation) { joinChainWithSessionLocked(it, deviceName, isGenesis, serverUrl) } }
+
+    private suspend fun joinChainWithSessionLocked(
+        rootSession: PallaSyncRootSession,
         deviceName: String,
         isGenesis: Boolean,
         serverUrl: String?,
     ): Pair<String, HttpUrl>? {
-        val baseUrl =
-            when (val normalized = PallaSyncUrls.normalize(serverUrl ?: getServerUrl())) {
-                is PallaSyncHttpResult.Success -> normalized.value
-                is PallaSyncHttpResult.ProtocolError -> return null.also { log(normalized.message) }
-                else -> return null
+        val base = selectedJoinBase(serverUrl)
+        val origin = PallaSyncUrls.extractOrigin(base)
+        val chain = rootSession.identity.chainId
+        // A completed activation must never generate a replacement identity or genesis request.
+        val committed = db.dao.getChainState(chain)
+        if (committed != null && committed.writeState != "activation_preparing" && committed.writeState != "archived") {
+            requireProtectedAuthority(chain)
+            val boundAuthority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(chain))).jsonObject
+            check(
+                boundAuthority
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("origin")
+                    .jsonPrimitive.content == origin,
+            ) {
+                "C_BOOTSTRAP_TRUST_REQUIRED"
             }
-        val aud = PallaSyncUrls.extractOrigin(baseUrl)
-
-        when (val health = refreshRelayHealth(baseUrl)) {
-            is PallaSyncHttpResult.Success -> Unit
-            is PallaSyncHttpResult.Retryable -> return null.also { log(health.message) }
-            is PallaSyncHttpResult.ProtocolError -> return null.also { log(health.message) }
-            PallaSyncHttpResult.Gone -> return null
+            check(keysForChainLocked(chain) != null) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            return chain to base
         }
-
-        val chainId: String
-        val deviceId: String
-        val candidateKeys: PallaSyncKeySnapshot
-
-        if (isGenesis) {
-            val genesisBundleJson =
-                runCatching {
-                    crypto.createGenesisBundle(
-                        seedPhrase = seedPhrase,
-                        passphrase = "",
-                        deviceName = deviceName,
-                        keyProtection = "os-keystore",
-                        aud = aud,
-                    ) ?: error("Native genesis bundle creation failed")
-                }.getOrElse {
-                    log("Could not create PallaSync genesis bundle: ${it.message}")
-                    return null
-                }
-            val bundle =
-                runCatching { json.decodeFromString<PallaSyncGenesisBundle>(genesisBundleJson) }
-                    .getOrElse {
-                        log("Could not decode genesis bundle: ${it.message}")
-                        return null
-                    }
-            chainId = bundle.chainId
-            deviceId = bundle.deviceId
-
-            val createChainRequest =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.chains(baseUrl))
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .header("Authorization", "PallaSync ${bundle.adminCapabilityToken}")
-                    .post(bundle.genesisRequestBodyJson.toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
-            when (val created = remote.executeUnit(createChainRequest)) {
-                is PallaSyncHttpResult.Success -> Unit
-                is PallaSyncHttpResult.Retryable -> return null.also { log(created.message) }
-                is PallaSyncHttpResult.ProtocolError -> return null.also { log(created.message) }
-                PallaSyncHttpResult.Gone -> return null.also { log("The PallaSync service is unavailable") }
+        val prepared =
+            if (isGenesis) {
+                prepareGenesis(rootSession, deviceName, base, origin)
+            } else {
+                prepareMnemonicEnrollment(rootSession, deviceName, base, origin)
             }
-
-            candidateKeys =
-                PallaSyncKeySnapshot(
-                    chainId = bundle.chainId,
-                    seedPhrase = seedPhrase,
-                    encryptionKeyBase64Url = bundle.recordKey,
-                    signingKeyBase64Url = bundle.deviceSigningKey,
-                    publicKeyBase64Url = bundle.devicePublicKey,
-                    kexPrivateKeyBase64Url = bundle.deviceKexPrivateKey,
-                    kexPublicKeyBase64Url = bundle.deviceKexPublicKey,
-                    deviceMetaKeyBase64Url = bundle.deviceMetaKey,
-                )
-        } else {
-            val rootKeysJson =
-                crypto.deriveRootKeys(seedPhrase, "")
-                    ?: return null.also { log("Native root key derivation failed") }
-            val rootKeys =
-                runCatching { json.parseToJsonElement(rootKeysJson).jsonObject }
-                    .getOrNull() ?: return null.also { log("Could not parse derived root keys") }
-            val derivedChainId =
-                rootKeys["chain_id"]?.jsonPrimitive?.content
-                    ?: return null.also { log("Derived keys did not contain a chain ID") }
-            chainId = derivedChainId
-
-            val paramsPath = "/pallasync/v3/chains/$chainId/parameters"
-            val adminTokenForParams =
-                crypto.createCapabilityToken(
-                    chainId = chainId,
-                    deviceId = null,
-                    method = "GET",
-                    path = paramsPath,
-                    query = "",
-                    bodyJson = "",
-                    signingKeyBase64 = rootKeys["admin_private_key"]?.jsonPrimitive?.content ?: "",
-                    ttlMs = 120_000L,
-                    aud = aud,
-                    signerKind = "admin",
-                ) ?: return null.also { log("Could not generate admin capability token for parameters") }
-
-            val paramsRequest =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.parameters(baseUrl, chainId))
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .header("Authorization", "PallaSync $adminTokenForParams")
-                    .get()
-                    .build()
-            val paramsObj =
-                when (
-                    val res =
-                        remote.execute(paramsRequest) { resp ->
-                            val body = resp.body?.string() ?: return@execute PallaSyncHttpResult.ProtocolError("Empty parameters response")
-                            val parsed =
-                                runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull()
-                                    ?: return@execute PallaSyncHttpResult.ProtocolError("Invalid parameters response")
-                            PallaSyncHttpResult.Success(parsed)
-                        }
-                ) {
-                    is PallaSyncHttpResult.Success -> res.value
-                    PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
-                    is PallaSyncHttpResult.Retryable -> return null.also { log(res.message) }
-                    is PallaSyncHttpResult.ProtocolError -> return null.also { log(res.message) }
-                }
-            val parametersHash = paramsObj["parameters_hash"]?.jsonPrimitive?.content.orEmpty()
-            val epochHash = paramsObj["epoch_hash"]?.jsonPrimitive?.content.orEmpty()
-            val generation = paramsObj["generation"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
-
-            val recoveryPath = "/pallasync/v3/chains/$chainId/epochs/0/recovery-envelope"
-            val adminTokenForRecovery =
-                crypto.createCapabilityToken(
-                    chainId = chainId,
-                    deviceId = null,
-                    method = "GET",
-                    path = recoveryPath,
-                    query = "",
-                    bodyJson = "",
-                    signingKeyBase64 = rootKeys["admin_private_key"]?.jsonPrimitive?.content ?: "",
-                    ttlMs = 120_000L,
-                    aud = aud,
-                    signerKind = "admin",
-                ) ?: return null.also { log("Could not generate admin token for recovery envelope") }
-
-            val recoveryUrl =
-                baseUrl
-                    .newBuilder()
-                    .addPathSegment("pallasync")
-                    .addPathSegment("v3")
-                    .addPathSegment("chains")
-                    .addPathSegment(chainId)
-                    .addPathSegment("epochs")
-                    .addPathSegment("0")
-                    .addPathSegment("recovery-envelope")
-                    .build()
-            val recoveryRequest =
-                Request
-                    .Builder()
-                    .url(recoveryUrl)
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .header("Authorization", "PallaSync $adminTokenForRecovery")
-                    .get()
-                    .build()
-            val recoveryEnvelopeJson =
-                when (
-                    val res =
-                        remote.execute(recoveryRequest) { resp ->
-                            val body =
-                                resp.body?.string() ?: return@execute PallaSyncHttpResult.ProtocolError("Empty recovery envelope response")
-                            val parsed = runCatching { json.parseToJsonElement(body).jsonObject["envelope"] }.getOrNull()
-                            PallaSyncHttpResult.Success(parsed?.toString() ?: body)
-                        }
-                ) {
-                    is PallaSyncHttpResult.Success -> res.value
-                    PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
-                    is PallaSyncHttpResult.Retryable -> return null.also { log(res.message) }
-                    is PallaSyncHttpResult.ProtocolError -> return null.also { log(res.message) }
-                }
-
-            val enrollmentBundleJson =
-                runCatching {
-                    crypto.createMnemonicEnrollmentBundle(
-                        seedPhrase = seedPhrase,
-                        passphrase = "",
-                        deviceName = deviceName,
-                        keyProtection = "os-keystore",
-                        generation = generation,
-                        epoch = 0,
-                        recoveryEnvelopeJson = recoveryEnvelopeJson,
-                        expectedParametersHash = parametersHash,
-                        expectedEpochHash = epochHash,
-                        aud = aud,
-                    ) ?: error("Native mnemonic enrollment bundle creation failed")
-                }.getOrElse {
-                    log("Could not create mnemonic enrollment bundle: ${it.message}")
-                    return null
-                }
-            val bundle =
-                runCatching { json.decodeFromString<PallaSyncMnemonicEnrollmentBundle>(enrollmentBundleJson) }
-                    .getOrElse {
-                        log("Could not decode enrollment bundle: ${it.message}")
-                        return null
-                    }
-            deviceId = bundle.deviceId
-
-            val enrollRequest =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.enrollDevice(baseUrl, chainId))
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .header("Authorization", "PallaSync ${bundle.adminCapabilityToken}")
-                    .post(bundle.enrollRequestBodyJson.toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
-            when (val enrolled = remote.executeUnit(enrollRequest)) {
-                is PallaSyncHttpResult.Success -> Unit
-                is PallaSyncHttpResult.Retryable -> return null.also { log(enrolled.message) }
-                is PallaSyncHttpResult.ProtocolError -> return null.also { log(enrolled.message) }
-                PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
-            }
-
-            val ackRequest =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.deviceKeysAck(baseUrl, chainId, deviceId))
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .header("Authorization", "PallaSync ${bundle.deviceKeysAckToken}")
-                    .post(bundle.keysAckRequestBodyJson.toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
-            when (val acked = remote.executeUnit(ackRequest)) {
-                is PallaSyncHttpResult.Success -> Unit
-                is PallaSyncHttpResult.Retryable -> return null.also { log(acked.message) }
-                is PallaSyncHttpResult.ProtocolError -> return null.also { log(acked.message) }
-                PallaSyncHttpResult.Gone -> return null.also { log("Chain deleted") }
-            }
-
-            candidateKeys =
-                PallaSyncKeySnapshot(
-                    chainId = bundle.chainId,
-                    seedPhrase = seedPhrase,
-                    encryptionKeyBase64Url = bundle.recordKey,
-                    signingKeyBase64Url = bundle.deviceSigningKey,
-                    publicKeyBase64Url = bundle.devicePublicKey,
-                    kexPrivateKeyBase64Url = bundle.deviceKexPrivateKey,
-                    kexPublicKeyBase64Url = bundle.deviceKexPublicKey,
-                    deviceMetaKeyBase64Url = bundle.deviceMetaKey,
-                )
+        checkNotNull(prepared) { "C_MISSING_DEPENDENCY" }
+        check(keystore.savePendingChainKeys(prepared.keys) && keystore.getPendingChainKeys() == prepared.keys) { "C_LOCAL_STORAGE_FULL" }
+        stagePreparedActivation(prepared, isGenesis, origin)
+        val collections = SettingsStore(appContext).readSyncedCollections()
+        if (!isGenesis) {
+            PallaSyncPrefixMaterializer(db, keystore).apply(chain, prepared.keys, checkNotNull(prepared.checkpoint))
         }
-
-        val initialState =
-            ChainStateEntity(
-                chainId = chainId,
-                lamport = 0,
-                keyEpoch = 1,
-                chainVectorJson = "{}",
-                lastRelaySeq = 0,
-                initialPullCompleted = isGenesis,
-            )
-        val localCollections =
-            try {
-                SettingsStore(appContext).readSyncedCollections()
-            } catch (expectedFailure: Exception) {
-                val error = expectedFailure
-                log("Could not snapshot local sync items before activating the chain: ${error.message}")
-                return null
-            }
-        val initialSettingsEvents = buildInitialSettingsSyncEvents(localCollections)
-        val (activatedState, initialOutbox) =
-            runCatching {
-                createInitialOutbox(
-                    state = initialState,
-                    keys = candidateKeys,
-                    deviceId = deviceId,
-                    events = initialSettingsEvents,
-                    status = if (isGenesis) "queued" else "pending_initial_merge",
-                )
-            }.getOrElse { expectedFailure ->
-                val error = expectedFailure
-                log("Could not prepare initial sync items; the current chain was retained: ${error.message}")
-                return null
-            }
-        if (!keystore.savePendingChainKeys(candidateKeys)) {
-            log("The new PallaSync keys could not be stored; the current chain was retained")
-            return null
+        localAuthor.initialize(chain, prepared.keys, orderInitialEvents(chain, buildInitialSettingsSyncEvents(collections)))
+        check(rootSession.identity.chainId == chain) { "C_RECOVERY_ROOT_MISMATCH" }
+        currentCoroutineContext().ensureActive()
+        keystore.stageActivation(chain)
+        db.transaction {
+            val complete = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+            db.dao.archiveOtherChainStates(chain)
+            db.dao.updateChainState(complete.copy(writeState = "active"))
         }
-
-        try {
-            db.pallaSyncDao().activateChain(
-                activatedState,
-                initialEvents = initialOutbox,
-            )
-        } catch (expectedFailure: Exception) {
-            val error = expectedFailure
-            keystore.clearPendingChainKeys()
-            log("The new chain could not be activated; the previous chain was retained: ${error.message}")
-            return null
-        }
-
-        if (!keystore.promotePendingChainKeys()) {
-            log("The staged chain keys will be promoted on the next sync cycle")
-        }
-
+        check(keystore.promotePendingChainKeys()) { "C_LOCAL_STORAGE_FULL" }
         stopBackgroundSync()
-        keystore.saveDeviceId(deviceId)
-        log("Successfully joined chain: ${chainId.take(8)}…")
-        return chainId to baseUrl
+        log("Successfully joined chain: ${chain.take(8)}…")
+        return chain to base
     }
+
+    private suspend fun selectedJoinBase(serverUrl: String?): HttpUrl {
+        val normalized = PallaSyncUrls.normalize(serverUrl ?: getServerUrl())
+        check(normalized is PallaSyncHttpResult.Success) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val health = refreshRelayHealth(normalized.value)
+        if (health !is PallaSyncHttpResult.Success) throw PallaSyncInitialHistory.Failure(health)
+        return normalized.value
+    }
+
+    private suspend fun requireProtectedAuthority(chain: String) {
+        val saved = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+        check(
+            crypto.objectHash(saved) == keystore.authorityHash(chain) &&
+                keystore.authorityHash(chain) != null,
+        ) { "C_ROLLBACK_DETECTED" }
+        val origin =
+            Json
+                .parseToJsonElement(saved)
+                .jsonObject
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
+        policy.bindChainOrigin(chain, origin)
+    }
+
+    private suspend fun stagePreparedActivation(
+        prepared: PreparedJoin,
+        genesis: Boolean,
+        origin: String,
+    ) {
+        val chain = checkNotNull(prepared.keys.chainId)
+        val existing = db.dao.getChainState(chain)
+        if (existing == null) {
+            pinPreparedCheckpoint(prepared)
+            commitPreparedActivation(prepared, initialChainState(prepared, genesis).copy(writeState = "activation_preparing"), origin)
+        } else {
+            check(existing.writeState == "activation_preparing" && keystore.boundDeviceId(chain) == prepared.keys.deviceId) {
+                "C_MISSING_DEPENDENCY"
+            }
+            requireProtectedAuthority(chain)
+        }
+    }
+
+    private fun initialChainState(
+        prepared: PreparedJoin,
+        genesis: Boolean,
+    ): ChainStateEntity {
+        val pending =
+            ChainStateEntity(
+                chainId = checkNotNull(prepared.keys.chainId),
+                lamport = 0,
+                keyEpoch = prepared.keys.epoch,
+                chainVectorJson = "{}",
+                initialPullCompleted = genesis,
+                writeState = "pending_verification",
+            )
+        val checkpoint = prepared.checkpoint ?: return pending
+        return pending.copy(
+            generation = checkpoint.generation,
+            lastRelaySeq = if (genesis) checkpoint.headSeq else 0,
+            downloadedSeq = if (genesis) checkpoint.headSeq else 0,
+            logId = checkpoint.logId,
+            parametersHash = checkpoint.parametersHash,
+            epochHash = checkpoint.epochHash,
+            verifiedSeq = if (genesis) checkpoint.headSeq else 0,
+            materializedSeq = if (genesis) checkpoint.headSeq else 0,
+            verifiedHash = if (genesis) checkpoint.headHash else checkNotNull(checkpoint.dataZero),
+            transparencyId = checkpoint.transparencyId,
+            transparencyIndex = checkpoint.transparencyIndex,
+            transparencyHash = checkpoint.transparencyHash,
+            writeState = "active",
+        )
+    }
+
+    private fun pinPreparedCheckpoint(prepared: PreparedJoin) {
+        val chainId = checkNotNull(prepared.keys.chainId)
+        val deviceId = checkNotNull(prepared.keys.deviceId)
+        val genesisCheckpoint = prepared.checkpoint
+        genesisCheckpoint?.authority?.toString()?.let { authority ->
+            check(keystore.pinInitialAuthority(chainId, crypto.objectHash(authority) ?: error("C_SCHEMA_VIOLATION"))) {
+                "C_LOCAL_STORAGE_FULL"
+            }
+            policy.bindChainOrigin(
+                chainId,
+                Json
+                    .parseToJsonElement(authority)
+                    .jsonObject
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("origin")
+                    .jsonPrimitive.content,
+            )
+        }
+        genesisCheckpoint?.let { checkpoint ->
+            check(keystore.pinInitialDeviceId(chainId, deviceId)) { "C_LOCAL_STORAGE_FULL" }
+            val anchor =
+                buildJsonObject {
+                    put("transparency_id", checkpoint.transparencyId)
+                    put("index", checkpoint.transparencyIndex)
+                    put("hash", checkpoint.transparencyHash)
+                }
+            check(keystore.pinInitialTransparency(chainId, anchor)) { "C_LOCAL_STORAGE_FULL" }
+        }
+    }
+
+    private suspend fun commitPreparedActivation(
+        prepared: PreparedJoin,
+        activatedState: ChainStateEntity,
+        aud: String,
+    ) {
+        val chainId = activatedState.chainId
+        val genesisCheckpoint = prepared.checkpoint
+        db.transaction {
+            check(db.dao.getChainState(chainId) == null) { "C_MISSING_DEPENDENCY" }
+            db.dao.updateChainState(activatedState)
+            genesisCheckpoint?.let { retainGenesisEvidence(chainId, aud, it) }
+            genesisCheckpoint?.authority?.toString()?.let { authority ->
+                db.protocolDao().commitAuthority(
+                    com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity(
+                        chainId,
+                        "checkpoint",
+                        crypto.objectHash(authority) ?: error("C_SCHEMA_VIOLATION"),
+                        activatedState.generation,
+                        authority,
+                        "current_checkpoint",
+                    ),
+                )
+            }
+        }
+    }
+
+    /** Original control objects and acceptance claims commit alongside the initial H5 state. */
+    private suspend fun retainGenesisEvidence(
+        chain: String,
+        origin: String,
+        checkpoint: PallaSyncGenesisCheckpoint,
+    ) {
+        val body = checkpoint.genesis ?: return
+        val envelopes = body.getValue("envelopes").jsonArray.map { it.jsonObject }
+        val objects =
+            listOf(
+                "parameters" to body.getValue("parameters"),
+                "device" to body.getValue("device_record"),
+                "envelope" to envelopes.single { it.getValue("recipient_kind").jsonPrimitive.content == "device" },
+                "envelope" to envelopes.single { it.getValue("recipient_kind").jsonPrimitive.content == "recovery" },
+                "epoch" to body.getValue("epoch"),
+            )
+        check(objects.size == checkpoint.receipts.size) { "C_ACCEPTANCE_UNPROVEN" }
+        objects.zip(checkpoint.receipts).forEach { (objectAndKind, receipt) ->
+            val (kind, value) = objectAndKind
+            val entry =
+                buildJsonObject {
+                    put("relay_seq", receipt.getValue("relay_seq"))
+                    put("received_at_ms", receipt.getValue("received_at_ms"))
+                    put("kind", kind)
+                    put("object", value)
+                    if (kind == "epoch") put("committed_at_ms", receipt.getValue("received_at_ms"))
+                }
+            check(crypto.objectHash(entry.toString()) == receipt.getValue("entry_hash").jsonPrimitive.content) { "C_LOG_HASH_MISMATCH" }
+            retainActivationLog(chain, checkpoint.logId, entry, receipt)
+            db.protocolDao().retainAuthority(
+                com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity(
+                    chain,
+                    "genesis_entry",
+                    checkNotNull(crypto.objectHash(entry.toString())),
+                    0,
+                    entry.toString(),
+                    "verified",
+                ),
+            )
+            db.protocolDao().retainEvidence(
+                ProtectedEvidenceEntity(
+                    origin,
+                    receipt.getValue("relay_key_id").jsonPrimitive.content,
+                    chain,
+                    checkpoint.logId,
+                    "upload_receipt",
+                    receipt
+                        .getValue("relay_seq")
+                        .jsonPrimitive.content
+                        .toLong(),
+                    checkNotNull(crypto.objectHash(receipt.toString())),
+                    receipt.toString(),
+                ),
+            )
+        }
+    }
+
+    private suspend fun retainActivationLog(
+        chain: String,
+        log: String,
+        entry: JsonObject,
+        receipt: JsonObject,
+    ) {
+        db.protocolDao().retainLogEntry(
+            com.yunfie.illustia.pallasync.data.LogEntryEntity(
+                chain,
+                log,
+                receipt.getValue("relay_seq").jsonPrimitive.long,
+                checkNotNull(crypto.objectHash(entry.toString())),
+                entry.toString(),
+                receipt.toString(),
+                "authority_verified",
+            ),
+        )
+    }
+
+    private data class PreparedJoin(
+        val keys: PallaSyncKeySnapshot,
+        val checkpoint: PallaSyncGenesisCheckpoint?,
+    )
+
+    private suspend fun prepareGenesis(
+        root: PallaSyncRootSession,
+        name: String,
+        base: HttpUrl,
+        origin: String,
+    ): PreparedJoin? {
+        val (body, keys) = prepareGenesisCandidate(root, name, origin)
+        // An exact durable retry gets a fresh audience/body-bound token; tokens are never journaled.
+        val token =
+            checkNotNull(root.token(origin, "POST", "/pallasync/v3/chains", body = body.toByteArray())) { "C_RECOVERY_AUTH_REQUIRED" }
+        val request =
+            Request
+                .Builder()
+                .url(PallaSyncUrls.chains(base))
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .header("Authorization", "PallaSync $token")
+                .post(body.toRequestBody(JSON_MEDIA_TYPE))
+                .build()
+        val response =
+            remote.execute(request) { result ->
+                val liveIdentity = root.identity
+                val publicIdentity =
+                    buildJsonObject {
+                        put("chain_id", liveIdentity.chainId)
+                        put("admin_public_key", liveIdentity.adminPublicKey)
+                    }.toString()
+                val checkpoint =
+                    PallaSyncCore.validateGenesisAcceptance(
+                        result.pallaSyncBytes(),
+                        body,
+                        publicIdentity,
+                        origin,
+                        policy.trustedRelayKey(origin),
+                    )
+                PallaSyncHttpResult.Success(json.decodeFromString<PallaSyncGenesisCheckpoint>(checkpoint))
+            }
+        return when (response) {
+            is PallaSyncHttpResult.Success -> PreparedJoin(keys, response.value)
+            else -> null.also { log("Genesis acceptance is unresolved; the exact request and candidate keys were retained") }
+        }
+    }
+
+    private fun prepareGenesisCandidate(
+        root: PallaSyncRootSession,
+        name: String,
+        origin: String,
+    ): Pair<String, PallaSyncKeySnapshot> {
+        val identity = root.identity
+        val stored = keystore.pendingGenesisRequest(identity.chainId, origin)
+        val body: String
+        val keys: PallaSyncKeySnapshot
+        if (stored != null) {
+            body = stored
+            keys = checkNotNull(keystore.getPendingChainKeys()) { "C_MISSING_DEPENDENCY" }
+            val request = json.parseToJsonElement(body).jsonObject
+            check(
+                request
+                    .getValue("parameters")
+                    .jsonObject
+                    .getValue("admin_public_key")
+                    .jsonPrimitive.content == identity.adminPublicKey &&
+                    request
+                        .getValue("device_record")
+                        .jsonObject
+                        .getValue("device_id")
+                        .jsonPrimitive.content == keys.deviceId,
+            ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        } else {
+            val prepared = crypto.createGenesisBundle(root, name, aud = origin).use { it.publicResult to it.snapshot() }
+            body = prepared.first.requestBody
+            keys = prepared.second
+            check(keystore.savePendingChainKeys(keys, body, origin)) { "C_LOCAL_STORAGE_FULL" }
+        }
+        check(keystore.getPendingChainKeys() == keys && keystore.pendingGenesisRequest(identity.chainId, origin) == body) {
+            "C_LOCAL_STORAGE_FULL"
+        }
+        return body to keys
+    }
+
+    private suspend fun prepareMnemonicEnrollment(
+        rootSession: PallaSyncRootSession,
+        deviceName: String,
+        baseUrl: HttpUrl,
+        aud: String,
+    ): PreparedJoin? =
+        try {
+            check(aud == PallaSyncUrls.extractOrigin(baseUrl)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val (keys, checkpoint) =
+                PallaSyncMnemonicEnrollment(db, remote, policy, keystore, crypto)
+                    .prepare(rootSession, deviceName, baseUrl)
+            PreparedJoin(keys, checkpoint)
+        } catch (failure: PallaSyncInitialHistory.Failure) {
+            log("Enrollment is unresolved (${failure.result::class.simpleName}); candidate keys and verified evidence were retained")
+            null
+        }
 
     suspend fun enqueueDataEvent(
         schema: String,
@@ -568,9 +917,26 @@ internal class PalleriaSyncCoordinator(
     override suspend fun enqueueDataEvents(events: List<PallaSyncPendingEvent>): Boolean {
         if (events.isEmpty()) return true
         return withContext(Dispatchers.IO) {
-            operationMutex.withLock { enqueueDataEventsLocked(events) }
+            operationMutex.withLock {
+                val retained = enqueueDataEventsLocked(events)
+                if (retained) resumeLocalIntentsLocked()
+                retained
+            }
         }
     }
+
+    /** Optional recovery audit must not be published into a concurrently selected different chain. */
+    internal suspend fun enqueueRecoveryAudit(
+        chainId: String,
+        event: PallaSyncPendingEvent,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                if (activeChainStateLocked()?.chainId != chainId) return@withLock false
+                check(event.schema == "pallasync.audit/3") { "C_RECOVERY_SHARE_INVALID" }
+                enqueueDataEventsLocked(listOf(event))
+            }
+        }
 
     override suspend fun <T> enqueueDataEventsThen(
         events: List<PallaSyncPendingEvent>,
@@ -578,69 +944,74 @@ internal class PalleriaSyncCoordinator(
     ): T =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
-                check(enqueueDataEventsLocked(events)) {
-                    "No matching active PallaSync chain/key exists"
-                }
-                afterEnqueue()
+                // An app without a bound chain edits locally. A paused/disabled bound chain journals first.
+                if (activeChainStateLocked() != null) check(enqueueDataEventsLocked(events)) { "C_LOCAL_STORAGE_FULL" }
+                val saved = afterEnqueue()
+                resumeLocalIntentsLocked()
+                saved
             }
         }
 
-    private suspend fun enqueueDataEventsLocked(events: List<PallaSyncPendingEvent>): Boolean {
-        val dao = db.pallaSyncDao()
-        var state = activeChainStateLocked() ?: return false
-        val keys = keysForChainLocked(state.chainId) ?: return false
-        val deviceId = keystore.getDeviceId() ?: return false
-        val outbox = mutableListOf<OutboxEntity>()
-        val status = if (state.initialPullCompleted) "queued" else "pending_initial_merge"
-
-        events.forEach { event ->
-            val lamport = state.lamport + 1
-            val operation =
-                PallaSyncOperation(
-                    entityId = event.entityId,
-                    operation = event.operation,
-                    lamport = lamport,
-                    createdAtMs = System.currentTimeMillis(),
-                    context = event.context,
-                    body = (event.body as? JsonObject) ?: JsonObject(emptyMap()),
-                )
-            val innerRecord =
-                PallaSyncInnerRecord(
-                    collection = event.schema,
-                    deviceSeq = lamport,
-                    prevRecordHash = null,
-                    operations = listOf(operation),
-                )
-            val recordJson =
-                crypto.createSyncRecord(
-                    chainId = state.chainId,
-                    generation = 0,
-                    recordId = newPallaSyncRecordId(),
-                    deviceId = deviceId,
-                    epoch = 0,
-                    collectionTag = null,
-                    innerRecordJson = json.encodeToString(innerRecord),
-                    recordKeyBase64 = keys.encryptionKeyBase64Url,
-                    signingKeyBase64 = keys.signingKeyBase64Url,
-                ) ?: error("Native sync record creation failed")
-            state = state.copy(lamport = lamport)
-            outbox +=
-                OutboxEntity(
-                    chainId = state.chainId,
-                    deviceSeq = lamport,
-                    status = status,
-                    eventJson = recordJson,
-                )
+    private suspend fun orderInitialEvents(
+        chain: String,
+        events: List<PallaSyncPendingEvent>,
+    ): List<PallaSyncPendingEvent> {
+        var tail = db.protocolDao().lastOrderedEntity(chain, FAVORITE_TAG_SCHEMA_V3)?.orderKey
+        return events.map { event ->
+            if (event.schema != FAVORITE_TAG_SCHEMA_V3 || event.operation != "upsert") return@map event
+            val live = db.protocolDao().liveEntityIds(chain, FAVORITE_TAG_SCHEMA_V3, listOf(event.entityId)).isNotEmpty()
+            val observed = if (live) db.protocolDao().entity(chain, FAVORITE_TAG_SCHEMA_V3, event.entityId)?.orderKey else null
+            val order = observed ?: PallaSyncFractionalOrder.between(tail, null).also { tail = it }
+            event.copy(context = buildJsonObject { put("order_key", order) }, favoriteOrder = null)
         }
-        dao.updateChainStateAndInsertOutboxEvents(state, outbox)
+    }
+
+    private suspend fun orderLocalEvents(
+        chain: String,
+        events: List<PallaSyncPendingEvent>,
+    ): List<PallaSyncPendingEvent> {
+        val order = events.mapNotNull { it.favoriteOrder }.firstOrNull()
+        val retained = mutableMapOf<String, String>()
+        order?.forEach { tag ->
+            db
+                .protocolDao()
+                .entity(chain, FAVORITE_TAG_SCHEMA_V3, tag)
+                ?.orderKey
+                ?.let { retained[tag] = it }
+        }
+        val tail = db.protocolDao().lastOrderedEntity(chain, FAVORITE_TAG_SCHEMA_V3)?.orderKey
+        return prepareFavoriteOrder(events, retained, tail)
+    }
+
+    private suspend fun enqueueDataEventsLocked(events: List<PallaSyncPendingEvent>): Boolean {
+        val state = activeChainStateLocked() ?: return false
+        localIntents.stage(state.chainId, events)
         return true
     }
 
-    /** Explicit delete succeeds only on 2xx/410; transient/protocol errors retain local keys. */
+    private suspend fun resumeLocalIntentsLocked() {
+        val state = activeChainStateLocked() ?: return
+        if (state.writeState == "active" && SettingsStore(appContext).read().pallaSyncEnabled) {
+            try {
+                requireProtectedAuthority(state.chainId)
+                val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                localIntents.resume(state.chainId, keys)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: IllegalStateException) {
+                val code = error.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_MISSING_DEPENDENCY"
+                log("$code: unsigned local intent was retained")
+            } catch (_: SQLiteException) {
+                log("C_LOCAL_STORAGE_FULL: unsigned local intent was retained")
+            }
+        }
+    }
+
+    /** §17.11: HTTP status alone never grants local erasure. */
     suspend fun deleteChain(callApi: Boolean = true): Boolean {
         return withContext(Dispatchers.IO) {
             operationMutex.withLock {
-                val activeChain = db.pallaSyncDao().getAllChainStates().singleOrNull()
+                val activeChain = db.pallaSyncDao().getActiveChainStates().singleOrNull()
                 if (activeChain == null) return@withLock true
                 if (!callApi) {
                     clearLocalChainLocked()
@@ -664,9 +1035,8 @@ internal class PalleriaSyncCoordinator(
                     is PallaSyncHttpResult.Success,
                     PallaSyncHttpResult.Gone,
                     -> {
-                        clearLocalChainLocked()
-                        log("PallaSync chain deleted")
-                        true
+                        goneLocked()
+                        false
                     }
 
                     is PallaSyncHttpResult.Retryable -> {
@@ -701,7 +1071,7 @@ internal class PalleriaSyncCoordinator(
                     PallaSyncHttpResult.Gone -> {
                         false.also {
                             if (db.pallaSyncDao().getActiveChainState()?.chainId == chainId) {
-                                clearLocalChainLocked()
+                                goneLocked()
                             }
                         }
                     }
@@ -722,7 +1092,7 @@ internal class PalleriaSyncCoordinator(
     suspend fun processOutbox(serverUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
             operationMutex.withLock {
-                val state = db.pallaSyncDao().getAllChainStates().singleOrNull() ?: return@withLock true
+                val state = db.pallaSyncDao().getActiveChainStates().singleOrNull() ?: return@withLock true
                 val baseUrl =
                     when (val normalized = PallaSyncUrls.normalize(serverUrl)) {
                         is PallaSyncHttpResult.Success -> normalized.value
@@ -730,7 +1100,7 @@ internal class PalleriaSyncCoordinator(
                     }
                 when (val result = processOutboxLocked(baseUrl, state.chainId)) {
                     is PallaSyncHttpResult.Success -> true
-                    PallaSyncHttpResult.Gone -> false.also { clearLocalChainLocked() }
+                    PallaSyncHttpResult.Gone -> false.also { goneLocked() }
                     is PallaSyncHttpResult.Retryable -> false.also { log(result.message) }
                     is PallaSyncHttpResult.ProtocolError -> false.also { log(result.message) }
                 }
@@ -745,6 +1115,7 @@ internal class PalleriaSyncCoordinator(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             operationMutex.withLock {
+                if (db.dao.getChainState(chainId)?.writeState != "active") return@withLock false
                 val baseUrl =
                     when (val normalized = PallaSyncUrls.normalize(serverUrl)) {
                         is PallaSyncHttpResult.Success -> normalized.value
@@ -775,15 +1146,12 @@ internal class PalleriaSyncCoordinator(
                         .build()
                 when (val result = executeRecordUpload(request, submitted)) {
                     is PallaSyncHttpResult.Success -> {
-                        result.value.rejected.isEmpty()
+                        val proof = proveUploadOutcome(baseUrl, chainId, result.value)
+                        proof is PallaSyncHttpResult.Success && result.value.rejected.isEmpty()
                     }
 
                     PallaSyncHttpResult.Gone -> {
-                        false.also {
-                            if (db.pallaSyncDao().getActiveChainState()?.chainId == chainId) {
-                                clearLocalChainLocked()
-                            }
-                        }
+                        unverifiedUploadDeletion(chainId)
                     }
 
                     else -> {
@@ -794,12 +1162,17 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    private suspend fun unverifiedUploadDeletion(chainId: String): Boolean {
+        if (db.dao.getActiveChainState()?.chainId == chainId) goneLocked()
+        return false
+    }
+
     private suspend fun synchronizeOnceLocked(baseUrlOverride: HttpUrl? = null): SyncCycleOutcome =
         GlitchTipTelemetry.traceAsync("pallasync.sync", "sync.operation") { tx ->
             val dao = db.pallaSyncDao()
             val chainState =
                 activeChainStateLocked() ?: run {
-                    keystore.clearPendingChainKeys()
+                    // An accepted or uncertain remote candidate survives a missing Room commit.
                     disableOrphanedEnabledFlag()
                     return@traceAsync SyncCycleOutcome.Idle
                 }
@@ -822,6 +1195,42 @@ internal class PalleriaSyncCoordinator(
                 log("Active PallaSync keys do not match the Room chain state")
                 return@traceAsync SyncCycleOutcome.ProtocolError
             }
+            if (policy.retry.remaining(PallaSyncUrls.extractOrigin(baseUrl)) > 0) return@traceAsync SyncCycleOutcome.Retryable
+
+            PallaSyncAuthorityCommit(db, keystore).recover(chainState.chainId)
+            if (db.dao.getChainState(chainState.chainId)?.writeState == "epoch_rebase_required") {
+                outboxRebase.resume(chainState.chainId, checkNotNull(keysForChainLocked(chainState.chainId)))
+            }
+            if (chainState.writeState == "active") {
+                localAuthor.append(chainState.chainId, checkNotNull(keysForChainLocked(chainState.chainId)), emptyList())
+            }
+
+            if (android.os.SystemClock.elapsedRealtime() >= nextProbeAt ||
+                foregroundRevision != PallaSyncSecretLifecycle.foregroundRevision
+            ) {
+                when (val checked = consistencyProbe.run(baseUrl, chainState.chainId)) {
+                    is PallaSyncHttpResult.Success -> {
+                        nextProbeAt =
+                            android.os.SystemClock.elapsedRealtime() + PROBE_INTERVAL_MS +
+                            kotlin.random.Random.nextLong(
+                                PROBE_JITTER_MS + 1,
+                            )
+                        foregroundRevision = PallaSyncSecretLifecycle.foregroundRevision
+                    }
+
+                    PallaSyncHttpResult.Gone -> {
+                        return@traceAsync goneLocked()
+                    }
+
+                    is PallaSyncHttpResult.Retryable -> {
+                        return@traceAsync SyncCycleOutcome.Retryable.also { log(checked.message) }
+                    }
+
+                    is PallaSyncHttpResult.ProtocolError -> {
+                        return@traceAsync SyncCycleOutcome.ProtocolError.also { log(checked.message) }
+                    }
+                }
+            }
 
             // Device validation/self-heal must happen before old queued records are
             // uploaded, otherwise a missing relay-side device can block forever on 400.
@@ -832,12 +1241,32 @@ internal class PalleriaSyncCoordinator(
                 is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(devices.message) }
                 is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also { log(devices.message) }
             }
+            resumeLocalIntentsLocked()
             val pushed = tx.span("sync.process_outbox") { processOutboxLocked(baseUrl, chainState.chainId) }
             when (pushed) {
                 is PallaSyncHttpResult.Success -> Unit
                 PallaSyncHttpResult.Gone -> return@traceAsync goneLocked()
                 is PallaSyncHttpResult.Retryable -> return@traceAsync SyncCycleOutcome.Retryable.also { log(pushed.message) }
                 is PallaSyncHttpResult.ProtocolError -> return@traceAsync SyncCycleOutcome.ProtocolError.also { log(pushed.message) }
+            }
+            val fullPrefix = liveHistory.pull(baseUrl, chainState.chainId, checkNotNull(keysForChainLocked(chainState.chainId)))
+            when (fullPrefix) {
+                is PallaSyncHttpResult.Success -> {
+                    epochStatus.read(chainState.chainId)
+                    projection.publish(chainState.chainId, db)
+                }
+
+                PallaSyncHttpResult.Gone -> {
+                    return@traceAsync goneLocked()
+                }
+
+                is PallaSyncHttpResult.Retryable -> {
+                    return@traceAsync SyncCycleOutcome.Retryable.also { log(fullPrefix.message) }
+                }
+
+                is PallaSyncHttpResult.ProtocolError -> {
+                    return@traceAsync SyncCycleOutcome.ProtocolError.also { log(fullPrefix.message) }
+                }
             }
             val pulled = tx.span("sync.pull_records") { pullRecordPagesLocked(baseUrl, chainState.chainId) }
             when (pulled) {
@@ -884,6 +1313,7 @@ internal class PalleriaSyncCoordinator(
                     }
                 }
             }
+            policy.retry.progress(PallaSyncUrls.extractOrigin(baseUrl))
             SyncCycleOutcome.Success
         }
 
@@ -901,9 +1331,7 @@ internal class PalleriaSyncCoordinator(
                     if (response.header("Content-Type")?.substringBefore(';')?.trim() != PALLASYNC_MEDIA_TYPE) {
                         return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response used an unexpected media type")
                     }
-                    val body =
-                        response.body?.string()
-                            ?: return@execute PallaSyncHttpResult.ProtocolError("PallaSync health response was empty")
+                    val body = PallaSyncCore.validateHealth(response.pallaSyncBytes(), PallaSyncUrls.extractOrigin(baseUrl))
                     parseHealthResponseBody(body, PallaSyncUrls.extractOrigin(baseUrl))
                 }
         ) {
@@ -933,17 +1361,13 @@ internal class PalleriaSyncCoordinator(
         path: String,
         query: String = "",
         bodyJson: String = "",
-        signerKind: String = "device",
     ): String? {
         val keys = keysForChainLocked(chainId)
-        val deviceId = keystore.getDeviceId()
-        if (keys == null || (signerKind == "device" && deviceId == null)) {
-            return null
-        }
+        val deviceId = keys?.deviceId ?: return null
         val aud = PallaSyncUrls.extractOrigin(baseUrl)
         return crypto.createCapabilityToken(
             chainId = chainId,
-            deviceId = if (signerKind == "device") deviceId else null,
+            deviceId = deviceId,
             method = method,
             path = path,
             query = query,
@@ -951,71 +1375,133 @@ internal class PalleriaSyncCoordinator(
             signingKeyBase64 = keys.signingKeyBase64Url,
             ttlMs = 120_000L,
             aud = aud,
-            signerKind = signerKind,
+            signerKind = "device",
         )
     }
 
-    private fun executeRecordUpload(
+    private suspend fun executeRecordUpload(
         request: Request,
         submitted: Map<String, JsonObject>,
-    ): PallaSyncHttpResult<PallaSyncPostRecordsResponse> =
-        remote.execute(request) { response ->
-            val body =
-                response.body?.string()
-                    ?: return@execute PallaSyncHttpResult.ProtocolError("Record upload response body was empty")
-            parseRecordUploadResponseBody(json, body, submitted)
+    ): PallaSyncHttpResult<PallaSyncPostRecordsResponse> {
+        val chainId =
+            submitted.values
+                .firstOrNull()
+                ?.get("chain_id")
+                ?.jsonPrimitive
+                ?.content
+        val state =
+            chainId?.let { db.pallaSyncDao().getChainState(it) }
+        val logId = state?.logId
+        if (chainId == null || logId == null) {
+            return PallaSyncHttpResult.ProtocolError(
+                if (chainId == null) "C_SCHEMA_VIOLATION" else "C_BOOTSTRAP_TRUST_REQUIRED",
+            )
         }
+        val origin = PallaSyncUrls.extractOrigin(request.url)
+        val pin =
+            buildJsonObject {
+                put("origin", origin)
+                put("chain_id", chainId)
+                put("public_key", policy.trustedRelayKey(origin))
+                put("log_id", logId)
+            }.toString()
+        return remote.execute(request) { response ->
+            val body =
+                response.pallaSyncBytes()
+            val verified = PallaSyncCore.validateRecordUpload(body, JsonArray(submitted.values.toList()).toString(), pin)
+            parseRecordUploadResponseBody(json, verified, submitted)
+        }
+    }
 
     private suspend fun processOutboxLocked(
         baseUrl: HttpUrl,
         chainId: String,
     ): PallaSyncHttpResult<Unit> {
+        PallaSyncAuthorityCommit(db, keystore).recover(chainId)
+        if (db.dao.getChainState(chainId)?.writeState != "active") return PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
+        val currentKeys = keysForChainLocked(chainId) ?: return PallaSyncHttpResult.ProtocolError("C_BOOTSTRAP_TRUST_REQUIRED")
+        val verified = liveHistory.pull(baseUrl, chainId, currentKeys)
+        if (verified !is PallaSyncHttpResult.Success) return verified
+        if (db.dao.getChainState(chainId)?.writeState != "active") return PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
         when (val health = refreshRelayHealth(baseUrl)) {
             is PallaSyncHttpResult.Success -> Unit
             else -> return health
         }
-        val dao = db.pallaSyncDao()
-        val events = dao.getQueuedEvents().filter { it.chainId == chainId }
+        // §11.1: one bounded pass. A later cycle resumes remaining immutable objects.
+        val events = db.dao.queuedBatch(chainId, PALLASYNC_PAGE_SIZE)
         var offset = 0
         while (offset < events.size) {
             val count = recordUploadBatchSize(events.drop(offset).map { it.eventJson }, relayLimits)
-            if (count == 0) return PallaSyncHttpResult.ProtocolError("Queued record exceeds the relay request limit; retained locally")
-            val batch = events.drop(offset).take(count)
-            val objects = batch.map { json.parseToJsonElement(it.eventJson).jsonObject }
-            val submitted = objects.associateBy { it["record_id"]!!.jsonPrimitive.content }
-            if (submitted.size !=
-                batch.size
-            ) {
-                return PallaSyncHttpResult.ProtocolError("Queued records contained duplicate IDs; retained locally")
-            }
-            val body = "{\"records\":${batch.joinToString(separator = ",", prefix = "[", postfix = "]") { it.eventJson }}}"
-            val path = "/pallasync/v3/chains/$chainId/records"
-            val token =
-                makeCapabilityToken(baseUrl, chainId, "POST", path, "", body)
-                    ?: return PallaSyncHttpResult.ProtocolError("Active PallaSync keys are missing")
-            val request =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.recordsEndpoint(baseUrl, chainId))
-                    .header("Accept", JSON_MEDIA_TYPE.toString())
-                    .header("Authorization", "PallaSync $token")
-                    .post(body.toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
-            val outcome =
-                when (val result = executeRecordUpload(request, submitted)) {
-                    is PallaSyncHttpResult.Success -> result.value
-                    PallaSyncHttpResult.Gone -> return PallaSyncHttpResult.Gone
-                    is PallaSyncHttpResult.Retryable -> return result
-                    is PallaSyncHttpResult.ProtocolError -> return result
-                }
-            val eventsById = batch.zip(objects).associate { (event, obj) -> obj["record_id"]!!.jsonPrimitive.content to event }
-            when (val reconciled = reconcileUploadOutcome(outcome, eventsById)) {
-                is PallaSyncHttpResult.Success -> Unit
-                else -> return reconciled
-            }
+            if (count == 0) return PallaSyncHttpResult.ProtocolError("C_LOCAL_LIMIT")
+            val result = uploadOutboxBatch(baseUrl, chainId, events.drop(offset).take(count))
+            if (result !is PallaSyncHttpResult.Success) return result
             offset += count
         }
         return PallaSyncHttpResult.Success(Unit)
+    }
+
+    private suspend fun uploadOutboxBatch(
+        base: HttpUrl,
+        chain: String,
+        events: List<OutboxEntity>,
+    ): PallaSyncHttpResult<Unit> {
+        val objects = events.map { json.parseToJsonElement(it.eventJson).jsonObject }
+        val submitted = objects.associateBy { it.getValue("record_id").jsonPrimitive.content }
+        check(validSubmittedBatch(objects, submitted)) { "C_SCHEMA_VIOLATION" }
+        val body = "{\"records\":${JsonArray(objects)}}"
+        val url = PallaSyncUrls.recordsEndpoint(base, chain)
+        val token = checkNotNull(makeCapabilityToken(base, chain, "POST", url.encodedPath, "", body)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .header("Authorization", "PallaSync $token")
+                .post(body.toRequestBody(JSON_MEDIA_TYPE))
+                .build()
+        return when (val result = executeRecordUpload(request, submitted)) {
+            is PallaSyncHttpResult.Success -> {
+                val proof = proveUploadOutcome(base, chain, result.value)
+                if (proof is PallaSyncHttpResult.Success) {
+                    val byId = events.zip(objects).associate { (event, obj) -> obj.getValue("record_id").jsonPrimitive.content to event }
+                    val reconciled = reconcileUploadOutcome(result.value, byId, PallaSyncUrls.extractOrigin(base))
+                    if (reconciled is PallaSyncHttpResult.Retryable) remote.defer(request, reconciled)
+                    reconciled
+                } else {
+                    proof
+                }
+            }
+
+            PallaSyncHttpResult.Gone -> {
+                PallaSyncHttpResult.Gone
+            }
+
+            is PallaSyncHttpResult.Retryable -> {
+                result.also { nextProbeAt = 0L }
+            }
+
+            is PallaSyncHttpResult.ProtocolError -> {
+                result
+            }
+        }
+    }
+
+    private suspend fun proveUploadOutcome(
+        base: HttpUrl,
+        chain: String,
+        outcome: PallaSyncPostRecordsResponse,
+    ): PallaSyncHttpResult<Unit> {
+        retainUploadEvidence(outcome, chain, PallaSyncUrls.extractOrigin(base))
+        val proof = consistencyProbe.run(base, chain)
+        if (proof !is PallaSyncHttpResult.Success) return proof
+        return try {
+            verifyUploadInclusions(outcome, chain, PallaSyncUrls.extractOrigin(base))
+            PallaSyncHttpResult.Success(Unit)
+        } catch (error: IllegalStateException) {
+            val code = error.message?.takeIf { it.startsWith("C_") } ?: "C_ACCEPTANCE_UNPROVEN"
+            if (code == "C_TRANSPARENCY_INVALID") db.dao.pauseIntegrityWrites(chain)
+            PallaSyncHttpResult.ProtocolError(code)
+        }
     }
 
     private fun validSubmittedBatch(
@@ -1028,26 +1514,120 @@ internal class PalleriaSyncCoordinator(
     private suspend fun reconcileUploadOutcome(
         outcome: PallaSyncPostRecordsResponse,
         eventsById: Map<String, OutboxEntity>,
+        origin: String,
     ): PallaSyncHttpResult<Unit> {
         val dao = db.pallaSyncDao()
-        outcome.accepted.forEach { dao.deleteOutboxEvent(eventsById.getValue(it.recordId).id) }
-        outcome.rejected.filterNot { it.retryable }.forEach {
-            dao.updateOutboxEvent(eventsById.getValue(it.recordId).copy(status = "rejected"))
+        val receipts = outcome.uploadReceipts.associateBy { it.getValue("object_hash").jsonPrimitive.content }
+        verifyUploadInclusions(outcome, eventsById.values.first().chainId, origin)
+        db.transaction {
+            outcome.accepted.forEach { accepted ->
+                val submitted = eventsById.getValue(accepted.recordId)
+                val hash = submitted.objectHash ?: error("C_ACCEPTANCE_UNPROVEN")
+                check(submitted.recordId == accepted.recordId && crypto.objectHash(submitted.eventJson) == hash) {
+                    "C_ACCEPTANCE_UNPROVEN"
+                }
+                val receipt = receipts.getValue(hash)
+                val receiptJson = receipt.toString()
+                val evidence =
+                    ProtectedEvidenceEntity(
+                        origin = origin,
+                        relayKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content,
+                        chainId = submitted.chainId,
+                        logId = outcome.logId,
+                        kind = "upload_receipt",
+                        sequence = accepted.receipt.relaySeq,
+                        objectHash = crypto.objectHash(receiptJson) ?: error("C_SCHEMA_VIOLATION"),
+                        signedJson = receiptJson,
+                    )
+                db.protocolDao().retainEvidence(evidence)
+                val present = dao.outboxEvent(submitted.id)
+                if (present != null) {
+                    check(present == submitted) { "C_RECORD_ID_CONFLICT" }
+                    check(dao.removeReceiptConfirmedOutbox(submitted.id, submitted.chainId, accepted.recordId, hash) == 1) {
+                        "C_ACCEPTANCE_UNPROVEN"
+                    }
+                }
+            }
+        }
+        val deferred = outcome.rejected.filter { it.status !in PALLASYNC_AUTOMATIC_RETRY_STATUSES }
+        deferred.forEach {
+            dao.updateOutboxEvent(eventsById.getValue(it.recordId).copy(status = "awaiting_reconciliation:${it.code}"))
         }
         if (outcome.accepted.isNotEmpty()) log("Uploaded ${outcome.accepted.size} accepted sync record(s)")
-        val details = outcome.rejected.joinToString { it.code }
-        return when {
-            outcome.rejected.isEmpty() -> {
-                PallaSyncHttpResult.Success(Unit)
-            }
+        val error = outcome.rejected.firstOrNull { it !in deferred } ?: outcome.rejected.firstOrNull()
+        return if (error == null) {
+            PallaSyncHttpResult.Success(Unit)
+        } else {
+            checkNotNull(classifyPallaSyncHttpStatus(error.status, PallaSyncProblemHint(error.status, error.code, error.retryable)))
+        }
+    }
 
-            outcome.rejected.any { it.retryable } -> {
-                PallaSyncHttpResult.Retryable("Relay rejected records ($details); unaccepted records were retained locally")
-            }
+    private suspend fun retainUploadEvidence(
+        outcome: PallaSyncPostRecordsResponse,
+        chainId: String,
+        origin: String,
+    ) {
+        outcome.uploadReceipts.forEach { receipt ->
+            db.protocolDao().retainEvidence(
+                ProtectedEvidenceEntity(
+                    origin,
+                    receipt.getValue("relay_key_id").jsonPrimitive.content,
+                    chainId,
+                    outcome.logId,
+                    "upload_receipt",
+                    receipt
+                        .getValue("relay_seq")
+                        .jsonPrimitive.content
+                        .toLong(),
+                    checkNotNull(crypto.objectHash(receipt.toString())),
+                    receipt.toString(),
+                ),
+            )
+            db.protocolDao().retainEvidence(
+                ProtectedEvidenceEntity(
+                    origin,
+                    receipt.getValue("relay_key_id").jsonPrimitive.content,
+                    chainId,
+                    outcome.logId,
+                    "record_acceptance",
+                    receipt.getValue("relay_seq").jsonPrimitive.long,
+                    receipt.getValue("object_hash").jsonPrimitive.content,
+                    receipt.toString(),
+                ),
+            )
+        }
+    }
 
-            else -> {
-                PallaSyncHttpResult.ProtocolError("Relay rejected records ($details); unaccepted records were retained locally")
-            }
+    private suspend fun verifyUploadInclusions(
+        outcome: PallaSyncPostRecordsResponse,
+        chainId: String,
+        origin: String,
+    ) {
+        val anchor = checkNotNull(keystore.transparencyPin(chainId)) { "C_ACCEPTANCE_UNPROVEN" }
+        val pin =
+            buildJsonObject {
+                put("origin", origin)
+                put("chain_id", chainId)
+                put("public_key", policy.trustedRelayKey(origin))
+                put("log_id", outcome.logId)
+            }.toString()
+        outcome.uploadReceipts.forEach { receipt ->
+            val items =
+                db.protocolDao().evidenceAt(
+                    origin,
+                    receipt.getValue("relay_key_id").jsonPrimitive.content,
+                    chainId,
+                    outcome.logId,
+                    "transparency",
+                    receipt
+                        .getValue("transparency_index")
+                        .jsonPrimitive.content
+                        .toLong(),
+                )
+            check(items.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
+            check(
+                PallaSyncCore.validateReceiptInclusion(receipt.toString(), items.single(), pin, anchor.toString()),
+            ) { "C_TRANSPARENCY_INVALID" }
         }
     }
 
@@ -1078,8 +1658,7 @@ internal class PalleriaSyncCoordinator(
                     val result =
                         remote.execute(request) { response ->
                             val body =
-                                response.body?.string()
-                                    ?: return@execute PallaSyncHttpResult.ProtocolError("Device response body was empty")
+                                response.pallaSyncText()
                             parseDevicesResponseBody(json, body)
                         }
                 ) {
@@ -1103,54 +1682,63 @@ internal class PalleriaSyncCoordinator(
         val keys =
             keysForChainLocked(chainId)
                 ?: return PallaSyncHttpResult.ProtocolError("Active PallaSync keys are missing")
-        val myDeviceId = keystore.getDeviceId()
+        val myDeviceId = keys.deviceId
+        val authority =
+            db.protocolDao().currentAuthority(chainId)
+                ?: return PallaSyncHttpResult.ProtocolError("C_BOOTSTRAP_TRUST_REQUIRED")
+        if (keystore.authorityHash(chainId) != crypto.objectHash(authority)) {
+            return PallaSyncHttpResult.ProtocolError("C_ROLLBACK_DETECTED")
+        }
         val activeDeviceIds = mutableSetOf<String>()
         var shouldSelfHeal = false
 
         registry.forEach { entry ->
             val rawDevice = entry.deviceRecord.toString()
+            val verified =
+                runCatching { json.parseToJsonElement(PallaSyncCore.validateKnownDevice(authority, rawDevice)).jsonObject }
+                    .getOrElse {
+                        val code = it.message?.takeIf { message -> message.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"
+                        crypto.objectHash(rawDevice)?.let { hash ->
+                            db.protocolDao().quarantine(QuarantineEvidenceEntity(chainId, hash, code, rawDevice, "unresolved"))
+                        }
+                        return@forEach
+                    }
             val device =
                 runCatching { json.decodeFromString<PallaSyncWireDevice>(rawDevice) }
                     .getOrElse {
                         log("Ignored a malformed device record")
                         return@forEach
                     }
-            if (device.chainId != chainId ||
-                (
-                    device.protocolVersion != PALLASYNC_PROTOCOL_VERSION &&
-                        device.protocolVersion != PALLASYNC_LEGACY_PROTOCOL_VERSION
-                )
-            ) {
+            if (device.chainId != chainId || device.protocolVersion != PALLASYNC_PROTOCOL_VERSION) {
                 log("Ignored a device record for the wrong chain or protocol")
                 return@forEach
             }
-            if (entry.status == "revoked") {
+            if (verified["revoked"]?.jsonPrimitive?.content == "true") {
                 if (device.deviceId == myDeviceId) return PallaSyncHttpResult.ProtocolError("The active device is revoked; sync paused")
                 return@forEach
             }
-            activeDeviceIds += device.deviceId
             if (!runCatching { crypto.verifyDeviceRecord(rawDevice) }.getOrDefault(false)) {
-                log("Ignored an invalid device signature for ${device.deviceId.take(8)}")
+                log("C_SIGNATURE_INVALID")
                 if (device.deviceId == myDeviceId) shouldSelfHeal = true
-                dao.insertDevice(
-                    PallaSyncDeviceEntity(
-                        deviceId = device.deviceId,
-                        chainId = chainId,
-                        deviceName = "Device ${device.deviceId.take(4)}",
-                        publicKey = device.devicePublicKey,
-                        joinedAtMs = device.createdAtMs,
-                    ),
-                )
+                crypto.objectHash(rawDevice)?.let { hash ->
+                    db.protocolDao().quarantine(QuarantineEvidenceEntity(chainId, hash, "C_SIGNATURE_INVALID", rawDevice, "unresolved"))
+                }
                 return@forEach
             }
+            activeDeviceIds += device.deviceId
 
             val decryptedName =
                 runCatching {
-                    crypto
-                        .decryptDeviceRecord(
-                            recordJson = rawDevice,
-                            deviceMetaKeyBase64 = keys.deviceMetaKeyBase64Url,
-                        )?.let { json.decodeFromString<PallaSyncDeviceMetaPlaintext>(it).name }
+                    PallaSyncEpochSession
+                        .begin(
+                            checkNotNull(keystore.keysForEpoch(keys, device.metaEpoch)) {
+                                "C_MISSING_DEPENDENCY"
+                            },
+                            authority,
+                            device.metaEpoch,
+                        ).use {
+                            json.decodeFromString<PallaSyncDeviceMetaPlaintext>(it.decryptDevice(rawDevice)).name
+                        }
                 }.getOrNull()
             if (decryptedName.isNullOrBlank() && device.deviceId == myDeviceId) {
                 shouldSelfHeal = true
@@ -1167,10 +1755,7 @@ internal class PalleriaSyncCoordinator(
         }
 
         if (myDeviceId != null && myDeviceId !in activeDeviceIds) shouldSelfHeal = true
-        dao
-            .getDevicesInChain(chainId)
-            .filterNot { it.deviceId in activeDeviceIds }
-            .forEach { dao.deleteDevice(it.deviceId) }
+        // §18.4: a mutable registry omission cannot erase historical verification keys.
 
         if (shouldSelfHeal && myDeviceId != null) {
             log("Device registration mismatch detected for this device ($myDeviceId)")
@@ -1210,6 +1795,18 @@ internal class PalleriaSyncCoordinator(
         chainId: String,
         afterSeq: Long,
     ): PallaSyncHttpResult<PallaSyncRecordsPage> {
+        val state =
+            db.pallaSyncDao().getChainState(chainId)
+        val logId = state?.logId
+        if (state == null || logId == null) return PallaSyncHttpResult.ProtocolError("C_BOOTSTRAP_TRUST_REQUIRED")
+        val origin = PallaSyncUrls.extractOrigin(baseUrl)
+        val pin =
+            buildJsonObject {
+                put("origin", origin)
+                put("chain_id", chainId)
+                put("public_key", policy.trustedRelayKey(origin))
+                put("log_id", logId)
+            }.toString()
         val path = "/pallasync/v3/chains/$chainId/records"
         val query = "after_seq=$afterSeq&limit=$PALLASYNC_PAGE_SIZE"
         val token = makeCapabilityToken(baseUrl, chainId, "GET", path, query, "")
@@ -1223,11 +1820,15 @@ internal class PalleriaSyncCoordinator(
         }
         val request = requestBuilder.get().build()
         return remote.execute(request) { response ->
-            val body =
-                response.body?.string()
-                    ?: return@execute PallaSyncHttpResult.ProtocolError("Relay page body was empty")
-
-            parseRecordsResponseBody(json, body, afterSeq)
+            val validated =
+                PallaSyncCore.validateRecordsPage(
+                    response.pallaSyncBytes(),
+                    pin,
+                    state.generation,
+                    afterSeq,
+                    PALLASYNC_PAGE_SIZE,
+                )
+            parseRecordsResponseBody(json, validated, afterSeq)
         }
     }
 
@@ -1242,12 +1843,21 @@ internal class PalleriaSyncCoordinator(
         val inboxRecords = mutableListOf<PallaSyncInboxEntity>()
         val decryptedCandidates = mutableListOf<DecryptedCandidate>()
         val pageRecordIds = mutableSetOf<String>()
+        val authority =
+            db.protocolDao().currentAuthority(chainId)
+                ?: return PallaSyncHttpResult.ProtocolError("C_BOOTSTRAP_TRUST_REQUIRED")
+        if (keystore.authorityHash(chainId) != crypto.objectHash(authority)) return PallaSyncHttpResult.ProtocolError("C_ROLLBACK_DETECTED")
 
         page.records.forEach { pageRecord ->
             val wire = pageRecord.wireRecord
             val recordId = wire?.recordId ?: malformedRecordId(pageRecord.rawJson)
             if (!pageRecordIds.add(recordId)) return@forEach
-            if (dao.hasInboxRecord(chainId, recordId)) return@forEach
+            val previous = dao.getInboxRecord(chainId, recordId)
+            if (previous?.status == "applied" &&
+                crypto.objectHash(previous.rawRecordJson) == crypto.objectHash(pageRecord.rawJson)
+            ) {
+                return@forEach
+            }
             val relaySeq = wire?.relaySeq ?: page.nextSeq
 
             fun quarantine(reason: String) {
@@ -1257,7 +1867,7 @@ internal class PalleriaSyncCoordinator(
                         recordId = recordId,
                         relaySeq = relaySeq,
                         rawJson = pageRecord.rawJson,
-                        status = "quarantined",
+                        status = validationState(reason),
                         reason = reason,
                     )
             }
@@ -1266,48 +1876,35 @@ internal class PalleriaSyncCoordinator(
                 quarantine(pageRecord.parseError ?: "Malformed sync record")
                 return@forEach
             }
-            if (wire.chainId != chainId ||
-                (
-                    wire.protocolVersion != PALLASYNC_PROTOCOL_VERSION &&
-                        wire.protocolVersion != PALLASYNC_LEGACY_PROTOCOL_VERSION
-                )
-            ) {
+            if (wire.chainId != chainId || wire.protocolVersion != PALLASYNC_PROTOCOL_VERSION) {
                 quarantine("Record chain or protocol did not match the active chain")
                 return@forEach
             }
-            val device = dao.getDeviceSync(wire.deviceId)
-            if (device == null || device.chainId != chainId || device.publicKey.isBlank()) {
-                quarantine("Record signer is not a valid device in the active chain")
+            val eligibility = runCatching { PallaSyncCore.validateRecordAuthority(authority, pageRecord.rawJson, relaySeq) }
+            if (eligibility.isFailure || eligibility.getOrDefault(false) != true) {
+                quarantine(eligibility.exceptionOrNull()?.message ?: "C_ACCEPTANCE_UNPROVEN")
                 return@forEach
             }
-            val signatureValid =
+            // Native authority validation already checks the retained certificate's
+            // signing key at this log position. Mutable device display status must
+            // not erase historical verification eligibility after revocation (§18.4).
+            val payloadResult =
                 runCatching {
-                    crypto.verifySyncRecord(pageRecord.rawJson, device.publicKey)
-                }.getOrDefault(false)
-            if (!signatureValid) {
-                quarantine("Record signature is invalid")
-                return@forEach
-            }
-            val payloadJson =
-                runCatching {
-                    crypto.decryptSyncRecord(pageRecord.rawJson, keys.encryptionKeyBase64Url)
-                }.getOrNull()
+                    val epochKeys = checkNotNull(keystore.keysForEpoch(keys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
+                    PallaSyncEpochSession.begin(epochKeys, authority, wire.epoch).use { it.decryptRecord(pageRecord.rawJson) }
+                }
+            val payloadJson = payloadResult.getOrNull()
             if (payloadJson.isNullOrBlank()) {
-                quarantine("Record payload could not be decrypted")
+                quarantine(payloadResult.exceptionOrNull()?.message?.takeIf { it.startsWith("C_") } ?: "C_SCHEMA_VIOLATION")
                 return@forEach
             }
-            val innerRecord = runCatching { json.decodeFromString<PallaSyncInnerRecord>(payloadJson) }.getOrNull()
-            val maxLamport =
-                if (innerRecord != null) {
-                    innerRecord.operations.maxOfOrNull { it.lamport } ?: 0L
-                } else {
-                    val payload = runCatching { json.decodeFromString<DataPayload>(payloadJson) }.getOrNull()
-                    if (payload == null || payload.lamport < 0L) {
-                        quarantine("Decrypted payload metadata was invalid")
+            val innerRecord =
+                runCatching { json.decodeFromString<PallaSyncInnerRecord>(payloadJson) }.getOrNull()
+                    ?: run {
+                        quarantine("C_SCHEMA_VIOLATION")
                         return@forEach
                     }
-                    payload.lamport
-                }
+            val maxLamport = innerRecord.operations.maxOf { it.lamport }
             decryptedCandidates +=
                 DecryptedCandidate(
                     recordId = recordId,
@@ -1318,47 +1915,14 @@ internal class PalleriaSyncCoordinator(
                 )
         }
 
-        val applyResults =
-            try {
-                recordProcessor.applyEvents(decryptedCandidates.map(DecryptedCandidate::payloadJson))
-            } catch (expectedFailure: Exception) {
-                val error = expectedFailure
-                return PallaSyncHttpResult.Retryable(
-                    "Local sync apply failed; relay cursor was retained: ${error.message}",
-                )
-            }
-        if (applyResults.size != decryptedCandidates.size) {
-            return PallaSyncHttpResult.ProtocolError("Sync applier returned an invalid result count")
-        }
-        decryptedCandidates.zip(applyResults).forEach { (candidate, result) ->
-            inboxRecords +=
-                when (result) {
-                    PallaSyncApplyResult.Applied -> {
-                        inboxRecord(
-                            chainId,
-                            candidate.recordId,
-                            candidate.relaySeq,
-                            candidate.rawRecordJson,
-                            status = "applied",
-                        )
-                    }
-
-                    is PallaSyncApplyResult.Quarantined -> {
-                        inboxRecord(
-                            chainId,
-                            candidate.recordId,
-                            candidate.relaySeq,
-                            candidate.rawRecordJson,
-                            status = "quarantined",
-                            reason = result.reason,
-                        )
-                    }
-                }
-        }
-
         try {
-            val maxLamport = decryptedCandidates.maxOfOrNull(DecryptedCandidate::lamport) ?: 0L
-            dao.commitInboxPage(chainId, page.nextSeq, maxLamport, inboxRecords)
+            db.transaction {
+                decryptedCandidates.forEach { candidate -> inboxRecords += materializeCandidate(chainId, page.logId, candidate) }
+                inboxRecords.filter { it.status == "quarantined" }.forEach { retainRecordQuarantine(it) }
+                // applyVerifiedRecord observed only accepted operations' clocks in this transaction.
+                dao.commitInboxPage(chainId, page.nextSeq, 0L, inboxRecords)
+            }
+            projection.publish(chainId, db)
         } catch (expectedFailure: Exception) {
             val error = expectedFailure
             return PallaSyncHttpResult.Retryable(
@@ -1368,141 +1932,83 @@ internal class PalleriaSyncCoordinator(
         return PallaSyncHttpResult.Success(Unit)
     }
 
-    suspend fun getDeviceViewHistory(deviceId: String): List<Illust> {
-        return withContext(Dispatchers.IO) {
-            operationMutex.withLock {
-                val state =
-                    db.pallaSyncDao().getAllChainStates().singleOrNull()
-                        ?: return@withLock emptyList()
-                val keys = keysForChainLocked(state.chainId) ?: return@withLock emptyList()
-                val baseUrl =
-                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
-                        is PallaSyncHttpResult.Success -> normalized.value
-                        else -> return@withLock emptyList()
-                    }
-                when (fetchDevicesLocked(baseUrl, state.chainId)) {
-                    is PallaSyncHttpResult.Success -> {
-                        Unit
-                    }
-
-                    PallaSyncHttpResult.Gone -> {
-                        clearLocalChainLocked()
-                        return@withLock emptyList()
-                    }
-
-                    else -> {
-                        return@withLock emptyList()
-                    }
-                }
-                val signer =
-                    db
-                        .pallaSyncDao()
-                        .getDeviceSync(deviceId)
-                        ?.takeIf { it.chainId == state.chainId }
-                        ?: return@withLock emptyList()
-
-                val history = linkedMapOf<Long, Illust>()
-                var afterSeq = 0L
-                do {
-                    val pageResult = fetchRecordsPage(baseUrl, state.chainId, afterSeq)
-                    if (pageResult == PallaSyncHttpResult.Gone) {
-                        clearLocalChainLocked()
-                        return@withLock emptyList()
-                    }
-                    if (pageResult !is PallaSyncHttpResult.Success) break
-                    val page = pageResult.value
-                    if (
-                        page.nextSeq < afterSeq ||
-                        (page.nextSeq == afterSeq && (page.hasMore || page.records.isNotEmpty()))
-                    ) {
-                        log("Stopped device-history paging on a non-advancing relay cursor")
-                        break
-                    }
-                    page.records.forEach { pageRecord ->
-                        val record = pageRecord.wireRecord ?: return@forEach
-                        val isCompatibleProtocol =
-                            record.protocolVersion == PALLASYNC_PROTOCOL_VERSION ||
-                                record.protocolVersion == PALLASYNC_LEGACY_PROTOCOL_VERSION
-                        if (record.chainId != state.chainId || !isCompatibleProtocol || record.deviceId != deviceId) {
-                            return@forEach
-                        }
-                        if (!runCatching {
-                                crypto.verifySyncRecord(pageRecord.rawJson, signer.publicKey)
-                            }.getOrDefault(false)
-                        ) {
-                            return@forEach
-                        }
-                        val decrypted =
-                            runCatching {
-                                crypto.decryptSyncRecord(pageRecord.rawJson, keys.encryptionKeyBase64Url)
-                            }.getOrNull() ?: return@forEach
-                        val innerRecord = runCatching { json.decodeFromString<PallaSyncInnerRecord>(decrypted) }.getOrNull()
-                        if (innerRecord != null) {
-                            if (innerRecord.collection in setOf(VIEW_HISTORY_SCHEMA_V1, VIEW_HISTORY_SCHEMA_V2, VIEW_HISTORY_SCHEMA_V3)) {
-                                innerRecord.operations.forEach { op ->
-                                    val payload =
-                                        DataPayload(
-                                            schema = innerRecord.collection,
-                                            entity_id = op.entityId,
-                                            operation = op.operation,
-                                            context = emptyMap(),
-                                            lamport = op.lamport,
-                                            created_at_ms = op.createdAtMs,
-                                            body = op.body,
-                                        )
-                                    applyViewHistoryPayload(history, payload)
-                                }
-                            }
-                        } else {
-                            val payload = runCatching { json.decodeFromString<DataPayload>(decrypted) }.getOrNull() ?: return@forEach
-                            if (payload.schema in setOf(VIEW_HISTORY_SCHEMA_V1, VIEW_HISTORY_SCHEMA_V2, VIEW_HISTORY_SCHEMA_V3)) {
-                                applyViewHistoryPayload(history, payload)
-                            }
-                        }
-                    }
-                    afterSeq = page.nextSeq
-                } while (page.hasMore)
-                history.values.toList().asReversed()
-            }
+    private suspend fun materializeCandidate(
+        chain: String,
+        log: String,
+        candidate: DecryptedCandidate,
+    ): PallaSyncInboxEntity {
+        val wire = json.decodeFromString<PallaSyncWireRecord>(candidate.rawRecordJson)
+        val inner = json.decodeFromString<PallaSyncInnerRecord>(candidate.payloadJson)
+        val event =
+            SignedEventEntity(
+                chain,
+                candidate.recordId,
+                log,
+                candidate.relaySeq,
+                checkNotNull(crypto.objectHash(candidate.rawRecordJson)),
+                candidate.rawRecordJson,
+                null,
+                "validated_object",
+            )
+        val conflict = db.protocolDao().recordConflict(event, wire.generation, wire.deviceId, inner)
+        if (conflict == null) {
+            db.protocolDao().applyVerifiedRecord(event, wire.generation, wire.deviceId, inner)
+            db.dao.resolveInboxRecord(chain, candidate.recordId, candidate.rawRecordJson, candidate.relaySeq)
         }
+        return inboxRecord(
+            chain,
+            candidate.recordId,
+            candidate.relaySeq,
+            candidate.rawRecordJson,
+            status = if (conflict == null) "applied" else "quarantined",
+            reason = conflict,
+        )
     }
 
-    private fun applyViewHistoryPayload(
-        history: LinkedHashMap<Long, Illust>,
-        payload: DataPayload,
-    ) {
-        when (payload.schema) {
-            VIEW_HISTORY_SCHEMA_V1 -> {
-                val viewed = (payload.body as? JsonObject)?.get("viewedIllusts") as? JsonArray ?: return
-                viewed.asReversed().forEach { element ->
-                    legacyIllust(element)?.let { illust ->
-                        history.remove(illust.id)
-                        history[illust.id] = illust
-                    }
-                }
-            }
+    private suspend fun retainRecordQuarantine(record: PallaSyncInboxEntity) {
+        db.protocolDao().quarantine(
+            QuarantineEvidenceEntity(
+                record.chainId,
+                checkNotNull(crypto.objectHash(record.rawRecordJson)),
+                record.quarantineReason ?: "C_SCHEMA_VIOLATION",
+                record.rawRecordJson,
+                "unresolved",
+            ),
+        )
+        if (record.quarantineReason in setOf("C_DEVICE_EQUIVOCATION", "C_RECORD_ID_CONFLICT")) db.dao.pauseIntegrityWrites(record.chainId)
+    }
 
-            VIEW_HISTORY_SCHEMA_V2, VIEW_HISTORY_SCHEMA_V3 -> {
-                if (!payload.entity_id.startsWith("viewed:")) return
-                val id = payload.entity_id.removePrefix("viewed:").toLongOrNull() ?: return
-                if (payload.operation == SYNC_OPERATION_DELETE) {
-                    history.remove(id)
-                    return
-                }
-                if (payload.operation != SYNC_OPERATION_UPSERT) return
-                val body =
-                    runCatching { json.decodeFromJsonElement<ViewedIllustBody>(payload.body) }.getOrNull()
-                        ?: return
-                if (body.id != id) return
-                history.remove(body.id)
-                history[body.id] = body.toIllust()
+    suspend fun getDeviceViewHistory(deviceId: String): List<Illust> = getDeviceHistoryPage(deviceId, null).items
+
+    suspend fun getDeviceHistoryPage(
+        deviceId: String,
+        cursor: com.yunfie.illustia.pallasync.data.HistoryCursor?,
+    ): PallaSyncHistoryPage =
+        withContext(Dispatchers.IO) {
+            db.transaction {
+                val state = checkNotNull(db.dao.getActiveChainState()) { "C_MISSING_DEPENDENCY" }
+                val deviceBytes = PallaSyncConflictResolver.key(0, "upsert", deviceId, deviceId, 0).deviceId
+                val page =
+                    db.protocolDao().historySlice(
+                        state.chainId,
+                        VIEW_HISTORY_SCHEMA_V3,
+                        "viewed",
+                        cursor,
+                        PALLASYNC_PAGE_SIZE,
+                        deviceBytes,
+                    )
+                val items =
+                    page.rows.map { row ->
+                        val entity = checkNotNull(db.protocolDao().entity(state.chainId, VIEW_HISTORY_SCHEMA_V3, row.entityId))
+                        json.decodeFromString<ViewedIllustBody>(entity.bodyJson).toIllust()
+                    }
+                PallaSyncHistoryPage(items, page.next, !state.initialPullCompleted || state.materializedSeq < state.downloadedSeq)
             }
         }
-    }
 
     private suspend fun goneLocked(): SyncCycleOutcome {
-        clearLocalChainLocked()
-        log("The active PallaSync chain is gone; local chain material was cleared")
+        stopBackgroundSync()
+        log("C_DELETION_UNVERIFIED: signed deletion authority is required; keys, state and outbox were retained")
         return SyncCycleOutcome.Gone
     }
 
@@ -1516,7 +2022,7 @@ internal class PalleriaSyncCoordinator(
             val error = expectedFailure
             log("Chain data was cleared, but the enabled flag could not be updated: ${error.message}")
         }
-        // Cancel only after durable cleanup. A 410 may be handled by the poll job itself.
+        // Cancel after the explicitly requested local cleanup is durable.
         stopBackgroundSync()
     }
 
@@ -1535,64 +2041,41 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
-    private fun createInitialOutbox(
-        state: ChainStateEntity,
-        keys: PallaSyncKeySnapshot,
-        deviceId: String,
+    private fun prepareFavoriteOrder(
         events: List<PallaSyncPendingEvent>,
-        status: String,
-    ): Pair<ChainStateEntity, List<OutboxEntity>> {
-        var nextState = state
-        val outbox =
-            events.map { event ->
-                val lamport = nextState.lamport + 1
-                val operation =
-                    PallaSyncOperation(
-                        entityId = event.entityId,
-                        operation = event.operation,
-                        lamport = lamport,
-                        createdAtMs = System.currentTimeMillis(),
-                        context = event.context,
-                        body = (event.body as? JsonObject) ?: JsonObject(emptyMap()),
-                    )
-                val innerRecord =
-                    PallaSyncInnerRecord(
-                        collection = event.schema,
-                        deviceSeq = lamport,
-                        prevRecordHash = null,
-                        operations = listOf(operation),
-                    )
-                val recordJson =
-                    crypto.createSyncRecord(
-                        chainId = state.chainId,
-                        generation = 0,
-                        recordId = newPallaSyncRecordId(),
-                        deviceId = deviceId,
-                        epoch = 0,
-                        collectionTag = null,
-                        innerRecordJson = json.encodeToString(innerRecord),
-                        recordKeyBase64 = keys.encryptionKeyBase64Url,
-                        signingKeyBase64 = keys.signingKeyBase64Url,
-                    ) ?: error("Native sync record creation failed")
-                nextState = nextState.copy(lamport = lamport)
-                OutboxEntity(
-                    chainId = state.chainId,
-                    deviceSeq = lamport,
-                    status = status,
-                    eventJson = recordJson,
+        retained: Map<String, String>,
+        appendAfter: String? = null,
+    ): List<PallaSyncPendingEvent> {
+        val order = events.mapNotNull { it.favoriteOrder }.firstOrNull() ?: return events
+        check(events.mapNotNull { it.favoriteOrder }.all { it == order }) { "C_SCHEMA_VIOLATION" }
+        val changed =
+            events.filter { it.schema == FAVORITE_TAG_SCHEMA_V3 && it.operation == "upsert" }.mapTo(
+                mutableSetOf(),
+            ) { it.entityId }
+        val keys = PallaSyncFractionalOrder.place(order, changed, retained, appendAfter)
+        return events.map { event ->
+            if (event.schema == FAVORITE_TAG_SCHEMA_V3 && event.operation == "upsert") {
+                event.copy(
+                    context =
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("order_key", kotlinx.serialization.json.JsonPrimitive(keys.getValue(event.entityId)))
+                        },
+                    favoriteOrder = null,
                 )
+            } else {
+                event
             }
-        return nextState to outbox
+        }
     }
 
     /**
      * Resolves the only key snapshot that is allowed to sign/decrypt [chainId].
      * A staged join survives process death: it is promoted when Room already
-     * points at the candidate, or discarded when Room still points at the old chain.
+     * points at the candidate, and retained for reconciliation when Room still points at the old chain.
      */
     private suspend fun activeChainStateLocked(): ChainStateEntity? {
         val dao = db.pallaSyncDao()
-        val states = dao.getAllChainStates()
+        val states = dao.getActiveChainStates()
         if (states.size <= 1) return states.singleOrNull()
 
         val pendingChainId = keystore.getPendingChainKeys()?.chainId
@@ -1608,8 +2091,9 @@ internal class PalleriaSyncCoordinator(
     }
 
     private fun keysForChainLocked(chainId: String): PallaSyncKeySnapshot? {
+        val identity = keystore.boundDeviceId(chainId) ?: return null
         val pending = keystore.getPendingChainKeys()
-        if (pending?.chainId == chainId) {
+        if (pending?.chainId == chainId && pending.deviceId == identity) {
             if (keystore.promotePendingChainKeys()) {
                 return keystore.getActiveChainKeys()
             }
@@ -1618,9 +2102,9 @@ internal class PalleriaSyncCoordinator(
 
         val active = keystore.getActiveChainKeys() ?: return null
         val resolvedChainId = resolvedSnapshotChainId(active)
-        if (resolvedChainId != chainId) return null
+        if (resolvedChainId != chainId || active.deviceId != identity) return null
 
-        if (pending != null) keystore.clearPendingChainKeys()
+        // An uncertain remote join retains its candidate even when another chain is active.
         if (active.chainId == null) {
             val upgraded = active.copy(chainId = resolvedChainId)
             if (keystore.saveActiveChainKeys(upgraded)) return upgraded
@@ -1628,12 +2112,7 @@ internal class PalleriaSyncCoordinator(
         return active.copy(chainId = resolvedChainId)
     }
 
-    private fun resolvedSnapshotChainId(snapshot: PallaSyncKeySnapshot): String? {
-        return snapshot.chainId ?: runCatching {
-            val derived = crypto.deriveRootKeys(snapshot.seedPhrase, "") ?: return@runCatching null
-            json.parseToJsonElement(derived).jsonObject.string("chain_id")
-        }.getOrNull()
-    }
+    private fun resolvedSnapshotChainId(snapshot: PallaSyncKeySnapshot): String? = snapshot.chainId
 
     private fun inboxRecord(
         chainId: String,
@@ -1665,46 +2144,7 @@ internal class PalleriaSyncCoordinator(
             ?: UUID.nameUUIDFromBytes(rawJson.toByteArray(Charsets.UTF_8)).toString()
     }
 
-    private fun legacyIllust(element: JsonElement): Illust? {
-        val item = element as? JsonObject ?: return null
-        val id = item["id"]?.jsonPrimitive?.content?.toLongOrNull() ?: return null
-        return Illust(
-            id = id,
-            title = item.string("title").orEmpty(),
-            type = item.string("type") ?: "illust",
-            caption = "",
-            artistId = 0,
-            artistName = item.string("artistName").orEmpty(),
-            artistAvatarUrl = null,
-            squareImageUrl = item.string("imageUrl").orEmpty(),
-            mediumImageUrl = item.string("imageUrl").orEmpty(),
-            imageUrl = item.string("imageUrl").orEmpty(),
-            originalImageUrl = null,
-            tags = emptyList(),
-            pageCount = item["pageCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 1,
-            isBookmarked = false,
-        )
-    }
-
-    private fun ViewedIllustBody.toIllust() =
-        Illust(
-            id = id,
-            title = title,
-            type = type,
-            caption = "",
-            artistId = 0,
-            artistName = artistName,
-            artistAvatarUrl = null,
-            squareImageUrl = imageUrl,
-            mediumImageUrl = imageUrl,
-            imageUrl = imageUrl,
-            originalImageUrl = null,
-            tags = tags,
-            pageCount = pageCount,
-            isBookmarked = isBookmarked,
-            xRestrict = xRestrict,
-            illustAiType = illustAiType,
-        )
+    private fun ViewedIllustBody.toIllust() = illust()
 
     private fun JsonObject.string(name: String): String? = this[name]?.jsonPrimitive?.content?.takeIf(String::isNotBlank)
 

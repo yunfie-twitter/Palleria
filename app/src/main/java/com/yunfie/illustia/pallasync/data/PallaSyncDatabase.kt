@@ -13,14 +13,32 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ChainStateEntity::class,
         PallaSyncDeviceEntity::class,
         PallaSyncInboxEntity::class,
+        RegistryHistoryEntity::class,
+        EpochKeyEntity::class,
+        SignedEventEntity::class,
+        AuthorSequenceEntity::class,
+        EntityRegisterEntity::class,
+        ScopeRegisterEntity::class,
+        HistoryIndexEntity::class,
+        QuarantineEvidenceEntity::class,
+        SnapshotPartEntity::class,
+        ProtectedEvidenceEntity::class,
+        AuthorityHistoryEntity::class,
+        MigrationJournalEntity::class,
+        ProjectionStateEntity::class,
+        LogEntryEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
     abstract fun pallaSyncDao(): PallaSyncDao
 
+    abstract fun protocolDao(): ProtocolDao
+
     companion object {
+        private const val MIGRATION_TARGET_VERSION = 3
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -32,8 +50,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             context.applicationContext,
                             PallaSyncDatabase::class.java,
                             "pallasync_database",
-                        ).addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-                        .fallbackToDestructiveMigrationFrom(1, 2)
+                        ).addMigrations(MIGRATION_1_3, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, ProtocolMigration)
                         .build()
                 INSTANCE = instance
                 instance
@@ -86,6 +103,32 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                         ON pallasync_inbox(chain_id, status)
                         """.trimIndent(),
                     )
+                }
+            }
+
+        /** Retain old tables/data. Unknown legacy layouts fail closed without a destructive fallback. */
+        val MIGRATION_1_3 = legacyMigration(1)
+        val MIGRATION_2_3 = legacyMigration(2)
+
+        private fun legacyMigration(version: Int) =
+            object : Migration(version, MIGRATION_TARGET_VERSION) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    val columns = mutableSetOf<String>()
+                    db.query("PRAGMA table_info(pallasync_chain_state)").use { cursor ->
+                        val name = cursor.getColumnIndexOrThrow("name")
+                        while (cursor.moveToNext()) columns += cursor.getString(name)
+                    }
+                    check(columns.containsAll(setOf("chainId", "lamport", "key_epoch", "chain_vector_json"))) { "C_SCHEMA_VIOLATION" }
+                    if ("latest_control_seq" !in
+                        columns
+                    ) {
+                        db.execSQL("ALTER TABLE pallasync_chain_state ADD COLUMN latest_control_seq INTEGER NOT NULL DEFAULT 0")
+                    }
+                    if ("prev_control_hash" !in
+                        columns
+                    ) {
+                        db.execSQL("ALTER TABLE pallasync_chain_state ADD COLUMN prev_control_hash TEXT NOT NULL DEFAULT ''")
+                    }
                 }
             }
 

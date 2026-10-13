@@ -23,6 +23,7 @@ android {
         targetSdk = 36
         versionCode = 166
         versionName = "7.0.0-beta.3"
+        testInstrumentationRunner = "com.yunfie.illustia.pallasync.PallaSyncTestRunner"
     }
 
     signingConfigs {
@@ -422,6 +423,13 @@ dependencies {
     testImplementation libs.androidx.test.core
     testImplementation libs.robolectric
     testRuntimeOnly libs.junit.vintage
+    androidTestImplementation libs.androidx.test.core
+    androidTestImplementation libs.androidx.test.junit
+    androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.espresso.core
+    androidTestImplementation libs.uiautomator
+    androidTestImplementation platform(libs.compose.bom)
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4"
 }
 
 

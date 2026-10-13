@@ -10,6 +10,7 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.pallasync.PallaSyncSecretLifecycle
 import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
@@ -89,6 +90,7 @@ class IllustiaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        PallaSyncSecretLifecycle.install()
         CrashHandler.instance.init(this)
         appScope.launch {
             val startupSettings = repository.readStartupSettings()

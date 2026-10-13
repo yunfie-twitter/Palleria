@@ -1,0 +1,658 @@
+//! §§7.12/17.3/17.9. Relay commitments authenticate storage claims, not client authority.
+use crate::{
+    client_error::{ClientError, Result},
+    public_wire::{self as wire, a, fields, n, s},
+    strict::{jcs, verify::*},
+};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use serde_json::json;
+use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, HashSet};
+
+fn schema() -> ClientError {
+    ClientError("C_SCHEMA_VIOLATION")
+}
+fn require(condition: bool, code: &'static str) -> Result {
+    if condition {
+        Ok(())
+    } else {
+        Err(ClientError(code))
+    }
+}
+
+/// Protected local pin. Never populated from an unconfirmed response or error hint.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RelayPin {
+    pub origin: String,
+    pub chain_id: String,
+    pub public_key: String,
+    pub log_id: String,
+}
+impl RelayPin {
+    pub fn validate(&self) -> Result {
+        require(
+            self.origin.starts_with("https://")
+                && crate::crypto::normalize_origin(&self.origin)
+                    .ok()
+                    .as_deref()
+                    == Some(&self.origin),
+            "C_RELAY_KEY_MISMATCH",
+        )?;
+        require(
+            valid_ed_key(&self.public_key)
+                && decode(&self.chain_id, Some(32)).is_ok()
+                && wire::uuid(&self.log_id),
+            "C_RELAY_KEY_MISMATCH",
+        )
+    }
+    pub fn key_id(&self) -> Result<String> {
+        Ok(hash_bytes(
+            &decode(&self.public_key, Some(32)).map_err(|_| schema())?,
+        ))
+    }
+    fn verify(&self, value: &Value, context: &[u8]) -> Result {
+        self.validate()?;
+        require(
+            s(value, "chain_id") == self.chain_id && s(value, "log_id") == self.log_id,
+            "C_LOG_HASH_MISMATCH",
+        )?;
+        require(
+            s(value, "relay_key_id") == self.key_id()?,
+            "C_RELAY_KEY_MISMATCH",
+        )?;
+        require(
+            verify_signature(
+                &self.public_key,
+                s(value, "relay_signature"),
+                &signing_bytes(value, context, "relay_signature"),
+            )
+            .unwrap_or(false),
+            "C_SIGNATURE_INVALID",
+        )
+    }
+}
+
+fn link(previous: &str, index: u64, hash: &str, context: &[u8]) -> Result<String> {
+    let mut digest = Sha256::new();
+    digest.update(context);
+    digest.update(decode(previous, Some(32)).map_err(|_| schema())?);
+    digest.update(index.to_be_bytes());
+    digest.update(decode(hash, Some(32)).map_err(|_| schema())?);
+    Ok(hash_bytes_raw(&digest.finalize()))
+}
+fn hash_bytes_raw(value: &[u8]) -> String {
+    use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+    URL_SAFE_NO_PAD.encode(value)
+}
+pub fn data_zero(chain: &str, log: &str) -> Result<String> {
+    let mut input = b"PALLASYNC-LOG-v3\0".to_vec();
+    input.extend(decode(chain, Some(32)).map_err(|_| schema())?);
+    input.extend(uuid::Uuid::parse_str(log).map_err(|_| schema())?.as_bytes());
+    require(wire::uuid(log), "C_SCHEMA_VIOLATION")?;
+    Ok(hash_bytes(&input))
+}
+pub fn transparency_zero(chain: &str, id: &str, key_id: &str) -> Result<String> {
+    let mut input = b"PALLASYNC-TRANSPARENCY-v3\0".to_vec();
+    input.extend(decode(chain, Some(32)).map_err(|_| schema())?);
+    input.extend(uuid::Uuid::parse_str(id).map_err(|_| schema())?.as_bytes());
+    input.extend(decode(key_id, Some(32)).map_err(|_| schema())?);
+    require(wire::uuid(id), "C_SCHEMA_VIOLATION")?;
+    Ok(hash_bytes(&input))
+}
+pub fn validate_log_entry(entry: &Value) -> Result {
+    fields(
+        entry,
+        &[
+            ("relay_seq", "int"),
+            ("received_at_ms", "int"),
+            (
+                "kind",
+                "parameters|device|epoch|envelope|compaction|admin|record",
+            ),
+            ("object", "object"),
+        ],
+        &[("committed_at_ms", "int")],
+    )?;
+    require(
+        n(entry, "relay_seq") > 0
+            && (s(entry, "kind") == "epoch") == entry.get("committed_at_ms").is_some(),
+        "C_SCHEMA_VIOLATION",
+    )?;
+    if s(entry, "kind") == "epoch" {
+        require(
+            entry["committed_at_ms"] == entry["received_at_ms"],
+            "C_SCHEMA_VIOLATION",
+        )?;
+    }
+    wire::validate(&entry["object"], s(entry, "kind"))
+}
+pub fn data_link(previous: &str, entry: &Value) -> Result<String> {
+    validate_log_entry(entry)?;
+    link(previous, n(entry, "relay_seq"), &object_hash(entry), b"")
+}
+
+pub fn validate_receipt(receipt: &Value, pin: &RelayPin) -> Result {
+    fields(
+        receipt,
+        &[
+            ("type", "PALLASYNC-UPLOAD-RECEIPT-v3"),
+            ("version", "3.0"),
+            ("receipt_id", "uuid"),
+            ("chain_id", "b32"),
+            ("log_id", "uuid"),
+            ("relay_key_id", "b32"),
+            ("relay_seq", "int?"),
+            ("object_hash", "b32"),
+            ("entry_hash", "b32?"),
+            ("previous_head_hash", "b32"),
+            ("resulting_head_hash", "b32"),
+            ("received_at_ms", "int"),
+            ("transparency_id", "uuid"),
+            ("transparency_index", "int"),
+            ("transparency_hash", "b32"),
+            ("relay_signature", "b64"),
+        ],
+        &[],
+    )?;
+    require(
+        n(receipt, "transparency_index") > 0
+            && receipt["relay_seq"].is_null() == receipt["entry_hash"].is_null()
+            && (receipt["relay_seq"].is_null() || n(receipt, "relay_seq") > 0),
+        "C_SCHEMA_VIOLATION",
+    )?;
+    pin.verify(receipt, CTX_RECEIPT)
+}
+/// Validates the exact submitted object and the complete original LogEntry.
+/// Inclusion in a pinned prefix is a separate operation; callers retain this evidence.
+pub fn verify_receipt(
+    receipt: &Value,
+    object: &Value,
+    entry: Option<&Value>,
+    pin: &RelayPin,
+) -> Result {
+    validate_receipt(receipt, pin)?;
+    require(
+        s(receipt, "object_hash") == object_hash(object) && s(object, "chain_id") == pin.chain_id,
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+    match entry {
+        Some(entry) => {
+            validate_log_entry(entry)?;
+            require(
+                entry["object"] == *object
+                    && receipt["relay_seq"] == entry["relay_seq"]
+                    && receipt["received_at_ms"] == entry["received_at_ms"]
+                    && s(receipt, "entry_hash") == object_hash(entry),
+                "C_ACCEPTANCE_UNPROVEN",
+            )?;
+            require(
+                data_link(s(receipt, "previous_head_hash"), entry)?
+                    == s(receipt, "resulting_head_hash"),
+                "C_LOG_HASH_MISMATCH",
+            )
+        }
+        None => {
+            wire::validate(object, "record")?;
+            require(
+                receipt["relay_seq"].is_null()
+                    && receipt["entry_hash"].is_null()
+                    && receipt["previous_head_hash"] == receipt["resulting_head_hash"],
+                "C_ACCEPTANCE_UNPROVEN",
+            )
+        }
+    }
+}
+pub fn validate_transparency(entry: &Value, pin: &RelayPin) -> Result {
+    fields(
+        entry,
+        &[
+            ("type", "PALLASYNC-TRANSPARENCY-ENTRY-v3"),
+            ("version", "3.0"),
+            ("transparency_id", "uuid"),
+            ("entry_index", "int"),
+            ("chain_id", "b32"),
+            ("log_id", "uuid"),
+            ("relay_key_id", "b32"),
+            ("operation", "accept|reject|prune|delete|migrate"),
+            ("object_hash", "b32"),
+            ("relay_seq", "int?"),
+            ("resulting_head_hash", "b32"),
+            ("previous_transparency_hash", "b32"),
+            ("timestamp", "int"),
+            ("code", "string?"),
+            ("relay_signature", "b64"),
+        ],
+        &[],
+    )?;
+    require(
+        n(entry, "entry_index") > 0 && (entry["relay_seq"].is_null() || n(entry, "relay_seq") > 0),
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    match s(entry, "operation") {
+        "accept" => require(entry["code"].is_null(), "C_TRANSPARENCY_INVALID")?,
+        "reject" => require(
+            entry["relay_seq"].is_null()
+                && crate::error_catalogue::known(s(entry, "code"))
+                && !s(entry, "code").starts_with("C_"),
+            "C_TRANSPARENCY_INVALID",
+        )?,
+        _ => require(
+            entry["relay_seq"].is_null() && entry["code"].is_null(),
+            "C_TRANSPARENCY_INVALID",
+        )?,
+    }
+    pin.verify(entry, CTX_TRANSPARENCY)
+}
+pub fn transparency_link(previous: &str, entry: &Value, pin: &RelayPin) -> Result<String> {
+    validate_transparency(entry, pin)?;
+    require(
+        s(entry, "previous_transparency_hash") == previous,
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    link(
+        previous,
+        n(entry, "entry_index"),
+        &object_hash(entry),
+        b"PALLASYNC-TRANSPARENCY-LINK-v3\0",
+    )
+}
+pub fn verify_receipt_transparency(receipt: &Value, entry: &Value, pin: &RelayPin) -> Result {
+    validate_receipt(receipt, pin)?;
+    validate_transparency(entry, pin)?;
+    for (r, e) in [
+        ("transparency_id", "transparency_id"),
+        ("transparency_index", "entry_index"),
+        ("object_hash", "object_hash"),
+        ("relay_seq", "relay_seq"),
+        ("resulting_head_hash", "resulting_head_hash"),
+    ] {
+        require(receipt[r] == entry[e], "C_TRANSPARENCY_INVALID")?;
+    }
+    require(
+        s(entry, "operation") == "accept"
+            && transparency_link(s(entry, "previous_transparency_hash"), entry, pin)?
+                == s(receipt, "transparency_hash"),
+        "C_TRANSPARENCY_INVALID",
+    )
+}
+pub fn validate_head(head: &Value, pin: &RelayPin) -> Result {
+    fields(
+        head,
+        &[
+            ("type", "PALLASYNC-TRANSPARENCY-HEAD-v3"),
+            ("version", "3.0"),
+            ("chain_id", "b32"),
+            ("log_id", "uuid"),
+            ("relay_key_id", "b32"),
+            ("transparency_id", "uuid"),
+            ("entry_index", "int"),
+            ("transparency_hash", "b32"),
+            ("head_seq", "int"),
+            ("head_hash", "b32"),
+            ("parameters_hash", "b32"),
+            ("epoch_hash", "b32"),
+            ("min_available_seq", "int"),
+            ("timestamp", "int"),
+            ("relay_signature", "b64"),
+        ],
+        &[],
+    )?;
+    pin.verify(head, CTX_HEAD)?;
+    require(
+        n(head, "min_available_seq") > 0
+            && n(head, "min_available_seq") <= n(head, "head_seq").saturating_add(1),
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    if n(head, "entry_index") == 0 {
+        require(
+            s(head, "transparency_hash")
+                == transparency_zero(&pin.chain_id, s(head, "transparency_id"), &pin.key_id()?)?,
+            "C_TRANSPARENCY_INVALID",
+        )?;
+    }
+    if n(head, "head_seq") == 0 {
+        require(
+            s(head, "head_hash") == data_zero(&pin.chain_id, &pin.log_id)?,
+            "C_LOG_HASH_MISMATCH",
+        )?;
+    }
+    Ok(())
+}
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TransparencyAnchor {
+    pub transparency_id: String,
+    pub index: u64,
+    pub hash: String,
+}
+/// At most one page in RAM. The caller atomically saves entries and the returned anchor.
+/// An empty/missing suffix is pending, never a verified advance.
+pub fn verify_transparency_page(
+    anchor: &TransparencyAnchor,
+    entries: &[Value],
+    target: &Value,
+    pin: &RelayPin,
+) -> Result<TransparencyAnchor> {
+    validate_head(target, pin)?;
+    require(
+        anchor.index <= jcs::MAX_INTEGER
+            && decode(&anchor.hash, Some(32)).is_ok()
+            && anchor.transparency_id == s(target, "transparency_id")
+            && anchor.index <= n(target, "entry_index"),
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    require(
+        entries.len() <= 1000
+            && jcs::canonicalize_json(&Value::Array(entries.to_vec()))
+                .map_err(|_| schema())?
+                .len()
+                <= 8_388_608,
+        "C_SCHEMA_VIOLATION",
+    )?;
+    if anchor.index == 0 {
+        require(
+            anchor.hash
+                == transparency_zero(&pin.chain_id, &anchor.transparency_id, &pin.key_id()?)?,
+            "C_TRANSPARENCY_INVALID",
+        )?;
+    }
+    if entries.is_empty() && anchor.index < n(target, "entry_index") {
+        return Err(ClientError("C_MISSING_DEPENDENCY"));
+    }
+    let mut next = anchor.clone();
+    for entry in entries {
+        require(
+            n(entry, "entry_index") == next.index + 1
+                && n(entry, "entry_index") <= n(target, "entry_index")
+                && s(entry, "transparency_id") == next.transparency_id,
+            "C_TRANSPARENCY_INVALID",
+        )?;
+        next.hash = transparency_link(&next.hash, entry, pin)?;
+        next.index += 1;
+    }
+    if next.index == n(target, "entry_index") {
+        require(
+            next.hash == s(target, "transparency_hash"),
+            "C_TRANSPARENCY_INVALID",
+        )?;
+    }
+    Ok(next)
+}
+
+/// §10.6: every accepted ID requires one original, signed receipt. Rejected objects stay local.
+pub fn verify_record_upload_response(
+    response: &Value,
+    submitted: &[Value],
+    pin: &RelayPin,
+) -> Result {
+    fields(
+        response,
+        &[
+            ("accepted", "array"),
+            ("rejected", "array"),
+            ("upload_receipts", "array"),
+            ("generation", "u32"),
+            ("log_id", "uuid"),
+            ("head_seq", "int"),
+            ("head_hash", "b32"),
+        ],
+        &[],
+    )?;
+    pin.validate()?;
+    require(s(response, "log_id") == pin.log_id, "C_LOG_HASH_MISMATCH")?;
+    require(
+        !submitted.is_empty() && submitted.len() <= 64,
+        "C_SCHEMA_VIOLATION",
+    )?;
+    let mut objects = BTreeMap::new();
+    for object in submitted {
+        wire::validate(object, "record")?;
+        require(
+            s(object, "chain_id") == pin.chain_id
+                && object["generation"] == response["generation"]
+                && objects.insert(s(object, "record_id"), object).is_none(),
+            "C_SCHEMA_VIOLATION",
+        )?;
+    }
+    let mut receipts = BTreeMap::new();
+    let mut receipt_ids = HashSet::new();
+    for receipt in a(response, "upload_receipts") {
+        validate_receipt(receipt, pin)?;
+        require(
+            receipts
+                .insert(s(receipt, "object_hash"), receipt)
+                .is_none()
+                && receipt_ids.insert(s(receipt, "receipt_id")),
+            "C_ACCEPTANCE_UNPROVEN",
+        )?;
+    }
+    require(
+        receipts.len() == a(response, "accepted").len(),
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+    let mut accounted = HashSet::new();
+    for item in a(response, "accepted") {
+        fields(
+            item,
+            &[
+                ("record_id", "uuid"),
+                ("duplicate", "bool"),
+                ("receipt", "object"),
+            ],
+            &[],
+        )?;
+        let object = objects
+            .get(s(item, "record_id"))
+            .ok_or(ClientError("C_ACCEPTANCE_UNPROVEN"))?;
+        let receipt = receipts
+            .get(object_hash(object).as_str())
+            .ok_or(ClientError("C_ACCEPTANCE_UNPROVEN"))?;
+        require(
+            accounted.insert(s(item, "record_id"))
+                && s(&item["receipt"], "kind") == "record"
+                && n(receipt, "relay_seq") <= n(response, "head_seq"),
+            "C_ACCEPTANCE_UNPROVEN",
+        )?;
+        verify_receipt(receipt, object, Some(&item["receipt"]), pin)?;
+    }
+    for item in a(response, "rejected") {
+        fields(
+            item,
+            &[
+                ("record_id", "uuid"),
+                ("status", "int"),
+                ("code", "string"),
+                ("retryable", "bool"),
+            ],
+            &[],
+        )?;
+        require(
+            objects.contains_key(s(item, "record_id"))
+                && accounted.insert(s(item, "record_id"))
+                && crate::error_catalogue::server(s(item, "code")).is_some_and(
+                    |(status, retryable)| {
+                        n(item, "status") == u64::from(status)
+                            && item["retryable"].as_bool() == Some(retryable)
+                    },
+                ),
+            "C_SCHEMA_VIOLATION",
+        )?;
+    }
+    require(accounted.len() == submitted.len(), "C_ACCEPTANCE_UNPROVEN")
+}
+
+/// §10.2: establish H0..H5 from the locally authorized genesis and all five signed receipts.
+/// This deliberately leaves transparency at T0 until its complete signed suffix is fetched.
+pub fn verify_genesis_acceptance(
+    response: &Value,
+    genesis: &Value,
+    identity: &Value,
+    origin: &str,
+    relay_key: &str,
+) -> Result<Value> {
+    fields(
+        identity,
+        &[("chain_id", "b32"), ("admin_public_key", "b32")],
+        &[],
+    )?;
+    fields(
+        genesis,
+        &[
+            ("parameters", "object"),
+            ("device_record", "object"),
+            ("epoch", "object"),
+            ("envelopes", "array"),
+        ],
+        &[],
+    )?;
+    fields(
+        response,
+        &[
+            ("parameters_hash", "b32"),
+            ("epoch_hash", "b32"),
+            ("log_id", "uuid"),
+            ("head_seq", "int"),
+            ("head_hash", "b32"),
+            ("device_status", "active"),
+            ("upload_receipts", "array"),
+        ],
+        &[],
+    )?;
+    let p = &genesis["parameters"];
+    let d = &genesis["device_record"];
+    let e = &genesis["epoch"];
+    for (v, kind) in [(p, "parameters"), (d, "device"), (e, "epoch")] {
+        wire::validate(v, kind)?;
+        require(
+            v["chain_id"] == identity["chain_id"] && n(v, "generation") == 0,
+            "C_SCHEMA_VIOLATION",
+        )?;
+    }
+    require(
+        p["admin_public_key"] == identity["admin_public_key"]
+            && s(&d["enrollment"], "signer_kind") == "admin"
+            && d["enrollment"]["request_hash"].is_null(),
+        "C_SIGNATURE_INVALID",
+    )?;
+    wire::verify(p, s(identity, "admin_public_key"), CTX_PARAMETERS)?;
+    wire::verify(
+        &d["enrollment"],
+        s(identity, "admin_public_key"),
+        CTX_ENROLLMENT,
+    )?;
+    wire::verify(d, s(d, "device_public_key"), CTX_DEVICE_RECORD)?;
+    wire::verify(e, s(identity, "admin_public_key"), CTX_EPOCH)?;
+    require(
+        n(e, "epoch") == 0
+            && n(d, "meta_epoch") == 0
+            && s(e, "reason") == "genesis"
+            && s(e, "signer_kind") == "admin"
+            && a(e, "members") == std::slice::from_ref(&d["device_id"])
+            && a(e, "revoked_device_ids").is_empty(),
+        "C_SCHEMA_VIOLATION",
+    )?;
+    require(a(genesis, "envelopes").len() == 2, "C_SCHEMA_VIOLATION")?;
+    let mut device_envelope = None;
+    let mut recovery_envelope = None;
+    for envelope in a(genesis, "envelopes") {
+        wire::validate(envelope, "envelope")?;
+        for name in [
+            "chain_id",
+            "generation",
+            "epoch",
+            "previous_epoch_hash",
+            "epoch_commitment",
+        ] {
+            require(envelope[name] == e[name], "C_SCHEMA_VIOLATION")?;
+        }
+        let key = if s(envelope, "signer_kind") == "admin" {
+            s(identity, "admin_public_key")
+        } else {
+            require(
+                envelope["signer_device_id"] == d["device_id"],
+                "C_SIGNATURE_INVALID",
+            )?;
+            s(d, "device_public_key")
+        };
+        wire::verify(envelope, key, CTX_ENVELOPE)?;
+        if s(envelope, "recipient_kind") == "device" {
+            require(
+                device_envelope.is_none()
+                    && envelope["recipient_device_id"] == d["device_id"]
+                    && s(envelope, "recipient_key_hash")
+                        == hash_bytes(
+                            &decode(s(d, "device_kex_public_key"), Some(32))
+                                .map_err(|_| schema())?,
+                        ),
+                "C_SCHEMA_VIOLATION",
+            )?;
+            device_envelope = Some(envelope);
+        } else {
+            require(recovery_envelope.is_none(), "C_SCHEMA_VIOLATION")?;
+            recovery_envelope = Some(envelope);
+        }
+    }
+    let device_envelope = device_envelope.ok_or_else(schema)?;
+    let recovery_envelope = recovery_envelope.ok_or_else(schema)?;
+    require(
+        device_envelope["envelope_id"] != recovery_envelope["envelope_id"]
+            && s(e, "recovery_envelope_hash") == object_hash(recovery_envelope),
+        "C_SCHEMA_VIOLATION",
+    )?;
+    require(
+        s(response, "parameters_hash") == object_hash(p)
+            && s(response, "epoch_hash") == object_hash(e)
+            && n(response, "head_seq") == 5
+            && a(response, "upload_receipts").len() == 5,
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+    let pin = RelayPin {
+        origin: origin.into(),
+        chain_id: s(identity, "chain_id").into(),
+        public_key: relay_key.into(),
+        log_id: s(response, "log_id").into(),
+    };
+    pin.validate()?;
+    let mut receipts = a(response, "upload_receipts").iter().collect::<Vec<_>>();
+    receipts.sort_by_key(|r| n(r, "relay_seq"));
+    let mut hash = data_zero(&pin.chain_id, &pin.log_id)?;
+    let mut transparency_id = String::new();
+    for (offset, (kind, object)) in [
+        ("parameters", p),
+        ("device", d),
+        ("envelope", device_envelope),
+        ("envelope", recovery_envelope),
+        ("epoch", e),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let receipt = receipts[offset];
+        let seq = offset as u64 + 1;
+        require(
+            n(receipt, "relay_seq") == seq
+                && s(receipt, "previous_head_hash") == hash
+                && n(receipt, "transparency_index") == seq,
+            "C_LOG_HASH_MISMATCH",
+        )?;
+        if offset == 0 {
+            transparency_id = s(receipt, "transparency_id").into();
+        }
+        require(
+            s(receipt, "transparency_id") == transparency_id,
+            "C_TRANSPARENCY_INVALID",
+        )?;
+        let mut entry = json!({"relay_seq":seq,"received_at_ms":receipt["received_at_ms"],"kind":kind,"object":object});
+        if kind == "epoch" {
+            entry["committed_at_ms"] = receipt["received_at_ms"].clone();
+        }
+        verify_receipt(receipt, object, Some(&entry), &pin)?;
+        hash = s(receipt, "resulting_head_hash").into();
+    }
+    require(hash == s(response, "head_hash"), "C_LOG_HASH_MISMATCH")?;
+    Ok(
+        json!({"log_id":pin.log_id,"head_seq":5,"head_hash":hash,"parameters_hash":response["parameters_hash"],"epoch_hash":response["epoch_hash"],"transparency_id":transparency_id,"transparency_index":0,"transparency_hash":transparency_zero(&pin.chain_id,&transparency_id,&pin.key_id()?)?}),
+    )
+}

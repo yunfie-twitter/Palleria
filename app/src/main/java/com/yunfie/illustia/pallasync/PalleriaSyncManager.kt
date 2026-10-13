@@ -50,6 +50,8 @@ class PalleriaSyncManager(
 
     suspend fun syncNow(): Boolean = coordinator.syncNow()
 
+    internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)
+
     suspend fun getServerUrl(): String = coordinator.getServerUrl()
 
     fun normalizeServerUrl(rawUrl: String): String? = coordinator.normalizeServerUrl(rawUrl)
@@ -58,13 +60,57 @@ class PalleriaSyncManager(
 
     suspend fun recoverInterruptedActivation(): Boolean = coordinator.recoverInterruptedActivation()
 
-    suspend fun initializeGenesis(serverUrl: String? = null): String = coordinator.initializeGenesis(serverUrl)
+    suspend fun generateGenesisMnemonic(): String = coordinator.generateGenesisMnemonic()
+
+    suspend fun hasLocalChain(): Boolean = coordinator.hasLocalChain()
+
+    suspend fun getPendingLocalEditCount(): Long = coordinator.getPendingLocalEditCount()
+
+    internal suspend fun recoveryChainContext(): PallaSyncRecoveryChainContext? = coordinator.recoveryChainContext()
+
+    internal suspend fun rotateRecoveredEpoch(
+        completion: PallaSyncRecoveryCompletion,
+        cancellation: PallaSyncRootCancellation,
+    ): Boolean = coordinator.rotateRecoveredEpoch(completion, cancellation)
+
+    internal suspend fun enqueueRecoveryAudit(
+        chainId: String,
+        event: PallaSyncPendingEvent,
+    ): Boolean = coordinator.enqueueRecoveryAudit(chainId, event)
+
+    suspend fun resumeBoundChain(): Boolean = coordinator.resumeBoundChain()
+
+    suspend fun getEpochStatus(): PallaSyncEpochStatus? = coordinator.getEpochStatus()
+
+    suspend fun rotateEpoch(
+        mnemonic: String,
+        reason: String = "manual",
+        revoked: List<String> = emptyList(),
+        admin: Boolean = false,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = coordinator.rotateEpoch(mnemonic, reason, revoked, admin, passphrase, cancellation)
+
+    suspend fun refreshEpochs(
+        mnemonic: String,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = coordinator.refreshEpochs(mnemonic, passphrase, cancellation)
+
+    suspend fun createGenesis(
+        seedPhrase: String,
+        serverUrl: String? = null,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = coordinator.createGenesis(seedPhrase, serverUrl, passphrase, cancellation)
 
     suspend fun joinChain(
         seedPhrase: String,
         deviceName: String = Build.MODEL,
         serverUrl: String? = null,
-    ): Boolean = coordinator.joinChain(seedPhrase, deviceName, serverUrl)
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = coordinator.joinChain(seedPhrase, deviceName, serverUrl, passphrase, cancellation)
 
     suspend fun enqueueDataEvent(
         schema: String,
@@ -91,4 +137,9 @@ class PalleriaSyncManager(
     ): Boolean = coordinator.pushRecords(serverUrl, chainId, recordsJsonArray)
 
     suspend fun getDeviceViewHistory(deviceId: String): List<Illust> = coordinator.getDeviceViewHistory(deviceId)
+
+    suspend fun getDeviceHistoryPage(
+        deviceId: String,
+        cursor: com.yunfie.illustia.pallasync.data.HistoryCursor? = null,
+    ): PallaSyncHistoryPage = coordinator.getDeviceHistoryPage(deviceId, cursor)
 }

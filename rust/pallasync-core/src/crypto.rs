@@ -1,7 +1,6 @@
 use crate::models::{
-    self, CapabilityToken, DeviceMetaAAD, DeviceMetaPlaintext, DeviceRecord,
-    EnrollmentCertificate, EnvelopeBinding, EpochKeyEnvelope, InnerRecord, RecordAAD, SyncRecord,
-    unsigned_record_jcs,
+    self, CapabilityToken, DeviceMetaAAD, DeviceMetaPlaintext, DeviceRecord, EnrollmentCertificate,
+    EnvelopeBinding, EpochKeyEnvelope, InnerRecord, RecordAAD, SyncRecord, unsigned_record_jcs,
 };
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use bip39::{Language, Mnemonic};
@@ -13,14 +12,14 @@ use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use hkdf::Hkdf;
 use hmac::{Hmac, Mac};
 use hpke::{
-    Deserializable, Kem, OpModeR, OpModeS, Serializable,
-    aead::ChaCha20Poly1305 as HpkeAeadChaCha,
-    kdf::HkdfSha256 as HpkeKdfSha256,
-    kem::X25519HkdfSha256 as HpkeKemX25519,
+    Deserializable, Kem, OpModeR, OpModeS, Serializable, aead::ChaCha20Poly1305 as HpkeAeadChaCha,
+    kdf::HkdfSha256 as HpkeKdfSha256, kem::X25519HkdfSha256 as HpkeKemX25519,
 };
 use rand::RngCore;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
+use subtle::ConstantTimeEq;
+use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 pub type HmacSha256 = Hmac<Sha256>;
 
@@ -42,9 +41,9 @@ pub const SIZE_BUCKETS: &[usize] = &[1024, 4096, 16384, 65536, 262144, 1048576];
 pub const DEVICE_META_BUCKETS: &[usize] = &[1024, 4096];
 
 pub fn generate_seed_phrase() -> String {
-    let mut entropy = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut entropy);
-    let mnemonic = Mnemonic::from_entropy(&entropy).unwrap();
+    let mut entropy = Zeroizing::new([0u8; 32]);
+    rand::thread_rng().fill_bytes(&mut *entropy);
+    let mnemonic = Mnemonic::from_entropy(entropy.as_slice()).unwrap();
     mnemonic.to_string()
 }
 
@@ -82,19 +81,26 @@ pub fn sha256_hash(data: &[u8]) -> [u8; 32] {
 // Root Key Derivation & Chain ID (§5.1, §5.2)
 // ---------------------------------------------------------------------
 
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct RootKeys {
-    pub chain_id: String,        // b64u(32), 43 chars
-    pub chain_salt: String,      // b64u(32)
+    #[zeroize(skip)]
+    pub chain_id: String, // b64u(32), 43 chars
+    pub chain_salt: String, // b64u(32)
     pub chain_salt_bytes: [u8; 32],
     pub chain_id_digest: [u8; 32],
+    #[zeroize(skip)] // ed25519-dalek zeroizes its seed in Drop.
     pub admin_key: SigningKey,
+    #[zeroize(skip)]
     pub admin_public_key: String, // b64u(32)
     pub recovery_kek: [u8; 32],
 }
 
 pub fn derive_root_seed(seed_phrase: &str, passphrase: &str) -> Result<[u8; 64], String> {
     let mnemonic = Mnemonic::parse_in(Language::English, seed_phrase)
-        .map_err(|e| format!("Invalid seed phrase: {e}"))?;
+        .map_err(|_| "C_SCHEMA_VIOLATION".to_owned())?;
+    if mnemonic.word_count() != 24 {
+        return Err("C_SCHEMA_VIOLATION".to_owned());
+    }
     Ok(mnemonic.to_seed(passphrase))
 }
 
@@ -114,15 +120,15 @@ pub fn derive_chain_id_digest(chain_salt: &[u8; 32], root_seed: &[u8; 64]) -> [u
 }
 
 pub fn derive_root_keys(seed_phrase: &str, passphrase: &str) -> Result<RootKeys, String> {
-    let root_seed = derive_root_seed(seed_phrase, passphrase)?;
+    let root_seed = Zeroizing::new(derive_root_seed(seed_phrase, passphrase)?);
     let chain_salt = derive_chain_salt(&root_seed);
     let chain_id_digest = derive_chain_id_digest(&chain_salt, &root_seed);
     let chain_id = URL_SAFE_NO_PAD.encode(chain_id_digest);
 
-    let hk = Hkdf::<Sha256>::new(Some(&chain_salt), &root_seed);
+    let hk = Hkdf::<Sha256>::new(Some(&chain_salt), &*root_seed);
 
-    let mut admin_seed = [0u8; 32];
-    hk.expand(b"PALLASYNC-v3\0admin-ed25519\0", &mut admin_seed)
+    let mut admin_seed = Zeroizing::new([0u8; 32]);
+    hk.expand(b"PALLASYNC-v3\0admin-ed25519\0", &mut *admin_seed)
         .map_err(|_| "HKDF expand failure: admin_seed")?;
     let admin_key = SigningKey::from_bytes(&admin_seed);
     let admin_public_key = URL_SAFE_NO_PAD.encode(admin_key.verifying_key().as_bytes());
@@ -146,6 +152,7 @@ pub fn derive_root_keys(seed_phrase: &str, passphrase: &str) -> Result<RootKeys,
 // Epoch Secrets and Keys (§5.3)
 // ---------------------------------------------------------------------
 
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct EpochKeys {
     pub epoch_prk: [u8; 32],
     pub record_key: [u8; 32],
@@ -283,20 +290,20 @@ pub fn verify_with_context(
     canonical_jcs: &[u8],
     signature_base64_url: &str,
 ) -> Result<bool, String> {
-    if public_key.is_weak() {
-        return Ok(false);
-    }
-    let signature = decode_signature(signature_base64_url)?;
     let mut msg = Vec::with_capacity(context.len() + canonical_jcs.len());
     msg.extend_from_slice(context);
     msg.extend_from_slice(canonical_jcs);
 
-    Ok(public_key.verify_strict(&msg, &signature).is_ok())
+    crate::strict::verify::verify_signature(
+        &URL_SAFE_NO_PAD.encode(public_key.as_bytes()),
+        signature_base64_url,
+        &msg,
+    )
+    .map_err(str::to_owned)
 }
 
 fn decode_fixed<const N: usize>(encoded: &str, label: &str) -> Result<[u8; N], String> {
-    let decoded = URL_SAFE_NO_PAD
-        .decode(encoded)
+    let decoded = crate::strict::verify::decode(encoded, Some(N))
         .map_err(|_| format!("Invalid base64url {label}"))?;
     decoded
         .try_into()
@@ -316,9 +323,9 @@ pub fn decode_signing_key(encoded: &str) -> Result<SigningKey, String> {
 
 pub fn decode_verifying_key(encoded: &str) -> Result<VerifyingKey, String> {
     let bytes = decode_fixed(encoded, "public key")?;
-    let vk = VerifyingKey::from_bytes(&bytes)
-        .map_err(|_| "Invalid Ed25519 public key".to_string())?;
-    if vk.is_weak() {
+    let vk =
+        VerifyingKey::from_bytes(&bytes).map_err(|_| "Invalid Ed25519 public key".to_string())?;
+    if !crate::strict::verify::prime_point(&bytes) {
         return Err("Weak Ed25519 public key".to_string());
     }
     Ok(vk)
@@ -345,12 +352,55 @@ pub fn create_sync_record(
     signing_key: &SigningKey,
     is_test_zero_padding: bool,
 ) -> Result<SyncRecord, String> {
+    crate::schema::validate_inner(
+        &serde_json::to_value(inner_record).map_err(|_| "C_SCHEMA_VIOLATION")?,
+    )
+    .map_err(|e| e.to_string())?;
     let inner_jcs = models::to_jcs(inner_record)
         .map_err(|e| format!("Cannot canonicalize InnerRecord: {e}"))?;
 
-    let framed = pad_and_frame(&inner_jcs, SIZE_BUCKETS, is_test_zero_padding)?;
-
+    let framed = Zeroizing::new(pad_and_frame(
+        &inner_jcs,
+        SIZE_BUCKETS,
+        is_test_zero_padding,
+    )?);
     let nonce_bytes = generate_nonce_24();
+    create_sync_record_from_frame(
+        chain_id,
+        generation,
+        record_id,
+        device_id,
+        epoch,
+        collection_tag,
+        &framed,
+        &nonce_bytes,
+        record_key,
+        signing_key,
+    )
+}
+
+/// §11.1: the caller journals the random nonce and complete random-padded frame before
+/// construction. Repeating that journal produces the exact same immutable signed object.
+#[allow(clippy::too_many_arguments)]
+pub fn create_sync_record_from_frame(
+    chain_id: &str,
+    generation: u32,
+    record_id: &str,
+    device_id: &str,
+    epoch: u32,
+    collection_tag: Option<&str>,
+    frame: &[u8],
+    nonce_bytes: &[u8; 24],
+    record_key: &[u8; 32],
+    signing_key: &SigningKey,
+) -> Result<SyncRecord, String> {
+    let inner = Zeroizing::new(unpad_and_unframe(frame, SIZE_BUCKETS)?);
+    let value = crate::strict::jcs::parse(&inner).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    crate::schema::validate_inner(&value).map_err(|e| e.to_string())?;
+    // Journal input is constructed locally and must have been canonicalized before framing.
+    if crate::strict::jcs::canonicalize_json(&value).map_err(|_| "C_SCHEMA_VIOLATION")? != *inner {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
     let payload_nonce = URL_SAFE_NO_PAD.encode(nonce_bytes);
 
     let aad_obj = RecordAAD {
@@ -363,11 +413,18 @@ pub fn create_sync_record(
         epoch,
         collection_tag,
     };
-    let aad = models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize RecordAAD: {e}"))?;
+    let aad =
+        models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize RecordAAD: {e}"))?;
 
     let cipher = XChaCha20Poly1305::new(record_key.into());
     let ciphertext = cipher
-        .encrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: &framed, aad: &aad })
+        .encrypt(
+            XNonce::from_slice(nonce_bytes),
+            Payload {
+                msg: frame,
+                aad: &aad,
+            },
+        )
         .map_err(|e| format!("XChaCha20Poly1305 encryption failure: {e}"))?;
     let encrypted_payload = URL_SAFE_NO_PAD.encode(ciphertext);
 
@@ -386,6 +443,11 @@ pub fn create_sync_record(
     };
 
     sign_sync_record(&mut record, signing_key)?;
+    crate::public_wire::validate(
+        &serde_json::to_value(&record).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        "record",
+    )
+    .map_err(|e| e.to_string())?;
     Ok(record)
 }
 
@@ -400,6 +462,11 @@ pub fn verify_sync_record(
     record: &SyncRecord,
     public_key_base64_url: &str,
 ) -> Result<bool, String> {
+    crate::public_wire::validate(
+        &serde_json::to_value(record).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        "record",
+    )
+    .map_err(|e| e.to_string())?;
     let public_key = decode_verifying_key(public_key_base64_url)?;
     let canonical = unsigned_record_jcs(record)
         .map_err(|error| format!("Cannot canonicalize sync record: {error}"))?;
@@ -410,8 +477,9 @@ pub fn verify_sync_record_json(
     record_json: &str,
     public_key_base64_url: &str,
 ) -> Result<bool, String> {
-    let record = serde_json::from_str::<SyncRecord>(record_json)
-        .map_err(|error| format!("Invalid sync record JSON: {error}"))?;
+    let value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    crate::public_wire::validate(&value, "record").map_err(|e| e.to_string())?;
+    let record = serde_json::from_value::<SyncRecord>(value).map_err(|_| "C_SCHEMA_VIOLATION")?;
     verify_sync_record(&record, public_key_base64_url)
 }
 
@@ -440,22 +508,54 @@ pub fn decrypt_sync_record(
         epoch: record.epoch,
         collection_tag: record.collection_tag.as_deref(),
     };
-    let aad = models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize RecordAAD: {e}"))?;
+    let aad =
+        models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize RecordAAD: {e}"))?;
 
     let cipher = XChaCha20Poly1305::new(record_key.into());
-    let framed = cipher
-        .decrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: &ciphertext, aad: &aad })
-        .map_err(|_| "AEAD decryption failed (invalid key, nonce, or AAD mismatch)".to_string())?;
+    let framed = Zeroizing::new(
+        cipher
+            .decrypt(
+                XNonce::from_slice(&nonce_bytes),
+                Payload {
+                    msg: &ciphertext,
+                    aad: &aad,
+                },
+            )
+            .map_err(|_| "C_AEAD_FAILURE".to_string())?,
+    );
 
-    let plaintext_bytes = unpad_and_unframe(&framed, SIZE_BUCKETS)?;
-    serde_json::from_slice(&plaintext_bytes)
-        .map_err(|e| format!("Cannot deserialize decrypted InnerRecord JSON: {e}"))
+    let plaintext_bytes = Zeroizing::new(unpad_and_unframe(&framed, SIZE_BUCKETS)?);
+    crate::schema::parse_inner(&plaintext_bytes).map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------
 // DeviceRecord Creation, Encryption, Decryption & Verification (§7.4)
 // ---------------------------------------------------------------------
 
+fn validate_device_metadata(value: &serde_json::Value) -> Result<(), String> {
+    crate::normal_data_boundary::check(value).map_err(|error| error.to_string())?;
+    crate::public_wire::fields(
+        value,
+        &[
+            ("name", "text"),
+            (
+                "key_protection",
+                "os-keystore|hardware|webcrypto-nonextractable|passphrase-wrapped",
+            ),
+        ],
+        &[("ext", "object")],
+    )
+    .map_err(|error| error.to_string())?;
+    if !(1..=256).contains(&value["name"].as_str().unwrap_or("").len()) {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    if let Some(ext) = value.get("ext") {
+        crate::schema::extension(ext).map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn create_device_record(
     chain_id: &str,
     generation: u32,
@@ -467,9 +567,15 @@ pub fn create_device_record(
     device_meta_key: &[u8; 32],
     enrollment: EnrollmentCertificate,
 ) -> Result<DeviceRecord, String> {
-    let meta_jcs = models::to_jcs(device_meta)
-        .map_err(|e| format!("Cannot canonicalize device metadata: {e}"))?;
-    let framed = pad_and_frame(&meta_jcs, DEVICE_META_BUCKETS, false)?;
+    let metadata = crate::recovery::SecretJson(
+        serde_json::to_value(device_meta).map_err(|_| "C_SCHEMA_VIOLATION")?,
+    );
+    validate_device_metadata(&metadata.0)?;
+    let meta_jcs = Zeroizing::new(
+        models::to_jcs(device_meta)
+            .map_err(|e| format!("Cannot canonicalize device metadata: {e}"))?,
+    );
+    let framed = Zeroizing::new(pad_and_frame(&meta_jcs, DEVICE_META_BUCKETS, false)?);
 
     let nonce_bytes = generate_nonce_24();
     let meta_nonce = URL_SAFE_NO_PAD.encode(nonce_bytes);
@@ -481,11 +587,18 @@ pub fn create_device_record(
         device_id,
         epoch: meta_epoch,
     };
-    let aad = models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize DeviceMetaAAD: {e}"))?;
+    let aad =
+        models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize DeviceMetaAAD: {e}"))?;
 
     let cipher = XChaCha20Poly1305::new(device_meta_key.into());
     let ciphertext = cipher
-        .encrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: &framed, aad: &aad })
+        .encrypt(
+            XNonce::from_slice(&nonce_bytes),
+            Payload {
+                msg: &framed,
+                aad: &aad,
+            },
+        )
         .map_err(|e| format!("Device metadata encryption failed: {e}"))?;
 
     let device_public_key = URL_SAFE_NO_PAD.encode(device_signing_key.verifying_key().as_bytes());
@@ -509,7 +622,10 @@ pub fn create_device_record(
     Ok(record)
 }
 
-pub fn sign_device_record(record: &mut DeviceRecord, signing_key: &SigningKey) -> Result<(), String> {
+pub fn sign_device_record(
+    record: &mut DeviceRecord,
+    signing_key: &SigningKey,
+) -> Result<(), String> {
     let canonical = unsigned_record_jcs(record)
         .map_err(|error| format!("Cannot canonicalize device record: {error}"))?;
     record.signature = sign_with_context(signing_key, CTX_DEVICE_RECORD, &canonical);
@@ -517,15 +633,26 @@ pub fn sign_device_record(record: &mut DeviceRecord, signing_key: &SigningKey) -
 }
 
 pub fn verify_device_record(record: &DeviceRecord) -> Result<bool, String> {
+    crate::public_wire::validate(
+        &serde_json::to_value(record).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        "device",
+    )
+    .map_err(|e| e.to_string())?;
     let public_key = decode_verifying_key(&record.device_public_key)?;
     let canonical = unsigned_record_jcs(record)
         .map_err(|error| format!("Cannot canonicalize device record: {error}"))?;
-    verify_with_context(&public_key, CTX_DEVICE_RECORD, &canonical, &record.signature)
+    verify_with_context(
+        &public_key,
+        CTX_DEVICE_RECORD,
+        &canonical,
+        &record.signature,
+    )
 }
 
 pub fn verify_device_record_json(record_json: &str) -> Result<bool, String> {
-    let record = serde_json::from_str::<DeviceRecord>(record_json)
-        .map_err(|error| format!("Invalid device record JSON: {error}"))?;
+    let value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    crate::public_wire::validate(&value, "device").map_err(|e| e.to_string())?;
+    let record = serde_json::from_value::<DeviceRecord>(value).map_err(|_| "C_SCHEMA_VIOLATION")?;
     verify_device_record(&record)
 }
 
@@ -533,6 +660,11 @@ pub fn decrypt_device_meta(
     record: &DeviceRecord,
     device_meta_key: &[u8; 32],
 ) -> Result<DeviceMetaPlaintext, String> {
+    crate::public_wire::validate(
+        &serde_json::to_value(record).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        "device",
+    )
+    .map_err(|error| error.to_string())?;
     let ciphertext = URL_SAFE_NO_PAD
         .decode(&record.encrypted_device_meta)
         .map_err(|_| "Invalid base64url encrypted device meta".to_string())?;
@@ -551,22 +683,35 @@ pub fn decrypt_device_meta(
         device_id: &record.device_id,
         epoch: record.meta_epoch,
     };
-    let aad = models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize DeviceMetaAAD: {e}"))?;
+    let aad =
+        models::to_jcs(&aad_obj).map_err(|e| format!("Cannot canonicalize DeviceMetaAAD: {e}"))?;
 
     let cipher = XChaCha20Poly1305::new(device_meta_key.into());
-    let framed = cipher
-        .decrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: &ciphertext, aad: &aad })
-        .map_err(|_| "Device metadata decryption failed (invalid key, nonce, or AAD mismatch)".to_string())?;
+    let framed = Zeroizing::new(
+        cipher
+            .decrypt(
+                XNonce::from_slice(&nonce_bytes),
+                Payload {
+                    msg: &ciphertext,
+                    aad: &aad,
+                },
+            )
+            .map_err(|_| "C_AEAD_FAILURE".to_string())?,
+    );
 
-    let plaintext_bytes = unpad_and_unframe(&framed, DEVICE_META_BUCKETS)?;
-    serde_json::from_slice(&plaintext_bytes)
-        .map_err(|e| format!("Cannot deserialize decrypted DeviceMetaPlaintext: {e}"))
+    let plaintext_bytes = Zeroizing::new(unpad_and_unframe(&framed, DEVICE_META_BUCKETS)?);
+    let value = crate::recovery::SecretJson(
+        crate::strict::jcs::parse(&plaintext_bytes).map_err(str::to_owned)?,
+    );
+    validate_device_metadata(&value.0)?;
+    serde_json::from_value(value.0.clone()).map_err(|_| "C_SCHEMA_VIOLATION".into())
 }
 
 // ---------------------------------------------------------------------
 // EpochKeyEnvelope Wrap & Unwrap (HPKE & Recovery) (§7.7)
 // ---------------------------------------------------------------------
 
+#[allow(clippy::too_many_arguments)]
 pub fn wrap_device_epoch_envelope(
     envelope_id: &str,
     chain_id: &str,
@@ -581,7 +726,11 @@ pub fn wrap_device_epoch_envelope(
     signing_key: &SigningKey,
     epoch_secret: &[u8; 32],
 ) -> Result<EpochKeyEnvelope, String> {
-    let recipient_pk_bytes = decode_key_32(recipient_kex_public_key_b64u, "recipient X25519 public key")?;
+    if !crate::strict::verify::valid_x_key(recipient_kex_public_key_b64u) {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let recipient_pk_bytes =
+        decode_key_32(recipient_kex_public_key_b64u, "recipient X25519 public key")?;
     let recipient_key_hash = URL_SAFE_NO_PAD.encode(sha256_hash(&recipient_pk_bytes));
 
     let binding = EnvelopeBinding {
@@ -608,13 +757,14 @@ pub fn wrap_device_epoch_envelope(
     let recipient_pk = <HpkeKemX25519 as Kem>::PublicKey::from_bytes(&recipient_pk_bytes)
         .map_err(|_| "Invalid recipient X25519 public key for HPKE".to_string())?;
 
-    let (enc, mut sender_ctx) = hpke::setup_sender::<HpkeAeadChaCha, HpkeKdfSha256, HpkeKemX25519, _>(
-        &OpModeS::Base,
-        &recipient_pk,
-        &info,
-        &mut OsRng,
-    )
-    .map_err(|e| format!("HPKE setup_sender failed: {e:?}"))?;
+    let (enc, mut sender_ctx) =
+        hpke::setup_sender::<HpkeAeadChaCha, HpkeKdfSha256, HpkeKemX25519, _>(
+            &OpModeS::Base,
+            &recipient_pk,
+            &info,
+            &mut OsRng,
+        )
+        .map_err(|e| format!("HPKE setup_sender failed: {e:?}"))?;
 
     let ciphertext = sender_ctx
         .seal(epoch_secret, &binding_jcs)
@@ -654,6 +804,11 @@ pub fn unwrap_device_epoch_envelope(
     recipient_kex_private_key: &[u8; 32],
     chain_id_digest: &[u8; 32],
 ) -> Result<[u8; 32], String> {
+    crate::public_wire::validate(
+        &serde_json::to_value(envelope).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        "envelope",
+    )
+    .map_err(|e| e.to_string())?;
     if envelope.recipient_kind != "device" {
         return Err("Not a device envelope".to_string());
     }
@@ -699,23 +854,31 @@ pub fn unwrap_device_epoch_envelope(
     )
     .map_err(|e| format!("HPKE setup_receiver failed: {e:?}"))?;
 
-    let secret_vec = receiver_ctx
-        .open(&ciphertext, &binding_jcs)
-        .map_err(|e| format!("HPKE open failed: {e:?}"))?;
+    let secret_vec = Zeroizing::new(
+        receiver_ctx
+            .open(&ciphertext, &binding_jcs)
+            .map_err(|_| "C_AEAD_FAILURE".to_owned())?,
+    );
 
-    let secret_bytes: [u8; 32] = secret_vec
-        .try_into()
-        .map_err(|_| "Decrypted epoch secret must be 32 bytes".to_string())?;
+    let secret_bytes = Zeroizing::new(
+        <[u8; 32]>::try_from(secret_vec.as_slice())
+            .map_err(|_| "Decrypted epoch secret must be 32 bytes".to_string())?,
+    );
 
     // Verify commitment constant-time (§5.3)
     let derived = derive_epoch_keys(chain_id_digest, envelope.epoch, &secret_bytes)?;
-    if derived.epoch_commitment_b64u != envelope.epoch_commitment {
-        return Err("C_COMMITMENT_MISMATCH: epoch commitment does not match".to_string());
+    if !bool::from(
+        derived
+            .epoch_commitment
+            .ct_eq(&decode_key_32(&envelope.epoch_commitment, "commitment")?),
+    ) {
+        return Err("C_COMMITMENT_MISMATCH".to_string());
     }
 
-    Ok(secret_bytes)
+    Ok(*secret_bytes)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn wrap_recovery_epoch_envelope(
     envelope_id: &str,
     chain_id: &str,
@@ -749,7 +912,13 @@ pub fn wrap_recovery_epoch_envelope(
     let nonce_bytes = fixed_nonce.copied().unwrap_or_else(generate_nonce_24);
     let cipher = XChaCha20Poly1305::new(recovery_kek.into());
     let ciphertext = cipher
-        .encrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: epoch_secret, aad: &binding_jcs })
+        .encrypt(
+            XNonce::from_slice(&nonce_bytes),
+            Payload {
+                msg: epoch_secret,
+                aad: &binding_jcs,
+            },
+        )
         .map_err(|e| format!("Recovery envelope encryption failed: {e}"))?;
 
     let mut envelope = EpochKeyEnvelope {
@@ -783,6 +952,11 @@ pub fn unwrap_recovery_epoch_envelope(
     recovery_kek: &[u8; 32],
     chain_id_digest: &[u8; 32],
 ) -> Result<[u8; 32], String> {
+    crate::public_wire::validate(
+        &serde_json::to_value(envelope).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        "envelope",
+    )
+    .map_err(|e| e.to_string())?;
     if envelope.recipient_kind != "recovery" {
         return Err("Not a recovery envelope".to_string());
     }
@@ -817,87 +991,57 @@ pub fn unwrap_recovery_epoch_envelope(
         .map_err(|e| format!("Cannot canonicalize EnvelopeBinding: {e}"))?;
 
     let cipher = XChaCha20Poly1305::new(recovery_kek.into());
-    let secret_vec = cipher
-        .decrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: &ciphertext, aad: &binding_jcs })
-        .map_err(|_| "Recovery envelope AEAD decryption failed".to_string())?;
+    let secret_vec = Zeroizing::new(
+        cipher
+            .decrypt(
+                XNonce::from_slice(&nonce_bytes),
+                Payload {
+                    msg: &ciphertext,
+                    aad: &binding_jcs,
+                },
+            )
+            .map_err(|_| "Recovery envelope AEAD decryption failed".to_string())?,
+    );
 
-    let secret_bytes: [u8; 32] = secret_vec
-        .try_into()
-        .map_err(|_| "Decrypted recovery secret must be 32 bytes".to_string())?;
+    let secret_bytes = Zeroizing::new(
+        <[u8; 32]>::try_from(secret_vec.as_slice())
+            .map_err(|_| "Decrypted recovery secret must be 32 bytes".to_string())?,
+    );
 
     let derived = derive_epoch_keys(chain_id_digest, envelope.epoch, &secret_bytes)?;
-    if derived.epoch_commitment_b64u != envelope.epoch_commitment {
+    if !bool::from(
+        derived
+            .epoch_commitment
+            .ct_eq(&decode_key_32(&envelope.epoch_commitment, "commitment")?),
+    ) {
         return Err("C_COMMITMENT_MISMATCH: epoch commitment does not match".to_string());
     }
 
-    Ok(secret_bytes)
+    Ok(*secret_bytes)
 }
 
 // ---------------------------------------------------------------------
 // Capability Tokens (§6.1, §6.2)
 // ---------------------------------------------------------------------
 
-pub fn canonicalize_query(raw_query: &str) -> String {
-    let trimmed = raw_query.trim_start_matches('?');
-    if trimmed.is_empty() {
-        return String::new();
-    }
-
-    let mut pairs: Vec<(String, String)> = trimmed
-        .split('&')
-        .map(|pair| {
-            let (k, v) = match pair.split_once('=') {
-                Some((k, v)) => (k, v),
-                None => (pair, ""),
-            };
-            let decoded_k = percent_decode(k);
-            let decoded_v = percent_decode(v);
-            (percent_encode(&decoded_k), percent_encode(&decoded_v))
-        })
-        .collect();
-
-    pairs.sort_by(|(k1, v1), (k2, v2)| match k1.cmp(k2) {
-        std::cmp::Ordering::Equal => v1.cmp(v2),
-        other => other,
-    });
-
-    pairs
-        .into_iter()
-        .map(|(k, v)| format!("{k}={v}"))
-        .collect::<Vec<_>>()
-        .join("&")
+pub fn canonicalize_query(raw_query: &str) -> Result<String, String> {
+    Ok(crate::public_wire::query_string(
+        &crate::public_wire::canonical_query(raw_query).map_err(|e| e.to_string())?,
+    ))
 }
-
-fn percent_decode(input: &str) -> String {
-    let mut bytes = Vec::new();
-    let mut chars = input.bytes();
-    while let Some(b) = chars.next() {
-        if b == b'%' {
-            if let (Some(h1), Some(h2)) = (chars.next(), chars.next()) {
-                if let Ok(byte) = u8::from_str_radix(
-                    &format!("{}{}", h1 as char, h2 as char),
-                    16,
-                ) {
-                    bytes.push(byte);
-                    continue;
-                }
-            }
-        }
-        bytes.push(b);
+pub fn normalize_origin(origin: &str) -> Result<String, String> {
+    let u = url::Url::parse(origin).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if !matches!(u.scheme(), "https" | "http")
+        || !u.username().is_empty()
+        || u.password().is_some()
+        || u.host_str().is_none()
+        || u.path() != "/"
+        || u.query().is_some()
+        || u.fragment().is_some()
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
     }
-    String::from_utf8_lossy(&bytes).to_string()
-}
-
-fn percent_encode(input: &str) -> String {
-    let mut out = String::new();
-    for b in input.bytes() {
-        if matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~') {
-            out.push(b as char);
-        } else {
-            out.push_str(&format!("%{:02X}", b));
-        }
-    }
-    out
+    Ok(u.origin().ascii_serialization())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -913,19 +1057,58 @@ pub fn create_capability_token(
     signing_key: &SigningKey,
     ttl_ms: i64,
 ) -> Result<String, String> {
-    let now = std::time::SystemTime::now()
+    create_capability_token_at(
+        aud,
+        chain_id,
+        signer_kind,
+        device_id,
+        method,
+        path,
+        query,
+        body_bytes,
+        signing_key,
+        ttl_ms,
+        token_now_ms()?,
+    )
+}
+
+pub fn token_now_ms() -> Result<i64, String> {
+    std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0);
+        .map_err(|_| "C_SCHEMA_VIOLATION".to_owned())?
+        .as_millis()
+        .try_into()
+        .map_err(|_| "C_SCHEMA_VIOLATION".to_owned())
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn create_capability_token_at(
+    aud: &str,
+    chain_id: &str,
+    signer_kind: &str,
+    device_id: Option<&str>,
+    method: &str,
+    path: &str,
+    query: &str,
+    body_bytes: &[u8],
+    signing_key: &SigningKey,
+    ttl_ms: i64,
+    now: i64,
+) -> Result<String, String> {
+    if ttl_ms != 120_000 || !(0..=crate::strict::jcs::MAX_INTEGER as i64 - ttl_ms).contains(&now) {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
     let expires = now + ttl_ms;
     let nonce = URL_SAFE_NO_PAD.encode(generate_nonce_16());
     let body_hash = sha256_hash(body_bytes);
     let body_sha256 = URL_SAFE_NO_PAD.encode(body_hash);
-    let canonical_query = canonicalize_query(query);
+    let canonical_query = crate::public_wire::query_string(
+        &crate::public_wire::canonical_query(query).map_err(|e| e.to_string())?,
+    );
 
     let mut token = CapabilityToken {
         v: 3,
-        aud: aud.trim_end_matches('/').to_lowercase(),
+        aud: normalize_origin(aud)?,
         chain_id: chain_id.to_string(),
         signer_kind: signer_kind.to_string(),
         device_id: device_id.map(ToString::to_string),
@@ -943,8 +1126,8 @@ pub fn create_capability_token(
         .map_err(|e| format!("Cannot canonicalize capability token: {e}"))?;
     token.signature = sign_with_context(signing_key, CTX_CAPABILITY, &canonical);
 
-    let jcs = models::to_jcs(&token)
-        .map_err(|e| format!("Cannot JCS encode capability token: {e}"))?;
+    let jcs =
+        models::to_jcs(&token).map_err(|e| format!("Cannot JCS encode capability token: {e}"))?;
     Ok(URL_SAFE_NO_PAD.encode(jcs))
 }
 
@@ -982,7 +1165,13 @@ pub fn decrypt_record_payload_legacy(
     aad: &[u8],
 ) -> Result<Vec<u8>, chacha20poly1305::Error> {
     let cipher = ChaCha20Poly1305::new(key.into());
-    cipher.decrypt(Nonce::from_slice(nonce), Payload { msg: ciphertext, aad })
+    cipher.decrypt(
+        Nonce::from_slice(nonce),
+        Payload {
+            msg: ciphertext,
+            aad,
+        },
+    )
 }
 
 pub fn object_hash<T: serde::Serialize>(object: &T) -> Result<String, String> {
@@ -990,7 +1179,7 @@ pub fn object_hash<T: serde::Serialize>(object: &T) -> Result<String, String> {
     Ok(URL_SAFE_NO_PAD.encode(sha256_hash(&jcs)))
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct GenesisBundle {
     pub chain_id: String,
     pub device_id: String,
@@ -1016,13 +1205,22 @@ pub fn create_genesis_bundle(
     aud: &str,
 ) -> Result<GenesisBundle, String> {
     let root_keys = derive_root_keys(seed_phrase, passphrase)?;
+    create_genesis_bundle_from_roots(&root_keys, device_name, key_protection, aud)
+}
+pub(crate) fn create_genesis_bundle_from_roots(
+    root_keys: &RootKeys,
+    device_name: &str,
+    key_protection: &str,
+    aud: &str,
+) -> Result<GenesisBundle, String> {
     let (device_signing_key, kex_bytes) = generate_device_keys();
+    let kex_bytes = Zeroizing::new(kex_bytes);
     let device_id = uuid::Uuid::new_v4().to_string();
 
-    let kex_secret = x25519_dalek::StaticSecret::from(kex_bytes);
+    let kex_secret = x25519_dalek::StaticSecret::from(*kex_bytes);
     let kex_pub = x25519_dalek::PublicKey::from(&kex_secret);
     let device_kex_pub_b64 = URL_SAFE_NO_PAD.encode(kex_pub.as_bytes());
-    let device_kex_priv_b64 = URL_SAFE_NO_PAD.encode(kex_bytes);
+    let device_kex_priv_b64 = URL_SAFE_NO_PAD.encode(*kex_bytes);
     let device_pub_b64 = URL_SAFE_NO_PAD.encode(device_signing_key.verifying_key().as_bytes());
     let device_sign_b64 = URL_SAFE_NO_PAD.encode(device_signing_key.to_bytes());
 
@@ -1044,7 +1242,8 @@ pub fn create_genesis_bundle(
     };
     let canonical_params = unsigned_record_jcs(&parameters)
         .map_err(|e| format!("Cannot canonicalize ChainParameters: {e}"))?;
-    parameters.signature = sign_with_context(&root_keys.admin_key, CTX_CHAIN_PARAMS, &canonical_params);
+    parameters.signature =
+        sign_with_context(&root_keys.admin_key, CTX_CHAIN_PARAMS, &canonical_params);
 
     // 2. EnrollmentCertificate (§7.4)
     let mut cert = EnrollmentCertificate {
@@ -1066,8 +1265,8 @@ pub fn create_genesis_bundle(
     cert.signature = sign_with_context(&root_keys.admin_key, CTX_ENROLLMENT, &canonical_cert);
 
     // 3. Epoch 0 keys
-    let mut epoch_secret_0 = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut epoch_secret_0);
+    let mut epoch_secret_0 = Zeroizing::new([0u8; 32]);
+    rand::thread_rng().fill_bytes(&mut *epoch_secret_0);
     let epoch_keys = derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret_0)?;
 
     // 4. DeviceRecord (§7.4)
@@ -1175,24 +1374,24 @@ pub fn create_genesis_bundle(
     )?;
 
     Ok(GenesisBundle {
-        chain_id: root_keys.chain_id,
+        chain_id: root_keys.chain_id.clone(),
         device_id,
         device_signing_key: device_sign_b64,
         device_public_key: device_pub_b64,
         device_kex_private_key: device_kex_priv_b64,
         device_kex_public_key: device_kex_pub_b64,
         epoch: 0,
-        epoch_secret: URL_SAFE_NO_PAD.encode(epoch_secret_0),
+        epoch_secret: URL_SAFE_NO_PAD.encode(*epoch_secret_0),
         record_key: URL_SAFE_NO_PAD.encode(epoch_keys.record_key),
         device_meta_key: URL_SAFE_NO_PAD.encode(epoch_keys.device_meta_key),
         collection_tag_key: URL_SAFE_NO_PAD.encode(epoch_keys.collection_tag_key),
-        epoch_commitment: epoch_keys.epoch_commitment_b64u,
+        epoch_commitment: epoch_keys.epoch_commitment_b64u.clone(),
         genesis_request_body_json: genesis_json,
         admin_capability_token: admin_token,
     })
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct MnemonicEnrollmentBundle {
     pub chain_id: String,
     pub device_id: String,
@@ -1212,6 +1411,7 @@ pub struct MnemonicEnrollmentBundle {
     pub device_keys_ack_token: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn create_mnemonic_enrollment_bundle(
     seed_phrase: &str,
     passphrase: &str,
@@ -1225,24 +1425,57 @@ pub fn create_mnemonic_enrollment_bundle(
     aud: &str,
 ) -> Result<MnemonicEnrollmentBundle, String> {
     let root_keys = derive_root_keys(seed_phrase, passphrase)?;
+    create_mnemonic_enrollment_bundle_from_roots(
+        &root_keys,
+        device_name,
+        key_protection,
+        generation,
+        epoch,
+        recovery_envelope_json,
+        expected_parameters_hash,
+        expected_epoch_hash,
+        aud,
+    )
+}
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn create_mnemonic_enrollment_bundle_from_roots(
+    root_keys: &RootKeys,
+    device_name: &str,
+    key_protection: &str,
+    generation: u32,
+    epoch: u32,
+    recovery_envelope_json: &str,
+    expected_parameters_hash: &str,
+    expected_epoch_hash: &str,
+    aud: &str,
+) -> Result<MnemonicEnrollmentBundle, String> {
     let (device_signing_key, kex_bytes) = generate_device_keys();
+    let kex_bytes = Zeroizing::new(kex_bytes);
     let device_id = uuid::Uuid::new_v4().to_string();
 
-    let kex_secret = x25519_dalek::StaticSecret::from(kex_bytes);
+    let kex_secret = x25519_dalek::StaticSecret::from(*kex_bytes);
     let kex_pub = x25519_dalek::PublicKey::from(&kex_secret);
     let device_kex_pub_b64 = URL_SAFE_NO_PAD.encode(kex_pub.as_bytes());
-    let device_kex_priv_b64 = URL_SAFE_NO_PAD.encode(kex_bytes);
+    let device_kex_priv_b64 = URL_SAFE_NO_PAD.encode(*kex_bytes);
     let device_pub_b64 = URL_SAFE_NO_PAD.encode(device_signing_key.verifying_key().as_bytes());
     let device_sign_b64 = URL_SAFE_NO_PAD.encode(device_signing_key.to_bytes());
 
-    let recovery_envelope: EpochKeyEnvelope = serde_json::from_str(recovery_envelope_json)
+    let recovery_envelope: EpochKeyEnvelope = models::parse(recovery_envelope_json)
         .map_err(|e| format!("Invalid recovery envelope JSON: {e}"))?;
+    if recovery_envelope.chain_id != root_keys.chain_id
+        || recovery_envelope.generation != generation
+        || recovery_envelope.epoch != epoch
+        || decode_key_32(expected_parameters_hash, "parameters").is_err()
+        || decode_key_32(expected_epoch_hash, "epoch").is_err()
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
 
-    let epoch_secret = unwrap_recovery_epoch_envelope(
+    let epoch_secret = Zeroizing::new(unwrap_recovery_epoch_envelope(
         &recovery_envelope,
         &root_keys.recovery_kek,
         &root_keys.chain_id_digest,
-    )?;
+    )?);
 
     let epoch_keys = derive_epoch_keys(&root_keys.chain_id_digest, epoch, &epoch_secret)?;
 
@@ -1389,7 +1622,10 @@ pub fn create_mnemonic_enrollment_bundle(
     let ack_body_json = serde_json::to_string(&ack_body)
         .map_err(|e| format!("Cannot serialize KeysAckBody: {e}"))?;
 
-    let ack_path = format!("/pallasync/v3/chains/{}/devices/{}/keys/ack", root_keys.chain_id, device_id);
+    let ack_path = format!(
+        "/pallasync/v3/chains/{}/devices/{}/keys/ack",
+        root_keys.chain_id, device_id
+    );
     let ack_token = create_capability_token(
         aud,
         &root_keys.chain_id,
@@ -1404,18 +1640,18 @@ pub fn create_mnemonic_enrollment_bundle(
     )?;
 
     Ok(MnemonicEnrollmentBundle {
-        chain_id: root_keys.chain_id,
+        chain_id: root_keys.chain_id.clone(),
         device_id,
         device_signing_key: device_sign_b64,
         device_public_key: device_pub_b64,
         device_kex_private_key: device_kex_priv_b64,
         device_kex_public_key: device_kex_pub_b64,
         epoch,
-        epoch_secret: URL_SAFE_NO_PAD.encode(epoch_secret),
+        epoch_secret: URL_SAFE_NO_PAD.encode(*epoch_secret),
         record_key: URL_SAFE_NO_PAD.encode(epoch_keys.record_key),
         device_meta_key: URL_SAFE_NO_PAD.encode(epoch_keys.device_meta_key),
         collection_tag_key: URL_SAFE_NO_PAD.encode(epoch_keys.collection_tag_key),
-        epoch_commitment: epoch_keys.epoch_commitment_b64u,
+        epoch_commitment: epoch_keys.epoch_commitment_b64u.clone(),
         enroll_request_body_json: enroll_body_json,
         admin_capability_token: admin_token,
         keys_ack_request_body_json: ack_body_json,

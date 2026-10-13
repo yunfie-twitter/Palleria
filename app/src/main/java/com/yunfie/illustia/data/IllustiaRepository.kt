@@ -32,6 +32,7 @@ import com.yunfie.illustia.models.pixiv.UserFollowDetail
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.models.pixiv.UserWorkspace
 import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
+import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
@@ -167,8 +168,9 @@ class IllustiaRepository(
     suspend fun saveSettings(
         settings: AppSettings,
         baseSettings: AppSettings? = null,
+        historyEdits: List<PallaSyncHistoryEdit> = emptyList(),
     ) {
-        val written = settingsStore.write(settings, baseSettings)
+        val written = settingsStore.write(settings, baseSettings, historyEdits)
         val cached =
             settingsCacheMutex.withLock {
                 val current = cachedSettings ?: settingsStore.read()
