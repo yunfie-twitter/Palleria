@@ -21,7 +21,7 @@ if hasattr(sys.stderr, "reconfigure"):
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KOTLIN_CORE = os.path.join(REPO_ROOT, "app", "src", "main", "java", "com", "yunfie", "illustia", "pallasync", "PallaSyncCore.kt")
-RUST_JNI_RS = os.path.join(REPO_ROOT, "rust", "pallasync-core", "src", "ffi_jni.rs")
+RUST_SRC_DIR = os.path.join(REPO_ROOT, "rust", "pallasync-core", "src")
 
 EXTERNAL_FUN_RE = re.compile(r"external\s+fun\s+([a-zA-Z0-9_]+)\s*\(")
 RUST_JNI_FN_RE = re.compile(r"pub\s+extern\s+\"[^\"]+\"\s+fn\s+(Java_com_yunfie_illustia_pallasync_PallaSyncCore_([a-zA-Z0-9_]+))")
@@ -31,14 +31,18 @@ def check_pallasync_jni():
     if not os.path.exists(KOTLIN_CORE):
         print(f"Error: {KOTLIN_CORE} not found", file=sys.stderr)
         return False
-    if not os.path.exists(RUST_JNI_RS):
-        print(f"Error: {RUST_JNI_RS} not found", file=sys.stderr)
+    if not os.path.isdir(RUST_SRC_DIR):
+        print(f"Error: {RUST_SRC_DIR} not found", file=sys.stderr)
         return False
 
     with open(KOTLIN_CORE, "r", encoding="utf-8") as f:
         kt_content = f.read()
-    with open(RUST_JNI_RS, "r", encoding="utf-8") as f:
-        rs_content = f.read()
+    rust_sources = glob.glob(os.path.join(RUST_SRC_DIR, "**", "*.rs"), recursive=True)
+    rs_contents = []
+    for source in rust_sources:
+        with open(source, "r", encoding="utf-8") as rust_file:
+            rs_contents.append(rust_file.read())
+    rs_content = "\n".join(rs_contents)
 
     kt_functions = set(EXTERNAL_FUN_RE.findall(kt_content))
     rs_matches = RUST_JNI_FN_RE.findall(rs_content)

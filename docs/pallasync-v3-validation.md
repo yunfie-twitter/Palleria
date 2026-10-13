@@ -149,6 +149,8 @@ Nativeのaudit schemaではwhole-set／ceremonyのholder_kind=nullを§8.6どお
 
 置換host試験は「新status active・replacement pending」の永続commit直後にroot ownerをcloseし、その後fresh native root sessionでstore CASを再開する境界も検証します（3つのrecovery dealer workflow testが成功。詳細log: app/build/pallasync-recovery-replacement-resume-host.log）。これはOSプロセスkillや物理ディスク障害注入ではありません。
 
+Draft PR CIでJNI declaration checkが失敗したため確認しました。Rust JNI exportは`ffi_jni.rs`以外の`src/**/*.rs`にも分割されていますが、check scriptが単一ファイルしか走査していませんでした。scannerを全Rust sourceへ拡張し、Kotlin external 103件とRust export 103件、12個のビルド済みshared librariesのsymbol inspectionがローカルで成功しました。CI rerunはcommit後に確認します。
+
 同じsource/APKの独立Python+Android interopは190.27秒で成功しました（PallaSync/target/qualification-android-resume-interop.log）。実Android端末承認・JNI/Room・HTTP、独立PythonによるSAS/署名/HPKE検証、epoch bundle/recovery envelope/receipt、epoch再base、initial sync/outbox、application payload boundary、origin bindingを確認しました。隔離relayを使ったこれらの対象試験は全50 ITではありません。
 
 全適合は未達です。IT-01〜IT-50、Appendix A/C/D全体、三者独立復旧・完全な移行／snapshot・大規模履歴・物理holderの独立保管・実ディスク障害試験、本番更新は未完了です。v2.1 ChainParameters.signatureの検証方式も§4.1に定義がないため追加していません。`docs/pallasync-v3-acceptance.json`の`conformance_claim`はfalseのまま維持します。
