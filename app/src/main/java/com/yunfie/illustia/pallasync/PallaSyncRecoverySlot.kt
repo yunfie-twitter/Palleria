@@ -29,7 +29,9 @@ internal class PallaSyncRecoverySlot(
         val encryptedKey: String,
         val compromised: Boolean = false,
         val conflictingStatusChain: String? = null,
+        val additionalConflictingStatusChains: List<String> = emptyList(),
     ) {
+        val forkEvidence: List<String> get() = (listOfNotNull(conflictingStatusChain) + additionalConflictingStatusChains).distinct()
         val packageObject: JsonObject get() = Json.parseToJsonElement(packageJson).jsonObject
         val admin: String get() =
             packageObject
@@ -84,7 +86,10 @@ internal class PallaSyncRecoverySlot(
         val statusHash: String,
         val compromised: Boolean,
         val conflictingStatusChain: String?,
-    )
+        val additionalConflictingStatusChains: List<String> = emptyList(),
+    ) {
+        val forkEvidence: List<String> get() = (listOfNotNull(conflictingStatusChain) + additionalConflictingStatusChains).distinct()
+    }
 
     fun publicEvidence(setId: String): PublicEvidence? =
         synchronized(lock) {
@@ -134,6 +139,7 @@ internal class PallaSyncRecoverySlot(
                     candidate.copy(
                         compromised = expected.compromised || candidate.compromised,
                         conflictingStatusChain = expected.conflictingStatusChain ?: candidate.conflictingStatusChain,
+                        additionalConflictingStatusChains = (expected.forkEvidence + candidate.forkEvidence).distinct().drop(1),
                     )
                 } else {
                     candidate
@@ -142,6 +148,7 @@ internal class PallaSyncRecoverySlot(
                 guarded.copy(
                     compromised = guarded.compromised || known?.compromised == true,
                     conflictingStatusChain = guarded.conflictingStatusChain ?: known?.conflictingStatusChain,
+                    additionalConflictingStatusChains = (guarded.forkEvidence + known?.forkEvidence.orEmpty()).distinct().drop(1),
                 ),
             )
         }
@@ -161,7 +168,8 @@ internal class PallaSyncRecoverySlot(
             val sharedLength = minOf(oldStatuses.size, nextStatuses.size)
             if (oldStatuses.take(sharedLength) != nextStatuses.take(sharedLength)) {
                 PallaSyncCore.cancelRecoverySetSessions(expected.setId)
-                write(expected.copy(conflictingStatusChain = nextStatuses.toString()))
+                val evidence = (expected.forkEvidence + nextStatuses.toString()).distinct()
+                write(expected.copy(conflictingStatusChain = evidence.first(), additionalConflictingStatusChains = evidence.drop(1)))
                 error("C_RECOVERY_SHARE_INVALID")
             }
             PallaSyncCore.validateRecoveryPackage(candidate.packageJson, expected.admin, expected.statusHash)
@@ -218,6 +226,7 @@ internal class PallaSyncRecoverySlot(
             entry.statusHash,
             entry.compromised,
             entry.conflictingStatusChain,
+            entry.additionalConflictingStatusChains,
         )
 
     companion object {

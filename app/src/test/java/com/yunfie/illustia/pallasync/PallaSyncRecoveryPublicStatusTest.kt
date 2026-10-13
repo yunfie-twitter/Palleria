@@ -96,4 +96,30 @@ class PallaSyncRecoveryPublicStatusTest {
         checkNotNull(store.read(entry.id)).conflictingStatuses shouldBe parsed
         checkNotNull(store.read(entry.id)).ordinaryRecoveryAvailable shouldBe false
     }
+
+    @Test
+    fun multipleSignedForksSurviveReopenAndReplayWithoutOverwritingOriginalEvidence() {
+        val name = "recovery-public-multiple-forks-unit"
+        val store = store(name)
+        val initial = store.observeHolder(holder())
+        val forks = recoveryStatusForks(holder().packageJson)
+        (forks + forks.first()).forEach { statuses ->
+            val expected = checkNotNull(store.read(initial.id))
+            shouldThrow<IllegalStateException> { store.updateStatus(expected, statuses, requireLocalActivation = false) }
+                .message shouldBe "C_RECOVERY_SHARE_INVALID"
+        }
+        val reopened = PallaSyncRecoverySetStore(context.getSharedPreferences(name, Context.MODE_PRIVATE))
+        val retained = reopened.all().single()
+        retained.statusesJson shouldBe initial.statusesJson
+        retained.conflictingStatuses shouldBe forks.first()
+        retained.forkEvidence shouldBe forks
+        retained.ordinaryRecoveryAvailable shouldBe false
+        shouldThrow<IllegalStateException> { reopened.updateStatus(retained, "[{}]", requireLocalActivation = false) }
+        reopened.read(initial.id) shouldBe retained
+        val observed =
+            reopened.observeHolder(
+                holder().copy(conflictingStatusChain = forks.first(), additionalConflictingStatusChains = forks.drop(1)),
+            )
+        observed.forkEvidence shouldBe forks
+    }
 }

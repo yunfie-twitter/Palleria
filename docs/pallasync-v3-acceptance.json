@@ -622,6 +622,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetupTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryInventoryTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryPublicStatusTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySlotTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryConfigurationTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflowTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryRecipientTest.kt",

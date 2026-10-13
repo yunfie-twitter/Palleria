@@ -23,6 +23,64 @@ import java.util.UUID
 @RunWith(AndroidJUnit4::class)
 class PallaSyncRecoveryPublicStatusAndroidTest {
     @Test
+    fun multipleSignedForksSurviveProtectedStoreReopenWithoutOverwritingAcceptedStatuses() {
+        ActivityScenario.launch(PallaSyncRecoveryTestActivity::class.java).use {
+            PallaSyncCore.setSecretForeground(true)
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val prefs =
+                EncryptedSharedPreferences.create(
+                    context,
+                    "pallasync-public-multiple-forks-native-test",
+                    PallaSyncPlatformKeys.master(context),
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                )
+            assertTrue("Test-owned public preferences must be empty", prefs.all.isEmpty())
+            try {
+                val store = PallaSyncRecoverySetStore(prefs)
+                val prepared = prepare(store)
+                val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
+                val accepted =
+                    PallaSyncRootSession.beginText(phrase, "", PallaSyncRootSession.Operation.RECOVERY_DISABLE).use { root ->
+                        signRecoveryRetirement(root, store, prepared)
+                    }
+                val now = System.currentTimeMillis()
+                val forks =
+                    PallaSyncRootSession.beginText(phrase, "", PallaSyncRootSession.Operation.RECOVERY_DISABLE).use { root ->
+                        listOf(now, now + 1).map { timestamp ->
+                            PallaSyncCore.advanceRecoveryStatus(
+                                root.handle,
+                                root.operation.wire,
+                                prepared.manifestJson,
+                                prepared.statusesJson,
+                                prepared.head,
+                                "compromised",
+                                null,
+                                timestamp,
+                            )
+                        }
+                    }
+                (forks + forks.first()).forEach { statuses ->
+                    val current = checkNotNull(store.read(prepared.id))
+                    val rejected = runCatching { store.updateStatus(current, statuses, requireLocalActivation = false) }.exceptionOrNull()
+                    assertTrue(rejected is IllegalStateException)
+                    assertEquals("C_RECOVERY_SHARE_INVALID", rejected?.message)
+                }
+                val retained = PallaSyncRecoverySetStore(prefs).all().single()
+                assertEquals(accepted.statusesJson, retained.statusesJson)
+                assertEquals(forks, retained.forkEvidence)
+                assertEquals(forks.first(), retained.conflictingStatuses)
+                assertFalse(retained.ordinaryRecoveryAvailable)
+                assertTrue(runCatching { store.updateStatus(retained, "[{}]", requireLocalActivation = false) }.isFailure)
+                assertEquals(retained, store.read(prepared.id))
+            } finally {
+                assertTrue(prefs.edit().clear().commit())
+                PallaSyncCore.setSecretForeground(false)
+            }
+        }
+    }
+
+    @Test
     fun interruptedPreparationCanBeRetiredWithFreshRootAndOriginalStatusesSurviveFileReadback() {
         ActivityScenario.launch(PallaSyncRecoveryTestActivity::class.java).use {
             PallaSyncCore.setSecretForeground(true)

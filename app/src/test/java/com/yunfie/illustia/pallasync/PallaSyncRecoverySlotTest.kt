@@ -108,6 +108,32 @@ class PallaSyncRecoverySlotTest {
     }
 
     @Test
+    fun everySignedForkSurvivesEraseAndReimportWithoutRestoringOrdinaryRecovery() {
+        val name = "recovery-slot-multiple-forks-unit"
+        val holder = slot(name)
+        val candidate = entry()
+        val accepted = holder.replace(null, candidate, candidate.admin, false)
+        val forks = recoveryStatusForks(accepted.packageJson)
+        (forks + forks.first()).forEach { statuses ->
+            val current = checkNotNull(holder.read())
+            val competing = JsonObject(current.packageObject + ("status_chain" to Json.parseToJsonElement(statuses)))
+            shouldThrow<IllegalStateException> { holder.updateStatus(current, competing.toString()) }
+                .message shouldBe "C_RECOVERY_SHARE_INVALID"
+        }
+        val prefs = ApplicationProvider.getApplicationContext<Context>().getSharedPreferences(name, Context.MODE_PRIVATE)
+        val reopened = PallaSyncRecoverySlot(prefs)
+        val retained = checkNotNull(reopened.read())
+        retained.packageJson shouldBe accepted.packageJson
+        retained.forkEvidence shouldBe forks
+        reopened.erase(retained, true)
+        checkNotNull(reopened.publicEvidence(retained.setId)).forkEvidence shouldBe forks
+        reopened.keyErased(retained.keyAlias)
+        val reimported = reopened.replace(null, candidate, candidate.admin, false)
+        reimported.forkEvidence shouldBe forks
+        checkNotNull(reopened.publicEvidence(retained.setId)).forkEvidence shouldBe forks
+    }
+
+    @Test
     fun compromisedOwnPieceCanOnlyEnterExplicitNewRootEmergencyCollection() {
         PallaSyncCore.setSecretForeground(true)
         val packageJson = entry().packageJson

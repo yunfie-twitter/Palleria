@@ -40,7 +40,9 @@ internal class PallaSyncRecoverySetStore(
         val interrupted: Boolean = false,
         val compromised: Boolean = false,
         val conflictingStatuses: String? = null,
+        val additionalConflictingStatuses: List<String> = emptyList(),
     ) {
+        val forkEvidence: List<String> get() = (listOfNotNull(conflictingStatuses) + additionalConflictingStatuses).distinct()
         val manifest: JsonObject get() = Json.parseToJsonElement(manifestJson).jsonObject
         val statuses get() = Json.parseToJsonElement(statusesJson).jsonArray
         val id: String get() = manifest.getValue("recovery_set_id").jsonPrimitive.content
@@ -76,7 +78,7 @@ internal class PallaSyncRecoverySetStore(
             prefs.all.keys.filter { it.startsWith(PREFIX) }.sorted().map { key ->
                 val entry = checkNotNull(read(key.removePrefix(PREFIX)))
                 PallaSyncCore.validateRecoverySetState(entry.manifestJson, entry.statusesJson, entry.admin, entry.head)
-                entry.conflictingStatuses?.let {
+                entry.forkEvidence.forEach {
                     PallaSyncCore.validateRecoverySetState(entry.manifestJson, it, entry.admin, null)
                 }
                 entry
@@ -116,7 +118,7 @@ internal class PallaSyncRecoverySetStore(
         holder: PallaSyncRecoverySlot.Entry,
     ): Entry {
         val marked = if (holder.compromised && !expected.compromised) compromised(expected) else expected
-        return holder.conflictingStatusChain?.let { observeStatus(marked, it) } ?: marked
+        return holder.forkEvidence.fold(marked) { current, evidence -> observeStatus(current, evidence) }
     }
 
     private fun observeStatus(
@@ -129,7 +131,7 @@ internal class PallaSyncRecoverySetStore(
         } catch (failure: IllegalStateException) {
             // A valid fork is displayable only after its exact signed evidence was durably quarantined.
             val saved = read(expected.id)
-            if (saved?.conflictingStatuses != checked) throw failure
+            if (saved == null || checked !in saved.forkEvidence) throw failure
             saved
         }
     }
@@ -194,7 +196,8 @@ internal class PallaSyncRecoverySetStore(
             val shared = minOf(statuses.size, expected.statuses.size)
             if (statuses.take(shared) != expected.statuses.take(shared)) {
                 PallaSyncCore.cancelRecoverySetSessions(expected.id)
-                commit(expected.copy(conflictingStatuses = canonical))
+                val evidence = (expected.forkEvidence + canonical).distinct()
+                commit(expected.copy(conflictingStatuses = evidence.first(), additionalConflictingStatuses = evidence.drop(1)))
                 error("C_RECOVERY_SHARE_INVALID")
             }
             PallaSyncCore.validateRecoverySetState(expected.manifestJson, canonical, expected.admin, expected.head)

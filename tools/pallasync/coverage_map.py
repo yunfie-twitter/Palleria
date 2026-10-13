@@ -143,7 +143,7 @@ CHECKLIST = [
       "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryStatusActions.kt",
       "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryCreationDialog.kt",
       "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryDealerControls.kt"],
-     [CORE + "tests/recovery_flow.rs", TESTS + "PallaSyncRecoverySetupTest.kt", TESTS + "PallaSyncRecoveryInventoryTest.kt", TESTS + "PallaSyncRecoveryPublicStatusTest.kt",
+     [CORE + "tests/recovery_flow.rs", TESTS + "PallaSyncRecoverySetupTest.kt", TESTS + "PallaSyncRecoveryInventoryTest.kt", TESTS + "PallaSyncRecoveryPublicStatusTest.kt", TESTS + "PallaSyncRecoverySlotTest.kt",
       TESTS + "PallaSyncRecoveryConfigurationTest.kt", TESTS + "PallaSyncRecoveryDealerWorkflowTest.kt",
       TESTS + "PallaSyncRecoveryRecipientTest.kt",
       TESTS + "PallaSyncRecoveryCollectorTest.kt",

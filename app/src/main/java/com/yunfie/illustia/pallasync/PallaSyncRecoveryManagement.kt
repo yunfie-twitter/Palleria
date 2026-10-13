@@ -145,14 +145,14 @@ internal class PallaSyncRecoveryManagement(
         ) {
             PallaSyncCore.cancelRecoverySetSessions(entry.id)
         }
-        slot.read()?.takeIf { it.setId == entry.id }?.let { own ->
-            val statuses = entry.conflictingStatuses ?: entry.statusesJson
+        (entry.forkEvidence.ifEmpty { listOf(entry.statusesJson) }).forEach { statuses ->
+            val own = slot.read()?.takeIf { it.setId == entry.id } ?: return@forEach
             val next = JsonObject(own.packageObject + ("status_chain" to Json.parseToJsonElement(statuses)))
             try {
                 slot.updateStatus(own, next.toString())
             } catch (failure: IllegalStateException) {
                 // A verified fork is an expected rejection only after its exact evidence is durable in the holder.
-                if (entry.conflictingStatuses == null || slot.read()?.conflictingStatusChain != statuses) throw failure
+                if (statuses !in entry.forkEvidence || statuses !in slot.read()?.forkEvidence.orEmpty()) throw failure
             }
         }
     }

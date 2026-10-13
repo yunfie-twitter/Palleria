@@ -3,9 +3,13 @@
 規範は依頼者が指定した `PallaSync-Protocol/docs/v3.0.md` だけです。
 本記録・コード・試験・設定は仕様を変更しません。全機能の適合完了はまだ宣言しません。
 
+2026-10-13、追加実装の前に依頼どおり両リポジトリの作業をcommitしました。
+Palleriaは`470b5131`、PallaSyncは`6c9f51f`です。これらは途中の実装を保存するcommitであり、
+全適合・最終APK・本番更新・新規PRの完了を表しません。
+
 §7.11／§18.6–§18.8のJNIには配布、proposalのadmin署名、保護package作成、readback ack、
 自端末共有・live収集、threshold試験、active化、指定操作用rootの型付き所有権を接続しています。
-受取・共有解放・collector画面の接続時点でKotlin全460試験（PallaSync対象123試験、失敗/error/skip 0）、detekt/ktlintが成功しました。その後のexact retry/ID/sequence conflict補強は関連18試験・静的検査・APK生成で検証しています。実Androidの検証範囲と版ごとの結果は後段に記録します。Rust core全61試験とclippyも、直前のnative実装時点で成功しています。
+複数の署名済みstatus分岐を保持する修正後、Kotlin全464試験（PallaSync対象127試験、失敗/error/skip 0）、detekt/ktlintが成功しました。実Androidの検証範囲と版ごとの結果は後段に記録します。Rust core全61試験とclippyも、直前のnative実装時点で成功しています。
 holder保存枠は通常DBから独立し、全chainで単一の保護entryをCAS更新します。host試験では、
 占有拒否、再開、古い状態による削除拒否、署名済みstatus forkの保存とunsigned変更の拒否を確認しました。
 RSWKはOS認証を必要とするKeystore cipherで包み、解放には新しい認証と明示同意を要求します。
@@ -124,3 +128,9 @@ collectorのclassloader修正後はhost全460件（PallaSync対象123件、failu
 §7.11.5のUI受取/collector cacheではnativeのstrict parserを先に通し、原wire bytesのSHA-256、transfer_id、方向別session/sender/message_seqを、署名と処理に成功した後だけ保持します。原packetの再送は元の公開/ciphertext応答を返し、古いpacketへ現時点のcountを返しません。同じID/seqの変更bytesは、秘密pairを終了した後やstage遷移後にもC_RECOVERY_SHARE_INVALIDで拒否します。1024 packetのローカルRAM上限ではC_LOCAL_LIMITで止め、媒体を削除しません。送受信は直列化し、処理中のUI二重実行を防ぎます。この追加部分を対象試験で検証中です。
 
 exact retry/ID/sequence補強はhost対象18件（Collector 4、Inventory 4、Recipient/Reader 7、PublicStatus 3、failure/error/skip 0）、detekt/ktlint、3 ABI/universal/test APK生成で成功しました（app/build/pallasync-recovery-replay-checks.log）。実Android対象12件は60.613秒で成功しました（app/build/pallasync-recovery-replay-android.log）。全460件の記録は再送補強直前のsource、最新の対象18件は補強後のsourceです。最新5 APKのhashはapp/build/pallasync-recovery-replay-apk-metadata.jsonへ記録し、final_delivery=falseです。全適合試験・最終APK・本番更新・新規PRは引き続き未完了です。
+
+§7.11.1／§19.4に従い、同じ既知statusから分岐した複数の署名済みstatus chainを、端末内の保護ストアで追記・重複排除して保持するよう変更しました。元のaccepted chainと最初の矛盾証拠を上書きしません。holder消去後の公開証拠、再インポート、inventoryからholderへの伝播も同じ証拠集合を保持します。wire objectへのフィールド追加はありません。新しいhost試験は、複数の有効なadmin署名、exact再送、再open、消去／再import、不正statusによる既存証拠変更の拒否を対象にしています。全体テストの実行結果は確定後に追記します。
+
+複数分岐の保存修正後、Kotlin全464件（PallaSync対象127件、failure/error/skip 0）、detekt／ktlintが成功しました（app/build/pallasync-recovery-fork-checks.log、8分38秒）。追加のAndroid試験は別に実行し、実際の結果を区別して記録します。これは全IT・本番確認の完了を意味しません。
+
+実Androidの対象2件は2.434秒で成功しました（app/build/pallasync-recovery-fork-android.log）。追加1件では実JNIで同じprepared statusから2つの異なるcompromised successorに署名し、元の受理済みretired chainを変更せず、双方の矛盾証拠をEncryptedSharedPreferencesへ保持します。再openと重複再送、不正statusの拒否も検証しました。これはOSプロセスkillや全復旧三者ITの試験ではありません。detekt／ktlint、3 ABI／universal／test APK生成も成功しました（app/build/pallasync-recovery-fork-android-build.log、54秒）。最新5 APKのhashはapp/build/pallasync-recovery-fork-apk-metadata.jsonへ記録し、final_delivery=falseです。前段のAndroid12件は以前のsourceに対する検証として区別します。
