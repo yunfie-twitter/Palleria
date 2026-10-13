@@ -63,7 +63,7 @@ object NetworkWarmer {
                                 .Builder()
                                 .url(url)
                                 .header("Referer", "https://www.pixiv.net/")
-                                .header("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Palleria)")
+                                .header("User-Agent", "PixivAndroidApp/6.184.0 (Android 14; Pixel 6a)")
                                 .head()
                                 .build()
                         client.newCall(request).execute().use {
