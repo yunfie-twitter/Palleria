@@ -153,6 +153,7 @@ internal class PallaSyncRecoveryDealerWorkflow(
             checkNotNull(collection).finish(explicitlyConfirmed).use { result ->
                 check(result.thresholdTestPassed) { "C_RECOVERY_BLOB_INVALID" }
             }
+            owner.usePrepared { it.finishThresholdAudit(true) }
             collection = null
             thresholdTestPassed = true
         }

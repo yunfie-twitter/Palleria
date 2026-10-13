@@ -10,6 +10,33 @@ fn inner() -> Value {
 }
 
 #[test]
+fn recovery_set_and_ceremony_audits_require_null_holder_kind() {
+    let mut value = inner();
+    value["collection"] = json!("pallasync.audit/3");
+    value["operations"][0]["entity_id"] = json!("11111111-1111-4111-8111-111111111111");
+    value["operations"][0]["body"] = json!({
+        "event":"recovery_share_set_created","subject_id":null,"object_hash":null,"result":"succeeded",
+        "ext":{"org.palleria.recovery":{"recovery_set_id":"22222222-2222-4222-8222-222222222222",
+        "recovery_secret_fingerprint":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","threshold":2,"total_shares":3,
+        "holder_kind":null,"holder_counts":{"device":2,"offline":1}}}
+    });
+    for event in [
+        "recovery_share_set_created",
+        "recovery_share_set_rotated",
+        "recovery_ceremony_started",
+        "recovery_ceremony_succeeded",
+        "recovery_ceremony_failed",
+    ] {
+        value["operations"][0]["body"]["event"] = json!(event);
+        for kind in [Value::Null, json!("device"), json!("offline")] {
+            value["operations"][0]["body"]["ext"]["org.palleria.recovery"]["holder_kind"] =
+                kind.clone();
+            assert_eq!(schema::validate_inner(&value).is_ok(), kind.is_null());
+        }
+    }
+}
+
+#[test]
 fn lexical_negatives_are_rejected_before_conversion() {
     for bytes in [
         r#"{"a":1,"a":2}"#,

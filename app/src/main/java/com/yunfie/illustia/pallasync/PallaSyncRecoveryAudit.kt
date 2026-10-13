@@ -14,15 +14,6 @@ internal fun recoverySafetyAudit(
     entry: PallaSyncRecoverySetStore.Entry,
     lostShareId: String?,
 ): PallaSyncPendingEvent {
-    val kinds =
-        entry.manifest
-            .getValue("holders")
-            .jsonArray
-            .map {
-                it.jsonObject
-                    .getValue("holder_kind")
-                    .jsonPrimitive.content
-            }
     val holderKind =
         lostShareId?.let { id ->
             checkNotNull(
@@ -33,15 +24,39 @@ internal fun recoverySafetyAudit(
                 },
             ) { "C_RECOVERY_SET_MISMATCH" }.jsonObject.getValue("holder_kind").jsonPrimitive.content
         }
+    return recoveryAudit(entry, if (lostShareId == null) "recovery_share_compromised" else "recovery_share_lost", "succeeded", holderKind)
+}
+
+internal fun recoveryAudit(
+    entry: PallaSyncRecoverySetStore.Entry,
+    event: String,
+    result: String,
+    holderKind: String? = null,
+): PallaSyncPendingEvent {
+    check(event in recoveryAuditEvents && result in setOf("started", "succeeded", "failed", "blocked")) { "C_SCHEMA_VIOLATION" }
+    check(holderKind == null || holderKind in setOf("device", "offline")) { "C_SCHEMA_VIOLATION" }
+    check(holderKind == null || !(event.startsWith("recovery_share_set_") || event.startsWith("recovery_ceremony_"))) {
+        "C_SCHEMA_VIOLATION"
+    }
+    PallaSyncCore.validateRecoverySetState(entry.manifestJson, entry.statusesJson, entry.admin, entry.head)
+    val kinds =
+        entry.manifest
+            .getValue("holders")
+            .jsonArray
+            .map {
+                it.jsonObject
+                    .getValue("holder_kind")
+                    .jsonPrimitive.content
+            }
     return PallaSyncPendingEvent(
         "pallasync.audit/3",
         UUID.randomUUID().toString(),
         "upsert",
         buildJsonObject {
-            put("event", if (lostShareId == null) "recovery_share_compromised" else "recovery_share_lost")
+            put("event", event)
             put("subject_id", JsonNull)
             put("object_hash", JsonNull)
-            put("result", "succeeded")
+            put("result", result)
             put(
                 "ext",
                 buildJsonObject {
@@ -65,5 +80,19 @@ internal fun recoverySafetyAudit(
                 },
             )
         },
+        createdAtMs = System.currentTimeMillis(),
     )
 }
+
+internal val recoveryAuditEvents =
+    setOf(
+        "recovery_share_set_created",
+        "recovery_share_set_rotated",
+        "recovery_share_holder_added",
+        "recovery_share_holder_removed",
+        "recovery_ceremony_started",
+        "recovery_ceremony_succeeded",
+        "recovery_ceremony_failed",
+        "recovery_share_lost",
+        "recovery_share_compromised",
+    )

@@ -134,3 +134,13 @@ exact retry/ID/sequence補強はhost対象18件（Collector 4、Inventory 4、Re
 複数分岐の保存修正後、Kotlin全464件（PallaSync対象127件、failure/error/skip 0）、detekt／ktlintが成功しました（app/build/pallasync-recovery-fork-checks.log、8分38秒）。追加のAndroid試験は別に実行し、実際の結果を区別して記録します。これは全IT・本番確認の完了を意味しません。
 
 実Androidの対象2件は2.434秒で成功しました（app/build/pallasync-recovery-fork-android.log）。追加1件では実JNIで同じprepared statusから2つの異なるcompromised successorに署名し、元の受理済みretired chainを変更せず、双方の矛盾証拠をEncryptedSharedPreferencesへ保持します。再openと重複再送、不正statusの拒否も検証しました。これはOSプロセスkillや全復旧三者ITの試験ではありません。detekt／ktlint、3 ABI／universal／test APK生成も成功しました（app/build/pallasync-recovery-fork-android-build.log、54秒）。最新5 APKのhashはapp/build/pallasync-recovery-fork-apk-metadata.jsonへ記録し、final_delivery=falseです。前段のAndroid12件は以前のsourceに対する検証として区別します。
+
+§8.6／§11.4／§18.6–§18.7の復旧監査を、作成・holder readback・閾値テスト・collectorの開始／選択操作の成功／失敗／取消・紛失／漏洩へ接続しました。保護prefsの待機キューに保存するのは許可された監査メタデータだけです。未登録／別chainのwriterへは渡さず、Roomへの引渡しはevent UUIDと原serialization hashの同一transaction markerで重複防止します。Occurrence時刻をOperation.created_at_msへ保持します。監査の失敗はroot消去／安全上の操作の前提条件にしません。cleanupの一部が失敗しても、後続の所有resourceはすべてcloseします。
+
+Nativeのaudit schemaではwhole-set／ceremonyのholder_kind=nullを§8.6どおり検査します。Rust全62件、fmt／clippy、関連Kotlin20件（failure/error/skip 0）、detekt／ktlintが成功しました。ログはrust/pallasync-core/target/recovery-audit-tests-fixed.logとapp/build/pallasync-recovery-audit-checks-fixed.log（5分30秒）です。初回のRust検証はcheckoutによる署名済みprivacy.mdのCRLF変換で失敗しました。元のgit blobが署名済みmarkdown_sha256と一致することを確かめてbytesを復元し、.gitattributesで変換を防止しました。初回のKotlin検査はMagicNumberで失敗し、定数へ修正しています。検証を緩めたり、失敗を成功と扱ったりしていません。
+
+実Androidの新しい1件は1.595秒で成功しました（app/build/pallasync-recovery-audit-android.log）。実JNI／EncryptedSharedPreferences／Roomで、引渡しcommit直後の中断とstore再openを経て、同じUUID・原body・発生時刻を一度だけ署名し、author sequence／outboxが1件であることを確認しています。Roomはin-memoryであり、実プロセスkill・ディスク障害・三者HTTPの試験ではありません。3 ABI／universal／test APK生成と静的検査も成功しました（app/build/pallasync-recovery-audit-android-build.log、3分）。最新APKは最終配布版ではありません。
+
+独立Pythonには同じ§8.6の許可listを別実装で追加しました。Rust／JNIを使用せず、秘密field・holder ID・誤count・whole-setのholder_kind・不正時刻を署名／author sequence更新前に拒否し、元UUID／時刻のEd25519／AEAD roundtripを確認します。参照unit suite全25件が1.003秒で成功しました（PallaSync/target/recovery-audit-reference-tests.log）。これは全50 ITや完全適合の証明ではありません。
+
+追加実装直前には最新main（27b90453）のGradle 9.8.1を取り込み、Kotlin全464件／静的検査／APK生成が13分12秒で成功しました（app/build/qualification-kotlin-build.log）。現行の関連20件とはsourceとscopeを区別します。全適合、未完了の管理・移行・snapshot機能、本番更新と新規PRは引き続き未完了です。

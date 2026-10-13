@@ -75,4 +75,5 @@
     <string name="pallasync_recovery_collect_begin">この操作のための収集を明示的に開始</string>
     <string name="pallasync_recovery_collect_operation_confirm">対象chain・set・操作を確認してください。検証した閾値はこの選択した操作だけに使います。無効化ではretired statusへ署名し公開証拠を保持しますが、外部コピーは失効しません。epoch更新には現行の署名済みauthority、privacy同意、原receiptとCASの検証が必要です。</string>
     <string name="pallasync_recovery_collect_succeeded">選択した操作が完了し、native rootセッションを終了しました。新しい署名済みstatusがある場合はholderへ配布してください。すべてのオフラインコピーが最新であることを示すものではありません。</string>
+    <string name="pallasync_recovery_audit_storage_failed">復旧の監査履歴を保存できませんでした。保存領域を確認してください。</string>
 </resources>

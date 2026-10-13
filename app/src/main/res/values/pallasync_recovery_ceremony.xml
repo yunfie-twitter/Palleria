@@ -75,4 +75,5 @@
     <string name="pallasync_recovery_collect_begin">Explicitly start collection for this operation</string>
     <string name="pallasync_recovery_collect_operation_confirm">Verify the intended chain, set and operation. Use the verified threshold only for this selected action. Disabling signs retired status and keeps public evidence; retained copies are not revoked. Epoch rotation requires current signed authority, policy consent, original receipts and CAS verification.</string>
     <string name="pallasync_recovery_collect_succeeded">The selected operation completed and the native root session ended. Distribute any new signed public status to holders; this does not prove that every offline copy is current.</string>
+    <string name="pallasync_recovery_audit_storage_failed">Recovery audit could not be saved. Check available storage.</string>
 </resources>

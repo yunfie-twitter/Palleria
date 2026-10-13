@@ -31,6 +31,7 @@ internal class PallaSyncRecoverySetup private constructor(
     private val transfers = mutableListOf<Transfer>()
     private val collections = mutableListOf<PallaSyncRecoveryCollection>()
     private var closed = false
+    private var thresholdAuditStarted = false
     val manifestJson: String get() = evidence.manifestJson
 
     fun userInteraction() {
@@ -128,7 +129,16 @@ internal class PallaSyncRecoverySetup private constructor(
                 check(shareId == holder.getValue("recovery_share_id").jsonPrimitive.content) { "C_RECOVERY_SHARE_INVALID" }
                 val hash = result.getValue("record_hash").jsonPrimitive.content
                 if (evidence.state == "prepared") {
+                    val firstReadback = evidence.holders.single { it.shareId == shareId }.recordHash == null
                     evidence = store.readback(evidence, shareId, hash)
+                    if (firstReadback) {
+                        store.auditQueue.record(
+                            evidence,
+                            "recovery_share_holder_added",
+                            "succeeded",
+                            holder.getValue("holder_kind").jsonPrimitive.content,
+                        )
+                    }
                 } else {
                     check(evidence.holders.single { it.shareId == shareId }.recordHash == hash) { "C_RECOVERY_SHARE_INVALID" }
                 }
@@ -141,14 +151,41 @@ internal class PallaSyncRecoverySetup private constructor(
             check(evidence.holders.all { it.recordHash != null && it.available && !it.lost }) { "C_RECOVERY_ROTATION_INCOMPLETE" }
             PallaSyncRecoveryCollection
                 .setupTest(manifestJson, evidence.statusesJson, root, evidence.head, ceremonyId, explicitlyConfirmed)
-                .also(collections::add)
+                .also {
+                    collections.add(it)
+                    thresholdAuditStarted = true
+                    store.auditQueue.record(evidence, "recovery_ceremony_started", "started")
+                }
         }
 
     fun activate(nowMs: Long): String =
         checked {
             evidence = store.signStatus(evidence) { PallaSyncCore.activateRecoverySet(root.handle, root.operation.wire, nowMs) }
+            finishThresholdAudit(true)
+            store.auditQueue.record(
+                evidence,
+                if (root.operation ==
+                    PallaSyncRootSession.Operation.RECOVERY_ROTATE
+                ) {
+                    "recovery_share_set_rotated"
+                } else {
+                    "recovery_share_set_created"
+                },
+                "succeeded",
+            )
             evidence.statusesJson
         }
+
+    fun finishThresholdAudit(success: Boolean) {
+        if (thresholdAuditStarted) {
+            thresholdAuditStarted = false
+            store.auditQueue.record(
+                evidence,
+                if (success) "recovery_ceremony_succeeded" else "recovery_ceremony_failed",
+                if (success) "succeeded" else "failed",
+            )
+        }
+    }
 
     fun retire(
         previous: PallaSyncRecoverySetStore.Entry,
@@ -204,12 +241,17 @@ internal class PallaSyncRecoverySetup private constructor(
         if (!closed) {
             closed = true
             try {
-                collections.forEach(PallaSyncRecoveryCollection::close)
-                transfers.forEach(Transfer::close)
+                closeRecoveryResources(
+                    buildList<AutoCloseable> {
+                        addAll(collections)
+                        addAll(transfers)
+                        add(root)
+                    },
+                )
             } finally {
-                root.close()
+                finishThresholdAudit(false)
+                if (evidence.state == "prepared") evidence = store.interrupted(evidence)
             }
-            if (evidence.state == "prepared") evidence = store.interrupted(evidence)
         }
     }
 

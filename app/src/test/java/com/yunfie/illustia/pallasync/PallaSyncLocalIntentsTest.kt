@@ -162,6 +162,61 @@ class PallaSyncLocalIntentsTest {
     private fun database() =
         Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), PallaSyncDatabase::class.java).build()
 
+    @Test
+    fun `audit handoff uncertainty is idempotent and retains the original occurrence time`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val context = ApplicationProvider.getApplicationContext<Context>()
+                val store = PallaSyncLocalStore(context, db)
+                store.dao.updateChainState(ChainStateEntity(chain, 20, 0, "{}", logId = log, writeState = "integrity_paused"))
+                val prefs = context.getSharedPreferences("recovery-audit-handoff-unit", Context.MODE_PRIVATE)
+                prefs.edit().clear().commit()
+                val recovery = PallaSyncRecoverySetStore(prefs)
+                val packageJson =
+                    checkNotNull(javaClass.getResourceAsStream("/pallasync/python-recovery-c8-package.json"))
+                        .use { it.readBytes().toString(Charsets.UTF_8) }
+                val entry = recovery.observeHolder(PallaSyncRecoverySlot.Entry(packageJson, "public-test", "public-test", "public-test"))
+                val event = recoveryAudit(entry, "recovery_ceremony_started", "started").copy(createdAtMs = 42)
+                recovery.auditQueue.enqueue(PallaSyncRecoveryAuditQueue.Pending(chain, event))
+                val author = author(store, MemoryStorage())
+                val intents = queue(store, author)
+                runCatching {
+                    recovery.auditQueue.drain(chain) {
+                        intents.stageRecoveryAudit(chain, it)
+                        error("Injected after Room handoff commit")
+                    }
+                }.isFailure shouldBe true
+                recovery.auditQueue
+                    .pending(chain)
+                    .single()
+                    .event shouldBe event
+                PallaSyncRecoveryAuditQueue(prefs).drain(chain) {
+                    intents.stageRecoveryAudit(chain, it)
+                    true
+                }
+                recovery.auditQueue.pending(chain) shouldBe emptyList()
+                store.protocolDao().pendingMigrationCount(PallaSyncLocalIntents.journalId(chain)) shouldBe 1
+                store.dao.updateChainState(checkNotNull(store.dao.getChainState(chain)).copy(writeState = "active"))
+                intents.resume(chain, keys())
+                intents.stageRecoveryAudit(chain, event)
+                intents.resume(chain, keys())
+                val record = store.dao.queuedBatch(chain, 200).single()
+                store.dao.getChainState(chain)?.authorSeq shouldBe 1
+                PallaSyncDeviceSession.begin(keys()).use { session ->
+                    val inner =
+                        Json.decodeFromString<PallaSyncInnerRecord>(
+                            PallaSyncCore.decryptOwnPreparedRecord(session.handle, record.eventJson),
+                        )
+                    inner.operations.single().entityId shouldBe event.entityId
+                    inner.operations.single().createdAtMs shouldBe 42
+                    inner.operations.single().body shouldBe event.body
+                }
+            } finally {
+                db.close()
+            }
+        }
+
     private fun queue(
         store: PallaSyncLocalStore,
         author: PallaSyncLocalAuthor,

@@ -55,6 +55,33 @@ internal class PallaSyncLocalIntents(
         }
     }
 
+    /** §§8.6/11.4: uncertain queue-to-Room handoff must not allocate another operation for the same occurrence. */
+    suspend fun stageRecoveryAudit(
+        chain: String,
+        event: PallaSyncPendingEvent,
+    ) = store.transaction {
+        PallaSyncRecoveryAuditQueue.validate(event)
+        val marker = "recovery-audit:$chain:${event.entityId}"
+        val hash = sourceHash(event)
+        val existing = store.protocolDao().migrationChunk(marker, 0)
+        if (existing != null) {
+            check(existing.sourceHash == hash && existing.targetChain == chain) { "C_RECORD_ID_CONFLICT" }
+        } else {
+            stage(chain, listOf(event))
+            store.protocolDao().putMigrationChunk(
+                MigrationJournalEntity(
+                    marker,
+                    0,
+                    hash,
+                    event.entityId,
+                    chain,
+                    "recovery_audit_queued",
+                    "{}",
+                ),
+            )
+        }
+    }
+
     /** One bounded rotating scan: a paused creation cannot starve a later delete/clear (§16.4). */
     suspend fun resume(
         chain: String,

@@ -23,6 +23,8 @@ internal class PallaSyncRecoverySetStore(
 ) {
     constructor(context: Context) : this(protectedPrefs(context))
 
+    val auditQueue = PallaSyncRecoveryAuditQueue(prefs)
+
     @Serializable
     data class HolderState(
         val shareId: String,

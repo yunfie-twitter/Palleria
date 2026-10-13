@@ -122,6 +122,7 @@ internal fun PallaSyncRecoveryDealerControls(
         Text(stringResource(R.string.pallasync_recovery_set_id, evidence.id))
         Text(stringResource(R.string.pallasync_recovery_capacity, evidence.usable, evidence.threshold, evidence.total))
         if (failed) Text(stringResource(R.string.pallasync_recovery_action_failed))
+        if (owner.auditStorageFailed) Text(stringResource(R.string.pallasync_recovery_audit_storage_failed))
         if (stage == PallaSyncRecoveryDealerWorkflow.Stage.CLOSED) Text(stringResource(R.string.pallasync_recovery_fresh_session_needed))
         if (pending != null && stage != PallaSyncRecoveryDealerWorkflow.Stage.CLOSED) {
             TextButton(stringResource(R.string.pallasync_recovery_retry_file), enabled = !busy, onClick = {

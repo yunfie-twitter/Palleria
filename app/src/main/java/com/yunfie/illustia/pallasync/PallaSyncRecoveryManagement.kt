@@ -198,12 +198,12 @@ internal class PallaSyncRecoveryManagement(
         lostShareId: String?,
     ) {
         try {
-            manager.enqueueRecoveryAudit(
+            val chain =
                 entry.manifest
                     .getValue("chain_id")
-                    .jsonPrimitive.content,
-                recoverySafetyAudit(entry, lostShareId),
-            )
+                    .jsonPrimitive.content
+            store.auditQueue.enqueue(PallaSyncRecoveryAuditQueue.Pending(chain, recoverySafetyAudit(entry, lostShareId)))
+            store.auditQueue.drain(chain) { manager.enqueueRecoveryAudit(chain, it) }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {

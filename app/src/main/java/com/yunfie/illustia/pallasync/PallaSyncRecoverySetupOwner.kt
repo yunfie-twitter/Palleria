@@ -11,6 +11,7 @@ internal class PallaSyncRecoverySetupOwner(
     private var started = false
     private var closed = false
     private var setup: PallaSyncRecoverySetup? = null
+    val auditStorageFailed: Boolean get() = store.auditQueue.storageFailed
 
     /** Run off the UI thread. Ownership is installed before a coroutine dispatcher can discard its result. */
     @Suppress("LongParameterList", "TooGenericExceptionCaught")

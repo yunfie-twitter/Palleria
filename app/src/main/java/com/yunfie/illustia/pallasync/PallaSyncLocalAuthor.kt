@@ -148,7 +148,7 @@ internal class PallaSyncLocalAuthor(
                         event.entityId,
                         event.operation,
                         state.lamport + 1,
-                        System.currentTimeMillis(),
+                        event.createdAtMs ?: System.currentTimeMillis(),
                         event.context,
                         event.body as? JsonObject ?: error("C_SCHEMA_VIOLATION"),
                     ),

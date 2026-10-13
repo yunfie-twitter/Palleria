@@ -10,6 +10,7 @@ import java.util.UUID
 internal class PallaSyncRecoveryCollectorOwner(
     val entry: PallaSyncRecoverySetStore.Entry,
     val operation: PallaSyncRootSession.Operation,
+    private val auditQueue: PallaSyncRecoveryAuditQueue? = null,
 ) : AutoCloseable {
     enum class Stage { NEW, READY, SAS, RECEIVING, RECOVERED, CLOSED }
 
@@ -21,6 +22,8 @@ internal class PallaSyncRecoveryCollectorOwner(
     private var expectedRole: String? = null
     private val replay = PallaSyncRecoveryReplayCache<Int>()
     private val ceremonyId = UUID.randomUUID().toString()
+    private var auditStarted = false
+    val auditStorageFailed: Boolean get() = auditQueue?.storageFailed == true
     var distinctShares = 0
         private set
     var descriptor: String? = null
@@ -56,6 +59,8 @@ internal class PallaSyncRecoveryCollectorOwner(
                 false,
             )
         stage = Stage.READY
+        auditStarted = true
+        auditQueue?.record(entry, "recovery_ceremony_started", "started")
     }
 
     @Synchronized
@@ -144,6 +149,23 @@ internal class PallaSyncRecoveryCollectorOwner(
         return checkNotNull(completion)
     }
 
+    @Synchronized
+    fun operationFinished(success: Boolean) {
+        check(stage == Stage.RECOVERED) { "C_RECOVERY_AUTH_REQUIRED" }
+        finishAudit(success)
+    }
+
+    private fun finishAudit(success: Boolean) {
+        if (auditStarted) {
+            auditStarted = false
+            auditQueue?.record(
+                entry,
+                if (success) "recovery_ceremony_succeeded" else "recovery_ceremony_failed",
+                if (success) "succeeded" else "failed",
+            )
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private inline fun <T> checked(action: () -> T): T =
         try {
@@ -157,12 +179,15 @@ internal class PallaSyncRecoveryCollectorOwner(
     @Synchronized
     override fun close() {
         stage = Stage.CLOSED
-        pair?.close()
+        val resources = listOfNotNull<AutoCloseable>(pair, collection, completion)
         pair = null
-        collection?.close()
         collection = null
-        completion?.close()
         completion = null
         replay.clear()
+        try {
+            closeRecoveryResources(resources)
+        } finally {
+            finishAudit(false)
+        }
     }
 }

@@ -305,6 +305,11 @@ pub fn validate_operation(collection: &str, op: &Value) -> Result {
                 )?;
                 fields(&body["ext"], &[("org.palleria.recovery", "object")], &[])?;
                 let m = &body["ext"]["org.palleria.recovery"];
+                if event.starts_with("recovery_share_set_")
+                    || event.starts_with("recovery_ceremony_")
+                {
+                    check(m["holder_kind"].is_null())?;
+                }
                 fields(
                     m,
                     &[

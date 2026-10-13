@@ -78,6 +78,8 @@ internal data class PallaSyncPendingEvent(
     val context: kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(emptyMap()),
     // A local ordering intent, consumed before wire encoding; never a signed/wire member.
     val favoriteOrder: List<String>? = null,
+    // Local occurrence time survives deferred audit publication; encoded only as Operation.created_at_ms.
+    val createdAtMs: Long? = null,
 )
 
 internal sealed interface PallaSyncApplyResult {

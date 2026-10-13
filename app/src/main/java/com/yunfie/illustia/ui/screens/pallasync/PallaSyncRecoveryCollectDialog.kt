@@ -55,7 +55,10 @@ internal fun PallaSyncRecoveryCollectDialog(
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current
     val dismiss by rememberUpdatedState(onDismiss)
-    val owner = remember(entry, operation) { PallaSyncRecoveryCollectorOwner(entry, operation) }
+    val owner =
+        remember(entry, operation) {
+            PallaSyncRecoveryCollectorOwner(entry, operation, PallaSyncRecoverySetStore(context.applicationContext).auditQueue)
+        }
     val cancellation = remember(owner) { PallaSyncRootCancellation() }
     val management = remember(manager) { PallaSyncRecoveryManagement(context.applicationContext, manager) }
     var incoming by remember { mutableStateOf<Uri?>(null) }
@@ -244,6 +247,7 @@ internal fun PallaSyncRecoveryCollectDialog(
                 })
             }
             TextButton(stringResource(R.string.action_cancel), onClick = onDismiss)
+            if (owner.auditStorageFailed) Text(stringResource(R.string.pallasync_recovery_audit_storage_failed))
         }
     }
     if (confirmSas) {
@@ -278,6 +282,7 @@ internal fun PallaSyncRecoveryCollectDialog(
                         } else {
                             manager.rotateRecoveredEpoch(owner.recovered(), cancellation)
                         }
+                    owner.operationFinished(succeeded)
                     owner.close()
                 }
             },

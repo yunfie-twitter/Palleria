@@ -76,6 +76,7 @@ internal class PalleriaSyncCoordinator(
     private val db = localStore
     private val crypto by lazy { PallaSyncCryptoService(policy) }
     private val keystore by lazy { PallaSyncKeystore(appContext) }
+    private val recoveryAudits by lazy { PallaSyncRecoverySetStore(appContext).auditQueue }
     private val consistencyProbe by lazy { PallaSyncConsistencyProbe(db, remote, policy, keystore, ::makeCapabilityToken) }
     private val projection = PallaSyncProjection(appContext)
     private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
@@ -934,7 +935,8 @@ internal class PalleriaSyncCoordinator(
             operationMutex.withLock {
                 if (activeChainStateLocked()?.chainId != chainId) return@withLock false
                 check(event.schema == "pallasync.audit/3") { "C_RECOVERY_SHARE_INVALID" }
-                enqueueDataEventsLocked(listOf(event))
+                localIntents.stageRecoveryAudit(chainId, event)
+                true
             }
         }
 
@@ -991,6 +993,7 @@ internal class PalleriaSyncCoordinator(
 
     private suspend fun resumeLocalIntentsLocked() {
         val state = activeChainStateLocked() ?: return
+        drainRecoveryAuditsLocked(state.chainId)
         if (state.writeState == "active" && SettingsStore(appContext).read().pallaSyncEnabled) {
             try {
                 requireProtectedAuthority(state.chainId)
@@ -1004,6 +1007,21 @@ internal class PalleriaSyncCoordinator(
             } catch (_: SQLiteException) {
                 log("C_LOCAL_STORAGE_FULL: unsigned local intent was retained")
             }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun drainRecoveryAuditsLocked(chain: String) {
+        try {
+            recoveryAudits.drain(chain) { event ->
+                localIntents.stageRecoveryAudit(chain, event)
+                true
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_LOCAL_STORAGE_FULL"
+            log("$code: recovery audit metadata retained")
         }
     }
 
