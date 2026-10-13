@@ -5,6 +5,7 @@ package com.yunfie.illustia.pallasync
  */
 internal class PallaSyncRecoverySetupOwner(
     private val store: PallaSyncRecoverySetStore,
+    private val previous: PallaSyncRecoverySetStore.Entry? = null,
 ) : AutoCloseable {
     private val cancellation = PallaSyncRootCancellation()
     private val lock = Any()
@@ -32,14 +33,20 @@ internal class PallaSyncRecoverySetupOwner(
                 PallaSyncRootSession.beginText(
                     mnemonic,
                     passphrase,
-                    PallaSyncRootSession.Operation.RECOVERY_CREATE,
+                    if (previous ==
+                        null
+                    ) {
+                        PallaSyncRootSession.Operation.RECOVERY_CREATE
+                    } else {
+                        PallaSyncRootSession.Operation.RECOVERY_ROTATE
+                    },
                     chain.chainId,
                     chain.adminPublicKey,
                 )
             val prepared =
                 try {
                     cancellation.attach(root)
-                    PallaSyncRecoverySetup.create(root, store, chain.generation, configuration.threshold.toLong(), holders, nowMs)
+                    PallaSyncRecoverySetup.create(root, store, chain.generation, configuration.threshold.toLong(), holders, nowMs, previous)
                 } catch (failure: Throwable) {
                     root.close()
                     throw failure

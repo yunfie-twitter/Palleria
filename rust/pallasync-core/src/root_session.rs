@@ -72,6 +72,7 @@ pub struct RootSession {
     last_interaction: Instant,
     pub(crate) prepared: Option<PreparedSet>,
     recovery_source_set: Option<String>,
+    active_replacement: Option<String>,
 }
 struct ProtectedRecoveryInput {
     mnemonic: LockedBytes,
@@ -168,6 +169,7 @@ pub(crate) fn insert_input_at(
             operation,
             last_interaction: Instant::now(),
             prepared: None,
+            active_replacement: None,
             recovery_source_set: recovery_source_set.map(str::to_owned),
         },
     );
@@ -663,6 +665,58 @@ pub fn activate_set(handle: u64, operation: Operation, now_ms: u64) -> Result<Va
 /// §§7.11.1/18.6–18.8: authoritative retirement/compromise needs scoped root authority.
 /// A replacement may name only the new set activated by this rotation's distribution/test guards.
 #[allow(clippy::too_many_arguments)]
+/// §§18.6–18.8: resume only the public retirement step after an already signed active handoff.
+/// This restores neither a dealer session nor its RMS/pieces and cannot activate a prepared set.
+pub fn bind_active_replacement(
+    handle: u64,
+    manifest: &Value,
+    statuses: &[Value],
+    known_head: &str,
+) -> Result<()> {
+    use crate::public_wire::s;
+    with(handle, Operation::RecoveryRotate, |session| {
+        recovery::validate_manifest(manifest, &session.roots.admin_public_key)?;
+        recovery::validate_status_chain(statuses, manifest, Some(known_head))?;
+        let latest = statuses
+            .last()
+            .ok_or(ClientError("C_RECOVERY_SHARE_INVALID"))?;
+        if object_hash(latest) != known_head || s(latest, "state") != "active" {
+            return Err(ClientError("C_RECOVERY_ROTATION_INCOMPLETE"));
+        }
+        let input = session
+            .input
+            .as_ref()
+            .ok_or(ClientError("C_RECOVERY_AUTH_REQUIRED"))?;
+        if manifest["chain_id"] != session.roots.chain_id
+            || s(manifest, "recovery_secret_fingerprint") != input.fingerprint
+        {
+            return Err(ClientError("C_RECOVERY_ROOT_MISMATCH"));
+        }
+        let id = s(manifest, "recovery_set_id");
+        if session
+            .active_replacement
+            .as_deref()
+            .is_some_and(|previous| previous != id)
+        {
+            return Err(ClientError("C_RECOVERY_SET_MISMATCH"));
+        }
+        if let Some(prepared) = &session.prepared
+            && (prepared.manifest != *manifest
+                || !prepared.threshold_test_passed
+                || prepared.acknowledged.len() != prepared.pieces.len()
+                || prepared
+                    .statuses
+                    .last()
+                    .is_none_or(|status| object_hash(status) != known_head))
+        {
+            return Err(ClientError("C_RECOVERY_ROTATION_INCOMPLETE"));
+        }
+        session.active_replacement = Some(id.to_owned());
+        Ok(())
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn advance_recovery_status(
     handle: u64,
     operation: Operation,
@@ -696,19 +750,19 @@ pub fn advance_recovery_status(
             return Err(ClientError("C_RECOVERY_PARAMETER_INVALID"));
         }
         if let Some(replacement) = replacement {
-            let active = session
-                .prepared
-                .as_ref()
-                .ok_or(ClientError("C_RECOVERY_ROTATION_INCOMPLETE"))?;
+            let complete_live_handoff = session.prepared.as_ref().is_some_and(|active| {
+                active.manifest["recovery_set_id"] == replacement
+                    && active
+                        .statuses
+                        .last()
+                        .is_some_and(|status| status["state"] == "active")
+                    && active.acknowledged.len() == active.pieces.len()
+                    && active.threshold_test_passed
+            });
             if operation != Operation::RecoveryRotate
-                || active.manifest["recovery_set_id"] != replacement
-                || active.manifest["recovery_set_id"] == manifest["recovery_set_id"]
-                || active
-                    .statuses
-                    .last()
-                    .is_none_or(|status| status["state"] != "active")
-                || active.acknowledged.len() != active.pieces.len()
-                || !active.threshold_test_passed
+                || manifest["recovery_set_id"] == replacement
+                || !(complete_live_handoff
+                    || session.active_replacement.as_deref() == Some(replacement))
             {
                 return Err(ClientError("C_RECOVERY_ROTATION_INCOMPLETE"));
             }

@@ -144,3 +144,9 @@ Nativeのaudit schemaではwhole-set／ceremonyのholder_kind=nullを§8.6どお
 独立Pythonには同じ§8.6の許可listを別実装で追加しました。Rust／JNIを使用せず、秘密field・holder ID・誤count・whole-setのholder_kind・不正時刻を署名／author sequence更新前に拒否し、元UUID／時刻のEd25519／AEAD roundtripを確認します。参照unit suite全25件が1.003秒で成功しました（PallaSync/target/recovery-audit-reference-tests.log）。これは全50 ITや完全適合の証明ではありません。
 
 追加実装直前には最新main（27b90453）のGradle 9.8.1を取り込み、Kotlin全464件／静的検査／APK生成が13分12秒で成功しました（app/build/qualification-kotlin-build.log）。現行の関連20件とはsourceとscopeを区別します。全適合、未完了の管理・移行・snapshot機能、本番更新と新規PRは引き続き未完了です。
+
+§18.7のrecovery set置換を追加しました。新setの全readback・閾値試験・有効化が先行し、その後にだけ旧setを新set ID付きretiredへ署名します。途中終了後は、保護領域へshare/RMS/rootを保存せず、activeな新setと同chain/adminを確認し、fresh rootを再入力して旧statusの署名を完了する画面を追加しました。old setのfork・compromise・別置換途中とCAS不一致は拒否します。置換workflow host試験を含め、469件（PallaSync対象132件、failure/error/skip 0）、detekt／ktlint、debug appとandroidTest APK生成が成功しました（app/build/pallasync-recovery-resume-final.log）。最終APKで専用AVD instrumentation 25件も成功しました（app/build/pallasync-recovery-resume-final-instrumentation.log）。この再開処理は公開statusのみを確定し、全offline holderへ新statusが配布済みであることは保証しません。
+
+同じsource/APKの独立Python+Android interopは190.27秒で成功しました（PallaSync/target/qualification-android-resume-interop.log）。実Android端末承認・JNI/Room・HTTP、独立PythonによるSAS/署名/HPKE検証、epoch bundle/recovery envelope/receipt、epoch再base、initial sync/outbox、application payload boundary、origin bindingを確認しました。隔離relayを使ったこれらの対象試験は全50 ITではありません。
+
+全適合は未達です。IT-01〜IT-50、Appendix A/C/D全体、三者独立復旧・完全な移行／snapshot・大規模履歴・物理holderの独立保管・実ディスク障害試験、本番更新は未完了です。v2.1 ChainParameters.signatureの検証方式も§4.1に定義がないため追加していません。`docs/pallasync-v3-acceptance.json`の`conformance_claim`はfalseのまま維持します。

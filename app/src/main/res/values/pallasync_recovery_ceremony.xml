@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="pallasync_recovery_create">Create a recovery set</string>
+    <string name="pallasync_recovery_replace">Replace this complete recovery set</string>
+    <string name="pallasync_recovery_replacement_guidance">Create a fresh, complete set with direct root input. This set becomes active only after every new holder reads back its package and the threshold test succeeds; the prior set is then retired. Until that signed status commits, the prior set stays separately visible and no replacement is implied.</string>
     <string name="pallasync_recovery_setup_guidance">Recommend 2-of-3 with one offline medium. Select distinct physical storage domains and enter their stable holder IDs. Copies and app clones are the same holder. At most n−t losses are tolerated; t leaked pieces and the blob expose your original recovery inputs.</string>
     <string name="pallasync_recovery_local_files_guidance">Choose two distinct local files before starting: incoming from the other endpoint and outgoing to it. Each explicit write replaces the outgoing file with the original signed object or HPKE transfer. Share them only by local media. Cloud providers and relay transport are forbidden. Leaving the app aborts the secret session.</string>
     <string name="pallasync_recovery_setup_root_guidance">This explicitly creates fresh recovery material for the selected holders. Prepared material is not active. All holders must persist and read back their package and a live threshold test must pass before activation. Root inputs remain only for this foreground operation.</string>
@@ -76,4 +78,6 @@
     <string name="pallasync_recovery_collect_operation_confirm">Verify the intended chain, set and operation. Use the verified threshold only for this selected action. Disabling signs retired status and keeps public evidence; retained copies are not revoked. Epoch rotation requires current signed authority, policy consent, original receipts and CAS verification.</string>
     <string name="pallasync_recovery_collect_succeeded">The selected operation completed and the native root session ended. Distribute any new signed public status to holders; this does not prove that every offline copy is current.</string>
     <string name="pallasync_recovery_audit_storage_failed">Recovery audit could not be saved. Check available storage.</string>
+    <string name="pallasync_recovery_resume_replacement">Finish interrupted recovery replacement</string>
+    <string name="pallasync_recovery_resume_replacement_guidance">The new set is already active, but the signed retirement of its pinned predecessor was interrupted. Re-enter the chain root to finish this public status transition. No recovery shares or root material were retained.</string>
 </resources>

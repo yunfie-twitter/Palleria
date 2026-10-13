@@ -47,12 +47,13 @@ private data class RecoveryHolderInput(
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
 internal fun PallaSyncRecoveryCreationDialog(
     manager: PalleriaSyncManager,
+    previous: PallaSyncRecoverySetStore.Entry? = null,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current
-    val owner = remember { PallaSyncRecoverySetupOwner(PallaSyncRecoverySetStore(context.applicationContext)) }
+    val owner = remember(previous?.id) { PallaSyncRecoverySetupOwner(PallaSyncRecoverySetStore(context.applicationContext), previous) }
     var threshold by remember { mutableStateOf("2") }
     var holders by remember { mutableStateOf(listOf(RecoveryHolderInput(), RecoveryHolderInput(), RecoveryHolderInput(offline = true))) }
     var independent by remember { mutableStateOf(false) }
@@ -108,8 +109,20 @@ internal fun PallaSyncRecoveryCreationDialog(
         }
     } else if (configuration != null) {
         PallaSyncRootInputDialog(
-            title = stringResource(R.string.pallasync_recovery_create),
-            explanation = stringResource(R.string.pallasync_recovery_setup_root_guidance),
+            title =
+                stringResource(
+                    if (previous == null) R.string.pallasync_recovery_create else R.string.pallasync_recovery_replace,
+                ),
+            explanation =
+                stringResource(
+                    if (previous ==
+                        null
+                    ) {
+                        R.string.pallasync_recovery_setup_root_guidance
+                    } else {
+                        R.string.pallasync_recovery_replacement_guidance
+                    },
+                ),
             busy = busy,
             onDismiss = onDismiss,
             onConfirm = { words, passphrase ->

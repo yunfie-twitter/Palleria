@@ -96,6 +96,47 @@ internal class PallaSyncRecoveryManagement(
             }
         }
 
+    /** Resume only the signed public replacement commit after interruption; no share/RMS is retained. */
+    suspend fun finishReplacement(
+        expected: PallaSyncRecoverySetStore.Entry,
+        mnemonic: String,
+        passphrase: String,
+        cancellation: PallaSyncRootCancellation,
+    ): PallaSyncRecoverySetStore.Entry =
+        withContext(Dispatchers.IO) {
+            val chain = checkNotNull(manager.recoveryChainContext()) { "C_MISSING_DEPENDENCY" }
+            check(expected.replacementPending && expected.state == "active" && expected.conflictingStatuses == null) {
+                "C_RECOVERY_ROTATION_INCOMPLETE"
+            }
+            check(
+                expected.admin == chain.adminPublicKey && expected.manifest
+                    .getValue("chain_id")
+                    .jsonPrimitive.content == chain.chainId,
+            ) {
+                "C_RECOVERY_SET_MISMATCH"
+            }
+            val root =
+                PallaSyncRootSession.beginText(
+                    mnemonic,
+                    passphrase,
+                    PallaSyncRootSession.Operation.RECOVERY_ROTATE,
+                    chain.chainId,
+                    chain.adminPublicKey,
+                )
+            try {
+                cancellation.attach(root)
+                val previousId = checkNotNull(expected.replacesSetId) { "C_MISSING_DEPENDENCY" }
+                val updated = store.finishReplacement(expected, root, System.currentTimeMillis())
+                store.read(previousId)?.let(::updateOwnStatus)
+                updateOwnStatus(updated)
+                audit(updated, null)
+                updated
+            } finally {
+                root.close()
+                cancellation.release(root)
+            }
+        }
+
     suspend fun importStatuses(
         expected: PallaSyncRecoverySetStore.Entry,
         statusesJson: String,

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="pallasync_recovery_create">復旧セットを作成</string>
+    <string name="pallasync_recovery_replace">この復旧セット全体を置き換える</string>
+    <string name="pallasync_recovery_replacement_guidance">直接のroot入力から新しい完全なセットを作成します。全holderが新しいpackageを読み戻し、閾値試験に成功してから新セットを有効化し、旧セットを退役させます。旧セットの状態はsigned status commitまで個別に表示し、置換済みとみなしません。</string>
     <string name="pallasync_recovery_setup_guidance">オフライン媒体を1つ含む2-of-3を推奨します。独立した物理保存先を選び、各保存先の固定holder IDを指定してください。コピーやアプリのcloneは同じ保有者です。耐えられる紛失はn−t個までで、t個の漏洩共有とblobから元の復旧入力が露出します。</string>
     <string name="pallasync_recovery_local_files_guidance">開始前に相手からの受信ファイルと相手へ渡す送信ファイルを別々に選んでください。保存ボタンを押すたびに送信先を元の署名済みobjectまたはHPKE transferで上書きします。ローカル媒体だけで交換してください。クラウド・リレーへの転送は禁止です。アプリを離れると秘密セッションを中止します。</string>
     <string name="pallasync_recovery_setup_root_guidance">選んだ保有者向けの新しい復旧材料を明示的に作成します。prepared状態では有効ではありません。全保有者の保存・読戻しと、live閾値試験が成功してから有効化します。root入力はこの画面の操作中だけ保持します。</string>
@@ -76,4 +78,6 @@
     <string name="pallasync_recovery_collect_operation_confirm">対象chain・set・操作を確認してください。検証した閾値はこの選択した操作だけに使います。無効化ではretired statusへ署名し公開証拠を保持しますが、外部コピーは失効しません。epoch更新には現行の署名済みauthority、privacy同意、原receiptとCASの検証が必要です。</string>
     <string name="pallasync_recovery_collect_succeeded">選択した操作が完了し、native rootセッションを終了しました。新しい署名済みstatusがある場合はholderへ配布してください。すべてのオフラインコピーが最新であることを示すものではありません。</string>
     <string name="pallasync_recovery_audit_storage_failed">復旧の監査履歴を保存できませんでした。保存領域を確認してください。</string>
+    <string name="pallasync_recovery_resume_replacement">中断した復旧set置換を完了</string>
+    <string name="pallasync_recovery_resume_replacement_guidance">新しいsetは有効ですが、前のsetを退役させる署名処理が中断されました。この公開status遷移を完了するため、chain rootを再入力してください。復旧共有やroot秘密は保持していません。</string>
 </resources>

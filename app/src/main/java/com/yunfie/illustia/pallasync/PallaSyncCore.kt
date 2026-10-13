@@ -63,6 +63,13 @@ object PallaSyncCore {
         nowMs: Long,
     ): String
 
+    external fun bindRecoveryReplacement(
+        root: Long,
+        manifestJson: String,
+        statusesJson: String,
+        knownHead: String,
+    )
+
     external fun touchRecoveryCollection(collector: Long)
 
     external fun cancelRecoverySetSessions(setId: String)

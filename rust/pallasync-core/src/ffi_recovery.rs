@@ -229,6 +229,31 @@ fn output(env: &mut JNIEnv<'_>, result: Result<String>) -> Result<jstring> {
     })
 }
 
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_bindRecoveryReplacement<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    root: jlong,
+    manifest: JString<'local>,
+    chain: JString<'local>,
+    known_head: JString<'local>,
+) {
+    let result = (|| {
+        root_session::bind_active_replacement(
+            root as u64,
+            &value(&mut env, &manifest)?,
+            &statuses(&mut env, &chain)?,
+            &text(&mut env, &known_head)?,
+        )
+    })();
+    if let Err(error) = result {
+        root_session::end(root as u64);
+        failure(&mut env, error);
+    }
+}
+
 fn statuses(env: &mut JNIEnv<'_>, input: &JString<'_>) -> Result<Vec<Value>> {
     value(env, input)?
         .as_array()

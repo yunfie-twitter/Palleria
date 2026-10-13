@@ -44,6 +44,8 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
     var revision by remember { mutableStateOf(0) }
     var heldSetId by remember { mutableStateOf<String?>(null) }
     var creating by remember { mutableStateOf(false) }
+    var replacing by remember { mutableStateOf<PallaSyncRecoverySetStore.Entry?>(null) }
+    var resumingReplacement by remember { mutableStateOf<PallaSyncRecoverySetStore.Entry?>(null) }
     var receiving by remember { mutableStateOf(false) }
     var releasing by remember { mutableStateOf(false) }
     var collecting by remember { mutableStateOf<Pair<PallaSyncRecoverySetStore.Entry, PallaSyncRootSession.Operation>?>(null) }
@@ -83,7 +85,21 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
                                 action =
                                     RecoverySafetyAction(entry)
                             })
+                            if (entry.replacementPending && entry.state == "active" && entry.conflictingStatuses == null) {
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_recovery_resume_replacement),
+                                    enabled = !busy,
+                                    onClick = { resumingReplacement = entry },
+                                )
+                            }
                             PallaSyncRecoveryStatusActions(management, manager, entry, busy) { revision++ }
+                            if (canReplaceRecoverySet(entry)) {
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_recovery_replace),
+                                    enabled = !busy,
+                                    onClick = { replacing = entry },
+                                )
+                            }
                             val canCollect = !busy && entry.state == "active" && !entry.compromised && entry.conflictingStatuses == null
                             TextButton(
                                 stringResource(R.string.pallasync_recovery_collect_disable),
@@ -117,6 +133,18 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
             creating = false
             revision++
         })
+    }
+    replacing?.let { previous ->
+        PallaSyncRecoveryCreationDialog(manager, previous = previous, onDismiss = {
+            replacing = null
+            revision++
+        })
+    }
+    resumingReplacement?.let { entry ->
+        PallaSyncRecoveryReplacementResumeDialog(manager, management, entry) {
+            resumingReplacement = null
+            revision++
+        }
     }
     if (receiving) {
         PallaSyncRecoveryReceiveDialog(manager, onDismiss = {
@@ -246,7 +274,12 @@ private fun recoveryStateMessage(entry: PallaSyncRecoverySetStore.Entry): Int =
     when {
         entry.conflictingStatuses != null -> R.string.pallasync_recovery_quarantined
         entry.compromised || entry.state == "compromised" -> R.string.pallasync_recovery_compromised
+        entry.replacementPending -> R.string.pallasync_recovery_incomplete
         entry.state == "retired" -> R.string.pallasync_recovery_retired
         entry.interrupted || entry.state == "prepared" -> R.string.pallasync_recovery_incomplete
         else -> R.string.pallasync_recovery_active
     }
+
+private fun canReplaceRecoverySet(entry: PallaSyncRecoverySetStore.Entry): Boolean =
+    (entry.state == "active" || entry.compromised) && !entry.replacementPending &&
+        entry.conflictingStatuses == null && entry.forkEvidence.isEmpty()

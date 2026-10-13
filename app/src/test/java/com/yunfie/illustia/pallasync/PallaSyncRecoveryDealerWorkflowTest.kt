@@ -86,6 +86,56 @@ class PallaSyncRecoveryDealerWorkflowTest {
         checkNotNull(store.selected()).interrupted shouldBe true
     }
 
+    @Test
+    fun replacementActivatesOnlyAfterReadbackAndThresholdThenRetiresThePinnedPreviousSet() {
+        val (initialFlow, store) = create("dealer-workflow-replacement-unit")
+        val initialPackages = List(3) { index -> distribute(initialFlow, index) }
+        initialFlow.beginThresholdTest(true)
+        repeat(2) { index -> collect(initialFlow, initialPackages[index], index) }
+        initialFlow.finishThresholdTest(true)
+        initialFlow.activate(2)
+        val previous = checkNotNull(store.read(initialFlow.evidence.id))
+        previous.state shouldBe "active"
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val identity = PallaSyncRootSession.beginText(phrase, "", PallaSyncRootSession.Operation.RECOVERY_ROTATE).use { it.identity }
+        val configuration =
+            PallaSyncRecoveryConfiguration(
+                2,
+                List(3) { PallaSyncRecoveryConfiguration.Holder(UUID.randomUUID().toString(), null) },
+                true,
+                false,
+            )
+        val owner = PallaSyncRecoverySetupOwner(store, previous)
+        owner.prepare(
+            PallaSyncRecoveryChainContext(identity.chainId, identity.adminPublicKey, 0, UUID.randomUUID().toString()),
+            configuration,
+            phrase,
+            "",
+            3,
+        )
+        val replacement = PallaSyncRecoveryDealerWorkflow(owner)
+        val replacementPackages = List(3) { index -> distribute(replacement, index) }
+        replacement.beginThresholdTest(true)
+        repeat(2) { index -> collect(replacement, replacementPackages[index], index) }
+        replacement.finishThresholdTest(true)
+        replacement.activate(4)
+
+        val retired = checkNotNull(store.read(previous.id))
+        retired.state shouldBe "retired"
+        retired.statuses
+            .last()
+            .jsonObject
+            .getValue("replacement_set_id")
+            .jsonPrimitive.content shouldBe replacement.evidence.id
+        replacement.evidence.state shouldBe "active"
+        replacement.evidence.replacementPending shouldBe false
+        retired.usable shouldBe 3
+        replacement.evidence.usable shouldBe 3
+        initialFlow.close()
+        replacement.close()
+    }
+
     private fun responder(
         flow: PallaSyncRecoveryDealerWorkflow,
         descriptor: String,
@@ -98,7 +148,7 @@ class PallaSyncRecoveryDealerWorkflowTest {
             parsed.getValue("session_id").jsonPrimitive.content,
             "responder",
             "reader",
-            "create",
+            flow.purpose,
         )
     }
 

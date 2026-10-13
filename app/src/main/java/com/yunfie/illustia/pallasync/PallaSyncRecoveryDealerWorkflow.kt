@@ -24,6 +24,7 @@ internal class PallaSyncRecoveryDealerWorkflow(
         private set
     var thresholdTestPassed = false
         private set
+    val purpose get() = owner.usePrepared { it.purpose }
     private var transfer: PallaSyncRecoverySetup.Transfer? = null
     private var collection: PallaSyncRecoveryCollection? = null
     private var receiver: PallaSyncRecoveryCandidate? = null
@@ -139,7 +140,7 @@ internal class PallaSyncRecoveryDealerWorkflow(
                         UUID.randomUUID().toString(),
                         "initiator",
                         "collector",
-                        "create",
+                        setup.purpose,
                     )
             }
             descriptor = checkNotNull(receiver).descriptorJson
@@ -163,7 +164,10 @@ internal class PallaSyncRecoveryDealerWorkflow(
             check(stage == Stage.READY && thresholdTestPassed) { "C_RECOVERY_ROTATION_INCOMPLETE" }
             val statuses =
                 owner.usePrepared {
-                    it.activate(nowMs).also { _ -> completedEvidence = it.evidence }
+                    it.activate(nowMs).also { _ ->
+                        it.finishReplacement(nowMs)
+                        completedEvidence = it.evidence
+                    }
                 }
             // Success ends the secret-bearing ceremony; only the signed public state stays visible.
             owner.close()

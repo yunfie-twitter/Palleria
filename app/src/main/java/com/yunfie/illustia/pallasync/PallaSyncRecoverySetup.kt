@@ -33,6 +33,7 @@ internal class PallaSyncRecoverySetup private constructor(
     private var closed = false
     private var thresholdAuditStarted = false
     val manifestJson: String get() = evidence.manifestJson
+    val purpose: String get() = if (root.operation == PallaSyncRootSession.Operation.RECOVERY_ROTATE) "rotate" else "create"
 
     fun userInteraction() {
         checkOpen()
@@ -59,7 +60,7 @@ internal class PallaSyncRecoverySetup private constructor(
                     UUID.randomUUID().toString(),
                     "initiator",
                     "dealer",
-                    purpose(),
+                    purpose,
                 )
             Transfer(shareIndex, role, pair).also(transfers::add)
         }
@@ -187,6 +188,11 @@ internal class PallaSyncRecoverySetup private constructor(
         }
     }
 
+    fun finishReplacement(nowMs: Long) =
+        checked {
+            if (evidence.replacementPending) evidence = store.finishReplacement(evidence, root, nowMs)
+        }
+
     fun retire(
         previous: PallaSyncRecoverySetStore.Entry,
         nowMs: Long,
@@ -209,8 +215,6 @@ internal class PallaSyncRecoverySetup private constructor(
                     )
                 }.statusesJson
         }
-
-    private fun purpose(): String = if (root.operation == PallaSyncRootSession.Operation.RECOVERY_ROTATE) "rotate" else "create"
 
     private fun checkOpen() {
         check(!closed) { "C_RECOVERY_SESSION_EXPIRED" }
@@ -264,6 +268,7 @@ internal class PallaSyncRecoverySetup private constructor(
             threshold: Long,
             holdersJson: String,
             nowMs: Long,
+            previous: PallaSyncRecoverySetStore.Entry? = null,
         ): PallaSyncRecoverySetup {
             try {
                 val prepared =
@@ -283,6 +288,7 @@ internal class PallaSyncRecoverySetup private constructor(
                         prepared.getValue("manifest").toString(),
                         prepared.getValue("status_chain").toString(),
                         ownedRoot.identity.adminPublicKey,
+                        previous,
                     )
                 return PallaSyncRecoverySetup(ownedRoot, store, prepared, entry)
             } catch (failure: Throwable) {

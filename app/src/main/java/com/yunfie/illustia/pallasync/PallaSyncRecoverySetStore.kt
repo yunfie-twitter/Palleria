@@ -43,6 +43,8 @@ internal class PallaSyncRecoverySetStore(
         val compromised: Boolean = false,
         val conflictingStatuses: String? = null,
         val additionalConflictingStatuses: List<String> = emptyList(),
+        val replacesSetId: String? = null,
+        val replacementPending: Boolean = false,
     ) {
         val forkEvidence: List<String> get() = (listOfNotNull(conflictingStatuses) + additionalConflictingStatuses).distinct()
         val manifest: JsonObject get() = Json.parseToJsonElement(manifestJson).jsonObject
@@ -142,6 +144,7 @@ internal class PallaSyncRecoverySetStore(
         manifestJson: String,
         statusesJson: String,
         trustedAdmin: String,
+        previous: Entry? = null,
     ): Entry =
         synchronized(lock) {
             val statuses = PallaSyncCore.validateRecoverySetState(manifestJson, statusesJson, trustedAdmin, null)
@@ -154,10 +157,114 @@ internal class PallaSyncRecoverySetStore(
                         holder.getValue("holder_instance_id").jsonPrimitive.content,
                     )
                 }
-            val entry = Entry(manifest.toString(), statuses, holders)
+            previous?.let {
+                requireCurrent(it)
+                check(
+                    !it.replacementPending && it.conflictingStatuses == null && it.forkEvidence.isEmpty() &&
+                        it.admin == trustedAdmin && it.manifest.getValue("chain_id") == manifest.getValue("chain_id") && it.id !=
+                        manifest.getValue("recovery_set_id").jsonPrimitive.content,
+                ) {
+                    "C_RECOVERY_SET_MISMATCH"
+                }
+            }
+            val entry =
+                Entry(
+                    manifest.toString(),
+                    statuses,
+                    holders,
+                    replacesSetId = previous?.id,
+                    replacementPending = previous != null,
+                )
             check(read(entry.id) == null && entry.state == "prepared") { "C_RECOVERY_SHARE_INVALID" }
             commit(entry, true)
         }
+
+    /** Both signed heads remain pinned under the same commit lock; no secret dealer state is resumed. */
+    fun finishReplacement(
+        expected: Entry,
+        root: PallaSyncRootSession,
+        nowMs: Long,
+    ): Entry =
+        synchronized(lock) {
+            requireCurrent(expected)
+            check(
+                expected.replacementPending && expected.state == "active" && expected.conflictingStatuses == null && !expected.compromised,
+            ) {
+                "C_RECOVERY_ROTATION_INCOMPLETE"
+            }
+            val previous = checkNotNull(read(checkNotNull(expected.replacesSetId))) { "C_MISSING_DEPENDENCY" }
+            validateReplacementTarget(previous, expected)
+            validateReplacementRoot(root, expected)
+            PallaSyncCore.bindRecoveryReplacement(root.handle, expected.manifestJson, expected.statusesJson, expected.head)
+            retireReplacedSet(previous, expected, root, nowMs)
+            commit(expected.copy(replacementPending = false))
+        }
+
+    private fun validateReplacementTarget(
+        previous: Entry,
+        expected: Entry,
+    ) {
+        check(
+            !previous.replacementPending && previous.conflictingStatuses == null && previous.forkEvidence.isEmpty() &&
+                previous.admin == expected.admin &&
+                previous.manifest.getValue("chain_id") == expected.manifest.getValue("chain_id"),
+        ) { "C_RECOVERY_SET_MISMATCH" }
+        when (previous.state) {
+            "active", "prepared", "compromised" -> {
+                Unit
+            }
+
+            "retired" -> {
+                check(
+                    previous.statuses
+                        .last()
+                        .jsonObject
+                        .getValue("replacement_set_id")
+                        .jsonPrimitive.content == expected.id,
+                ) {
+                    "C_RECOVERY_SET_MISMATCH"
+                }
+            }
+
+            else -> {
+                error("C_RECOVERY_ROTATION_INCOMPLETE")
+            }
+        }
+    }
+
+    private fun validateReplacementRoot(
+        root: PallaSyncRootSession,
+        expected: Entry,
+    ) {
+        check(
+            root.operation == PallaSyncRootSession.Operation.RECOVERY_ROTATE && root.identity.adminPublicKey == expected.admin &&
+                root.identity.chainId ==
+                expected.manifest
+                    .getValue("chain_id")
+                    .jsonPrimitive.content,
+        ) { "C_RECOVERY_ROOT_MISMATCH" }
+    }
+
+    private fun retireReplacedSet(
+        previous: Entry,
+        expected: Entry,
+        root: PallaSyncRootSession,
+        nowMs: Long,
+    ) {
+        if (previous.state == "compromised" || previous.state == "retired") return
+        signStatus(previous) {
+            PallaSyncCore.advanceRecoveryStatus(
+                root.handle,
+                root.operation.wire,
+                previous.manifestJson,
+                previous.statusesJson,
+                previous.head,
+                "retired",
+                expected.id,
+                nowMs,
+            )
+        }
+    }
 
     /** This caller must already have validated a signed live persisted/readback packet through the native dealer. */
     fun readback(
