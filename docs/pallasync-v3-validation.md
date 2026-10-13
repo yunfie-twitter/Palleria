@@ -153,7 +153,9 @@ Draft PR CIでJNI declaration checkが失敗したため確認しました。Rus
 
 Secret Scanの`generic-api-key`検出は固定公開テストベクターのfieldだけでした。値は表示せず、15個の正確なJSON/markdown fixture pathに限る`.gitleaks.toml` allowlistを加え、他のpathとruleは標準scanに残します。TOML parseとdiff checkは成功し、CI scan結果を次commitで確認します。
 
-CI ASanがexpiry中にholderのlocked RSWK stateが残るraceを検出しました。並列unit testの`local_transfer::end_all`がsessionを削除する時も、対応するholder handleを収集してRSWK holder stateを破棄するよう修正しました。Rustの再検証と新しいASan runはcommit後に行います。
+CI ASanがexpiry中にholderのlocked RSWK stateが残るraceを検出しました。並列unit testの`local_transfer::end_all`がsessionを削除する時も、対応するholder handleを収集してRSWK holder stateを破棄するよう修正しました。Rust lib 6件、package全体tests、clippyが成功し、CI ASanとMiriも修正commit上で成功しました。
+
+同じCIでRustSec監査がquinn-proto 0.11.16の5 advisoryを報告しました。pixiv API crateのlockfileを修正済み0.11.18へ更新し、package test 40件が通過しました。RustSec advisoryのpatched versionが0.11.17/0.11.18であることは[0.11.18対象のRustSec notice](https://rustsec.org/advisories/RUSTSEC-2026-0338.html) と [0.11.17対象のRustSec notice](https://rustsec.org/advisories/RUSTSEC-2026-0342.html) に対応します。dependency auditの再確認はpush後に行います。
 
 同じsource/APKの独立Python+Android interopは190.27秒で成功しました（PallaSync/target/qualification-android-resume-interop.log）。実Android端末承認・JNI/Room・HTTP、独立PythonによるSAS/署名/HPKE検証、epoch bundle/recovery envelope/receipt、epoch再base、initial sync/outbox、application payload boundary、origin bindingを確認しました。隔離relayを使ったこれらの対象試験は全50 ITではありません。
 
