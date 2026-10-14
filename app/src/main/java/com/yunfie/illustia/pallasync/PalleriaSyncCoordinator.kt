@@ -812,6 +812,16 @@ internal class PalleriaSyncCoordinator(
         )
     }
 
+    internal suspend fun legacyMigrationProgress(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress? =
+        withContext(Dispatchers.IO) { localIntents.legacyMigrationProgress(migrationId) }
+
+    internal suspend fun legacyMigrationDecisionPage(
+        migrationId: String,
+        afterIndex: Long,
+        limit: Int = 200,
+    ): PallaSyncLocalIntents.LegacyDecisionPage =
+        withContext(Dispatchers.IO) { localIntents.legacyMigrationDecisionPage(migrationId, afterIndex, limit) }
+
     fun getPallaSyncKeystore(): PallaSyncKeystore = keystore
 
     /** Repairs a process death between staged-key and Room activation commits. */

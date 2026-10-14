@@ -330,4 +330,13 @@ class PalleriaSyncManager(
             targetChain,
             freezeConfirmed,
         )
+
+    internal suspend fun legacyMigrationProgress(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress? =
+        coordinator.legacyMigrationProgress(migrationId)
+
+    internal suspend fun legacyMigrationDecisionPage(
+        migrationId: String,
+        afterIndex: Long,
+        limit: Int = 200,
+    ): PallaSyncLocalIntents.LegacyDecisionPage = coordinator.legacyMigrationDecisionPage(migrationId, afterIndex, limit)
 }
