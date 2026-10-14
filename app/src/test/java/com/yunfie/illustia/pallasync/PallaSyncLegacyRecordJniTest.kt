@@ -2,9 +2,41 @@ package com.yunfie.illustia.pallasync
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
+import java.util.Base64
 
 class PallaSyncLegacyRecordJniTest {
+    @Test
+    fun `v21 device registry verifier rejects incomplete rows`() {
+        PallaSyncCore.verifyLegacyDeviceRecordV21("{}") shouldBe false
+    }
+
+    @Test
+    fun `v21 migration token only signs authenticated read paths and binds pagination`() {
+        val seed = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 41 })
+        val chainId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        val deviceId = "01890f3e-7c00-7000-8000-000000000002"
+        val path = "/pallasync/v2/chains/$chainId/records"
+        val query = "after_seq=0&limit=200"
+
+        val encoded = PallaSyncCore.legacyV21GetToken(seed, chainId, deviceId, path, query, 1_700_000_000_000)
+        val tokenBytes = Base64.getUrlDecoder().decode(encoded)
+        val token = Json.parseToJsonElement(tokenBytes.toString(Charsets.UTF_8)).jsonObject
+        token.getValue("method").jsonPrimitive.content shouldBe "GET"
+        token.getValue("query").jsonPrimitive.content shouldBe query
+        token.getValue("expires_at_ms").jsonPrimitive.content shouldBe "1700000300000"
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncCore.legacyV21GetToken(seed, chainId, deviceId, "/pallasync/v2/chains/$chainId/delete", "", 1_700_000_000_000)
+        }
+        shouldThrow<IllegalStateException> {
+            PallaSyncCore.legacyV21GetToken(seed, chainId, deviceId, path, "limit=200", 1_700_000_000_000)
+        }
+    }
+
     @Test
     fun `v20 legacy root session validates deterministic chain id and ends natively`() {
         val mnemonic =

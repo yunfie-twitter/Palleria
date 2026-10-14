@@ -33,6 +33,27 @@ fn signed_record(key: &SigningKey) -> Value {
     record
 }
 
+fn signed_device(key: &SigningKey) -> Value {
+    let mut device = json!({
+        "protocol_version": "2.1",
+        "chain_id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "device_id": "01890f3e-7c00-7000-8000-000000000002",
+        "device_public_key": URL_SAFE_NO_PAD.encode(key.verifying_key().as_bytes()),
+        "encrypted_device_name": URL_SAFE_NO_PAD.encode([8u8; 32]),
+        "device_name_nonce": URL_SAFE_NO_PAD.encode([9u8; 24]),
+        "status": "active",
+        "created_at_ms": 1_700_000_000_000u64,
+        "updated_at_ms": 1_700_000_000_000u64,
+        "signature": "",
+    });
+    let mut unsigned = device.clone();
+    unsigned.as_object_mut().unwrap().remove("signature");
+    let mut input = b"PALLASYNC-DEVICE-RECORD-v2.1\0".to_vec();
+    input.extend_from_slice(&models::to_jcs(&unsigned).unwrap());
+    device["signature"] = json!(URL_SAFE_NO_PAD.encode(key.sign(&input).to_bytes()));
+    device
+}
+
 fn record_text(record: &Value) -> String {
     String::from_utf8(models::to_jcs(record).unwrap()).unwrap()
 }
@@ -102,6 +123,24 @@ fn verifies_v21_record_and_excludes_relay_sequence_metadata() {
     relayed["server_sequence"] = json!(87);
     let text = record_text(&relayed);
     assert!(crypto::verify_sync_record_v21_json(&text, &public).unwrap());
+}
+
+#[test]
+fn verifies_signed_v21_device_registry_rows_before_read_capabilities() {
+    let key = SigningKey::from_bytes(&[29u8; 32]);
+    let device = signed_device(&key);
+    let text = String::from_utf8(models::to_jcs(&device).unwrap()).unwrap();
+    assert!(crypto::verify_device_record_v21_json(&text).unwrap());
+
+    let mut altered = device.clone();
+    altered["status"] = json!("revoked");
+    let text = String::from_utf8(models::to_jcs(&altered).unwrap()).unwrap();
+    assert!(!crypto::verify_device_record_v21_json(&text).unwrap());
+
+    let mut unknown = device;
+    unknown["extra"] = json!(true);
+    let text = String::from_utf8(models::to_jcs(&unknown).unwrap()).unwrap();
+    assert!(crypto::verify_device_record_v21_json(&text).is_err());
 }
 
 #[test]
@@ -215,5 +254,76 @@ fn derives_legacy_identity_and_decrypts_only_authenticated_v21_aad() {
         crypto::decrypt_sync_record_v21_json(&record_text(&tampered_signature), &public, &keys)
             .unwrap_err(),
         "C_SIGNATURE_INVALID"
+    );
+}
+
+#[test]
+fn legacy_get_capability_is_context_signed_read_only_and_query_bound() {
+    let device = SigningKey::from_bytes(&[41u8; 32]);
+    let seed = [41u8; 32];
+    let chain = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    let device_id = "01890f3e-7c00-7000-8000-000000000002";
+    let path = format!("/pallasync/v2/chains/{chain}/records");
+    let query = "after_seq=0&limit=200";
+    let encoded = crypto::create_legacy_v21_get_token(
+        &seed,
+        chain,
+        device_id,
+        &path,
+        query,
+        1_700_000_000_000,
+    )
+    .unwrap();
+    let bytes = URL_SAFE_NO_PAD.decode(encoded).unwrap();
+    let token: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(token["v"], 1);
+    assert_eq!(token["method"], "GET");
+    assert_eq!(token["query"], query);
+    assert_eq!(token["expires_at_ms"], 1_700_000_300_000u64);
+    let signature = URL_SAFE_NO_PAD
+        .decode(token["signature"].as_str().unwrap())
+        .unwrap();
+    let signature = ed25519_dalek::Signature::from_slice(&signature).unwrap();
+    let mut unsigned = token.clone();
+    unsigned.as_object_mut().unwrap().remove("signature");
+    let mut signed = b"PALLASYNC-CAPABILITY-v2.1\0".to_vec();
+    signed.extend_from_slice(&models::to_jcs(&unsigned).unwrap());
+    device
+        .verifying_key()
+        .verify_strict(&signed, &signature)
+        .unwrap();
+
+    assert!(
+        crypto::create_legacy_v21_get_token(
+            &seed,
+            chain,
+            device_id,
+            &path,
+            "limit=200",
+            1_700_000_000_000
+        )
+        .is_err()
+    );
+    assert!(
+        crypto::create_legacy_v21_get_token(
+            &seed,
+            chain,
+            device_id,
+            &path,
+            query,
+            1_700_000_000_000
+        )
+        .is_ok()
+    );
+    assert!(
+        crypto::create_legacy_v21_get_token(
+            &seed,
+            chain,
+            device_id,
+            "/pallasync/v2/chains/x/delete",
+            "",
+            1_700_000_000_000
+        )
+        .is_err()
     );
 }

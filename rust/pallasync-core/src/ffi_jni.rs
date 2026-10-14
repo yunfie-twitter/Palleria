@@ -2019,6 +2019,64 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyLe
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyLegacyDeviceRecordV21<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    record_json: JString<'local>,
+) -> jboolean {
+    let Some(record_str) = read_string(&mut env, &record_json) else {
+        return 0;
+    };
+    u8::from(crypto::verify_device_record_v21_json(&record_str).unwrap_or(false))
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_legacyV21GetToken<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    device_seed_base64: JString<'local>,
+    chain_id: JString<'local>,
+    device_id: JString<'local>,
+    path: JString<'local>,
+    query: JString<'local>,
+    now_ms: jlong,
+) -> jstring {
+    let result = (|| {
+        let encoded =
+            read_string(&mut env, &device_seed_base64).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let seed = Zeroizing::new(
+            crate::strict::verify::decode(&encoded, Some(32))
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let seed: [u8; 32] = seed
+            .as_slice()
+            .try_into()
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let chain_id = read_string(&mut env, &chain_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let device_id =
+            read_string(&mut env, &device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let path = read_string(&mut env, &path).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let query = read_string(&mut env, &query).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crypto::create_legacy_v21_get_token(&seed, &chain_id, &device_id, &path, &query, now_ms)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })();
+    match result {
+        Ok(token) => env
+            .new_string(token)
+            .map(|value| value.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateLegacyV21Identity<
     'local,
 >(

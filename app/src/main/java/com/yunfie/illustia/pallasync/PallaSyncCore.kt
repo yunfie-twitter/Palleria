@@ -680,6 +680,19 @@ object PallaSyncCore {
         devicePublicKeyBase64: String,
     ): Boolean
 
+    /** Verifies a self-signed v2.1 registry row before legacy migration uses its device key (§9.1). */
+    external fun verifyLegacyDeviceRecordV21(recordJson: String): Boolean
+
+    /** Signs only a v2.1 read capability for the user's explicitly selected legacy source (§9.1). */
+    external fun legacyV21GetToken(
+        deviceSeedBase64: String,
+        chainId: String,
+        deviceId: String,
+        path: String,
+        query: String,
+        nowMs: Long,
+    ): String
+
     /** Derives the legacy v2.1 identity in a transient native operation and compares public pins. */
     external fun validateLegacyV21Identity(
         seedPhrase: String,

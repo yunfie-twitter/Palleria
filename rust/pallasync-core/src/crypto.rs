@@ -1223,6 +1223,103 @@ pub fn verify_capability_token(
 pub const LEGACY_SYNC_RECORD_AAD: &[u8] = b"PALLASYNC-AAD-v2";
 pub const LEGACY_DEVICE_RECORD_AAD: &[u8] = b"PALLASYNC-DEVICE-AAD-v2";
 pub const CTX_SYNC_RECORD_V21: &[u8] = b"PALLASYNC-SYNC-RECORD-v2.1\0";
+pub const CTX_DEVICE_RECORD_V21: &[u8] = b"PALLASYNC-DEVICE-RECORD-v2.1\0";
+const CTX_CAPABILITY_V21: &[u8] = b"PALLASYNC-CAPABILITY-v2.1\0";
+
+/// Create only the v2.1 GET capability required for explicit legacy source export (§9.1).
+/// The caller must provide the old enrolled device seed from protected storage; it is never
+/// derived from or reused as a v3 device key.
+pub fn create_legacy_v21_get_token(
+    device_seed: &[u8; 32],
+    chain_id: &str,
+    device_id: &str,
+    path: &str,
+    query: &str,
+    now_ms: i64,
+) -> Result<String, String> {
+    const TTL_MS: i64 = 300_000;
+    if !(0..=crate::strict::jcs::MAX_INTEGER as i64 - TTL_MS).contains(&now_ms) {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    if crate::strict::verify::decode(chain_id, Some(32)).is_err()
+        || uuid::Uuid::parse_str(device_id).is_err()
+        || device_id.to_lowercase() != device_id
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let base = format!("/pallasync/v2/chains/{chain_id}");
+    if path == format!("{base}/devices") {
+        if !query.is_empty() {
+            return Err("C_SCHEMA_VIOLATION".into());
+        }
+    } else if path == format!("{base}/records") {
+        let canonical = crate::public_wire::query_string(
+            &crate::public_wire::canonical_query(query).map_err(|_| "C_SCHEMA_VIOLATION")?,
+        );
+        if canonical != query {
+            return Err("C_SCHEMA_VIOLATION".into());
+        }
+        let values: std::collections::BTreeMap<_, _> = crate::public_wire::canonical_query(query)
+            .map_err(|_| "C_SCHEMA_VIOLATION")?
+            .into_iter()
+            .collect();
+        let valid_keys = values
+            .keys()
+            .all(|key| ["after_seq", "cursor", "limit"].contains(&key.as_str()));
+        let valid_cursor = (values.contains_key("after_seq") ^ values.contains_key("cursor"))
+            && values
+                .get("after_seq")
+                .or_else(|| values.get("cursor"))
+                .is_some_and(|value| {
+                    !value.is_empty()
+                        && value.bytes().all(|byte| byte.is_ascii_digit())
+                        && value
+                            .parse::<u64>()
+                            .is_ok_and(|number| number <= crate::strict::jcs::MAX_INTEGER)
+                });
+        let valid_limit = values.get("limit").is_some_and(|value| {
+            value
+                .parse::<u64>()
+                .is_ok_and(|number| (1..=1000).contains(&number))
+        });
+        if !valid_keys || !valid_cursor || !valid_limit {
+            return Err("C_SCHEMA_VIOLATION".into());
+        }
+    } else {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+
+    let mut nonce = [0u8; 16];
+    OsRng.fill_bytes(&mut nonce);
+    let mut token = serde_json::json!({
+        "v":1,
+        "chain_id":chain_id,
+        "device_id":device_id,
+        "method":"GET",
+        "path":path,
+        "query":query,
+        "body_sha256":URL_SAFE_NO_PAD.encode(sha256_hash(b"")),
+        "issued_at_ms":now_ms,
+        "expires_at_ms":now_ms + TTL_MS,
+        "nonce":URL_SAFE_NO_PAD.encode(nonce),
+        "signature":""
+    });
+    let mut unsigned_token = token.clone();
+    unsigned_token
+        .as_object_mut()
+        .ok_or("C_SCHEMA_VIOLATION")?
+        .remove("signature");
+    let unsigned = serde_jcs::to_vec(&unsigned_token).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let signing_key = SigningKey::from_bytes(device_seed);
+    let mut message = Vec::with_capacity(CTX_CAPABILITY_V21.len() + unsigned.len());
+    message.extend_from_slice(CTX_CAPABILITY_V21);
+    message.extend_from_slice(&unsigned);
+    token["signature"] =
+        serde_json::json!(URL_SAFE_NO_PAD.encode(signing_key.sign(&message).to_bytes()));
+    drop(signing_key);
+    let encoded = serde_jcs::to_vec(&token).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    Ok(URL_SAFE_NO_PAD.encode(encoded))
+}
 
 /// Deterministic PallaSync 2.0 keys used only by the explicit §9 migration reader.
 #[derive(Zeroize, ZeroizeOnDrop)]
@@ -1566,6 +1663,70 @@ pub fn verify_sync_record_v21_json(
     verify_with_context(
         &verifying_key,
         CTX_SYNC_RECORD_V21,
+        &canonical,
+        &record.signature,
+    )
+}
+
+/// Verify a legacy v2.1 registry entry before using its device key for an explicit §9 read.
+/// This does not establish trust in the chain parameters or decrypt device metadata.
+pub fn verify_device_record_v21_json(record_json: &str) -> Result<bool, String> {
+    const REQUIRED: &[&str] = &[
+        "protocol_version",
+        "chain_id",
+        "device_id",
+        "device_public_key",
+        "encrypted_device_name",
+        "device_name_nonce",
+        "status",
+        "created_at_ms",
+        "updated_at_ms",
+        "signature",
+    ];
+    const MAX_LEGACY_RECORD_BYTES: usize = 64 * 1024;
+
+    if record_json.len() > MAX_LEGACY_RECORD_BYTES {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let mut value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    let object = value.as_object().ok_or("C_SCHEMA_VIOLATION")?;
+    if object.len() != REQUIRED.len() || !REQUIRED.iter().all(|key| object.contains_key(*key)) {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let record: models::legacy::DeviceRecordV21 =
+        serde_json::from_value(value.clone()).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if record.protocol_version != models::legacy::PROTOCOL_VERSION_2_1
+        || !matches!(record.status.as_str(), "active" | "revoked")
+        || record.created_at_ms < 0
+        || record.updated_at_ms < record.created_at_ms
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    uuid::Uuid::parse_str(&record.device_id).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let chain_id = crate::strict::verify::decode(&record.chain_id, Some(32))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if chain_id.len() != 32 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let public_key = crate::strict::verify::decode(&record.device_public_key, Some(32))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let name_nonce = crate::strict::verify::decode(&record.device_name_nonce, Some(24))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let encrypted_name = crate::strict::verify::decode(&record.encrypted_device_name, None)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if public_key.len() != 32 || name_nonce.len() != 24 || encrypted_name.len() < 16 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    crate::strict::verify::decode(&record.signature, Some(64)).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let verifying_key = decode_verifying_key(&record.device_public_key)?;
+    value
+        .as_object_mut()
+        .ok_or("C_SCHEMA_VIOLATION")?
+        .remove("signature");
+    let canonical = models::to_jcs(&value).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    verify_with_context(
+        &verifying_key,
+        CTX_DEVICE_RECORD_V21,
         &canonical,
         &record.signature,
     )
