@@ -40,8 +40,10 @@ import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
+import com.yunfie.illustia.pallasync.PallaSyncHttpResult
 import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
+import com.yunfie.illustia.pallasync.PallaSyncRootSession
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
 import com.yunfie.illustia.ui.components.DividerLine
@@ -72,6 +74,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
+import java.util.UUID
 
 @Composable
 @Suppress("ThrowsCount", "TooGenericExceptionCaught") // SAF and snapshot-source failures are mapped to retained-state UI outcomes.
@@ -129,6 +132,9 @@ fun PallaSyncSettingsScreen(
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
     var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
     var loadingLegacyDecisions by remember { mutableStateOf(false) }
+    var showLegacySourceDialog by remember { mutableStateOf(false) }
+    var inspectingLegacySource by remember { mutableStateOf(false) }
+    var legacySourceJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
     val legacyReportExporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -901,9 +907,17 @@ fun PallaSyncSettingsScreen(
             }
 
             item {
-                if (legacyMigrations.isNotEmpty()) {
+                if (legacyMigrations.isNotEmpty() || (state.settings.pallaSyncEnabled && hasLocalChain)) {
                     Section(stringResource(R.string.pallasync_legacy_migration_title)) {
                         ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+                            if (state.settings.pallaSyncEnabled && hasLocalChain) {
+                                SettingLinkRow(
+                                    title = stringResource(R.string.pallasync_legacy_source_action),
+                                    summary = stringResource(R.string.pallasync_legacy_source_action_summary),
+                                    onClick = { if (!inspectingLegacySource) showLegacySourceDialog = true },
+                                )
+                                if (legacyMigrations.isNotEmpty()) DividerLine()
+                            }
                             legacyMigrations.forEachIndexed { index, migration ->
                                 SettingLinkRow(
                                     title =
@@ -1176,6 +1190,120 @@ fun PallaSyncSettingsScreen(
         }
     }
 
+    if (showLegacySourceDialog) {
+        PallaSyncLegacyMigrationSourceDialog(
+            busy = inspectingLegacySource,
+            onDismiss = {
+                legacySourceJob?.cancel()
+                showLegacySourceDialog = false
+            },
+            onInspect = { input ->
+                inspectingLegacySource = true
+                legacySourceJob =
+                    scope.launch {
+                        try {
+                            val normalizedSource = syncManager.normalizeServerUrl(input.sourceUrl)
+                            check(normalizedSource == input.sourceUrl) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                            val chainState =
+                                com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+                                    .getDatabase(context)
+                                    .pallaSyncDao()
+                                    .getActiveChainState()
+                            val targetChain = checkNotNull(chainState?.chainId) { "C_MISSING_DEPENDENCY" }
+                            PallaSyncRootSession
+                                .beginText(
+                                    input.mnemonic,
+                                    input.passphrase,
+                                    PallaSyncRootSession.Operation.NEW_ROOT_MIGRATION,
+                                    expectedChain = targetChain,
+                                ).use { root ->
+                                    check(root.identity.chainId == targetChain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                                }
+                            val parameters =
+                                when (
+                                    val result =
+                                        syncManager.fetchLegacyV21Parameters(
+                                            normalizedSource,
+                                            input.sourceChainId,
+                                            input.mnemonic,
+                                            input.passphrase,
+                                        )
+                                ) {
+                                    is PallaSyncHttpResult.Success -> result.value
+                                    is PallaSyncHttpResult.ProtocolError -> error(result.message)
+                                    is PallaSyncHttpResult.Retryable -> error(result.message)
+                                    PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
+                                }
+                            val devices =
+                                when (
+                                    val result =
+                                        syncManager.fetchLegacyV21Devices(
+                                            normalizedSource,
+                                            parameters,
+                                            input.sourceDeviceId,
+                                            input.sourceDeviceSeed,
+                                            input.sourceDevicePublicKey,
+                                        )
+                                ) {
+                                    is PallaSyncHttpResult.Success -> result.value
+                                    is PallaSyncHttpResult.ProtocolError -> error(result.message)
+                                    is PallaSyncHttpResult.Retryable -> error(result.message)
+                                    PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
+                                }
+                            val migrationId = "legacy:${UUID.randomUUID()}"
+                            when (
+                                val result =
+                                    syncManager.beginLegacyV21Migration(
+                                        migrationId,
+                                        normalizedSource,
+                                        parameters,
+                                        devices,
+                                        input.sourceDeviceId,
+                                        input.sourceDeviceSeed,
+                                        input.sourceDevicePublicKey,
+                                        targetChain,
+                                        input.writersStopped,
+                                    )
+                            ) {
+                                is PallaSyncHttpResult.Success -> {
+                                    val progress =
+                                        checkNotNull(syncManager.legacyMigrationProgress(migrationId)) { "C_SCHEMA_VIOLATION" }
+                                    legacyMigrations =
+                                        (legacyMigrations + progress).distinctBy { it.migrationId }
+                                    showLegacySourceDialog = false
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            R.string.pallasync_legacy_source_verified_journal_started,
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                }
+
+                                is PallaSyncHttpResult.ProtocolError -> {
+                                    error(result.message)
+                                }
+
+                                is PallaSyncHttpResult.Retryable -> {
+                                    error(result.message)
+                                }
+
+                                PallaSyncHttpResult.Gone -> {
+                                    error("C_MISSING_DEPENDENCY")
+                                }
+                            }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            Toast.makeText(context, R.string.pallasync_legacy_source_failed, Toast.LENGTH_LONG).show()
+                        } finally {
+                            inspectingLegacySource = false
+                            legacySourceJob = null
+                        }
+                    }
+            },
+        )
+    }
+
     selectedLegacyMigration?.let { migration ->
         OverlayDialog(
             show = true,
@@ -1204,6 +1332,9 @@ fun PallaSyncSettingsScreen(
                         migration.exportHash,
                     ),
                 )
+                if (migration.decisions == 0L) {
+                    Text(stringResource(R.string.pallasync_legacy_source_not_staged))
+                }
                 migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }
                 TextButton(
                     text = stringResource(R.string.pallasync_legacy_migration_export_report),
