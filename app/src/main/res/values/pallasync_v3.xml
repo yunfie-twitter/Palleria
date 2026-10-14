@@ -92,6 +92,9 @@
     <string name="pallasync_legacy_migration_loading">Loading verified migration decisions…</string>
     <string name="pallasync_legacy_migration_more">Load next page</string>
     <string name="pallasync_legacy_migration_report_failed">Could not load the local migration report.</string>
+    <string name="pallasync_quarantine_title">Unresolved protocol evidence</string>
+    <string name="pallasync_quarantine_explanation">These objects and their evidence are retained. Review the reason and hash; resolution requires protocol-authorized evidence.</string>
+    <string name="pallasync_quarantine_item">%1$s · %2$s</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

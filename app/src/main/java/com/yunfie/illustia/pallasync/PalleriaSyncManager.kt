@@ -224,6 +224,11 @@ class PalleriaSyncManager(
 
     internal suspend fun getClientStatus(): PallaSyncClientStatus? = coordinator.getClientStatus()
 
+    internal suspend fun getUnresolvedQuarantinePage(
+        afterHash: String = "",
+        limit: Int = 50,
+    ): PallaSyncQuarantinePage = coordinator.getUnresolvedQuarantinePage(afterHash, limit)
+
     internal suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> = coordinator.trustedSnapshotCandidates()
 
     internal suspend fun trustAndInstallSnapshot(

@@ -3643,6 +3643,18 @@ internal class PalleriaSyncCoordinator(
             )
         }
 
+    suspend fun getUnresolvedQuarantinePage(
+        afterHash: String = "",
+        limit: Int = 50,
+    ): PallaSyncQuarantinePage =
+        withContext(Dispatchers.IO) {
+            require(limit in 1..50 && afterHash.length <= 128) { "C_SCHEMA_VIOLATION" }
+            val state = db.dao.getActiveChainState() ?: return@withContext PallaSyncQuarantinePage(emptyList(), null)
+            val rows = db.protocolDao().unresolvedQuarantinePage(state.chainId, afterHash, limit + 1)
+            val page = rows.take(limit)
+            PallaSyncQuarantinePage(page, page.lastOrNull()?.objectHash.takeIf { rows.size > limit })
+        }
+
     suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {

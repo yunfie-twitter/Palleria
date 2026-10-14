@@ -129,6 +129,9 @@ class PallaSyncProtocolStoreTest {
 
                 protocol.unresolvedAuthorGapCount(chain) shouldBe 1
                 protocol.unresolvedQuarantineCount(chain) shouldBe 2
+                val first = protocol.unresolvedQuarantinePage(chain, "", 2)
+                first.map { it.objectHash to it.reason } shouldBe
+                    listOf("q1" to "C_SIGNATURE_INVALID", "q2" to "C_MISSING_DEPENDENCY")
             } finally {
                 db.close()
             }

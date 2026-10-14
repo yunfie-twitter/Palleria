@@ -523,6 +523,15 @@ interface ProtocolDao {
     @Query("SELECT COUNT(*) FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state IN ('unresolved','pending_resolution')")
     suspend fun unresolvedQuarantineCount(chainId: String): Long
 
+    @Query(
+        "SELECT object_hash,reason FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state IN ('unresolved','pending_resolution') AND object_hash>:afterHash ORDER BY object_hash LIMIT :limit",
+    )
+    suspend fun unresolvedQuarantinePage(
+        chainId: String,
+        afterHash: String,
+        limit: Int,
+    ): List<QuarantineSummaryRow>
+
     @Query("SELECT index_revision FROM pallasync_chain_state WHERE chainId=:chainId")
     suspend fun indexRevision(chainId: String): Long?
 

@@ -520,7 +520,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncHttpClassificationTest.kt"
       ],
       "result": "pending",
-      "remaining": "Complete all catalogue operational/quarantine handling and visible capacity/retry-resolution workflows.",
+      "remaining": "Settings now lists unresolved quarantine reason codes and hashes through a bounded keyset query while retaining the objects; resolution actions are not offered without protocol-authorized evidence. Still implement full catalogue operational workflows, retry/recovery resolution paths, and independent verification.",
       "verification_scope": "targeted_partial"
     },
     {

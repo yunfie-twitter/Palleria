@@ -42,6 +42,7 @@ import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -118,6 +119,9 @@ fun PallaSyncSettingsScreen(
     var legacyMigrations by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacyMigrationProgress>>(emptyList()) }
     var legacyMigrationCursor by remember { mutableStateOf<String?>(null) }
     var loadingLegacyMigrationPage by remember { mutableStateOf(false) }
+    var unresolvedQuarantine by remember { mutableStateOf<List<QuarantineSummaryRow>>(emptyList()) }
+    var quarantineCursor by remember { mutableStateOf<String?>(null) }
+    var loadingQuarantinePage by remember { mutableStateOf(false) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
     var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
@@ -167,6 +171,16 @@ fun PallaSyncSettingsScreen(
                 legacyMigrations =
                     (legacyMigrations.associateBy { it.migrationId } + page.items.associateBy { it.migrationId }).values.toList()
                 if (legacyMigrationCursor == null) legacyMigrationCursor = page.nextMigrationId
+                if (state.settings.pallaSyncEnabled) {
+                    val quarantinePage = syncManager.getUnresolvedQuarantinePage(limit = 50)
+                    unresolvedQuarantine =
+                        (
+                            unresolvedQuarantine.associateBy {
+                                it.objectHash
+                            } + quarantinePage.items.associateBy { it.objectHash }
+                        ).values.toList()
+                    if (quarantineCursor == null) quarantineCursor = quarantinePage.nextHash
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -1009,6 +1023,47 @@ fun PallaSyncSettingsScreen(
                                 )
                                 Text(stringResource(R.string.pallasync_snapshot_bootstrap_desc))
                                 trustedSnapshotFailure?.let { Text(it) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                if (unresolvedQuarantine.isNotEmpty()) {
+                    Section(stringResource(R.string.pallasync_quarantine_title)) {
+                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                            Text(stringResource(R.string.pallasync_quarantine_explanation))
+                            unresolvedQuarantine.forEach { entry ->
+                                DividerLine()
+                                Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash))
+                            }
+                            quarantineCursor?.let { cursor ->
+                                if (!loadingQuarantinePage) {
+                                    DividerLine()
+                                    TextButton(
+                                        text = stringResource(R.string.pallasync_legacy_migration_more),
+                                        onClick = {
+                                            loadingQuarantinePage = true
+                                            scope.launch {
+                                                try {
+                                                    val page = syncManager.getUnresolvedQuarantinePage(cursor, 50)
+                                                    unresolvedQuarantine = unresolvedQuarantine + page.items
+                                                    quarantineCursor = page.nextHash
+                                                } catch (_: Exception) {
+                                                    Toast
+                                                        .makeText(
+                                                            context,
+                                                            R.string.pallasync_legacy_migration_report_failed,
+                                                            Toast.LENGTH_LONG,
+                                                        ).show()
+                                                } finally {
+                                                    loadingQuarantinePage = false
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
