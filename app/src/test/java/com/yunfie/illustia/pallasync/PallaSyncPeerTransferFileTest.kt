@@ -29,4 +29,11 @@ class PallaSyncPeerTransferFileTest {
             PallaSyncPeerTransferFile.encode("a".repeat(PallaSyncPeerTransferFile.MAX_BYTES + 1))
         }.message shouldBe "C_SCHEMA_VIOLATION"
     }
+
+    @Test
+    fun `transfer writer rejects malformed utf16 input`() {
+        shouldThrow<CharacterCodingException> {
+            PallaSyncPeerTransferFile.encode("\uD800")
+        }
+    }
 }
