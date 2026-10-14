@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,6 +76,14 @@ fun DevicePairingScreen(
     var pendingExport by remember { mutableStateOf<String?>(null) }
     var importPurpose by remember { mutableStateOf<ImportPurpose?>(null) }
 
+    LaunchedEffect(serverUrl) {
+        try {
+            candidate = manager.pendingPeerSubjectEnrollment(serverUrl)
+        } catch (failure: Exception) {
+            peerError = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
+        }
+    }
+
     val scanner =
         rememberLauncherForActivityResult(ScanContract()) { result ->
             result.contents?.let {
@@ -101,7 +110,13 @@ fun DevicePairingScreen(
                         when (purpose) {
                             ImportPurpose.AUTHORITY -> {
                                 authorityJson = text
-                                authorityLabel = objectValue["pin"]?.jsonObject?.get("log_id")?.toString()
+                                val importedPin =
+                                    objectValue["authority"]
+                                        ?.jsonObject
+                                        ?.get("pin")
+                                        ?.jsonObject
+                                        ?: objectValue["pin"]?.jsonObject
+                                authorityLabel = importedPin?.get("log_id")?.toString()
                                 peerError = null
                             }
 
@@ -117,6 +132,13 @@ fun DevicePairingScreen(
                                     )
                                 pendingExport = candidate?.requestBody
                                 peerError = null
+                            }
+
+                            ImportPurpose.ACCEPTANCE -> {
+                                manager.completePeerSubjectEnrollment(text)
+                                peerError = null
+                                joined = true
+                                onPairSuccess()
                             }
                         }
                     } catch (cancelled: CancellationException) {
@@ -344,6 +366,14 @@ fun DevicePairingScreen(
                         enabled = !peerBusy,
                         onClick = { exporter.launch("pallasync-enrollment-${it.keys.deviceId}.json") },
                     )
+                    TextButton(
+                        text = stringResource(R.string.pallasync_peer_subject_import_acceptance),
+                        enabled = !peerBusy,
+                        onClick = {
+                            importPurpose = ImportPurpose.ACCEPTANCE
+                            importer.launch(arrayOf("application/json", "text/json", "*/*"))
+                        },
+                    )
                 }
                 peerError?.let { Text(it) }
             }
@@ -351,4 +381,4 @@ fun DevicePairingScreen(
     }
 }
 
-private enum class ImportPurpose { AUTHORITY, CERTIFICATE_ENVELOPE }
+private enum class ImportPurpose { AUTHORITY, CERTIFICATE_ENVELOPE, ACCEPTANCE }

@@ -63,6 +63,7 @@ import java.util.UUID
 
 private const val MAX_PROTOCOL_COUNTER = 4_294_967_295L
 private const val MAX_DELETION_WITNESSES = 128
+private const val MAX_PEER_HISTORY_BYTES = 3_500_000
 
 private data class DeletionContext(
     val state: ChainStateEntity,
@@ -118,7 +119,7 @@ internal class PalleriaSyncCoordinator(
     private val peerApprover by lazy {
         PallaSyncPeerApprover(db, policy, keystore, peerJournal, PallaSyncPeerRelay(db, remote, crypto))
     }
-    private val peerSubject by lazy { PallaSyncPeerSubjectEnrollment(remote, policy, keystore) }
+    private val peerSubject by lazy { PallaSyncPeerSubjectEnrollment(db, remote, policy, keystore, crypto) }
     private val json =
         Json {
             ignoreUnknownKeys = true
@@ -374,7 +375,7 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
-    /** Exports only the already verified public authority cut pinned by this live offer. */
+    /** Exports a bounded, fully verified public history prefix for the physically selected subject. */
     internal suspend fun peerAuthorityForOffer(transcript: PallaSyncPeerJournal.Transcript): String =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
@@ -390,9 +391,80 @@ internal class PalleriaSyncCoordinator(
                 ) {
                     "C_ROLLBACK_DETECTED"
                 }
-                authority
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                exportPeerHistory(chain, state, authority, transcript.authorityHash, base)
             }
         }
+
+    private suspend fun exportPeerHistory(
+        chain: String,
+        state: ChainStateEntity,
+        authority: String,
+        expectedHash: String,
+        base: HttpUrl,
+    ): String {
+        val parsedAuthority = Json.parseToJsonElement(authority).jsonObject
+        val pin = parsedAuthority.getValue("pin").jsonObject
+        val origin = pin.getValue("origin").jsonPrimitive.content
+        val active = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val parameters =
+            PallaSyncPeerRelay(db, remote, crypto).request(PallaSyncUrls.parameters(base, chain), active, "GET") { bytes ->
+                bytes.toString(Charsets.UTF_8).also { check(it.isNotBlank()) { "C_SCHEMA_VIOLATION" } }
+            }
+        val identity =
+            kotlinx.serialization.json
+                .buildJsonObject {
+                    put("chain_id", chain)
+                    put("admin_public_key", parsedAuthority.getValue("admin_public_key"))
+                }.toString()
+        var verified =
+            Json
+                .parseToJsonElement(
+                    PallaSyncCore.beginAuthorityHistory(
+                        parameters.toByteArray(Charsets.UTF_8),
+                        identity,
+                        origin,
+                        policy.trustedRelayKey(origin),
+                    ),
+                ).jsonObject
+        val through = parsedAuthority.getValue("sequence").jsonPrimitive.long
+        val logId = checkNotNull(state.logId) { "C_MISSING_DEPENDENCY" }
+        check(logId == pin.getValue("log_id").jsonPrimitive.content) { "C_LOG_ID_MISMATCH" }
+        check(
+            state.verifiedSeq == through && state.verifiedHash == parsedAuthority.getValue("head_hash").jsonPrimitive.content,
+        ) { "C_MISSING_DEPENDENCY" }
+        val entries = ArrayList<String>()
+        var exportBytes = parameters.length + authority.length + 256
+        var after = 0L
+        while (after < through) {
+            val page = db.protocolDao().logPage(chain, logId, after, through, PALLASYNC_PAGE_SIZE)
+            check(page.isNotEmpty() && page.first().relaySeq == after + 1L) { "C_MISSING_DEPENDENCY" }
+            for (row in page) {
+                check(row.validationState == "authority_verified" && row.relaySeq == after + 1L) { "C_MISSING_DEPENDENCY" }
+                val entry = Json.parseToJsonElement(row.signedJson).jsonObject
+                val receipt = Json.parseToJsonElement(row.receiptJson).jsonObject
+                verified =
+                    Json
+                        .parseToJsonElement(
+                            PallaSyncCore.advanceAuthorityHistory(verified.toString(), entry.toString(), receipt.toString()),
+                        ).jsonObject
+                val item = "{\"entry\":$entry,\"receipt\":$receipt}"
+                exportBytes += item.length
+                check(exportBytes <= MAX_PEER_HISTORY_BYTES) { "C_LOCAL_LIMIT" }
+                entries += item
+                after = row.relaySeq
+            }
+        }
+        check(
+            crypto.objectHash(verified.toString()) == expectedHash,
+        ) { "C_ROLLBACK_DETECTED" }
+        val serializedEntries = entries.joinToString(",")
+        return "{\"format\":\"pallasync-peer-history/3\",\"parameters\":$parameters," +
+            "\"authority\":$authority,\"items\":[$serializedEntries]}"
+    }
 
     internal suspend fun pollPeerEnrollmentRequest(transcript: PallaSyncPeerJournal.Transcript): JsonObject? =
         withContext(Dispatchers.IO) {
@@ -525,6 +597,39 @@ internal class PalleriaSyncCoordinator(
     ): PallaSyncPeerSubjectEnrollment.Candidate =
         withContext(Dispatchers.IO) {
             peerSubject.prepare(work, certificateJson, envelopeJson, deviceName, policy.retry.correctedTime(work.origin))
+        }
+
+    internal suspend fun completePeerSubjectEnrollment(acceptanceJson: String): Pair<String, HttpUrl> =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                val origin = PallaSyncUrls.extractOrigin(base)
+                val (candidate, checkpoint) = peerSubject.complete(acceptanceJson, base)
+                val chain = checkNotNull(candidate.chainId)
+                val prepared = PreparedJoin(candidate, checkpoint)
+                stagePreparedActivation(prepared, false, origin)
+                PallaSyncPrefixMaterializer(db, keystore).apply(chain, candidate, checkpoint)
+                val collections = SettingsStore(appContext).readSyncedCollections()
+                localAuthor.initialize(chain, candidate, orderInitialEvents(chain, buildInitialSettingsSyncEvents(collections)))
+                currentCoroutineContext().ensureActive()
+                keystore.stageActivation(chain)
+                db.transaction {
+                    val active = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+                    db.dao.archiveOtherChainStates(chain)
+                    db.dao.updateChainState(active.copy(writeState = "active"))
+                }
+                check(keystore.promotePendingChainKeys()) { "C_LOCAL_STORAGE_FULL" }
+                stopBackgroundSync()
+                chain to base
+            }
+        }
+
+    internal suspend fun pendingPeerSubjectEnrollment(origin: String): PallaSyncPeerSubjectEnrollment.Candidate? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock { peerSubject.pendingCandidate(origin) }
         }
 
     suspend fun rotateEpoch(

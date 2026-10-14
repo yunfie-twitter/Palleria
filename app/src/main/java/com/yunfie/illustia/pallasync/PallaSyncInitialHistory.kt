@@ -105,7 +105,8 @@ internal class PallaSyncInitialHistory(
         // Current generation is independently signed in the parameters advertisement, but
         // historical generation switches still require the verified snapshot installer.
         val generation =
-            initial["parameters"]?.let { if (it is JsonObject) it.getValue("generation").jsonPrimitive.long else null }
+            initial["generation"]?.jsonPrimitive?.long
+                ?: initial["parameters"]?.let { if (it is JsonObject) it.getValue("generation").jsonPrimitive.long else null }
                 ?: 0L
         var cursor: String? = null
         val seen = mutableSetOf<String>()

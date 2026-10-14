@@ -371,17 +371,32 @@ class PallaSyncKeystore(
         origin: String,
         body: String,
         ack: String,
+        peerContext: String? = null,
     ): Boolean {
         check(savePendingChainKeys(snapshot) && getPendingChainKeys() == snapshot) { "C_LOCAL_STORAGE_FULL" }
         val previous = pendingEnrollment(snapshot.chainId!!, origin)
         check(previous == null || previous == (body to ack)) { "C_RECORD_ID_CONFLICT" }
+        if (peerContext != null) {
+            val previousContext = sharedPrefs.getString("pending_peer_context", null)
+            check(previousContext == null || previousContext == peerContext) { "C_RECORD_ID_CONFLICT" }
+        }
         return sharedPrefs
             .edit()
             .putString("pending_enrollment_origin", origin)
             .putString("pending_enrollment_body", body)
             .putString("pending_enrollment_ack", ack)
+            .apply { if (peerContext != null) putString("pending_peer_context", peerContext) }
             .commit() &&
             pendingEnrollment(snapshot.chainId, origin) == (body to ack)
+    }
+
+    internal fun pendingPeerContext(
+        chain: String,
+        origin: String,
+    ): String? {
+        if (getPendingChainKeys()?.chainId != chain) return null
+        check(sharedPrefs.getString("pending_enrollment_origin", null) == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        return sharedPrefs.getString("pending_peer_context", null)
     }
 
     internal fun pendingEnrollment(
@@ -434,6 +449,7 @@ class PallaSyncKeystore(
                 .remove("pending_enrollment_origin")
                 .remove("pending_enrollment_body")
                 .remove("pending_enrollment_ack")
+                .remove("pending_peer_context")
                 .commit()
         }
     }
@@ -511,6 +527,7 @@ class PallaSyncKeystore(
             .remove("pending_genesis_request")
             .remove("pending_genesis_chain")
             .remove("pending_genesis_origin")
+            .remove("pending_peer_context")
             .commit()
 
     fun clearActiveChainKeys(): Boolean =

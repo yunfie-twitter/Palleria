@@ -126,6 +126,12 @@ class PalleriaSyncManager(
         deviceName: String,
     ): PallaSyncPeerSubjectEnrollment.Candidate = coordinator.preparePeerSubjectEnrollment(work, certificateJson, envelopeJson, deviceName)
 
+    internal suspend fun completePeerSubjectEnrollment(acceptanceJson: String): Pair<String, okhttp3.HttpUrl> =
+        coordinator.completePeerSubjectEnrollment(acceptanceJson)
+
+    internal suspend fun pendingPeerSubjectEnrollment(origin: String): PallaSyncPeerSubjectEnrollment.Candidate? =
+        coordinator.pendingPeerSubjectEnrollment(origin)
+
     suspend fun rotateEpoch(
         mnemonic: String,
         reason: String = "manual",

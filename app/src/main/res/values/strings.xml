@@ -1427,6 +1427,7 @@
     <string name="pallasync_peer_subject_sas_confirm">SASが両端末で一致したことを確認</string>
     <string name="pallasync_peer_subject_import_certificate">承認端末から証明書とenvelopeを読み込む</string>
     <string name="pallasync_peer_subject_pending">端末鍵はOS保護領域へ保存しreadbackしました。承認結果・履歴検証・envelope再取得・ackが完了するまで、この端末は有効ではありません。</string>
+    <string name="pallasync_peer_subject_import_acceptance">承認者から受理応答を読み込む</string>
     <string name="pallasync_peer_subject_export_request">承認端末へ署名済み申請を渡す</string>
     <string name="pallasync_peer_subject_request_exported">申請ファイルを保存・readbackしました。承認端末へ渡してください。</string>
 </resources>
