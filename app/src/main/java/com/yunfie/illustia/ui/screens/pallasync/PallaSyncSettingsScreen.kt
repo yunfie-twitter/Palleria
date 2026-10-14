@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
@@ -101,6 +102,32 @@ fun PallaSyncSettingsScreen(
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
     var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
+
+    val relayExportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PALLASYNC_EXPORT_MEDIA_TYPE)) { uri ->
+            if (uri == null) {
+                Toast.makeText(context, R.string.pallasync_export_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            syncManager.exportRelayArchive(
+                                checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" },
+                            )
+                        }
+                        Toast.makeText(context, R.string.pallasync_export_saved, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
 
     LaunchedEffect(state.settings.pallaSyncEnabled) {
         if (!state.settings.pallaSyncEnabled) {
@@ -630,6 +657,14 @@ fun PallaSyncSettingsScreen(
                             summary = stringResource(R.string.pallasync_pair_device_desc),
                             onClick = onPairDevice,
                         )
+                        if (state.settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_export_title),
+                                summary = stringResource(R.string.pallasync_export_device_summary),
+                                onClick = { relayExportLauncher.launch("pallasync-device-export.jsonl") },
+                            )
+                        }
                         if (state.settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(

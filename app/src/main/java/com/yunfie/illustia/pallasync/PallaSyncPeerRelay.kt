@@ -17,6 +17,45 @@ internal class PallaSyncPeerRelay(
     private val remote: PallaSyncRemoteService,
     private val crypto: PallaSyncCryptoService,
 ) {
+    fun requestBytes(
+        url: HttpUrl,
+        device: PallaSyncKeySnapshot,
+        method: String,
+        accept: String,
+        validate: (ByteArray) -> ByteArray,
+    ): ByteArray {
+        val token =
+            checkNotNull(
+                crypto.createCapabilityToken(
+                    PallaSyncUrls.extractOrigin(url),
+                    checkNotNull(device.chainId),
+                    "device",
+                    device.deviceId,
+                    method,
+                    url.encodedPath,
+                    url.encodedQuery.orEmpty(),
+                    "",
+                    device.signingKeyBase64Url,
+                ),
+            ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", accept)
+                .header("Authorization", "PallaSync $token")
+                .get()
+                .build()
+        val result =
+            remote.execute(request) { response ->
+                PallaSyncHttpResult.Success(validate(response.pallaSyncBytes()))
+            }
+        return when (result) {
+            is PallaSyncHttpResult.Success -> result.value
+            else -> throw PallaSyncInitialHistory.Failure(result)
+        }
+    }
+
     fun request(
         url: HttpUrl,
         device: PallaSyncKeySnapshot,

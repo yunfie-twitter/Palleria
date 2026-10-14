@@ -1335,6 +1335,29 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_objectHa
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_canonicalJson<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    value: JString<'local>,
+) -> jstring {
+    let Some(text) = read_string(&mut env, &value) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(value) = crate::strict::jcs::parse(text.as_bytes()) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(bytes) = crate::strict::jcs::canonicalize_json(&value) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(canonical) = String::from_utf8(bytes) else {
+        return std::ptr::null_mut();
+    };
+    env.new_string(canonical)
+        .map(|s| s.into_raw())
+        .unwrap_or(std::ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginSnapshotVerification<
     'local,
 >(

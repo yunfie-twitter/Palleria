@@ -62,6 +62,7 @@ import java.util.Locale
 import java.util.UUID
 
 private const val MAX_PROTOCOL_COUNTER = 4_294_967_295L
+private const val MAX_EXPORT_CHUNK_BYTES = 8_388_608
 private const val MAX_DELETION_WITNESSES = 128
 private const val MAX_PEER_HISTORY_BYTES = 3_500_000
 
@@ -248,6 +249,44 @@ internal class PalleriaSyncCoordinator(
                 return false
             }
         return outcome == SyncCycleOutcome.Success || outcome == SyncCycleOutcome.Idle
+    }
+
+    /** §17.4/§17.10: stream a pinned device-authorized export without recovery envelopes. */
+    suspend fun exportRelayArchive(output: java.io.OutputStream) {
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val origin = pin.getValue("origin").jsonPrimitive.content
+                val baseResult = PallaSyncUrls.normalize(getServerUrl())
+                check(baseResult is PallaSyncHttpResult.Success && PallaSyncUrls.extractOrigin(baseResult.value) == origin) {
+                    "C_BOOTSTRAP_TRUST_REQUIRED"
+                }
+                policy.requireCurrent(origin)
+                val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(device.chainId == state.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val relay = PallaSyncPeerRelay(db, remote, crypto)
+                PallaSyncExportArchive.create(output).use { archive ->
+                    var cursor: String? = null
+                    do {
+                        currentCoroutineContext().ensureActive()
+                        val requestedCursor = cursor
+                        val url = PallaSyncUrls.export(baseResult.value, state.chainId, requestedCursor)
+                        val chunk =
+                            relay.requestBytes(url, device, "GET", PALLASYNC_EXPORT_MEDIA_TYPE) { bytes ->
+                                check(bytes.size <= MAX_EXPORT_CHUNK_BYTES) { "C_LOCAL_LIMIT" }
+                                bytes
+                            }
+                        val page = archive.acceptChunk(chunk, requestedCursor)
+                        cursor = page.cursor
+                        if (!page.hasMore) break
+                    } while (true)
+                    archive.finish()
+                }
+            }
+        }
     }
 
     suspend fun getServerUrl(): String =

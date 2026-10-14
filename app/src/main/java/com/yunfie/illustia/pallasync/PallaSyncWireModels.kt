@@ -17,7 +17,9 @@ internal const val PALLASYNC_PROTOCOL_VERSION = "3.0"
 internal const val PALLASYNC_LEGACY_PROTOCOL_VERSION = "2.1"
 internal const val PALLASYNC_PROTOCOL_IDENTIFIER = "pallasync/3"
 internal const val PALLASYNC_MEDIA_TYPE = "application/vnd.palleria.sync.v3+json"
+internal const val PALLASYNC_EXPORT_MEDIA_TYPE = "application/vnd.palleria.sync.export.v3+jsonl"
 internal const val PALLASYNC_PAGE_SIZE = 200
+private const val PALLASYNC_EXPORT_MAX_PAGE_SIZE = 1_000
 internal val PALLASYNC_AUTOMATIC_RETRY_STATUSES = setOf(408, 429, 500, 502, 503, 504)
 private const val HTTP_UNAUTHORIZED = 401
 private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
@@ -572,6 +574,19 @@ internal object PallaSyncUrls {
         baseUrl: HttpUrl,
         chainId: String,
     ): HttpUrl = endpoint(baseUrl, "chains", chainId, "records")
+
+    fun export(
+        baseUrl: HttpUrl,
+        chainId: String,
+        cursor: String?,
+        limit: Int = 200,
+    ): HttpUrl =
+        endpoint(baseUrl, "chains", chainId, "export")
+            .newBuilder()
+            .addQueryParameter("limit", limit.coerceIn(1, PALLASYNC_EXPORT_MAX_PAGE_SIZE).toString())
+            .addQueryParameter("include_recovery", "false")
+            .apply { if (cursor != null) addQueryParameter("cursor", cursor) }
+            .build()
 
     fun chain(
         baseUrl: HttpUrl,

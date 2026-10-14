@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="pallasync_v3_mnemonic">Save your recovery mnemonic</string>
+    <string name="pallasync_export_title">Export relay archive</string>
+    <string name="pallasync_export_device_summary">Stream and save a pinned archive without recovery envelopes. This device export is not a complete recovery archive.</string>
+    <string name="pallasync_export_saved">Relay archive saved.</string>
+    <string name="pallasync_export_cancelled">Export cancelled.</string>
+    <string name="pallasync_export_failed">Relay export failed. Local keys and data were retained.</string>
     <string name="pallasync_v3_mnemonic_explanation">Write down these 24 words in a safe offline place. The app does not retain them. The display closes when you leave this screen or after ten minutes.</string>
     <string name="pallasync_v3_mnemonic_saved">I saved these words</string>
     <string name="pallasync_v3_source">Choose the synchronization source</string>

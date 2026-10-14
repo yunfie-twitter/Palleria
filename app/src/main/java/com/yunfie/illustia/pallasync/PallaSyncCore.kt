@@ -621,6 +621,8 @@ object PallaSyncCore {
 
     external fun objectHash(valueJson: String): String?
 
+    external fun canonicalJson(valueJson: String): String?
+
     /** §16.6 streaming validator for independently authenticated, decrypted snapshot parts. */
     external fun beginSnapshotVerification(
         recordKey: ByteArray,
