@@ -159,6 +159,69 @@ class PallaSyncLocalIntentsTest {
             }
         }
 
+    @Test
+    fun `frozen legacy source page and destination author mapping resume idempotently`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:source:$chain"
+                val exportHash = encode(ByteArray(32) { 3 })
+                val sourceHash = encode(ByteArray(32) { 4 })
+
+                intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = true)
+                runCatching {
+                    intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = false)
+                }.isFailure shouldBe true
+
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 1,
+                    mappings =
+                        listOf(
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                1,
+                                "legacy-record",
+                                0,
+                                sourceHash,
+                                event("imported"),
+                            ),
+                        ),
+                    report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = true),
+                )
+                intents.legacyMigrationProgress(migration)?.let {
+                    it.sourceHighWater shouldBe 1
+                    it.sourceComplete shouldBe true
+                    it.candidates shouldBe 1
+                    it.pending shouldBe 1
+                }
+
+                intents.resumeLegacyMigration(migration, keys())
+                intents.resumeLegacyMigration(migration, keys())
+                val record = store.dao.queuedBatch(chain, 200).single()
+                store.dao.getChainState(chain)?.authorSeq shouldBe 1
+                val journal = checkNotNull(store.protocolDao().migrationChunk(migration, 1))
+                journal.state shouldBe "constructed"
+                journal.sourceIdentity shouldBe "legacy:1:legacy-record:0:$sourceHash"
+                intents.legacyMigrationProgress(migration)?.let {
+                    it.pending shouldBe 0
+                    it.constructed shouldBe 1
+                }
+                PallaSyncDeviceSession.begin(keys()).use { session ->
+                    val inner =
+                        Json.decodeFromString<PallaSyncInnerRecord>(
+                            PallaSyncCore.decryptOwnPreparedRecord(session.handle, record.eventJson),
+                        )
+                    inner.operations.single().entityId shouldBe "imported"
+                }
+            } finally {
+                db.close()
+            }
+        }
+
     private fun database() =
         Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), PallaSyncDatabase::class.java).build()
 

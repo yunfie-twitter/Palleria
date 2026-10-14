@@ -106,8 +106,25 @@ interface ProtocolDao {
         report: String,
     ): Int
 
+    @Query(
+        "UPDATE ps_migrations SET state=:nextState,report_json=:report WHERE migration_id=:id AND chunk_index=0 AND source_hash=:hash AND state=:expectedState",
+    )
+    suspend fun updateMigrationManifest(
+        id: String,
+        hash: String,
+        expectedState: String,
+        nextState: String,
+        report: String,
+    ): Int
+
     @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state='pending'")
     suspend fun pendingMigrationCount(id: String): Long
+
+    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state=:state")
+    suspend fun migrationStateCount(
+        id: String,
+        state: String,
+    ): Long
 
     @Query(
         "SELECT DISTINCT source_identity FROM ps_migrations WHERE migration_id=:id AND state='pending' AND source_identity IN (:collections)",
