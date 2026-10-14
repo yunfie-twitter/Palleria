@@ -327,6 +327,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/PallaSyncDatabase.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
+    "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStateStager.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotCore.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStateReader.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotProducer.kt",
@@ -337,6 +338,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncDeviceSession.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/SnapshotStateDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/SnapshotPublicationDao.kt",
+    "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/SnapshotInstallDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotPublicationJournal.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/CompactionCatalogueDao.kt",
         "PallaSync/src/api/read.rs",
@@ -352,6 +354,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStagingTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotPublicationDaoTest.kt",
+    "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotInstallDaoTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStateReaderTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotProducerTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAttestationJniTest.kt",
@@ -359,7 +362,7 @@
         "PallaSync/tests/reference/test_snapshot.py"
       ],
       "result": "pending",
-      "remaining": "A user-triggered settings action now composes the verified-state producer, native CompactionRecord signing, bounded POST /snapshots/parts batches, current transparency consistency probes, receipt-inclusion verification, durable exact-part receipts, resumable Room publication journal, and POST /snapshots. It pulls and verifies the accepted control LogEntry before marking the journal published. Resumable-publication DAO tests, producer tests (including 1,200-entry multi-part input), detekt and ktlint pass. No pruning is triggered or authorized by this action, consistent with §7.8/§16.7. Still required: execute this coordinator against an isolated relay and independent client; test cancellation, unknown upload/compaction outcomes, concurrent log advance and restart at each commit boundary; implement semantic snapshot-vs-replay comparison, atomic staging install, suffix replay, trusted-source handoff and separately authorized pruning. Full IT-01–IT-50 / Appendix C-D conformance and Android instrumentation remain incomplete.",
+      "remaining": "The incoming snapshot verifier now streams each signature- and AEAD-authenticated plaintext part into a separate Room staging journal; JCS entries are retained atomically with the exact part identity. Plaintext entry queries remain gated until every part is present and the native ordered commitment verifies, and exact restart retries are idempotent. Version 9→10 migration and focused DAO/migration tests pass. The verified-state producer/publication path remains as previously described; no pruning is triggered or authorized, consistent with §7.8/§16.7. Still required: isolated-relay and independent-client execution; cancellation, unknown outcome, concurrent log advance and restart fault tests; semantic snapshot-vs-replay comparison, atomic state-table installation, suffix replay, trusted-source handoff and separately authorized pruning. Full IT-01–IT-50 / Appendix C-D conformance and Android instrumentation remain incomplete.",
       "verification_scope": "targeted_partial"
     },
     {

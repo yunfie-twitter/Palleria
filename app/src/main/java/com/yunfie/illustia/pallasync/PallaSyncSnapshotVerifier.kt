@@ -23,10 +23,11 @@ internal class PallaSyncSnapshotVerifier private constructor(
         recordJson: String,
         authorPublicKeyBase64Url: String,
         epochSession: PallaSyncEpochSession,
-    ) {
+    ): String {
         val active = checkNotNullHandle()
         val part = epochSession.decryptSnapshotPart(recordJson, authorPublicKeyBase64Url)
         check(PallaSyncSnapshotCore.acceptVerifiedPart(active, part)) { "C_SNAPSHOT_INVALID" }
+        return part
     }
 
     fun finish(expectedCommitment: String) {

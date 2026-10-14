@@ -176,6 +176,45 @@ data class SnapshotPublicationPartEntity(
     val status: String = "prepared",
 )
 
+/** Plaintext state recovered from parts stays isolated until every part verifies as one stream. */
+@Entity(tableName = "ps_snapshot_installs", primaryKeys = ["chain_id", "compaction_id"])
+data class SnapshotInstallEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+    @ColumnInfo(name = "compaction_json") val compactionJson: String,
+    @ColumnInfo(name = "part_count") val partCount: Int,
+    @ColumnInfo(name = "state_sha256") val stateSha256: String,
+    @ColumnInfo(name = "covered_through_seq") val coveredThroughSeq: Long,
+    @ColumnInfo(name = "covered_log_hash") val coveredLogHash: String,
+    @ColumnInfo(name = "generation") val generation: Long,
+    @ColumnInfo(name = "status") val status: String,
+)
+
+@Entity(
+    tableName = "ps_snapshot_install_parts",
+    primaryKeys = ["chain_id", "compaction_id", "part_index"],
+)
+data class SnapshotInstallPartEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+    @ColumnInfo(name = "part_index") val partIndex: Int,
+    @ColumnInfo(name = "record_id") val recordId: String,
+    @ColumnInfo(name = "record_hash") val recordHash: String,
+    @ColumnInfo(name = "entry_count") val entryCount: Int,
+)
+
+@Entity(
+    tableName = "ps_snapshot_install_entries",
+    primaryKeys = ["chain_id", "compaction_id", "part_index", "entry_index"],
+)
+data class SnapshotInstallEntryEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+    @ColumnInfo(name = "part_index") val partIndex: Int,
+    @ColumnInfo(name = "entry_index") val entryIndex: Int,
+    @ColumnInfo(name = "entry_json") val entryJson: String,
+)
+
 @Entity(tableName = "ps_evidence", primaryKeys = ["origin", "relay_key_id", "chain_id", "log_id", "kind", "sequence", "object_hash"])
 data class ProtectedEvidenceEntity(
     val origin: String,

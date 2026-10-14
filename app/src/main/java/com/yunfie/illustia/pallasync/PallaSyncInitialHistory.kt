@@ -151,7 +151,10 @@ internal class PallaSyncInitialHistory(
         deviceKeys: PallaSyncKeySnapshot,
         keystore: PallaSyncKeystore,
     ) {
-        val input = snapshotVerificationInput(staging.compactionRecord(), pinJson, authority, deviceKeys, keystore)
+        val compaction = staging.compactionRecord()
+        val input = snapshotVerificationInput(compaction, pinJson, authority, deviceKeys, keystore)
+        val stateStager = PallaSyncSnapshotStateStager(store.snapshotInstallDao(), chain, staging, compaction)
+        stateStager.begin()
         PallaSyncEpochSession.begin(input.epochKeys, authority.toString(), input.epochNumber).use { epochSession ->
             val first = stagedPart(0, staging, pinJson)
             val firstRecord = Json.parseToJsonElement(first.signedJson).jsonObject
@@ -165,8 +168,22 @@ internal class PallaSyncInitialHistory(
                     .firstOrNull()
                     ?.jsonObject ?: error("C_SNAPSHOT_INVALID")
             validateSnapshotHeader(header, input)
-            verifyRemainingSnapshotParts(staging, pinJson, input, firstPlaintext, header, epochSession)
+            val retainPart: suspend (Int, SnapshotPartEntity, JsonObject) -> Unit = { index, part, frame ->
+                stateStager.retainVerifiedPart(index, part, frame)
+            }
+            verifyRemainingSnapshotParts(
+                staging,
+                pinJson,
+                input,
+                first,
+                firstPlaintext,
+                firstPart,
+                header,
+                epochSession,
+                retainPart,
+            )
         }
+        stateStager.complete()
     }
 
     private suspend fun snapshotVerificationInput(
@@ -292,9 +309,12 @@ internal class PallaSyncInitialHistory(
         staging: PallaSyncSnapshotStaging,
         pinJson: String,
         input: SnapshotVerificationInput,
+        firstRecord: SnapshotPartEntity,
         firstPlaintext: String,
+        firstPart: JsonObject,
         header: JsonObject,
         epochSession: PallaSyncEpochSession,
+        retainPart: suspend (Int, SnapshotPartEntity, JsonObject) -> Unit,
     ) {
         PallaSyncSnapshotVerifier
             .beginFromEpochSession(
@@ -304,12 +324,14 @@ internal class PallaSyncInitialHistory(
                 staging.partCount,
             ).use { verifier ->
                 verifier.acceptDecryptedAuthenticatedPart(firstPlaintext)
+                retainPart(0, firstRecord, firstPart)
                 for (partIndex in 1 until staging.partCount) {
                     currentCoroutineContext().ensureActive()
                     val part = stagedPart(partIndex, staging, pinJson)
                     val record = Json.parseToJsonElement(part.signedJson).jsonObject
                     check(record.getValue("device_id").jsonPrimitive.content == input.authorId) { "C_ACCEPTANCE_UNPROVEN" }
-                    verifier.acceptSignedRecord(part.signedJson, input.authorPublicKey, epochSession)
+                    val plaintext = verifier.acceptSignedRecord(part.signedJson, input.authorPublicKey, epochSession)
+                    retainPart(partIndex, part, Json.parseToJsonElement(plaintext).jsonObject)
                 }
                 verifier.finish(
                     input.compaction

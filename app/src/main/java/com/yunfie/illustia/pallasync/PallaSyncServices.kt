@@ -29,6 +29,8 @@ internal class PallaSyncLocalStore(
 
     fun snapshotDatabase(): PallaSyncDatabase = database
 
+    fun snapshotInstallDao() = database.snapshotInstallDao()
+
     suspend fun <T> transaction(block: suspend () -> T): T = database.withTransaction { block() }
 }
 

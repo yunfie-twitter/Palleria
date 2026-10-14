@@ -24,13 +24,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SnapshotPartEntity::class,
         SnapshotPublicationEntity::class,
         SnapshotPublicationPartEntity::class,
+        SnapshotInstallEntity::class,
+        SnapshotInstallPartEntity::class,
+        SnapshotInstallEntryEntity::class,
         ProtectedEvidenceEntity::class,
         AuthorityHistoryEntity::class,
         MigrationJournalEntity::class,
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -43,6 +46,8 @@ abstract class PallaSyncDatabase : RoomDatabase() {
     abstract fun snapshotDao(): SnapshotDao
 
     abstract fun snapshotPublicationDao(): SnapshotPublicationDao
+
+    abstract fun snapshotInstallDao(): SnapshotInstallDao
 
     abstract fun snapshotStateDao(): SnapshotStateDao
 
@@ -72,6 +77,21 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_9_10 =
+            object : Migration(9, 10) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_installs (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,compaction_json TEXT NOT NULL,part_count INTEGER NOT NULL,state_sha256 TEXT NOT NULL,covered_through_seq INTEGER NOT NULL,covered_log_hash TEXT NOT NULL,generation INTEGER NOT NULL,status TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_install_parts (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,part_index INTEGER NOT NULL,record_id TEXT NOT NULL,record_hash TEXT NOT NULL,entry_count INTEGER NOT NULL,PRIMARY KEY(chain_id,compaction_id,part_index))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_install_entries (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,part_index INTEGER NOT NULL,entry_index INTEGER NOT NULL,entry_json TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id,part_index,entry_index))",
+                    )
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -92,6 +112,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             ProtocolMigration,
                             MIGRATION_7_8,
                             MIGRATION_8_9,
+                            MIGRATION_9_10,
                         ).build()
                 INSTANCE = instance
                 instance
