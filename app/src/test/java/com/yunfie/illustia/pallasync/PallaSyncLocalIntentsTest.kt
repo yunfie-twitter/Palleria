@@ -221,7 +221,7 @@ class PallaSyncLocalIntentsTest {
                 val migrationPage = intents.legacyMigrationProgressPage(limit = 20)
                 migrationPage.items.single().migrationId shouldBe migration
                 migrationPage.items.single().sourceChain shouldBe "source-chain"
-                migrationPage.nextMigrationId shouldBe migration
+                migrationPage.nextMigrationId shouldBe null
 
                 intents.resumeLegacyMigration(migration, keys())
                 intents.resumeLegacyMigration(migration, keys())

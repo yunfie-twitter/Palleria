@@ -116,6 +116,8 @@ fun PallaSyncSettingsScreen(
         mutableStateOf<List<com.yunfie.illustia.pallasync.PallaSyncTrustedSnapshotCandidate>>(emptyList())
     }
     var legacyMigrations by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacyMigrationProgress>>(emptyList()) }
+    var legacyMigrationCursor by remember { mutableStateOf<String?>(null) }
+    var loadingLegacyMigrationPage by remember { mutableStateOf(false) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
     var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
@@ -161,7 +163,10 @@ fun PallaSyncSettingsScreen(
         while (isActive) {
             try {
                 if (state.settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
-                legacyMigrations = syncManager.legacyMigrationProgressPage(limit = 20).items
+                val page = syncManager.legacyMigrationProgressPage(limit = 20)
+                legacyMigrations =
+                    (legacyMigrations.associateBy { it.migrationId } + page.items.associateBy { it.migrationId }).values.toList()
+                if (legacyMigrationCursor == null) legacyMigrationCursor = page.nextMigrationId
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -893,6 +898,33 @@ fun PallaSyncSettingsScreen(
                                     },
                                 )
                                 if (index < legacyMigrations.lastIndex) DividerLine()
+                            }
+                            legacyMigrationCursor?.let { cursor ->
+                                if (!loadingLegacyMigrationPage) {
+                                    DividerLine()
+                                    TextButton(
+                                        text = stringResource(R.string.pallasync_legacy_migration_more),
+                                        onClick = {
+                                            loadingLegacyMigrationPage = true
+                                            scope.launch {
+                                                try {
+                                                    val page = syncManager.legacyMigrationProgressPage(cursor, 20)
+                                                    legacyMigrations = legacyMigrations + page.items
+                                                    legacyMigrationCursor = page.nextMigrationId
+                                                } catch (_: Exception) {
+                                                    Toast
+                                                        .makeText(
+                                                            context,
+                                                            R.string.pallasync_legacy_migration_report_failed,
+                                                            Toast.LENGTH_LONG,
+                                                        ).show()
+                                                } finally {
+                                                    loadingLegacyMigrationPage = false
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }

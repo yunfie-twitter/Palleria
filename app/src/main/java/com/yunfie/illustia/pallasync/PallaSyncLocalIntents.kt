@@ -389,9 +389,10 @@ internal class PallaSyncLocalIntents(
         limit: Int = 20,
     ): LegacyProgressPage {
         require(limit in 1..20 && afterMigrationId.length <= 200) { "C_SCHEMA_VIOLATION" }
-        val rows = store.protocolDao().legacyMigrationManifestPage(afterMigrationId, limit)
-        val items = rows.mapNotNull { row -> legacyMigrationProgress(row.migrationId) }
-        return LegacyProgressPage(items, rows.lastOrNull()?.migrationId)
+        val rows = store.protocolDao().legacyMigrationManifestPage(afterMigrationId, limit + 1)
+        val pageRows = rows.take(limit)
+        val items = pageRows.mapNotNull { row -> legacyMigrationProgress(row.migrationId) }
+        return LegacyProgressPage(items, pageRows.lastOrNull()?.migrationId.takeIf { rows.size > limit })
     }
 
     /** Bounded keyset read for the migration report; decision rows never enter sync/outbox paths. */
