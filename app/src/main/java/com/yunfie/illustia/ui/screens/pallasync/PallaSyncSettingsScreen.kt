@@ -34,6 +34,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
+import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
@@ -273,12 +274,8 @@ fun PallaSyncSettingsScreen(
                             withContext(kotlinx.coroutines.Dispatchers.IO) {
                                 checkNotNull(
                                     context.contentResolver.openInputStream(uri),
-                                ) { "C_SCHEMA_VIOLATION" }.use { input ->
-                                    input.readBytes().also {
-                                        check(
-                                            it.size <= MAX_DELETION_EVIDENCE_ARCHIVE_BYTES,
-                                        ) { "C_SCHEMA_VIOLATION" }
-                                    }
+                                ) { "C_SCHEMA_VIOLATION" }.use {
+                                    PallaSyncDeletionEvidenceArchive.readBounded(it, MAX_DELETION_EVIDENCE_ARCHIVE_BYTES)
                                 }
                             }
                         val archive = bytes.toString(Charsets.UTF_8)
