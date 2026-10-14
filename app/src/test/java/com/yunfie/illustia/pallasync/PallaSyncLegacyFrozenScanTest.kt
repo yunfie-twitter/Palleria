@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import java.util.Base64
 
 class PallaSyncLegacyFrozenScanTest {
     @Test
@@ -68,6 +69,34 @@ class PallaSyncLegacyFrozenScanTest {
                     },
                 )
             (gap as PallaSyncHttpResult.ProtocolError).message shouldBe "C_ROLLBACK_DETECTED"
+        }
+    }
+
+    @Test
+    fun `frozen source proof rejects a registry that changes during scan`() {
+        runBlocking {
+            val registryBefore =
+                PallaSyncLegacyV21Source.Device(
+                    "device-1",
+                    "public-key",
+                    true,
+                    Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 1 }),
+                )
+            val registryAfter =
+                registryBefore.copy(
+                    sourceObjectHash = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 2 }),
+                )
+            val result =
+                PallaSyncLegacyV21Source.inspectFrozenExport(
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    listOf(registryBefore),
+                    freezeConfirmed = true,
+                    fetchDevices = { PallaSyncHttpResult.Success(listOf(registryAfter)) },
+                    fetchPage = { after ->
+                        PallaSyncHttpResult.Success(PallaSyncLegacyV21Source.RecordPage(after, after, false, emptyList()))
+                    },
+                )
+            (result as PallaSyncHttpResult.ProtocolError).message shouldBe "C_DEVICE_EQUIVOCATION"
         }
     }
 }
