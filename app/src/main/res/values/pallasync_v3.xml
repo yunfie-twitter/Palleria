@@ -48,6 +48,15 @@
     <string name="pallasync_witness_import_cancelled">Witness import cancelled.</string>
     <string name="pallasync_witness_import_failed">The deletion receipt archive could not be read.</string>
     <string name="pallasync_witness_create_failed">This device could not validate or sign the deletion receipt.</string>
+    <string name="pallasync_progress_title">Sync progress and local history capacity</string>
+    <string name="pallasync_progress_state">Write state: %1$s</string>
+    <string name="pallasync_progress_positions">Observed target %1$d · verified %2$d · materialized %3$d</string>
+    <string name="pallasync_progress_partial">Partial: initial pull complete = %1$b. Verified and materialized positions can still lag the target.</string>
+    <string name="pallasync_progress_current">Verified and materialized through the observed target. An isolated relay can still hide unseen history.</string>
+    <string name="pallasync_progress_blockers">Pending outbox %1$d · author gaps %2$d · unresolved quarantine %3$d</string>
+    <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
+    <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
+    <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

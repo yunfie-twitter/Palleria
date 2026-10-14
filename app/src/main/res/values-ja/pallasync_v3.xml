@@ -48,6 +48,15 @@
     <string name="pallasync_witness_import_cancelled">witnessの読込みをキャンセルしました。</string>
     <string name="pallasync_witness_import_failed">削除receipt archiveを読み込めませんでした。</string>
     <string name="pallasync_witness_create_failed">この端末で削除receiptを検証または署名できませんでした。</string>
+    <string name="pallasync_progress_title">同期進捗とローカル履歴容量</string>
+    <string name="pallasync_progress_state">書込み状態: %1$s</string>
+    <string name="pallasync_progress_positions">観測target %1$d · 検証済み %2$d · 適用済み %3$d</string>
+    <string name="pallasync_progress_partial">一部未完了: 初回取得完了=%1$b。検証済み／適用済み位置がtargetに届いていない場合があります。</string>
+    <string name="pallasync_progress_current">観測済みtargetまで検証・適用済みです。孤立端末ではリレーが未提示の履歴を隠している可能性があります。</string>
+    <string name="pallasync_progress_blockers">送信待ち %1$d · author欠落 %2$d · 未解決隔離 %3$d</string>
+    <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
+    <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
+    <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

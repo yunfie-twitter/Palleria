@@ -9,3 +9,24 @@ data class PallaSyncHistoryPage(
     val next: HistoryCursor?,
     val partial: Boolean,
 )
+
+/** Local bounded status summary; sequence positions are independent verified pipeline marks. */
+data class PallaSyncClientStatus(
+    val targetSeq: Long,
+    val verifiedSeq: Long,
+    val materializedSeq: Long,
+    val pendingOutbox: Long,
+    val authorGaps: Long,
+    val unresolvedQuarantine: Long,
+    val writeState: String,
+    val initialPullCompleted: Boolean,
+    val searchCount: Long,
+    val searchCeiling: Long,
+    val viewedCount: Long,
+    val viewedCeiling: Long,
+    val seenCount: Long,
+    val seenCeiling: Long,
+) {
+    val partial: Boolean
+        get() = !initialPullCompleted || verifiedSeq < targetSeq || materializedSeq < verifiedSeq
+}

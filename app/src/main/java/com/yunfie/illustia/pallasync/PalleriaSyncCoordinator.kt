@@ -8,6 +8,9 @@ import com.yunfie.illustia.GlitchTipTelemetry.span
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
+import com.yunfie.illustia.pallasync.data.PALLASYNC_SEARCH_SAFETY_LIMIT
+import com.yunfie.illustia.pallasync.data.PALLASYNC_SEEN_SAFETY_LIMIT
+import com.yunfie.illustia.pallasync.data.PALLASYNC_VIEWED_SAFETY_LIMIT
 import com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
@@ -2494,6 +2497,28 @@ internal class PalleriaSyncCoordinator(
                     }
                 PallaSyncHistoryPage(items, page.next, !state.initialPullCompleted || state.materializedSeq < state.downloadedSeq)
             }
+        }
+
+    suspend fun getClientStatus(): PallaSyncClientStatus? =
+        withContext(Dispatchers.IO) {
+            val state = db.dao.getActiveChainState() ?: return@withContext null
+            val protocol = db.protocolDao()
+            PallaSyncClientStatus(
+                targetSeq = state.downloadedSeq,
+                verifiedSeq = state.verifiedSeq,
+                materializedSeq = state.materializedSeq,
+                pendingOutbox = db.dao.pendingOutboxCount(state.chainId),
+                authorGaps = protocol.unresolvedAuthorGapCount(state.chainId),
+                unresolvedQuarantine = protocol.unresolvedQuarantineCount(state.chainId),
+                writeState = state.writeState,
+                initialPullCompleted = state.initialPullCompleted,
+                searchCount = protocol.liveScopeCount(state.chainId, "palleria.search_history/3", "all"),
+                searchCeiling = PALLASYNC_SEARCH_SAFETY_LIMIT,
+                viewedCount = protocol.liveScopeCount(state.chainId, "palleria.view_history/3", "viewed"),
+                viewedCeiling = PALLASYNC_VIEWED_SAFETY_LIMIT,
+                seenCount = protocol.liveScopeCount(state.chainId, "palleria.view_history/3", "seen"),
+                seenCeiling = PALLASYNC_SEEN_SAFETY_LIMIT,
+            )
         }
 
     private suspend fun goneLocked(): SyncCycleOutcome {

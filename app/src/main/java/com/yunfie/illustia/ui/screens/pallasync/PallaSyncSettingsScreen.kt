@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.DividerLine
@@ -99,6 +100,24 @@ fun PallaSyncSettingsScreen(
     var generatedMnemonic by remember { mutableStateOf<String?>(null) }
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
+    var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
+
+    LaunchedEffect(state.settings.pallaSyncEnabled) {
+        if (!state.settings.pallaSyncEnabled) {
+            clientStatus = null
+            return@LaunchedEffect
+        }
+        while (isActive) {
+            try {
+                clientStatus = syncManager.getClientStatus()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Keep the last verified summary visible; a local read failure is not sync progress.
+            }
+            kotlinx.coroutines.delay(2_000)
+        }
+    }
 
     val deletionProofExporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -683,6 +702,42 @@ fun PallaSyncSettingsScreen(
                                 summary = stringResource(R.string.pallasync_delete_chain_desc),
                                 onClick = { showDeleteConfirm = true },
                             )
+                        }
+                    }
+                }
+            }
+
+            item {
+                clientStatus?.let { status ->
+                    Section(stringResource(R.string.pallasync_progress_title)) {
+                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                            Text(stringResource(R.string.pallasync_progress_state, status.writeState))
+                            Text(
+                                stringResource(
+                                    R.string.pallasync_progress_positions,
+                                    status.targetSeq,
+                                    status.verifiedSeq,
+                                    status.materializedSeq,
+                                ),
+                            )
+                            Text(
+                                stringResource(
+                                    if (status.partial) R.string.pallasync_progress_partial else R.string.pallasync_progress_current,
+                                    status.initialPullCompleted,
+                                ),
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.pallasync_progress_blockers,
+                                    status.pendingOutbox,
+                                    status.authorGaps,
+                                    status.unresolvedQuarantine,
+                                ),
+                            )
+                            DividerLine()
+                            Text(stringResource(R.string.pallasync_capacity_search, status.searchCount, status.searchCeiling))
+                            Text(stringResource(R.string.pallasync_capacity_viewed, status.viewedCount, status.viewedCeiling))
+                            Text(stringResource(R.string.pallasync_capacity_seen, status.seenCount, status.seenCeiling))
                         }
                     }
                 }

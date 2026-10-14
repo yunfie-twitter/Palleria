@@ -404,6 +404,12 @@ interface ProtocolDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun quarantine(evidence: QuarantineEvidenceEntity)
 
+    @Query("SELECT COUNT(*) FROM ps_authors WHERE chain_id=:chainId AND gap_before=1")
+    suspend fun unresolvedAuthorGapCount(chainId: String): Long
+
+    @Query("SELECT COUNT(*) FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state IN ('unresolved','pending_resolution')")
+    suspend fun unresolvedQuarantineCount(chainId: String): Long
+
     @Query("SELECT index_revision FROM pallasync_chain_state WHERE chainId=:chainId")
     suspend fun indexRevision(chainId: String): Long?
 

@@ -258,14 +258,17 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncHistoryPage.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncFeedMembership.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
-        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt"
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt"
       ],
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncViewedProjectionTest.kt",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
       ],
       "result": "pending",
-      "remaining": "Connect all archive/history/count/progress/capacity screens and run real-size Android stress at the safety ceilings.",
+      "remaining": "Settings now displays separate target/verified/materialized marks, outbox/gaps/quarantine and search/viewed/seen safety-ceiling counts; DAO coverage passes. Connect status to archive/history screens and run real-size Android stress at safety ceilings; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

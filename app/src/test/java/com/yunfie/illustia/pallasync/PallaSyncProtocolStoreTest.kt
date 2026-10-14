@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
+import com.yunfie.illustia.pallasync.data.AuthorSequenceEntity
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
+import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import com.yunfie.illustia.pallasync.data.SignedEventEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -27,6 +29,30 @@ class PallaSyncProtocolStoreTest {
     private val deviceA = "11111111-1111-4111-8111-111111111111"
     private val deviceB = "ffffffff-ffff-4fff-8fff-ffffffffffff"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `progress counts outstanding author gaps and unresolved quarantine states`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                protocol.insertAuthor(AuthorSequenceEntity(chain, 0, deviceA, 2, "record-2", "hash-2", "hash-1", true))
+                protocol.insertAuthor(AuthorSequenceEntity(chain, 0, deviceA, 3, "record-3", "hash-3", "hash-2", false))
+                protocol.quarantine(QuarantineEvidenceEntity(chain, "q1", "C_SIGNATURE_INVALID", "{}", "unresolved"))
+                protocol.quarantine(QuarantineEvidenceEntity(chain, "q2", "C_MISSING_DEPENDENCY", "{}", "pending_resolution"))
+                protocol.quarantine(QuarantineEvidenceEntity(chain, "q3", "C_SCHEMA_VIOLATION", "{}", "resolved"))
+
+                protocol.unresolvedAuthorGapCount(chain) shouldBe 1
+                protocol.unresolvedQuarantineCount(chain) shouldBe 2
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `verified deletion retains signed proof while erasing chain rows and other evidence`() =
