@@ -121,8 +121,6 @@ fn snapshot_records_use_reserved_collection_signature_and_plaintext_validation()
         &secret,
     )
     .unwrap();
-    let sign = SigningKey::from_bytes(&[9; 32]);
-    let tag = crypto::compute_collection_tag(&keys.collection_tag_key, "pallasync.snapshot/3");
     let part = json!({
         "type":"PALLASYNC-SNAPSHOT-v3",
         "collection":"pallasync.snapshot/3",
@@ -140,26 +138,20 @@ fn snapshot_records_use_reserved_collection_signature_and_plaintext_validation()
             "lamport_max":0
         }]
     });
-    let record = crypto::create_sync_snapshot_record(
-        &chain,
-        0,
+    let handle = epoch_session::begin(context("queryable"), &secret).unwrap();
+    let value = epoch_session::create_snapshot_record(
+        handle,
         "11111111-1111-4111-8111-111111111111",
         "22222222-2222-4222-8222-222222222222",
-        0,
-        Some(&tag),
         &part,
-        &keys.record_key,
-        &sign,
-        true,
+        &[9; 32],
     )
     .unwrap();
-    let handle = epoch_session::begin(context("queryable"), &secret).unwrap();
-    let value = serde_json::to_value(&record).unwrap();
     assert_eq!(
         epoch_session::decrypt_snapshot_part(
             handle,
             &value,
-            &URL_SAFE_NO_PAD.encode(sign.verifying_key().as_bytes()),
+            &URL_SAFE_NO_PAD.encode(SigningKey::from_bytes(&[9; 32]).verifying_key().as_bytes()),
         )
         .unwrap(),
         part
@@ -173,6 +165,10 @@ fn snapshot_records_use_reserved_collection_signature_and_plaintext_validation()
         .unwrap_err()
         .0,
         "C_SIGNATURE_INVALID"
+    );
+    assert_eq!(
+        value["collection_tag"],
+        crypto::compute_collection_tag(&keys.collection_tag_key, "pallasync.snapshot/3")
     );
     epoch_session::end(handle);
 }

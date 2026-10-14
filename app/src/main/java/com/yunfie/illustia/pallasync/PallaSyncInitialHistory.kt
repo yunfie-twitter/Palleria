@@ -15,6 +15,7 @@ import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.Request
+import java.util.Base64
 import java.util.UUID
 
 private const val SNAPSHOT_RECORD_UUID_VERSION = 4
@@ -137,6 +138,207 @@ internal class PallaSyncInitialHistory(
             consumePart(partIndex, part)
         }
     }
+
+    /**
+     * Verify every staged part against the replay-authenticated compaction and registry, then
+     * stream its canonical entries into the native bounded commitment verifier. This deliberately
+     * does not install the snapshot or authorize pruning: callers still need full-state semantic
+     * comparison, verified suffix application, and an atomic staging-database handoff (§16.6–16.7).
+     */
+    suspend fun verifySnapshotParts(
+        staging: PallaSyncSnapshotStaging,
+        pinJson: String,
+        authority: JsonObject,
+        deviceKeys: PallaSyncKeySnapshot,
+        keystore: PallaSyncKeystore,
+    ) {
+        val input = snapshotVerificationInput(staging.compactionRecord(), pinJson, authority, deviceKeys, keystore)
+        val materializedEpochKeys = PallaSyncEpochSession.materialize(input.epochKeys, authority.toString())
+        PallaSyncEpochSession.begin(input.epochKeys, authority.toString(), input.epochNumber).use { epochSession ->
+            val first = stagedPart(0, staging, pinJson)
+            val firstRecord = Json.parseToJsonElement(first.signedJson).jsonObject
+            check(firstRecord.getValue("device_id").jsonPrimitive.content == input.authorId) { "C_ACCEPTANCE_UNPROVEN" }
+            val firstPlaintext = epochSession.decryptSnapshotPart(first.signedJson, input.authorPublicKey)
+            val firstPart = Json.parseToJsonElement(firstPlaintext).jsonObject
+            val header =
+                firstPart
+                    .getValue("entries")
+                    .jsonArray
+                    .firstOrNull()
+                    ?.jsonObject ?: error("C_SNAPSHOT_INVALID")
+            validateSnapshotHeader(header, input)
+            verifyRemainingSnapshotParts(staging, pinJson, input, materializedEpochKeys, firstPlaintext, header, epochSession)
+        }
+    }
+
+    private suspend fun snapshotVerificationInput(
+        compaction: JsonObject,
+        pinJson: String,
+        authority: JsonObject,
+        deviceKeys: PallaSyncKeySnapshot,
+        keystore: PallaSyncKeystore,
+    ): SnapshotVerificationInput {
+        val compactionId = compaction.getValue("compaction_id").jsonPrimitive.content
+        val logId = compaction.getValue("log_id").jsonPrimitive.content
+        validateCompactionSource(compaction, compactionId, logId, pinJson, authority)
+        val epochHash = compaction.getValue("epoch_hash").jsonPrimitive.content
+        val (epochNumber, epochKeys) = snapshotEpochKeys(authority, epochHash, deviceKeys, keystore)
+        val authorId = compaction.getValue("device_id").jsonPrimitive.content
+        val author = snapshotAuthor(authority, authorId, compaction.getValue("generation").jsonPrimitive.long)
+        return SnapshotVerificationInput(
+            compaction,
+            compactionId,
+            logId,
+            epochHash,
+            epochNumber,
+            epochKeys,
+            authorId,
+            author.getValue("device_public_key").jsonPrimitive.content,
+            compaction.getValue("covered_through_seq").jsonPrimitive.long,
+            compaction.getValue("generation").jsonPrimitive.long,
+        )
+    }
+
+    private suspend fun validateCompactionSource(
+        compaction: JsonObject,
+        compactionId: String,
+        logId: String,
+        pinJson: String,
+        authority: JsonObject,
+    ) {
+        check(
+            compaction.getValue("chain_id").jsonPrimitive.content == chain &&
+                authority
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("chain_id")
+                    .jsonPrimitive.content == chain &&
+                authority
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("log_id")
+                    .jsonPrimitive.content == logId &&
+                Json
+                    .parseToJsonElement(pinJson)
+                    .jsonObject
+                    .getValue("log_id")
+                    .jsonPrimitive.content == logId,
+        ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+
+        // A caller cannot elevate an arbitrary cached CompactionRecord into a trust anchor.
+        val accepted = store.compactionCatalogueDao().verifiedEntries(chain, logId, compactionId)
+        check(accepted.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
+        val acceptedEntry = Json.parseToJsonElement(accepted.single().signedJson).jsonObject
+        check(
+            acceptedEntry.getValue("kind").jsonPrimitive.content == "compaction" &&
+                PallaSyncCore.canonicalJson(acceptedEntry.getValue("object").toString()) ==
+                PallaSyncCore.canonicalJson(compaction.toString()),
+        ) { "C_LOG_HASH_MISMATCH" }
+    }
+
+    private fun snapshotEpochKeys(
+        authority: JsonObject,
+        epochHash: String,
+        deviceKeys: PallaSyncKeySnapshot,
+        keystore: PallaSyncKeystore,
+    ): Pair<Long, PallaSyncKeySnapshot> {
+        val epochEntry =
+            authority
+                .getValue("epochs")
+                .jsonObject
+                .entries
+                .singleOrNull { (_, value) ->
+                    val record = value.jsonObject.getValue("record").jsonObject
+                    PallaSyncCore.objectHash(record.toString()) == epochHash
+                } ?: error("C_MISSING_DEPENDENCY")
+        val epochNumber = epochEntry.key.toLongOrNull() ?: error("C_SCHEMA_VIOLATION")
+        val epochKeys = checkNotNull(keystore.keysForEpoch(deviceKeys, epochNumber)) { "C_MISSING_DEPENDENCY" }
+        return epochNumber to epochKeys
+    }
+
+    private fun snapshotAuthor(
+        authority: JsonObject,
+        authorId: String,
+        generation: Long,
+    ): JsonObject {
+        val author =
+            authority
+                .getValue("devices")
+                .jsonObject[authorId]
+                ?.jsonObject
+                ?.getValue("record")
+                ?.jsonObject ?: error("C_MISSING_DEPENDENCY")
+        check(author.getValue("generation").jsonPrimitive.long == generation) { "C_ACCEPTANCE_UNPROVEN" }
+        return author
+    }
+
+    private fun validateSnapshotHeader(
+        header: JsonObject,
+        input: SnapshotVerificationInput,
+    ) {
+        check(
+            header.getValue("kind").jsonPrimitive.content == "header" &&
+                header.getValue("chain_id").jsonPrimitive.content == chain &&
+                header.getValue("generation").jsonPrimitive.long == input.expectedGeneration &&
+                header.getValue("log_id").jsonPrimitive.content == input.logId &&
+                header.getValue("covered_through_seq").jsonPrimitive.long == input.expectedCoveredSeq &&
+                header.getValue("covered_log_hash").jsonPrimitive.content ==
+                input.compaction
+                    .getValue("covered_log_hash")
+                    .jsonPrimitive.content &&
+                header.getValue("epoch_hash").jsonPrimitive.content == input.epochHash,
+        ) { "C_SNAPSHOT_INVALID" }
+    }
+
+    private suspend fun verifyRemainingSnapshotParts(
+        staging: PallaSyncSnapshotStaging,
+        pinJson: String,
+        input: SnapshotVerificationInput,
+        materializedEpochKeys: PallaSyncKeySnapshot,
+        firstPlaintext: String,
+        header: JsonObject,
+        epochSession: PallaSyncEpochSession,
+    ) {
+        val recordKey = Base64.getUrlDecoder().decode(materializedEpochKeys.encryptionKeyBase64Url)
+        try {
+            PallaSyncSnapshotVerifier.begin(recordKey, header.toString(), input.compactionId, staging.partCount).use { verifier ->
+                verifier.acceptDecryptedAuthenticatedPart(firstPlaintext)
+                for (partIndex in 1 until staging.partCount) {
+                    currentCoroutineContext().ensureActive()
+                    val part = stagedPart(partIndex, staging, pinJson)
+                    val record = Json.parseToJsonElement(part.signedJson).jsonObject
+                    check(record.getValue("device_id").jsonPrimitive.content == input.authorId) { "C_ACCEPTANCE_UNPROVEN" }
+                    verifier.acceptSignedRecord(part.signedJson, input.authorPublicKey, epochSession)
+                }
+                verifier.finish(
+                    input.compaction
+                        .getValue("state_sha256")
+                        .jsonPrimitive.content,
+                )
+            }
+        } finally {
+            recordKey.fill(0)
+        }
+    }
+
+    private suspend fun stagedPart(
+        index: Int,
+        staging: PallaSyncSnapshotStaging,
+        pinJson: String,
+    ) = staging.verifiedDownloaded(index, pinJson) ?: fetchAndStageSnapshotPart(index, pinJson, staging)
+
+    private data class SnapshotVerificationInput(
+        val compaction: JsonObject,
+        val compactionId: String,
+        val logId: String,
+        val epochHash: String,
+        val epochNumber: Long,
+        val epochKeys: PallaSyncKeySnapshot,
+        val authorId: String,
+        val authorPublicKey: String,
+        val expectedCoveredSeq: Long,
+        val expectedGeneration: Long,
+    )
 
     /** §10.12: accept catalogue entries only when they exactly match a receipt-verified replayed log entry. */
     private suspend fun verifySnapshotCatalogue(

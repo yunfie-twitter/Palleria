@@ -1,13 +1,71 @@
 package com.yunfie.illustia.pallasync
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class PallaSyncSnapshotVerifierAndroidTest {
+    @Test
+    fun jniCreatesReservedSnapshotRecordAndWipesTransferredDeviceSeed() {
+        val chain = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
+        val secret = ByteArray(32) { (0xa0 + it).toByte() }
+        val context =
+            buildJsonObject {
+                put("chain_id", chain)
+                put("generation", 0)
+                put("epoch", 0)
+                put("epoch_commitment", "3fT41zGvEMHJhoQzcQO_4BC_hPtkbiz6Ea7K-rmG9JM")
+                put("metadata_profile", "queryable")
+            }
+        val header =
+            buildJsonObject {
+                put("kind", "header")
+                put("chain_id", chain)
+                put("generation", 0)
+                put("log_id", "44444444-4444-4444-8444-444444444444")
+                put("covered_through_seq", 0)
+                put("covered_log_hash", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                put("epoch_hash", "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+                put("lamport_max", 0)
+            }
+        val part =
+            buildJsonObject {
+                put("type", "PALLASYNC-SNAPSHOT-v3")
+                put("collection", "pallasync.snapshot/3")
+                put("compaction_id", "55555555-5555-4555-8555-555555555555")
+                put("part_index", 0)
+                put("part_count", 1)
+                put("entries", kotlinx.serialization.json.buildJsonArray { add(header) })
+            }
+        val seed = ByteArray(32) { 9 }
+        PallaSyncEpochSession.begin(context, secret).use { session ->
+            val record =
+                Json
+                    .parseToJsonElement(
+                        session.createSnapshotRecord(
+                            "11111111-1111-4111-8111-111111111111",
+                            "22222222-2222-4222-8222-222222222222",
+                            part.toString(),
+                            seed,
+                        ),
+                    ).jsonObject
+            assertEquals(chain, record.getValue("chain_id").jsonPrimitive.content)
+            assertEquals(session.tag("pallasync.snapshot/3"), record.getValue("collection_tag").jsonPrimitive.content)
+            assertNotNull(record.getValue("signature"))
+        }
+        assertEquals(true, seed.all { it == 0.toByte() })
+        assertEquals(true, secret.all { it == 0.toByte() })
+    }
+
     @Test
     fun jniVerifierConsumesCompleteStreamOnceAndRejectsWrongCommitment() {
         val key =
@@ -53,6 +111,11 @@ class PallaSyncSnapshotVerifierAndroidTest {
             verifier.acceptDecryptedAuthenticatedPart(part)
             verifier.finish("cEWZYwyPF0UbkBBP8J9BJnU69OPDBciCrjHKk2gt1bU")
             assertThrows(IllegalStateException::class.java) { verifier.acceptDecryptedAuthenticatedPart(part) }
+        }
+
+        PallaSyncSnapshotVerifier.begin(key, header, "55555555-5555-4555-8555-555555555555", 1).use { verifier ->
+            verifier.acceptDecryptedAuthenticatedPart(part)
+            assertEquals("cEWZYwyPF0UbkBBP8J9BJnU69OPDBciCrjHKk2gt1bU", verifier.finishCommitment())
         }
 
         PallaSyncSnapshotVerifier.begin(key, header, "55555555-5555-4555-8555-555555555555", 1).use { verifier ->

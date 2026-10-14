@@ -205,6 +205,50 @@ pub fn decrypt_snapshot_part(handle: u64, value: &Value, author_public_key: &str
         Ok(part)
     })
 }
+
+/// Create one reserved §16.6 snapshot SyncRecord using the session's authenticated epoch keys.
+/// The signing seed is an explicit, short-lived byte input from protected device storage; it is
+/// never parsed from or returned as JSON.
+pub fn create_snapshot_record(
+    handle: u64,
+    record_id: &str,
+    device_id: &str,
+    part: &Value,
+    signing_seed: &[u8],
+) -> Result<Value> {
+    let signing_seed = Zeroizing::new(
+        <[u8; 32]>::try_from(signing_seed).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+    );
+    if !wire::uuid(record_id) || !wire::uuid(device_id) {
+        return Err(ClientError("C_SCHEMA_VIOLATION"));
+    }
+    let signing_key = ed25519_dalek::SigningKey::from_bytes(&signing_seed);
+    with(handle, |s| {
+        let tag = if s.context.metadata_profile == "private" {
+            None
+        } else {
+            Some(crypto::compute_collection_tag(
+                &s.keys.collection_tag_key,
+                "pallasync.snapshot/3",
+            ))
+        };
+        let record = crypto::create_sync_snapshot_record(
+            &s.context.chain_id,
+            s.context.generation,
+            record_id,
+            device_id,
+            s.context.epoch,
+            tag.as_deref(),
+            part,
+            &s.keys.record_key,
+            &signing_key,
+            false,
+        )
+        .map_err(|_| ClientError("C_SNAPSHOT_INVALID"))?;
+        serde_json::to_value(record).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })
+}
+
 pub fn decrypt_device(handle: u64, value: &Value) -> Result<Value> {
     wire::validate(value, "device")?;
     let record: DeviceRecord =

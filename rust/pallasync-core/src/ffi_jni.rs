@@ -398,6 +398,39 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptE
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_createSnapshotRecord<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    record_id: JString<'local>,
+    device_id: JString<'local>,
+    part: JString<'local>,
+    signing_seed: JByteArray<'local>,
+) -> jstring {
+    let result = (|| {
+        let record_id =
+            read_string(&mut env, &record_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let device_id =
+            read_string(&mut env, &device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let part = public_value(&mut env, &part)?;
+        let signing_seed = Zeroizing::new(
+            env.convert_byte_array(&signing_seed)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        crate::epoch_session::create_snapshot_record(
+            handle as u64,
+            &record_id,
+            &device_id,
+            &part,
+            &signing_seed,
+        )
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptEpochDevice<
     'local,
 >(
@@ -1435,7 +1468,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_canonica
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginSnapshotVerification<
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_beginVerification<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -1471,7 +1504,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginSna
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifySnapshotPart<
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_acceptVerifiedPart<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -1493,7 +1526,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifySn
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_finishSnapshotVerification<
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_finishVerification<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -1514,7 +1547,27 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_finishSn
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_abortSnapshotVerification<
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_finishCommitment<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+) -> jstring {
+    match crate::snapshot::finish_commitment(handle as u64) {
+        Ok(commitment) => env
+            .new_string(commitment)
+            .map(|value| value.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_abortVerification<
     'local,
 >(
     _env: JNIEnv<'local>,

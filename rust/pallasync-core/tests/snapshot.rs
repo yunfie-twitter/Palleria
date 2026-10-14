@@ -90,7 +90,8 @@ fn every_state_kind_has_one_identity_order_independent_of_part_boundaries() {
 #[test]
 fn native_verifier_session_is_one_shot_and_failed_parts_destroy_it() {
     use pallasync_core::snapshot::{
-        abort_verification, begin_verification, finish_verification, verification_part,
+        abort_verification, begin_verification, finish_commitment, finish_verification,
+        verification_part,
     };
 
     let head = header();
@@ -99,6 +100,14 @@ fn native_verifier_session_is_one_shot_and_failed_parts_destroy_it() {
     verification_part(handle, &encoded).unwrap();
     finish_verification(handle, "cEWZYwyPF0UbkBBP8J9BJnU69OPDBciCrjHKk2gt1bU").unwrap();
     assert!(finish_verification(handle, "cEWZYwyPF0UbkBBP8J9BJnU69OPDBciCrjHKk2gt1bU").is_err());
+
+    let producer = begin_verification(&key(), &head, COMPACTION, 1).unwrap();
+    verification_part(producer, &encoded).unwrap();
+    assert_eq!(
+        finish_commitment(producer).unwrap(),
+        "cEWZYwyPF0UbkBBP8J9BJnU69OPDBciCrjHKk2gt1bU"
+    );
+    assert!(finish_commitment(producer).is_err());
 
     let failed = begin_verification(&key(), &head, COMPACTION, 1).unwrap();
     let wrong = part(1, 1, std::slice::from_ref(&head));

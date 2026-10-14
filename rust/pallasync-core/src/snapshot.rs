@@ -334,6 +334,18 @@ pub fn finish_verification(handle: u64, commitment: &str) -> Result {
     session.stream.finish(commitment)
 }
 
+/// Finish a fully validated stream and return its keyed commitment for a local snapshot producer.
+/// This consumes the same one-shot session as verification and never exposes the record key.
+pub fn finish_commitment(handle: u64) -> Result<String> {
+    let session = verifiers()
+        .lock()
+        .map_err(|_| invalid())?
+        .remove(&handle)
+        .ok_or_else(invalid)?;
+    require(session.last_activity.elapsed() <= Duration::from_secs(60))?;
+    session.stream.commitment()
+}
+
 pub fn abort_verification(handle: u64) {
     if let Ok(mut sessions) = verifiers().lock() {
         sessions.remove(&handle);

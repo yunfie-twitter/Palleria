@@ -6,7 +6,7 @@ internal class PallaSyncSnapshotVerifier private constructor(
 ) : AutoCloseable {
     fun acceptDecryptedAuthenticatedPart(partJson: String) {
         val active = checkNotNullHandle()
-        check(PallaSyncCore.verifySnapshotPart(active, partJson)) { "C_SNAPSHOT_INVALID" }
+        check(PallaSyncSnapshotCore.acceptVerifiedPart(active, partJson)) { "C_SNAPSHOT_INVALID" }
     }
 
     /**
@@ -21,19 +21,25 @@ internal class PallaSyncSnapshotVerifier private constructor(
     ) {
         val active = checkNotNullHandle()
         val part = epochSession.decryptSnapshotPart(recordJson, authorPublicKeyBase64Url)
-        check(PallaSyncCore.verifySnapshotPart(active, part)) { "C_SNAPSHOT_INVALID" }
+        check(PallaSyncSnapshotCore.acceptVerifiedPart(active, part)) { "C_SNAPSHOT_INVALID" }
     }
 
     fun finish(expectedCommitment: String) {
         val active = checkNotNullHandle()
         handle = 0
-        check(PallaSyncCore.finishSnapshotVerification(active, expectedCommitment)) { "C_SNAPSHOT_INVALID" }
+        check(PallaSyncSnapshotCore.finishVerification(active, expectedCommitment)) { "C_SNAPSHOT_INVALID" }
+    }
+
+    fun finishCommitment(): String {
+        val active = checkNotNullHandle()
+        handle = 0
+        return PallaSyncSnapshotCore.finishCommitment(active)
     }
 
     override fun close() {
         val active = handle
         handle = 0
-        if (active != 0L) PallaSyncCore.abortSnapshotVerification(active)
+        if (active != 0L) PallaSyncSnapshotCore.abortVerification(active)
     }
 
     private fun checkNotNullHandle(): Long = handle.also { check(it != 0L) { "C_SNAPSHOT_INVALID" } }
@@ -48,7 +54,7 @@ internal class PallaSyncSnapshotVerifier private constructor(
             partCount: Int,
         ): PallaSyncSnapshotVerifier {
             require(partCount in 1..MAX_SNAPSHOT_PARTS) { "C_SNAPSHOT_INVALID" }
-            val handle = PallaSyncCore.beginSnapshotVerification(recordKey, headerJson, compactionId, partCount)
+            val handle = PallaSyncSnapshotCore.beginVerification(recordKey, headerJson, compactionId, partCount)
             check(handle != 0L) { "C_SNAPSHOT_INVALID" }
             return PallaSyncSnapshotVerifier(handle)
         }

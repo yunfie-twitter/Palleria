@@ -630,26 +630,6 @@ object PallaSyncCore {
 
     external fun canonicalJson(valueJson: String): String?
 
-    /** §16.6 streaming validator for independently authenticated, decrypted snapshot parts. */
-    external fun beginSnapshotVerification(
-        recordKey: ByteArray,
-        headerJson: String,
-        compactionId: String,
-        partCount: Int,
-    ): Long
-
-    external fun verifySnapshotPart(
-        handle: Long,
-        partJson: String,
-    ): Boolean
-
-    external fun finishSnapshotVerification(
-        handle: Long,
-        expectedCommitment: String,
-    ): Boolean
-
-    external fun abortSnapshotVerification(handle: Long)
-
     external fun validateRecordUpload(
         body: ByteArray,
         submitted: String,
@@ -715,4 +695,7 @@ object PallaSyncCore {
         expectedEpochHash: String,
         aud: String,
     ): PallaSyncPreparedKeys
+
+    /** Forces class initialization so feature-specific JNI facades can share this library. */
+    internal fun ensureNativeLibraryLoaded() = Unit
 }

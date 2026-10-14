@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import com.yunfie.illustia.pallasync.data.SnapshotDao
 import com.yunfie.illustia.pallasync.data.SnapshotPartEntity
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -29,6 +30,9 @@ internal class PallaSyncSnapshotStaging(
 
     val partCount: Int
         get() = partReferences.size
+
+    /** The exact locally verified CompactionRecord that defines this staging set. */
+    fun compactionRecord(): JsonObject = Json.parseToJsonElement(compactionJson).jsonObject
 
     init {
         require(chainId.isNotBlank() && compactionId.isNotBlank() && generation >= 0 && epoch >= 0 && coveredThroughSeq >= 0) {

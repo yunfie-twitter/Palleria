@@ -23,6 +23,19 @@ internal class PallaSyncEpochSession private constructor(
         authorPublicKeyBase64Url: String,
     ): String = PallaSyncCore.decryptEpochSnapshotPart(handle, record, authorPublicKeyBase64Url)
 
+    /** The caller transfers ownership of the short-lived seed; it is wiped even on JNI failure. */
+    fun createSnapshotRecord(
+        recordId: String,
+        deviceId: String,
+        partJson: String,
+        signingSeed: ByteArray,
+    ): String =
+        try {
+            PallaSyncSnapshotCore.createSnapshotRecord(handle, recordId, deviceId, partJson, signingSeed)
+        } finally {
+            signingSeed.fill(0)
+        }
+
     fun decryptDevice(record: String): String = PallaSyncCore.decryptEpochDevice(handle, record)
 
     override fun close() = PallaSyncCore.endEpochSession(handle)
