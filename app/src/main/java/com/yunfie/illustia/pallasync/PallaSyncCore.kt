@@ -380,6 +380,13 @@ object PallaSyncCore {
         recordJson: String,
     ): String
 
+    /** §16.6: signature-check and decrypt one snapshot frame using an authenticated author key. */
+    external fun decryptEpochSnapshotPart(
+        handle: Long,
+        recordJson: String,
+        authorPublicKeyBase64Url: String,
+    ): String
+
     external fun decryptEpochDevice(
         handle: Long,
         recordJson: String,

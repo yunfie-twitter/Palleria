@@ -233,6 +233,29 @@ fn validate_entry(value: &Value) -> Result<Identity> {
     };
     Ok(identity)
 }
+
+/// Validate the public frame independently of prefix-wide ordering and commitment state.
+/// This is used at the reserved snapshot decryption boundary before a part is exposed.
+pub fn validate_part_frame(part: &Value) -> Result {
+    fields(
+        part,
+        &[
+            ("type", "PALLASYNC-SNAPSHOT-v3"),
+            ("collection", "pallasync.snapshot/3"),
+            ("compaction_id", "uuid"),
+            ("part_index", "u32"),
+            ("part_count", "u32"),
+            ("entries", "array"),
+        ],
+        &[],
+    )
+    .map_err(|_| invalid())?;
+    require(
+        (1..=65_536).contains(&n(part, "part_count"))
+            && n(part, "part_index") < n(part, "part_count")
+            && jcs::canonicalize_json(part).map_err(|_| invalid())?.len() <= 1_048_572,
+    )
+}
 pub struct StateStream {
     mac: Hmac<Sha256>,
     previous: Option<Identity>,
@@ -384,26 +407,13 @@ impl StateStream {
         result
     }
     fn part_inner(&mut self, part: &Value, compaction_id: &str) -> Result {
-        fields(
-            part,
-            &[
-                ("type", "PALLASYNC-SNAPSHOT-v3"),
-                ("collection", "pallasync.snapshot/3"),
-                ("compaction_id", "uuid"),
-                ("part_index", "u32"),
-                ("part_count", "u32"),
-                ("entries", "array"),
-            ],
-            &[],
-        )
-        .map_err(|_| invalid())?;
+        validate_part_frame(part)?;
         require(
             s(part, "compaction_id") == compaction_id
                 && n(part, "part_index") == u64::from(self.expected_part)
                 && n(part, "part_count") == u64::from(self.part_count)
                 && self.expected_part < self.part_count,
         )?;
-        require(jcs::canonicalize_json(part).map_err(|_| invalid())?.len() <= 1_048_572)?;
         for entry in wire::a(part, "entries") {
             self.entry(entry)?;
         }

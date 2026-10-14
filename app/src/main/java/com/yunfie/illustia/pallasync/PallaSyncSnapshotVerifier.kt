@@ -9,6 +9,21 @@ internal class PallaSyncSnapshotVerifier private constructor(
         check(PallaSyncCore.verifySnapshotPart(active, partJson)) { "C_SNAPSHOT_INVALID" }
     }
 
+    /**
+     * Verify the SyncRecord signature and decrypt its reserved snapshot frame before streaming
+     * it into the commitment verifier. [authorPublicKeyBase64Url] must come from the already
+     * authenticated registry history for this chain; this class does not establish trust.
+     */
+    fun acceptSignedRecord(
+        recordJson: String,
+        authorPublicKeyBase64Url: String,
+        epochSession: PallaSyncEpochSession,
+    ) {
+        val active = checkNotNullHandle()
+        val part = epochSession.decryptSnapshotPart(recordJson, authorPublicKeyBase64Url)
+        check(PallaSyncCore.verifySnapshotPart(active, part)) { "C_SNAPSHOT_INVALID" }
+    }
+
     fun finish(expectedCommitment: String) {
         val active = checkNotNullHandle()
         handle = 0

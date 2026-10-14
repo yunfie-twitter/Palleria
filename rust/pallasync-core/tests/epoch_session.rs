@@ -1,3 +1,4 @@
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::SigningKey;
 use pallasync_core::{
     crypto,
@@ -108,4 +109,70 @@ fn commitment_and_profile_are_checked_before_plaintext_is_returned_and_closed_se
             .0,
         "C_MISSING_DEPENDENCY"
     );
+}
+
+#[test]
+fn snapshot_records_use_reserved_collection_signature_and_plaintext_validation() {
+    let secret = std::array::from_fn::<_, 32, _>(|n| 0xa0 + n as u8);
+    let chain = context("queryable").chain_id;
+    let keys = crypto::derive_epoch_keys(
+        &decode(&chain, Some(32)).unwrap().try_into().unwrap(),
+        0,
+        &secret,
+    )
+    .unwrap();
+    let sign = SigningKey::from_bytes(&[9; 32]);
+    let tag = crypto::compute_collection_tag(&keys.collection_tag_key, "pallasync.snapshot/3");
+    let part = json!({
+        "type":"PALLASYNC-SNAPSHOT-v3",
+        "collection":"pallasync.snapshot/3",
+        "compaction_id":"33333333-3333-4333-8333-333333333333",
+        "part_index":0,
+        "part_count":1,
+        "entries":[{
+            "kind":"header",
+            "chain_id":chain,
+            "generation":0,
+            "log_id":"44444444-4444-4444-8444-444444444444",
+            "covered_through_seq":0,
+            "covered_log_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "epoch_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "lamport_max":0
+        }]
+    });
+    let record = crypto::create_sync_snapshot_record(
+        &chain,
+        0,
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+        0,
+        Some(&tag),
+        &part,
+        &keys.record_key,
+        &sign,
+        true,
+    )
+    .unwrap();
+    let handle = epoch_session::begin(context("queryable"), &secret).unwrap();
+    let value = serde_json::to_value(&record).unwrap();
+    assert_eq!(
+        epoch_session::decrypt_snapshot_part(
+            handle,
+            &value,
+            &URL_SAFE_NO_PAD.encode(sign.verifying_key().as_bytes()),
+        )
+        .unwrap(),
+        part
+    );
+    assert_eq!(
+        epoch_session::decrypt_snapshot_part(
+            handle,
+            &value,
+            &URL_SAFE_NO_PAD.encode(SigningKey::from_bytes(&[10; 32]).verifying_key().as_bytes()),
+        )
+        .unwrap_err()
+        .0,
+        "C_SIGNATURE_INVALID"
+    );
+    epoch_session::end(handle);
 }

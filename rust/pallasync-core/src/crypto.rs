@@ -379,6 +379,45 @@ pub fn create_sync_record(
     )
 }
 
+/// §16.6 snapshot parts use the SyncRecord cryptographic envelope but are not InnerRecord
+/// application events. Keep their reserved plaintext format on a separate constructor.
+#[allow(clippy::too_many_arguments)]
+pub fn create_sync_snapshot_record(
+    chain_id: &str,
+    generation: u32,
+    record_id: &str,
+    device_id: &str,
+    epoch: u32,
+    collection_tag: Option<&str>,
+    snapshot_part: &serde_json::Value,
+    record_key: &[u8; 32],
+    signing_key: &SigningKey,
+    is_test_zero_padding: bool,
+) -> Result<SyncRecord, String> {
+    crate::snapshot::validate_part_frame(snapshot_part).map_err(|e| e.0.to_string())?;
+    let plaintext = Zeroizing::new(
+        crate::strict::jcs::canonicalize_json(snapshot_part).map_err(|_| "C_SNAPSHOT_INVALID")?,
+    );
+    let framed = Zeroizing::new(pad_and_frame(
+        &plaintext,
+        SIZE_BUCKETS,
+        is_test_zero_padding,
+    )?);
+    let nonce_bytes = generate_nonce_24();
+    create_sync_record_from_validated_frame(
+        chain_id,
+        generation,
+        record_id,
+        device_id,
+        epoch,
+        collection_tag,
+        &framed,
+        &nonce_bytes,
+        record_key,
+        signing_key,
+    )
+}
+
 /// §11.1: the caller journals the random nonce and complete random-padded frame before
 /// construction. Repeating that journal produces the exact same immutable signed object.
 #[allow(clippy::too_many_arguments)]
@@ -401,6 +440,33 @@ pub fn create_sync_record_from_frame(
     if crate::strict::jcs::canonicalize_json(&value).map_err(|_| "C_SCHEMA_VIOLATION")? != *inner {
         return Err("C_SCHEMA_VIOLATION".into());
     }
+    create_sync_record_from_validated_frame(
+        chain_id,
+        generation,
+        record_id,
+        device_id,
+        epoch,
+        collection_tag,
+        frame,
+        nonce_bytes,
+        record_key,
+        signing_key,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn create_sync_record_from_validated_frame(
+    chain_id: &str,
+    generation: u32,
+    record_id: &str,
+    device_id: &str,
+    epoch: u32,
+    collection_tag: Option<&str>,
+    frame: &[u8],
+    nonce_bytes: &[u8; 24],
+    record_key: &[u8; 32],
+    signing_key: &SigningKey,
+) -> Result<SyncRecord, String> {
     let payload_nonce = URL_SAFE_NO_PAD.encode(nonce_bytes);
 
     let aad_obj = RecordAAD {
@@ -487,6 +553,16 @@ pub fn decrypt_sync_record(
     record: &SyncRecord,
     record_key: &[u8; 32],
 ) -> Result<InnerRecord, String> {
+    let plaintext_bytes = decrypt_sync_record_plaintext(record, record_key)?;
+    crate::schema::parse_inner(&plaintext_bytes).map_err(|e| e.to_string())
+}
+
+/// Decrypt and unframe the authenticated SyncRecord payload without interpreting it as an
+/// application InnerRecord. Only reserved protocol formats such as §16.6 may use this.
+pub fn decrypt_sync_record_plaintext(
+    record: &SyncRecord,
+    record_key: &[u8; 32],
+) -> Result<Zeroizing<Vec<u8>>, String> {
     let ciphertext = URL_SAFE_NO_PAD
         .decode(&record.encrypted_payload)
         .map_err(|_| "Invalid base64url encrypted payload".to_string())?;
@@ -524,8 +600,7 @@ pub fn decrypt_sync_record(
             .map_err(|_| "C_AEAD_FAILURE".to_string())?,
     );
 
-    let plaintext_bytes = Zeroizing::new(unpad_and_unframe(&framed, SIZE_BUCKETS)?);
-    crate::schema::parse_inner(&plaintext_bytes).map_err(|e| e.to_string())
+    Ok(Zeroizing::new(unpad_and_unframe(&framed, SIZE_BUCKETS)?))
 }
 
 // ---------------------------------------------------------------------

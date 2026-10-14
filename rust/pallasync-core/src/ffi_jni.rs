@@ -379,6 +379,25 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptE
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptEpochSnapshotPart<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    record: JString<'local>,
+    author_public_key: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let value = public_value(&mut env, &record)?;
+        let public_key =
+            read_string(&mut env, &author_public_key).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::epoch_session::decrypt_snapshot_part(handle as u64, &value, &public_key)
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptEpochDevice<
     'local,
 >(

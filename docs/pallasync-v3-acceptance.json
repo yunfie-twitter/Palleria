@@ -314,19 +314,23 @@
       ],
       "implementation": [
         "Palleria/rust/pallasync-core/src/snapshot.rs",
+        "Palleria/rust/pallasync-core/src/crypto.rs",
+        "Palleria/rust/pallasync-core/src/epoch_session.rs",
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotVerifier.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncEpochSession.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
         "PallaSync/src/api/read.rs",
         "PallaSync/src/api/retention.rs"
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/snapshot.rs",
+        "Palleria/rust/pallasync-core/tests/epoch_session.rs",
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotVerifierAndroidTest.kt",
         "PallaSync/tests/reference/test_snapshot.py"
       ],
       "result": "pending",
-      "remaining": "JNI now provides short-lived streaming state commitment validation for independently decrypted/authenticated parts. Still implement snapshot SyncRecord creation/decryption orchestration, replay-based complete hot/cold semantic completeness proof, durable staging and atomic install, trusted handoff, pruning gates/UI, and independent cross-client/relay tests.",
+      "remaining": "JNI now verifies the supplied author key's SyncRecord signature and decrypts reserved snapshot frames into the bounded stream verifier; Rust epoch_session covers queryable tags, signature failure, and frame roundtrip. Still connect this to authenticated registry resolution and relay compaction/part fetch, prove complete hot/cold semantic completeness by replay, implement durable staging and atomic install, trusted handoff, pruning gates/UI, and independent cross-client/relay tests.",
       "verification_scope": "targeted_partial"
     },
     {

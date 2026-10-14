@@ -158,6 +158,53 @@ pub fn decrypt_record(handle: u64, value: &Value) -> Result<InnerRecord> {
         Ok(inner)
     })
 }
+
+/// Verify the author signature and decrypt one reserved §16.6 snapshot part. The supplied
+/// public key must come from the caller's authenticated registry history; this function does
+/// not infer membership from the record itself.
+pub fn decrypt_snapshot_part(handle: u64, value: &Value, author_public_key: &str) -> Result<Value> {
+    wire::validate(value, "record")?;
+    let record: SyncRecord =
+        serde_json::from_value(value.clone()).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+    let encoded = serde_json::to_string(&record).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+    if !crypto::verify_sync_record_json(&encoded, author_public_key)
+        .map_err(|_| ClientError("C_SIGNATURE_INVALID"))?
+    {
+        return Err(ClientError("C_SIGNATURE_INVALID"));
+    }
+    with(handle, |s| {
+        if record.chain_id != s.context.chain_id
+            || record.generation != s.context.generation
+            || record.epoch != s.context.epoch
+        {
+            return Err(ClientError("C_MISSING_DEPENDENCY"));
+        }
+        let expected_tag = if s.context.metadata_profile == "private" {
+            None
+        } else {
+            Some(crypto::compute_collection_tag(
+                &s.keys.collection_tag_key,
+                "pallasync.snapshot/3",
+            ))
+        };
+        if expected_tag.as_deref() != record.collection_tag.as_deref() {
+            return Err(ClientError("C_COLLECTION_TAG_MISMATCH"));
+        }
+        let plaintext =
+            crypto::decrypt_sync_record_plaintext(&record, &s.keys.record_key).map_err(classify)?;
+        let part =
+            crate::strict::jcs::parse(&plaintext).map_err(|_| ClientError("C_SNAPSHOT_INVALID"))?;
+        if crate::strict::jcs::canonicalize_json(&part)
+            .map_err(|_| ClientError("C_SNAPSHOT_INVALID"))?
+            .as_slice()
+            != plaintext.as_slice()
+        {
+            return Err(ClientError("C_SNAPSHOT_INVALID"));
+        }
+        crate::snapshot::validate_part_frame(&part)?;
+        Ok(part)
+    })
+}
 pub fn decrypt_device(handle: u64, value: &Value) -> Result<Value> {
     wire::validate(value, "device")?;
     let record: DeviceRecord =

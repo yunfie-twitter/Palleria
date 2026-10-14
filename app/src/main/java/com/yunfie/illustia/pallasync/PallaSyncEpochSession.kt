@@ -17,6 +17,12 @@ internal class PallaSyncEpochSession private constructor(
 
     fun decryptRecord(record: String): String = PallaSyncCore.decryptEpochRecord(handle, record)
 
+    /** Author key must be selected from this chain's authenticated registry history. */
+    fun decryptSnapshotPart(
+        record: String,
+        authorPublicKeyBase64Url: String,
+    ): String = PallaSyncCore.decryptEpochSnapshotPart(handle, record, authorPublicKeyBase64Url)
+
     fun decryptDevice(record: String): String = PallaSyncCore.decryptEpochDevice(handle, record)
 
     override fun close() = PallaSyncCore.endEpochSession(handle)
