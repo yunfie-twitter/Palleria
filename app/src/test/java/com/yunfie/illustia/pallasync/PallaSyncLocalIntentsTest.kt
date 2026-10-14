@@ -197,6 +197,7 @@ class PallaSyncLocalIntentsTest {
                     it.sourceComplete shouldBe true
                     it.candidates shouldBe 1
                     it.pending shouldBe 1
+                    it.schemaCounts shouldBe mapOf(SEARCH_HISTORY_SCHEMA_V3 to 1L)
                 }
 
                 intents.resumeLegacyMigration(migration, keys())

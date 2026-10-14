@@ -25,12 +25,14 @@ internal class PallaSyncLocalIntents(
         val exportHash: String,
         val targetChain: String,
         val targetGeneration: Long,
+        val conversionVersion: String = "legacy-v1",
         val stagedThrough: Long = 0,
         val sourceRecordsVisited: Long = 0,
         val candidateCount: Long = 0,
         val quarantinedCount: Long = 0,
         val normalizationCount: Long = 0,
         val collisionCount: Long = 0,
+        val schemaCounts: Map<String, Long> = emptyMap(),
         val sourceComplete: Boolean = false,
     )
 
@@ -60,6 +62,7 @@ internal class PallaSyncLocalIntents(
         val pending: Long,
         val constructed: Long,
         val quarantined: Long,
+        val schemaCounts: Map<String, Long>,
     )
 
     companion object {
@@ -143,7 +146,7 @@ internal class PallaSyncLocalIntents(
                 row.sourceHash == exportHash && row.sourceIdentity == sourceChain && row.targetChain == targetChain &&
                     saved.sourceChain == expected.sourceChain && saved.sourceProtocol == expected.sourceProtocol &&
                     saved.sourceHighWater == expected.sourceHighWater && saved.exportHash == expected.exportHash &&
-                    saved.targetGeneration == state.generation,
+                    saved.targetGeneration == state.generation && saved.conversionVersion == expected.conversionVersion,
             ) { "C_RECORD_ID_CONFLICT" }
         }
     }
@@ -177,6 +180,8 @@ internal class PallaSyncLocalIntents(
         check(batchCounts.all { it >= 0 }) {
             "C_SCHEMA_VIOLATION"
         }
+        check(mappings.all { it.event.schema.length in 1..80 }) { "C_SCHEMA_VIOLATION" }
+        check(mappings.map { it.event.schema }.distinct().size <= 64) { "C_LOCAL_LIMIT" }
         check(
             report.sourceRecordsVisited == throughSequence - expectedAfterSequence &&
                 report.quarantinedCount <= report.sourceRecordsVisited,
@@ -220,6 +225,12 @@ internal class PallaSyncLocalIntents(
                 quarantinedCount = manifest.quarantinedCount + report.quarantinedCount,
                 normalizationCount = manifest.normalizationCount + report.normalizationCount,
                 collisionCount = manifest.collisionCount + report.collisionCount,
+                schemaCounts =
+                    manifest.schemaCounts +
+                        mappings
+                            .groupingBy { it.event.schema }
+                            .eachCount()
+                            .mapValues { (schema, count) -> manifest.schemaCounts.getOrDefault(schema, 0) + count },
                 sourceComplete = report.complete,
             )
         val nextState = if (report.complete) "legacy_staged" else "legacy_staging"
@@ -280,6 +291,7 @@ internal class PallaSyncLocalIntents(
             dao.migrationStateCount(migrationId, "pending"),
             dao.migrationStateCount(migrationId, "constructed"),
             manifest.quarantinedCount,
+            manifest.schemaCounts,
         )
     }
 
