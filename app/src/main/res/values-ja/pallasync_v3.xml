@@ -83,6 +83,7 @@
     <string name="pallasync_legacy_migration_summary">記録済み %1$d / %2$d · 候補 %3$d · 未処理 %4$d · 構築済み %5$d · 隔離 %6$d</string>
     <string name="pallasync_legacy_migration_report_title">旧版移行レポート</string>
     <string name="pallasync_legacy_migration_report_progress">走査済み %1$d / %2$d · 判断 %3$d · 候補 %4$d · 未処理 %5$d · 構築済み %6$d · 隔離 %7$d</string>
+    <string name="pallasync_legacy_migration_source_evidence">移行元 v%1$s · chain %2$s · 最終sequence %3$d · 凍結export hash %4$s</string>
     <string name="pallasync_legacy_migration_decision">sequence %1$d · record %2$s · %3$s · 理由 %4$s · source hash %5$s</string>
     <string name="pallasync_legacy_migration_loading">検証済み移行判断を読み込んでいます…</string>
     <string name="pallasync_legacy_migration_more">次のページを読み込む</string>

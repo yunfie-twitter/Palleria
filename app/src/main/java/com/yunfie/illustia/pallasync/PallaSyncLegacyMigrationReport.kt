@@ -54,6 +54,8 @@ internal object PallaSyncLegacyMigrationReport {
             writer.write("{\"report_type\":\"pallasync-legacy-migration-report\",\"report_version\":1")
             writer.write(",\"migration_id\":${Json.encodeToString(migration.migrationId)}")
             writer.write(",\"source_chain_id\":${Json.encodeToString(migration.sourceChain)}")
+            writer.write(",\"source_protocol\":${Json.encodeToString(migration.sourceProtocol)}")
+            writer.write(",\"source_export_hash\":${Json.encodeToString(migration.exportHash)}")
             writer.write(",\"target_chain_id\":${Json.encodeToString(migration.targetChain)}")
             writer.write(",\"source_high_water\":${migration.sourceHighWater}")
             writer.write(",\"staged_through\":${migration.stagedThrough}")

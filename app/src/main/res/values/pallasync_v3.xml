@@ -88,6 +88,7 @@
     <string name="pallasync_legacy_migration_summary">Staged %1$d / %2$d · candidates %3$d · pending %4$d · constructed %5$d · quarantined %6$d</string>
     <string name="pallasync_legacy_migration_report_title">Legacy migration report</string>
     <string name="pallasync_legacy_migration_report_progress">Scanned %1$d / %2$d · decisions %3$d · candidates %4$d · pending %5$d · constructed %6$d · quarantined %7$d</string>
+    <string name="pallasync_legacy_migration_source_evidence">Source v%1$s · chain %2$s · high-water %3$d · frozen export hash %4$s</string>
     <string name="pallasync_legacy_migration_decision">Sequence %1$d · record %2$s · %3$s · reason %4$s · source hash %5$s</string>
     <string name="pallasync_legacy_migration_loading">Loading verified migration decisions…</string>
     <string name="pallasync_legacy_migration_more">Load next page</string>

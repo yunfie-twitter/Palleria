@@ -27,6 +27,9 @@ class PallaSyncLegacyMigrationReportTest {
                 val report = Json.parseToJsonElement(temp.readText()).jsonObject
                 report.getValue("report_type").jsonPrimitive.content shouldBe "pallasync-legacy-migration-report"
                 report.getValue("source_high_water").jsonPrimitive.content shouldBe "2"
+                report.getValue("source_protocol").jsonPrimitive.content shouldBe "2.1"
+                report.getValue("source_export_hash").jsonPrimitive.content shouldBe
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                 report.getValue("decisions").jsonArray.map {
                     it.jsonObject
                         .getValue("sourceRecordId")
@@ -58,6 +61,8 @@ class PallaSyncLegacyMigrationReportTest {
         PallaSyncLocalIntents.LegacyMigrationProgress(
             migrationId = "migration-id",
             sourceChain = "source-chain",
+            sourceProtocol = "2.1",
+            exportHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
             targetChain = "target-chain",
             sourceHighWater = 2,
             stagedThrough = 2,

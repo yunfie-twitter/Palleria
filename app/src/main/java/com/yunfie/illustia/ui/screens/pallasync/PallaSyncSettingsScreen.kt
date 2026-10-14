@@ -1195,6 +1195,15 @@ fun PallaSyncSettingsScreen(
                         migration.quarantined,
                     ),
                 )
+                Text(
+                    stringResource(
+                        R.string.pallasync_legacy_migration_source_evidence,
+                        migration.sourceProtocol,
+                        migration.sourceChain,
+                        migration.sourceHighWater,
+                        migration.exportHash,
+                    ),
+                )
                 migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }
                 TextButton(
                     text = stringResource(R.string.pallasync_legacy_migration_export_report),

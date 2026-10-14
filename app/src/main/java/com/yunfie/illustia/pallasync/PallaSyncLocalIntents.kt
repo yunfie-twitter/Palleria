@@ -67,6 +67,8 @@ internal class PallaSyncLocalIntents(
     internal data class LegacyMigrationProgress(
         val migrationId: String,
         val sourceChain: String,
+        val sourceProtocol: String,
+        val exportHash: String,
         val targetChain: String,
         val sourceHighWater: Long,
         val stagedThrough: Long,
@@ -371,6 +373,8 @@ internal class PallaSyncLocalIntents(
         return LegacyMigrationProgress(
             migrationId,
             manifest.sourceChain,
+            manifest.sourceProtocol,
+            manifest.exportHash,
             manifest.targetChain,
             manifest.sourceHighWater,
             manifest.stagedThrough,
