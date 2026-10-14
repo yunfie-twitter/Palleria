@@ -77,6 +77,8 @@ internal class PallaSyncSnapshotStaging(
         return checkNotNull(dao.part(chainId, compactionId, partIndex)) { "C_LOCAL_STORAGE_FULL" }
     }
 
+    fun expectedRecordId(partIndex: Int): String = partReferences.getOrNull(partIndex)?.first ?: error("C_SNAPSHOT_INVALID")
+
     suspend fun resumeDownloaded(): List<SnapshotPartEntity> = dao.parts(chainId, compactionId)
 
     private companion object {

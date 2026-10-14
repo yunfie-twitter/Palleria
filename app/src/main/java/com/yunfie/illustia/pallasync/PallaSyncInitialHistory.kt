@@ -2,6 +2,7 @@ package com.yunfie.illustia.pallasync
 
 import com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
+import com.yunfie.illustia.pallasync.data.SnapshotPartEntity
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
@@ -108,6 +109,17 @@ internal class PallaSyncInitialHistory(
                     pinJson,
                 ),
             ).jsonObject
+    }
+
+    /** §10.11 + §16.6: persist only the receipt-checked, compaction-listed opaque record. */
+    suspend fun fetchAndStageSnapshotPart(
+        partIndex: Int,
+        pinJson: String,
+        staging: PallaSyncSnapshotStaging,
+    ): SnapshotPartEntity {
+        val recordId = staging.expectedRecordId(partIndex)
+        val response = fetchSnapshotPart(recordId, pinJson)
+        return staging.retainDownloaded(partIndex, response.getValue("record").toString())
     }
 
     private fun initialAuthority(): JsonObject {

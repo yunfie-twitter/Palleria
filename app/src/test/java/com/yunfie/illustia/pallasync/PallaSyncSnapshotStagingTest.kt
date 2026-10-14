@@ -44,6 +44,8 @@ class PallaSyncSnapshotStagingTest {
                         coveredThroughSeq = 7,
                         validatedCompactionJson = compaction,
                     )
+                staging.expectedRecordId(0) shouldBe recordId
+                runCatching { staging.expectedRecordId(1) }.exceptionOrNull()?.message shouldBe "C_SNAPSHOT_INVALID"
                 staging.retainDownloaded(0, record).signedJson shouldBe PallaSyncCore.canonicalJson(record)
                 staging.resumeDownloaded().size shouldBe 1
                 val conflict = runCatching { staging.retainDownloaded(0, record.replace("opaque", "changed")) }
