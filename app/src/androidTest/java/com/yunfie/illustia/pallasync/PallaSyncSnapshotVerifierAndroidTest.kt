@@ -2,6 +2,8 @@ package com.yunfie.illustia.pallasync
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -135,5 +137,22 @@ class PallaSyncSnapshotVerifierAndroidTest {
             }
         }
         assertEquals(null, PallaSyncCore.objectHash("{\"same\":1,\"same\":2}"))
+    }
+
+    @Test
+    fun jniSnapshotPartUploadValidatorRejectsEmptySubmittedBatch() {
+        val pin =
+            JsonObject(
+                mapOf(
+                    "origin" to kotlinx.serialization.json.JsonPrimitive("https://relay.example.com"),
+                    "chain_id" to kotlinx.serialization.json.JsonPrimitive("ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"),
+                    "public_key" to kotlinx.serialization.json.JsonPrimitive("T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ"),
+                    "log_id" to kotlinx.serialization.json.JsonPrimitive("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
+                ),
+            )
+        val response = """{"accepted":[],"rejected":[],"upload_receipts":[]}""".toByteArray()
+        assertThrows(IllegalStateException::class.java) {
+            PallaSyncSnapshotVerifier.validateUploadedParts(response, JsonArray(emptyList()), pin)
+        }
     }
 }

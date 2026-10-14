@@ -6,6 +6,12 @@ import java.util.Base64
 internal class PallaSyncDeviceSession private constructor(
     val handle: Long,
 ) : AutoCloseable {
+    fun signCompaction(
+        compactionJson: String,
+        deviceId: String,
+        signingPublicKey: String,
+    ): String = PallaSyncCore.signCompactionRecord(handle, compactionJson, deviceId, signingPublicKey)
+
     override fun close() = PallaSyncCore.endDeviceSession(handle)
 
     companion object {

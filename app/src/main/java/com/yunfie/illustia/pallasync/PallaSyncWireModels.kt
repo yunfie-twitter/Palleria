@@ -575,6 +575,11 @@ internal object PallaSyncUrls {
         chainId: String,
     ): HttpUrl = endpoint(baseUrl, "chains", chainId, "records")
 
+    fun snapshotParts(
+        baseUrl: HttpUrl,
+        chainId: String,
+    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "snapshots", "parts")
+
     fun export(
         baseUrl: HttpUrl,
         chainId: String,

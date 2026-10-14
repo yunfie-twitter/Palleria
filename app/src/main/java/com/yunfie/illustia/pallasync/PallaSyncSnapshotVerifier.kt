@@ -1,5 +1,10 @@
 package com.yunfie.illustia.pallasync
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+
 /** Bounded §16.6 part validator. This does not install state or authorize pruning. */
 internal class PallaSyncSnapshotVerifier private constructor(
     private var handle: Long,
@@ -46,6 +51,20 @@ internal class PallaSyncSnapshotVerifier private constructor(
 
     companion object {
         private const val MAX_SNAPSHOT_PARTS = 65_536
+
+        /** Strictly validate the §10.11 batch partition and exact null-sequence storage receipts. */
+        fun validateUploadedParts(
+            response: ByteArray,
+            submittedRecords: JsonArray,
+            pin: JsonObject,
+        ): JsonObject {
+            val recordsJson = checkNotNull(PallaSyncCore.canonicalJson(submittedRecords.toString())) { "C_SCHEMA_VIOLATION" }
+            val pinJson = checkNotNull(PallaSyncCore.canonicalJson(pin.toString())) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            return Json
+                .parseToJsonElement(
+                    PallaSyncSnapshotCore.validateSnapshotPartUploadResponse(response, recordsJson, pinJson),
+                ).jsonObject
+        }
 
         fun begin(
             recordKey: ByteArray,

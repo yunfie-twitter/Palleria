@@ -15,6 +15,63 @@ fn context() -> RecordContext {
 }
 
 #[test]
+fn compaction_signing_is_scoped_to_the_authenticated_device_key() {
+    use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+
+    let seed = [0x31; 32];
+    let signing = SigningKey::from_bytes(&seed);
+    let public_key = URL_SAFE_NO_PAD.encode(signing.verifying_key().as_bytes());
+    let device_id = "22222222-2222-4222-8222-222222222222";
+    let value = json!({
+        "compaction_id":"55555555-5555-4555-8555-555555555555",
+        "chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+        "generation":0,
+        "device_id":device_id,
+        "log_id":"33333333-3333-4333-8333-333333333333",
+        "covered_through_seq":1,
+        "covered_log_hash":URL_SAFE_NO_PAD.encode([0x41;32]),
+        "epoch_hash":URL_SAFE_NO_PAD.encode([0x42;32]),
+        "snapshot_parts":[{"record_id":"11111111-1111-4111-8111-111111111111","record_hash":URL_SAFE_NO_PAD.encode([0x43;32])}],
+        "state_sha256":URL_SAFE_NO_PAD.encode([0x44;32]),
+        "signature":""
+    });
+    let handle = device_session::begin(&seed, &[]).unwrap();
+    let signed =
+        device_session::sign_compaction(handle, value.clone(), device_id, &public_key).unwrap();
+    pallasync_core::public_wire::verify(&signed, &public_key, crypto::CTX_COMPACTION).unwrap();
+    assert_eq!(signed["device_id"], device_id);
+    assert_eq!(
+        device_session::sign_compaction(
+            handle,
+            value.clone(),
+            "44444444-4444-4444-8444-444444444444",
+            &public_key
+        )
+        .unwrap_err()
+        .0,
+        "C_DEVICE_KEY_MISMATCH"
+    );
+    assert_eq!(
+        device_session::sign_compaction(
+            handle,
+            value.clone(),
+            device_id,
+            &URL_SAFE_NO_PAD.encode([0x55; 32])
+        )
+        .unwrap_err()
+        .0,
+        "C_DEVICE_KEY_MISMATCH"
+    );
+    device_session::end(handle);
+    assert_eq!(
+        device_session::sign_compaction(handle, value, device_id, &public_key)
+            .unwrap_err()
+            .0,
+        "C_BOOTSTRAP_TRUST_REQUIRED"
+    );
+}
+
+#[test]
 fn device_token_session_has_no_record_key_or_administrative_override_and_uses_fresh_nonces() {
     use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
     let handle = device_session::begin(&[1; 32], &[]).unwrap();

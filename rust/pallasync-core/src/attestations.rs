@@ -193,6 +193,116 @@ pub fn validate_snapshot_part_response(
     Ok(json!({"record":record,"upload_receipt":receipt}))
 }
 
+/// Validate POST C/snapshots/parts and its null-sequence receipts (§10.11/§10.17).
+/// The response's accepted/rejected IDs must account for the exact submitted batch; receipts
+/// bind to each accepted ciphertext without adding any event-log sequence.
+pub fn validate_snapshot_part_upload(
+    response: &Value,
+    submitted: &[Value],
+    pin: &RelayPin,
+) -> Result<Value> {
+    fields(
+        response,
+        &[
+            ("accepted", "array"),
+            ("rejected", "array"),
+            ("upload_receipts", "array"),
+        ],
+        &[],
+    )?;
+    require(
+        !submitted.is_empty() && submitted.len() <= 64,
+        "C_SCHEMA_VIOLATION",
+    )?;
+
+    let mut by_id = BTreeMap::new();
+    let mut by_hash = BTreeMap::new();
+    for record in submitted {
+        wire::validate(record, "record")?;
+        require(s(record, "chain_id") == pin.chain_id, "C_LOG_HASH_MISMATCH")?;
+        let id = s(record, "record_id").to_owned();
+        let hash = object_hash(record);
+        require(
+            by_id.insert(id.clone(), hash.clone()).is_none(),
+            "C_DEVICE_EQUIVOCATION",
+        )?;
+        require(by_hash.insert(hash, id).is_none(), "C_DEVICE_EQUIVOCATION")?;
+    }
+
+    let mut accepted = HashSet::new();
+    for id in a(response, "accepted") {
+        let id = id.as_str().ok_or_else(schema)?;
+        require(
+            by_id.contains_key(id) && accepted.insert(id.to_owned()),
+            "C_ACCEPTANCE_UNPROVEN",
+        )?;
+    }
+    let mut rejected = HashSet::new();
+    for item in a(response, "rejected") {
+        fields(
+            item,
+            &[
+                ("record_id", "uuid"),
+                ("status", "int"),
+                ("code", "text"),
+                ("retryable", "bool"),
+            ],
+            &[],
+        )?;
+        let id = s(item, "record_id");
+        let status: u16 = n(item, "status")
+            .try_into()
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        require(
+            crate::error_catalogue::server(s(item, "code"))
+                == Some((status, item["retryable"].as_bool().ok_or_else(schema)?)),
+            "C_SCHEMA_VIOLATION",
+        )?;
+        require(
+            by_id.contains_key(id) && !accepted.contains(id) && rejected.insert(id.to_owned()),
+            "C_ACCEPTANCE_UNPROVEN",
+        )?;
+    }
+    require(
+        accepted.len() + rejected.len() == by_id.len()
+            && by_id
+                .keys()
+                .all(|id| accepted.contains(id) || rejected.contains(id)),
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+
+    let receipts = a(response, "upload_receipts");
+    require(receipts.len() == accepted.len(), "C_ACCEPTANCE_UNPROVEN")?;
+    let mut receipt_ids = HashSet::new();
+    let mut transparency_indexes = HashSet::new();
+    let mut last_record_id: Option<&str> = None;
+    for receipt in receipts {
+        validate_receipt(receipt, pin)?;
+        let object_hash = s(receipt, "object_hash");
+        let record_id = by_hash
+            .get(object_hash)
+            .ok_or(ClientError("C_ACCEPTANCE_UNPROVEN"))?;
+        require(accepted.contains(record_id), "C_ACCEPTANCE_UNPROVEN")?;
+        require(
+            receipt["relay_seq"].is_null()
+                && receipt["entry_hash"].is_null()
+                && s(receipt, "previous_head_hash") == s(receipt, "resulting_head_hash"),
+            "C_ACCEPTANCE_UNPROVEN",
+        )?;
+        require(
+            last_record_id.is_none_or(|previous| previous < record_id.as_str()),
+            "C_SCHEMA_VIOLATION",
+        )?;
+        require(
+            receipt_ids.insert(s(receipt, "receipt_id").to_owned())
+                && transparency_indexes.insert(n(receipt, "transparency_index")),
+            "C_DEVICE_EQUIVOCATION",
+        )?;
+        last_record_id = Some(record_id);
+    }
+    Ok(response.clone())
+}
+
 /// Validate the post-delete proof against the previously committed authority and the exact
 /// locally submitted root authorization. A valid relay signature alone never authorizes erasure.
 pub fn validate_deletion_proof(

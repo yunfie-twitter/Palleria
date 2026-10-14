@@ -191,6 +191,52 @@ pub fn decrypt_own(handle: u64, value: &serde_json::Value) -> Result<InnerRecord
     })
 }
 
+/// Sign the exact §7.8 CompactionRecord under the current device key. This does not authorize
+/// it against active membership; the coordinator must establish that from verified authority.
+pub fn sign_compaction(
+    handle: u64,
+    mut value: serde_json::Value,
+    expected_device_id: &str,
+    expected_public_key: &str,
+) -> Result<serde_json::Value> {
+    use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+
+    let object = value
+        .as_object_mut()
+        .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+    object.insert(
+        "signature".into(),
+        serde_json::Value::String(URL_SAFE_NO_PAD.encode([0; 64])),
+    );
+    crate::public_wire::validate(&value, "compaction")?;
+    if crate::public_wire::s(&value, "device_id") != expected_device_id {
+        return Err(ClientError("C_DEVICE_KEY_MISMATCH"));
+    }
+
+    let mut all = sessions()
+        .lock()
+        .map_err(|_| ClientError("C_LOCAL_LIMIT"))?;
+    all.retain(|_, s| s.touched.elapsed() < IDLE);
+    let session = all
+        .get_mut(&handle)
+        .ok_or(ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+    session.touched = Instant::now();
+    let signing = SigningKey::from_bytes(&session.keys.signing);
+    if URL_SAFE_NO_PAD.encode(signing.verifying_key().as_bytes()) != expected_public_key {
+        return Err(ClientError("C_DEVICE_KEY_MISMATCH"));
+    }
+    let canonical = crate::models::unsigned_record_jcs(&value)
+        .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+    value["signature"] = serde_json::Value::String(crate::crypto::sign_with_context(
+        &signing,
+        crate::crypto::CTX_COMPACTION,
+        &canonical,
+    ));
+    crate::public_wire::validate(&value, "compaction")?;
+    crate::public_wire::verify(&value, expected_public_key, crate::crypto::CTX_COMPACTION)?;
+    Ok(value)
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TokenBinding {

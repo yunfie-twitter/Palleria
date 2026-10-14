@@ -475,6 +475,14 @@ object PallaSyncCore {
 
     external fun endDeviceSession(handle: Long)
 
+    /** §7.8: sign a compaction using a scoped device session after authority was verified. */
+    external fun signCompactionRecord(
+        handle: Long,
+        compactionJson: String,
+        expectedDeviceId: String,
+        expectedPublicKey: String,
+    ): String
+
     external fun decryptOwnPreparedRecord(
         handle: Long,
         recordJson: String,

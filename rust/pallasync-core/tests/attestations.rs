@@ -95,6 +95,114 @@ fn snapshot_part_readback_binds_signed_record_and_unchanged_data_head() {
     );
 }
 
+#[test]
+fn snapshot_part_upload_requires_exact_id_coverage_and_null_sequence_receipts() {
+    let relay = ed25519_dalek::SigningKey::from_bytes(&[0x61; 32]);
+    let author = ed25519_dalek::SigningKey::from_bytes(&[0x62; 32]);
+    let chain_id = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc";
+    let log_id = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    let pin = RelayPin {
+        origin: "https://relay.example.com".into(),
+        chain_id: chain_id.into(),
+        public_key: base64::Engine::encode(
+            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+            relay.verifying_key().as_bytes(),
+        ),
+        log_id: log_id.into(),
+    };
+    let part = json!({
+        "type":"PALLASYNC-SNAPSHOT-v3",
+        "collection":"pallasync.snapshot/3",
+        "compaction_id":"55555555-5555-4555-8555-555555555555",
+        "part_index":0,
+        "part_count":2,
+        "entries":[]
+    });
+    let records: Vec<Value> = [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+    ]
+    .into_iter()
+    .map(|id| {
+        serde_json::to_value(
+            pallasync_core::crypto::create_sync_snapshot_record(
+                chain_id,
+                0,
+                id,
+                "33333333-3333-4333-8333-333333333333",
+                0,
+                None,
+                &part,
+                &[0x63; 32],
+                &author,
+                true,
+            )
+            .unwrap(),
+        )
+        .unwrap()
+    })
+    .collect();
+    let head_hash = hash_bytes(&[0x64; 32]);
+    let mut receipts: Vec<Value> = records
+        .iter()
+        .enumerate()
+        .map(|(index, record)| {
+            let mut receipt = json!({
+                "type":"PALLASYNC-UPLOAD-RECEIPT-v3","version":"3.0",
+                "receipt_id":format!("66666666-6666-4666-8666-66666666666{}", index + 1),
+                "chain_id":chain_id,"log_id":log_id,"relay_key_id":pin.key_id().unwrap(),
+                "relay_seq":null,"object_hash":object_hash(record),"entry_hash":null,
+                "previous_head_hash":head_hash,"resulting_head_hash":head_hash,
+                "received_at_ms":1791684000000u64,"transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+                "transparency_index":index + 1,"transparency_hash":hash_bytes(&[0x65 + index as u8;32]),
+                "relay_signature":""
+            });
+            sign_relay(&relay, &mut receipt, CTX_RECEIPT).unwrap();
+            receipt
+        })
+        .collect();
+    // UUID text prefix order is the specified receipt order for these fixture IDs.
+    let response = json!({"accepted":[
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222"
+    ],"rejected":[],"upload_receipts":receipts});
+    assert_eq!(
+        validate_snapshot_part_upload(&response, &records, &pin).unwrap(),
+        response
+    );
+
+    let mut omitted = response.clone();
+    omitted["upload_receipts"].as_array_mut().unwrap().pop();
+    assert_eq!(
+        validate_snapshot_part_upload(&omitted, &records, &pin)
+            .unwrap_err()
+            .0,
+        "C_ACCEPTANCE_UNPROVEN"
+    );
+
+    receipts.reverse();
+    let mut reordered = response.clone();
+    reordered["upload_receipts"] = receipts.into();
+    assert_eq!(
+        validate_snapshot_part_upload(&reordered, &records, &pin)
+            .unwrap_err()
+            .0,
+        "C_SCHEMA_VIOLATION"
+    );
+
+    let mut accepted_rejected = response.clone();
+    accepted_rejected["rejected"] = json!([{
+        "record_id":"11111111-1111-4111-8111-111111111111",
+        "status":409,"code":"RECORD_ID_CONFLICT","retryable":false
+    }]);
+    assert_eq!(
+        validate_snapshot_part_upload(&accepted_rejected, &records, &pin)
+            .unwrap_err()
+            .0,
+        "C_ACCEPTANCE_UNPROVEN"
+    );
+}
+
 fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
     let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
     let admin = ed25519_dalek::SigningKey::from_bytes(&[0x42; 32]);

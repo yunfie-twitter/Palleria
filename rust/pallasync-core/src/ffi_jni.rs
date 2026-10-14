@@ -515,6 +515,29 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_validateSnapshotPartUploadResponse<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    body: JByteArray<'local>,
+    submitted_records: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let response = public_bytes(&mut env, &body)?;
+        let submitted = public_value(&mut env, &submitted_records)?;
+        let records = submitted
+            .as_array()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin = serde_json::from_value(public_value(&mut env, &pin)?)
+            .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::validate_snapshot_part_upload(&response, records, &pin)
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_validateCompactionPage<
     'local,
 >(
@@ -899,6 +922,33 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_decryptO
         let record = public_value(&mut env, &record)?;
         let inner = crate::device_session::decrypt_own(handle as u64, &record)?;
         serde_json::to_value(inner).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_signCompactionRecord<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    compaction: JString<'local>,
+    expected_device_id: JString<'local>,
+    expected_public_key: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let compaction = public_value(&mut env, &compaction)?;
+        let expected_device_id =
+            read_string(&mut env, &expected_device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let expected_public_key =
+            read_string(&mut env, &expected_public_key).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::device_session::sign_compaction(
+            handle as u64,
+            compaction,
+            &expected_device_id,
+            &expected_public_key,
+        )
     })();
     public_result(&mut env, result)
 }
