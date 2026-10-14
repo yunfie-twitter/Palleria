@@ -85,10 +85,10 @@ internal class PallaSyncInitialHistory(
         )
     }
 
-    /** §10.11: fetch one immutable part and verify its null-sequence receipt against this cut. */
+    /** §10.11: fetch one immutable part and verify its null-sequence receipt under the selected relay pin. */
     suspend fun fetchSnapshotPart(
         recordId: String,
-        authorityJson: String,
+        pinJson: String,
     ): JsonObject {
         val uuid = runCatching { UUID.fromString(recordId) }.getOrNull()
         check(
@@ -97,8 +97,7 @@ internal class PallaSyncInitialHistory(
                 uuid.variant() == SNAPSHOT_RECORD_UUID_VARIANT &&
                 uuid.toString() == recordId,
         ) { "C_SCHEMA_VIOLATION" }
-        val authority = Json.parseToJsonElement(authorityJson).jsonObject
-        val pin = authority.getValue("pin").jsonObject
+        val pin = Json.parseToJsonElement(pinJson).jsonObject
         check(pin.getValue("chain_id").jsonPrimitive.content == chain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val response = get(url("snapshots/parts/$recordId"))
         return json
@@ -106,8 +105,7 @@ internal class PallaSyncInitialHistory(
                 PallaSyncSnapshotCore.validateSnapshotPartResponse(
                     response,
                     recordId,
-                    authority.getValue("head_hash").jsonPrimitive.content,
-                    pin.toString(),
+                    pinJson,
                 ),
             ).jsonObject
     }

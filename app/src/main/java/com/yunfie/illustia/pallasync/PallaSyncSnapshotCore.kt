@@ -9,7 +9,6 @@ internal object PallaSyncSnapshotCore {
     external fun validateSnapshotPartResponse(
         body: ByteArray,
         expectedRecordId: String,
-        expectedHeadHash: String,
         pinJson: String,
     ): String
 }

@@ -76,20 +76,17 @@ fn snapshot_part_readback_binds_signed_record_and_unchanged_data_head() {
     sign_relay(&relay, &mut receipt, CTX_RECEIPT).unwrap();
     let response = json!({"record":record,"upload_receipt":receipt});
     assert_eq!(
-        validate_snapshot_part_response(
-            &response,
-            "11111111-1111-4111-8111-111111111111",
-            &head_hash,
-            &pin,
-        )
-        .unwrap(),
+        validate_snapshot_part_response(&response, "11111111-1111-4111-8111-111111111111", &pin,)
+            .unwrap(),
         response
     );
+    let mut changed_head = response.clone();
+    changed_head["upload_receipt"]["resulting_head_hash"] = hash_bytes(&[0x56; 32]).into();
+    sign_relay(&relay, &mut changed_head["upload_receipt"], CTX_RECEIPT).unwrap();
     assert_eq!(
         validate_snapshot_part_response(
-            &response,
+            &changed_head,
             "11111111-1111-4111-8111-111111111111",
-            &hash_bytes(&[0x56; 32]),
             &pin,
         )
         .unwrap_err()

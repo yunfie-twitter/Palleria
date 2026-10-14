@@ -50,7 +50,6 @@ class PallaSyncAttestationJniTest :
                 PallaSyncSnapshotCore.validateSnapshotPartResponse(
                     "{}".toByteArray(),
                     "11111111-1111-4111-8111-111111111111",
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                     """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}""",
                 )
             }.message shouldBe "C_SCHEMA_VIOLATION"

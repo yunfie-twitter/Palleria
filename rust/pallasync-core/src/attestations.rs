@@ -166,11 +166,10 @@ pub fn validate_receipt(receipt: &Value, pin: &RelayPin) -> Result {
 }
 
 /// Validate the immutable snapshot-part readback wrapper (§7.12.1/§10.11). Its receipt is
-/// deliberately outside the data-log sequence and must commit the unchanged pinned head.
+/// deliberately outside the data-log sequence and must commit an unchanged data head.
 pub fn validate_snapshot_part_response(
     response: &Value,
     expected_record_id: &str,
-    expected_head_hash: &str,
     pin: &RelayPin,
 ) -> Result<Value> {
     fields(
@@ -188,8 +187,7 @@ pub fn validate_snapshot_part_response(
             && s(receipt, "object_hash") == object_hash(record)
             && receipt["relay_seq"].is_null()
             && receipt["entry_hash"].is_null()
-            && s(receipt, "previous_head_hash") == expected_head_hash
-            && s(receipt, "resulting_head_hash") == expected_head_hash,
+            && s(receipt, "previous_head_hash") == s(receipt, "resulting_head_hash"),
         "C_ACCEPTANCE_UNPROVEN",
     )?;
     Ok(json!({"record":record,"upload_receipt":receipt}))
