@@ -59,6 +59,7 @@ import java.util.Locale
 import java.util.UUID
 
 private const val MAX_PROTOCOL_COUNTER = 4_294_967_295L
+private const val MAX_DELETION_WITNESSES = 128
 
 private data class DeletionContext(
     val state: ChainStateEntity,
@@ -1380,6 +1381,111 @@ internal class PalleriaSyncCoordinator(
                         ).contains(archive),
                 ) { "C_LOCAL_STORAGE_FULL" }
                 archive
+            }
+        }
+
+    /** Local file ceremony: one active enrolled device signs one exact receipt after foreground confirmation. */
+    @Suppress("LongMethod") // Keep signing, bundle validation, and protected persistence in one serialized operation.
+    suspend fun addDeletionIntentWitness(
+        archiveText: String,
+        explicitlyConfirmed: Boolean,
+    ): String? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                if (!explicitlyConfirmed) return@withLock null
+                val archive = Json.parseToJsonElement(archiveText).jsonObject
+                check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
+                val receipt = archive.getValue("delete_receipt").jsonObject
+                val oldBundle = archive.getValue("evidence_bundle").jsonObject
+                check(oldBundle.getValue("chain_id").jsonPrimitive.content == receipt.getValue("chain_id").jsonPrimitive.content) {
+                    "C_DELETION_UNVERIFIED"
+                }
+                val chain = receipt.getValue("chain_id").jsonPrimitive.content
+                val state = checkNotNull(db.dao.getChainState(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.writeState == "active") { "C_WRITE_PAUSED" }
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(PallaSyncCore.objectHash(authorityText) == keystore.authorityHash(chain)) { "C_ROLLBACK_DETECTED" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val keys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(keys.chainId == chain && keys.deviceId != null) { "C_DEVICE_KEY_MISMATCH" }
+                PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), oldBundle.toString(), authorityText)
+                val witnessSeed = Base64.getUrlDecoder().decode(keys.signingKeyBase64Url)
+                val witnessText =
+                    try {
+                        PallaSyncCore.createDeletionWitness(
+                            receipt.toString(),
+                            authorityText,
+                            checkNotNull(keys.deviceId),
+                            witnessSeed,
+                            policy.retry.correctedTime(
+                                authority
+                                    .getValue("pin")
+                                    .jsonObject
+                                    .getValue("origin")
+                                    .jsonPrimitive.content,
+                            ),
+                        )
+                    } finally {
+                        witnessSeed.fill(0)
+                    }
+                val witness = Json.parseToJsonElement(witnessText).jsonObject
+                val witnessId = witness.getValue("witness_device_id").jsonPrimitive.content
+                val witnesses =
+                    oldBundle
+                        .getValue("witnesses")
+                        .jsonArray
+                        .map { it.jsonObject }
+                        .toMutableList()
+                check(witnesses.none { it.getValue("witness_device_id").jsonPrimitive.content == witnessId }) { "C_DEVICE_EQUIVOCATION" }
+                check(witnesses.size < MAX_DELETION_WITNESSES) { "C_SCHEMA_VIOLATION" }
+                witnesses.add(witness)
+                val nextBundle =
+                    buildJsonObject {
+                        put("type", oldBundle.getValue("type"))
+                        put("version", oldBundle.getValue("version"))
+                        put("chain_id", oldBundle.getValue("chain_id"))
+                        put("deletion_id", oldBundle.getValue("deletion_id"))
+                        put("delete_receipt_hash", oldBundle.getValue("delete_receipt_hash"))
+                        put("witnesses", JsonArray(witnesses.sortedBy { it.getValue("witness_device_id").jsonPrimitive.content }))
+                    }
+                PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), nextBundle.toString(), authorityText)
+                val result =
+                    buildJsonObject {
+                        put("delete_receipt", receipt)
+                        put("evidence_bundle", nextBundle)
+                    }.toString()
+                val pin = authority.getValue("pin").jsonObject
+                val hash = checkNotNull(PallaSyncCore.objectHash(nextBundle.toString())) { "C_DELETION_UNVERIFIED" }
+                val index =
+                    receipt
+                        .getValue("transparency_index")
+                        .jsonPrimitive.content
+                        .toLong()
+                db.protocolDao().retainEvidence(
+                    ProtectedEvidenceEntity(
+                        pin.getValue("origin").jsonPrimitive.content,
+                        receipt.getValue("relay_key_id").jsonPrimitive.content,
+                        chain,
+                        pin.getValue("log_id").jsonPrimitive.content,
+                        "deletion_evidence_bundle",
+                        index,
+                        hash,
+                        result,
+                    ),
+                )
+                check(
+                    db
+                        .protocolDao()
+                        .evidenceAt(
+                            pin.getValue("origin").jsonPrimitive.content,
+                            receipt.getValue("relay_key_id").jsonPrimitive.content,
+                            chain,
+                            pin.getValue("log_id").jsonPrimitive.content,
+                            "deletion_evidence_bundle",
+                            index,
+                        ).contains(result),
+                ) { "C_LOCAL_STORAGE_FULL" }
+                result
             }
         }
 

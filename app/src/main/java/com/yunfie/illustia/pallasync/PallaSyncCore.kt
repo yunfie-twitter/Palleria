@@ -569,6 +569,14 @@ object PallaSyncCore {
         authorityJson: String,
     ): String
 
+    external fun createDeletionWitness(
+        receiptJson: String,
+        authorityJson: String,
+        deviceId: String,
+        signingSeed: ByteArray,
+        createdAtMs: Long,
+    ): String
+
     external fun rootCapabilityToken(
         handle: Long,
         operation: String,

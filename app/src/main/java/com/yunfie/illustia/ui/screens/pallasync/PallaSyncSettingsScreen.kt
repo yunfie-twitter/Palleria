@@ -46,6 +46,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -60,7 +63,10 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 
+private const val MAX_DELETION_EVIDENCE_ARCHIVE_BYTES = 262_144
+
 @Composable
+@Suppress("ThrowsCount") // SAF provider failures are mapped to explicit retained-state UI outcomes.
 fun PallaSyncSettingsScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
@@ -82,6 +88,8 @@ fun PallaSyncSettingsScreen(
     var deletingChain by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
+    var witnessInputArchive by remember { mutableStateOf<String?>(null) }
+    var witnessOutputArchive by remember { mutableStateOf<String?>(null) }
     var exportedDeletionProof by remember { mutableStateOf<String?>(null) }
     var showOfflineDeletionCopyConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
@@ -161,6 +169,80 @@ fun PallaSyncSettingsScreen(
                         Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
                     } catch (_: IllegalStateException) {
                         Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
+    val deletionWitnessExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val archive = witnessOutputArchive
+            if (uri == null || archive == null) {
+                Toast.makeText(context, R.string.pallasync_witness_export_cancelled, Toast.LENGTH_LONG).show()
+            } else {
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val bytes = archive.toByteArray(Charsets.UTF_8)
+                            checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
+                                output.write(bytes)
+                                output.flush()
+                            }
+                            val readBack =
+                                checkNotNull(
+                                    context.contentResolver.openInputStream(uri),
+                                ) { "C_DELETION_UNVERIFIED" }.use { it.readBytes() }
+                            check(readBack.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
+                        }
+                        Toast.makeText(context, R.string.pallasync_witness_exported, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        witnessOutputArchive = null
+                    }
+                }
+            }
+        }
+
+    val deletionWitnessImporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) {
+                Toast.makeText(context, R.string.pallasync_witness_import_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                scope.launch {
+                    try {
+                        val bytes =
+                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                checkNotNull(
+                                    context.contentResolver.openInputStream(uri),
+                                ) { "C_SCHEMA_VIOLATION" }.use { input ->
+                                    input.readBytes().also {
+                                        check(
+                                            it.size <= MAX_DELETION_EVIDENCE_ARCHIVE_BYTES,
+                                        ) { "C_SCHEMA_VIOLATION" }
+                                    }
+                                }
+                            }
+                        val archive = bytes.toString(Charsets.UTF_8)
+                        val value = Json.parseToJsonElement(archive).jsonObject
+                        check(value.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
+                        witnessInputArchive = archive
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_witness_import_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_witness_import_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_witness_import_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalArgumentException) {
+                        Toast.makeText(context, R.string.pallasync_witness_import_failed, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -332,6 +414,43 @@ fun PallaSyncSettingsScreen(
         )
     }
 
+    witnessInputArchive?.let { archive ->
+        val info =
+            runCatching {
+                val receipt =
+                    Json
+                        .parseToJsonElement(archive)
+                        .jsonObject
+                        .getValue("delete_receipt")
+                        .jsonObject
+                "${receipt.getValue("chain_id").jsonPrimitive.content}\n${receipt.getValue("deletion_id").jsonPrimitive.content}"
+            }.getOrDefault("")
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_witness_confirm_title),
+            summary = stringResource(R.string.pallasync_witness_confirm_summary, info),
+            confirmText = stringResource(R.string.pallasync_witness_confirm_action),
+            onConfirm = {
+                witnessInputArchive = null
+                scope.launch {
+                    try {
+                        witnessOutputArchive = syncManager.addDeletionIntentWitness(archive, explicitlyConfirmed = true)
+                        if (witnessOutputArchive == null) {
+                            Toast.makeText(context, R.string.pallasync_witness_create_failed, Toast.LENGTH_LONG).show()
+                        } else {
+                            deletionWitnessExporter.launch("pallasync-deletion-witness-bundle.json")
+                        }
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_witness_create_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalArgumentException) {
+                        Toast.makeText(context, R.string.pallasync_witness_create_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+            onDismiss = { witnessInputArchive = null },
+        )
+    }
+
     if (showLeaveConfirm) {
         MiuixConfirmDialog(
             show = true,
@@ -492,6 +611,14 @@ fun PallaSyncSettingsScreen(
                             summary = stringResource(R.string.pallasync_pair_device_desc),
                             onClick = onPairDevice,
                         )
+                        if (state.settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_witness_import_title),
+                                summary = stringResource(R.string.pallasync_witness_import_summary),
+                                onClick = { deletionWitnessImporter.launch(arrayOf("application/json")) },
+                            )
+                        }
                         if (state.settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(

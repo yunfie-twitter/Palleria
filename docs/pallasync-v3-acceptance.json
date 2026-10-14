@@ -702,6 +702,8 @@
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
+        "Palleria/app/src/main/res/values/pallasync_v3.xml",
+        "Palleria/app/src/main/res/values-ja/pallasync_v3.xml",
         "PallaSync/src/api/deletion.rs"
       ],
       "tests": [
@@ -709,7 +711,7 @@
         "PallaSync/tests/reference/test_attestations.py"
       ],
       "result": "pending",
-      "remaining": "Only empty-witness bundle generation, verification and SAF export are connected. Add witness ceremony/collection/import, full IT-44 cases and completion-revision-specific evidence workflows; test on physical SAF. Keep this item pending.",
+      "remaining": "Basic witnessed-archive import/explicit signing/merge/export is connected. Add completion-revision-specific bundles, full IT-44 negative and 128-witness cases, distinct-device file-exchange instrumentation and physical SAF verification. Keep this item pending.",
       "verification_scope": "targeted_partial"
     },
     {

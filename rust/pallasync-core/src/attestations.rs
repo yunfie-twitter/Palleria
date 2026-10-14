@@ -486,6 +486,127 @@ pub fn validate_deletion_evidence_bundle(
     Ok(bundle.clone())
 }
 
+/// Sign one explicitly confirmed local intent witness using this enrolled device's key.
+/// The caller must show the exact receipt and obtain foreground confirmation first.
+pub fn create_deletion_witness(
+    receipt: &Value,
+    authority: &crate::authority::Authority,
+    device_id: &str,
+    signing_seed: &mut [u8],
+    created_at_ms: u64,
+) -> Result<Value> {
+    require(
+        signing_seed.len() == 32 && created_at_ms > 0 && created_at_ms <= jcs::MAX_INTEGER,
+        "C_SCHEMA_VIOLATION",
+    )?;
+    authority.pin.validate()?;
+    fields(
+        receipt,
+        &[
+            ("type", "PALLASYNC-DELETE-RECEIPT-v3"),
+            ("version", "3.0"),
+            ("chain_id", "b32"),
+            ("deletion_id", "uuid"),
+            ("log_id", "uuid"),
+            ("relay_key_id", "b32"),
+            ("authorized_parameters_hash", "b32"),
+            ("authorized_epoch_hash", "b32"),
+            ("authorization_hash", "b32"),
+            ("requested_at_ms", "int"),
+            ("completed_at_ms", "int?"),
+            ("assurance", "crypto-shred|backup-expiry"),
+            ("delete_after_ms", "int?"),
+            ("ledger_receipt_hash", "b32"),
+            ("transparency_id", "uuid"),
+            ("transparency_index", "int"),
+            ("transparency_hash", "b32"),
+            ("relay_signature", "b64"),
+        ],
+        &[],
+    )?;
+    authority.pin.verify(receipt, CTX_DELETE)?;
+    require(
+        s(receipt, "chain_id") == authority.pin.chain_id,
+        "C_RELAY_KEY_MISMATCH",
+    )?;
+    let epoch = authority
+        .epochs
+        .values()
+        .find(|epoch| object_hash(&epoch.record) == s(receipt, "authorized_epoch_hash"))
+        .ok_or(ClientError("C_DELETION_UNVERIFIED"))?;
+    let parameters = authority
+        .parameters
+        .as_ref()
+        .ok_or(ClientError("C_DELETION_UNVERIFIED"))?;
+    require(
+        object_hash(parameters) == s(receipt, "authorized_parameters_hash")
+            && a(&epoch.record, "members")
+                .iter()
+                .any(|member| member == device_id),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    let admission = authority
+        .devices
+        .get(device_id)
+        .ok_or(ClientError("C_DELETION_UNVERIFIED"))?;
+    require(
+        n(&admission.record, "generation") == n(&epoch.record, "generation")
+            && admission.enrolled_seq < epoch.relay_seq
+            && admission
+                .revoked_seq
+                .is_none_or(|seq| seq > epoch.relay_seq),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    let device_public_key = s(&admission.record, "device_public_key");
+    let mut seed: [u8; 32] = signing_seed.try_into().map_err(|_| schema())?;
+    let signing_key = ed25519_dalek::SigningKey::from_bytes(&seed);
+    use zeroize::Zeroize;
+    seed.zeroize();
+    signing_seed.zeroize();
+    require(
+        signing_key.verifying_key().as_bytes()
+            == decode(device_public_key, Some(32))
+                .map_err(|_| schema())?
+                .as_slice(),
+        "C_DEVICE_KEY_MISMATCH",
+    )?;
+    let mut witness = json!({
+        "type":"PALLASYNC-DELETION-WITNESS-v3","version":"3.0",
+        "chain_id":s(receipt,"chain_id"),"deletion_id":s(receipt,"deletion_id"),
+        "delete_receipt_hash":object_hash(receipt),
+        "authorized_parameters_hash":s(receipt,"authorized_parameters_hash"),
+        "authorized_epoch_hash":s(receipt,"authorized_epoch_hash"),
+        "authorization_hash":s(receipt,"authorization_hash"),
+        "witness_device_id":device_id,"created_at_ms":created_at_ms,"signature":""
+    });
+    let canonical = jcs::canonicalize_json(&signing_value_without_member(&witness, "signature"))
+        .map_err(|_| schema())?;
+    witness["signature"] = json!(crate::crypto::sign_with_context(
+        &signing_key,
+        CTX_DELETION_WITNESS,
+        &canonical,
+    ));
+    require(
+        verify_signed_json(
+            device_public_key,
+            s(&witness, "signature"),
+            &witness,
+            CTX_DELETION_WITNESS,
+        )
+        .unwrap_or(false),
+        "C_SIGNATURE_INVALID",
+    )?;
+    Ok(witness)
+}
+
+fn signing_value_without_member(value: &Value, member: &str) -> Value {
+    let mut unsigned = value.clone();
+    if let Some(fields) = unsigned.as_object_mut() {
+        fields.remove(member);
+    }
+    unsigned
+}
+
 fn uuid_bytes(value: &str) -> Result<Vec<u8>> {
     require(wire::uuid(value), "C_SCHEMA_VIOLATION")?;
     let compact = value

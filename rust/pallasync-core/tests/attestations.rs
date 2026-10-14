@@ -1,6 +1,6 @@
 use pallasync_core::{
     attestations::*,
-    authority::{AcceptedEpoch, Authority},
+    authority::{AcceptedEpoch, Admission, Authority},
     strict::{jcs, verify::*},
 };
 use serde_json::{Value, json};
@@ -29,8 +29,10 @@ fn entry() -> Value {
 fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
     let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
     let admin = ed25519_dalek::SigningKey::from_bytes(&[0x42; 32]);
+    let device = ed25519_dalek::SigningKey::from_bytes(&[0x43; 32]);
     let chain_id = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc";
     let log_id = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    let device_id = "11111111-1111-4111-8111-111111111111";
     let pin = RelayPin {
         origin: "https://relay.example.com".into(),
         chain_id: chain_id.into(),
@@ -41,13 +43,27 @@ fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
         log_id: log_id.into(),
     };
     let parameters = json!({"chain_id":chain_id,"generation":0});
-    let epoch = json!({"chain_id":chain_id,"generation":0,"members":[]});
+    let epoch = json!({"chain_id":chain_id,"generation":0,"members":[device_id]});
     let admin_public = base64::Engine::encode(
         &base64::engine::general_purpose::URL_SAFE_NO_PAD,
         admin.verifying_key().as_bytes(),
     );
     let mut authority = Authority::new(pin.clone(), admin_public).unwrap();
     authority.parameters = Some(parameters.clone());
+    authority.devices.insert(
+        device_id.into(),
+        Admission {
+            record: json!({
+                "generation":0,
+                "device_public_key":base64::Engine::encode(
+                    &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+                    device.verifying_key().as_bytes(),
+                )
+            }),
+            enrolled_seq: 1,
+            revoked_seq: None,
+        },
+    );
     authority.epochs.insert(
         0,
         AcceptedEpoch {
@@ -195,4 +211,38 @@ fn deletion_evidence_bundle_keeps_receipt_immutable_and_binds_exact_hash() {
             .0,
         "C_SCHEMA_VIOLATION"
     );
+}
+
+#[test]
+fn deletion_witness_requires_current_certified_device_seed_and_binds_receipt() {
+    let (_, authority, receipt, mut bundle) = deletion_evidence_fixture();
+    let mut seed = [0x43; 32];
+    let witness = create_deletion_witness(
+        &receipt,
+        &authority,
+        "11111111-1111-4111-8111-111111111111",
+        &mut seed,
+        11,
+    )
+    .unwrap();
+    assert!(seed.iter().all(|byte| *byte == 0));
+    bundle["witnesses"] = json!([witness.clone()]);
+    validate_deletion_evidence_bundle(&receipt, &bundle, &authority).unwrap();
+
+    let mut wrong_key_seed = [0x44; 32];
+    assert_eq!(
+        create_deletion_witness(
+            &receipt,
+            &authority,
+            "11111111-1111-4111-8111-111111111111",
+            &mut wrong_key_seed,
+            11,
+        )
+        .unwrap_err()
+        .0,
+        "C_DEVICE_KEY_MISMATCH"
+    );
+    let mut wrong_receipt = receipt.clone();
+    wrong_receipt["completed_at_ms"] = json!(12);
+    assert!(validate_deletion_evidence_bundle(&wrong_receipt, &bundle, &authority).is_err());
 }

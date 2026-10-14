@@ -38,6 +38,16 @@
     <string name="pallasync_delete_bundle_export">削除証拠bundleを書き出す</string>
     <string name="pallasync_delete_bundle_export_desc">DeleteReceiptと別のDeletionEvidenceBundleをJSON保存します。任意witnessはまだ含みません。</string>
     <string name="pallasync_delete_bundle_exported">削除証拠bundleを書き出し、読み戻しを確認しました。</string>
+    <string name="pallasync_witness_import_title">削除意図のwitnessを確認</string>
+    <string name="pallasync_witness_import_summary">DeleteReceipt archiveを読み込み、chainと削除IDを確認して、この端末から任意のwitnessに署名します。</string>
+    <string name="pallasync_witness_confirm_title">削除意図のwitnessに署名しますか？</string>
+    <string name="pallasync_witness_confirm_summary">この端末は以下の削除receiptを確認したことに署名します。削除を認可せず、物理消去の証明にもなりません。\n%1$s</string>
+    <string name="pallasync_witness_confirm_action">署名して書き出す</string>
+    <string name="pallasync_witness_exported">witness bundleを書き出し、読み戻しを確認しました。削除を管理する端末へ転送してください。</string>
+    <string name="pallasync_witness_export_cancelled">witnessの書出しをキャンセルしました。端末内の署名は保持されています。</string>
+    <string name="pallasync_witness_import_cancelled">witnessの読込みをキャンセルしました。</string>
+    <string name="pallasync_witness_import_failed">削除receipt archiveを読み込めませんでした。</string>
+    <string name="pallasync_witness_create_failed">この端末で削除receiptを検証または署名できませんでした。</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

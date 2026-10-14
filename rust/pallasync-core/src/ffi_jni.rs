@@ -1385,6 +1385,39 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createDeletionWitness<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    receipt: JString<'local>,
+    authority: JString<'local>,
+    device_id: JString<'local>,
+    signing_seed: JByteArray<'local>,
+    created_at_ms: jlong,
+) -> jstring {
+    let mut seed = env.convert_byte_array(&signing_seed).unwrap_or_default();
+    let result = (|| {
+        let receipt = public_value(&mut env, &receipt)?;
+        let authority: crate::authority::Authority =
+            serde_json::from_value(public_value(&mut env, &authority)?)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let device_id =
+            read_string(&mut env, &device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::attestations::create_deletion_witness(
+            &receipt,
+            &authority,
+            &device_id,
+            &mut seed,
+            u64::try_from(created_at_ms).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        )
+    })();
+    use zeroize::Zeroize;
+    seed.zeroize();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_generateSeedPhrase<
     'local,
 >(

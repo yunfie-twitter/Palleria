@@ -38,6 +38,16 @@
     <string name="pallasync_delete_bundle_export">Export deletion evidence bundle</string>
     <string name="pallasync_delete_bundle_export_desc">Save DeleteReceipt and its separate DeletionEvidenceBundle as JSON. No optional witnesses are included yet.</string>
     <string name="pallasync_delete_bundle_exported">Deletion evidence bundle saved and read back successfully.</string>
+    <string name="pallasync_witness_import_title">Confirm intent witness</string>
+    <string name="pallasync_witness_import_summary">Import a DeleteReceipt archive, review its chain and deletion ID, and optionally sign an intent witness on this active device.</string>
+    <string name="pallasync_witness_confirm_title">Sign deletion intent witness?</string>
+    <string name="pallasync_witness_confirm_summary">This device will sign a statement confirming the exact deletion receipt below. It does not authorize deletion or prove physical erasure.\n%1$s</string>
+    <string name="pallasync_witness_confirm_action">Sign and export witness</string>
+    <string name="pallasync_witness_exported">Witness bundle saved and read back. Transfer it to the device managing deletion.</string>
+    <string name="pallasync_witness_export_cancelled">Witness export cancelled. No signature was removed from this device.</string>
+    <string name="pallasync_witness_import_cancelled">Witness import cancelled.</string>
+    <string name="pallasync_witness_import_failed">The deletion receipt archive could not be read.</string>
+    <string name="pallasync_witness_create_failed">This device could not validate or sign the deletion receipt.</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

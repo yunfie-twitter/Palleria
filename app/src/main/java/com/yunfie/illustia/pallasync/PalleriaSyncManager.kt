@@ -134,6 +134,11 @@ class PalleriaSyncManager(
 
     internal suspend fun pendingDeletionEvidenceArchive(): String? = coordinator.pendingDeletionEvidenceArchive()
 
+    internal suspend fun addDeletionIntentWitness(
+        archive: String,
+        explicitlyConfirmed: Boolean,
+    ): String? = coordinator.addDeletionIntentWitness(archive, explicitlyConfirmed)
+
     internal suspend fun completeDeletionAfterExport(
         proof: String,
         explicitlyConfirmedOfflineCopy: Boolean,
