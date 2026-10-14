@@ -29,6 +29,7 @@ import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity
@@ -117,7 +118,9 @@ fun PallaSyncDevicesScreen(
                                     it.flush()
                                 }
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
-                                    input.readBytes().also { check(it.contentEquals(bytes)) { "C_MISSING_DEPENDENCY" } }
+                                    PallaSyncDeletionEvidenceArchive
+                                        .readBounded(input, MAX_PEER_TRANSFER_BYTES)
+                                        .also { check(it.contentEquals(bytes)) { "C_MISSING_DEPENDENCY" } }
                                 }
                             }
                         check(returned.toString(Charsets.UTF_8) == value) { "C_MISSING_DEPENDENCY" }
@@ -143,7 +146,7 @@ fun PallaSyncDevicesScreen(
                         val bytes =
                             withContext(Dispatchers.IO) {
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
-                                    input.readBytes().also { check(it.size <= MAX_PEER_TRANSFER_BYTES) { "C_SCHEMA_VIOLATION" } }
+                                    PallaSyncDeletionEvidenceArchive.readBounded(input, MAX_PEER_TRANSFER_BYTES)
                                 }
                             }
                         val value = bytes.toString(Charsets.UTF_8)
