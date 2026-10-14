@@ -1,5 +1,6 @@
 use pallasync_core::{
     attestations::*,
+    authority::{AcceptedEpoch, Authority},
     strict::{jcs, verify::*},
 };
 use serde_json::{Value, json};
@@ -23,6 +24,54 @@ fn pin() -> RelayPin {
 }
 fn entry() -> Value {
     json!({"relay_seq":7,"kind":"record","received_at_ms":1791684000000u64,"object":vector("record")})
+}
+
+fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
+    let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
+    let admin = ed25519_dalek::SigningKey::from_bytes(&[0x42; 32]);
+    let chain_id = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc";
+    let log_id = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    let pin = RelayPin {
+        origin: "https://relay.example.com".into(),
+        chain_id: chain_id.into(),
+        public_key: base64::Engine::encode(
+            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+            relay.verifying_key().as_bytes(),
+        ),
+        log_id: log_id.into(),
+    };
+    let parameters = json!({"chain_id":chain_id,"generation":0});
+    let epoch = json!({"chain_id":chain_id,"generation":0,"members":[]});
+    let admin_public = base64::Engine::encode(
+        &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+        admin.verifying_key().as_bytes(),
+    );
+    let mut authority = Authority::new(pin.clone(), admin_public).unwrap();
+    authority.parameters = Some(parameters.clone());
+    authority.epochs.insert(
+        0,
+        AcceptedEpoch {
+            record: epoch.clone(),
+            relay_seq: 5,
+            committed_at_ms: 1,
+        },
+    );
+    let mut receipt = json!({
+        "type":"PALLASYNC-DELETE-RECEIPT-v3","version":"3.0","chain_id":chain_id,
+        "deletion_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","log_id":log_id,
+        "relay_key_id":pin.key_id().unwrap(),"authorized_parameters_hash":object_hash(&parameters),
+        "authorized_epoch_hash":object_hash(&epoch),"authorization_hash":hash_bytes(&[7;32]),
+        "requested_at_ms":10,"completed_at_ms":null,"assurance":"crypto-shred","delete_after_ms":null,
+        "ledger_receipt_hash":hash_bytes(&[8;32]),"transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "transparency_index":1,"transparency_hash":hash_bytes(&[9;32]),"relay_signature":""
+    });
+    sign_relay(&relay, &mut receipt, CTX_DELETE).unwrap();
+    let bundle = json!({
+        "type":"PALLASYNC-DELETION-EVIDENCE-v3","version":"3.0","chain_id":chain_id,
+        "deletion_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "delete_receipt_hash":object_hash(&receipt),"witnesses":[]
+    });
+    (pin, authority, receipt, bundle)
 }
 
 #[test]
@@ -122,4 +171,28 @@ fn signed_page_does_not_skip_gaps_or_reset_a_pinned_prefix() {
         ..pin
     };
     assert!(validate_head(&head, &changed_log).is_err());
+}
+
+#[test]
+fn deletion_evidence_bundle_keeps_receipt_immutable_and_binds_exact_hash() {
+    let (_, authority, receipt, bundle) = deletion_evidence_fixture();
+    validate_deletion_evidence_bundle(&receipt, &bundle, &authority).unwrap();
+
+    let mut wrong_receipt_hash = bundle.clone();
+    wrong_receipt_hash["delete_receipt_hash"] = json!(hash_bytes(&[0; 32]));
+    assert_eq!(
+        validate_deletion_evidence_bundle(&receipt, &wrong_receipt_hash, &authority)
+            .unwrap_err()
+            .0,
+        "C_DELETION_UNVERIFIED"
+    );
+
+    let mut receipt_with_witnesses = receipt.clone();
+    receipt_with_witnesses["witness_signatures"] = json!([]);
+    assert_eq!(
+        validate_deletion_evidence_bundle(&receipt_with_witnesses, &bundle, &authority)
+            .unwrap_err()
+            .0,
+        "C_SCHEMA_VIOLATION"
+    );
 }

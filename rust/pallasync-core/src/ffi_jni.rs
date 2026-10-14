@@ -1364,6 +1364,27 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateDeletionEvidenceBundle<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    receipt: JString<'local>,
+    bundle: JString<'local>,
+    authority: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let receipt = public_value(&mut env, &receipt)?;
+        let bundle = public_value(&mut env, &bundle)?;
+        let authority: crate::authority::Authority =
+            serde_json::from_value(public_value(&mut env, &authority)?)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::attestations::validate_deletion_evidence_bundle(&receipt, &bundle, &authority)
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_generateSeedPhrase<
     'local,
 >(

@@ -20,6 +20,7 @@ pub const CTX_RECEIPT: &[u8] = b"PALLASYNC-UPLOAD-RECEIPT-v3\0";
 pub const CTX_TRANSPARENCY: &[u8] = b"PALLASYNC-TRANSPARENCY-ENTRY-v3\0";
 pub const CTX_HEAD: &[u8] = b"PALLASYNC-TRANSPARENCY-HEAD-v3\0";
 pub const CTX_DELETE: &[u8] = b"PALLASYNC-DELETE-RECEIPT-v3\0";
+pub const CTX_DELETION_WITNESS: &[u8] = b"PALLASYNC-DELETION-WITNESS-v3\0";
 pub const CTX_PRIVACY: &[u8] = b"PALLASYNC-RELAY-PRIVACY-v3\0";
 
 pub fn decode(s: &str, length: Option<usize>) -> Result<Vec<u8>, &'static str> {

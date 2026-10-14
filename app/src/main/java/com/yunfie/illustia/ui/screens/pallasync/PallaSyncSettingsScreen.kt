@@ -81,6 +81,7 @@ fun PallaSyncSettingsScreen(
     var showDeleteRootInput by remember { mutableStateOf(false) }
     var deletingChain by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
+    var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var exportedDeletionProof by remember { mutableStateOf<String?>(null) }
     var showOfflineDeletionCopyConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
@@ -126,6 +127,40 @@ fun PallaSyncSettingsScreen(
                         Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
                     } finally {
                         deletingChain = false
+                    }
+                }
+            }
+        }
+
+    val deletionArchiveExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val archive = pendingDeletionArchive
+            if (uri == null || archive == null) {
+                Toast.makeText(context, R.string.pallasync_delete_export_required, Toast.LENGTH_LONG).show()
+            } else {
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val bytes = archive.toByteArray(Charsets.UTF_8)
+                            checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
+                                output.write(bytes)
+                                output.flush()
+                            }
+                            val readBack =
+                                checkNotNull(
+                                    context.contentResolver.openInputStream(uri),
+                                ) { "C_DELETION_UNVERIFIED" }.use { it.readBytes() }
+                            check(readBack.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
+                        }
+                        Toast.makeText(context, R.string.pallasync_delete_bundle_exported, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -430,6 +465,25 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_delete_export_title),
                                 summary = stringResource(R.string.pallasync_delete_export_required),
                                 onClick = { deletionProofExporter.launch("pallasync-deletion-evidence.json") },
+                            )
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_delete_bundle_export),
+                                summary = stringResource(R.string.pallasync_delete_bundle_export_desc),
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            pendingDeletionArchive = syncManager.pendingDeletionEvidenceArchive()
+                                            if (pendingDeletionArchive == null) {
+                                                Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                                            } else {
+                                                deletionArchiveExporter.launch("pallasync-deletion-bundle.json")
+                                            }
+                                        } catch (_: IllegalStateException) {
+                                            Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
                             )
                         }
                         DividerLine()

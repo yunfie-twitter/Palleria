@@ -35,6 +35,9 @@
     <string name="pallasync_delete_export_written_confirm">証明ファイルを書き出し、バイト単位で読み戻して確認しました。別のオフライン媒体に保存したことを確認してください。確認後、この端末の鍵とチェーンデータを消去します。</string>
     <string name="pallasync_delete_export_required">証明は検証済みで端末内に保持されています。端末データはまだ消去していません。オフライン媒体へ保存し、確認して続行してください。</string>
     <string name="pallasync_delete_export_failed">証拠ファイルを保存・検証できませんでした。この端末の鍵とデータは保持されています。</string>
+    <string name="pallasync_delete_bundle_export">削除証拠bundleを書き出す</string>
+    <string name="pallasync_delete_bundle_export_desc">DeleteReceiptと別のDeletionEvidenceBundleをJSON保存します。任意witnessはまだ含みません。</string>
+    <string name="pallasync_delete_bundle_exported">削除証拠bundleを書き出し、読み戻しを確認しました。</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

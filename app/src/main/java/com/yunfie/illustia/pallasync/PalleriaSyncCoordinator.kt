@@ -1325,6 +1325,64 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    /** Build and retain the §7.12.5 archive wrapper separately from the immutable receipt. */
+    suspend fun pendingDeletionEvidenceArchive(): String? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val context = deletionContext() ?: return@withLock null
+                val proofText =
+                    db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_receipt") ?: return@withLock null
+                val proof = Json.parseToJsonElement(proofText).jsonObject
+                val receipt = proof.getValue("delete_receipt").jsonObject
+                val bundle =
+                    buildJsonObject {
+                        put("type", "PALLASYNC-DELETION-EVIDENCE-v3")
+                        put("version", "3.0")
+                        put("chain_id", receipt.getValue("chain_id"))
+                        put("deletion_id", receipt.getValue("deletion_id"))
+                        put("delete_receipt_hash", checkNotNull(PallaSyncCore.objectHash(receipt.toString())))
+                        put("witnesses", JsonArray(emptyList()))
+                    }
+                PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), bundle.toString(), context.authorityText)
+                val archive =
+                    buildJsonObject {
+                        put("delete_receipt", receipt)
+                        put("evidence_bundle", bundle)
+                    }.toString()
+                val index =
+                    receipt
+                        .getValue("transparency_index")
+                        .jsonPrimitive.content
+                        .toLong()
+                val hash = checkNotNull(PallaSyncCore.objectHash(bundle.toString())) { "C_DELETION_UNVERIFIED" }
+                db.protocolDao().retainEvidence(
+                    ProtectedEvidenceEntity(
+                        context.origin,
+                        context.relayKeyId,
+                        context.state.chainId,
+                        context.logId,
+                        "deletion_evidence_bundle",
+                        index,
+                        hash,
+                        archive,
+                    ),
+                )
+                check(
+                    db
+                        .protocolDao()
+                        .evidenceAt(
+                            context.origin,
+                            context.relayKeyId,
+                            context.state.chainId,
+                            context.logId,
+                            "deletion_evidence_bundle",
+                            index,
+                        ).contains(archive),
+                ) { "C_LOCAL_STORAGE_FULL" }
+                archive
+            }
+        }
+
     suspend fun completeDeletionAfterExport(
         exportedProof: String,
         explicitlyConfirmedOfflineCopy: Boolean,

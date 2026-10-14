@@ -562,6 +562,13 @@ object PallaSyncCore {
         submittedRequestJson: String,
     ): String
 
+    /** Validates an optional §7.12.5 witness bundle against a verified relay receipt and authority checkpoint. */
+    external fun validateDeletionEvidenceBundle(
+        receiptJson: String,
+        bundleJson: String,
+        authorityJson: String,
+    ): String
+
     external fun rootCapabilityToken(
         handle: Long,
         operation: String,

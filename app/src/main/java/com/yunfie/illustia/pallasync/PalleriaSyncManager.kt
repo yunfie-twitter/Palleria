@@ -132,6 +132,8 @@ class PalleriaSyncManager(
 
     internal suspend fun pendingDeletionProof(): String? = coordinator.pendingDeletionProof()
 
+    internal suspend fun pendingDeletionEvidenceArchive(): String? = coordinator.pendingDeletionEvidenceArchive()
+
     internal suspend fun completeDeletionAfterExport(
         proof: String,
         explicitlyConfirmedOfflineCopy: Boolean,

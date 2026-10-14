@@ -344,6 +344,158 @@ pub fn validate_deletion_proof(
     )?;
     Ok(proof.clone())
 }
+
+/// Validate the optional, unsigned public witness container independently from the
+/// immutable relay receipt (§7.12.3/§7.12.5/§17.11). Authority must be a checkpoint
+/// already verified from the pinned log; it is never accepted from this archive.
+pub fn validate_deletion_evidence_bundle(
+    receipt: &Value,
+    bundle: &Value,
+    authority: &crate::authority::Authority,
+) -> Result<Value> {
+    authority.pin.validate()?;
+    require(
+        authority.pin.chain_id == s(receipt, "chain_id")
+            && authority.pin.log_id == s(receipt, "log_id"),
+        "C_RELAY_KEY_MISMATCH",
+    )?;
+    fields(
+        receipt,
+        &[
+            ("type", "PALLASYNC-DELETE-RECEIPT-v3"),
+            ("version", "3.0"),
+            ("chain_id", "b32"),
+            ("deletion_id", "uuid"),
+            ("log_id", "uuid"),
+            ("relay_key_id", "b32"),
+            ("authorized_parameters_hash", "b32"),
+            ("authorized_epoch_hash", "b32"),
+            ("authorization_hash", "b32"),
+            ("requested_at_ms", "int"),
+            ("completed_at_ms", "int?"),
+            ("assurance", "crypto-shred|backup-expiry"),
+            ("delete_after_ms", "int?"),
+            ("ledger_receipt_hash", "b32"),
+            ("transparency_id", "uuid"),
+            ("transparency_index", "int"),
+            ("transparency_hash", "b32"),
+            ("relay_signature", "b64"),
+        ],
+        &[],
+    )?;
+    authority.pin.verify(receipt, CTX_DELETE)?;
+    require(
+        n(receipt, "transparency_index") > 0
+            && (receipt["completed_at_ms"].is_null()
+                || n(receipt, "completed_at_ms") >= n(receipt, "requested_at_ms"))
+            && (receipt["delete_after_ms"].is_null()
+                || n(receipt, "delete_after_ms") >= n(receipt, "requested_at_ms")),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    fields(
+        bundle,
+        &[
+            ("type", "PALLASYNC-DELETION-EVIDENCE-v3"),
+            ("version", "3.0"),
+            ("chain_id", "b32"),
+            ("deletion_id", "uuid"),
+            ("delete_receipt_hash", "b32"),
+            ("witnesses", "array"),
+        ],
+        &[],
+    )?;
+    require(
+        s(bundle, "chain_id") == s(receipt, "chain_id")
+            && bundle["deletion_id"] == receipt["deletion_id"]
+            && s(bundle, "delete_receipt_hash") == object_hash(receipt)
+            && a(bundle, "witnesses").len() <= 128,
+        "C_DELETION_UNVERIFIED",
+    )?;
+    let mut previous: Option<Vec<u8>> = None;
+    let authorized_epoch = authority
+        .epochs
+        .values()
+        .find(|epoch| object_hash(&epoch.record) == s(receipt, "authorized_epoch_hash"))
+        .ok_or(ClientError("C_DELETION_UNVERIFIED"))?;
+    require(
+        authority.parameters.as_ref().is_some_and(|parameters| {
+            object_hash(parameters) == s(receipt, "authorized_parameters_hash")
+        }),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    for witness in a(bundle, "witnesses") {
+        fields(
+            witness,
+            &[
+                ("type", "PALLASYNC-DELETION-WITNESS-v3"),
+                ("version", "3.0"),
+                ("chain_id", "b32"),
+                ("deletion_id", "uuid"),
+                ("delete_receipt_hash", "b32"),
+                ("authorized_parameters_hash", "b32"),
+                ("authorized_epoch_hash", "b32"),
+                ("authorization_hash", "b32"),
+                ("witness_device_id", "uuid"),
+                ("created_at_ms", "int"),
+                ("signature", "b64"),
+            ],
+            &[],
+        )?;
+        let device_id = s(witness, "witness_device_id");
+        let id_bytes = uuid_bytes(device_id)?;
+        require(
+            previous.as_ref().is_none_or(|last| last < &id_bytes),
+            "C_DELETION_UNVERIFIED",
+        )?;
+        previous = Some(id_bytes);
+        require(
+            witness["chain_id"] == receipt["chain_id"]
+                && witness["deletion_id"] == receipt["deletion_id"]
+                && s(witness, "delete_receipt_hash") == object_hash(receipt)
+                && witness["authorized_parameters_hash"] == receipt["authorized_parameters_hash"]
+                && witness["authorized_epoch_hash"] == receipt["authorized_epoch_hash"]
+                && witness["authorization_hash"] == receipt["authorization_hash"]
+                && a(&authorized_epoch.record, "members")
+                    .iter()
+                    .any(|member| member == device_id),
+            "C_DELETION_UNVERIFIED",
+        )?;
+        let admission = authority
+            .devices
+            .get(device_id)
+            .ok_or(ClientError("C_DELETION_UNVERIFIED"))?;
+        require(
+            n(&admission.record, "generation") == n(&authorized_epoch.record, "generation")
+                && admission.enrolled_seq < authorized_epoch.relay_seq
+                && admission
+                    .revoked_seq
+                    .is_none_or(|seq| seq > authorized_epoch.relay_seq),
+            "C_DELETION_UNVERIFIED",
+        )?;
+        require(
+            verify_signed_json(
+                s(&admission.record, "device_public_key"),
+                s(witness, "signature"),
+                witness,
+                CTX_DELETION_WITNESS,
+            )
+            .unwrap_or(false),
+            "C_SIGNATURE_INVALID",
+        )?;
+    }
+    Ok(bundle.clone())
+}
+
+fn uuid_bytes(value: &str) -> Result<Vec<u8>> {
+    require(wire::uuid(value), "C_SCHEMA_VIOLATION")?;
+    let compact = value
+        .bytes()
+        .filter(|byte| *byte != b'-')
+        .collect::<Vec<_>>();
+    let decoded = hex::decode(compact).map_err(|_| schema())?;
+    require(decoded.len() == 16, "C_SCHEMA_VIOLATION")?;
+    Ok(decoded)
+}
 /// Validates the exact submitted object and the complete original LogEntry.
 /// Inclusion in a pinned prefix is a separate operation; callers retain this evidence.
 pub fn verify_receipt(

@@ -170,3 +170,5 @@ CI ASanがexpiry中にholderのlocked RSWK stateが残るraceを検出しまし�
 同じsource/APKの独立Python+Android interopは190.27秒で成功しました（PallaSync/target/qualification-android-resume-interop.log）。実Android端末承認・JNI/Room・HTTP、独立PythonによるSAS/署名/HPKE検証、epoch bundle/recovery envelope/receipt、epoch再base、initial sync/outbox、application payload boundary、origin bindingを確認しました。隔離relayを使ったこれらの対象試験は全50 ITではありません。
 
 全適合は未達です。IT-01〜IT-50、Appendix A/C/D全体、三者独立復旧・完全な移行／snapshot・大規模履歴・物理holderの独立保管・実ディスク障害試験、本番更新は未完了です。v2.1 ChainParameters.signatureの検証方式も§4.1に定義がないため追加していません。`docs/pallasync-v3-acceptance.json`の`conformance_claim`はfalseのまま維持します。
+
+§7.12.3/§7.12.5/§17.11のoptional public deletion evidenceとして、immutable DeleteReceiptと独立したDeletionEvidenceBundleを生成・native検証し、仕様例の`{delete_receipt,evidence_bundle}` archive wrapperを保護領域に保持して別ファイルへ書き出す経路を追加しました。receipt全体のhash、relay署名、authorized parameters/epoch、witnessのreceipt binding、承認epoch membership・端末登録/失効境界・certified signing key・署名contextをRustで検証します。現行UIのbundleはwitness 0件です。端末間witness署名ceremony、bundle import、128件境界、completion revisionとIT-44の実行、実SAF端末試験は未実施です。Rust host `cargo check`とlib 6件は成功しました。Androidの変更後compile/lintは実行中のGradle結果を確認してから記録します。
