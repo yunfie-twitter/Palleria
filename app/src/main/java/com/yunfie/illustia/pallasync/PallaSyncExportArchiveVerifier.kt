@@ -56,7 +56,7 @@ internal object PallaSyncExportArchiveVerifier {
                     "C_SCHEMA_VIOLATION"
                 }
                 check(value["line_count"]?.jsonPrimitive?.longOrNull == lineCount) { "C_SCHEMA_VIOLATION" }
-                check(includeRecovery || !complete) { "C_SCHEMA_VIOLATION" }
+                check(!complete) { "C_SCHEMA_VIOLATION" }
                 check(source.read() == -1) { "C_SCHEMA_VIOLATION" }
                 return Header(
                     chainId = header.getValue("chain_id").jsonPrimitive.content,

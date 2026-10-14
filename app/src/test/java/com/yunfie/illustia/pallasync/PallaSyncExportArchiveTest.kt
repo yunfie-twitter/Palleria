@@ -121,5 +121,18 @@ class PallaSyncExportArchiveTest {
         shouldThrow<IllegalStateException> {
             PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(tampered))
         }
+
+        val recoveryOutput = ByteArrayOutputStream()
+        val recoveryHeader = header.replace("\"include_recovery\":false", "\"include_recovery\":true")
+        PallaSyncExportArchive.create(recoveryOutput).use { archive ->
+            archive.acceptChunk(
+                "$recoveryHeader\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n".toByteArray(),
+                null,
+            )
+            archive.finish()
+        }
+        val recoveryArchive = PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(recoveryOutput.toByteArray()))
+        recoveryArchive.includeRecovery shouldBe true
+        recoveryArchive.complete shouldBe false
     }
 }

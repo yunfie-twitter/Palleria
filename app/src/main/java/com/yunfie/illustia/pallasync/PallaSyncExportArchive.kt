@@ -125,12 +125,10 @@ internal class PallaSyncExportArchive private constructor(
     fun finish() {
         check(!finished && !failed && headerLine != null && !hasMore) { "C_SCHEMA_VIOLATION" }
         try {
-            val header = canonicalObject(checkNotNull(headerLine))
-            val includeRecovery = header.getValue("include_recovery").jsonPrimitive.booleanOrNull ?: error("C_SCHEMA_VIOLATION")
             val footer =
                 """{"archive_sha256":"${Base64.getUrlEncoder().withoutPadding().encodeToString(
                     digest.digest(),
-                )}","complete":$includeRecovery,"kind":"footer","line_count":$lineCount}"""
+                )}","complete":false,"kind":"footer","line_count":$lineCount}"""
             val canonicalFooter = checkNotNull(PallaSyncCore.canonicalJson(footer))
             val bytes = canonicalFooter.toByteArray(Charsets.UTF_8) + '\n'.code.toByte()
             output.write(bytes)
