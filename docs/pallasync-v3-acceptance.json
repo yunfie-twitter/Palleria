@@ -598,6 +598,10 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryAuthentication.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCollection.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetup.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLocalFiles.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryReceiveDialog.kt",
+        "Palleria/app/src/main/res/values/pallasync_recovery_ceremony.xml",
+        "Palleria/app/src/main/res/values-ja/pallasync_recovery_ceremony.xml",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetStore.kt",
         "Palleria/app/src/main/res/xml/pallasync_data_extraction_rules.xml"
       ],
@@ -606,12 +610,13 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySlotTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryOfflineMediaTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryQrUiTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetupTest.kt",
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryHolderAndroidTest.kt",
         "PallaSync/tests/reference/test_recovery.py"
       ],
       "result": "pending",
-      "remaining": "Complete independent three-party device/offline holder and reader interoperability, live SAS/QR/encrypted-file UI, and OS process/cancel/fault boundaries.",
+      "remaining": "The receiver can now scan the dealer's signed session descriptor QR before creating a secret session, with the bounded local-file path retained as an alternative; the recovery transfer itself remains the exact encrypted file/object format. QR text is bounded to the §18.6 4,194,304-byte transfer maximum and malformed UTF-16 is rejected. Unit boundary tests and an Android UI test for the scan entry point pass; all 29 available instrumentation tests pass when the relay-backed test requiring disposable relay arguments is excluded. Still required: independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
       "verification_scope": "targeted_partial"
     },
     {

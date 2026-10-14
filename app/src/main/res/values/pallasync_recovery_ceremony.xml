@@ -47,6 +47,9 @@
     <string name="pallasync_recovery_receive_manifest">Choose the original signed manifest</string>
     <string name="pallasync_recovery_receive_statuses">Choose the original signed status chain</string>
     <string name="pallasync_recovery_receive_descriptor">Choose the dealer session descriptor</string>
+    <string name="pallasync_recovery_scan_descriptor">Scan session descriptor QR</string>
+    <string name="pallasync_recovery_descriptor_scanned">Session descriptor QR scanned</string>
+    <string name="pallasync_recovery_scan_descriptor_prompt">Scan the PallaSync recovery QR displayed on the peer device</string>
     <string name="pallasync_recovery_receive_medium">Choose the designated offline medium</string>
     <string name="pallasync_recovery_receive_identity">This physical app holder ID: %1$s</string>
     <string name="pallasync_recovery_receive_protection">Device holding requires OS Keystore protection, backup exclusion and fresh authentication for storage and readback. This app cannot establish independence of other installs or clones.</string>

@@ -47,6 +47,9 @@
     <string name="pallasync_recovery_receive_manifest">元の署名済みmanifestを選ぶ</string>
     <string name="pallasync_recovery_receive_statuses">元の署名済みstatus履歴を選ぶ</string>
     <string name="pallasync_recovery_receive_descriptor">配布側のセッションdescriptorを選ぶ</string>
+    <string name="pallasync_recovery_scan_descriptor">QRからセッションdescriptorを読み取る</string>
+    <string name="pallasync_recovery_descriptor_scanned">セッションdescriptorをQRから読み取り済み</string>
+    <string name="pallasync_recovery_scan_descriptor_prompt">相手端末に表示されたPallaSync復旧QRを読み取ってください</string>
     <string name="pallasync_recovery_receive_medium">保存するオフライン媒体を選ぶ</string>
     <string name="pallasync_recovery_receive_identity">このアプリ保存領域のholder ID: %1$s</string>
     <string name="pallasync_recovery_receive_protection">端末での保管にはOS Keystore、バックアップ除外、保存と再読取り時の認証が必要です。他のインストールや複製との物理的な独立性はこのアプリで証明できません。</string>

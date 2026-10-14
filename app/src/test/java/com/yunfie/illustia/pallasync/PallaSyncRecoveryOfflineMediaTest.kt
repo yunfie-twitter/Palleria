@@ -17,6 +17,19 @@ import java.io.ByteArrayOutputStream
 @Config(sdk = [35], application = android.app.Application::class)
 class PallaSyncRecoveryOfflineMediaTest {
     @Test
+    fun recoveryQrDescriptorUsesTheRecoveryTransferByteCeiling() {
+        PallaSyncRecoveryLocalFiles.qrDescriptor("{}") shouldBe "{}"
+        val exactlyAtLimit = "x".repeat(PallaSyncRecoveryLocalFiles.MAX_TRANSFER_BYTES)
+        PallaSyncRecoveryLocalFiles.qrDescriptor(exactlyAtLimit) shouldBe exactlyAtLimit
+        shouldThrow<IllegalStateException> {
+            PallaSyncRecoveryLocalFiles.qrDescriptor(exactlyAtLimit + "x")
+        }.message shouldBe "C_RECOVERY_SHARE_INVALID"
+        shouldThrow<IllegalStateException> {
+            PallaSyncRecoveryLocalFiles.qrDescriptor("\uD800")
+        }.message shouldBe "C_RECOVERY_SHARE_INVALID"
+    }
+
+    @Test
     fun aDevicePackageCannotBeSavedAsOfflineBackupAndInvalidInputsWriteNoBytes() {
         val source =
             checkNotNull(javaClass.getResourceAsStream("/pallasync/python-recovery-c8-package.json"))
