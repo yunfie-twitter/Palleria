@@ -8,16 +8,145 @@ import com.yunfie.illustia.pallasync.data.SnapshotPublicationEntity
 import com.yunfie.illustia.pallasync.data.SnapshotPublicationPartEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.SQLiteMode
 
-@RunWith(RobolectricTestRunner::class)
+@RunWith(PallaSyncJniRobolectricRunner::class)
 @Config(sdk = [28], application = android.app.Application::class)
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncSnapshotPublicationDaoTest {
+    @Test
+    @Suppress("LongMethod")
+    fun `snapshot receipts persist only after transparency inclusion succeeds`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val journal = PallaSyncSnapshotPublicationJournal(db, CHAIN, COMPACTION, epoch = 4)
+                val header =
+                    buildJsonObject {
+                        put("kind", "header")
+                        put("chain_id", CHAIN)
+                        put("generation", 2)
+                        put("log_id", LOG)
+                        put("covered_through_seq", 91)
+                        put("covered_log_hash", HASH)
+                        put("epoch_hash", OTHER_HASH)
+                        put("lamport_max", 7)
+                    }
+                journal.begin(header, 1)
+                val record =
+                    buildJsonObject {
+                        put("record_id", RECORD)
+                        put("chain_id", CHAIN)
+                        put("ciphertext", "opaque")
+                    }
+                val recordHash = checkNotNull(PallaSyncCore.objectHash(record.toString()))
+                journal.retain(
+                    SnapshotPublicationPartEntity(
+                        chainId = CHAIN,
+                        compactionId = COMPACTION,
+                        partIndex = 0,
+                        recordId = RECORD,
+                        recordHash = recordHash,
+                        signedJson = record.toString(),
+                    ),
+                )
+                val receipt =
+                    buildJsonObject {
+                        put("chain_id", CHAIN)
+                        put("log_id", LOG)
+                        put("object_hash", recordHash)
+                        put("relay_seq", JsonNull)
+                        put("entry_hash", JsonNull)
+                        put("receipt_id", "55555555-5555-4555-8555-555555555555")
+                    }
+                val response =
+                    buildJsonObject {
+                        put("accepted", JsonArray(listOf(JsonPrimitive(RECORD))))
+                        put("rejected", JsonArray(emptyList()))
+                        put("upload_receipts", JsonArray(listOf(receipt)))
+                    }
+                runCatching {
+                    journal.verifyAndRetainUploadReceipts(listOf(record), response) {
+                        error("C_TRANSPARENCY_INVALID")
+                    }
+                }.exceptionOrNull()?.message shouldBe "C_TRANSPARENCY_INVALID"
+                journal.prepared(0)?.uploadReceiptJson shouldBe null
+
+                var verified = 0
+                journal.verifyAndRetainUploadReceipts(listOf(record), response) { verified++ }
+                verified shouldBe 1
+                journal.prepared(0)?.uploadReceiptJson shouldBe receipt.toString()
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun `producer journal binds resume state to the complete canonical header`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val journal = PallaSyncSnapshotPublicationJournal(db, CHAIN, COMPACTION, epoch = 4)
+                val header =
+                    buildJsonObject {
+                        put("kind", "header")
+                        put("chain_id", CHAIN)
+                        put("generation", 2)
+                        put("log_id", LOG)
+                        put("covered_through_seq", 91)
+                        put("covered_log_hash", HASH)
+                        put("epoch_hash", OTHER_HASH)
+                        put("lamport_max", 7)
+                    }
+                journal.begin(header, 1)
+                journal.prepared(0) shouldBe null
+                val part =
+                    SnapshotPublicationPartEntity(
+                        chainId = CHAIN,
+                        compactionId = COMPACTION,
+                        partIndex = 0,
+                        recordId = RECORD,
+                        recordHash = HASH,
+                        signedJson = "{\"immutable\":true}",
+                    )
+                journal.retain(part)
+                journal.prepared(0) shouldBe part.copy(status = "prepared")
+                journal.begin(header, 1)
+                runCatching {
+                    journal.begin(
+                        kotlinx.serialization.json.JsonObject(
+                            header +
+                                (
+                                    "covered_log_hash" to
+                                        kotlinx.serialization.json.JsonPrimitive("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+                                ),
+                        ),
+                        1,
+                    )
+                }.exceptionOrNull()?.message shouldBe "C_SNAPSHOT_INVALID"
+            } finally {
+                db.close()
+            }
+        }
+
     @Test
     fun `publication journal preserves exact parts and receipts across retry boundaries`() =
         runBlocking<Unit> {

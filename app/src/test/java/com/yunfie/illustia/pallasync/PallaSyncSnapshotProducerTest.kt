@@ -24,6 +24,96 @@ import java.util.UUID
 class PallaSyncSnapshotProducerTest {
     @Test
     @Suppress("LongMethod")
+    fun `restarts reuse only exact signature verified encrypted parts`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            PallaSyncCore.setSecretForeground(true)
+            val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
+            val root = PallaSyncCore.beginRootSession(phrase.toByteArray(), byteArrayOf(), "genesis", null, null)
+            try {
+                PallaSyncCore.createGenesisBundle(root, "snapshot resume", "os-keystore", "https://relay.example.com").use { prepared ->
+                    val keys = prepared.snapshot()
+                    val chainId = checkNotNull(keys.chainId)
+                    val deviceId = checkNotNull(keys.deviceId)
+                    db.pallaSyncDao().updateChainState(
+                        ChainStateEntity(
+                            chainId = chainId,
+                            lamport = 0,
+                            keyEpoch = keys.epoch,
+                            chainVectorJson = "{}",
+                            generation = 0,
+                            logId = LOG_ID,
+                            epochHash = HASH,
+                            verifiedSeq = 0,
+                            materializedSeq = 0,
+                            verifiedHash = HASH,
+                            indexRevision = 0,
+                        ),
+                    )
+                    val context =
+                        buildJsonObject {
+                            put("chain_id", chainId)
+                            put("generation", 0)
+                            put("epoch", keys.epoch)
+                            put("epoch_commitment", prepared.publicResult.epochCommitment)
+                            put("metadata_profile", "private")
+                        }
+                    val secret =
+                        java.util.Base64
+                            .getUrlDecoder()
+                            .decode(keys.epochSecretBase64Url)
+                    PallaSyncEpochSession.begin(context, secret).use { epoch ->
+                        val journal = PallaSyncSnapshotPublicationJournal(db, chainId, COMPACTION_ID, keys.epoch)
+                        val firstUpload = mutableListOf<Pair<String, String>>()
+                        val first =
+                            PallaSyncSnapshotProducer(db).produce(
+                                chainId = chainId,
+                                compactionId = COMPACTION_ID,
+                                deviceId = deviceId,
+                                epochSession = epoch,
+                                signingSeed = {
+                                    java.util.Base64
+                                        .getUrlDecoder()
+                                        .decode(keys.signingKeyBase64Url)
+                                },
+                                devicePublicKeyBase64Url = keys.publicKeyBase64Url,
+                                journal = journal,
+                                publishPart = { id, signedRecord, _ -> firstUpload += id to signedRecord },
+                            )
+                        first.parts.size shouldBe 1
+                        firstUpload.size shouldBe 1
+
+                        val resumedUpload = mutableListOf<Pair<String, String>>()
+                        val resumed =
+                            PallaSyncSnapshotProducer(db).produce(
+                                chainId = chainId,
+                                compactionId = COMPACTION_ID,
+                                deviceId = deviceId,
+                                epochSession = epoch,
+                                signingSeed = { error("resuming an existing part must not create a new signature") },
+                                devicePublicKeyBase64Url = keys.publicKeyBase64Url,
+                                journal = journal,
+                                publishPart = { id, signedRecord, _ -> resumedUpload += id to signedRecord },
+                            )
+                        resumed.stateCommitment shouldBe first.stateCommitment
+                        resumed.parts shouldBe first.parts
+                        resumedUpload shouldBe firstUpload
+                    }
+                }
+            } finally {
+                PallaSyncCore.endRootSession(root)
+                PallaSyncCore.setSecretForeground(false)
+                db.close()
+            }
+        }
+
+    @Test
+    @Suppress("LongMethod")
     fun `plans state commitment then creates ordered encrypted snapshot parts`() =
         runBlocking<Unit> {
             val db =
@@ -162,6 +252,7 @@ class PallaSyncSnapshotProducerTest {
 
     private companion object {
         const val HASH = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        const val LOG_ID = "44444444-4444-4444-8444-444444444444"
         const val COMPACTION_ID = "55555555-5555-4555-8555-555555555555"
         const val DEVICE_ID = "22222222-2222-4222-8222-222222222222"
         const val ENTITY_COUNT = 1_200

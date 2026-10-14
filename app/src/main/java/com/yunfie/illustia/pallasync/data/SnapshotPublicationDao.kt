@@ -111,6 +111,8 @@ interface SnapshotPublicationDao {
     @Transaction
     suspend fun retainPrepared(part: SnapshotPublicationPartEntity) {
         check(part.partIndex >= 0 && part.status == "prepared" && part.uploadReceiptJson == null) { "C_SNAPSHOT_INVALID" }
+        val publication = publication(part.chainId, part.compactionId) ?: error("C_MISSING_DEPENDENCY")
+        check(publication.status in setOf("preparing", "uploading")) { "C_SNAPSHOT_INVALID" }
         val old = part(part.chainId, part.compactionId, part.partIndex)
         if (old == null) {
             insertPart(part)
@@ -126,6 +128,7 @@ interface SnapshotPublicationDao {
                 it.recordId == part.recordId && it.recordHash == part.recordHash && it.signedJson == part.signedJson
             } == true,
         ) { "C_LOCAL_STORAGE_FULL" }
+        compareAndSetStatus(part.chainId, part.compactionId, "preparing", "uploading")
     }
 
     @Transaction
@@ -133,6 +136,8 @@ interface SnapshotPublicationDao {
         part: SnapshotPublicationPartEntity,
         receipt: String,
     ) {
+        val publication = publication(part.chainId, part.compactionId) ?: error("C_MISSING_DEPENDENCY")
+        check(publication.status in setOf("preparing", "uploading")) { "C_SNAPSHOT_INVALID" }
         val old = part(part.chainId, part.compactionId, part.partIndex) ?: error("C_MISSING_DEPENDENCY")
         check(
             old.recordId == part.recordId && old.recordHash == part.recordHash && old.signedJson == part.signedJson,

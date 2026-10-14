@@ -15,6 +15,7 @@ class PallaSyncJniRobolectricRunner(
             "PallaSyncSnapshotCore",
             "PallaSyncKeySnapshot",
             "PallaSyncPreparedKeys",
+            "PallaSyncPreparedKeys\$PublicResult",
             "PallaSyncSecretLifecycle",
             "PallaSyncRecoveryCandidate",
             "PallaSyncRecoveryCompletion",
