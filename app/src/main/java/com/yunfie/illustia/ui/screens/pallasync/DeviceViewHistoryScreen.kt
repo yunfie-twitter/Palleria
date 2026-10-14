@@ -27,6 +27,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.HistoryCursor
 import com.yunfie.illustia.ui.components.EmptyState
@@ -72,6 +73,7 @@ fun DeviceViewHistoryScreen(
     var cursor by remember(deviceId) { mutableStateOf<HistoryCursor?>(null) }
     var nextCursor by remember(deviceId) { mutableStateOf<HistoryCursor?>(null) }
     var partial by remember(deviceId) { mutableStateOf(true) }
+    var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
     var failure by remember(deviceId) { mutableStateOf<String?>(null) }
     val gridState = rememberLazyGridState()
     val feedHighQuality = state.settings.useHighQualityFeedImages
@@ -85,6 +87,7 @@ fun DeviceViewHistoryScreen(
             viewHistory = page.items
             nextCursor = page.next
             partial = page.partial
+            clientStatus = syncManager.getClientStatus()
             failure = null
             gridState.scrollToItem(0)
         } catch (error: IllegalStateException) {
@@ -164,9 +167,54 @@ fun DeviceViewHistoryScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(stringResource(R.string.pallasync_v3_history_window))
             }
-            if (partial) {
+            if (partial || clientStatus?.partial == true) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(stringResource(R.string.pallasync_v3_history_partial))
+                }
+            }
+            clientStatus?.let { status ->
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_sync_positions,
+                            status.targetSeq,
+                            status.verifiedSeq,
+                            status.materializedSeq,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_transparency,
+                            status.verifiedTransparencyIndex,
+                            status.observedTransparencyTargetIndex,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_pending,
+                            status.pendingOutbox,
+                            status.authorGaps,
+                            status.unresolvedQuarantine,
+                            status.writeState,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_capacity,
+                            status.searchCount,
+                            status.searchCeiling,
+                            status.viewedCount,
+                            status.viewedCeiling,
+                            status.seenCount,
+                            status.seenCeiling,
+                        ),
+                    )
                 }
             }
             failure?.let { message -> item(span = { GridItemSpan(maxLineSpan) }) { Text(message) } }

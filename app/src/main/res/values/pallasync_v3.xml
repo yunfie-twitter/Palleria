@@ -19,6 +19,10 @@
     <string name="pallasync_v3_withdraw">Withdraw consent and pause synchronization</string>
     <string name="pallasync_v3_history_window">Stored history last updated by this device is shown in pages of 200.</string>
     <string name="pallasync_v3_history_partial">Some history is still missing or awaiting verification. This is the locally available range.</string>
+    <string name="pallasync_v3_history_sync_positions">Sync positions — downloaded: %1$d, verified: %2$d, materialized: %3$d</string>
+    <string name="pallasync_v3_history_transparency">Transparency checkpoint — verified: %1$d, observed target: %2$d</string>
+    <string name="pallasync_v3_history_pending">Pending outbox: %1$d · author gaps: %2$d · quarantined: %3$d · writes: %4$s</string>
+    <string name="pallasync_v3_history_capacity">Logical history / safety ceiling — searches %1$d/%2$d · viewed %3$d/%4$d · seen %5$d/%6$d</string>
     <string name="pallasync_v3_history_first">First page</string>
     <string name="pallasync_v3_history_older">Older page</string>
     <string name="pallasync_v3_root_input_explanation">Enter the mnemonic and BIP39 passphrase used for this chain. The input display clears after submission, cancellation, leaving this screen or ten minutes of inactivity.</string>
