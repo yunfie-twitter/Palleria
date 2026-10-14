@@ -66,6 +66,27 @@ class PallaSyncLegacyRecordJniTest {
     }
 
     @Test
+    fun `frozen v21 export transcript commits ordered source records and rejects gaps`() {
+        val chainId = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 5 })
+
+        fun transcript(record: String): String =
+            PallaSyncLegacyV21Source
+                .ExportTranscript(chainId)
+                .apply {
+                    append(PallaSyncLegacyV21Source.SignedRecord(1, record, "record-1", "device-1"))
+                }.finish()
+
+        transcript("""{"value":1}""") shouldBe transcript("""{"value":1}""")
+        (transcript("""{"value":1}""") != transcript("""{"value":2}""")) shouldBe true
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncLegacyV21Source.ExportTranscript(chainId).append(
+                PallaSyncLegacyV21Source.SignedRecord(2, "{}", "record-2", "device-1"),
+            )
+        }
+    }
+
+    @Test
     fun `v21 device registry verifier rejects incomplete rows`() {
         PallaSyncCore.verifyLegacyDeviceRecordV21("{}") shouldBe false
     }

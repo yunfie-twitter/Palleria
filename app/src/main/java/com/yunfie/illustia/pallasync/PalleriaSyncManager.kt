@@ -265,4 +265,46 @@ class PalleriaSyncManager(
             signerDeviceId,
             signerDeviceSeed,
         )
+
+    internal suspend fun inspectFrozenLegacyV21Export(
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.FrozenExportProof> =
+        coordinator.inspectFrozenLegacyV21Export(
+            sourceUrl,
+            parameters,
+            devices,
+            signerDeviceId,
+            signerDeviceSeed,
+            signerDevicePublicKey,
+            freezeConfirmed,
+        )
+
+    internal suspend fun beginLegacyV21Migration(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.FrozenExportProof> =
+        coordinator.beginLegacyV21Migration(
+            migrationId,
+            sourceUrl,
+            parameters,
+            devices,
+            signerDeviceId,
+            signerDeviceSeed,
+            signerDevicePublicKey,
+            targetChain,
+            freezeConfirmed,
+        )
 }

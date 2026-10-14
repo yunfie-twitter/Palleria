@@ -696,6 +696,94 @@ internal class PalleriaSyncCoordinator(
             )
         }
 
+    /**
+     * Performs §9.1's explicit frozen-source completeness pass before a journal can be started.
+     * The only available v2.1 API is ordinary reads, so freezeConfirmed represents the user's
+     * confirmation that every old writer was stopped or the source is an immutable export.
+     */
+    internal suspend fun inspectFrozenLegacyV21Export(
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.FrozenExportProof> =
+        withContext(Dispatchers.IO) {
+            val normalized = normalizeServerUrl(sourceUrl) ?: return@withContext PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            val base = normalized.toHttpUrl()
+            legacyV21Source.inspectFrozenExport(
+                chainId = parameters.chainId,
+                initialDevices = devices,
+                freezeConfirmed = freezeConfirmed,
+                fetchDevices = {
+                    legacyV21Source.getDevices(
+                        base,
+                        parameters,
+                        signerDeviceId,
+                        signerDeviceSeed,
+                        signerDevicePublicKey,
+                        policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+                    )
+                },
+                fetchPage = { cursor ->
+                    legacyV21Source.getRecordPage(
+                        base,
+                        parameters.chainId,
+                        cursor,
+                        devices,
+                        signerDeviceId,
+                        signerDeviceSeed,
+                        policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+                    )
+                },
+            )
+        }
+
+    /** Persists the migration source marker only after the complete frozen-source scan succeeds. */
+    internal suspend fun beginLegacyV21Migration(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.FrozenExportProof> {
+        val proof =
+            inspectFrozenLegacyV21Export(
+                sourceUrl,
+                parameters,
+                devices,
+                signerDeviceId,
+                signerDeviceSeed,
+                signerDevicePublicKey,
+                freezeConfirmed,
+            )
+        if (proof !is PallaSyncHttpResult.Success) return proof
+        return try {
+            localIntents.beginLegacyMigration(
+                migrationId = migrationId,
+                sourceChain = proof.value.sourceChain,
+                sourceProtocol = "2.1",
+                sourceHighWater = proof.value.highWater,
+                exportHash = proof.value.exportHash,
+                targetChain = targetChain,
+                freezeConfirmed = freezeConfirmed,
+            )
+            proof
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: IllegalStateException) {
+            PallaSyncHttpResult.ProtocolError(error.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY")
+        } catch (_: IllegalArgumentException) {
+            PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+        }
+    }
+
     fun getPallaSyncKeystore(): PallaSyncKeystore = keystore
 
     /** Repairs a process death between staged-key and Room activation commits. */
