@@ -520,7 +520,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncHttpClassificationTest.kt"
       ],
       "result": "pending",
-      "remaining": "Settings now lists unresolved quarantine reason codes and hashes through a bounded keyset query while retaining the objects; resolution actions are not offered without protocol-authorized evidence. Still implement full catalogue operational workflows, retry/recovery resolution paths, and independent verification.",
+      "remaining": "Settings lists unresolved quarantine reason codes and hashes through bounded keyset queries while retaining original objects. For C_MISSING_DEPENDENCY only, explicit retry first performs an authorized synchronization, revalidates the immutable original against the refreshed authority and epoch key, then atomically applies it and marks both inbox/quarantine resolution state; failure retains the evidence. A Room test verifies the resolution transition is idempotent and preserves the source bytes. Still implement remaining catalogue operational workflows, other protocol-authorized recovery resolution paths, and isolated-relay/independent-client verification.",
       "verification_scope": "targeted_partial"
     },
     {

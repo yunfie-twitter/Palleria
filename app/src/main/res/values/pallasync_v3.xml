@@ -95,6 +95,10 @@
     <string name="pallasync_quarantine_title">Unresolved protocol evidence</string>
     <string name="pallasync_quarantine_explanation">These objects and their evidence are retained. Review the reason and hash; resolution requires protocol-authorized evidence.</string>
     <string name="pallasync_quarantine_item">%1$s · %2$s</string>
+    <string name="pallasync_quarantine_retry">Fetch missing evidence and retry verification</string>
+    <string name="pallasync_quarantine_retry_running">Refreshing evidence and revalidating…</string>
+    <string name="pallasync_quarantine_retry_succeeded">Original object revalidated and applied; evidence remains retained.</string>
+    <string name="pallasync_quarantine_retry_failed">Could not revalidate the original object; evidence remains retained.</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

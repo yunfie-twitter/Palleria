@@ -138,6 +138,34 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `missing dependency quarantine resolution preserves original evidence and is idempotent`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                val original = "{\"version\":\"pallasync/3\",\"signed\":\"fixture\"}"
+                val hash = checkNotNull(PallaSyncCore.objectHash(original))
+                protocol.quarantine(QuarantineEvidenceEntity(chain, hash, "C_MISSING_DEPENDENCY", original, "unresolved"))
+
+                protocol.quarantineEvidence(chain, hash)?.evidenceJson shouldBe original
+                protocol.resolveMissingDependencyQuarantine(chain, hash) shouldBe 1
+                protocol.quarantineEvidence(chain, hash)?.let {
+                    it.evidenceJson shouldBe original
+                    it.resolutionState shouldBe "resolved"
+                }
+                protocol.resolveMissingDependencyQuarantine(chain, hash) shouldBe 0
+                protocol.unresolvedQuarantineCount(chain) shouldBe 0
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `verified deletion retains signed proof while erasing chain rows and other evidence`() =
         runBlocking<Unit> {
             val db =

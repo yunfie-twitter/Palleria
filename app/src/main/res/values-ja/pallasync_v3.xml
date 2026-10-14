@@ -90,6 +90,10 @@
     <string name="pallasync_quarantine_title">未解決のプロトコル証拠</string>
     <string name="pallasync_quarantine_explanation">対象オブジェクトと証拠は保持されています。理由とhashを確認してください。解決にはプロトコルで認可された証拠が必要です。</string>
     <string name="pallasync_quarantine_item">%1$s · %2$s</string>
+    <string name="pallasync_quarantine_retry">不足している証拠を取得して再検証</string>
+    <string name="pallasync_quarantine_retry_running">証拠を更新して再検証しています…</string>
+    <string name="pallasync_quarantine_retry_succeeded">元のオブジェクトを再検証して適用しました。証拠は保持されています。</string>
+    <string name="pallasync_quarantine_retry_failed">元のオブジェクトを再検証できませんでした。証拠は保持されています。</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

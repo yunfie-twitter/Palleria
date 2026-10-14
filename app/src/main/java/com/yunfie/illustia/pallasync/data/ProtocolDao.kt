@@ -514,6 +514,20 @@ interface ProtocolDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun quarantine(evidence: QuarantineEvidenceEntity)
 
+    @Query("SELECT * FROM ps_quarantine WHERE chain_id=:chainId AND object_hash=:objectHash LIMIT 1")
+    suspend fun quarantineEvidence(
+        chainId: String,
+        objectHash: String,
+    ): QuarantineEvidenceEntity?
+
+    @Query(
+        "UPDATE ps_quarantine SET resolution_state='resolved' WHERE chain_id=:chainId AND object_hash=:objectHash AND reason='C_MISSING_DEPENDENCY' AND resolution_state IN ('unresolved','pending_resolution')",
+    )
+    suspend fun resolveMissingDependencyQuarantine(
+        chainId: String,
+        objectHash: String,
+    ): Int
+
     @Query(
         "SELECT (SELECT COUNT(*) FROM ps_authors WHERE chain_id=:chainId AND gap_before=1) + " +
             "(SELECT COUNT(*) FROM ps_snapshot_author_gaps WHERE chain_id=:chainId)",

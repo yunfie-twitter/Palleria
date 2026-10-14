@@ -3655,6 +3655,75 @@ internal class PalleriaSyncCoordinator(
             PallaSyncQuarantinePage(page, page.lastOrNull()?.objectHash.takeIf { rows.size > limit })
         }
 
+    /** §19.4: refresh authorized evidence, then replay the immutable original only for missing ancestry. */
+    suspend fun retryMissingDependencyQuarantine(objectHash: String): Boolean {
+        require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }
+        if (!syncNow()) return false
+        return withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                try {
+                    val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+                    val protocol = db.protocolDao()
+                    val evidence = checkNotNull(protocol.quarantineEvidence(state.chainId, objectHash)) { "C_MISSING_DEPENDENCY" }
+                    check(
+                        evidence.reason == "C_MISSING_DEPENDENCY" &&
+                            evidence.resolutionState in setOf("unresolved", "pending_resolution") &&
+                            crypto.objectHash(evidence.evidenceJson) == objectHash,
+                    ) { "C_SCHEMA_VIOLATION" }
+                    val wire = json.decodeFromString<PallaSyncWireRecord>(evidence.evidenceJson)
+                    check(wire.chainId == state.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    val inbox = checkNotNull(db.dao.getInboxRecord(state.chainId, wire.recordId)) { "C_MISSING_DEPENDENCY" }
+                    check(
+                        inbox.status == "quarantined" && inbox.rawRecordJson == evidence.evidenceJson && inbox.relaySeq != null,
+                    ) { "C_ROLLBACK_DETECTED" }
+                    val relaySequence = checkNotNull(inbox.relaySeq) { "C_MISSING_DEPENDENCY" }
+                    val authorityText = checkNotNull(protocol.currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                    check(keystore.authorityHash(state.chainId) == crypto.objectHash(authorityText)) { "C_ROLLBACK_DETECTED" }
+                    check(PallaSyncCore.validateRecordAuthority(authorityText, evidence.evidenceJson, relaySequence)) {
+                        "C_MISSING_DEPENDENCY"
+                    }
+                    val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    val epochKeys = checkNotNull(keystore.keysForEpoch(keys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
+                    val payload =
+                        PallaSyncEpochSession.begin(epochKeys, authorityText, wire.epoch).use {
+                            it.decryptRecord(evidence.evidenceJson)
+                        }
+                    val inner = json.decodeFromString<PallaSyncInnerRecord>(payload)
+                    check(inner.operations.isNotEmpty()) { "C_SCHEMA_VIOLATION" }
+                    db.transaction {
+                        val current = checkNotNull(protocol.quarantineEvidence(state.chainId, objectHash)) { "C_MISSING_DEPENDENCY" }
+                        check(current == evidence) { "C_ROLLBACK_DETECTED" }
+                        val applied =
+                            materializeCandidate(
+                                state.chainId,
+                                checkNotNull(state.logId) { "C_MISSING_DEPENDENCY" },
+                                DecryptedCandidate(
+                                    wire.recordId,
+                                    relaySequence,
+                                    inner.operations.maxOf { it.lamport },
+                                    evidence.evidenceJson,
+                                    payload,
+                                ),
+                            )
+                        check(applied.status == "applied") { applied.quarantineReason ?: "C_SCHEMA_VIOLATION" }
+                        check(db.dao.getInboxRecord(state.chainId, wire.recordId)?.status == "applied") { "C_ROLLBACK_DETECTED" }
+                        check(protocol.resolveMissingDependencyQuarantine(state.chainId, objectHash) == 1) {
+                            "C_ROLLBACK_DETECTED"
+                        }
+                    }
+                    projection.publish(state.chainId, db)
+                    true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_MISSING_DEPENDENCY"
+                    log("Quarantine retry retained original evidence: $code")
+                    false
+                }
+            }
+        }
+    }
+
     suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {

@@ -122,6 +122,7 @@ fun PallaSyncSettingsScreen(
     var unresolvedQuarantine by remember { mutableStateOf<List<QuarantineSummaryRow>>(emptyList()) }
     var quarantineCursor by remember { mutableStateOf<String?>(null) }
     var loadingQuarantinePage by remember { mutableStateOf(false) }
+    var retryingQuarantineHash by remember { mutableStateOf<String?>(null) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
     var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
@@ -1037,6 +1038,51 @@ fun PallaSyncSettingsScreen(
                             unresolvedQuarantine.forEach { entry ->
                                 DividerLine()
                                 Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash))
+                                if (entry.reason == "C_MISSING_DEPENDENCY") {
+                                    TextButton(
+                                        text =
+                                            stringResource(
+                                                if (retryingQuarantineHash == entry.objectHash) {
+                                                    R.string.pallasync_quarantine_retry_running
+                                                } else {
+                                                    R.string.pallasync_quarantine_retry
+                                                },
+                                            ),
+                                        enabled = retryingQuarantineHash == null,
+                                        onClick = {
+                                            retryingQuarantineHash = entry.objectHash
+                                            scope.launch {
+                                                val resolved =
+                                                    try {
+                                                        syncManager.retryMissingDependencyQuarantine(entry.objectHash)
+                                                    } catch (cancelled: CancellationException) {
+                                                        throw cancelled
+                                                    } catch (_: Exception) {
+                                                        false
+                                                    } finally {
+                                                        retryingQuarantineHash = null
+                                                    }
+                                                if (resolved) {
+                                                    unresolvedQuarantine =
+                                                        unresolvedQuarantine.filterNot { it.objectHash == entry.objectHash }
+                                                    Toast
+                                                        .makeText(
+                                                            context,
+                                                            R.string.pallasync_quarantine_retry_succeeded,
+                                                            Toast.LENGTH_LONG,
+                                                        ).show()
+                                                } else {
+                                                    Toast
+                                                        .makeText(
+                                                            context,
+                                                            R.string.pallasync_quarantine_retry_failed,
+                                                            Toast.LENGTH_LONG,
+                                                        ).show()
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
                             quarantineCursor?.let { cursor ->
                                 if (!loadingQuarantinePage) {
