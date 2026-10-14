@@ -12,6 +12,13 @@ class PallaSyncExportArchiveTest {
         """{"chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","generation":0,"head_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","head_seq":0,"include_recovery":false,"kind":"header","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","protocol":"pallasync/3","relay_key_id":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","relay_public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","transparency_head_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","transparency_head_index":0,"transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd"}"""
 
     @Test
+    fun nativeCanonicalizerRejectsNonJcsAndDuplicateKeys() {
+        PallaSyncCore.canonicalJson("{\"b\":2,\"a\":1}") shouldBe "{\"a\":1,\"b\":2}"
+        PallaSyncCore.canonicalJson("{\"a\":1,\"a\":2}") shouldBe null
+        PallaSyncCore.canonicalJson("{ \"a\":1}") shouldBe "{\"a\":1}"
+    }
+
+    @Test
     fun mergesBoundedChunksAndWritesExactArchiveFooterHash() {
         val output = ByteArrayOutputStream()
         val archive = PallaSyncExportArchive.create(output)

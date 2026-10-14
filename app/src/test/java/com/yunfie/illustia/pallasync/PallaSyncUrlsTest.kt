@@ -40,6 +40,14 @@ class PallaSyncUrlsTest :
             url.encodedPath shouldBe "/pallasync/v3/chains/chain/devices"
             url.encodedQuery shouldBe "limit=8&cursor=a_b"
         }
+
+        "device export always excludes recovery envelopes and signs its cursor query" {
+            val base = normalizedUrl("https://example.com")
+
+            PallaSyncUrls.export(base, "chain", null).encodedQuery shouldBe "limit=200&include_recovery=false"
+            PallaSyncUrls.export(base, "chain", "a_b", 1_000).encodedQuery shouldBe
+                "limit=1000&include_recovery=false&cursor=a_b"
+        }
     })
 
 private fun normalizedUrl(raw: String): HttpUrl =
