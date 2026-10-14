@@ -647,11 +647,11 @@ pub fn validate_deletion_evidence_bundle(
         ],
         &[],
     )?;
+    require(a(bundle, "witnesses").len() <= 128, "C_SCHEMA_VIOLATION")?;
     require(
         s(bundle, "chain_id") == s(receipt, "chain_id")
             && bundle["deletion_id"] == receipt["deletion_id"]
-            && s(bundle, "delete_receipt_hash") == object_hash(receipt)
-            && a(bundle, "witnesses").len() <= 128,
+            && s(bundle, "delete_receipt_hash") == object_hash(receipt),
         "C_DELETION_UNVERIFIED",
     )?;
     let mut previous: Option<Vec<u8>> = None;

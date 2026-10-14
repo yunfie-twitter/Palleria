@@ -771,7 +771,7 @@
         "PallaSync/tests/reference/test_attestations.py"
       ],
       "result": "pending",
-      "remaining": "The client preserves distinct signed receipt revisions by object hash, validates monotone completion revisions against the prior retained receipt, and creates each exported bundle against that exact receipt hash. Export now restores the largest verified locally retained witness bundle for that exact receipt revision instead of silently replacing it with an empty bundle; Room test covers retaining multiple bundle revisions for one receipt. Rust tests cover later completion, regression rejection and immutable transparency binding. Run full IT-44 negative and 128-witness cases, JNI/device completion-revision archive roundtrip, distinct-device file-exchange instrumentation and physical SAF verification; keep pending.",
+      "remaining": "The client preserves distinct signed receipt revisions by object hash, validates monotone completion revisions against the prior retained receipt, and creates each exported bundle against that exact receipt hash. Export restores the largest verified locally retained witness bundle for that exact receipt revision; Room tests cover multiple bundle revisions for one receipt. Rust tests now verify 128 certified unique witnesses, reject 129 with C_SCHEMA_VIOLATION, reject a bundle reused against a newly signed completion revision, and cover completion monotonicity. Still run the full IT-44 negative catalogue, JNI/device archive roundtrip, distinct-device file-exchange instrumentation and physical SAF verification; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

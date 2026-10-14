@@ -278,7 +278,7 @@ fn compaction_publish_requires_exact_compaction_log_entry_and_signed_receipt() {
     );
 }
 
-fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
+fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value, ed25519_dalek::SigningKey) {
     let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
     let admin = ed25519_dalek::SigningKey::from_bytes(&[0x42; 32]);
     let device = ed25519_dalek::SigningKey::from_bytes(&[0x43; 32]);
@@ -339,7 +339,7 @@ fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
         "deletion_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         "delete_receipt_hash":object_hash(&receipt),"witnesses":[]
     });
-    (pin, authority, receipt, bundle)
+    (pin, authority, receipt, bundle, relay)
 }
 
 #[test]
@@ -443,7 +443,7 @@ fn signed_page_does_not_skip_gaps_or_reset_a_pinned_prefix() {
 
 #[test]
 fn deletion_evidence_bundle_keeps_receipt_immutable_and_binds_exact_hash() {
-    let (_, authority, receipt, bundle) = deletion_evidence_fixture();
+    let (_, authority, receipt, bundle, _) = deletion_evidence_fixture();
     validate_deletion_evidence_bundle(&receipt, &bundle, &authority).unwrap();
 
     let mut wrong_receipt_hash = bundle.clone();
@@ -467,7 +467,7 @@ fn deletion_evidence_bundle_keeps_receipt_immutable_and_binds_exact_hash() {
 
 #[test]
 fn deletion_witness_requires_current_certified_device_seed_and_binds_receipt() {
-    let (_, authority, receipt, mut bundle) = deletion_evidence_fixture();
+    let (_, authority, receipt, mut bundle, relay) = deletion_evidence_fixture();
     let mut seed = [0x43; 32];
     let witness = create_deletion_witness(
         &receipt,
@@ -494,14 +494,68 @@ fn deletion_witness_requires_current_certified_device_seed_and_binds_receipt() {
         .0,
         "C_DEVICE_KEY_MISMATCH"
     );
-    let mut wrong_receipt = receipt.clone();
-    wrong_receipt["completed_at_ms"] = json!(12);
-    assert!(validate_deletion_evidence_bundle(&wrong_receipt, &bundle, &authority).is_err());
+    let mut completed_receipt = receipt.clone();
+    completed_receipt["completed_at_ms"] = json!(12);
+    sign_relay(&relay, &mut completed_receipt, CTX_DELETE).unwrap();
+    assert_eq!(
+        validate_deletion_evidence_bundle(&completed_receipt, &bundle, &authority)
+            .unwrap_err()
+            .0,
+        "C_DELETION_UNVERIFIED"
+    );
+}
+
+#[test]
+fn deletion_evidence_accepts_128_certified_witnesses_and_rejects_129_as_schema() {
+    let (_, mut authority, mut receipt, mut bundle, relay) = deletion_evidence_fixture();
+    let mut members = Vec::with_capacity(128);
+    let mut devices = Vec::with_capacity(128);
+    for index in 0..128u16 {
+        let device_id = format!("00000000-0000-4000-8000-{index:012x}");
+        let seed = [index as u8 + 1; 32];
+        let device = ed25519_dalek::SigningKey::from_bytes(&seed);
+        authority.devices.insert(
+            device_id.clone(),
+            Admission {
+                record: json!({
+                    "generation":0,
+                    "device_public_key":base64::Engine::encode(
+                        &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+                        device.verifying_key().as_bytes(),
+                    )
+                }),
+                enrolled_seq: 1,
+                revoked_seq: None,
+            },
+        );
+        members.push(json!(device_id));
+        devices.push((device_id, seed));
+    }
+    authority.epochs.get_mut(&0).unwrap().record["members"] = json!(members);
+    receipt["authorized_epoch_hash"] = json!(object_hash(&authority.epochs[&0].record));
+    sign_relay(&relay, &mut receipt, CTX_DELETE).unwrap();
+    bundle["delete_receipt_hash"] = json!(object_hash(&receipt));
+    let mut witnesses = Vec::with_capacity(128);
+    for (device_id, mut seed) in devices {
+        witnesses.push(
+            create_deletion_witness(&receipt, &authority, &device_id, &mut seed, 11).unwrap(),
+        );
+    }
+    bundle["witnesses"] = json!(witnesses);
+    validate_deletion_evidence_bundle(&receipt, &bundle, &authority).unwrap();
+
+    bundle["witnesses"] = json!(vec![json!({}); 129]);
+    assert_eq!(
+        validate_deletion_evidence_bundle(&receipt, &bundle, &authority)
+            .unwrap_err()
+            .0,
+        "C_SCHEMA_VIOLATION"
+    );
 }
 
 #[test]
 fn deletion_completion_receipt_revision_is_signed_monotone_and_keeps_original() {
-    let (pin, _, original, _) = deletion_evidence_fixture();
+    let (pin, _, original, _, _) = deletion_evidence_fixture();
     let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
     let mut completed = original.clone();
     completed["completed_at_ms"] = json!(20);
