@@ -201,7 +201,12 @@ internal class PallaSyncPeerApprover(
             session.confirm(observedSas, confirmed, now)
             val certificate = Json.parseToJsonElement(session.certificate(now)).jsonObject
             val device = checkNotNull(keys.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-            val eligibleEpochs = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, now)
+            val eligibleEpochs =
+                PallaSyncRetentionHandoff(store, keys::expireRetainedEpochSecrets).eligibleEpochs(
+                    chain,
+                    authority,
+                    now,
+                )
             val envelopes =
                 eligibleEpochs.map { epoch ->
                     val epochKeys = checkNotNull(keys.keysForEpoch(device, epoch)) { "C_MISSING_DEPENDENCY" }

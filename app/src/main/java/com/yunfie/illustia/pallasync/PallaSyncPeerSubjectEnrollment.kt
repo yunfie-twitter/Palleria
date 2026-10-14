@@ -144,7 +144,8 @@ internal class PallaSyncPeerSubjectEnrollment(
             val envelopes = Json.parseToJsonElement(envelopesJson).jsonArray.map { it.jsonObject }
             val authority = Json.parseToJsonElement(work.authorityJson).jsonObject
             check(envelopes.isNotEmpty() && envelopes.size <= MAX_PEER_ENVELOPES) { "C_SCHEMA_VIOLATION" }
-            val expectedEpochs = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, nowMs).sorted()
+            // The approver must prove local handoff before it can issue this policy-minimal set.
+            val expectedEpochs = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, nowMs, handoffVerified = true).sorted()
             check(envelopes.map { it.getValue("epoch").jsonPrimitive.long }.sorted() == expectedEpochs) {
                 "C_MISSING_DEPENDENCY"
             }
