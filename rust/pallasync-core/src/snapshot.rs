@@ -264,6 +264,7 @@ pub fn begin_verification(
     compaction_id: &str,
     part_count: u32,
 ) -> Result<u64> {
+    crate::secret_lifetime::start();
     require(record_key.len() == 32 && wire::uuid(compaction_id))?;
     let key: &[u8; 32] = record_key.try_into().map_err(|_| invalid())?;
     let stream = StateStream::new(key, header, part_count)?;
