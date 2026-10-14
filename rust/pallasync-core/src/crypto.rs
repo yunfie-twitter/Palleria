@@ -1494,7 +1494,7 @@ pub fn create_mnemonic_enrollment_bundle(
     key_protection: &str,
     generation: u32,
     epoch: u32,
-    recovery_envelope_json: &str,
+    recovery_envelopes_json: &str,
     expected_parameters_hash: &str,
     expected_epoch_hash: &str,
     aud: &str,
@@ -1506,7 +1506,7 @@ pub fn create_mnemonic_enrollment_bundle(
         key_protection,
         generation,
         epoch,
-        recovery_envelope_json,
+        recovery_envelopes_json,
         expected_parameters_hash,
         expected_epoch_hash,
         aud,
@@ -1519,7 +1519,7 @@ pub(crate) fn create_mnemonic_enrollment_bundle_from_roots(
     key_protection: &str,
     generation: u32,
     epoch: u32,
-    recovery_envelope_json: &str,
+    recovery_envelopes_json: &str,
     expected_parameters_hash: &str,
     expected_epoch_hash: &str,
     aud: &str,
@@ -1535,24 +1535,53 @@ pub(crate) fn create_mnemonic_enrollment_bundle_from_roots(
     let device_pub_b64 = URL_SAFE_NO_PAD.encode(device_signing_key.verifying_key().as_bytes());
     let device_sign_b64 = URL_SAFE_NO_PAD.encode(device_signing_key.to_bytes());
 
-    let recovery_envelope: EpochKeyEnvelope = models::parse(recovery_envelope_json)
+    let recovery_envelopes: Vec<EpochKeyEnvelope> = models::parse(recovery_envelopes_json)
         .map_err(|e| format!("Invalid recovery envelope JSON: {e}"))?;
-    if recovery_envelope.chain_id != root_keys.chain_id
-        || recovery_envelope.generation != generation
-        || recovery_envelope.epoch != epoch
+    if recovery_envelopes.is_empty()
         || decode_key_32(expected_parameters_hash, "parameters").is_err()
         || decode_key_32(expected_epoch_hash, "epoch").is_err()
     {
         return Err("C_SCHEMA_VIOLATION".into());
     }
-
-    let epoch_secret = Zeroizing::new(unwrap_recovery_epoch_envelope(
-        &recovery_envelope,
-        &root_keys.recovery_kek,
-        &root_keys.chain_id_digest,
-    )?);
-
-    let epoch_keys = derive_epoch_keys(&root_keys.chain_id_digest, epoch, &epoch_secret)?;
+    let mut previous_epoch = None;
+    let mut current_material = None;
+    let mut device_envelopes = Vec::with_capacity(recovery_envelopes.len());
+    for recovery_envelope in recovery_envelopes {
+        if recovery_envelope.chain_id != root_keys.chain_id
+            || recovery_envelope.generation != generation
+            || recovery_envelope.epoch > epoch
+            || previous_epoch.is_some_and(|previous| recovery_envelope.epoch <= previous)
+        {
+            return Err("C_SCHEMA_VIOLATION".into());
+        }
+        previous_epoch = Some(recovery_envelope.epoch);
+        let secret = Zeroizing::new(unwrap_recovery_epoch_envelope(
+            &recovery_envelope,
+            &root_keys.recovery_kek,
+            &root_keys.chain_id_digest,
+        )?);
+        let keys = derive_epoch_keys(&root_keys.chain_id_digest, recovery_envelope.epoch, &secret)?;
+        let device_env_id = uuid::Uuid::new_v4().to_string();
+        device_envelopes.push(wrap_device_epoch_envelope(
+            &device_env_id,
+            &root_keys.chain_id,
+            generation,
+            recovery_envelope.epoch,
+            recovery_envelope.previous_epoch_hash.as_deref(),
+            &keys.epoch_commitment_b64u,
+            &device_id,
+            &device_kex_pub_b64,
+            "admin",
+            None,
+            &root_keys.admin_key,
+            &secret,
+        )?);
+        if recovery_envelope.epoch == epoch {
+            current_material = Some((secret, keys));
+        }
+    }
+    let (epoch_secret, epoch_keys) =
+        current_material.ok_or_else(|| "C_MISSING_DEPENDENCY".to_string())?;
 
     let now_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -1597,22 +1626,6 @@ pub(crate) fn create_mnemonic_enrollment_bundle_from_roots(
     )?;
 
     // 3. Device envelope (§7.7)
-    let device_env_id = uuid::Uuid::new_v4().to_string();
-    let device_envelope = wrap_device_epoch_envelope(
-        &device_env_id,
-        &root_keys.chain_id,
-        generation,
-        epoch,
-        recovery_envelope.previous_epoch_hash.as_deref(),
-        &epoch_keys.epoch_commitment_b64u,
-        &device_id,
-        &device_kex_pub_b64,
-        "admin",
-        None,
-        &root_keys.admin_key,
-        &epoch_secret,
-    )?;
-
     // 4. AdminOperation (§7.10)
     #[derive(serde::Serialize)]
     struct ActionPayload {
@@ -1621,7 +1634,7 @@ pub(crate) fn create_mnemonic_enrollment_bundle_from_roots(
     }
     let action_payload = ActionPayload {
         device_record: device_record.clone(),
-        envelopes: vec![device_envelope.clone()],
+        envelopes: device_envelopes.clone(),
     };
     let action_payload_jcs = models::to_jcs(&action_payload)
         .map_err(|e| format!("Cannot JCS encode ActionPayload: {e}"))?;
@@ -1664,7 +1677,7 @@ pub(crate) fn create_mnemonic_enrollment_bundle_from_roots(
     }
     let enroll_body = EnrollBody {
         device_record,
-        envelopes: vec![device_envelope],
+        envelopes: device_envelopes,
         admin_operation: admin_op,
     };
     let enroll_body_json = serde_json::to_string(&enroll_body)

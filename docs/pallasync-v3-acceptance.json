@@ -220,7 +220,7 @@
         "PallaSync/tests/reference/android_epoch.py"
       ],
       "result": "pending",
-      "remaining": "Implement all-revoked fresh subjects, retention handoff and all epoch journal/process-death/CAS boundaries.",
+      "remaining": "Mnemonic enrollment now creates device envelopes for every epoch eligible under the signed retain/windowed/immediate policy and retains only keys for those submitted envelopes (§10.4, §13.5); Rust tests cover multiple eligible epochs and reject a missing current, unordered or duplicate set. Still implement safe retention handoff/key expiry and prove enrollment restrictions for incomplete immediate/windowed snapshots; exercise all-revoked fresh-subject recovery and epoch journal/process-death/CAS boundaries against the isolated relay and on-device. Full IT-15/16 and independent interoperability remain pending.",
       "verification_scope": "targeted_partial"
     },
     {

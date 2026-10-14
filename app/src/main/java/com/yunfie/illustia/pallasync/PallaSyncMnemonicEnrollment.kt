@@ -4,6 +4,7 @@ import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -95,19 +96,27 @@ internal class PallaSyncMnemonicEnrollment(
                 .getValue("record")
                 .jsonObject
         val epoch = current.getValue("epoch").jsonPrimitive.long
-        val envelope =
-            PallaSyncCore.validateRecoveryEnvelopeResponse(
-                history.get(history.url("epochs/$epoch/recovery-envelope")),
-                checkpoint.authority.toString(),
-                epoch,
+        val eligibleEpochs =
+            PallaSyncPeerEpochEligibility.eligibleEpochs(
+                checkpoint.authority,
+                policy.retry.correctedTime(origin),
             )
+        check(eligibleEpochs.lastOrNull() == epoch) { "C_MISSING_DEPENDENCY" }
+        val envelopes =
+            eligibleEpochs.map { eligibleEpoch ->
+                PallaSyncCore.validateRecoveryEnvelopeResponse(
+                    history.get(history.url("epochs/$eligibleEpoch/recovery-envelope")),
+                    checkpoint.authority.toString(),
+                    eligibleEpoch,
+                )
+            }
         val prepared =
             crypto.createMnemonicEnrollmentBundle(
                 root,
                 name,
                 generation = checkpoint.generation,
                 epoch = epoch,
-                recoveryEnvelopeJson = envelope,
+                recoveryEnvelopesJson = JsonArray(envelopes.map(Json::parseToJsonElement)).toString(),
                 expectedParametersHash = checkpoint.parametersHash,
                 expectedEpochHash = checkpoint.epochHash,
                 aud = origin,
@@ -126,12 +135,14 @@ internal class PallaSyncMnemonicEnrollment(
         checkpoint: PallaSyncGenesisCheckpoint,
     ) {
         val chain = checkNotNull(candidate.keys.chainId)
-        val epochs =
-            checkpoint.authority
-                .getValue("epochs")
-                .jsonObject.keys
-                .map(String::toLong)
-                .sorted()
+        val submitted = Json.parseToJsonElement(candidate.body).jsonObject
+        val envelopeItems = submitted.getValue("envelopes").jsonArray
+        val epochs = mutableListOf<Long>()
+        for (envelope in envelopeItems) {
+            val epoch = envelope.jsonObject.getValue("epoch")
+            epochs += epoch.jsonPrimitive.long
+        }
+        epochs.sort()
         for (epoch in epochs) {
             if (keys.keysForEpoch(candidate.keys, epoch) != null) continue
             val response = history.get(history.url("epochs/$epoch/recovery-envelope"))

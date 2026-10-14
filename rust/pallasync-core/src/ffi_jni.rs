@@ -2067,7 +2067,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createMn
     key_protection: JString<'local>,
     generation: jlong,
     epoch: jlong,
-    recovery_envelope_json: JString<'local>,
+    recovery_envelopes_json: JString<'local>,
     expected_parameters_hash: JString<'local>,
     expected_epoch_hash: JString<'local>,
     aud: JString<'local>,
@@ -2082,7 +2082,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createMn
     ) = (
         read_string(&mut env, &device_name),
         read_string(&mut env, &key_protection),
-        read_string(&mut env, &recovery_envelope_json),
+        read_string(&mut env, &recovery_envelopes_json),
         read_string(&mut env, &expected_parameters_hash),
         read_string(&mut env, &expected_epoch_hash),
         read_string(&mut env, &aud),

@@ -698,7 +698,7 @@ object PallaSyncCore {
         keyProtection: String = "os-keystore",
         generation: Long,
         epoch: Long,
-        recoveryEnvelopeJson: String,
+        recoveryEnvelopesJson: String,
         expectedParametersHash: String,
         expectedEpochHash: String,
         aud: String,
