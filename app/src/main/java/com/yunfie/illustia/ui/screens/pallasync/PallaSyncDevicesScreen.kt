@@ -30,6 +30,7 @@ import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
+import com.yunfie.illustia.pallasync.PallaSyncPeerTransferFile
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity
@@ -60,8 +61,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-private const val MAX_PEER_TRANSFER_BYTES = 4_194_304
 
 // SAF/JCS boundary maps provider and malformed-file failures to protocol-safe UI outcomes.
 @Composable
@@ -111,15 +110,15 @@ fun PallaSyncDevicesScreen(
                     try {
                         val returned =
                             withContext(Dispatchers.IO) {
-                                val bytes = value.toByteArray(Charsets.UTF_8)
-                                check(bytes.size <= MAX_PEER_TRANSFER_BYTES) { "C_SCHEMA_VIOLATION" }
+                                val bytes = PallaSyncPeerTransferFile.encode(value)
                                 checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use {
                                     it.write(bytes)
                                     it.flush()
                                 }
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
-                                    PallaSyncDeletionEvidenceArchive
-                                        .readBounded(input, MAX_PEER_TRANSFER_BYTES)
+                                    PallaSyncPeerTransferFile
+                                        .read(input)
+                                        .toByteArray(Charsets.UTF_8)
                                         .also { check(it.contentEquals(bytes)) { "C_MISSING_DEPENDENCY" } }
                                 }
                             }
@@ -146,7 +145,7 @@ fun PallaSyncDevicesScreen(
                         val bytes =
                             withContext(Dispatchers.IO) {
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
-                                    PallaSyncDeletionEvidenceArchive.readBounded(input, MAX_PEER_TRANSFER_BYTES)
+                                    PallaSyncPeerTransferFile.read(input).toByteArray(Charsets.UTF_8)
                                 }
                             }
                         val value = bytes.toString(Charsets.UTF_8)
