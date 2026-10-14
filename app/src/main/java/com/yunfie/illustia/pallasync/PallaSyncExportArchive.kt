@@ -15,7 +15,16 @@ import java.util.Base64
 /** §17.4/§17.10 bounded JSONL chunk merger. It preserves signed source lines verbatim. */
 internal class PallaSyncExportArchive private constructor(
     private val output: OutputStream,
+    private val expectedSource: ExpectedSource?,
 ) : Closeable {
+    data class ExpectedSource(
+        val chainId: String,
+        val generation: Long,
+        val logId: String,
+        val relayPublicKey: String,
+        val relayKeyId: String,
+    )
+
     data class Page(
         val cursor: String?,
         val hasMore: Boolean,
@@ -74,7 +83,17 @@ internal class PallaSyncExportArchive private constructor(
     }
 
     private fun acceptHeader(line: String) {
-        validateHeader(canonicalObject(line))
+        val header = canonicalObject(line)
+        validateHeader(header)
+        expectedSource?.let { expected ->
+            check(
+                header["chain_id"]?.jsonPrimitive?.content == expected.chainId &&
+                    header["generation"]?.jsonPrimitive?.longOrNull == expected.generation &&
+                    header["log_id"]?.jsonPrimitive?.content == expected.logId &&
+                    header["relay_public_key"]?.jsonPrimitive?.content == expected.relayPublicKey &&
+                    header["relay_key_id"]?.jsonPrimitive?.content == expected.relayKeyId,
+            ) { "C_ROLLBACK_DETECTED" }
+        }
         val previous = headerLine
         if (previous == null) {
             headerLine = line
@@ -209,6 +228,9 @@ internal class PallaSyncExportArchive private constructor(
                 it.version() == UUID_VERSION_4 && it.variant() == UUID_VARIANT_RFC && it.toString() == value
             } == true
 
-        fun create(output: OutputStream): PallaSyncExportArchive = PallaSyncExportArchive(output)
+        fun create(
+            output: OutputStream,
+            expectedSource: ExpectedSource? = null,
+        ): PallaSyncExportArchive = PallaSyncExportArchive(output, expectedSource)
     }
 }

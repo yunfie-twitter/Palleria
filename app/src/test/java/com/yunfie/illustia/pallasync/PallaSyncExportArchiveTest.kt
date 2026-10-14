@@ -19,6 +19,29 @@ class PallaSyncExportArchiveTest {
     }
 
     @Test
+    fun rejectsArchiveHeaderFromAnotherChainCutOrRelayKey() {
+        val expected =
+            PallaSyncExportArchive.ExpectedSource(
+                chainId = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+                generation = 0,
+                logId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                relayPublicKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                relayKeyId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            )
+        val archive = PallaSyncExportArchive.create(ByteArrayOutputStream(), expected)
+        val mismatched = expected.copy(logId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee")
+        val otherSource = PallaSyncExportArchive.create(ByteArrayOutputStream(), mismatched)
+        shouldThrow<IllegalStateException> {
+            otherSource.acceptChunk(
+                "$header\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n".toByteArray(),
+                null,
+            )
+        }
+        otherSource.close()
+        archive.close()
+    }
+
+    @Test
     fun mergesBoundedChunksAndWritesExactArchiveFooterHash() {
         val output = ByteArrayOutputStream()
         val archive = PallaSyncExportArchive.create(output)

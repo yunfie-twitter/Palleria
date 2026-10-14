@@ -268,7 +268,15 @@ internal class PalleriaSyncCoordinator(
                 val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 check(device.chainId == state.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 val relay = PallaSyncPeerRelay(db, remote, crypto)
-                PallaSyncExportArchive.create(output).use { archive ->
+                val expectedSource =
+                    PallaSyncExportArchive.ExpectedSource(
+                        chainId = pin.getValue("chain_id").jsonPrimitive.content,
+                        generation = state.generation,
+                        logId = pin.getValue("log_id").jsonPrimitive.content,
+                        relayPublicKey = policy.trustedRelayKey(origin),
+                        relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                    )
+                PallaSyncExportArchive.create(output, expectedSource).use { archive ->
                     var cursor: String? = null
                     do {
                         currentCoroutineContext().ensureActive()
