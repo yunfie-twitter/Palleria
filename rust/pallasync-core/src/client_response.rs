@@ -189,6 +189,61 @@ pub fn page(
     Ok(())
 }
 
+/// §10.12: validate the bounded public CompactionRecord catalogue page at one pinned cut.
+/// Signatures are not established here; callers must match each object to a compaction LogEntry
+/// already advanced through Authority::advance with its original UploadReceipt.
+pub fn compaction_page(
+    value: &Value,
+    pin: &RelayPin,
+    generation: u32,
+    head_seq: u64,
+    limit: usize,
+) -> Result<Value> {
+    pin.validate()?;
+    require((1..=1000).contains(&limit))?;
+    fields(
+        value,
+        &[
+            ("items", "array"),
+            ("next_cursor", "text?"),
+            ("has_more", "bool"),
+            ("log_id", "uuid"),
+            ("generation", "u32"),
+            ("head_seq", "int"),
+        ],
+        &[],
+    )
+    .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+    if s(value, "log_id") != pin.log_id {
+        return Err(ClientError("C_LOG_HASH_MISMATCH"));
+    }
+    if n(value, "generation") != u64::from(generation) {
+        return Err(ClientError("C_MISSING_DEPENDENCY"));
+    }
+    require(n(value, "head_seq") == head_seq)?;
+    let cursor = value["next_cursor"].as_str();
+    require(value["has_more"].as_bool() == Some(cursor.is_some()))?;
+    require(cursor.is_none_or(|c| {
+        !c.is_empty()
+            && c.len() <= 2048
+            && c.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    }))?;
+    let items = a(value, "items");
+    require(items.len() <= limit && (!value["has_more"].as_bool().unwrap() || !items.is_empty()))?;
+    let mut previous = "";
+    for compaction in items {
+        wire::validate(compaction, "compaction").map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        require(
+            s(compaction, "chain_id") == pin.chain_id
+                && n(compaction, "generation") <= u64::from(generation)
+                && s(compaction, "compaction_id") > previous,
+        )?;
+        previous = s(compaction, "compaction_id");
+    }
+    Ok(value.clone())
+}
+
 /// RFC 9457 allows unknown extension members only here. Retain only the validated
 /// clock/wait hints required by §6.3/§17.8; none grants signed protocol authority.
 pub fn problem(value: &Value, status: u16) -> Result<Value> {

@@ -6,6 +6,8 @@ import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.pallasync.data.AuthorSequenceEntity
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
+import com.yunfie.illustia.pallasync.data.CompactionCatalogueDao
+import com.yunfie.illustia.pallasync.data.LogEntryEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
@@ -30,6 +32,46 @@ class PallaSyncProtocolStoreTest {
     private val deviceA = "11111111-1111-4111-8111-111111111111"
     private val deviceB = "ffffffff-ffff-4fff-8fff-ffffffffffff"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `compaction catalogue lookup selects only authority-verified entries`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val dao: CompactionCatalogueDao = db.compactionCatalogueDao()
+                val id = "22222222-2222-4222-8222-222222222222"
+                val first =
+                    LogEntryEntity(
+                        chain,
+                        log,
+                        1,
+                        "hash-1",
+                        "{\"kind\":\"compaction\",\"object\":{\"compaction_id\":\"$id\"}}",
+                        "{}",
+                        "authority_verified",
+                    )
+                db.protocolDao().putLogEntry(first)
+                db.protocolDao().putLogEntry(
+                    first.copy(relaySeq = 2, entryHash = "hash-2", validationState = "pending"),
+                )
+                db.protocolDao().putLogEntry(
+                    first.copy(
+                        relaySeq = 3,
+                        entryHash = "hash-3",
+                        signedJson = "{\"kind\":\"admin\",\"object\":{\"target\":{\"compaction_id\":\"$id\"}}}",
+                    ),
+                )
+                dao.verifiedEntries(chain, log, id) shouldBe listOf(first)
+                dao.verifiedCount(chain, log) shouldBe 1
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `snapshot staging resumes exact ciphertext and rejects conflicting part identity`() =

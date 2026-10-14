@@ -36,6 +36,8 @@ abstract class PallaSyncDatabase : RoomDatabase() {
 
     abstract fun protocolDao(): ProtocolDao
 
+    abstract fun compactionCatalogueDao(): CompactionCatalogueDao
+
     abstract fun snapshotDao(): SnapshotDao
 
     abstract fun deletionEvidenceDao(): DeletionEvidenceDao

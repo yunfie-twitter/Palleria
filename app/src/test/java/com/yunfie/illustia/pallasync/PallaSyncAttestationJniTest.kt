@@ -54,4 +54,15 @@ class PallaSyncAttestationJniTest :
                 )
             }.message shouldBe "C_SCHEMA_VIOLATION"
         }
+        "snapshot catalogue page is strictly checked through JNI" {
+            val pin =
+                """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+            val body =
+                """{"items":[{"compaction_id":"33333333-3333-4333-8333-333333333333","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","generation":0,"device_id":"11111111-1111-4111-8111-111111111111","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","covered_through_seq":0,"covered_log_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","epoch_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","snapshot_parts":[{"record_id":"22222222-2222-4222-8222-222222222222","record_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}],"state_sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","signature":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}],"next_cursor":null,"has_more":false,"log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","generation":0,"head_seq":8}"""
+            Json.parseToJsonElement(PallaSyncSnapshotCore.validateCompactionPage(body.toByteArray(), pin, 0, 8, 200)) shouldBe
+                Json.parseToJsonElement(body)
+            shouldThrow<IllegalStateException> {
+                PallaSyncSnapshotCore.validateCompactionPage(body.replace("\"head_seq\":8", "\"head_seq\":9").toByteArray(), pin, 0, 8, 200)
+            }.message shouldBe "C_SCHEMA_VIOLATION"
+        }
     })

@@ -9,6 +9,65 @@ fn pin() -> RelayPin {
     }
 }
 
+fn compaction(id: &str) -> serde_json::Value {
+    json!({
+        "compaction_id":id,
+        "chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+        "generation":0,
+        "device_id":"11111111-1111-4111-8111-111111111111",
+        "log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "covered_through_seq":0,
+        "covered_log_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "epoch_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "snapshot_parts":[{"record_id":"22222222-2222-4222-8222-222222222222","record_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}],
+        "state_sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "signature":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    })
+}
+
+#[test]
+fn compaction_catalogue_page_is_strict_and_bound_to_the_replayed_cut() {
+    let pin = pin();
+    let first = compaction("33333333-3333-4333-8333-333333333333");
+    let second = compaction("44444444-4444-4444-8444-444444444444");
+    let valid = json!({"items":[first,second],"next_cursor":null,"has_more":false,"log_id":pin.log_id,"generation":0,"head_seq":8});
+    assert_eq!(compaction_page(&valid, &pin, 0, 8, 2).unwrap(), valid);
+
+    let mut historical = compaction("66666666-6666-4666-8666-666666666666");
+    historical["generation"] = json!(0);
+    historical["log_id"] = json!("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
+    let historical_page = json!({"items":[historical],"next_cursor":null,"has_more":false,"log_id":pin.log_id,"generation":1,"head_seq":8});
+    compaction_page(&historical_page, &pin, 1, 8, 2).unwrap(); // Prior incarnation remains untrusted to the caller.
+    historical["generation"] = json!(2);
+    let too_new = json!({"items":[historical],"next_cursor":null,"has_more":false,"log_id":pin.log_id,"generation":1,"head_seq":8});
+    assert!(compaction_page(&too_new, &pin, 1, 8, 2).is_err());
+
+    let mut bad = valid.clone();
+    bad["head_seq"] = json!(9);
+    assert!(compaction_page(&bad, &pin, 0, 8, 2).is_err());
+    let mut bad = valid.clone();
+    bad["items"][1]["log_id"] = json!("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
+    compaction_page(&bad, &pin, 0, 8, 2).unwrap(); // Older-incarnation object is schema checked but remains untrusted.
+    bad["items"][1]["log_id"] = json!("not-a-uuid");
+    assert!(compaction_page(&bad, &pin, 0, 8, 2).is_err());
+    let mut bad = valid.clone();
+    bad["items"][0]["unrecognized"] = json!(true);
+    assert!(compaction_page(&bad, &pin, 0, 8, 2).is_err());
+    let mut bad = valid.clone();
+    bad["items"].as_array_mut().unwrap().swap(0, 1);
+    assert!(compaction_page(&bad, &pin, 0, 8, 2).is_err());
+    let mut bad = valid.clone();
+    bad["next_cursor"] = json!("cursor");
+    assert!(compaction_page(&bad, &pin, 0, 8, 2).is_err());
+    let mut bad = valid;
+    bad["items"] = json!([
+        compaction("33333333-3333-4333-8333-333333333333"),
+        compaction("44444444-4444-4444-8444-444444444444"),
+        compaction("55555555-5555-4555-8555-555555555555")
+    ]);
+    assert!(compaction_page(&bad, &pin, 0, 8, 2).is_err());
+}
+
 #[test]
 fn selected_history_checks_derived_admin_before_accepting_any_registry_or_head() {
     let f = jcs::parse(include_bytes!("fixtures/python-genesis-acceptance.json")).unwrap();

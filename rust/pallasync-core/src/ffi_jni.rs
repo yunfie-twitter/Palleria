@@ -482,6 +482,43 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_validateCompactionPage<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    body: JByteArray<'local>,
+    pin: JString<'local>,
+    generation: jlong,
+    head_seq: jlong,
+    limit: jint,
+) -> jstring {
+    let result = (|| {
+        let body = env
+            .convert_byte_array(&body)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let body =
+            crate::strict::jcs::parse(&body).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin = serde_json::from_value(public_value(&mut env, &pin)?)
+            .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::client_response::compaction_page(
+            &body,
+            &pin,
+            generation
+                .try_into()
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+            head_seq
+                .try_into()
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+            limit
+                .try_into()
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        )
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateRecoveryEnvelopeResponse<
     'local,
 >(

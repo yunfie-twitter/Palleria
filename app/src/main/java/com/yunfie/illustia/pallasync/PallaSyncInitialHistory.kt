@@ -68,6 +68,7 @@ internal class PallaSyncInitialHistory(
                 .parseToJsonElement(
                     PallaSyncCore.validateInitialHistoryCut(authority.toString(), get(url("transparency/head"))),
                 ).jsonObject
+        verifySnapshotCatalogue(pin, cut.getValue("generation").jsonPrimitive.long, authority.getValue("sequence").jsonPrimitive.long)
         val head = cut.getValue("head").jsonObject
         progress("history_transparency")
         val anchor = transparency(pin, cut, knownAnchor)
@@ -120,6 +121,67 @@ internal class PallaSyncInitialHistory(
         val recordId = staging.expectedRecordId(partIndex)
         val response = fetchSnapshotPart(recordId, pinJson)
         return staging.retainDownloaded(partIndex, response.getValue("record").toString())
+    }
+
+    /** §10.12: accept catalogue entries only when they exactly match a receipt-verified replayed log entry. */
+    private suspend fun verifySnapshotCatalogue(
+        pin: JsonObject,
+        generation: Long,
+        headSeq: Long,
+    ) {
+        val pinJson = pin.toString()
+        val logId = pin.getValue("log_id").jsonPrimitive.content
+        var cursor: String? = null
+        var previousId = ""
+        var matched = 0
+        val seenCursors = mutableSetOf<String>()
+        do {
+            currentCoroutineContext().ensureActive()
+            val requestUrl =
+                url("snapshots")
+                    .newBuilder()
+                    .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+                    .apply { cursor?.let { addQueryParameter("cursor", it) } }
+                    .build()
+            val page =
+                json
+                    .parseToJsonElement(
+                        PallaSyncSnapshotCore.validateCompactionPage(
+                            get(requestUrl),
+                            pinJson,
+                            generation,
+                            headSeq,
+                            PALLASYNC_PAGE_SIZE,
+                        ),
+                    ).jsonObject
+            for (value in page.getValue("items").jsonArray) {
+                currentCoroutineContext().ensureActive()
+                val compaction = value.jsonObject
+                val id = compaction.getValue("compaction_id").jsonPrimitive.content
+                check(id > previousId) { "C_SCHEMA_VIOLATION" }
+                previousId = id
+                // The relay may retain catalogue objects from older log incarnations. They
+                // are never used as authority or bootstrap candidates for this selected pin.
+                if (compaction.getValue("log_id").jsonPrimitive.content != logId) continue
+                val candidates = store.compactionCatalogueDao().verifiedEntries(chain, logId, id)
+                check(candidates.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
+                val entry = json.parseToJsonElement(candidates.single().signedJson).jsonObject
+                check(
+                    entry.getValue("kind").jsonPrimitive.content == "compaction" &&
+                        PallaSyncCore.canonicalJson(entry.getValue("object").toString()) ==
+                        PallaSyncCore.canonicalJson(compaction.toString()),
+                ) { "C_LOG_HASH_MISMATCH" }
+                matched++
+            }
+            cursor =
+                page
+                    .getValue("next_cursor")
+                    .jsonPrimitive
+                    .takeIf { it.isString }
+                    ?.content
+            check(cursor == null || seenCursors.add(checkNotNull(cursor))) { "C_SCHEMA_VIOLATION" }
+        } while (cursor != null)
+        check(store.compactionCatalogueDao().verifiedCount(chain, logId) == matched) { "C_MISSING_DEPENDENCY" }
     }
 
     private fun initialAuthority(): JsonObject {

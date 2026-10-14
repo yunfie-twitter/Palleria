@@ -23,6 +23,8 @@ internal class PallaSyncLocalStore(
 
     fun protocolDao() = database.protocolDao()
 
+    fun compactionCatalogueDao() = database.compactionCatalogueDao()
+
     fun deletionEvidenceDao() = database.deletionEvidenceDao()
 
     suspend fun <T> transaction(block: suspend () -> T): T = database.withTransaction { block() }

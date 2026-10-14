@@ -11,4 +11,13 @@ internal object PallaSyncSnapshotCore {
         expectedRecordId: String,
         pinJson: String,
     ): String
+
+    /** §10.12: validate the strict, bounded CompactionRecord catalogue response. */
+    external fun validateCompactionPage(
+        body: ByteArray,
+        pinJson: String,
+        generation: Long,
+        headSeq: Long,
+        limit: Int,
+    ): String
 }
