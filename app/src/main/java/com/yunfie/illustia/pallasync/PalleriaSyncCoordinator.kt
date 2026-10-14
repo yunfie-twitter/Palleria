@@ -403,7 +403,7 @@ internal class PalleriaSyncCoordinator(
         chain: String,
         state: ChainStateEntity,
         authority: String,
-        expectedHash: String,
+        expectedHash: String?,
         base: HttpUrl,
     ): String {
         val parsedAuthority = Json.parseToJsonElement(authority).jsonObject
@@ -458,13 +458,56 @@ internal class PalleriaSyncCoordinator(
                 after = row.relaySeq
             }
         }
-        check(
-            crypto.objectHash(verified.toString()) == expectedHash,
-        ) { "C_ROLLBACK_DETECTED" }
+        check(expectedHash == null || crypto.objectHash(verified.toString()) == expectedHash) { "C_ROLLBACK_DETECTED" }
         val serializedEntries = entries.joinToString(",")
         return "{\"format\":\"pallasync-peer-history/3\",\"parameters\":$parameters," +
             "\"authority\":$authority,\"items\":[$serializedEntries]}"
     }
+
+    internal suspend fun peerAcceptanceTransfer(transcript: PallaSyncPeerJournal.Transcript): String =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                check(transcript.stage == PallaSyncPeerJournal.Stage.ACCEPTED && peerJournal.read(transcript.requestId) == transcript) {
+                    "C_ACCEPTANCE_UNPROVEN"
+                }
+                val chain =
+                    transcript.offer
+                        .getValue("chain_id")
+                        .jsonPrimitive.content
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.chainId == chain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val keys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                when (
+                    val pulled =
+                        liveHistory.pull(
+                            checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                                "C_BOOTSTRAP_TRUST_REQUIRED"
+                            },
+                            chain,
+                            keys,
+                        )
+                ) {
+                    is PallaSyncHttpResult.Success -> Unit
+                    is PallaSyncHttpResult.ProtocolError -> error(pulled.message)
+                    is PallaSyncHttpResult.Retryable -> error(pulled.message)
+                    PallaSyncHttpResult.Gone -> error("C_DELETION_UNVERIFIED")
+                }
+                val authority = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+                val authorityHash = checkNotNull(crypto.objectHash(authority)) { "C_SCHEMA_VIOLATION" }
+                check(authorityHash == keystore.authorityHash(chain)) { "C_ROLLBACK_DETECTED" }
+                val latest = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                val history = exportPeerHistory(chain, latest, authority, null, base)
+                buildJsonObject {
+                    put("format", "pallasync-peer-acceptance/3")
+                    put("acceptance", checkNotNull(transcript.acceptance))
+                    put("history", Json.parseToJsonElement(history))
+                }.toString()
+            }
+        }
 
     internal suspend fun pollPeerEnrollmentRequest(transcript: PallaSyncPeerJournal.Transcript): JsonObject? =
         withContext(Dispatchers.IO) {

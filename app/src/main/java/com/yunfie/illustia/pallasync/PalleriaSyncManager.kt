@@ -108,6 +108,9 @@ class PalleriaSyncManager(
     internal suspend fun retryPeerEnrollmentApproval(transcript: PallaSyncPeerJournal.Transcript): PallaSyncPeerJournal.Transcript =
         coordinator.retryPeerEnrollmentApproval(transcript)
 
+    internal suspend fun peerAcceptanceTransfer(transcript: PallaSyncPeerJournal.Transcript): String =
+        coordinator.peerAcceptanceTransfer(transcript)
+
     internal suspend fun beginPeerSubjectEnrollment(
         offerJson: String,
         authorityJson: String,

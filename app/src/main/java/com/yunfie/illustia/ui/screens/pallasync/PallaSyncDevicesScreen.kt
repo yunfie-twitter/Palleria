@@ -83,6 +83,7 @@ fun PallaSyncDevicesScreen(
     var peerError by remember { mutableStateOf<String?>(null) }
     var pendingPeerTransfer by remember { mutableStateOf<String?>(null) }
     var acceptedPeerResponse by remember { mutableStateOf<String?>(null) }
+    var acceptedPeerTranscript by remember { mutableStateOf<com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Transcript?>(null) }
     var submittedPeerBody by remember { mutableStateOf<String?>(null) }
     var creatingOffer by remember { mutableStateOf(false) }
     var offerError by remember { mutableStateOf<String?>(null) }
@@ -337,6 +338,7 @@ fun PallaSyncDevicesScreen(
                                     try {
                                         val accepted = syncManager.approvePeerEnrollment(work, body)
                                         acceptedPeerResponse = accepted.acceptance?.toString() ?: error("C_ACCEPTANCE_UNPROVEN")
+                                        acceptedPeerTranscript = accepted
                                         approvalWork = null
                                         submittedPeerBody = null
                                     } catch (cancelled: CancellationException) {
@@ -370,6 +372,7 @@ fun PallaSyncDevicesScreen(
                                 try {
                                     val accepted = syncManager.retryPeerEnrollmentApproval(work.transcript)
                                     acceptedPeerResponse = accepted.acceptance?.toString() ?: error("C_ACCEPTANCE_UNPROVEN")
+                                    acceptedPeerTranscript = accepted
                                     approvalWork = null
                                 } catch (cancelled: CancellationException) {
                                     throw cancelled
@@ -404,11 +407,26 @@ fun PallaSyncDevicesScreen(
             ) {
                 TextButton(
                     text = stringResource(R.string.pallasync_peer_approval_receipt_export),
+                    enabled = !peerBusy,
                     onClick = {
-                        pendingPeerTransfer = response
-                        peerTransferExporter.launch("pallasync-approval-response.json")
+                        val transcript = acceptedPeerTranscript ?: return@TextButton
+                        peerBusy = true
+                        peerError = null
+                        scope.launch {
+                            try {
+                                pendingPeerTransfer = syncManager.peerAcceptanceTransfer(transcript)
+                                peerTransferExporter.launch("pallasync-approval-response.json")
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY"
+                            } finally {
+                                peerBusy = false
+                            }
+                        }
                     },
                 )
+                peerError?.let { Text(it) }
                 TextButton(text = stringResource(R.string.action_cancel), onClick = { acceptedPeerResponse = null })
             }
         }

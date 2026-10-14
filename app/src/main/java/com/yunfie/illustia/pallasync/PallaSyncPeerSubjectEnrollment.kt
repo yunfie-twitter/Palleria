@@ -185,12 +185,20 @@ internal class PallaSyncPeerSubjectEnrollment(
         val pending = checkNotNull(keys.getPendingChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val chain = checkNotNull(pending.chainId)
         val relay = PallaSyncPeerRelay(store, remote, crypto)
-        val (context, submitted, accepted) = validateAcceptance(acceptanceJson, pending, origin)
+        val packageValue = Json.parseToJsonElement(acceptanceJson).jsonObject
+        check(
+            packageValue.keys == setOf("format", "acceptance", "history") &&
+                packageValue.getValue("format").jsonPrimitive.content == "pallasync-peer-acceptance/3",
+        ) { "C_SCHEMA_VIOLATION" }
+        val (original, submitted, accepted) = validateAcceptance(packageValue.getValue("acceptance").toString(), pending, origin)
+        val history = packageValue.getValue("history").jsonObject
+        val finalAuthority = verifyTransferredHistory(history, origin, original.authority)
+        proveAcceptanceEntries(accepted, submitted, history)
+        val context = original.copy(history = history, authority = finalAuthority)
         retainVerifiedPrefix(context, origin, chain)
-        relay.retainReceipts(context.authority, accepted)
-        val acceptedAuthority = appendAcceptance(context.authority, submitted, accepted)
-        verifyAndAcknowledge(base, pending, origin, acceptedAuthority, context.envelopes)
-        val checkpoint = verifyCurrentHistory(base, pending, context, acceptedAuthority)
+        relay.retainReceipts(finalAuthority, accepted)
+        verifyAndAcknowledge(base, pending, origin, finalAuthority, context.envelopes)
+        val checkpoint = verifyCurrentHistory(base, pending, context, finalAuthority)
         val device = checkNotNull(pending.deviceId)
         val acceptedDevice =
             checkpoint.authority
@@ -262,6 +270,7 @@ internal class PallaSyncPeerSubjectEnrollment(
     private fun verifyTransferredHistory(
         transfer: JsonObject,
         origin: String,
+        expectedPrefix: JsonObject? = null,
     ): JsonObject {
         val authority = transfer.getValue("authority").jsonObject
         val pin = authority.getValue("pin").jsonObject
@@ -283,6 +292,12 @@ internal class PallaSyncPeerSubjectEnrollment(
         val items = transfer.getValue("items").jsonArray
         val finalSequence = authority.getValue("sequence").jsonPrimitive.long
         check(items.size.toLong() == finalSequence) { "C_MISSING_DEPENDENCY" }
+        val prefixSequence = expectedPrefix?.getValue("sequence")?.jsonPrimitive?.long
+        var prefixVerified = prefixSequence == null
+        if (prefixSequence == 0L) {
+            check(pallaSyncPeerHash(current) == pallaSyncPeerHash(expectedPrefix)) { "C_LOG_HASH_MISMATCH" }
+            prefixVerified = true
+        }
         items.forEachIndexed { index, value ->
             val item = value.jsonObject
             check(item.keys == setOf("entry", "receipt")) { "C_SCHEMA_VIOLATION" }
@@ -297,9 +312,54 @@ internal class PallaSyncPeerSubjectEnrollment(
                             item.getValue("receipt").toString(),
                         ),
                     ).jsonObject
+            if (prefixSequence == index + 1L) {
+                check(pallaSyncPeerHash(current) == pallaSyncPeerHash(expectedPrefix)) { "C_LOG_HASH_MISMATCH" }
+                prefixVerified = true
+            }
         }
+        check(prefixSequence == null || prefixSequence in 0..finalSequence) { "C_MISSING_DEPENDENCY" }
+        check(prefixVerified) { "C_MISSING_DEPENDENCY" }
         check(pallaSyncPeerHash(current) == pallaSyncPeerHash(authority)) { "C_LOG_HASH_MISMATCH" }
         return current
+    }
+
+    private fun proveAcceptanceEntries(
+        acceptance: JsonObject,
+        submittedJson: String,
+        history: JsonObject,
+    ) {
+        val submitted = Json.parseToJsonElement(submittedJson).jsonObject
+        val objects =
+            listOf("device" to submitted.getValue("device_record")) +
+                submitted.getValue("envelopes").jsonArray.map { "envelope" to it }
+        val receipts = acceptance.getValue("upload_receipts").jsonArray.map { it.jsonObject }
+        check(receipts.size == objects.size && receipts.map { it.getValue("relay_seq") }.toSet().size == receipts.size) {
+            "C_ACCEPTANCE_UNPROVEN"
+        }
+        val entries =
+            history.getValue("items").jsonArray.associate { value ->
+                val item = value.jsonObject
+                item
+                    .getValue("entry")
+                    .jsonObject
+                    .getValue("relay_seq")
+                    .jsonPrimitive.long to item
+            }
+        for (receipt in receipts) {
+            val objectMatches =
+                objects.filter { (_, item) ->
+                    PallaSyncCore.objectHash(item.toString()) ==
+                        receipt.getValue("object_hash").jsonPrimitive.content
+                }
+            check(objectMatches.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
+            val (kind, value) = objectMatches.single()
+            val item = checkNotNull(entries[receipt.getValue("relay_seq").jsonPrimitive.long]) { "C_ACCEPTANCE_UNPROVEN" }
+            check(item.getValue("receipt") == receipt) { "C_ACCEPTANCE_UNPROVEN" }
+            val entry = item.getValue("entry").jsonObject
+            check(entry.getValue("kind").jsonPrimitive.content == kind && entry.getValue("object") == value) {
+                "C_ACCEPTANCE_UNPROVEN"
+            }
+        }
     }
 
     private suspend fun retainVerifiedPrefix(
@@ -453,71 +513,6 @@ internal class PallaSyncPeerSubjectEnrollment(
                 checkpoint.generation == pendingGeneration(context.authority),
         ) { "C_MISSING_DEPENDENCY" }
         return checkpoint
-    }
-
-    private suspend fun appendAcceptance(
-        authority: JsonObject,
-        submittedJson: String,
-        acceptance: JsonObject,
-    ): JsonObject {
-        val submitted = Json.parseToJsonElement(submittedJson).jsonObject
-        val objects =
-            listOf("device" to submitted.getValue("device_record")) +
-                submitted.getValue("envelopes").jsonArray.map { "envelope" to it }
-        var current = authority
-        val receipts =
-            acceptance.getValue("upload_receipts").jsonArray.map { it.jsonObject }.sortedBy {
-                it.getValue("relay_seq").jsonPrimitive.long
-            }
-        check(receipts.size == objects.size) { "C_ACCEPTANCE_UNPROVEN" }
-        for (receipt in receipts) {
-            val match =
-                objects.filter { (_, value) ->
-                    PallaSyncCore.objectHash(value.toString()) ==
-                        receipt.getValue("object_hash").jsonPrimitive.content
-                }
-            check(match.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
-            val (kind, value) = match.single()
-            val entry =
-                buildJsonObject {
-                    put("relay_seq", receipt.getValue("relay_seq"))
-                    put("received_at_ms", receipt.getValue("received_at_ms"))
-                    put("kind", kind)
-                    put("object", value)
-                }
-            current =
-                Json
-                    .parseToJsonElement(
-                        PallaSyncCore.advanceAuthorityHistory(current.toString(), entry.toString(), receipt.toString()),
-                    ).jsonObject
-            val pin = current.getValue("pin").jsonObject
-            val chain = pin.getValue("chain_id").jsonPrimitive.content
-            val generation = current.getValue("generation").jsonPrimitive.long
-            store.transaction {
-                store.protocolDao().retainLogEntry(
-                    LogEntryEntity(
-                        chain,
-                        pin.getValue("log_id").jsonPrimitive.content,
-                        receipt.getValue("relay_seq").jsonPrimitive.long,
-                        pallaSyncPeerHash(entry),
-                        entry.toString(),
-                        receipt.toString(),
-                        "authority_verified",
-                    ),
-                )
-                store.protocolDao().retainAuthority(
-                    AuthorityHistoryEntity(
-                        chain,
-                        "selected_history_entry",
-                        pallaSyncPeerHash(entry),
-                        generation,
-                        entry.toString(),
-                        "authority_verified",
-                    ),
-                )
-            }
-        }
-        return current
     }
 
     private fun capability(
