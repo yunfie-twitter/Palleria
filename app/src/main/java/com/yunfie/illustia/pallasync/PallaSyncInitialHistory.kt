@@ -14,8 +14,13 @@ import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.Request
+import java.util.UUID
+
+private const val SNAPSHOT_RECORD_UUID_VERSION = 4
+private const val SNAPSHOT_RECORD_UUID_VARIANT = 2
 
 /** §11.6: replay the explicitly selected relay in bounded pages, without materializing plaintext. */
+@Suppress("TooManyFunctions") // Keep selected-source bootstrap validation together; snapshot helper is bounded and read-only.
 internal class PallaSyncInitialHistory(
     private val store: PallaSyncLocalStore,
     private val remote: PallaSyncRemoteService,
@@ -78,6 +83,33 @@ internal class PallaSyncInitialHistory(
             generation = cut.getValue("generation").jsonPrimitive.long,
             dataZero = cut.getValue("data_zero").jsonPrimitive.content,
         )
+    }
+
+    /** §10.11: fetch one immutable part and verify its null-sequence receipt against this cut. */
+    suspend fun fetchSnapshotPart(
+        recordId: String,
+        authorityJson: String,
+    ): JsonObject {
+        val uuid = runCatching { UUID.fromString(recordId) }.getOrNull()
+        check(
+            uuid != null &&
+                uuid.version() == SNAPSHOT_RECORD_UUID_VERSION &&
+                uuid.variant() == SNAPSHOT_RECORD_UUID_VARIANT &&
+                uuid.toString() == recordId,
+        ) { "C_SCHEMA_VIOLATION" }
+        val authority = Json.parseToJsonElement(authorityJson).jsonObject
+        val pin = authority.getValue("pin").jsonObject
+        check(pin.getValue("chain_id").jsonPrimitive.content == chain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val response = get(url("snapshots/parts/$recordId"))
+        return json
+            .parseToJsonElement(
+                PallaSyncSnapshotCore.validateSnapshotPartResponse(
+                    response,
+                    recordId,
+                    authority.getValue("head_hash").jsonPrimitive.content,
+                    pin.toString(),
+                ),
+            ).jsonObject
     }
 
     private fun initialAuthority(): JsonObject {

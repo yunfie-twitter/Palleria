@@ -316,6 +316,7 @@
         "Palleria/rust/pallasync-core/src/snapshot.rs",
         "Palleria/rust/pallasync-core/src/crypto.rs",
         "Palleria/rust/pallasync-core/src/epoch_session.rs",
+        "Palleria/rust/pallasync-core/src/attestations.rs",
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotVerifier.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncEpochSession.kt",
@@ -323,19 +324,22 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/SnapshotDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/PallaSyncDatabase.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotCore.kt",
         "PallaSync/src/api/read.rs",
         "PallaSync/src/api/retention.rs"
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/snapshot.rs",
         "Palleria/rust/pallasync-core/tests/epoch_session.rs",
+        "Palleria/rust/pallasync-core/tests/attestations.rs",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStagingTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAttestationJniTest.kt",
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotVerifierAndroidTest.kt",
         "PallaSync/tests/reference/test_snapshot.py"
       ],
       "result": "pending",
-      "remaining": "JNI now verifies the supplied author key's SyncRecord signature and decrypts reserved snapshot frames into the bounded stream verifier; Rust epoch_session covers queryable tags, signature failure, and frame roundtrip. The durable staging layer now verifies the listed record ID/hash plus chain/generation/epoch and resumes only exact ciphertext, with Room conflicts rejected. It is still not connected to authenticated registry resolution or relay compaction/part fetch; complete hot/cold semantic completeness proof, staging-to-install gating after full stream verification, atomic install, trusted handoff, pruning gates/UI, and independent cross-client/relay tests remain.",
+      "remaining": "JNI now verifies the supplied author key's SyncRecord signature and decrypts reserved snapshot frames into the bounded stream verifier; Rust epoch_session covers queryable tags, signature failure, and frame roundtrip. The durable staging layer verifies the listed record ID/hash plus chain/generation/epoch and resumes only exact ciphertext, with Room conflicts rejected. InitialHistory can request a UUIDv4 snapshot part and native validates the relay receipt's object hash and unchanged pinned data head; this fetch helper is not yet orchestrated across a verified compaction list or authenticated registry. Complete hot/cold semantic completeness proof, staging-to-install gating after full stream verification, atomic install, trusted handoff, pruning gates/UI, and independent cross-client/relay tests remain.",
       "verification_scope": "targeted_partial"
     },
     {

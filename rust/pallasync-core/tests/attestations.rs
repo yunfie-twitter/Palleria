@@ -26,6 +26,78 @@ fn entry() -> Value {
     json!({"relay_seq":7,"kind":"record","received_at_ms":1791684000000u64,"object":vector("record")})
 }
 
+#[test]
+fn snapshot_part_readback_binds_signed_record_and_unchanged_data_head() {
+    let relay = ed25519_dalek::SigningKey::from_bytes(&[0x51; 32]);
+    let author = ed25519_dalek::SigningKey::from_bytes(&[0x52; 32]);
+    let chain_id = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc";
+    let log_id = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    let head_hash = hash_bytes(&[0x53; 32]);
+    let pin = RelayPin {
+        origin: "https://relay.example.com".into(),
+        chain_id: chain_id.into(),
+        public_key: base64::Engine::encode(
+            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+            relay.verifying_key().as_bytes(),
+        ),
+        log_id: log_id.into(),
+    };
+    let part = json!({
+        "type":"PALLASYNC-SNAPSHOT-v3",
+        "collection":"pallasync.snapshot/3",
+        "compaction_id":"55555555-5555-4555-8555-555555555555",
+        "part_index":0,
+        "part_count":1,
+        "entries":[]
+    });
+    let record = pallasync_core::crypto::create_sync_snapshot_record(
+        chain_id,
+        0,
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+        0,
+        None,
+        &part,
+        &[0x54; 32],
+        &author,
+        true,
+    )
+    .unwrap();
+    let record = serde_json::to_value(record).unwrap();
+    let mut receipt = json!({
+        "type":"PALLASYNC-UPLOAD-RECEIPT-v3","version":"3.0",
+        "receipt_id":"66666666-6666-4666-8666-666666666666","chain_id":chain_id,
+        "log_id":log_id,"relay_key_id":pin.key_id().unwrap(),"relay_seq":null,
+        "object_hash":object_hash(&record),"entry_hash":null,
+        "previous_head_hash":head_hash,"resulting_head_hash":head_hash,
+        "received_at_ms":1791684000000u64,"transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "transparency_index":1,"transparency_hash":hash_bytes(&[0x55;32]),"relay_signature":""
+    });
+    sign_relay(&relay, &mut receipt, CTX_RECEIPT).unwrap();
+    let response = json!({"record":record,"upload_receipt":receipt});
+    assert_eq!(
+        validate_snapshot_part_response(
+            &response,
+            "11111111-1111-4111-8111-111111111111",
+            &head_hash,
+            &pin,
+        )
+        .unwrap(),
+        response
+    );
+    assert_eq!(
+        validate_snapshot_part_response(
+            &response,
+            "11111111-1111-4111-8111-111111111111",
+            &hash_bytes(&[0x56; 32]),
+            &pin,
+        )
+        .unwrap_err()
+        .0,
+        "C_ACCEPTANCE_UNPROVEN"
+    );
+}
+
 fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
     let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
     let admin = ed25519_dalek::SigningKey::from_bytes(&[0x42; 32]);

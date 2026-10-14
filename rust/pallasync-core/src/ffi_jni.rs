@@ -461,6 +461,32 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_validateSnapshotPartResponse<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    body: JByteArray<'local>,
+    expected_record_id: JString<'local>,
+    expected_head_hash: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let response = public_bytes(&mut env, &body)?;
+        let record_id =
+            read_string(&mut env, &expected_record_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let head_hash =
+            read_string(&mut env, &expected_head_hash).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin = serde_json::from_value(public_value(&mut env, &pin)?)
+            .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::validate_snapshot_part_response(
+            &response, &record_id, &head_hash, &pin,
+        )
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateRecoveryEnvelopeResponse<
     'local,
 >(
