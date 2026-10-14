@@ -45,8 +45,10 @@ class PallaSyncSnapshotInstallDaoTest {
                 )
                 val first = part(index = 0, entry = "{\"kind\":\"header\"}")
                 val second = part(index = 1, entry = "{\"kind\":\"entity\"}")
+                val conflictingRetry = part(index = 0, entry = "{\"kind\":\"tampered\"}")
                 dao.retainVerifiedPart(first.first, first.second)
                 dao.retainVerifiedPart(first.first, first.second)
+                shouldThrow<IllegalStateException> { dao.retainVerifiedPart(conflictingRetry.first, conflictingRetry.second) }
                 dao.verifiedPartEntries(CHAIN, COMPACTION, 0) shouldBe emptyList()
                 dao.entryPage(CHAIN, COMPACTION, -1, -1, 10) shouldBe emptyList()
                 shouldThrow<IllegalStateException> { dao.markVerified(CHAIN, COMPACTION) }

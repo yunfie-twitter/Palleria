@@ -75,6 +75,7 @@ interface SnapshotInstallDao {
         if (old == null) {
             insertInstall(install)
         } else {
+            check(old.status in setOf("staging", "verified")) { "C_SNAPSHOT_INVALID" }
             check(old.copy(status = "staging") == install) { "C_SNAPSHOT_INVALID" }
         }
         check(install(install.chainId, install.compactionId)?.copy(status = "staging") == install) { "C_LOCAL_STORAGE_FULL" }
