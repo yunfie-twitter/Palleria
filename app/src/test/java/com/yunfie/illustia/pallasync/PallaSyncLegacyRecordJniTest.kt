@@ -69,15 +69,21 @@ class PallaSyncLegacyRecordJniTest {
     fun `frozen v21 export transcript commits ordered source records and rejects gaps`() {
         val chainId = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 5 })
 
-        fun transcript(record: String): String =
+        fun transcript(
+            record: String,
+            registryHash: String? = null,
+        ): String =
             PallaSyncLegacyV21Source
-                .ExportTranscript(chainId)
+                .ExportTranscript(chainId, registryHash)
                 .apply {
                     append(PallaSyncLegacyV21Source.SignedRecord(1, record, "record-1", "device-1"))
                 }.finish()
 
         transcript("""{"value":1}""") shouldBe transcript("""{"value":1}""")
         (transcript("""{"value":1}""") != transcript("""{"value":2}""")) shouldBe true
+        val firstRegistry = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 1 })
+        val secondRegistry = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 2 })
+        (transcript("""{"value":1}""", firstRegistry) != transcript("""{"value":1}""", secondRegistry)) shouldBe true
 
         shouldThrow<IllegalStateException> {
             PallaSyncLegacyV21Source.ExportTranscript(chainId).append(

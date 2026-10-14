@@ -66,6 +66,7 @@ internal class PallaSyncLegacyV21Source(
     /** Deterministic local transcript for the ordinary v2.1 read API (§9.3). */
     internal class ExportTranscript(
         chainId: String,
+        verifiedDeviceRegistryHash: String? = null,
     ) {
         private val digest = MessageDigest.getInstance("SHA-256")
         var highWater: Long = 0
@@ -76,6 +77,7 @@ internal class PallaSyncLegacyV21Source(
         init {
             digest.update("PALLASYNC-LEGACY-EXPORT-TRANSCRIPT-v1\u0000".toByteArray(Charsets.UTF_8))
             digest.update(decode(chainId))
+            verifiedDeviceRegistryHash?.let { digest.update(decode(it)) }
         }
 
         fun append(record: SignedRecord) {
@@ -232,7 +234,7 @@ internal class PallaSyncLegacyV21Source(
             if (!freezeConfirmed) return PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
             return try {
                 val initialRegistryHash = registryHash(initialDevices)
-                val transcript = ExportTranscript(chainId)
+                val transcript = ExportTranscript(chainId, initialRegistryHash)
                 var cursor = 0L
                 var hasMore = true
                 while (hasMore) {
