@@ -2052,6 +2052,32 @@ internal class PalleriaSyncCoordinator(
                 if (retained != null) {
                     val archive = retained.toString()
                     check(archive.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
+                    val bundle = retained.getValue("evidence_bundle").jsonObject
+                    val hash = checkNotNull(PallaSyncCore.objectHash(bundle.toString())) { "C_DELETION_UNVERIFIED" }
+                    db.protocolDao().retainEvidence(
+                        ProtectedEvidenceEntity(
+                            context.origin,
+                            context.relayKeyId,
+                            context.state.chainId,
+                            context.logId,
+                            "deletion_evidence_bundle",
+                            index,
+                            hash,
+                            archive,
+                        ),
+                    )
+                    check(
+                        db
+                            .protocolDao()
+                            .evidenceAt(
+                                context.origin,
+                                context.relayKeyId,
+                                context.state.chainId,
+                                context.logId,
+                                "deletion_evidence_bundle",
+                                index,
+                            ).contains(archive),
+                    ) { "C_LOCAL_STORAGE_FULL" }
                     return@withLock archive
                 }
                 val bundle =
@@ -2125,42 +2151,10 @@ internal class PalleriaSyncCoordinator(
                     )
                     archive
                 }
-        val selected =
-            archives.maxByOrNull { archive ->
-                archive
-                    .getValue("evidence_bundle")
-                    .jsonObject
-                    .getValue("witnesses")
-                    .jsonArray.size
-            }
-        if (selected != null) {
-            val selectedWitnesses =
-                selected
-                    .getValue("evidence_bundle")
-                    .jsonObject
-                    .getValue("witnesses")
-                    .jsonArray
-                    .associateBy {
-                        it.jsonObject
-                            .getValue("witness_device_id")
-                            .jsonPrimitive.content
-                    }
-            archives.forEach { archive ->
-                archive
-                    .getValue("evidence_bundle")
-                    .jsonObject
-                    .getValue("witnesses")
-                    .jsonArray
-                    .forEach { witness ->
-                        val device =
-                            witness.jsonObject
-                                .getValue("witness_device_id")
-                                .jsonPrimitive.content
-                        check(selectedWitnesses[device] == witness) { "C_DELETION_UNVERIFIED" }
-                    }
-            }
-        }
-        return selected
+        val merged = PallaSyncDeletionEvidenceMerge.merge(archives) ?: return null
+        val mergedBundle = merged.getValue("evidence_bundle").jsonObject
+        PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), mergedBundle.toString(), context.authorityText)
+        return merged
     }
 
     /** Local file ceremony: one active enrolled device signs one exact receipt after foreground confirmation. */
