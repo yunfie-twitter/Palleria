@@ -289,6 +289,44 @@ interface ProtocolDao {
         seq: Long,
     ): SnapshotAuthorHeadEntity?
 
+    @Query(
+        "SELECT * FROM ps_snapshot_author_gaps WHERE chain_id=:chainId AND generation=:generation AND device_id=:deviceId AND first_seq<=:sequence AND last_seq>=:sequence ORDER BY first_seq",
+    )
+    suspend fun coveringSnapshotAuthorGaps(
+        chainId: String,
+        generation: Long,
+        deviceId: String,
+        sequence: Long,
+    ): List<SnapshotAuthorGapEntity>
+
+    @Query(
+        "DELETE FROM ps_snapshot_author_gaps WHERE chain_id=:chainId AND generation=:generation AND device_id=:deviceId AND first_seq=:first AND last_seq=:last",
+    )
+    suspend fun deleteSnapshotAuthorGap(
+        chainId: String,
+        generation: Long,
+        deviceId: String,
+        first: Long,
+        last: Long,
+    ): Int
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertSnapshotAuthorGap(gap: SnapshotAuthorGapEntity)
+
+    @Transaction
+    suspend fun resolveSnapshotAuthorGaps(
+        chainId: String,
+        generation: Long,
+        deviceId: String,
+        sequence: Long,
+    ) {
+        coveringSnapshotAuthorGaps(chainId, generation, deviceId, sequence).forEach { gap ->
+            check(deleteSnapshotAuthorGap(chainId, generation, deviceId, gap.first, gap.last) == 1) { "C_LOCAL_STORAGE_FULL" }
+            if (gap.first < sequence) insertSnapshotAuthorGap(gap.copy(last = sequence - 1))
+            if (sequence < gap.last) insertSnapshotAuthorGap(gap.copy(first = sequence + 1))
+        }
+    }
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAuthor(author: AuthorSequenceEntity)
 
@@ -692,6 +730,7 @@ interface ProtocolDao {
         deviceId: String,
         inner: PallaSyncInnerRecord,
     ) {
+        resolveSnapshotAuthorGaps(signed.chainId, generation, deviceId, inner.deviceSeq)
         if (author(signed.chainId, generation, deviceId, inner.deviceSeq) == null) {
             val gap =
                 inner.deviceSeq > 1 &&

@@ -502,6 +502,7 @@ class PallaSyncProtocolStoreTest {
                 )
                 db.snapshotStateDao().insertSnapshotAuthorGap(SnapshotAuthorGapEntity(chain, 0, deviceA, 1, 2, log))
                 db.snapshotStateDao().insertSnapshotAuthorGap(SnapshotAuthorGapEntity(chain, 0, deviceA, 4, 4, log))
+                db.snapshotStateDao().insertSnapshotAuthorGap(SnapshotAuthorGapEntity(chain, 0, deviceA, 6, 7, log))
 
                 dao.applyVerifiedRecord(
                     event(record(20), 1),
@@ -515,7 +516,9 @@ class PallaSyncProtocolStoreTest {
                     ),
                 )
                 dao.author(chain, 0, deviceA, 6)?.previousHash shouldBe "snapshot-head-hash"
-                dao.unresolvedAuthorGapCount(chain) shouldBe 2
+                dao.unresolvedAuthorGapCount(chain) shouldBe 3
+                db.snapshotStateDao().authorGapPage(chain, -1, "", 0, 10).map { it.first to it.last } shouldBe
+                    listOf(1L to 2L, 4L to 4L, 7L to 7L)
 
                 val result =
                     runCatching {
@@ -533,7 +536,7 @@ class PallaSyncProtocolStoreTest {
                     }
                 result.exceptionOrNull()?.message shouldBe "C_DEVICE_EQUIVOCATION"
                 dao.entity(chain, SEARCH_HISTORY_SCHEMA_V3, "must-not-apply") shouldBe null
-                dao.unresolvedAuthorGapCount(chain) shouldBe 2
+                dao.unresolvedAuthorGapCount(chain) shouldBe 3
             } finally {
                 db.close()
             }

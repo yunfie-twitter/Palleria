@@ -85,6 +85,14 @@ data class SnapshotAuthorGapEntity(
     @ColumnInfo(name = "compaction_id") val compactionId: String,
 )
 
+/** Ordered union row used to stream the newest author head from retained events and snapshots. */
+data class SnapshotAuthorEvidenceRow(
+    val generation: Long,
+    @ColumnInfo(name = "device_id") val deviceId: String,
+    @ColumnInfo(name = "device_seq") val deviceSeq: Long,
+    @ColumnInfo(name = "record_hash") val recordHash: String,
+)
+
 @Entity(tableName = "ps_entities", primaryKeys = ["chain_id", "collection", "entity_id"])
 data class EntityRegisterEntity(
     @ColumnInfo(name = "chain_id") val chainId: String,

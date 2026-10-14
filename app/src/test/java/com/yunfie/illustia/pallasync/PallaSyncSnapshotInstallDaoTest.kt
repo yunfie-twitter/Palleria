@@ -11,6 +11,7 @@ import com.yunfie.illustia.pallasync.data.SnapshotInstallPartEntity
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -21,6 +22,7 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncSnapshotInstallDaoTest {
     @Test
+    @Suppress("LongMethod")
     fun `verified snapshot atomically replaces logical prefix and keeps author head evidence`() =
         runBlocking<Unit> {
             val db =
@@ -72,6 +74,12 @@ class PallaSyncSnapshotInstallDaoTest {
                 db.protocolDao().entity(CHAIN, COLLECTION, ENTITY)?.operation shouldBe "upsert"
                 db.protocolDao().snapshotAuthorHead(CHAIN, 0, DEVICE, 4)?.recordHash shouldBe AUTHOR_HASH
                 db.protocolDao().unresolvedAuthorGapCount(CHAIN) shouldBe 1L
+                val snapshotEntries = mutableListOf<String>()
+                PallaSyncSnapshotStateReader(
+                    db,
+                    pageSize = 1,
+                ).stream(CHAIN) { snapshotEntries += it.getValue("kind").jsonPrimitive.content }
+                snapshotEntries shouldBe listOf("header", "entity", "author", "author_gap")
                 db.pallaSyncDao().getChainState(CHAIN)?.let {
                     listOf(it.verifiedSeq, it.materializedSeq, it.indexRevision, it.verifiedHash) shouldBe
                         listOf(1L, 1L, 1L, COVERED_HASH)

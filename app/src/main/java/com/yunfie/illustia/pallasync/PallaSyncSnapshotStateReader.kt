@@ -109,46 +109,106 @@ internal class PallaSyncSnapshotStateReader(
         emit: suspend (JsonObject) -> Unit,
     ) {
         var group: Pair<Long, String>? = null
-        var latest: AuthorSequenceEntity? = null
-        scanAuthors(chain) { row ->
+        var latest: com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow? = null
+        scanAuthorEvidence(chain) { row ->
             val key = row.generation to row.deviceId
             if (group != key) {
                 latest?.let { emit(it.snapshotEntry()) }
                 group = key
             }
-            latest = row
+            val previous = latest
+            if (previous?.sameAuthorPosition(row) == true) {
+                check(previous.recordHash == row.recordHash) { "C_DEVICE_EQUIVOCATION" }
+            }
+            if (previous == null || !previous.sameAuthorGroup(row) || row.deviceSeq > previous.deviceSeq) {
+                latest = row
+            }
         }
         latest?.let { emit(it.snapshotEntry()) }
     }
 
+    // This is a bounded merge of two separately paged canonical streams.
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun streamAuthorGaps(
         chain: String,
         emit: suspend (JsonObject) -> Unit,
     ) {
-        var group: Pair<Long, String>? = null
+        var storedGeneration = -1L
+        var storedDevice = ""
+        var storedFirst = 0L
+        var storedPage = emptyList<com.yunfie.illustia.pallasync.data.SnapshotAuthorGapEntity>()
+        var storedIndex = 0
+
+        suspend fun nextStoredGap(): AuthorGapValue? {
+            if (storedIndex == storedPage.size) {
+                storedPage = database.snapshotStateDao().authorGapPage(chain, storedGeneration, storedDevice, storedFirst, pageSize)
+                storedIndex = 0
+            }
+            val row = storedPage.getOrNull(storedIndex++) ?: return null
+            storedGeneration = row.generation
+            storedDevice = row.deviceId
+            storedFirst = row.first
+            return AuthorGapValue(row.generation, row.deviceId, row.first, row.last)
+        }
+
+        var authorGeneration = -1L
+        var authorDevice = ""
+        var authorSequence = -1L
+        var authorPage = emptyList<AuthorSequenceEntity>()
+        var authorIndex = 0
+        var currentGroup: Pair<Long, String>? = null
         var previousSequence = 0L
-        scanAuthors(chain) { row ->
-            val key = row.generation to row.deviceId
-            if (group != key) {
-                group = key
-                previousSequence = 0
+
+        suspend fun nextAuthorRow(): AuthorSequenceEntity? {
+            if (authorIndex == authorPage.size) {
+                authorPage = database.snapshotStateDao().authorPage(chain, authorGeneration, authorDevice, authorSequence, pageSize)
+                authorIndex = 0
             }
-            if (row.deviceSeq > previousSequence + 1) {
-                emit(authorGap(key, previousSequence + 1, row.deviceSeq - 1))
+            val row = authorPage.getOrNull(authorIndex++) ?: return null
+            authorGeneration = row.generation
+            authorDevice = row.deviceId
+            authorSequence = row.deviceSeq
+            return row
+        }
+
+        suspend fun nextSuffixGap(): AuthorGapValue? {
+            while (true) {
+                val row = nextAuthorRow() ?: return null
+                val key = row.generation to row.deviceId
+                if (currentGroup != key) {
+                    currentGroup = key
+                    previousSequence = database.snapshotStateDao().authorHead(chain, row.generation, row.deviceId)?.deviceSeq ?: 0
+                }
+                if (row.deviceSeq <= previousSequence) continue
+                val firstMissing = previousSequence + 1
+                previousSequence = row.deviceSeq
+                if (firstMissing < row.deviceSeq) return AuthorGapValue(row.generation, row.deviceId, firstMissing, row.deviceSeq - 1)
             }
-            previousSequence = row.deviceSeq
+        }
+
+        var stored = nextStoredGap()
+        var suffix = nextSuffixGap()
+        while (stored != null || suffix != null) {
+            if (stored != null && (suffix == null || stored.compareTo(suffix) <= 0)) {
+                emit(authorGap(stored.generation to stored.deviceId, stored.first, stored.last))
+                stored = nextStoredGap()
+            } else {
+                val row = checkNotNull(suffix)
+                emit(authorGap(row.generation to row.deviceId, row.first, row.last))
+                suffix = nextSuffixGap()
+            }
         }
     }
 
-    private suspend fun scanAuthors(
+    private suspend fun scanAuthorEvidence(
         chain: String,
-        consume: suspend (AuthorSequenceEntity) -> Unit,
+        consume: suspend (com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow) -> Unit,
     ) {
         var generation = -1L
         var device = ""
         var sequence = -1L
         while (true) {
-            val rows = database.snapshotStateDao().authorPage(chain, generation, device, sequence, pageSize)
+            val rows = database.snapshotStateDao().authorEvidencePage(chain, generation, device, sequence, pageSize)
             if (rows.isEmpty()) return
             rows.forEach { consume(it) }
             rows.last().also {
@@ -219,7 +279,7 @@ internal class PallaSyncSnapshotStateReader(
         }
     }
 
-    private fun AuthorSequenceEntity.snapshotEntry(): JsonObject =
+    private fun com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow.snapshotEntry(): JsonObject =
         buildJsonObject {
             put("kind", "author")
             put("generation", generation)
@@ -227,6 +287,14 @@ internal class PallaSyncSnapshotStateReader(
             put("device_seq", deviceSeq)
             put("record_hash", recordHash)
         }
+
+    private fun com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow.sameAuthorPosition(
+        other: com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow,
+    ): Boolean = sameAuthorGroup(other) && deviceSeq == other.deviceSeq
+
+    private fun com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow.sameAuthorGroup(
+        other: com.yunfie.illustia.pallasync.data.SnapshotAuthorEvidenceRow,
+    ): Boolean = generation == other.generation && deviceId == other.deviceId
 
     private fun ProjectionStateEntity.snapshotEntry(): JsonObject {
         require(projectionLimit > 0 && (evictionKey == null) == (evictionEntity == null)) { "C_SNAPSHOT_INVALID" }
@@ -311,6 +379,16 @@ internal class PallaSyncSnapshotStateReader(
         val recordId: String,
         val opIndex: Int,
     )
+
+    private data class AuthorGapValue(
+        val generation: Long,
+        val deviceId: String,
+        val first: Long,
+        val last: Long,
+    ) : Comparable<AuthorGapValue> {
+        override fun compareTo(other: AuthorGapValue): Int =
+            compareValuesBy(this, other, AuthorGapValue::generation, AuthorGapValue::deviceId, AuthorGapValue::first)
+    }
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 200
