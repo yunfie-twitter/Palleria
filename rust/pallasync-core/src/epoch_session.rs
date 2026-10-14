@@ -249,6 +249,30 @@ pub fn create_snapshot_record(
     })
 }
 
+/// Start a snapshot state commitment stream using the record key already held by this epoch
+/// session. The key remains inside Rust and is copied only into the one-shot HMAC state.
+pub fn begin_snapshot_state_stream(
+    handle: u64,
+    header: &Value,
+    compaction_id: &str,
+    part_count: u32,
+) -> Result<u64> {
+    with(handle, |session| {
+        if header.get("chain_id").and_then(Value::as_str) != Some(session.context.chain_id.as_str())
+            || header.get("generation").and_then(Value::as_u64)
+                != Some(u64::from(session.context.generation))
+        {
+            return Err(ClientError("C_SNAPSHOT_INVALID"));
+        }
+        crate::snapshot::begin_verification(
+            &session.keys.record_key,
+            header,
+            compaction_id,
+            part_count,
+        )
+    })
+}
+
 pub fn decrypt_device(handle: u64, value: &Value) -> Result<Value> {
     wire::validate(value, "device")?;
     let record: DeviceRecord =

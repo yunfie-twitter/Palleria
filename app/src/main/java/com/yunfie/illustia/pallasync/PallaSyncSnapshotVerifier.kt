@@ -58,5 +58,25 @@ internal class PallaSyncSnapshotVerifier private constructor(
             check(handle != 0L) { "C_SNAPSHOT_INVALID" }
             return PallaSyncSnapshotVerifier(handle)
         }
+
+        /** Producer-only entry point; the record key stays inside the epoch session in Rust. */
+        fun beginFromEpochSession(
+            epochSession: PallaSyncEpochSession,
+            headerJson: String,
+            compactionId: String,
+            partCount: Int,
+        ): PallaSyncSnapshotVerifier {
+            require(partCount in 1..MAX_SNAPSHOT_PARTS) { "C_SNAPSHOT_INVALID" }
+            val canonicalHeader = checkNotNull(PallaSyncCore.canonicalJson(headerJson)) { "C_SNAPSHOT_INVALID" }
+            val handle =
+                PallaSyncSnapshotCore.beginFromEpochSession(
+                    epochSession.handle,
+                    canonicalHeader,
+                    compactionId,
+                    partCount,
+                )
+            check(handle != 0L) { "C_SNAPSHOT_INVALID" }
+            return PallaSyncSnapshotVerifier(handle)
+        }
     }
 }

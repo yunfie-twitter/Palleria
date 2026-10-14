@@ -15,7 +15,6 @@ import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.Request
-import java.util.Base64
 import java.util.UUID
 
 private const val SNAPSHOT_RECORD_UUID_VERSION = 4
@@ -153,7 +152,6 @@ internal class PallaSyncInitialHistory(
         keystore: PallaSyncKeystore,
     ) {
         val input = snapshotVerificationInput(staging.compactionRecord(), pinJson, authority, deviceKeys, keystore)
-        val materializedEpochKeys = PallaSyncEpochSession.materialize(input.epochKeys, authority.toString())
         PallaSyncEpochSession.begin(input.epochKeys, authority.toString(), input.epochNumber).use { epochSession ->
             val first = stagedPart(0, staging, pinJson)
             val firstRecord = Json.parseToJsonElement(first.signedJson).jsonObject
@@ -167,7 +165,7 @@ internal class PallaSyncInitialHistory(
                     .firstOrNull()
                     ?.jsonObject ?: error("C_SNAPSHOT_INVALID")
             validateSnapshotHeader(header, input)
-            verifyRemainingSnapshotParts(staging, pinJson, input, materializedEpochKeys, firstPlaintext, header, epochSession)
+            verifyRemainingSnapshotParts(staging, pinJson, input, firstPlaintext, header, epochSession)
         }
     }
 
@@ -294,14 +292,17 @@ internal class PallaSyncInitialHistory(
         staging: PallaSyncSnapshotStaging,
         pinJson: String,
         input: SnapshotVerificationInput,
-        materializedEpochKeys: PallaSyncKeySnapshot,
         firstPlaintext: String,
         header: JsonObject,
         epochSession: PallaSyncEpochSession,
     ) {
-        val recordKey = Base64.getUrlDecoder().decode(materializedEpochKeys.encryptionKeyBase64Url)
-        try {
-            PallaSyncSnapshotVerifier.begin(recordKey, header.toString(), input.compactionId, staging.partCount).use { verifier ->
+        PallaSyncSnapshotVerifier
+            .beginFromEpochSession(
+                epochSession,
+                header.toString(),
+                input.compactionId,
+                staging.partCount,
+            ).use { verifier ->
                 verifier.acceptDecryptedAuthenticatedPart(firstPlaintext)
                 for (partIndex in 1 until staging.partCount) {
                     currentCoroutineContext().ensureActive()
@@ -316,9 +317,6 @@ internal class PallaSyncInitialHistory(
                         .jsonPrimitive.content,
                 )
             }
-        } finally {
-            recordKey.fill(0)
-        }
     }
 
     private suspend fun stagedPart(

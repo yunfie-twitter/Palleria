@@ -40,6 +40,8 @@ abstract class PallaSyncDatabase : RoomDatabase() {
 
     abstract fun snapshotDao(): SnapshotDao
 
+    abstract fun snapshotStateDao(): SnapshotStateDao
+
     abstract fun deletionEvidenceDao(): DeletionEvidenceDao
 
     companion object {

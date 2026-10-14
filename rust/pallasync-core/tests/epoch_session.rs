@@ -4,6 +4,7 @@ use pallasync_core::{
     crypto,
     epoch_session::{self, Context},
     models::{InnerRecord, Operation},
+    snapshot,
     strict::verify::decode,
 };
 use serde_json::json;
@@ -23,6 +24,47 @@ fn context(profile: &str) -> Context {
         epoch_commitment: keys.epoch_commitment_b64u.clone(),
         metadata_profile: profile.into(),
     }
+}
+
+#[test]
+fn snapshot_stream_uses_the_epoch_record_key_without_returning_it() {
+    let secret = std::array::from_fn::<_, 32, _>(|n| 0xa0 + n as u8);
+    let handle = epoch_session::begin(context("queryable"), &secret).unwrap();
+    let header = json!({
+        "kind":"header",
+        "chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+        "generation":0,
+        "log_id":"44444444-4444-4444-8444-444444444444",
+        "covered_through_seq":0,
+        "covered_log_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "epoch_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "lamport_max":0
+    });
+    let compaction_id = "55555555-5555-4555-8555-555555555555";
+    let mut wrong_chain = header.clone();
+    wrong_chain["chain_id"] = json!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    assert_eq!(
+        epoch_session::begin_snapshot_state_stream(handle, &wrong_chain, compaction_id, 1)
+            .unwrap_err()
+            .0,
+        "C_SNAPSHOT_INVALID"
+    );
+    let verifier =
+        epoch_session::begin_snapshot_state_stream(handle, &header, compaction_id, 1).unwrap();
+    snapshot::verification_part(
+        verifier,
+        &json!({
+            "type":"PALLASYNC-SNAPSHOT-v3",
+            "collection":"pallasync.snapshot/3",
+            "compaction_id":compaction_id,
+            "part_index":0,
+            "part_count":1,
+            "entries":[header]
+        }),
+    )
+    .unwrap();
+    assert_ne!(snapshot::finish_commitment(verifier).unwrap(), "");
+    epoch_session::end(handle);
 }
 
 #[test]

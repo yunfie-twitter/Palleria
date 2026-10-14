@@ -34,7 +34,7 @@ class PallaSyncSnapshotVerifierAndroidTest {
                 put("log_id", "44444444-4444-4444-8444-444444444444")
                 put("covered_through_seq", 0)
                 put("covered_log_hash", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-                put("epoch_hash", "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+                put("epoch_hash", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
                 put("lamport_max", 0)
             }
         val part =
@@ -48,6 +48,16 @@ class PallaSyncSnapshotVerifierAndroidTest {
             }
         val seed = ByteArray(32) { 9 }
         PallaSyncEpochSession.begin(context, secret).use { session ->
+            PallaSyncSnapshotVerifier
+                .beginFromEpochSession(
+                    session,
+                    header.toString(),
+                    "55555555-5555-4555-8555-555555555555",
+                    1,
+                ).use { verifier ->
+                    verifier.acceptDecryptedAuthenticatedPart(checkNotNull(PallaSyncCore.canonicalJson(part.toString())))
+                    assertNotNull(verifier.finishCommitment())
+                }
             val record =
                 Json
                     .parseToJsonElement(

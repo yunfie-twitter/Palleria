@@ -17,6 +17,14 @@ internal object PallaSyncSnapshotCore {
         partCount: Int,
     ): Long
 
+    /** Start a producer commitment stream with the epoch session's private record key. */
+    external fun beginFromEpochSession(
+        epochHandle: Long,
+        headerJson: String,
+        compactionId: String,
+        partCount: Int,
+    ): Long
+
     external fun acceptVerifiedPart(
         handle: Long,
         partJson: String,

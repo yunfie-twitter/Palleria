@@ -1504,6 +1504,39 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_beginFromEpochSession<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    epoch_handle: jlong,
+    header: JString<'local>,
+    compaction_id: JString<'local>,
+    part_count: jint,
+) -> jlong {
+    let result = (|| {
+        let header = public_value(&mut env, &header)?;
+        let compaction_id =
+            read_string(&mut env, &compaction_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::epoch_session::begin_snapshot_state_stream(
+            epoch_handle as u64,
+            &header,
+            &compaction_id,
+            part_count
+                .try_into()
+                .map_err(|_| ClientError("C_SNAPSHOT_INVALID"))?,
+        )
+    })();
+    match result {
+        Ok(handle) => handle as jlong,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_acceptVerifiedPart<
     'local,
 >(
