@@ -15,7 +15,7 @@ internal object PallaSyncSnapshotSemanticComparator {
         epochHash: String,
         coveredSeq: Long,
         coveredHash: String,
-    ): Boolean {
+    ): Long? {
         val local = store.dao.getChainState(chainId)
         val matches =
             local != null &&
@@ -27,12 +27,12 @@ internal object PallaSyncSnapshotSemanticComparator {
                     local.materializedSeq == coveredSeq,
                     local.verifiedHash == coveredHash,
                 ).all { it }
-        if (!matches) return false
+        if (!matches) return null
         val reader = PallaSyncSnapshotStateReader(store.snapshotDatabase())
         compare(store.snapshotInstallDao(), chainId, compactionId) { emit ->
             reader.stream(chainId) { entry -> emit(entry.toString()) }
         }
-        return matches
+        return local.indexRevision
     }
 
     suspend fun compare(

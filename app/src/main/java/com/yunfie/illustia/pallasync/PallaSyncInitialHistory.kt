@@ -140,9 +140,9 @@ internal class PallaSyncInitialHistory(
 
     /**
      * Verify every staged part against the replay-authenticated compaction and registry, then
-     * stream its canonical entries into the native bounded commitment verifier. This deliberately
-     * does not install the snapshot or authorize pruning: callers still need full-state semantic
-     * comparison, verified suffix application, and an atomic staging-database handoff (§16.6–16.7).
+     * stream its canonical entries into the native bounded commitment verifier. Installation is
+     * allowed only when the entire local replay is at the same checkpoint and has identical state;
+     * this method does not establish trust for a snapshot-only bootstrap or authorize pruning.
      */
     suspend fun verifySnapshotParts(
         staging: PallaSyncSnapshotStaging,
@@ -186,16 +186,20 @@ internal class PallaSyncInitialHistory(
         stateStager.complete()
         val coveredSeq = compaction.getValue("covered_through_seq").jsonPrimitive.long
         val coveredHash = compaction.getValue("covered_log_hash").jsonPrimitive.content
-        PallaSyncSnapshotSemanticComparator.compareWithExactLocalReplay(
-            store,
-            chain,
-            input.compactionId,
-            input.logId,
-            input.expectedGeneration,
-            input.epochHash,
-            coveredSeq,
-            coveredHash,
-        )
+        val exactReplayRevision =
+            PallaSyncSnapshotSemanticComparator.compareWithExactLocalReplay(
+                store,
+                chain,
+                input.compactionId,
+                input.logId,
+                input.expectedGeneration,
+                input.epochHash,
+                coveredSeq,
+                coveredHash,
+            )
+        if (exactReplayRevision != null) {
+            store.snapshotInstallDao().installVerifiedState(chain, input.compactionId, exactReplayRevision)
+        }
     }
 
     private suspend fun snapshotVerificationInput(
