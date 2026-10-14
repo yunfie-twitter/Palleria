@@ -292,7 +292,7 @@ fun PallaSyncSettingsScreen(
                                     PallaSyncDeletionEvidenceArchive.readBounded(it, PallaSyncDeletionEvidenceArchive.MAX_BYTES)
                                 }
                             }
-                        val archive = bytes.toString(Charsets.UTF_8)
+                        val archive = PallaSyncDeletionEvidenceArchive.decodeUtf8(bytes)
                         val value = Json.parseToJsonElement(archive).jsonObject
                         check(value.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
                         witnessInputPreview = checkNotNull(syncManager.previewDeletionIntentWitness(archive)) { "C_DELETION_UNVERIFIED" }

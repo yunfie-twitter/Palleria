@@ -2,6 +2,8 @@ package com.yunfie.illustia.pallasync
 
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 
 /** Bounded SAF import for the public §7.12.5 receipt-and-witness archive. */
 internal object PallaSyncDeletionEvidenceArchive {
@@ -30,6 +32,15 @@ internal object PallaSyncDeletionEvidenceArchive {
             output.write(buffer, 0, read)
         }
     }
+
+    /** Decode an imported evidence archive without replacing malformed UTF-8 with U+FFFD. */
+    fun decodeUtf8(bytes: ByteArray): String =
+        Charsets.UTF_8
+            .newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .decode(ByteBuffer.wrap(bytes))
+            .toString()
 
     private const val BUFFER_SIZE = 8_192
 }

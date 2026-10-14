@@ -148,7 +148,7 @@ fun PallaSyncDevicesScreen(
                                     PallaSyncPeerTransferFile.read(input).toByteArray(Charsets.UTF_8)
                                 }
                             }
-                        val value = bytes.toString(Charsets.UTF_8)
+                        val value = PallaSyncDeletionEvidenceArchive.decodeUtf8(bytes)
                         val objectValue = Json.parseToJsonElement(value).jsonObject
                         check(objectValue.keys == setOf("device_record", "envelopes", "admin_operation")) { "C_SCHEMA_VIOLATION" }
                         submittedPeerBody = value
