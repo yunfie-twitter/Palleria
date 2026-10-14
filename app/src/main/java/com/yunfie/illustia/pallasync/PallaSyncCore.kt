@@ -680,6 +680,15 @@ object PallaSyncCore {
         devicePublicKeyBase64: String,
     ): Boolean
 
+    /** Derives the legacy v2.1 identity in a transient native operation and compares public pins. */
+    external fun validateLegacyV21Identity(
+        seedPhrase: String,
+        passphrase: String,
+        chainId: String,
+        chainSaltBase64: String,
+        adminPublicKeyBase64: String,
+    ): Boolean
+
     /** Verifies a device record against its embedded public key. */
     external fun verifyDeviceRecord(recordJson: String): Boolean
 

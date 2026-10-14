@@ -2018,6 +2018,46 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyLe
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateLegacyV21Identity<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    seed_phrase: JString<'local>,
+    passphrase: JString<'local>,
+    chain_id: JString<'local>,
+    chain_salt: JString<'local>,
+    admin_public_key: JString<'local>,
+) -> jboolean {
+    let (
+        Some(seed_phrase),
+        Some(passphrase),
+        Some(chain_id),
+        Some(chain_salt),
+        Some(admin_public_key),
+    ) = (
+        read_string(&mut env, &seed_phrase),
+        read_string(&mut env, &passphrase),
+        read_string(&mut env, &chain_id),
+        read_string(&mut env, &chain_salt),
+        read_string(&mut env, &admin_public_key),
+    )
+    else {
+        return 0;
+    };
+    let result = (|| {
+        let seed_phrase = zeroize::Zeroizing::new(seed_phrase);
+        let passphrase = zeroize::Zeroizing::new(passphrase);
+        let salt = crate::strict::verify::decode(&chain_salt, Some(32))
+            .map_err(|_| "C_SCHEMA_VIOLATION")?;
+        let salt: [u8; 32] = salt.try_into().map_err(|_| "C_SCHEMA_VIOLATION")?;
+        let keys = crypto::derive_legacy_v21_keys(&seed_phrase, &passphrase, &salt)?;
+        crypto::legacy_v21_identity_matches(&keys, &chain_id, &chain_salt, &admin_public_key)
+    })();
+    u8::from(result.unwrap_or(false))
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyDeviceRecord<
     'local,
 >(

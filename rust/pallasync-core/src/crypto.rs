@@ -1224,6 +1224,130 @@ pub const LEGACY_SYNC_RECORD_AAD: &[u8] = b"PALLASYNC-AAD-v2";
 pub const LEGACY_DEVICE_RECORD_AAD: &[u8] = b"PALLASYNC-DEVICE-AAD-v2";
 pub const CTX_SYNC_RECORD_V21: &[u8] = b"PALLASYNC-SYNC-RECORD-v2.1\0";
 
+/// Ephemeral v2.1 root derivation state for the explicit §9 migration ceremony.
+/// It is never serialized or stored in Room; dropping it zeroizes its PRK and salt.
+#[derive(Zeroize, ZeroizeOnDrop)]
+pub struct LegacyV21Keys {
+    pub chain_id: String,
+    pub admin_public_key: String,
+    chain_salt: [u8; 32],
+    prk: [u8; 32],
+}
+
+/// Derive only from a user-supplied legacy salt. v2.1 random salts cannot be reconstructed
+/// from the mnemonic alone, as §9.1 explicitly warns.
+pub fn derive_legacy_v21_keys(
+    seed_phrase: &str,
+    passphrase: &str,
+    chain_salt: &[u8; 32],
+) -> Result<LegacyV21Keys, String> {
+    let root_seed = Zeroizing::new(derive_root_seed(seed_phrase, passphrase)?);
+    let mut chain_id_hasher = Sha256::new();
+    chain_id_hasher.update(b"PALLASYNC-CHAIN-ID-v2.1\0");
+    chain_id_hasher.update(chain_salt);
+    chain_id_hasher.update(&*root_seed);
+    let chain_id_digest: [u8; 32] = chain_id_hasher.finalize().into();
+    let chain_id = URL_SAFE_NO_PAD.encode(chain_id_digest);
+
+    let (prk, _) = Hkdf::<Sha256>::extract(Some(chain_salt), &*root_seed);
+    let prk: [u8; 32] = prk.into();
+    let hk = Hkdf::<Sha256>::from_prk(&prk).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let mut admin_seed = Zeroizing::new([0u8; 32]);
+    hk.expand(b"PALLASYNC-v2.1\0admin-ed25519\0", &mut *admin_seed)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let admin_key = SigningKey::from_bytes(&admin_seed);
+    let admin_public_key = URL_SAFE_NO_PAD.encode(admin_key.verifying_key().as_bytes());
+    drop(admin_key);
+
+    Ok(LegacyV21Keys {
+        chain_id,
+        admin_public_key,
+        chain_salt: *chain_salt,
+        prk,
+    })
+}
+
+/// Verify the two legacy authority values reproducible from the explicitly selected source.
+/// This does not claim to verify ChainParameters.signature, whose context v2.1 does not define.
+pub fn legacy_v21_identity_matches(
+    keys: &LegacyV21Keys,
+    chain_id: &str,
+    chain_salt_base64_url: &str,
+    admin_public_key: &str,
+) -> Result<bool, String> {
+    let supplied_salt = crate::strict::verify::decode(chain_salt_base64_url, Some(32))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    Ok(supplied_salt.as_slice() == keys.chain_salt
+        && chain_id == keys.chain_id
+        && admin_public_key == keys.admin_public_key)
+}
+
+pub fn legacy_v21_record_key(
+    keys: &LegacyV21Keys,
+    epoch: u32,
+) -> Result<Zeroizing<[u8; 32]>, String> {
+    let hk = Hkdf::<Sha256>::from_prk(&keys.prk).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let mut epoch_info = b"PALLASYNC-v2.1\0epoch\0".to_vec();
+    epoch_info.extend_from_slice(&epoch.to_be_bytes());
+    let mut epoch_key = Zeroizing::new([0u8; 32]);
+    hk.expand(&epoch_info, &mut *epoch_key)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let record_hk = Hkdf::<Sha256>::from_prk(&*epoch_key).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let mut record_key = Zeroizing::new([0u8; 32]);
+    record_hk
+        .expand(b"PALLASYNC-v2.1\0record\0", &mut *record_key)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    Ok(record_key)
+}
+
+/// Authenticate and decrypt a v2.1 record inside the native migration boundary.
+/// The caller must keep the returned zeroizing buffer local and never persist it.
+pub fn decrypt_sync_record_v21_json(
+    record_json: &str,
+    device_public_key_base64_url: &str,
+    keys: &LegacyV21Keys,
+) -> Result<Zeroizing<Vec<u8>>, String> {
+    if !verify_sync_record_v21_json(record_json, device_public_key_base64_url)? {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    let record: models::legacy::SyncRecordV21 =
+        serde_json::from_value(value).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if record.chain_id != keys.chain_id || record.epoch < 0 || record.epoch > u32::MAX as i64 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let nonce = crate::strict::verify::decode(&record.payload_nonce, Some(24))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let ciphertext = crate::strict::verify::decode(&record.encrypted_payload, None)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let aad_object = models::legacy::RecordAADV21 {
+        protocol_version: &record.protocol_version,
+        chain_id: &record.chain_id,
+        record_id: &record.record_id,
+        epoch: record.epoch,
+        collection_name: &record.collection_name,
+        action: &record.action,
+        device_id: &record.device_id,
+        lamport: record.lamport,
+        created_at_ms: record.created_at_ms,
+    };
+    let aad = models::to_jcs(&aad_object).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let record_key = legacy_v21_record_key(keys, record.epoch as u32)?;
+    let plaintext = Zeroizing::new(
+        XChaCha20Poly1305::new((&*record_key).into())
+            .decrypt(
+                XNonce::from_slice(&nonce),
+                Payload {
+                    msg: &ciphertext,
+                    aad: &aad,
+                },
+            )
+            .map_err(|_| "C_AEAD_FAILURE")?,
+    );
+    crate::strict::jcs::parse(&plaintext).map_err(|_| "C_AEAD_FAILURE")?;
+    Ok(plaintext)
+}
+
 /// Verify an immutable v2.1 SyncRecord during the explicit §9 migration flow.
 /// Relay-assigned sequence members are permitted but removed before signature verification.
 pub fn verify_sync_record_v21_json(

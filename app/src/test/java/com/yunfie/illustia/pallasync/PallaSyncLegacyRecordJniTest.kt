@@ -5,6 +5,27 @@ import org.junit.Test
 
 class PallaSyncLegacyRecordJniTest {
     @Test
+    fun `v21 root inputs validate only the supplied legacy public identity`() {
+        val mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon " +
+                "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art"
+        val salt = "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ"
+        val chainId = "g76yyPCKGrNpNrfPgHGqdNsMmTLCZMg1lawtIPENYcM"
+        val adminPublicKey = "sidFYvDxRt_JRoVJDO4FSBEqpI6Ty4e08S0wKUGBu0I"
+
+        fun matches(
+            passphrase: String,
+            candidateChainId: String = chainId,
+            candidateSalt: String = salt,
+        ) = PallaSyncCore.validateLegacyV21Identity(mnemonic, passphrase, candidateChainId, candidateSalt, adminPublicKey)
+
+        matches("") shouldBe true
+        matches("wrong passphrase") shouldBe false
+        matches("", candidateChainId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") shouldBe false
+        matches("", candidateSalt = "not-a-salt") shouldBe false
+    }
+
+    @Test
     fun `v21 record signature uses legacy context and omits relay assigned sequences`() {
         val publicKey = "Zs1gi5KLiOUODv6qM_rxxDzv4HKUsLh-n-CrpqPPdjM"
         val record =
