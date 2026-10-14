@@ -739,6 +739,7 @@ internal class PalleriaSyncCoordinator(
                     checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
                         "C_BOOTSTRAP_TRUST_REQUIRED"
                     }
+                refreshPeerHistory(base, activeChainStateLocked()?.chainId ?: error("C_BOOTSTRAP_TRUST_REQUIRED"))
                 peerApprover.offer(base, explicitlyRequested = true)
             }
         }
@@ -751,6 +752,11 @@ internal class PalleriaSyncCoordinator(
                     transcript.offer
                         .getValue("chain_id")
                         .jsonPrimitive.content
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                refreshPeerHistory(base, chain)
                 val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 check(state.chainId == chain && transcript.stage == PallaSyncPeerJournal.Stage.OFFERED) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 val authority = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
@@ -759,10 +765,6 @@ internal class PalleriaSyncCoordinator(
                 ) {
                     "C_ROLLBACK_DETECTED"
                 }
-                val base =
-                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
-                        "C_BOOTSTRAP_TRUST_REQUIRED"
-                    }
                 exportPeerHistory(chain, state, authority, transcript.authorityHash, base)
             }
         }
@@ -832,6 +834,21 @@ internal class PalleriaSyncCoordinator(
             "\"authority\":$authority,\"items\":[$serializedEntries]}"
     }
 
+    private suspend fun refreshPeerHistory(
+        base: HttpUrl,
+        chain: String,
+    ) {
+        val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        check(state.chainId == chain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val currentKeys = checkNotNull(keysForChainLocked(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        when (val result = liveHistory.pull(base, chain, currentKeys)) {
+            is PallaSyncHttpResult.Success -> Unit
+            is PallaSyncHttpResult.ProtocolError -> error(result.message)
+            is PallaSyncHttpResult.Retryable -> error(result.message)
+            PallaSyncHttpResult.Gone -> error("C_DELETION_UNVERIFIED")
+        }
+    }
+
     internal suspend fun peerAcceptanceTransfer(transcript: PallaSyncPeerJournal.Transcript): String =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
@@ -884,6 +901,12 @@ internal class PalleriaSyncCoordinator(
                     checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
                         "C_BOOTSTRAP_TRUST_REQUIRED"
                     }
+                refreshPeerHistory(
+                    base,
+                    transcript.offer
+                        .getValue("chain_id")
+                        .jsonPrimitive.content,
+                )
                 peerApprover.pendingRequest(base, transcript)
             }
         }
@@ -899,6 +922,12 @@ internal class PalleriaSyncCoordinator(
                     checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
                         "C_BOOTSTRAP_TRUST_REQUIRED"
                     }
+                refreshPeerHistory(
+                    base,
+                    transcript.offer
+                        .getValue("chain_id")
+                        .jsonPrimitive.content,
+                )
                 val session = peerApprover.begin(base, transcript)
                 try {
                     val (bound, sas) =
@@ -923,6 +952,12 @@ internal class PalleriaSyncCoordinator(
                     checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
                         "C_BOOTSTRAP_TRUST_REQUIRED"
                     }
+                refreshPeerHistory(
+                    base,
+                    work.transcript.offer
+                        .getValue("chain_id")
+                        .jsonPrimitive.content,
+                )
                 val next = peerApprover.confirmedTransfer(base, work.transcript, work.session, work.sas, confirmed = true)
                 work.transcript = next
                 next
@@ -952,6 +987,12 @@ internal class PalleriaSyncCoordinator(
                         "C_BOOTSTRAP_TRUST_REQUIRED"
                     }
                 try {
+                    refreshPeerHistory(
+                        base,
+                        work.transcript.offer
+                            .getValue("chain_id")
+                            .jsonPrimitive.content,
+                    )
                     val next = peerApprover.approve(base, work.transcript, work.session, submittedBody)
                     work.transcript = next
                     next

@@ -15,6 +15,22 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35], application = android.app.Application::class)
 class PallaSyncPeerJournalTest {
     @Test
+    fun `an authority head change invalidates an in-flight enrollment offer`() {
+        val prefs =
+            ApplicationProvider.getApplicationContext<Context>().getSharedPreferences(
+                "peer-journal-unit-authority-change",
+                Context.MODE_PRIVATE,
+            )
+        prefs.edit().clear().commit()
+        val journal = PallaSyncPeerJournal(prefs)
+        val transcript = journal.create(buildJsonObject { put("request_id", "authority-change") }, "head-before")
+
+        journal.requireCurrentAuthority(transcript, "head-before")
+        val failure = runCatching { journal.requireCurrentAuthority(transcript, "head-after") }.exceptionOrNull()
+        failure?.message shouldBe "C_MISSING_DEPENDENCY"
+    }
+
+    @Test
     fun `a consumed offer or stale update cannot bind a second subject`() {
         val prefs =
             ApplicationProvider.getApplicationContext<Context>().getSharedPreferences(

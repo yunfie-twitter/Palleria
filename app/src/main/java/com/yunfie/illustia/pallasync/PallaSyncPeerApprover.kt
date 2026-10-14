@@ -19,6 +19,7 @@ import java.util.UUID
 /** §§10.7/18.1: only an active protected identity creates/offers/approves. Every
  * chain request passes the common privacy gate. The foreground caller owns the SAS session.
  */
+@Suppress("TooManyFunctions")
 internal class PallaSyncPeerApprover(
     private val store: PallaSyncLocalStore,
     private val policy: PallaSyncPolicyGate,
@@ -60,6 +61,7 @@ internal class PallaSyncPeerApprover(
         val qr = candidate.offer
         val chain = qr.getValue("chain_id").jsonPrimitive.content
         val authority = authority(base, chain)
+        requireOfferAuthority(candidate, authority)
         val device = checkNotNull(keys.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val body =
             buildJsonObject {
@@ -98,6 +100,7 @@ internal class PallaSyncPeerApprover(
                 .getValue("chain_id")
                 .jsonPrimitive.content
         val authority = authority(base, chain)
+        requireOfferAuthority(saved, authority)
         val device = checkNotNull(keys.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val signing = Base64.getUrlDecoder().decode(device.signingKeyBase64Url)
         return try {
@@ -122,6 +125,7 @@ internal class PallaSyncPeerApprover(
                 .getValue("chain_id")
                 .jsonPrimitive.content
         val authority = authority(base, chain)
+        requireOfferAuthority(saved, authority)
         val device = checkNotNull(keys.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val binding =
             buildJsonObject {
@@ -197,6 +201,7 @@ internal class PallaSyncPeerApprover(
                     .getValue("chain_id")
                     .jsonPrimitive.content
             val authority = authority(base, chain)
+            requireOfferAuthority(saved, authority)
             val now = policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base))
             session.confirm(observedSas, confirmed, now)
             val certificate = Json.parseToJsonElement(session.certificate(now)).jsonObject
@@ -256,6 +261,7 @@ internal class PallaSyncPeerApprover(
                         .getValue("chain_id")
                         .jsonPrimitive.content,
                 )
+            requireOfferAuthority(saved, authority)
             val subjectBody = Json.parseToJsonElement(body).jsonObject
             check(subjectBody.keys == setOf("device_record", "envelopes", "admin_operation")) { "C_SCHEMA_VIOLATION" }
             check(subjectBody.getValue("envelopes") == JsonArray(listOf(checkNotNull(saved.envelope)))) { "C_DEVICE_EQUIVOCATION" }
@@ -355,6 +361,13 @@ internal class PallaSyncPeerApprover(
             "C_BOOTSTRAP_TRUST_REQUIRED"
         }
         return authority
+    }
+
+    private fun requireOfferAuthority(
+        saved: PallaSyncPeerJournal.Transcript,
+        current: JsonObject,
+    ) {
+        journal.requireCurrentAuthority(saved, pallaSyncPeerHash(current))
     }
 
     private companion object {

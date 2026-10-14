@@ -45,6 +45,13 @@ internal class PallaSyncPeerJournal(
 
     fun read(id: String): Transcript? = prefs.getString("offer.$id", null)?.let { Json.decodeFromString<Transcript>(it) }
 
+    fun requireCurrentAuthority(
+        transcript: Transcript,
+        authorityHash: String,
+    ) {
+        check(authorityHash == transcript.authorityHash) { "C_MISSING_DEPENDENCY" }
+    }
+
     fun create(
         offer: JsonObject,
         authorityHash: String,
