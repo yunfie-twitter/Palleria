@@ -103,87 +103,6 @@ internal class PallaSyncLegacyV21Source(
         }
     }
 
-    /**
-     * Reads the complete source twice around an independently re-read signed device registry.
-     * The caller's explicit freeze confirmation is a prerequisite; ordinary v2.1 reads cannot
-     * prove that no old writer exists. No plaintext, credential or legacy payload is journaled here.
-     */
-    internal suspend fun inspectFrozenExport(
-        chainId: String,
-        initialDevices: List<Device>,
-        freezeConfirmed: Boolean,
-        fetchDevices: suspend () -> PallaSyncHttpResult<List<Device>>,
-        fetchPage: suspend (Long) -> PallaSyncHttpResult<RecordPage>,
-    ): PallaSyncHttpResult<FrozenExportProof> {
-        if (!freezeConfirmed) return PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
-        return try {
-            val initialRegistryHash = registryHash(initialDevices)
-            val transcript = ExportTranscript(chainId)
-            var cursor = 0L
-            var hasMore = true
-            while (hasMore) {
-                currentCoroutineContext().ensureActive()
-                when (val result = fetchPage(cursor)) {
-                    is PallaSyncHttpResult.Success -> {
-                        val page = result.value
-                        validateFrozenPage(cursor, page)
-                        for (record in page.records) {
-                            currentCoroutineContext().ensureActive()
-                            transcript.append(record)
-                            cursor = record.sequence
-                        }
-                        check(page.throughSequence == cursor) { "C_ROLLBACK_DETECTED" }
-                        hasMore = page.hasMore
-                    }
-
-                    is PallaSyncHttpResult.ProtocolError -> {
-                        return result
-                    }
-
-                    is PallaSyncHttpResult.Retryable -> {
-                        return result
-                    }
-
-                    PallaSyncHttpResult.Gone -> {
-                        return PallaSyncHttpResult.Gone
-                    }
-                }
-            }
-            when (val after = fetchDevices()) {
-                is PallaSyncHttpResult.Success -> {
-                    check(initialRegistryHash == registryHash(after.value)) { "C_DEVICE_EQUIVOCATION" }
-                }
-
-                is PallaSyncHttpResult.ProtocolError -> {
-                    return after
-                }
-
-                is PallaSyncHttpResult.Retryable -> {
-                    return after
-                }
-
-                PallaSyncHttpResult.Gone -> {
-                    return PallaSyncHttpResult.Gone
-                }
-            }
-            PallaSyncHttpResult.Success(
-                FrozenExportProof(
-                    sourceChain = chainId,
-                    highWater = cursor,
-                    recordCount = transcript.recordCount,
-                    exportHash = transcript.finish(),
-                    verifiedDeviceRegistryHash = initialRegistryHash,
-                ),
-            )
-        } catch (cancelled: kotlinx.coroutines.CancellationException) {
-            throw cancelled
-        } catch (error: IllegalStateException) {
-            PallaSyncHttpResult.ProtocolError(error.message?.takeIf { it.startsWith("C_") } ?: "C_SCHEMA_VIOLATION")
-        } catch (_: IllegalArgumentException) {
-            PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
-        }
-    }
-
     internal fun getParameters(
         base: HttpUrl,
         chainId: String,
@@ -298,6 +217,86 @@ internal class PallaSyncLegacyV21Source(
 
     companion object {
         private const val MEDIA_TYPE = "application/vnd.palleria.sync.v2+json"
+
+        /**
+         * Reads the complete source twice around an independently re-read signed device registry.
+         * Ordinary v2.1 reads cannot prove writers are stopped; explicit freeze confirmation is mandatory.
+         */
+        internal suspend fun inspectFrozenExport(
+            chainId: String,
+            initialDevices: List<Device>,
+            freezeConfirmed: Boolean,
+            fetchDevices: suspend () -> PallaSyncHttpResult<List<Device>>,
+            fetchPage: suspend (Long) -> PallaSyncHttpResult<RecordPage>,
+        ): PallaSyncHttpResult<FrozenExportProof> {
+            if (!freezeConfirmed) return PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
+            return try {
+                val initialRegistryHash = registryHash(initialDevices)
+                val transcript = ExportTranscript(chainId)
+                var cursor = 0L
+                var hasMore = true
+                while (hasMore) {
+                    currentCoroutineContext().ensureActive()
+                    when (val result = fetchPage(cursor)) {
+                        is PallaSyncHttpResult.Success -> {
+                            val page = result.value
+                            validateFrozenPage(cursor, page)
+                            for (record in page.records) {
+                                currentCoroutineContext().ensureActive()
+                                transcript.append(record)
+                                cursor = record.sequence
+                            }
+                            check(page.throughSequence == cursor) { "C_ROLLBACK_DETECTED" }
+                            hasMore = page.hasMore
+                        }
+
+                        is PallaSyncHttpResult.ProtocolError -> {
+                            return result
+                        }
+
+                        is PallaSyncHttpResult.Retryable -> {
+                            return result
+                        }
+
+                        PallaSyncHttpResult.Gone -> {
+                            return PallaSyncHttpResult.Gone
+                        }
+                    }
+                }
+                when (val after = fetchDevices()) {
+                    is PallaSyncHttpResult.Success -> {
+                        check(initialRegistryHash == registryHash(after.value)) { "C_DEVICE_EQUIVOCATION" }
+                    }
+
+                    is PallaSyncHttpResult.ProtocolError -> {
+                        return after
+                    }
+
+                    is PallaSyncHttpResult.Retryable -> {
+                        return after
+                    }
+
+                    PallaSyncHttpResult.Gone -> {
+                        return PallaSyncHttpResult.Gone
+                    }
+                }
+                PallaSyncHttpResult.Success(
+                    FrozenExportProof(
+                        sourceChain = chainId,
+                        highWater = cursor,
+                        recordCount = transcript.recordCount,
+                        exportHash = transcript.finish(),
+                        verifiedDeviceRegistryHash = initialRegistryHash,
+                    ),
+                )
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: IllegalStateException) {
+                PallaSyncHttpResult.ProtocolError(error.message?.takeIf { it.startsWith("C_") } ?: "C_SCHEMA_VIOLATION")
+            } catch (_: IllegalArgumentException) {
+                PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            }
+        }
 
         internal fun parseParameters(
             value: JsonObject,

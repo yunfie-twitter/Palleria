@@ -713,7 +713,7 @@ internal class PalleriaSyncCoordinator(
         withContext(Dispatchers.IO) {
             val normalized = normalizeServerUrl(sourceUrl) ?: return@withContext PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
             val base = normalized.toHttpUrl()
-            legacyV21Source.inspectFrozenExport(
+            PallaSyncLegacyV21Source.inspectFrozenExport(
                 chainId = parameters.chainId,
                 initialDevices = devices,
                 freezeConfirmed = freezeConfirmed,
