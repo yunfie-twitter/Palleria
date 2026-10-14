@@ -36,6 +36,7 @@ internal class PallaSyncPeerJournal(
         val request: JsonObject? = null,
         val certificate: JsonObject? = null,
         val envelope: JsonObject? = null,
+        val envelopes: List<JsonObject>? = null,
         val approvalBody: String? = null,
         val acceptance: JsonObject? = null,
     ) {
@@ -62,6 +63,7 @@ internal class PallaSyncPeerJournal(
         check(previous.request == null || previous.request == next.request) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         check(previous.certificate == null || previous.certificate == next.certificate) { "C_DEVICE_EQUIVOCATION" }
         check(previous.envelope == null || previous.envelope == next.envelope) { "C_DEVICE_EQUIVOCATION" }
+        check(previous.envelopes == null || previous.envelopes == next.envelopes) { "C_DEVICE_EQUIVOCATION" }
         check(previous.approvalBody == null || previous.approvalBody == next.approvalBody) { "C_DEVICE_EQUIVOCATION" }
         check(previous.acceptance == null || previous.acceptance == next.acceptance) { "C_ACCEPTANCE_UNPROVEN" }
         check(allowed(previous.stage, next.stage)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -86,7 +88,9 @@ internal class PallaSyncPeerJournal(
         val bound = value.stage in setOf(Stage.BOUND, Stage.TRANSFERRED, Stage.SUBMITTED, Stage.ACCEPTED, Stage.REJECTED)
         val transferred = value.stage in setOf(Stage.TRANSFERRED, Stage.SUBMITTED, Stage.ACCEPTED)
         check(!bound || value.request != null) { "C_MISSING_DEPENDENCY" }
-        check(!transferred || (value.certificate != null && value.envelope != null)) { "C_MISSING_DEPENDENCY" }
+        check(!transferred || (value.certificate != null && value.envelope != null && value.envelopes?.contains(value.envelope) == true)) {
+            "C_MISSING_DEPENDENCY"
+        }
         check(value.stage !in setOf(Stage.SUBMITTED, Stage.ACCEPTED) || value.approvalBody != null) { "C_MISSING_DEPENDENCY" }
         check(value.stage != Stage.ACCEPTED || value.acceptance != null) { "C_ACCEPTANCE_UNPROVEN" }
         check(prefs.edit().putString("offer.${value.requestId}", Json.encodeToString(value)).commit() && read(value.requestId) == value) {

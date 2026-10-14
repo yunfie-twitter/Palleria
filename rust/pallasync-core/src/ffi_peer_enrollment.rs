@@ -9,7 +9,7 @@ use crate::{
 use jni::{
     JNIEnv,
     objects::{JByteArray, JClass, JObject, JString, JValue},
-    sys::{jboolean, jlong, jobject, jstring},
+    sys::{jboolean, jbyteArray, jlong, jobject, jstring},
 };
 use serde_json::Value;
 use zeroize::Zeroizing;
@@ -309,6 +309,75 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_acceptPe
         (|| peer::accept_certificate(handle as u64, &json(&mut env, &certificate)?, clock(now)?))();
     unit_result(&mut env, result, handle as u64)
 }
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validatePeerSubjectEnvelopes<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    state: JString<'local>,
+    certificate: JString<'local>,
+    envelopes: JString<'local>,
+    now: jlong,
+) {
+    let result = (|| {
+        let authority = authority(&mut env, &state)?;
+        let certificate = json(&mut env, &certificate)?;
+        let envelopes = json(&mut env, &envelopes)?;
+        let envelopes = envelopes
+            .as_array()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        peer::validate_subject_envelopes(
+            handle as u64,
+            &authority,
+            &certificate,
+            envelopes,
+            clock(now)?,
+        )
+    })();
+    unit_result(&mut env, result, handle as u64)
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_unwrapPeerSubjectEnvelope<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    state: JString<'local>,
+    certificate: JString<'local>,
+    envelope: JString<'local>,
+    now: jlong,
+) -> jbyteArray {
+    let result = (|| {
+        let authority = authority(&mut env, &state)?;
+        let certificate = json(&mut env, &certificate)?;
+        let envelope = json(&mut env, &envelope)?;
+        let secret = peer::unwrap_subject_envelope(
+            handle as u64,
+            &authority,
+            &certificate,
+            &envelope,
+            clock(now)?,
+        )?;
+        env.byte_array_from_slice(secret.as_ref())
+            .map(|array| array.into_raw())
+            .map_err(|_| ClientError("C_LOCAL_LIMIT"))
+    })();
+    match result {
+        Ok(array) => array,
+        Err(error) => {
+            let _ = env.exception_clear();
+            peer::end(handle as u64);
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_endPeerSession<'local>(
     _env: JNIEnv<'local>,

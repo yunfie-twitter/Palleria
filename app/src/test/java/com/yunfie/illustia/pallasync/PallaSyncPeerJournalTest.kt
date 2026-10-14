@@ -57,6 +57,7 @@ class PallaSyncPeerJournalTest {
                     stage = PallaSyncPeerJournal.Stage.TRANSFERRED,
                     certificate = buildJsonObject { put("certificate", "fixture") },
                     envelope = buildJsonObject { put("envelope", "fixture") },
+                    envelopes = listOf(buildJsonObject { put("envelope", "fixture") }),
                 ),
             )
         current = journal.update(current, current.copy(stage = PallaSyncPeerJournal.Stage.SUBMITTED, approvalBody = "exact public fixture"))

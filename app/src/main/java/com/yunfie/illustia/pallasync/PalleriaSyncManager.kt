@@ -108,6 +108,24 @@ class PalleriaSyncManager(
     internal suspend fun retryPeerEnrollmentApproval(transcript: PallaSyncPeerJournal.Transcript): PallaSyncPeerJournal.Transcript =
         coordinator.retryPeerEnrollmentApproval(transcript)
 
+    internal suspend fun beginPeerSubjectEnrollment(
+        offerJson: String,
+        authorityJson: String,
+        configuredOrigin: String,
+    ): PallaSyncPeerSubjectEnrollment.Work = coordinator.beginPeerSubjectEnrollment(offerJson, authorityJson, configuredOrigin)
+
+    internal suspend fun confirmPeerSubjectSas(
+        work: PallaSyncPeerSubjectEnrollment.Work,
+        observed: String,
+    ) = coordinator.confirmPeerSubjectSas(work, observed)
+
+    internal suspend fun preparePeerSubjectEnrollment(
+        work: PallaSyncPeerSubjectEnrollment.Work,
+        certificateJson: String,
+        envelopeJson: String,
+        deviceName: String,
+    ): PallaSyncPeerSubjectEnrollment.Candidate = coordinator.preparePeerSubjectEnrollment(work, certificateJson, envelopeJson, deviceName)
+
     suspend fun rotateEpoch(
         mnemonic: String,
         reason: String = "manual",

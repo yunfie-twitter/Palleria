@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -200,11 +201,38 @@ internal class PallaSyncPeerApprover(
             session.confirm(observedSas, confirmed, now)
             val certificate = Json.parseToJsonElement(session.certificate(now)).jsonObject
             val device = checkNotNull(keys.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-            val secret = Base64.getUrlDecoder().decode(device.epochSecretBase64Url)
-            val envelope = Json.parseToJsonElement(session.envelope(authority.toString(), device.epoch, secret, now)).jsonObject
+            val eligibleEpochs = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, now)
+            val envelopes =
+                eligibleEpochs.map { epoch ->
+                    val epochKeys = checkNotNull(keys.keysForEpoch(device, epoch)) { "C_MISSING_DEPENDENCY" }
+                    val secret = Base64.getUrlDecoder().decode(epochKeys.epochSecretBase64Url)
+                    Json.parseToJsonElement(session.envelope(authority.toString(), epoch, secret, now)).jsonObject
+                }
+            val currentEpochHash =
+                saved.offer
+                    .getValue("epoch_hash")
+                    .jsonPrimitive.content
+            val currentEnvelope =
+                envelopes.singleOrNull { envelope ->
+                    val number = envelope.getValue("epoch").jsonPrimitive.long
+                    val record =
+                        authority
+                            .getValue("epochs")
+                            .jsonObject
+                            .getValue(number.toString())
+                            .jsonObject
+                            .getValue("record")
+                            .jsonObject
+                    pallaSyncPeerHash(record) == currentEpochHash
+                } ?: error("C_MISSING_DEPENDENCY")
             journal.update(
                 saved,
-                saved.copy(stage = PallaSyncPeerJournal.Stage.TRANSFERRED, certificate = certificate, envelope = envelope),
+                saved.copy(
+                    stage = PallaSyncPeerJournal.Stage.TRANSFERRED,
+                    certificate = certificate,
+                    envelope = currentEnvelope,
+                    envelopes = envelopes,
+                ),
             )
         }
 
@@ -223,7 +251,21 @@ internal class PallaSyncPeerApprover(
                         .getValue("chain_id")
                         .jsonPrimitive.content,
                 )
-            val validated = session.approval(authority.toString(), body, policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)))
+            val subjectBody = Json.parseToJsonElement(body).jsonObject
+            check(subjectBody.keys == setOf("device_record", "envelopes", "admin_operation")) { "C_SCHEMA_VIOLATION" }
+            check(subjectBody.getValue("envelopes") == JsonArray(listOf(checkNotNull(saved.envelope)))) { "C_DEVICE_EQUIVOCATION" }
+            val completeBody =
+                buildJsonObject {
+                    put("device_record", subjectBody.getValue("device_record"))
+                    put("envelopes", JsonArray(checkNotNull(saved.envelopes)))
+                    put("admin_operation", subjectBody.getValue("admin_operation"))
+                }.toString()
+            val validated =
+                session.approval(
+                    authority.toString(),
+                    completeBody,
+                    policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+                )
             val dispatched = journal.update(saved, saved.copy(stage = PallaSyncPeerJournal.Stage.SUBMITTED, approvalBody = validated))
             retryApproval(base, dispatched)
         }

@@ -45,6 +45,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
@@ -306,14 +307,14 @@ fun PallaSyncDevicesScreen(
                         enabled = !peerBusy,
                         onClick = {
                             val certificate = transcript.certificate
-                            val envelope = transcript.envelope
-                            if (certificate == null || envelope == null) {
+                            val envelopes = transcript.envelopes
+                            if (certificate == null || envelopes.isNullOrEmpty()) {
                                 peerError = "C_MISSING_DEPENDENCY"
                             } else {
                                 pendingPeerTransfer =
                                     buildJsonObject {
                                         put("certificate", certificate)
-                                        put("envelope", envelope)
+                                        put("envelopes", JsonArray(envelopes))
                                     }.toString()
                                 peerTransferExporter.launch("pallasync-certificate-envelope-${transcript.requestId}.json")
                             }

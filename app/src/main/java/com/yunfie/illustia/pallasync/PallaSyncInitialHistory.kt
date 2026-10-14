@@ -20,12 +20,18 @@ internal class PallaSyncInitialHistory(
     private val store: PallaSyncLocalStore,
     private val remote: PallaSyncRemoteService,
     private val policy: PallaSyncPolicyGate,
-    private val root: PallaSyncRootSession,
+    private val root: PallaSyncRootSession?,
     private val base: HttpUrl,
+    private val peerChainId: String? = null,
+    private val peerAdminPublicKey: String? = null,
+    private val importedAuthority: JsonObject? = null,
+    private val peerToken: ((HttpUrl, String, String) -> String?)? = null,
+    private val source: String = "relay_full_replay",
     private val progress: (String) -> Unit = {},
 ) {
     private val origin = PallaSyncUrls.extractOrigin(base)
-    private val chain = root.identity.chainId
+    private val chain = root?.identity?.chainId ?: checkNotNull(peerChainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+    private val adminPublicKey = root?.identity?.adminPublicKey ?: checkNotNull(peerAdminPublicKey) { "C_BOOTSTRAP_TRUST_REQUIRED" }
     private val prefix = "/pallasync/v3/chains/$chain"
     private val json = Json
 
@@ -35,18 +41,18 @@ internal class PallaSyncInitialHistory(
     ): PallaSyncGenesisCheckpoint {
         progress("history_policy")
         if (previous == null) {
-            policy.requireCurrent(origin, "relay_full_replay")
+            policy.requireCurrent(origin, source)
         } else {
-            policy.requireCurrent(origin)
+            policy.requireCurrent(origin, source)
             val pin = previous.getValue("pin").jsonObject
             check(
                 pin.getValue("chain_id").jsonPrimitive.content == chain &&
-                    previous.getValue("admin_public_key").jsonPrimitive.content == root.identity.adminPublicKey &&
+                    previous.getValue("admin_public_key").jsonPrimitive.content == adminPublicKey &&
                     pin.getValue("origin").jsonPrimitive.content == origin &&
                     pin.getValue("public_key").jsonPrimitive.content == policy.trustedRelayKey(origin),
             ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         }
-        val initial = previous ?: initialAuthority()
+        val initial = previous ?: importedAuthority ?: initialAuthority()
         progress("history_log")
         val authority = replay(initial)
         val pin = authority.getValue("pin").jsonObject
@@ -75,7 +81,8 @@ internal class PallaSyncInitialHistory(
     }
 
     private fun initialAuthority(): JsonObject {
-        val identity = root.identity
+        val session = checkNotNull(root) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val identity = session.identity
         val publicIdentity =
             buildJsonObject {
                 put("chain_id", identity.chainId)
@@ -280,7 +287,8 @@ internal class PallaSyncInitialHistory(
     fun get(requestUrl: HttpUrl): ByteArray {
         val token =
             checkNotNull(
-                root.token(origin, "GET", requestUrl.encodedPath, requestUrl.encodedQuery.orEmpty()),
+                peerToken?.invoke(requestUrl, requestUrl.encodedPath, requestUrl.encodedQuery.orEmpty())
+                    ?: root?.token(origin, "GET", requestUrl.encodedPath, requestUrl.encodedQuery.orEmpty()),
             ) { "C_RECOVERY_AUTH_REQUIRED" }
         val request =
             Request

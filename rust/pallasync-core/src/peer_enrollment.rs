@@ -472,6 +472,173 @@ pub fn accept_certificate(id: u64, certificate: &Value, now: u64) -> Result {
     })
 }
 
+/// Validate and unwrap every transferred same-generation device envelope before it can
+/// authorize historical reads or be forwarded in the approval payload (§13.5/§18.1).
+pub fn validate_subject_envelopes(
+    id: u64,
+    authority: &Authority,
+    certificate: &Value,
+    envelopes: &[Value],
+    now: u64,
+) -> Result {
+    with(id, now, |session| {
+        require(
+            session.role == Role::Subject
+                && session.confirmed
+                && session.certificate.as_ref() == Some(certificate),
+            "C_BOOTSTRAP_TRUST_REQUIRED",
+        )?;
+        wire::validate(certificate, "certificate")?;
+        require(
+            !envelopes.is_empty() && envelopes.len() <= 128,
+            "C_SCHEMA_VIOLATION",
+        )?;
+        let chain: [u8; 32] = decode(s(certificate, "chain_id"), Some(32))
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?
+            .try_into()
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let expected_recipient = hash_bytes(
+            &decode(s(certificate, "device_kex_public_key"), Some(32))
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let mut seen = std::collections::HashSet::new();
+        for envelope in envelopes {
+            wire::validate(envelope, "envelope")?;
+            let number = n(envelope, "epoch") as u32;
+            require(seen.insert(number), "C_DEVICE_EQUIVOCATION")?;
+            let epoch = epoch_binding(session, authority, number, now)?;
+            require(
+                envelope["recipient_kind"] == "device"
+                    && envelope["recipient_device_id"] == certificate["device_id"]
+                    && envelope["chain_id"] == certificate["chain_id"]
+                    && envelope["generation"] == certificate["generation"]
+                    && envelope["previous_epoch_hash"] == epoch["previous_epoch_hash"]
+                    && envelope["epoch_commitment"] == epoch["epoch_commitment"]
+                    && envelope["signer_kind"] == "device"
+                    && envelope["signer_device_id"] == session.offer["approver_device_id"]
+                    && s(envelope, "recipient_key_hash") == expected_recipient,
+                "C_BOOTSTRAP_TRUST_REQUIRED",
+            )?;
+            verify_signed_json(
+                s(&session.offer, "approver_device_public_key"),
+                s(envelope, "signature"),
+                envelope,
+                CTX_ENVELOPE,
+            )
+            .map_err(|_| ClientError("C_SIGNATURE_INVALID"))?;
+            unwrap_subject_epoch(session, &chain, envelope, number)?;
+        }
+        require(
+            seen.contains(&(n(&authority.current_epoch()?.record, "epoch") as u32)),
+            "C_MISSING_DEPENDENCY",
+        )
+    })
+}
+
+/// Decrypt one already-transferred envelope into typed mutable key material for OS-protected
+/// storage. This repeats every binding and signature check at the moment the bytes are released.
+pub fn unwrap_subject_envelope(
+    id: u64,
+    authority: &Authority,
+    certificate: &Value,
+    envelope: &Value,
+    now: u64,
+) -> Result<Zeroizing<[u8; 32]>> {
+    with(id, now, |session| {
+        require(
+            session.role == Role::Subject
+                && session.confirmed
+                && session.certificate.as_ref() == Some(certificate),
+            "C_BOOTSTRAP_TRUST_REQUIRED",
+        )?;
+        wire::validate(certificate, "certificate")?;
+        wire::validate(envelope, "envelope")?;
+        let number = n(envelope, "epoch") as u32;
+        let epoch = epoch_binding(session, authority, number, now)?;
+        let chain: [u8; 32] = decode(s(certificate, "chain_id"), Some(32))
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?
+            .try_into()
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let recipient_hash = hash_bytes(
+            &decode(s(certificate, "device_kex_public_key"), Some(32))
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        require(
+            envelope["recipient_kind"] == "device"
+                && envelope["recipient_device_id"] == certificate["device_id"]
+                && envelope["chain_id"] == certificate["chain_id"]
+                && envelope["generation"] == certificate["generation"]
+                && envelope["previous_epoch_hash"] == epoch["previous_epoch_hash"]
+                && envelope["epoch_commitment"] == epoch["epoch_commitment"]
+                && envelope["signer_kind"] == "device"
+                && envelope["signer_device_id"] == session.offer["approver_device_id"]
+                && s(envelope, "recipient_key_hash") == recipient_hash,
+            "C_BOOTSTRAP_TRUST_REQUIRED",
+        )?;
+        verify_signed_json(
+            s(&session.offer, "approver_device_public_key"),
+            s(envelope, "signature"),
+            envelope,
+            CTX_ENVELOPE,
+        )
+        .map_err(|_| ClientError("C_SIGNATURE_INVALID"))?;
+        let typed: crate::models::EpochKeyEnvelope = serde_json::from_value(envelope.clone())
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let secret = Zeroizing::new(
+            crypto::unwrap_device_epoch_envelope(&typed, &session.keys.kex, &chain).map_err(
+                |error| match error.as_str() {
+                    "C_COMMITMENT_MISMATCH" => ClientError("C_COMMITMENT_MISMATCH"),
+                    "C_AEAD_FAILURE" => ClientError("C_AEAD_FAILURE"),
+                    _ => ClientError("C_SCHEMA_VIOLATION"),
+                },
+            )?,
+        );
+        let derived = crypto::derive_epoch_keys(&chain, number, &secret)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        require(
+            bool::from(
+                derived
+                    .epoch_commitment_b64u
+                    .as_bytes()
+                    .ct_eq(s(envelope, "epoch_commitment").as_bytes()),
+            ),
+            "C_COMMITMENT_MISMATCH",
+        )?;
+        Ok(Zeroizing::new(*secret))
+    })
+}
+
+fn unwrap_subject_epoch(
+    session: &Session,
+    chain: &[u8; 32],
+    envelope: &Value,
+    number: u32,
+) -> Result<Zeroizing<[u8; 32]>> {
+    let typed: crate::models::EpochKeyEnvelope =
+        serde_json::from_value(envelope.clone()).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+    let secret = Zeroizing::new(
+        crypto::unwrap_device_epoch_envelope(&typed, &session.keys.kex, chain).map_err(
+            |error| match error.as_str() {
+                "C_COMMITMENT_MISMATCH" => ClientError("C_COMMITMENT_MISMATCH"),
+                "C_AEAD_FAILURE" => ClientError("C_AEAD_FAILURE"),
+                _ => ClientError("C_SCHEMA_VIOLATION"),
+            },
+        )?,
+    );
+    let derived = crypto::derive_epoch_keys(chain, number, &secret)
+        .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+    require(
+        bool::from(
+            derived
+                .epoch_commitment_b64u
+                .as_bytes()
+                .ct_eq(s(envelope, "epoch_commitment").as_bytes()),
+        ),
+        "C_COMMITMENT_MISMATCH",
+    )?;
+    Ok(Zeroizing::new(*secret))
+}
+
 /// §18.1: the approver accepts only the same self-signed subject and exact ciphertexts
 /// it transferred after its own confirmation. A relay response or a replacement body cannot approve a different device.
 pub fn approval_candidate(

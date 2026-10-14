@@ -1412,4 +1412,21 @@
     <string name="pallasync_recovery_sign_retirement">セットの退役に署名</string>
     <string name="pallasync_recovery_public_status_guidance">保有者には署名済み状態の元データを渡してください。このファイルは公開状態だけを含み、共有・package・解除用credentialは含みません。クラウド提供元は利用できません。状態の履歴は全体の最新性を保証しません。</string>
     <string name="pallasync_recovery_retirement_guidance">root入力でこのセットの退役状態に署名します。署名後、公開状態を到達可能な保有者に配布し、この端末の共有・到達可能な旧媒体を別途削除してください。ここでは他の媒体を削除しません。攻撃者が保持する旧共有やコピーの失効は保証できません。</string>
+    <string name="pallasync_peer_subject_start">別の端末から参加する</string>
+    <string name="pallasync_peer_subject_trust_source">QRと署名済みauthority exportを物理的に照合するrelay sourceを選びます。relay検索だけではchainを信頼しません。</string>
+    <string name="pallasync_peer_subject_guidance">承認端末に表示されたQRを読み取り、同じ端末から書き出した署名済みauthority JSONを選択してください。chain、approver、relayが一致してから申請します。</string>
+    <string name="pallasync_peer_subject_scan">承認端末のoffer QRを読み取る</string>
+    <string name="pallasync_peer_subject_scan_prompt">承認端末に表示されたPallaSync offerを読み取る</string>
+    <string name="pallasync_peer_subject_no_offer">offer QRはまだ読み取られていません</string>
+    <string name="pallasync_peer_subject_import_authority">署名済みauthority JSONを読み込む</string>
+    <string name="pallasync_peer_subject_authority_loaded">authority fileを読み込みました（log %1$s）。開始前にQRとの署名照合を行います。</string>
+    <string name="pallasync_peer_subject_submit">offerを検証して参加申請を送信</string>
+    <string name="pallasync_peer_subject_working">申請中…</string>
+    <string name="pallasync_peer_subject_sas_title">両端末で同じSASか確認</string>
+    <string name="pallasync_peer_subject_sas_guidance">別経路で承認端末に表示された12桁と比較してください。一致しなければ戻って中止し、新しいofferからやり直してください。</string>
+    <string name="pallasync_peer_subject_sas_confirm">SASが両端末で一致したことを確認</string>
+    <string name="pallasync_peer_subject_import_certificate">承認端末から証明書とenvelopeを読み込む</string>
+    <string name="pallasync_peer_subject_pending">端末鍵はOS保護領域へ保存しreadbackしました。承認結果・履歴検証・envelope再取得・ackが完了するまで、この端末は有効ではありません。</string>
+    <string name="pallasync_peer_subject_export_request">承認端末へ署名済み申請を渡す</string>
+    <string name="pallasync_peer_subject_request_exported">申請ファイルを保存・readbackしました。承認端末へ渡してください。</string>
 </resources>

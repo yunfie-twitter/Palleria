@@ -1,33 +1,56 @@
 package com.yunfie.illustia.ui.screens.pallasync
 
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncPeerSubjectEnrollment
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** §§5.5/10.4/11.6: root enrollment has explicit trust and transient protected input. */
+private const val MAX_PEER_FILE_BYTES = 4_194_304
+
+/** §§5.5/10.4/11.6/18.1: root and physically approved peer enrollment are separate ceremonies. */
 @Composable
+@Suppress(
+    "TooGenericExceptionCaught",
+    "ThrowsCount",
+) // SAF/ZXing failures are normalized at the UI boundary; native failures keep protocol codes.
 fun DevicePairingScreen(
     serverUrl: String,
     onBack: () -> Unit,
@@ -36,22 +59,140 @@ fun DevicePairingScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val context = LocalContext.current
     val manager = remember { PalleriaSyncManager(context = context) }
-    var showTrust by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var trustSource by remember { mutableStateOf<String?>(null) }
     var showRoot by remember { mutableStateOf(false) }
     var joined by remember { mutableStateOf(false) }
-    if (showTrust) {
+    var peerSetup by remember { mutableStateOf(false) }
+    var peerBusy by remember { mutableStateOf(false) }
+    var peerError by remember { mutableStateOf<String?>(null) }
+    var offerJson by remember { mutableStateOf<String?>(null) }
+    var authorityJson by remember { mutableStateOf<String?>(null) }
+    var authorityLabel by remember { mutableStateOf<String?>(null) }
+    var work by remember { mutableStateOf<PallaSyncPeerSubjectEnrollment.Work?>(null) }
+    var confirmed by remember { mutableStateOf(false) }
+    var candidate by remember { mutableStateOf<PallaSyncPeerSubjectEnrollment.Candidate?>(null) }
+    var pendingExport by remember { mutableStateOf<String?>(null) }
+    var importPurpose by remember { mutableStateOf<ImportPurpose?>(null) }
+
+    val scanner =
+        rememberLauncherForActivityResult(ScanContract()) { result ->
+            result.contents?.let {
+                offerJson = it
+                peerError = null
+            }
+        }
+    val importer =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            val purpose = importPurpose
+            importPurpose = null
+            if (uri != null && purpose != null) {
+                scope.launch {
+                    peerBusy = true
+                    try {
+                        val text =
+                            withContext(Dispatchers.IO) {
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }
+                                    .use { input ->
+                                        input.readBytes().also { check(it.size <= MAX_PEER_FILE_BYTES) { "C_SCHEMA_VIOLATION" } }
+                                    }.toString(Charsets.UTF_8)
+                            }
+                        val objectValue = Json.parseToJsonElement(text).jsonObject
+                        when (purpose) {
+                            ImportPurpose.AUTHORITY -> {
+                                authorityJson = text
+                                authorityLabel = objectValue["pin"]?.jsonObject?.get("log_id")?.toString()
+                                peerError = null
+                            }
+
+                            ImportPurpose.CERTIFICATE_ENVELOPE -> {
+                                check(objectValue.keys == setOf("certificate", "envelopes")) { "C_SCHEMA_VIOLATION" }
+                                val current = checkNotNull(work) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                                candidate =
+                                    manager.preparePeerSubjectEnrollment(
+                                        current,
+                                        objectValue.getValue("certificate").toString(),
+                                        objectValue.getValue("envelopes").jsonArray.toString(),
+                                        Build.MODEL.take(256).ifBlank { "Android device" },
+                                    )
+                                pendingExport = candidate?.requestBody
+                                peerError = null
+                            }
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        peerError = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"
+                        if (purpose == ImportPurpose.CERTIFICATE_ENVELOPE) {
+                            work?.close()
+                            work = null
+                            confirmed = false
+                            offerJson = null
+                        }
+                    } finally {
+                        peerBusy = false
+                    }
+                }
+            }
+        }
+    val exporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val value = pendingExport
+            pendingExport = null
+            if (uri != null && value != null) {
+                scope.launch {
+                    peerBusy = true
+                    try {
+                        withContext(Dispatchers.IO) {
+                            val bytes = value.toByteArray(Charsets.UTF_8)
+                            check(bytes.size <= MAX_PEER_FILE_BYTES) { "C_SCHEMA_VIOLATION" }
+                            checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use {
+                                it.write(bytes)
+                                it.flush()
+                            }
+                            checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
+                                check(input.readBytes().contentEquals(bytes)) { "C_MISSING_DEPENDENCY" }
+                            }
+                        }
+                        Toast.makeText(context, R.string.pallasync_peer_subject_request_exported, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        peerError = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_LOCAL_STORAGE_FULL"
+                    } finally {
+                        peerBusy = false
+                    }
+                }
+            }
+        }
+
+    DisposableEffect(work?.session?.handle) {
+        onDispose { work?.close() }
+    }
+
+    if (trustSource != null) {
+        val source = checkNotNull(trustSource)
+        val peer = source == "authenticated_export"
         PallaSyncTrustDialog(
             origin = serverUrl,
-            sourceKind = "relay_full_replay",
-            sourceLabel = stringResource(R.string.pallasync_v3_relay_replay_source),
-            onDismiss = { showTrust = false },
+            sourceKind = source,
+            sourceLabel =
+                stringResource(
+                    if (peer) R.string.pallasync_peer_subject_trust_source else R.string.pallasync_v3_relay_replay_source,
+                ),
+            onDismiss = { trustSource = null },
             onAccepted = {
-                showTrust = false
-                joined = false
-                showRoot = true
+                trustSource = null
+                if (peer) {
+                    peerSetup = true
+                } else {
+                    joined = false
+                    showRoot = true
+                }
             },
         )
     }
+
     if (showRoot) {
         PallaSyncRootActionDialog(
             manager,
@@ -65,6 +206,7 @@ fun DevicePairingScreen(
             manager.joinChain(words, serverUrl = serverUrl, passphrase = passphrase, cancellation = cancellation).also { joined = it }
         }
     }
+
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -80,9 +222,133 @@ fun DevicePairingScreen(
         ) {
             Text(serverUrl)
             Text(stringResource(R.string.pallasync_v3_relay_replay_source))
-            Button(onClick = { showTrust = true }, enabled = !showTrust && !showRoot, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { trustSource = "relay_full_replay" },
+                enabled = trustSource == null && !showRoot && !peerSetup,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(stringResource(R.string.pallasync_v3_root_enroll))
+            }
+            TextButton(
+                text = stringResource(R.string.pallasync_peer_subject_start),
+                enabled = trustSource == null && !showRoot && work == null && candidate == null,
+                onClick = { trustSource = "authenticated_export" },
+            )
+            if (peerSetup) {
+                Text(stringResource(R.string.pallasync_peer_subject_guidance))
+                TextButton(
+                    text = stringResource(R.string.pallasync_peer_subject_scan),
+                    enabled = !peerBusy && work == null && candidate == null,
+                    onClick = {
+                        scanner.launch(
+                            ScanOptions()
+                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                .setPrompt(context.getString(R.string.pallasync_peer_subject_scan_prompt))
+                                .setBeepEnabled(false)
+                                .setOrientationLocked(false),
+                        )
+                    },
+                )
+                Text(
+                    offerJson?.let {
+                        runCatching {
+                            Json
+                                .parseToJsonElement(
+                                    it,
+                                ).jsonObject
+                                .getValue("chain_id")
+                                .toString()
+                        }.getOrDefault("")
+                    }
+                        ?: stringResource(R.string.pallasync_peer_subject_no_offer),
+                )
+                TextButton(
+                    text = stringResource(R.string.pallasync_peer_subject_import_authority),
+                    enabled = !peerBusy && work == null && candidate == null,
+                    onClick = {
+                        importPurpose = ImportPurpose.AUTHORITY
+                        importer.launch(arrayOf("application/json", "text/json", "*/*"))
+                    },
+                )
+                authorityLabel?.let { Text(stringResource(R.string.pallasync_peer_subject_authority_loaded, it)) }
+                Button(
+                    onClick = {
+                        val offer = offerJson ?: return@Button
+                        val authority = authorityJson ?: return@Button
+                        peerBusy = true
+                        peerError = null
+                        scope.launch {
+                            try {
+                                work = manager.beginPeerSubjectEnrollment(offer, authority, serverUrl)
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                peerError = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
+                                offerJson = null
+                                authorityJson = null
+                                authorityLabel = null
+                                work?.close()
+                                work = null
+                                confirmed = false
+                            } finally {
+                                peerBusy = false
+                            }
+                        }
+                    },
+                    enabled = !peerBusy && work == null && candidate == null && offerJson != null && authorityJson != null,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(if (peerBusy) R.string.pallasync_peer_subject_working else R.string.pallasync_peer_subject_submit))
+                }
+                work?.let { active ->
+                    Text(stringResource(R.string.pallasync_peer_subject_sas_title))
+                    Text(active.sas.chunked(4).joinToString(" "))
+                    Text(stringResource(R.string.pallasync_peer_subject_sas_guidance))
+                    Button(
+                        enabled = !peerBusy && !confirmed,
+                        onClick = {
+                            peerBusy = true
+                            scope.launch {
+                                try {
+                                    manager.confirmPeerSubjectSas(active, active.sas)
+                                    confirmed = true
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (failure: Exception) {
+                                    peerError = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
+                                } finally {
+                                    peerBusy = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.pallasync_peer_subject_sas_confirm))
+                    }
+                    if (confirmed) {
+                        TextButton(
+                            text = stringResource(R.string.pallasync_peer_subject_import_certificate),
+                            enabled = !peerBusy && candidate == null,
+                            onClick = {
+                                importPurpose = ImportPurpose.CERTIFICATE_ENVELOPE
+                                importer.launch(arrayOf("application/json", "text/json", "*/*"))
+                            },
+                        )
+                    }
+                }
+                candidate?.let {
+                    Text(stringResource(R.string.pallasync_peer_subject_pending))
+                    Text(it.keys.deviceId.orEmpty())
+                    TextButton(
+                        text = stringResource(R.string.pallasync_peer_subject_export_request),
+                        enabled = !peerBusy,
+                        onClick = { exporter.launch("pallasync-enrollment-${it.keys.deviceId}.json") },
+                    )
+                }
+                peerError?.let { Text(it) }
             }
         }
     }
 }
+
+private enum class ImportPurpose { AUTHORITY, CERTIFICATE_ENVELOPE }

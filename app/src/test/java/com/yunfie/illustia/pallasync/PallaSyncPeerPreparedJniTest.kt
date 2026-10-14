@@ -30,10 +30,33 @@ class PallaSyncPeerPreparedJniTest :
                     visual shouldBe subject.sas(fixture.now)
                     subject.confirm(visual, true, fixture.now)
                     approver.confirm(visual, true, fixture.now)
-                    subject.acceptCertificate(approver.certificate(fixture.now), fixture.now)
+                    val certificate = approver.certificate(fixture.now)
+                    subject.acceptCertificate(certificate, fixture.now)
                     val secret = ByteArray(32) { (it + 0xa0).toByte() }
+                    val expectedSecret = secret.copyOf()
                     val envelope = approver.envelope(fixture.authority.toString(), 0, secret, fixture.now)
                     secret.all { it == 0.toByte() } shouldBe true
+                    PallaSyncCore.validatePeerSubjectEnvelopes(
+                        subject.handle,
+                        fixture.authority.toString(),
+                        certificate,
+                        "[$envelope]",
+                        fixture.now,
+                    )
+                    val unwrapped =
+                        PallaSyncCore.unwrapPeerSubjectEnvelope(
+                            subject.handle,
+                            fixture.authority.toString(),
+                            certificate,
+                            envelope,
+                            fixture.now,
+                        )
+                    try {
+                        unwrapped.contentEquals(expectedSecret) shouldBe true
+                    } finally {
+                        unwrapped.fill(0)
+                        expectedSecret.fill(0)
+                    }
                     val metadata =
                         buildJsonObject {
                             put("name", "JNI paired fixture")

@@ -144,6 +144,20 @@ fn both_endpoints_require_local_sas_confirmation_and_bind_the_same_subject_certi
     );
     let secret = Zeroizing::new(decode(&bundle.epoch_secret, Some(32)).unwrap());
     let envelope = peer::envelope(new_approving, &authority, 0, &secret, NOW).unwrap();
+    peer::validate_subject_envelopes(
+        new_subject,
+        &authority,
+        &cert,
+        std::slice::from_ref(&envelope),
+        NOW,
+    )
+    .unwrap();
+    assert_eq!(
+        peer::unwrap_subject_envelope(new_subject, &authority, &cert, &envelope, NOW)
+            .unwrap()
+            .as_slice(),
+        secret.as_slice()
+    );
     assert_eq!(
         envelope,
         peer::envelope(new_approving, &authority, 0, &secret, NOW + 1).unwrap()
@@ -204,6 +218,7 @@ fn both_endpoints_require_local_sas_confirmation_and_bind_the_same_subject_certi
     let mut changed = body.clone();
     changed["envelopes"][0]["ciphertext"] = json!(URL_SAFE_NO_PAD.encode([3; 48]));
     assert!(peer::approval_candidate(new_approving, &authority, &changed, NOW).is_err());
+    assert!(peer::validate_subject_envelopes(new_subject, &authority, &cert, &[], NOW).is_err());
     assert!(peer::visual_sas(new_approving, NOW).is_err());
     peer::end(approving);
     peer::end(new_approving);

@@ -163,6 +163,8 @@
         "Palleria/rust/pallasync-core/src/peer_enrollment.rs",
         "Palleria/rust/pallasync-core/src/peer_response.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerSession.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerSubjectEnrollment.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerEpochEligibility.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerApprover.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelay.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerJournal.kt",
@@ -179,6 +181,7 @@
         "Palleria/rust/pallasync-core/tests/peer_response.rs",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerJniTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerPreparedJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerEpochEligibilityTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerJournalTest.kt",
         "PallaSync/tests/reference/run_peer_interop.py",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncEpochHistoryJniTest.kt",
@@ -187,7 +190,7 @@
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelayBoundary.kt"
       ],
       "result": "pending",
-      "remaining": "Approver UI now exports the verified public authority cut, polls/binds one request, requires explicit SAS confirmation, transfers the signed certificate/current envelope, native-verifies the returning DeviceRecord/envelopes, submits approval and exports the signed acceptance response. Unknown POST outcome retries only the journaled identical approval. The selected transfer file contains public/signed objects and ciphertext but has no added local encryption wrapper because §18.1 specifies no wrapper cryptosuite. Still build the subject scanner/import/session/key-persistence/envelope-readback/ack activation side, atomic fresh-key enrollment/revocation, and independently test the complete ceremony; keep pending.",
+      "remaining": "Approver UI exports the verified public authority cut, polls/binds one request, requires explicit SAS confirmation, transfers the signed certificate and policy-eligible same-generation envelopes, native-verifies the returning DeviceRecord/envelopes, submits approval and exports the signed acceptance response. The subject scanner/import/session and pending-key preparation are now wired; native Rust/JNI revalidates every transferred envelope and returns historic epoch keys only as mutable byte arrays for OS-protected storage. Retention modes retain/windowed/immediate and contiguous epoch history have focused tests. The selected transfer file contains public/signed objects and ciphertext but has no added local encryption wrapper because §18.1 specifies no wrapper cryptosuite. Still complete acceptance/readback/ack/activation, atomic fresh-key enrollment/revocation, and independently test the full two-device ceremony; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

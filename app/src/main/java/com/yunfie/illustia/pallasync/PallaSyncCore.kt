@@ -275,6 +275,22 @@ object PallaSyncCore {
         nowMs: Long,
     )
 
+    external fun validatePeerSubjectEnvelopes(
+        handle: Long,
+        authorityJson: String,
+        certificateJson: String,
+        envelopesJson: String,
+        nowMs: Long,
+    )
+
+    external fun unwrapPeerSubjectEnvelope(
+        handle: Long,
+        authorityJson: String,
+        certificateJson: String,
+        envelopeJson: String,
+        nowMs: Long,
+    ): ByteArray
+
     external fun endPeerSession(handle: Long)
 
     external fun preparePeerEnvelope(

@@ -118,6 +118,7 @@ internal class PalleriaSyncCoordinator(
     private val peerApprover by lazy {
         PallaSyncPeerApprover(db, policy, keystore, peerJournal, PallaSyncPeerRelay(db, remote, crypto))
     }
+    private val peerSubject by lazy { PallaSyncPeerSubjectEnrollment(remote, policy, keystore) }
     private val json =
         Json {
             ignoreUnknownKeys = true
@@ -489,6 +490,41 @@ internal class PalleriaSyncCoordinator(
                     }
                 peerApprover.retryApproval(base, transcript)
             }
+        }
+
+    internal suspend fun beginPeerSubjectEnrollment(
+        offerJson: String,
+        authorityJson: String,
+        configuredOrigin: String,
+    ): PallaSyncPeerSubjectEnrollment.Work =
+        withContext(Dispatchers.IO) {
+            val base =
+                checkNotNull((PallaSyncUrls.normalize(configuredOrigin) as? PallaSyncHttpResult.Success)?.value) {
+                    "C_BOOTSTRAP_TRUST_REQUIRED"
+                }
+            peerSubject.begin(
+                offerJson,
+                authorityJson,
+                PallaSyncUrls.extractOrigin(base),
+                policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+            )
+        }
+
+    internal suspend fun confirmPeerSubjectSas(
+        work: PallaSyncPeerSubjectEnrollment.Work,
+        observed: String,
+    ) = withContext(Dispatchers.IO) {
+        work.confirm(observed, policy.retry.correctedTime(work.origin))
+    }
+
+    internal suspend fun preparePeerSubjectEnrollment(
+        work: PallaSyncPeerSubjectEnrollment.Work,
+        certificateJson: String,
+        envelopeJson: String,
+        deviceName: String,
+    ): PallaSyncPeerSubjectEnrollment.Candidate =
+        withContext(Dispatchers.IO) {
+            peerSubject.prepare(work, certificateJson, envelopeJson, deviceName, policy.retry.correctedTime(work.origin))
         }
 
     suspend fun rotateEpoch(
