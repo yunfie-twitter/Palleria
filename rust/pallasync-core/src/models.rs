@@ -287,6 +287,19 @@ pub mod legacy {
     pub const PROTOCOL_VERSION_2_0: &str = "2.0";
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+    pub struct SyncRecordV20 {
+        pub protocol_version: String,
+        pub chain_id: String,
+        pub record_id: String,
+        pub collection_name: String,
+        pub action: String,
+        pub encrypted_payload: String,
+        pub device_id: String,
+        pub created_at_ms: i64,
+        pub signature: String,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
     pub struct SyncRecordV21 {
         pub protocol_version: String,
         pub chain_id: String,

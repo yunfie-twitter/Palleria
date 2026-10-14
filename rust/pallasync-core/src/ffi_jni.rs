@@ -1911,6 +1911,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_endSecre
 ) {
     crate::secret_lifetime::invalidate();
     root_session::end_all();
+    crate::legacy_migration::end_all();
     crate::recovery_flow::end_all();
 }
 
@@ -2055,6 +2056,124 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
         crypto::legacy_v21_identity_matches(&keys, &chain_id, &chain_salt, &admin_public_key)
     })();
     u8::from(result.unwrap_or(false))
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginLegacyMigrationSession<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    seed_phrase: JString<'local>,
+    passphrase: JString<'local>,
+    chain_salt: JString<'local>,
+    chain_id: JString<'local>,
+    admin_public_key: JString<'local>,
+) -> jlong {
+    let result = (|| {
+        let seed_phrase = Zeroizing::new(
+            read_string(&mut env, &seed_phrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let passphrase = Zeroizing::new(
+            read_string(&mut env, &passphrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let chain_salt =
+            read_string(&mut env, &chain_salt).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let chain_id = read_string(&mut env, &chain_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let admin =
+            read_string(&mut env, &admin_public_key).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let salt = crate::strict::verify::decode(&chain_salt, Some(32))
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let salt: [u8; 32] = salt
+            .try_into()
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::legacy_migration::begin(&seed_phrase, &passphrase, &salt, &chain_id, &admin)
+    })();
+    match result {
+        Ok(handle) => handle as jlong,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginLegacyV20MigrationSession<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    seed_phrase: JString<'local>,
+    passphrase: JString<'local>,
+    chain_id: JString<'local>,
+) -> jlong {
+    let result = (|| {
+        let seed_phrase = Zeroizing::new(
+            read_string(&mut env, &seed_phrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let passphrase = Zeroizing::new(
+            read_string(&mut env, &passphrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let chain_id = read_string(&mut env, &chain_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::legacy_migration::begin_v20(&seed_phrase, &passphrase, &chain_id)
+    })();
+    match result {
+        Ok(handle) => handle as jlong,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_convertLegacyRecord<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    record_json: JString<'local>,
+    expected_device_id: JString<'local>,
+    device_public_key: JString<'local>,
+) -> jbyteArray {
+    let result = (|| {
+        let record =
+            read_string(&mut env, &record_json).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let expected_device =
+            read_string(&mut env, &expected_device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let device_key =
+            read_string(&mut env, &device_public_key).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let bytes = crate::legacy_migration::convert_record(
+            handle as u64,
+            &record,
+            &expected_device,
+            &device_key,
+        )?;
+        env.byte_array_from_slice(&bytes)
+            .map(|array| array.into_raw())
+            .map_err(|_| ClientError("C_LOCAL_LIMIT"))
+    })();
+    match result {
+        Ok(value) => value,
+        Err(error) => {
+            let _ = env.exception_clear();
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_endLegacyMigrationSession<
+    'local,
+>(
+    _env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+) {
+    crate::legacy_migration::end(handle as u64);
 }
 
 #[unsafe(no_mangle)]

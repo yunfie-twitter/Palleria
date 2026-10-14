@@ -1224,6 +1224,135 @@ pub const LEGACY_SYNC_RECORD_AAD: &[u8] = b"PALLASYNC-AAD-v2";
 pub const LEGACY_DEVICE_RECORD_AAD: &[u8] = b"PALLASYNC-DEVICE-AAD-v2";
 pub const CTX_SYNC_RECORD_V21: &[u8] = b"PALLASYNC-SYNC-RECORD-v2.1\0";
 
+/// Deterministic PallaSync 2.0 keys used only by the explicit §9 migration reader.
+#[derive(Zeroize, ZeroizeOnDrop)]
+pub struct LegacyV20Keys {
+    pub chain_id: String,
+    encryption_key: [u8; 32],
+    signing_seed: [u8; 32],
+}
+
+pub fn derive_legacy_v20_keys(
+    seed_phrase: &str,
+    passphrase: &str,
+) -> Result<LegacyV20Keys, String> {
+    let seed = Zeroizing::new(derive_root_seed(seed_phrase, passphrase)?);
+    let hk = Hkdf::<Sha256>::new(Some(b"PallaSync-V2-Salt"), &*seed);
+    let mut chain_id_bytes = Zeroizing::new([0u8; 32]);
+    let mut encryption_key = Zeroizing::new([0u8; 32]);
+    let mut signing_seed = Zeroizing::new([0u8; 32]);
+    hk.expand(b"chain_id", &mut *chain_id_bytes)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    hk.expand(b"encryption_key", &mut *encryption_key)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    hk.expand(b"signing_key", &mut *signing_seed)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    Ok(LegacyV20Keys {
+        chain_id: URL_SAFE_NO_PAD.encode(*chain_id_bytes),
+        encryption_key: *encryption_key,
+        signing_seed: *signing_seed,
+    })
+}
+
+pub fn verify_sync_record_v20_json(
+    record_json: &str,
+    keys: &LegacyV20Keys,
+) -> Result<bool, String> {
+    const REQUIRED: &[&str] = &[
+        "protocol_version",
+        "chain_id",
+        "record_id",
+        "collection_name",
+        "action",
+        "encrypted_payload",
+        "device_id",
+        "created_at_ms",
+        "signature",
+    ];
+    const OPTIONAL: &[&str] = &["relay_seq", "server_sequence"];
+    if record_json.len() > 8 * 1024 * 1024 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let mut value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    let object = value.as_object().ok_or("C_SCHEMA_VIOLATION")?;
+    if !REQUIRED.iter().all(|field| object.contains_key(*field))
+        || object
+            .keys()
+            .any(|field| !REQUIRED.contains(&field.as_str()) && !OPTIONAL.contains(&field.as_str()))
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    for field in OPTIONAL {
+        if let Some(sequence) = object.get(*field)
+            && !sequence
+                .as_u64()
+                .is_some_and(|value| value <= crate::strict::jcs::MAX_INTEGER)
+        {
+            return Err("C_SCHEMA_VIOLATION".into());
+        }
+    }
+    let record: models::legacy::SyncRecordV20 =
+        serde_json::from_value(value.clone()).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if record.protocol_version != models::legacy::PROTOCOL_VERSION_2_0
+        || record.chain_id != keys.chain_id
+        || record.created_at_ms < 0
+        || !matches!(record.action.as_str(), "upsert" | "delete")
+        || record.collection_name.is_empty()
+        || record.collection_name.len() > 255
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let record_id = uuid::Uuid::parse_str(&record.record_id).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let device_id = uuid::Uuid::parse_str(&record.device_id).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if record_id.get_version_num() != 7 || device_id.get_version_num() != 7 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    crate::strict::verify::decode(&record.encrypted_payload, None)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let signature = crate::strict::verify::decode(&record.signature, Some(64))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let signing = SigningKey::from_bytes(&keys.signing_seed);
+    let verifying = signing.verifying_key();
+    drop(signing);
+    let signed_object = value.as_object_mut().ok_or("C_SCHEMA_VIOLATION")?;
+    signed_object.remove("signature");
+    signed_object.remove("relay_seq");
+    signed_object.remove("server_sequence");
+    let canonical = models::to_jcs(&value).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let digest = sha256_hash(&canonical);
+    let signature = Signature::from_slice(&signature).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    Ok(verifying.verify_strict(&digest, &signature).is_ok())
+}
+
+pub fn decrypt_sync_record_v20_json(
+    record_json: &str,
+    keys: &LegacyV20Keys,
+) -> Result<Zeroizing<Vec<u8>>, String> {
+    if !verify_sync_record_v20_json(record_json, keys)? {
+        return Err("C_SIGNATURE_INVALID".into());
+    }
+    let value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    let record: models::legacy::SyncRecordV20 =
+        serde_json::from_value(value).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let ciphertext = crate::strict::verify::decode(&record.encrypted_payload, None)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if ciphertext.len() < 16 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let nonce = derive_record_nonce_legacy(&record.record_id);
+    let plaintext = Zeroizing::new(
+        decrypt_record_payload_legacy(
+            &keys.encryption_key,
+            &nonce,
+            &ciphertext,
+            LEGACY_SYNC_RECORD_AAD,
+        )
+        .map_err(|_| "C_AEAD_FAILURE")?,
+    );
+    crate::strict::jcs::parse(&plaintext).map_err(|_| "C_AEAD_FAILURE")?;
+    Ok(plaintext)
+}
+
 /// Ephemeral v2.1 root derivation state for the explicit §9 migration ceremony.
 /// It is never serialized or stored in Room; dropping it zeroizes its PRK and salt.
 #[derive(Zeroize, ZeroizeOnDrop)]
@@ -1245,7 +1374,7 @@ pub fn derive_legacy_v21_keys(
     let mut chain_id_hasher = Sha256::new();
     chain_id_hasher.update(b"PALLASYNC-CHAIN-ID-v2.1\0");
     chain_id_hasher.update(chain_salt);
-    chain_id_hasher.update(&*root_seed);
+    chain_id_hasher.update(*root_seed);
     let chain_id_digest: [u8; 32] = chain_id_hasher.finalize().into();
     let chain_id = URL_SAFE_NO_PAD.encode(chain_id_digest);
 
@@ -1308,7 +1437,7 @@ pub fn decrypt_sync_record_v21_json(
     keys: &LegacyV21Keys,
 ) -> Result<Zeroizing<Vec<u8>>, String> {
     if !verify_sync_record_v21_json(record_json, device_public_key_base64_url)? {
-        return Err("C_SCHEMA_VIOLATION".into());
+        return Err("C_SIGNATURE_INVALID".into());
     }
     let value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
     let record: models::legacy::SyncRecordV21 =
@@ -1385,13 +1514,12 @@ pub fn verify_sync_record_v21_json(
             return Err("C_SCHEMA_VIOLATION".into());
         }
         for field in OPTIONAL {
-            if let Some(sequence) = object.get(*field) {
-                if !sequence
+            if let Some(sequence) = object.get(*field)
+                && !sequence
                     .as_u64()
                     .is_some_and(|number| number <= crate::strict::jcs::MAX_INTEGER)
-                {
-                    return Err("C_SCHEMA_VIOLATION".into());
-                }
+            {
+                return Err("C_SCHEMA_VIOLATION".into());
             }
         }
     }

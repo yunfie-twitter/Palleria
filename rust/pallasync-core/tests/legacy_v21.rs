@@ -159,6 +159,44 @@ fn derives_legacy_identity_and_decrypts_only_authenticated_v21_aad() {
         br#"{"body":{"tag":"landscape"},"context":{},"created_at_ms":1700000000000,"entity_id":"landscape","lamport":1,"operation":"upsert","schema":"palleria.favorite_tag/2"}"#
     );
 
+    let handle = pallasync_core::legacy_migration::begin(
+        MNEMONIC,
+        "",
+        &salt,
+        &keys.chain_id,
+        &keys.admin_public_key,
+    )
+    .unwrap();
+    let converted = pallasync_core::legacy_migration::convert_record(
+        handle,
+        &record,
+        "01890f3e-7c00-7000-8000-000000000002",
+        &public,
+    )
+    .unwrap();
+    let candidate: Value = serde_json::from_slice(&converted).unwrap();
+    assert_eq!(candidate[0]["collection"], "palleria.favorite_tag/3");
+    assert_eq!(candidate[0]["body"]["tag"], "landscape");
+    assert!(
+        pallasync_core::legacy_migration::convert_record(
+            handle,
+            &record,
+            "01890f3e-7c00-7000-8000-000000000003",
+            &public,
+        )
+        .is_err()
+    );
+    pallasync_core::legacy_migration::end(handle);
+    assert!(
+        pallasync_core::legacy_migration::convert_record(
+            handle,
+            &record,
+            "01890f3e-7c00-7000-8000-000000000002",
+            &public,
+        )
+        .is_err()
+    );
+
     let mut tampered_aad = serde_json::from_str::<Value>(&record).unwrap();
     tampered_aad["action"] = json!("delete");
     let mut unsigned = tampered_aad.clone();
@@ -170,5 +208,12 @@ fn derives_legacy_identity_and_decrypts_only_authenticated_v21_aad() {
         crypto::decrypt_sync_record_v21_json(&record_text(&tampered_aad), &public, &keys)
             .unwrap_err(),
         "C_AEAD_FAILURE"
+    );
+    let mut tampered_signature = serde_json::from_str::<Value>(&record).unwrap();
+    tampered_signature["signature"] = json!(URL_SAFE_NO_PAD.encode([0u8; 64]));
+    assert_eq!(
+        crypto::decrypt_sync_record_v21_json(&record_text(&tampered_signature), &public, &keys)
+            .unwrap_err(),
+        "C_SIGNATURE_INVALID"
     );
 }

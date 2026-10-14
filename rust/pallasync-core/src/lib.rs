@@ -14,6 +14,7 @@ pub mod ffi_jni;
 mod ffi_peer_enrollment;
 mod ffi_recovery;
 mod ffi_recovery_media;
+pub mod legacy_migration;
 pub mod local_transfer;
 mod locked_memory;
 pub mod models;

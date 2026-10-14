@@ -533,16 +533,20 @@
         "PallaSync/src/bin/pallasync-operator.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt",
         "Palleria/rust/pallasync-core/src/crypto.rs",
+        "Palleria/rust/pallasync-core/src/legacy_migration.rs",
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncCore.kt"
       ],
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLegacyRecordJniTest.kt",
         "Palleria/rust/pallasync-core/tests/legacy_v21.rs",
+        "Palleria/rust/pallasync-core/tests/legacy_migration.rs",
+        "Palleria/rust/pallasync-core/tests/legacy_v20.rs",
         "PallaSync/tests/reference/run_legacy_interop.py"
       ],
       "result": "pending",
-      "remaining": "The client now exposes strict v2.1 SyncRecord signature verification (§4.1) and transient native identity derivation/comparison using the selected legacy salt, chain ID and derived admin public key (§5.1–§5.2). Legacy record key derivation and authenticated XChaCha20-Poly1305 decryption use the v2.1 epoch/record HKDF labels and exact JCS RecordAAD; plaintext remains in a zeroizing Rust buffer, never a JNI string. Rust tests cover valid/tampered signatures, relay sequence exclusion, fixed identity output, authenticated decryption and modified-AAD rejection; Android JNI tests cover identity comparison and bad input. v2.1 does not define a ChainParameters signature context, so no verifier is invented for that field. Still implement the frozen-source export, trusted device-key/parameter binding, native payload conversion into v3 records, durable resume journal, independent replay and migration report; A-19 remains pending.",
+      "remaining": "Implemented strict v2.1 and v2.0 SyncRecord validation/decryption in transient, memory-locked native sessions. v2.0 uses the documented deterministic identity/nonce, optional pre-hash signature, ChaCha20-Poly1305 and static AAD; its JNI session is tested. v2.1 uses the selected legacy salt/admin identity, per-device signature key and exact RecordAAD; relay sequencing fields are excluded from the signature. Both versions route authenticated payloads through strict `/1` snapshot or `/2` entity conversion, retain normalization/collision metadata, and output mutable JNI bytes. Rust tests cover profile crypto, field/signature/AAD tampering and candidate conversion; Android JNI tests cover v2.0/v2.1 identity sessions. v2.1 does not define a ChainParameters signature context, so none is invented. Still pending: frozen-source export and completeness/high-water verification; bind keys to verified source registry/parameters; resolve whole-export winners and normalization collisions per legacy semantics; create and journal destination Lamports/order/IDs/records with durable Room resume; upload receipts; independent replay, migration report and UI. A-19 remains pending.",
       "verification_scope": "targeted_partial"
     },
     {

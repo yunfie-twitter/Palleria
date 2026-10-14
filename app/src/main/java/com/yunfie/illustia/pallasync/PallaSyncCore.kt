@@ -3,7 +3,7 @@ package com.yunfie.illustia.pallasync
 import androidx.annotation.Keep
 
 @Keep
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 object PallaSyncCore {
     external fun createRecoveryResult(
         pair: Long,
@@ -688,6 +688,31 @@ object PallaSyncCore {
         chainSaltBase64: String,
         adminPublicKeyBase64: String,
     ): Boolean
+
+    /** Explicit §9.1 migration session; verified payload bytes must be zeroed by the caller. */
+    external fun beginLegacyMigrationSession(
+        seedPhrase: String,
+        passphrase: String,
+        chainSaltBase64: String,
+        chainId: String,
+        adminPublicKeyBase64: String,
+    ): Long
+
+    /** Deterministic v2.0 legacy key path, isolated from the v2.1 random-salt derivation. */
+    external fun beginLegacyV20MigrationSession(
+        seedPhrase: String,
+        passphrase: String,
+        chainId: String,
+    ): Long
+
+    external fun convertLegacyRecord(
+        handle: Long,
+        recordJson: String,
+        expectedDeviceId: String,
+        devicePublicKeyBase64: String,
+    ): ByteArray
+
+    external fun endLegacyMigrationSession(handle: Long)
 
     /** Verifies a device record against its embedded public key. */
     external fun verifyDeviceRecord(recordJson: String): Boolean

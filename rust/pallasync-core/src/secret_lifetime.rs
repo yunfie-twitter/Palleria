@@ -39,6 +39,7 @@ pub fn foreground(value: bool) {
     });
     if !value {
         crate::snapshot::abort_all_verifications();
+        crate::legacy_migration::end_all();
     }
     start();
 }
@@ -47,6 +48,7 @@ pub fn invalidate() {
         state.checked_add(2)
     });
     crate::snapshot::abort_all_verifications();
+    crate::legacy_migration::end_all();
     start();
 }
 pub(crate) fn start() {
@@ -63,6 +65,7 @@ pub(crate) fn start() {
                 crate::device_session::expire();
                 crate::epoch_session::expire();
                 crate::snapshot::expire_verifications();
+                crate::legacy_migration::expire();
             }
         });
     });

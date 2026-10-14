@@ -1,9 +1,34 @@
 package com.yunfie.illustia.pallasync
 
 import io.kotest.matchers.shouldBe
+import io.kotest.assertions.throwables.shouldThrow
 import org.junit.Test
 
 class PallaSyncLegacyRecordJniTest {
+    @Test
+    fun `v20 legacy root session validates deterministic chain id and ends natively`() {
+        val mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon " +
+                "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art"
+        val chainId = "_iefvXsLUE_of7LKvJB_z-e6-OXGP5oG6SClqLIA8Ds"
+
+        val handle = PallaSyncCore.beginLegacyV20MigrationSession(mnemonic, "", chainId)
+        (handle > 0) shouldBe true
+        PallaSyncCore.endLegacyMigrationSession(handle)
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncCore.beginLegacyV20MigrationSession(
+                mnemonic,
+                "",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            )
+        }
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncCore.beginLegacyV20MigrationSession(mnemonic, "wrong", chainId)
+        }
+    }
+
     @Test
     fun `v21 root inputs validate only the supplied legacy public identity`() {
         val mnemonic =
@@ -23,6 +48,10 @@ class PallaSyncLegacyRecordJniTest {
         matches("wrong passphrase") shouldBe false
         matches("", candidateChainId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") shouldBe false
         matches("", candidateSalt = "not-a-salt") shouldBe false
+
+        val handle = PallaSyncCore.beginLegacyMigrationSession(mnemonic, "", salt, chainId, adminPublicKey)
+        (handle > 0) shouldBe true
+        PallaSyncCore.endLegacyMigrationSession(handle)
     }
 
     @Test
