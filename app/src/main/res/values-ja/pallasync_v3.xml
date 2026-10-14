@@ -87,6 +87,9 @@
     <string name="pallasync_legacy_migration_loading">検証済み移行判断を読み込んでいます…</string>
     <string name="pallasync_legacy_migration_more">次のページを読み込む</string>
     <string name="pallasync_legacy_migration_report_failed">ローカル移行レポートを読み込めませんでした。</string>
+    <string name="pallasync_legacy_migration_export_report">完全なレポートを書き出す</string>
+    <string name="pallasync_legacy_migration_report_exported">移行レポートを書き出しました。</string>
+    <string name="pallasync_legacy_migration_report_cancelled">移行レポートの書き出しをキャンセルしました。</string>
     <string name="pallasync_quarantine_title">未解決のプロトコル証拠</string>
     <string name="pallasync_quarantine_explanation">対象オブジェクトと証拠は保持されています。理由とhashを確認してください。解決にはプロトコルで認可された証拠が必要です。</string>
     <string name="pallasync_quarantine_item">%1$s · %2$s</string>

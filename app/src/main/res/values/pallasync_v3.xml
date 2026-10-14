@@ -92,6 +92,9 @@
     <string name="pallasync_legacy_migration_loading">Loading verified migration decisions…</string>
     <string name="pallasync_legacy_migration_more">Load next page</string>
     <string name="pallasync_legacy_migration_report_failed">Could not load the local migration report.</string>
+    <string name="pallasync_legacy_migration_export_report">Export complete report</string>
+    <string name="pallasync_legacy_migration_report_exported">Complete migration report exported.</string>
+    <string name="pallasync_legacy_migration_report_cancelled">Migration report export cancelled.</string>
     <string name="pallasync_quarantine_title">Unresolved protocol evidence</string>
     <string name="pallasync_quarantine_explanation">These objects and their evidence are retained. Review the reason and hash; resolution requires protocol-authorized evidence.</string>
     <string name="pallasync_quarantine_item">%1$s · %2$s</string>

@@ -40,6 +40,7 @@ import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
+import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
@@ -124,9 +125,41 @@ fun PallaSyncSettingsScreen(
     var loadingQuarantinePage by remember { mutableStateOf(false) }
     var retryingQuarantineHash by remember { mutableStateOf<String?>(null) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
+    var pendingLegacyReport by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
     var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
     var loadingLegacyDecisions by remember { mutableStateOf(false) }
+
+    val legacyReportExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val migration = pendingLegacyReport
+            pendingLegacyReport = null
+            if (uri == null || migration == null) {
+                Toast.makeText(context, R.string.pallasync_legacy_migration_report_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            PallaSyncLegacyMigrationReport.export(
+                                context.cacheDir,
+                                context.contentResolver,
+                                uri,
+                                migration,
+                            ) { afterIndex -> syncManager.legacyMigrationDecisionPage(migration.migrationId, afterIndex) }
+                        }
+                        Toast.makeText(context, R.string.pallasync_legacy_migration_report_exported, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_legacy_migration_report_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_legacy_migration_report_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_legacy_migration_report_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
 
     val relayExportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PALLASYNC_EXPORT_MEDIA_TYPE)) { uri ->
@@ -1163,6 +1196,13 @@ fun PallaSyncSettingsScreen(
                     ),
                 )
                 migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }
+                TextButton(
+                    text = stringResource(R.string.pallasync_legacy_migration_export_report),
+                    onClick = {
+                        pendingLegacyReport = migration
+                        legacyReportExporter.launch("pallasync-migration-${migration.migrationId}.json")
+                    },
+                )
                 Column(
                     Modifier
                         .fillMaxWidth()
