@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
+import com.yunfie.illustia.pallasync.data.LogEntryEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.SnapshotInstallEntity
 import com.yunfie.illustia.pallasync.data.SnapshotInstallEntryEntity
@@ -21,6 +22,52 @@ import org.robolectric.annotation.SQLiteMode
 @Config(sdk = [28], application = android.app.Application::class)
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncSnapshotInstallDaoTest {
+    @Test
+    fun `snapshot trust catalogue query filters unverified and different epoch entries`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                protocol.retainLogEntry(
+                    LogEntryEntity(CHAIN, LOG, 1, "hash-1", compactionEntry(COMPACTION, EPOCH_HASH), "{}", "authority_verified"),
+                )
+                protocol.retainLogEntry(
+                    LogEntryEntity(
+                        CHAIN,
+                        LOG,
+                        2,
+                        "hash-2",
+                        compactionEntry("77777777-7777-4777-8777-777777777777", "other-epoch"),
+                        "{}",
+                        "authority_verified",
+                    ),
+                )
+                protocol.retainLogEntry(
+                    LogEntryEntity(
+                        CHAIN,
+                        LOG,
+                        3,
+                        "hash-3",
+                        compactionEntry("88888888-8888-4888-8888-888888888888", EPOCH_HASH),
+                        "{}",
+                        "pending_dependency",
+                    ),
+                )
+
+                db
+                    .compactionCatalogueDao()
+                    .verifiedSnapshotsForEpoch(CHAIN, LOG, generation = 0, epochHash = EPOCH_HASH)
+                    .map { it.relaySeq } shouldBe listOf(1L)
+            } finally {
+                db.close()
+            }
+        }
+
     @Test
     @Suppress("LongMethod")
     fun `verified snapshot atomically replaces logical prefix and keeps author head evidence`() =
@@ -242,6 +289,12 @@ class PallaSyncSnapshotInstallDaoTest {
     private fun author() = """{"device_id":"$DEVICE","device_seq":4,"generation":0,"kind":"author","record_hash":"$AUTHOR_HASH"}"""
 
     private fun authorGap() = """{"device_id":"$DEVICE","first":1,"generation":0,"kind":"author_gap","last":2}"""
+
+    private fun compactionEntry(
+        compactionId: String,
+        epochHash: String,
+    ) =
+        """{"kind":"compaction","object":{"chain_id":"$CHAIN","compaction_id":"$compactionId","covered_log_hash":"$COVERED_HASH","covered_through_seq":1,"device_id":"$DEVICE","epoch_hash":"$epochHash","generation":0,"log_id":"$LOG","snapshot_parts":[{"record_hash":"part-hash","record_id":"$RECORD"}],"state_sha256":"state-hash"}}"""
 
     private companion object {
         const val CHAIN = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"

@@ -69,7 +69,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 
 @Composable
-@Suppress("ThrowsCount") // SAF provider failures are mapped to explicit retained-state UI outcomes.
+@Suppress("ThrowsCount", "TooGenericExceptionCaught") // SAF and snapshot-source failures are mapped to retained-state UI outcomes.
 fun PallaSyncSettingsScreen(
     state: IllustiaUiState,
     viewModel: IllustiaViewModel,
@@ -105,6 +105,13 @@ fun PallaSyncSettingsScreen(
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
     var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
+    var showTrustedSnapshotDialog by remember { mutableStateOf(false) }
+    var loadingTrustedSnapshots by remember { mutableStateOf(false) }
+    var installingTrustedSnapshot by remember { mutableStateOf(false) }
+    var trustedSnapshotFailure by remember { mutableStateOf<String?>(null) }
+    var trustedSnapshotCandidates by remember {
+        mutableStateOf<List<com.yunfie.illustia.pallasync.PallaSyncTrustedSnapshotCandidate>>(emptyList())
+    }
 
     val relayExportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PALLASYNC_EXPORT_MEDIA_TYPE)) { uri ->
@@ -564,6 +571,51 @@ fun PallaSyncSettingsScreen(
         PallaSyncGenesisDialog(syncManager, phrase, state.settings.pallaSyncServerUrl, onDismiss = { generatedMnemonic = null })
     }
 
+    if (showTrustedSnapshotDialog) {
+        PallaSyncTrustedSnapshotDialog(
+            candidates = trustedSnapshotCandidates,
+            busy = installingTrustedSnapshot,
+            failure = trustedSnapshotFailure,
+            onDismiss = { if (!installingTrustedSnapshot) showTrustedSnapshotDialog = false },
+            onTrustAndInstall = { candidate ->
+                installingTrustedSnapshot = true
+                trustedSnapshotFailure = null
+                scope.launch {
+                    try {
+                        val installed =
+                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                syncManager.trustAndInstallSnapshot(
+                                    candidate.compactionId,
+                                    candidate.compactionHash,
+                                    explicitlyConfirmed = true,
+                                )
+                            }
+                        check(installed) { "C_MISSING_DEPENDENCY" }
+                        val suffixComplete = syncManager.syncNow()
+                        clientStatus = syncManager.getClientStatus()
+                        showTrustedSnapshotDialog = false
+                        Toast
+                            .makeText(
+                                context,
+                                if (suffixComplete) {
+                                    R.string.pallasync_snapshot_bootstrap_installed
+                                } else {
+                                    R.string.error_pallasync_sync_failed
+                                },
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        trustedSnapshotFailure = failure.message?.takeIf { it.startsWith("C_") } ?: "C_SNAPSHOT_INVALID"
+                    } finally {
+                        installingTrustedSnapshot = false
+                    }
+                }
+            },
+        )
+    }
+
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -826,6 +878,44 @@ fun PallaSyncSettingsScreen(
                             Text(stringResource(R.string.pallasync_capacity_search, status.searchCount, status.searchCeiling))
                             Text(stringResource(R.string.pallasync_capacity_viewed, status.viewedCount, status.viewedCeiling))
                             Text(stringResource(R.string.pallasync_capacity_seen, status.seenCount, status.seenCeiling))
+                            if (!status.initialPullCompleted && status.pendingOutbox == 0L && status.unresolvedQuarantine == 0L) {
+                                DividerLine()
+                                TextButton(
+                                    text =
+                                        stringResource(
+                                            if (loadingTrustedSnapshots) {
+                                                R.string.pallasync_snapshot_bootstrap_running
+                                            } else {
+                                                R.string.pallasync_snapshot_bootstrap
+                                            },
+                                        ),
+                                    enabled = !loadingTrustedSnapshots && !installingTrustedSnapshot,
+                                    onClick = {
+                                        loadingTrustedSnapshots = true
+                                        trustedSnapshotFailure = null
+                                        scope.launch {
+                                            try {
+                                                trustedSnapshotCandidates =
+                                                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                        syncManager.trustedSnapshotCandidates()
+                                                    }
+                                                showTrustedSnapshotDialog = true
+                                            } catch (cancelled: CancellationException) {
+                                                throw cancelled
+                                            } catch (failure: Exception) {
+                                                trustedSnapshotFailure =
+                                                    failure.message?.takeIf { it.startsWith("C_") } ?: "C_SNAPSHOT_INVALID"
+                                                trustedSnapshotCandidates = emptyList()
+                                                showTrustedSnapshotDialog = true
+                                            } finally {
+                                                loadingTrustedSnapshots = false
+                                            }
+                                        }
+                                    },
+                                )
+                                Text(stringResource(R.string.pallasync_snapshot_bootstrap_desc))
+                                trustedSnapshotFailure?.let { Text(it) }
+                            }
                         }
                     }
                 }

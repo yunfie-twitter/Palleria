@@ -21,7 +21,7 @@ private const val SNAPSHOT_RECORD_UUID_VERSION = 4
 private const val SNAPSHOT_RECORD_UUID_VARIANT = 2
 
 /** §11.6: replay the explicitly selected relay in bounded pages, without materializing plaintext. */
-@Suppress("TooManyFunctions") // Keep selected-source bootstrap validation together; snapshot helper is bounded and read-only.
+@Suppress("TooManyFunctions", "LargeClass") // Selected-source history validation shares a single pinned relay context.
 internal class PallaSyncInitialHistory(
     private val store: PallaSyncLocalStore,
     private val remote: PallaSyncRemoteService,
@@ -32,7 +32,7 @@ internal class PallaSyncInitialHistory(
     private val peerAdminPublicKey: String? = null,
     private val importedAuthority: JsonObject? = null,
     private val peerToken: ((HttpUrl, String, String) -> String?)? = null,
-    private val source: String = "relay_full_replay",
+    private val source: String? = "relay_full_replay",
     private val progress: (String) -> Unit = {},
 ) {
     private val origin = PallaSyncUrls.extractOrigin(base)
@@ -141,8 +141,8 @@ internal class PallaSyncInitialHistory(
     /**
      * Verify every staged part against the replay-authenticated compaction and registry, then
      * stream its canonical entries into the native bounded commitment verifier. Installation is
-     * allowed only when the entire local replay is at the same checkpoint and has identical state;
-     * this method does not establish trust for a snapshot-only bootstrap or authorize pruning.
+     * normally allowed only when local replay matches the checkpoint and state. The explicit
+     * trust path supports incomplete bootstrap and does not authorize pruning.
      */
     suspend fun verifySnapshotParts(
         staging: PallaSyncSnapshotStaging,
@@ -150,9 +150,22 @@ internal class PallaSyncInitialHistory(
         authority: JsonObject,
         deviceKeys: PallaSyncKeySnapshot,
         keystore: PallaSyncKeystore,
+        explicitlyTrustedBootstrap: Boolean = false,
     ) {
         val compaction = staging.compactionRecord()
         val input = snapshotVerificationInput(compaction, pinJson, authority, deviceKeys, keystore)
+        if (explicitlyTrustedBootstrap) {
+            PallaSyncSnapshotTrustVerifier.requireExactChoice(
+                policy,
+                chain,
+                origin,
+                input.logId,
+                input.compaction,
+                input.authorId,
+                input.authorPublicKey,
+                staging.partCount,
+            )
+        }
         val stateStager = PallaSyncSnapshotStateStager(store.snapshotInstallDao(), chain, staging, compaction)
         stateStager.begin()
         PallaSyncEpochSession.begin(input.epochKeys, authority.toString(), input.epochNumber).use { epochSession ->
@@ -184,6 +197,14 @@ internal class PallaSyncInitialHistory(
             )
         }
         stateStager.complete()
+        installVerifiedSnapshot(compaction, input, explicitlyTrustedBootstrap)
+    }
+
+    private suspend fun installVerifiedSnapshot(
+        compaction: JsonObject,
+        input: SnapshotVerificationInput,
+        explicitlyTrustedBootstrap: Boolean,
+    ) {
         val coveredSeq = compaction.getValue("covered_through_seq").jsonPrimitive.long
         val coveredHash = compaction.getValue("covered_log_hash").jsonPrimitive.content
         val exactReplayRevision =
@@ -198,7 +219,20 @@ internal class PallaSyncInitialHistory(
                 coveredHash,
             )
         if (exactReplayRevision != null) {
-            store.snapshotInstallDao().installVerifiedState(chain, input.compactionId, exactReplayRevision)
+            val state = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+            store.snapshotInstallDao().installVerifiedState(
+                chain,
+                input.compactionId,
+                exactReplayRevision,
+                explicitlyTrustedBootstrap = explicitlyTrustedBootstrap && !state.initialPullCompleted,
+            )
+        } else if (explicitlyTrustedBootstrap) {
+            store.snapshotInstallDao().installVerifiedState(
+                chain,
+                input.compactionId,
+                checkNotNull(store.dao.getChainState(chain)).indexRevision,
+                explicitlyTrustedBootstrap = true,
+            )
         }
     }
 

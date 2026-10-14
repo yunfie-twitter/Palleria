@@ -7,6 +7,16 @@ import androidx.room.Query
 @Dao
 interface CompactionCatalogueDao {
     @Query(
+        "SELECT * FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified' AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' AND signed_json LIKE '%\"epoch_hash\":\"' || :epochHash || '\"%' AND signed_json LIKE '%\"generation\":' || :generation || ',\"log_id\":%' ORDER BY relay_seq DESC",
+    )
+    suspend fun verifiedSnapshotsForEpoch(
+        chainId: String,
+        logId: String,
+        generation: Long,
+        epochHash: String,
+    ): List<LogEntryEntity>
+
+    @Query(
         "SELECT * FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified' AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' AND signed_json LIKE '%' || '\"compaction_id\":\"' || :compactionId || '\"%' LIMIT 2",
     )
     suspend fun verifiedEntries(

@@ -82,6 +82,22 @@ class PallaSyncPolicyGate internal constructor(
         val disclosure: String,
     )
 
+    @Serializable
+    internal data class TrustedSnapshotChoice(
+        @SerialName("relay_origin") val relayOrigin: String,
+        @SerialName("chain_id") val chainId: String,
+        @SerialName("log_id") val logId: String,
+        @SerialName("compaction_id") val compactionId: String,
+        @SerialName("compaction_hash") val compactionHash: String,
+        @SerialName("covered_through_seq") val coveredThroughSeq: Long,
+        @SerialName("covered_log_hash") val coveredLogHash: String,
+        @SerialName("state_sha256") val stateSha256: String,
+        @SerialName("epoch_hash") val epochHash: String,
+        @SerialName("author_device_id") val authorDeviceId: String,
+        @SerialName("author_public_key") val authorPublicKey: String,
+        @SerialName("part_count") val partCount: Int,
+    )
+
     /** §§11.7/17.6: only the caller holding verified/protected authority binds a chain. */
     internal fun bindChainOrigin(
         chain: String,
@@ -123,6 +139,30 @@ class PallaSyncPolicyGate internal constructor(
         }
         check(prefs.edit().putString("source:${normalizeOrigin(origin)}", source).commit()) { "C_LOCAL_STORAGE_FULL" }
     }
+
+    /** §11.6: persist the exact source, author, and coverage that the user explicitly trusted. */
+    internal fun confirmTrustedSnapshot(
+        choice: TrustedSnapshotChoice,
+        explicitlyConfirmed: Boolean,
+    ) {
+        val origin = normalizeOrigin(choice.relayOrigin)
+        check(
+            explicitlyConfirmed && choice.relayOrigin == origin && choice.chainId.isNotBlank() && choice.logId.isNotBlank() &&
+                choice.compactionId.isNotBlank() && choice.compactionHash.isNotBlank() && choice.coveredThroughSeq >= 0 &&
+                choice.coveredLogHash.isNotBlank() && choice.stateSha256.isNotBlank() && choice.epochHash.isNotBlank() &&
+                choice.authorDeviceId.isNotBlank() && choice.authorPublicKey.isNotBlank() && choice.partCount > 0,
+        ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        chooseSource(origin, "trusted_snapshot", explicitlyConfirmed = true)
+        check(
+            prefs
+                .edit()
+                .putString("snapshot-choice:${choice.chainId}", Json.encodeToString(choice))
+                .commit(),
+        ) { "C_LOCAL_STORAGE_FULL" }
+    }
+
+    internal fun trustedSnapshotChoice(chainId: String): TrustedSnapshotChoice? =
+        prefs.getString("snapshot-choice:$chainId", null)?.let { Json.decodeFromString<TrustedSnapshotChoice>(it) }
 
     fun inspectRelay(origin: String): Offer {
         val normalized = normalizeOrigin(origin)

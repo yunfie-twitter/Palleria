@@ -91,6 +91,15 @@ private data class SnapshotPublicationContext(
     val journal: PallaSyncSnapshotPublicationJournal,
 )
 
+private data class TrustedSnapshotBootstrapContext(
+    val keys: PallaSyncKeySnapshot,
+    val checkpoint: PallaSyncGenesisCheckpoint,
+    val history: PallaSyncInitialHistory,
+    val candidate: PallaSyncTrustedSnapshotCandidate,
+    val compaction: JsonObject,
+    val epoch: Long,
+)
+
 /** Application-scoped implementation of PallaSync state transitions and polling. */
 internal enum class PallaSyncDeletionRequestResult {
     PROOF_READY_FOR_EXPORT,
@@ -3397,6 +3406,182 @@ internal class PalleriaSyncCoordinator(
                 seenCeiling = PALLASYNC_SEEN_SAFETY_LIMIT,
             )
         }
+
+    suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(!state.initialPullCompleted) { "C_MISSING_DEPENDENCY" }
+                val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val base = selectedRelayBase()
+                val origin = PallaSyncUrls.extractOrigin(base)
+                policy.requireChainOrigin(state.chainId, origin)
+                val history = selectedSourceHistory(state, base, authority, source = null)
+                val checkpoint = history.load(authority, keystore.transparencyPin(state.chainId))
+                check(PallaSyncCore.objectHash(checkNotNull(checkpoint.authority).toString()) == keystore.authorityHash(state.chainId)) {
+                    "C_MISSING_DEPENDENCY"
+                }
+                PallaSyncSnapshotTrustReader(db, state.chainId).candidates(checkpoint.authority, keys, keystore)
+            }
+        }
+
+    suspend fun trustAndInstallSnapshot(
+        compactionId: String,
+        compactionHash: String,
+        explicitlyConfirmed: Boolean,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                if (!explicitlyConfirmed) return@withLock false
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(!state.initialPullCompleted && state.writeState == "active") { "C_MISSING_DEPENDENCY" }
+                check(state.lastRelaySeq <= state.verifiedSeq) { "C_MISSING_DEPENDENCY" }
+                check(db.snapshotInstallDao().pendingOutboxCount(state.chainId) == 0L) { "C_MISSING_DEPENDENCY" }
+                check(db.snapshotInstallDao().unresolvedQuarantineCount(state.chainId) == 0L) { "C_MISSING_DEPENDENCY" }
+                val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val base = selectedRelayBase()
+                val context = resolveTrustedSnapshotContext(state, keys, base, compactionId, compactionHash)
+                val staging =
+                    PallaSyncSnapshotStaging(
+                        db.snapshotDatabase().snapshotDao(),
+                        state.chainId,
+                        context.candidate.compactionId,
+                        context.candidate.generation,
+                        context.epoch,
+                        context.candidate.coveredThroughSeq,
+                        context.compaction.toString(),
+                    )
+                val pinJson =
+                    context.checkpoint.authority
+                        .getValue("pin")
+                        .jsonObject
+                        .toString()
+                context.history.fetchAndStageSnapshotParts(pinJson, staging) { _, _ -> }
+                context.history.verifySnapshotParts(
+                    staging,
+                    pinJson,
+                    context.checkpoint.authority,
+                    context.keys,
+                    keystore,
+                    explicitlyTrustedBootstrap = true,
+                )
+                check(db.snapshotInstallDao().install(state.chainId, context.candidate.compactionId)?.status == "installed") {
+                    "C_MISSING_DEPENDENCY"
+                }
+                log(
+                    "Explicitly trusted snapshot installed at covered sequence ${context.candidate.coveredThroughSeq}; suffix replay is pending",
+                )
+                true
+            }
+        }
+
+    private suspend fun resolveTrustedSnapshotContext(
+        state: ChainStateEntity,
+        keys: PallaSyncKeySnapshot,
+        base: HttpUrl,
+        compactionId: String,
+        compactionHash: String,
+    ): TrustedSnapshotBootstrapContext {
+        requireProtectedAuthority(state.chainId)
+        val authority =
+            Json
+                .parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId)))
+                .jsonObject
+        val origin = PallaSyncUrls.extractOrigin(base)
+        policy.requireChainOrigin(state.chainId, origin)
+        val discovery = selectedSourceHistory(state, base, authority, source = null)
+        val discoveryCheckpoint = discovery.load(authority, keystore.transparencyPin(state.chainId))
+        check(PallaSyncCore.objectHash(discoveryCheckpoint.authority.toString()) == keystore.authorityHash(state.chainId)) {
+            "C_MISSING_DEPENDENCY"
+        }
+        val selected =
+            PallaSyncSnapshotTrustReader(db, state.chainId)
+                .candidates(discoveryCheckpoint.authority, keys, keystore)
+                .singleOrNull { it.compactionId == compactionId && it.compactionHash == compactionHash }
+                ?: error("C_BOOTSTRAP_TRUST_REQUIRED")
+        check(selected.coveredThroughSeq >= state.verifiedSeq && selected.coveredThroughSeq >= state.lastRelaySeq) {
+            "C_MISSING_DEPENDENCY"
+        }
+        policy.confirmTrustedSnapshot(selected.toPolicyChoice(origin), explicitlyConfirmed = true)
+        val history = selectedSourceHistory(state, base, authority, source = "trusted_snapshot")
+        val checkpoint = history.load(authority, keystore.transparencyPin(state.chainId))
+        check(PallaSyncCore.objectHash(checkpoint.authority.toString()) == keystore.authorityHash(state.chainId)) {
+            "C_MISSING_DEPENDENCY"
+        }
+        check(
+            checkpoint.generation == selected.generation && checkpoint.logId == selected.logId &&
+                checkpoint.epochHash == selected.epochHash,
+        ) {
+            "C_MISSING_DEPENDENCY"
+        }
+        val compaction =
+            db
+                .compactionCatalogueDao()
+                .verifiedEntries(state.chainId, selected.logId, selected.compactionId)
+                .singleOrNull()
+                ?.let {
+                    Json
+                        .parseToJsonElement(it.signedJson)
+                        .jsonObject
+                        .getValue("object")
+                        .jsonObject
+                }
+                ?: error("C_BOOTSTRAP_TRUST_REQUIRED")
+        check(PallaSyncCore.objectHash(compaction.toString()) == selected.compactionHash) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val epoch =
+            checkpoint.authority
+                .getValue("epochs")
+                .jsonObject
+                .entries
+                .single { (_, entry) -> PallaSyncCore.objectHash(entry.jsonObject.getValue("record").toString()) == selected.epochHash }
+                .key
+                .toLongOrNull() ?: error("C_SCHEMA_VIOLATION")
+        return TrustedSnapshotBootstrapContext(keys, checkpoint, history, selected, compaction, epoch)
+    }
+
+    private fun PallaSyncTrustedSnapshotCandidate.toPolicyChoice(origin: String) =
+        PallaSyncPolicyGate.TrustedSnapshotChoice(
+            relayOrigin = origin,
+            chainId = chainId,
+            logId = logId,
+            compactionId = compactionId,
+            compactionHash = compactionHash,
+            coveredThroughSeq = coveredThroughSeq,
+            coveredLogHash = coveredLogHash,
+            stateSha256 = stateSha256,
+            epochHash = epochHash,
+            authorDeviceId = authorDeviceId,
+            authorPublicKey = authorPublicKey,
+            partCount = partCount,
+        )
+
+    private suspend fun selectedRelayBase(): HttpUrl =
+        when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+            is PallaSyncHttpResult.Success -> normalized.value
+            is PallaSyncHttpResult.ProtocolError -> error(normalized.message)
+            else -> error("C_RELAY_UNAVAILABLE")
+        }
+
+    private fun selectedSourceHistory(
+        state: ChainStateEntity,
+        base: HttpUrl,
+        authority: JsonObject,
+        source: String?,
+    ) = PallaSyncInitialHistory(
+        store = db,
+        remote = remote,
+        policy = policy,
+        root = null,
+        base = base,
+        peerChainId = state.chainId,
+        peerAdminPublicKey = authority.getValue("admin_public_key").jsonPrimitive.content,
+        importedAuthority = authority,
+        peerToken = { url, path, query -> makeCapabilityToken(url, state.chainId, "GET", path, query) },
+        source = source,
+    )
 
     private suspend fun goneLocked(): SyncCycleOutcome {
         stopBackgroundSync()

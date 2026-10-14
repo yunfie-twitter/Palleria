@@ -58,6 +58,15 @@
     <string name="pallasync_snapshot_publish_running">暗号化partと署名receiptを公開しています…</string>
     <string name="pallasync_snapshot_publish_succeeded">snapshotとtransparency証拠を検証し保存しました。</string>
     <string name="pallasync_snapshot_publish_failed">snapshot公開を一時停止しました。署名済みpartとreceiptは再試行用に保持しています。</string>
+    <string name="pallasync_snapshot_bootstrap">信頼するsnapshotから初期同期</string>
+    <string name="pallasync_snapshot_bootstrap_desc">署名者とcoverageを確認して選択し、snapshotをinstallした後にsuffixを再生します。</string>
+    <string name="pallasync_snapshot_bootstrap_title">snapshotを選択して信頼</string>
+    <string name="pallasync_snapshot_bootstrap_warning">relayと署名はsnapshotを認証しますが、作成者が過去の全項目を含めたことまでは証明できません。状態の完全性を信頼するかは利用者の判断です。clientはsnapshot commitmentを検証し、署名済みsuffixを再生してから初回同期を完了します。</string>
+    <string name="pallasync_snapshot_bootstrap_empty">現在のepochで利用できる、完全に検証済みのsnapshotがrelayにありません。</string>
+    <string name="pallasync_snapshot_bootstrap_candidate">chain: %1$s\nlog: %2$s\ncompaction: %3$s\ncompaction hash: %4$s\ncoverage: sequence %5$d、prefix hash %6$s\nstate commitment: %7$s\nepoch hash: %8$s\nauthor device: %9$s\n証明済みauthor key: %10$s\nparts: %11$d</string>
+    <string name="pallasync_snapshot_bootstrap_trust_install">このauthorを信頼してsnapshotをinstall</string>
+    <string name="pallasync_snapshot_bootstrap_running">選択したsnapshotのpartを検証してinstallしています…</string>
+    <string name="pallasync_snapshot_bootstrap_installed">snapshotをinstallしました。署名済みsuffixの再生を開始します。</string>
     <string name="pallasync_progress_title">同期進捗とローカル履歴容量</string>
     <string name="pallasync_progress_state">書込み状態: %1$s</string>
     <string name="pallasync_progress_positions">ダウンロード済み %1$d · 検証済み %2$d · 適用済み %3$d</string>

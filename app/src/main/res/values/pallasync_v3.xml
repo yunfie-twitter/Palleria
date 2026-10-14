@@ -63,6 +63,15 @@
     <string name="pallasync_snapshot_publish_running">Publishing exact encrypted parts and signed receipts…</string>
     <string name="pallasync_snapshot_publish_succeeded">The snapshot and its transparency evidence were verified and retained.</string>
     <string name="pallasync_snapshot_publish_failed">Snapshot publication paused. Local signed parts and receipts were retained for retry.</string>
+    <string name="pallasync_snapshot_bootstrap">Bootstrap from a trusted snapshot</string>
+    <string name="pallasync_snapshot_bootstrap_desc">Review the signed snapshot author and exact coverage before installing it and replaying the suffix.</string>
+    <string name="pallasync_snapshot_bootstrap_title">Choose and trust one snapshot</string>
+    <string name="pallasync_snapshot_bootstrap_warning">The relay and signatures authenticate this snapshot, but cannot prove that its author included every earlier item. Trusting semantic completeness is your decision. The client will verify the snapshot commitment and replay the signed suffix before completing initial sync.</string>
+    <string name="pallasync_snapshot_bootstrap_empty">No complete verified snapshot for the current epoch is available from this relay.</string>
+    <string name="pallasync_snapshot_bootstrap_candidate">Chain: %1$s\nLog: %2$s\nCompaction: %3$s\nCompaction hash: %4$s\nCoverage: sequence %5$d, prefix hash %6$s\nState commitment: %7$s\nEpoch hash: %8$s\nAuthor device: %9$s\nCertified author key: %10$s\nParts: %11$d</string>
+    <string name="pallasync_snapshot_bootstrap_trust_install">Trust this author and install this snapshot</string>
+    <string name="pallasync_snapshot_bootstrap_running">Verifying parts and installing the selected snapshot…</string>
+    <string name="pallasync_snapshot_bootstrap_installed">Snapshot installed; signed suffix replay has started.</string>
     <string name="pallasync_progress_title">Sync progress and local history capacity</string>
     <string name="pallasync_progress_state">Write state: %1$s</string>
     <string name="pallasync_progress_positions">Downloaded %1$d · verified %2$d · materialized %3$d</string>

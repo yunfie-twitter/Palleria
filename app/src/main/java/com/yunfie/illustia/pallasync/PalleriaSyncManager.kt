@@ -223,4 +223,12 @@ class PalleriaSyncManager(
     ): PallaSyncHistoryPage = coordinator.getDeviceHistoryPage(deviceId, cursor)
 
     internal suspend fun getClientStatus(): PallaSyncClientStatus? = coordinator.getClientStatus()
+
+    internal suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> = coordinator.trustedSnapshotCandidates()
+
+    internal suspend fun trustAndInstallSnapshot(
+        compactionId: String,
+        compactionHash: String,
+        explicitlyConfirmed: Boolean,
+    ): Boolean = coordinator.trustAndInstallSnapshot(compactionId, compactionHash, explicitlyConfirmed)
 }
