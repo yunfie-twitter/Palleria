@@ -110,6 +110,10 @@ internal class PalleriaSyncCoordinator(
     }
     private val outboxRebase by lazy { PallaSyncOutboxRebase(db, localAuthor, keystore, rebaseFault) }
     private val epochStatus by lazy { PallaSyncEpochStatusReader(db, keystore, policy.retry::correctedTime) }
+    private val peerJournal by lazy { PallaSyncPeerJournal(appContext) }
+    private val peerApprover by lazy {
+        PallaSyncPeerApprover(db, policy, keystore, peerJournal, PallaSyncPeerRelay(db, remote, crypto))
+    }
     private val json =
         Json {
             ignoreUnknownKeys = true
@@ -350,6 +354,18 @@ internal class PalleriaSyncCoordinator(
                     log("Epoch status unavailable: $code")
                     null
                 }
+            }
+        }
+
+    /** §18.1: create a fresh user-requested QR offer from the currently pinned active device. */
+    internal suspend fun createPeerDeviceOffer(): PallaSyncPeerJournal.Transcript =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                peerApprover.offer(base, explicitlyRequested = true)
             }
         }
 

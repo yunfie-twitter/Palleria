@@ -82,6 +82,8 @@ class PalleriaSyncManager(
 
     suspend fun getEpochStatus(): PallaSyncEpochStatus? = coordinator.getEpochStatus()
 
+    internal suspend fun createPeerDeviceOffer(): PallaSyncPeerJournal.Transcript = coordinator.createPeerDeviceOffer()
+
     suspend fun rotateEpoch(
         mnemonic: String,
         reason: String = "manual",

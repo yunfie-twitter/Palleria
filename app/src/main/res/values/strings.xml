@@ -895,6 +895,12 @@
     <string name="pallasync_leave_chain_confirm">本当に現在の同期チェーンから離れますか？ローカルのチェーンデータは削除されます。</string>
     <string name="pallasync_participating_devices">参加デバイス一覧</string>
     <string name="pallasync_no_participating_devices">参加中のデバイスはありません</string>
+    <string name="pallasync_peer_offer_create">新しい端末用QRオファーを作成</string>
+    <string name="pallasync_peer_offer_creating">QRオファーを作成中…</string>
+    <string name="pallasync_peer_offer_title">新しい端末を承認</string>
+    <string name="pallasync_peer_offer_guidance">新しい端末でこの有効期限付きオファーを対面で読み取ります。両方の画面でチェーンと承認端末を確認し、同じSASを照合・確認してから承認してください。</string>
+    <string name="pallasync_peer_offer_qr">期限付きPallaSync端末オファーQR</string>
+    <string name="pallasync_peer_offer_qr_failed">QRコードを作成できませんでした。新しいオファーを作成して再試行してください。</string>
     <string name="msg_pallasync_chain_left">同期チェーンから離れました</string>
     <string name="pallasync_delete_chain">チェーンの削除</string>
     <string name="pallasync_delete_chain_desc">この端末の同期データをすべて削除します</string>

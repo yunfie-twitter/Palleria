@@ -155,6 +155,8 @@ Nativeのaudit schemaではwhole-set／ceremonyのholder_kind=nullを§8.6どお
 
 §10.15／§17.7／§17.11の端末削除は、DELETE後に認証付きGET `/pallasync/v3/chains/{chain_id}/deletion` から取得した署名証明をnative verifierで検証し、端末内の公開証拠領域へ保存してから進みます。検証済み証明の保存直後に同期を停止し、未完了の証明がある間はchain再開を拒否します。ユーザーが保存先を選び、書出し後に同じbytesを読み戻して一致を確認し、独立したオフライン媒体への保存を明示確認した場合だけchain-local key/stateを消去します。picker取消、保存/readback失敗、画面の確認取消では端末のkey/stateを消去せず、設定画面から再試行できます。Kotlin compile、detekt、ktlintと対象Room host testは通過しました。実リレーに対する削除E2E、SAF pickerの実端末操作、物理的に独立した媒体の確認は未実施です。
 
+§10.7／§18.1の承認端末側入口として、端末一覧から既存のpeer-offer serviceを呼び出し、リレーへ登録した期限付きofferのQRを表示するUIを接続しました。Kotlin compile、detekt、ktlintと`PallaSyncPeerJournalTest`が通過しました。これはQR作成側の入口までです。新端末でのQR scan・source/identity表示・request作成、2端末のSAS確認、signed certificate/envelopeのローカルfile transfer、鍵readback後のack UIは未接続であり、peerの全承認フロー適合を主張しません。
+
 置換host試験は「新status active・replacement pending」の永続commit直後にroot ownerをcloseし、その後fresh native root sessionでstore CASを再開する境界も検証します（3つのrecovery dealer workflow testが成功。詳細log: app/build/pallasync-recovery-replacement-resume-host.log）。これはOSプロセスkillや物理ディスク障害注入ではありません。
 
 Draft PR CIでJNI declaration checkが失敗したため確認しました。Rust JNI exportは`ffi_jni.rs`以外の`src/**/*.rs`にも分割されていますが、check scriptが単一ファイルしか走査していませんでした。scannerを全Rust sourceへ拡張し、Kotlin external 103件とRust export 103件、12個のビルド済みshared librariesのsymbol inspectionがローカルで成功しました。

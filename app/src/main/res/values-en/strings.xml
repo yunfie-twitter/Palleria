@@ -606,6 +606,12 @@
     <string name="login_feature_sync">Sync</string>
     <string name="pallasync_participating_devices">Participating devices</string>
     <string name="pallasync_no_participating_devices">No participating devices</string>
+    <string name="pallasync_peer_offer_create">Create QR offer for a new device</string>
+    <string name="pallasync_peer_offer_creating">Creating QR offer…</string>
+    <string name="pallasync_peer_offer_title">Approve a new device</string>
+    <string name="pallasync_peer_offer_guidance">On the new device, scan this live offer in person. Verify the chain and approving device on both screens, then compare and confirm the same SAS before approving. The offer expires shortly.</string>
+    <string name="pallasync_peer_offer_qr">Time-limited PallaSync device offer QR</string>
+    <string name="pallasync_peer_offer_qr_failed">Could not render this offer as a QR code. Create a fresh offer and retry.</string>
     <string name="login_walkthrough_title_1">Find works faster</string>
     <string name="login_walkthrough_title_2">Keep bookmarks together</string>
     <string name="login_walkthrough_title_3">Pick up where you left off</string>
