@@ -151,7 +151,13 @@ fun PallaSyncSettingsScreen(
                                 context.contentResolver,
                                 uri,
                                 migration,
-                            ) { afterIndex -> syncManager.legacyMigrationDecisionPage(migration.migrationId, afterIndex) }
+                                fetchPage = { afterIndex ->
+                                    syncManager.legacyMigrationDecisionPage(migration.migrationId, afterIndex)
+                                },
+                                fetchSourcePage = { afterSequence ->
+                                    syncManager.legacyMigrationSourceEvidencePage(migration.migrationId, afterSequence)
+                                },
+                            )
                         }
                         Toast.makeText(context, R.string.pallasync_legacy_migration_report_exported, Toast.LENGTH_LONG).show()
                     } catch (cancelled: CancellationException) {

@@ -169,9 +169,12 @@ class PallaSyncLocalIntentsTest {
                 val intents = queue(store, author(store, MemoryStorage()))
                 val migration = "legacy:resume-safe:$chain"
                 val exportHash = encode(ByteArray(32) { 7 })
-                val objectHash = encode(ByteArray(32) { 8 })
+                val sourceJson = "{\"ciphertext\":\"opaque-record\"}"
+                val objectHash = checkNotNull(PallaSyncCore.objectHash(sourceJson))
                 val sourceRecordId = "01890f3e-7c00-7000-8000-000000000001"
                 intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = true)
+                intents.archiveLegacySourceRecord(migration, 1, sourceRecordId, objectHash, sourceJson)
+                intents.archiveLegacySourceRecord(migration, 1, sourceRecordId, objectHash, sourceJson)
                 intents.stageLegacyBatch(
                     migration,
                     expectedAfterSequence = 0,
@@ -206,6 +209,9 @@ class PallaSyncLocalIntentsTest {
                 intents.completeLegacySourceScan(migration, 1, 1, exportHash)
                 intents.legacyMigrationProgress(migration)?.sourceComplete shouldBe true
                 store.protocolDao().migrationChunk(migration, 0)?.state shouldBe "legacy_candidates_staged"
+                val evidencePage = intents.legacyMigrationSourceEvidencePage(migration, 0)
+                evidencePage.items.single().signedRecordJson shouldBe sourceJson
+                evidencePage.items.single().sourceObjectHash shouldBe objectHash
                 runCatching { intents.resumeLegacyMigration(migration, keys()) }.isFailure shouldBe true
                 store.dao.queuedBatch(chain, 200) shouldBe emptyList()
                 store.dao.getChainState(chain)?.authorSeq shouldBe 0
@@ -215,7 +221,7 @@ class PallaSyncLocalIntentsTest {
         }
 
     @Test
-    fun `frozen legacy source page and destination author mapping resume idempotently`() =
+    fun `frozen legacy source and encrypted export remain unapproved until conflict resolution`() =
         runBlocking<Unit> {
             val db = database()
             try {
@@ -224,10 +230,16 @@ class PallaSyncLocalIntentsTest {
                 val intents = queue(store, author(store, MemoryStorage()))
                 val migration = "legacy:source:$chain"
                 val exportHash = encode(ByteArray(32) { 3 })
-                val sourceHash = encode(ByteArray(32) { 4 })
-                val quarantinedHash = encode(ByteArray(32) { 5 })
+                val sourceRecordId1 = "01890f3e-7c00-7000-8000-000000000001"
+                val sourceRecordId2 = "01890f3e-7c00-7000-8000-000000000002"
+                val sourceJson1 = "{\"ciphertext\":\"record-1\"}"
+                val sourceJson2 = "{\"ciphertext\":\"record-2\"}"
+                val sourceHash = checkNotNull(PallaSyncCore.objectHash(sourceJson1))
+                val quarantinedHash = checkNotNull(PallaSyncCore.objectHash(sourceJson2))
 
                 intents.beginLegacyMigration(migration, "source-chain", "2.1", 2, exportHash, chain, freezeConfirmed = true)
+                intents.archiveLegacySourceRecord(migration, 1, sourceRecordId1, sourceHash, sourceJson1)
+                intents.archiveLegacySourceRecord(migration, 2, sourceRecordId2, quarantinedHash, sourceJson2)
                 runCatching {
                     intents.beginLegacyMigration(migration, "source-chain", "2.1", 2, exportHash, chain, freezeConfirmed = false)
                 }.isFailure shouldBe true
@@ -240,7 +252,7 @@ class PallaSyncLocalIntentsTest {
                         listOf(
                             PallaSyncLocalIntents.LegacyEventMapping(
                                 1,
-                                "01890f3e-7c00-7000-8000-000000000001",
+                                sourceRecordId1,
                                 0,
                                 sourceHash,
                                 event("imported"),
@@ -250,20 +262,21 @@ class PallaSyncLocalIntentsTest {
                         listOf(
                             PallaSyncLocalIntents.LegacySourceDecision(
                                 1,
-                                "01890f3e-7c00-7000-8000-000000000001",
+                                sourceRecordId1,
                                 sourceHash,
                                 "converted",
                             ),
                             PallaSyncLocalIntents.LegacySourceDecision(
                                 2,
-                                "01890f3e-7c00-7000-8000-000000000002",
+                                sourceRecordId2,
                                 quarantinedHash,
                                 "quarantined",
                                 "C_AEAD_FAILURE",
                             ),
                         ),
-                    report = PallaSyncLocalIntents.LegacyBatchReport(2, 1, 0, 0, complete = true),
+                    report = PallaSyncLocalIntents.LegacyBatchReport(2, 1, 0, 0, complete = false),
                 )
+                intents.completeLegacySourceScan(migration, 2, 2, exportHash)
                 intents.legacyMigrationProgress(migration)?.let {
                     it.sourceHighWater shouldBe 2
                     it.sourceComplete shouldBe true
@@ -278,12 +291,11 @@ class PallaSyncLocalIntentsTest {
                 migrationPage.items.single().sourceChain shouldBe "source-chain"
                 migrationPage.nextMigrationId shouldBe null
 
-                intents.resumeLegacyMigration(migration, keys())
-                intents.resumeLegacyMigration(migration, keys())
-                val record = store.dao.queuedBatch(chain, 200).single()
-                store.dao.getChainState(chain)?.authorSeq shouldBe 1
+                runCatching { intents.resumeLegacyMigration(migration, keys()) }.isFailure shouldBe true
+                store.dao.queuedBatch(chain, 200) shouldBe emptyList()
+                store.dao.getChainState(chain)?.authorSeq shouldBe 0
                 val journal = checkNotNull(store.protocolDao().migrationChunk(migration, 1))
-                journal.state shouldBe "constructed"
+                journal.state shouldBe "pending"
                 journal.sourceIdentity shouldBe "legacy:1:01890f3e-7c00-7000-8000-000000000001:0:$sourceHash"
                 val decision = checkNotNull(store.protocolDao().migrationChunk(migration, 2))
                 decision.state shouldBe "legacy_decision_converted"
@@ -296,16 +308,13 @@ class PallaSyncLocalIntentsTest {
                 decisionPage.items.map(PallaSyncLocalIntents.LegacySourceDecision::disposition) shouldBe listOf("converted", "quarantined")
                 decisionPage.nextIndex shouldBe 3L
                 intents.legacyMigrationProgress(migration)?.let {
-                    it.pending shouldBe 0
-                    it.constructed shouldBe 1
+                    it.pending shouldBe 1
+                    it.constructed shouldBe 0
                 }
-                PallaSyncDeviceSession.begin(keys()).use { session ->
-                    val inner =
-                        Json.decodeFromString<PallaSyncInnerRecord>(
-                            PallaSyncCore.decryptOwnPreparedRecord(session.handle, record.eventJson),
-                        )
-                    inner.operations.single().entityId shouldBe "imported"
-                }
+                val sourcePage = intents.legacyMigrationSourceEvidencePage(migration, 0)
+                sourcePage.items.map(PallaSyncLocalIntents.LegacySourceEvidence::sourceSequence) shouldBe listOf(1L, 2L)
+                sourcePage.items.map(PallaSyncLocalIntents.LegacySourceEvidence::signedRecordJson) shouldBe
+                    listOf(sourceJson1, sourceJson2)
             } finally {
                 db.close()
             }

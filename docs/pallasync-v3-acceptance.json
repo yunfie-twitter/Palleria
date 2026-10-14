@@ -545,7 +545,8 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLegacyV21Source.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
-        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt"
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLegacyMigrationReport.kt"
       ],
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
@@ -554,10 +555,11 @@
         "Palleria/rust/pallasync-core/tests/legacy_migration.rs",
         "Palleria/rust/pallasync-core/tests/legacy_v20.rs",
         "PallaSync/tests/reference/run_legacy_interop.py",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLegacyMigrationReportTest.kt"
       ],
       "result": "pending",
-      "remaining": "The protected v2.1 source action now opens a memory-limited native migration session, scans bounded pages, converts authenticated records to encrypted-operation candidates, and atomically journals each exact source hash, decision, and candidate mapping. A second complete transcript and device-registry read must match before the journal seals as legacy_candidates_staged. Same source/target selection reuses the durable migration ID after interruption. The candidate state is deliberately refused by the author/upload resume path until resolution is implemented. Targeted validation passed: :app:ktlintCheck, :app:compileDebugKotlin, :app:compileDebugAndroidTestKotlin, and the PallaSyncLocalIntentsTest plus PallaSyncLegacyRecordJniTest unit-test classes. Still pending: preserve the full source ciphertext export for §9.2 review; resolve whole-export conflicts with explicit user choices where the legacy spec has no total tie-break; derive favorite fractional order and lifecycle audit events; stage approved winners for destination signing; verify signed upload receipts; implement independent replay and a completion report/UI; add the v2.0 source flow and retention/truncation accounting; run isolated relay and independent client conformance trials. A-19 remains pending and the migration feature is not complete.",
+      "remaining": "The protected v2.1 source action now opens a memory-limited native migration session, scans bounded pages, converts authenticated records to encrypted-operation candidates, and atomically journals each exact source hash, decision, and candidate mapping. A second complete transcript and device-registry read must match before the journal seals as legacy_candidates_staged. Same source/target selection reuses the durable migration ID after interruption. The candidate state is deliberately refused by the author/upload resume path until resolution is implemented. Targeted validation passed: :app:ktlintCheck, :app:compileDebugKotlin, :app:compileDebugAndroidTestKotlin, and the PallaSyncLocalIntentsTest plus PallaSyncLegacyRecordJniTest unit-test classes. The original signed encrypted source records are now retained by sequence in an archive namespace separate from destination intents, each archive object is checked against its canonical source hash, and the streamed JSON report includes the full source objects and fails closed unless every sequence is present. This storage and report path has targeted unit coverage; run it with the expanded test suite before claiming conformance. Still pending: resolve whole-export conflicts with explicit user choices where the legacy spec has no total tie-break; derive favorite fractional order and lifecycle audit events; stage approved winners for destination signing; verify signed upload receipts; implement independent replay and a completion report/UI; add the v2.0 source flow and retention/truncation accounting; run isolated relay and independent client conformance trials. A-19 remains pending and the migration feature is not complete.",
       "verification_scope": "targeted_partial"
     },
     {

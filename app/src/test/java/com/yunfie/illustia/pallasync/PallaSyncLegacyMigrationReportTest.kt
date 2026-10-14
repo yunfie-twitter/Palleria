@@ -16,13 +16,24 @@ class PallaSyncLegacyMigrationReportTest {
         runBlocking {
             val temp = Files.createTempFile("pallasync-migration-report", ".json").toFile()
             try {
-                PallaSyncLegacyMigrationReport.writeReport(temp, progress(decisions = 2)) { after ->
-                    when (after) {
-                        0L -> PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(1, "item-1")), 1)
-                        1L -> PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(2, "item-2")), null)
-                        else -> error("unexpected cursor")
-                    }
-                }
+                PallaSyncLegacyMigrationReport.writeReport(
+                    temp,
+                    progress(decisions = 2),
+                    fetchPage = { after ->
+                        when (after) {
+                            0L -> PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(1, "item-1")), 1)
+                            1L -> PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(2, "item-2")), null)
+                            else -> error("unexpected cursor")
+                        }
+                    },
+                    fetchSourcePage = { after ->
+                        when (after) {
+                            0L -> PallaSyncLocalIntents.LegacySourceEvidencePage(listOf(sourceEvidence(1)), 1)
+                            1L -> PallaSyncLocalIntents.LegacySourceEvidencePage(listOf(sourceEvidence(2)), null)
+                            else -> error("unexpected source cursor")
+                        }
+                    },
+                )
 
                 val report = Json.parseToJsonElement(temp.readText()).jsonObject
                 report.getValue("report_type").jsonPrimitive.content shouldBe "pallasync-legacy-migration-report"
@@ -35,6 +46,9 @@ class PallaSyncLegacyMigrationReportTest {
                         .getValue("sourceRecordId")
                         .jsonPrimitive.content
                 } shouldBe listOf("item-1", "item-2")
+                val sourceRecords = report.getValue("source_records").jsonArray
+                val sourceSequences = sourceRecords.map { it.jsonObject["sourceSequence"]!!.jsonPrimitive.content }
+                sourceSequences shouldBe listOf("1", "2")
             } finally {
                 temp.delete()
             }
@@ -47,9 +61,16 @@ class PallaSyncLegacyMigrationReportTest {
             val temp = Files.createTempFile("pallasync-migration-report", ".json").toFile()
             try {
                 shouldThrow<IllegalStateException> {
-                    PallaSyncLegacyMigrationReport.writeReport(temp, progress(decisions = 2)) {
-                        PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(1, "item-1")), null)
-                    }
+                    PallaSyncLegacyMigrationReport.writeReport(
+                        temp,
+                        progress(decisions = 2),
+                        fetchPage = {
+                            PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(1, "item-1")), null)
+                        },
+                        fetchSourcePage = {
+                            error("source callback must not run after incomplete decision report")
+                        },
+                    )
                 }.message shouldBe "C_SCHEMA_VIOLATION"
             } finally {
                 temp.delete()
@@ -84,4 +105,12 @@ class PallaSyncLegacyMigrationReportTest {
         sourceObjectHash = "hash-$sequence",
         disposition = "converted",
     )
+
+    private fun sourceEvidence(sequence: Long) =
+        PallaSyncLocalIntents.LegacySourceEvidence(
+            sourceSequence = sequence,
+            sourceRecordId = "source-$sequence",
+            sourceObjectHash = "hash-$sequence",
+            signedRecordJson = "{\"sequence\":$sequence}",
+        )
 }

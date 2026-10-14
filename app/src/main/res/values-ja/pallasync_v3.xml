@@ -88,7 +88,7 @@
     <string name="pallasync_legacy_migration_loading">検証済み移行判断を読み込んでいます…</string>
     <string name="pallasync_legacy_migration_more">次のページを読み込む</string>
     <string name="pallasync_legacy_migration_report_failed">ローカル移行レポートを読み込めませんでした。</string>
-    <string name="pallasync_legacy_migration_export_report">完全なレポートを書き出す</string>
+    <string name="pallasync_legacy_migration_export_report">暗号化された移行元レコードを含むレポートを書き出す</string>
     <string name="pallasync_legacy_migration_report_exported">移行レポートを書き出しました。</string>
     <string name="pallasync_legacy_migration_report_cancelled">移行レポートの書き出しをキャンセルしました。</string>
     <string name="pallasync_legacy_source_action">v2.1移行元を確認して凍結する</string>

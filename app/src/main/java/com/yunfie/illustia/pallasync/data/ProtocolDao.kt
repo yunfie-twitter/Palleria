@@ -150,6 +150,18 @@ interface ProtocolDao {
     ): List<MigrationJournalEntity>
 
     @Query(
+        "SELECT * FROM ps_migrations WHERE migration_id=:id AND state='legacy_source_evidence' AND chunk_index>:afterSequence ORDER BY chunk_index LIMIT :limit",
+    )
+    suspend fun legacySourceEvidencePage(
+        id: String,
+        afterSequence: Long,
+        limit: Int,
+    ): List<MigrationJournalEntity>
+
+    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state='legacy_source_evidence'")
+    suspend fun legacySourceEvidenceCount(id: String): Long
+
+    @Query(
         "SELECT * FROM ps_migrations WHERE chunk_index=0 AND state LIKE 'legacy_%' AND migration_id>:afterId ORDER BY migration_id LIMIT :limit",
     )
     suspend fun legacyMigrationManifestPage(

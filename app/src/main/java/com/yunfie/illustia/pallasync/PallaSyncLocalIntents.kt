@@ -86,6 +86,19 @@ internal class PallaSyncLocalIntents(
         val nextIndex: Long?,
     )
 
+    @Serializable
+    internal data class LegacySourceEvidence(
+        val sourceSequence: Long,
+        val sourceRecordId: String,
+        val sourceObjectHash: String,
+        val signedRecordJson: String,
+    )
+
+    internal data class LegacySourceEvidencePage(
+        val items: List<LegacySourceEvidence>,
+        val nextSequence: Long?,
+    )
+
     internal data class LegacyProgressPage(
         val items: List<LegacyMigrationProgress>,
         val nextMigrationId: String?,
@@ -214,7 +227,7 @@ internal class PallaSyncLocalIntents(
                 report.quarantinedCount <= report.sourceRecordsVisited &&
                 decisions.size.toLong() == report.sourceRecordsVisited,
         ) { "C_ROLLBACK_DETECTED" }
-        check(!report.complete || throughSequence == manifest.sourceHighWater) { "C_ROLLBACK_DETECTED" }
+        check(!report.complete) { "C_ROLLBACK_DETECTED" }
         val state = checkNotNull(store.dao.getChainState(manifest.targetChain)) { "C_MISSING_DEPENDENCY" }
         check(state.generation == manifest.targetGeneration) { "C_MISSING_DEPENDENCY" }
         check(mappings.all { it.sourceSequence > expectedAfterSequence && it.sourceSequence <= throughSequence }) {
@@ -320,15 +333,14 @@ internal class PallaSyncLocalIntents(
                             .groupingBy { it.event.schema }
                             .eachCount()
                             .mapValues { (schema, count) -> manifest.schemaCounts.getOrDefault(schema, 0) + count },
-                sourceComplete = report.complete,
+                sourceComplete = false,
             )
-        val nextState = if (report.complete) "legacy_staged" else "legacy_staging"
         check(
             dao.updateMigrationManifest(
                 migrationId,
                 manifest.exportHash,
                 "legacy_staging",
-                nextState,
+                "legacy_staging",
                 Json.encodeToString(updated),
             ) == 1,
         ) { "C_LOCAL_STORAGE_FULL" }
@@ -347,7 +359,8 @@ internal class PallaSyncLocalIntents(
         check(
             manifest.sourceHighWater == expectedHighWater && manifest.exportHash == expectedExportHash &&
                 manifest.stagedThrough == expectedHighWater && manifest.sourceRecordsVisited == expectedRecordCount &&
-                manifest.decisionCount == expectedRecordCount,
+                manifest.decisionCount == expectedRecordCount &&
+                dao.legacySourceEvidenceCount(sourceEvidenceJournalId(migrationId)) == expectedRecordCount,
         ) { "C_ROLLBACK_DETECTED" }
         if (manifest.sourceComplete) {
             check(row.state == "legacy_candidates_staged") { "C_ROLLBACK_DETECTED" }
@@ -364,6 +377,50 @@ internal class PallaSyncLocalIntents(
                 Json.encodeToString(completed),
             ) == 1,
         ) { "C_LOCAL_STORAGE_FULL" }
+    }
+
+    /** Retains the exact signed ciphertext source object, separate from destination intents and reports (§9.2). */
+    suspend fun archiveLegacySourceRecord(
+        migrationId: String,
+        sequence: Long,
+        recordId: String,
+        objectHash: String,
+        signedRecordJson: String,
+    ) = store.transaction {
+        val dao = store.protocolDao()
+        val manifestRow = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+        val manifest = Json.decodeFromString<LegacyManifest>(manifestRow.reportJson)
+        val bytes = signedRecordJson.toByteArray(Charsets.UTF_8)
+        try {
+            check(sequence in 1..manifest.sourceHighWater && decodeHash(objectHash) && bytes.size <= 8_388_608) {
+                "C_SCHEMA_VIOLATION"
+            }
+            check(PallaSyncCore.objectHash(signedRecordJson) == objectHash) { "C_RECORD_ID_CONFLICT" }
+        } finally {
+            bytes.fill(0)
+        }
+        val archiveId = sourceEvidenceJournalId(migrationId)
+        val existing = dao.migrationChunk(archiveId, sequence)
+        val evidence = LegacySourceEvidence(sequence, recordId, objectHash, signedRecordJson)
+        if (existing != null) {
+            check(
+                existing.state == "legacy_source_evidence" && existing.sourceHash == objectHash &&
+                    existing.sourceIdentity == "legacy-source:$sequence:$recordId" &&
+                    existing.reportJson == Json.encodeToString(evidence),
+            ) { "C_RECORD_ID_CONFLICT" }
+        } else {
+            dao.putMigrationChunk(
+                MigrationJournalEntity(
+                    archiveId,
+                    sequence,
+                    objectHash,
+                    "legacy-source:$sequence:$recordId",
+                    manifest.targetChain,
+                    "legacy_source_evidence",
+                    Json.encodeToString(evidence),
+                ),
+            )
+        }
     }
 
     /** Re-author pending migration candidates from the saved source-to-record mapping. */
@@ -451,6 +508,31 @@ internal class PallaSyncLocalIntents(
             }
         return LegacyDecisionPage(items, rows.lastOrNull()?.chunkIndex)
     }
+
+    suspend fun legacyMigrationSourceEvidencePage(
+        migrationId: String,
+        afterSequence: Long,
+        limit: Int = PAGE_SIZE,
+    ): LegacySourceEvidencePage {
+        require(afterSequence >= 0 && limit in 1..PAGE_SIZE) { "C_SCHEMA_VIOLATION" }
+        val archiveId = sourceEvidenceJournalId(migrationId)
+        val rows = store.protocolDao().legacySourceEvidencePage(archiveId, afterSequence, limit + 1)
+        val pageRows = rows.take(limit)
+        val items =
+            pageRows.map { row ->
+                val evidence = Json.decodeFromString<LegacySourceEvidence>(row.reportJson)
+                check(
+                    row.chunkIndex == evidence.sourceSequence && row.sourceHash == evidence.sourceObjectHash &&
+                        row.sourceIdentity == "legacy-source:${evidence.sourceSequence}:${evidence.sourceRecordId}" &&
+                        row.state == "legacy_source_evidence" &&
+                        PallaSyncCore.objectHash(evidence.signedRecordJson) == evidence.sourceObjectHash,
+                ) { "C_ROLLBACK_DETECTED" }
+                evidence
+            }
+        return LegacySourceEvidencePage(items, pageRows.lastOrNull()?.chunkIndex.takeIf { rows.size > limit })
+    }
+
+    private fun sourceEvidenceJournalId(migrationId: String): String = "$migrationId:source"
 
     private fun decodeHash(value: String): Boolean {
         val bytes = runCatching { Base64.getUrlDecoder().decode(value) }.getOrNull() ?: return false

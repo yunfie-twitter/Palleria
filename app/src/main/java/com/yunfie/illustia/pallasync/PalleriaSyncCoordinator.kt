@@ -861,6 +861,14 @@ internal class PalleriaSyncCoordinator(
                                 currentCoroutineContext().ensureActive()
                                 transcript.append(record)
                                 cursor = record.sequence
+                                val objectHash = checkNotNull(PallaSyncCore.objectHash(record.json)) { "C_SCHEMA_VIOLATION" }
+                                localIntents.archiveLegacySourceRecord(
+                                    migrationId,
+                                    record.sequence,
+                                    record.recordId,
+                                    objectHash,
+                                    record.json,
+                                )
                                 if (record.sequence <= stagedThrough) continue
                                 check(record.sequence == stagedThrough + 1) { "C_ROLLBACK_DETECTED" }
                                 if (session == 0L) {
@@ -873,7 +881,6 @@ internal class PalleriaSyncCoordinator(
                                             parameters.adminPublicKey,
                                         )
                                 }
-                                val objectHash = checkNotNull(PallaSyncCore.objectHash(record.json)) { "C_SCHEMA_VIOLATION" }
                                 val device = devices.singleOrNull { it.deviceId == record.deviceId } ?: error("C_MISSING_DEPENDENCY")
                                 val candidates =
                                     try {
@@ -1083,6 +1090,13 @@ internal class PalleriaSyncCoordinator(
         limit: Int = 200,
     ): PallaSyncLocalIntents.LegacyDecisionPage =
         withContext(Dispatchers.IO) { localIntents.legacyMigrationDecisionPage(migrationId, afterIndex, limit) }
+
+    internal suspend fun legacyMigrationSourceEvidencePage(
+        migrationId: String,
+        afterSequence: Long,
+        limit: Int = 200,
+    ): PallaSyncLocalIntents.LegacySourceEvidencePage =
+        withContext(Dispatchers.IO) { localIntents.legacyMigrationSourceEvidencePage(migrationId, afterSequence, limit) }
 
     /** Revalidates the source proof before authoring any remaining migration candidates (§9.3). */
     internal suspend fun resumeLegacyV21Migration(

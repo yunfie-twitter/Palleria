@@ -19,10 +19,11 @@ internal object PallaSyncLegacyMigrationReport {
         destination: Uri,
         migration: PallaSyncLocalIntents.LegacyMigrationProgress,
         fetchPage: suspend (afterIndex: Long) -> PallaSyncLocalIntents.LegacyDecisionPage,
+        fetchSourcePage: suspend (afterSequence: Long) -> PallaSyncLocalIntents.LegacySourceEvidencePage,
     ) {
         val temp = File.createTempFile("pallasync-migration-", ".json", cacheDir)
         try {
-            writeReport(temp, migration, fetchPage)
+            writeReport(temp, migration, fetchPage, fetchSourcePage)
             val expected = digest(temp)
             contentResolver.openOutputStream(destination, "wt").use { output ->
                 checkNotNull(output) { "C_LOCAL_STORAGE_FULL" }
@@ -48,10 +49,11 @@ internal object PallaSyncLegacyMigrationReport {
         file: File,
         migration: PallaSyncLocalIntents.LegacyMigrationProgress,
         fetchPage: suspend (afterIndex: Long) -> PallaSyncLocalIntents.LegacyDecisionPage,
+        fetchSourcePage: suspend (afterSequence: Long) -> PallaSyncLocalIntents.LegacySourceEvidencePage,
     ) {
         file.outputStream().buffered().use { bytes ->
             val writer = BufferedWriter(OutputStreamWriter(bytes, Charsets.UTF_8))
-            writer.write("{\"report_type\":\"pallasync-legacy-migration-report\",\"report_version\":1")
+            writer.write("{\"report_type\":\"pallasync-legacy-migration-report\",\"report_version\":2")
             writer.write(",\"migration_id\":${Json.encodeToString(migration.migrationId)}")
             writer.write(",\"source_chain_id\":${Json.encodeToString(migration.sourceChain)}")
             writer.write(",\"source_protocol\":${Json.encodeToString(migration.sourceProtocol)}")
@@ -83,6 +85,24 @@ internal object PallaSyncLegacyMigrationReport {
                 afterIndex = next
             }
             check(written == migration.decisions) { "C_SCHEMA_VIOLATION" }
+            writer.write("],\"source_records\":[")
+            var afterSequence = 0L
+            var sourceWritten = 0L
+            first = true
+            while (true) {
+                val page = fetchSourcePage(afterSequence)
+                for (evidence in page.items) {
+                    check(evidence.sourceSequence == sourceWritten + 1) { "C_SCHEMA_VIOLATION" }
+                    if (!first) writer.write(",")
+                    writer.write(Json.encodeToString(evidence))
+                    first = false
+                    sourceWritten += 1
+                }
+                val next = page.nextSequence ?: break
+                check(next > afterSequence) { "C_SCHEMA_VIOLATION" }
+                afterSequence = next
+            }
+            check(sourceWritten == migration.sourceHighWater) { "C_SCHEMA_VIOLATION" }
             writer.write("]}")
             writer.flush()
         }
