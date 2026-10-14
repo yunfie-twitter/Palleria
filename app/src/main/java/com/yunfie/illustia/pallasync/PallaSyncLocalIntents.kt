@@ -60,6 +60,8 @@ internal class PallaSyncLocalIntents(
         val sourceObjectHash: String,
         val disposition: String,
         val reasonCode: String? = null,
+        val normalizationChanged: Boolean = false,
+        val normalizationCollision: Boolean = false,
     )
 
     internal data class LegacyMigrationProgress(
@@ -74,6 +76,11 @@ internal class PallaSyncLocalIntents(
         val constructed: Long,
         val quarantined: Long,
         val schemaCounts: Map<String, Long>,
+    )
+
+    internal data class LegacyDecisionPage(
+        val items: List<LegacySourceDecision>,
+        val nextIndex: Long?,
     )
 
     companion object {
@@ -212,9 +219,14 @@ internal class PallaSyncLocalIntents(
         check(decisions.all { it.sourceSequence > expectedAfterSequence && it.sourceSequence <= throughSequence }) {
             "C_SCHEMA_VIOLATION"
         }
-        val mappingsPerSource = mappings.groupingBy(LegacyEventMapping::sourceSequence).eachCount()
+        val mappingsPerSource = mappings.groupBy(LegacyEventMapping::sourceSequence)
         check(
             decisions.all { decision ->
+                val sourceMappings = mappingsPerSource[decision.sourceSequence].orEmpty()
+                val mappingsMatchDecision =
+                    sourceMappings.all {
+                        it.sourceRecordId == decision.sourceRecordId && it.sourceObjectHash == decision.sourceObjectHash
+                    }
                 val idValid =
                     runCatching {
                         val id = java.util.UUID.fromString(decision.sourceRecordId)
@@ -223,12 +235,12 @@ internal class PallaSyncLocalIntents(
                 val outcomeValid =
                     when (decision.disposition) {
                         "converted" -> {
-                            decision.reasonCode == null && mappingsPerSource.getOrDefault(decision.sourceSequence, 0) > 0
+                            decision.reasonCode == null && sourceMappings.isNotEmpty() && mappingsMatchDecision
                         }
 
                         "quarantined", "excluded" -> {
                             decision.reasonCode?.matches(Regex("C_[A-Z_]+")) == true &&
-                                mappingsPerSource.getOrDefault(decision.sourceSequence, 0) == 0
+                                sourceMappings.isEmpty()
                         }
 
                         else -> {
@@ -239,6 +251,12 @@ internal class PallaSyncLocalIntents(
             },
         ) { "C_SCHEMA_VIOLATION" }
         check(decisions.count { it.disposition == "quarantined" }.toLong() == report.quarantinedCount) {
+            "C_ROLLBACK_DETECTED"
+        }
+        check(decisions.count(LegacySourceDecision::normalizationChanged).toLong() == report.normalizationCount) {
+            "C_ROLLBACK_DETECTED"
+        }
+        check(decisions.count(LegacySourceDecision::normalizationCollision).toLong() == report.collisionCount) {
             "C_ROLLBACK_DETECTED"
         }
         var index = checkNotNull(dao.lastMigrationIndex(migrationId))
@@ -357,6 +375,27 @@ internal class PallaSyncLocalIntents(
             manifest.quarantinedCount,
             manifest.schemaCounts,
         )
+    }
+
+    /** Bounded keyset read for the migration report; decision rows never enter sync/outbox paths. */
+    suspend fun legacyMigrationDecisionPage(
+        migrationId: String,
+        afterIndex: Long,
+        limit: Int = PAGE_SIZE,
+    ): LegacyDecisionPage {
+        require(afterIndex >= 0 && limit in 1..PAGE_SIZE) { "C_SCHEMA_VIOLATION" }
+        val rows = store.protocolDao().legacyDecisionPage(migrationId, afterIndex, limit)
+        val items =
+            rows.map { row ->
+                val decision = Json.decodeFromString<LegacySourceDecision>(row.reportJson)
+                check(
+                    row.sourceHash == decision.sourceObjectHash &&
+                        row.sourceIdentity == "legacy-decision:${decision.sourceSequence}:${decision.sourceRecordId}" &&
+                        row.state == "legacy_decision_${decision.disposition}",
+                ) { "C_ROLLBACK_DETECTED" }
+                decision
+            }
+        return LegacyDecisionPage(items, rows.lastOrNull()?.chunkIndex)
     }
 
     private fun decodeHash(value: String): Boolean {

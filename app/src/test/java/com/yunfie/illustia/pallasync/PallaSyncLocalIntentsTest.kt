@@ -170,16 +170,17 @@ class PallaSyncLocalIntentsTest {
                 val migration = "legacy:source:$chain"
                 val exportHash = encode(ByteArray(32) { 3 })
                 val sourceHash = encode(ByteArray(32) { 4 })
+                val quarantinedHash = encode(ByteArray(32) { 5 })
 
-                intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = true)
+                intents.beginLegacyMigration(migration, "source-chain", "2.1", 2, exportHash, chain, freezeConfirmed = true)
                 runCatching {
-                    intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = false)
+                    intents.beginLegacyMigration(migration, "source-chain", "2.1", 2, exportHash, chain, freezeConfirmed = false)
                 }.isFailure shouldBe true
 
                 intents.stageLegacyBatch(
                     migration,
                     expectedAfterSequence = 0,
-                    throughSequence = 1,
+                    throughSequence = 2,
                     mappings =
                         listOf(
                             PallaSyncLocalIntents.LegacyEventMapping(
@@ -198,15 +199,23 @@ class PallaSyncLocalIntentsTest {
                                 sourceHash,
                                 "converted",
                             ),
+                            PallaSyncLocalIntents.LegacySourceDecision(
+                                2,
+                                "01890f3e-7c00-7000-8000-000000000002",
+                                quarantinedHash,
+                                "quarantined",
+                                "C_AEAD_FAILURE",
+                            ),
                         ),
-                    report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = true),
+                    report = PallaSyncLocalIntents.LegacyBatchReport(2, 1, 0, 0, complete = true),
                 )
                 intents.legacyMigrationProgress(migration)?.let {
-                    it.sourceHighWater shouldBe 1
+                    it.sourceHighWater shouldBe 2
                     it.sourceComplete shouldBe true
                     it.candidates shouldBe 1
-                    it.decisions shouldBe 1
+                    it.decisions shouldBe 2
                     it.pending shouldBe 1
+                    it.quarantined shouldBe 1
                     it.schemaCounts shouldBe mapOf(SEARCH_HISTORY_SCHEMA_V3 to 1L)
                 }
 
@@ -220,6 +229,13 @@ class PallaSyncLocalIntentsTest {
                 val decision = checkNotNull(store.protocolDao().migrationChunk(migration, 2))
                 decision.state shouldBe "legacy_decision_converted"
                 Json.decodeFromString<PallaSyncLocalIntents.LegacySourceDecision>(decision.reportJson).sourceObjectHash shouldBe sourceHash
+                val quarantined = checkNotNull(store.protocolDao().migrationChunk(migration, 3))
+                quarantined.state shouldBe "legacy_decision_quarantined"
+                Json.decodeFromString<PallaSyncLocalIntents.LegacySourceDecision>(quarantined.reportJson).reasonCode shouldBe
+                    "C_AEAD_FAILURE"
+                val decisionPage = intents.legacyMigrationDecisionPage(migration, afterIndex = 0)
+                decisionPage.items.map(PallaSyncLocalIntents.LegacySourceDecision::disposition) shouldBe listOf("converted", "quarantined")
+                decisionPage.nextIndex shouldBe 3L
                 intents.legacyMigrationProgress(migration)?.let {
                     it.pending shouldBe 0
                     it.constructed shouldBe 1
