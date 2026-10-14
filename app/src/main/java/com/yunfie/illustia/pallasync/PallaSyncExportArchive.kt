@@ -85,15 +85,7 @@ internal class PallaSyncExportArchive private constructor(
     private fun acceptHeader(line: String) {
         val header = canonicalObject(line)
         validateHeader(header)
-        expectedSource?.let { expected ->
-            check(
-                header["chain_id"]?.jsonPrimitive?.content == expected.chainId &&
-                    header["generation"]?.jsonPrimitive?.longOrNull == expected.generation &&
-                    header["log_id"]?.jsonPrimitive?.content == expected.logId &&
-                    header["relay_public_key"]?.jsonPrimitive?.content == expected.relayPublicKey &&
-                    header["relay_key_id"]?.jsonPrimitive?.content == expected.relayKeyId,
-            ) { "C_ROLLBACK_DETECTED" }
-        }
+        expectedSource?.let { validateExpectedSource(header, it) }
         val previous = headerLine
         if (previous == null) {
             headerLine = line
@@ -149,25 +141,6 @@ internal class PallaSyncExportArchive private constructor(
         }
     }
 
-    private fun validateHeader(value: kotlinx.serialization.json.JsonObject) {
-        check(
-            value.keys == EXPORT_HEADER_FIELDS && value["kind"]?.jsonPrimitive?.content == "header" &&
-                value["protocol"]?.jsonPrimitive?.content == "pallasync/3" &&
-                value["include_recovery"]?.jsonPrimitive?.booleanOrNull != null &&
-                HEADER_STRING_FIELDS.all { value[it]?.jsonPrimitive?.toString()?.startsWith('"') == true } &&
-                HEADER_INTEGER_FIELDS.all { value[it]?.jsonPrimitive?.longOrNull in 0..MAX_SAFE_INTEGER } &&
-                value["generation"]?.jsonPrimitive?.longOrNull in 0..MAX_GENERATION &&
-                uuid4(value.getValue("log_id").jsonPrimitive.content) &&
-                uuid4(value.getValue("transparency_id").jsonPrimitive.content) &&
-                B64U_32_FIELDS.all { value[it]?.jsonPrimitive?.content?.matches(B64U_32) == true },
-        ) { "C_SCHEMA_VIOLATION" }
-    }
-
-    private fun canonicalObject(line: String): kotlinx.serialization.json.JsonObject {
-        check(line.isNotBlank() && PallaSyncCore.canonicalJson(line) == line) { "C_SCHEMA_VIOLATION" }
-        return Json.parseToJsonElement(line).jsonObject
-    }
-
     private fun writeArchiveLine(line: String) {
         val bytes = line.toByteArray(Charsets.UTF_8) + '\n'.code.toByte()
         output.write(bytes)
@@ -183,7 +156,7 @@ internal class PallaSyncExportArchive private constructor(
     }
 
     companion object {
-        private val EXPORT_HEADER_FIELDS =
+        internal val EXPORT_HEADER_FIELDS =
             setOf(
                 "kind",
                 "protocol",
@@ -199,7 +172,7 @@ internal class PallaSyncExportArchive private constructor(
                 "transparency_head_index",
                 "transparency_head_hash",
             )
-        private val EXPORT_LINE_KINDS =
+        internal val EXPORT_LINE_KINDS =
             setOf(
                 "log",
                 "snapshot_part",
@@ -222,6 +195,38 @@ internal class PallaSyncExportArchive private constructor(
         private const val UUID_VERSION_4 = 4
         private const val UUID_VARIANT_RFC = 2
         private val B64U_32 = Regex("^[A-Za-z0-9_-]{43}$")
+
+        internal fun canonicalObject(line: String): kotlinx.serialization.json.JsonObject {
+            check(line.isNotBlank() && PallaSyncCore.canonicalJson(line) == line) { "C_SCHEMA_VIOLATION" }
+            return Json.parseToJsonElement(line).jsonObject
+        }
+
+        internal fun validateHeader(value: kotlinx.serialization.json.JsonObject) {
+            check(
+                value.keys == EXPORT_HEADER_FIELDS && value["kind"]?.jsonPrimitive?.content == "header" &&
+                    value["protocol"]?.jsonPrimitive?.content == "pallasync/3" &&
+                    value["include_recovery"]?.jsonPrimitive?.booleanOrNull != null &&
+                    HEADER_STRING_FIELDS.all { value[it]?.jsonPrimitive?.toString()?.startsWith('"') == true } &&
+                    HEADER_INTEGER_FIELDS.all { value[it]?.jsonPrimitive?.longOrNull in 0..MAX_SAFE_INTEGER } &&
+                    value["generation"]?.jsonPrimitive?.longOrNull in 0..MAX_GENERATION &&
+                    uuid4(value.getValue("log_id").jsonPrimitive.content) &&
+                    uuid4(value.getValue("transparency_id").jsonPrimitive.content) &&
+                    B64U_32_FIELDS.all { value[it]?.jsonPrimitive?.content?.matches(B64U_32) == true },
+            ) { "C_SCHEMA_VIOLATION" }
+        }
+
+        private fun validateExpectedSource(
+            header: kotlinx.serialization.json.JsonObject,
+            expected: ExpectedSource,
+        ) {
+            check(
+                header["chain_id"]?.jsonPrimitive?.content == expected.chainId &&
+                    header["generation"]?.jsonPrimitive?.longOrNull == expected.generation &&
+                    header["log_id"]?.jsonPrimitive?.content == expected.logId &&
+                    header["relay_public_key"]?.jsonPrimitive?.content == expected.relayPublicKey &&
+                    header["relay_key_id"]?.jsonPrimitive?.content == expected.relayKeyId,
+            ) { "C_ROLLBACK_DETECTED" }
+        }
 
         private fun uuid4(value: String): Boolean =
             runCatching { java.util.UUID.fromString(value) }.getOrNull()?.let {

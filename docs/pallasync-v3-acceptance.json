@@ -347,6 +347,7 @@
         "PallaSync/src/api/import.rs",
         "PallaSync/src/config.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncExportArchive.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncExportArchiveVerifier.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelay.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncWireModels.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",

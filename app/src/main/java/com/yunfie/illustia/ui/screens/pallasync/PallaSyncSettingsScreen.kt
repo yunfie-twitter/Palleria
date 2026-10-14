@@ -35,6 +35,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
+import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -114,6 +115,11 @@ fun PallaSyncSettingsScreen(
                             syncManager.exportRelayArchive(
                                 checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" },
                             )
+                            val verified =
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }.use(
+                                    PallaSyncExportArchiveVerifier::verify,
+                                )
+                            check(!verified.includeRecovery && !verified.complete) { "C_SCHEMA_VIOLATION" }
                         }
                         Toast.makeText(context, R.string.pallasync_export_saved, Toast.LENGTH_LONG).show()
                     } catch (cancelled: CancellationException) {

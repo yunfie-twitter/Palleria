@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 import java.util.Base64
@@ -98,5 +99,27 @@ class PallaSyncExportArchiveTest {
         incomplete.acceptChunk("$header\n{\"has_more\":true,\"kind\":\"continuation\",\"next_cursor\":\"next\"}\n".toByteArray(), null)
         shouldThrow<IllegalStateException> { incomplete.finish() }
         incomplete.close()
+    }
+
+    @Test
+    fun verifiesArchiveFooterStreamingAndRejectsTampering() {
+        val output = ByteArrayOutputStream()
+        PallaSyncExportArchive.create(output).use { archive ->
+            val chunk =
+                listOf(
+                    header,
+                    """{"kind":"control","object":{},"object_type":"parameters"}""",
+                    """{"has_more":false,"kind":"continuation","next_cursor":null}""",
+                ).joinToString("\n", postfix = "\n")
+            archive.acceptChunk(chunk.toByteArray(), null)
+            archive.finish()
+        }
+        val bytes = output.toByteArray()
+        PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(bytes)).complete shouldBe false
+
+        val tampered = bytes.toString(Charsets.UTF_8).replace("parameters", "device").toByteArray()
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(tampered))
+        }
     }
 }
