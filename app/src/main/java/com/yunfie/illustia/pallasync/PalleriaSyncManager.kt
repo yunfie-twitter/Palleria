@@ -339,4 +339,27 @@ class PalleriaSyncManager(
         afterIndex: Long,
         limit: Int = 200,
     ): PallaSyncLocalIntents.LegacyDecisionPage = coordinator.legacyMigrationDecisionPage(migrationId, afterIndex, limit)
+
+    internal suspend fun resumeLegacyV21Migration(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<Unit> =
+        coordinator.resumeLegacyV21Migration(
+            migrationId,
+            sourceUrl,
+            parameters,
+            devices,
+            signerDeviceId,
+            signerDeviceSeed,
+            signerDevicePublicKey,
+            targetChain,
+            freezeConfirmed,
+        )
 }

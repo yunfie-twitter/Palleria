@@ -822,6 +822,55 @@ internal class PalleriaSyncCoordinator(
     ): PallaSyncLocalIntents.LegacyDecisionPage =
         withContext(Dispatchers.IO) { localIntents.legacyMigrationDecisionPage(migrationId, afterIndex, limit) }
 
+    /** Revalidates the source proof before authoring any remaining migration candidates (§9.3). */
+    internal suspend fun resumeLegacyV21Migration(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<Unit> {
+        val verified =
+            revalidateLegacyV21MigrationSource(
+                migrationId,
+                sourceUrl,
+                parameters,
+                devices,
+                signerDeviceId,
+                signerDeviceSeed,
+                signerDevicePublicKey,
+                targetChain,
+                freezeConfirmed,
+            )
+        if (verified !is PallaSyncHttpResult.Success) {
+            return when (verified) {
+                is PallaSyncHttpResult.ProtocolError -> verified
+                is PallaSyncHttpResult.Retryable -> verified
+                PallaSyncHttpResult.Gone -> PallaSyncHttpResult.Gone
+                is PallaSyncHttpResult.Success -> error("unreachable")
+            }
+        }
+        return withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                try {
+                    val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+                    check(state.chainId == targetChain) { "C_MISSING_DEPENDENCY" }
+                    val keys = checkNotNull(keysForChainLocked(targetChain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    localIntents.resumeLegacyMigration(migrationId, keys)
+                    PallaSyncHttpResult.Success(Unit)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: IllegalStateException) {
+                    PallaSyncHttpResult.ProtocolError(error.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY")
+                }
+            }
+        }
+    }
+
     fun getPallaSyncKeystore(): PallaSyncKeystore = keystore
 
     /** Repairs a process death between staged-key and Room activation commits. */
