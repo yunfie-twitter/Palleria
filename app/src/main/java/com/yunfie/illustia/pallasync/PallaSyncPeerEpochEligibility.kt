@@ -12,6 +12,7 @@ internal object PallaSyncPeerEpochEligibility {
     fun eligibleEpochs(
         authority: JsonObject,
         nowMs: Long,
+        handoffVerified: Boolean = false,
     ): List<Long> {
         check(nowMs >= 0) { "C_SCHEMA_VIOLATION" }
         val generation = authority.getValue("generation").jsonPrimitive.long
@@ -46,6 +47,7 @@ internal object PallaSyncPeerEpochEligibility {
             }
 
             "immediate" -> {
+                check(handoffVerified || records.size == 1) { "C_MISSING_DEPENDENCY" }
                 listOf(current)
             }
 
@@ -61,7 +63,7 @@ internal object PallaSyncPeerEpochEligibility {
                             "C_SCHEMA_VIOLATION"
                         }
                         val deadline = successor.committedAtMs + window
-                        epoch.number.takeIf { nowMs < deadline }
+                        epoch.number.takeIf { nowMs < deadline || !handoffVerified }
                     }
                 }
             }

@@ -17,12 +17,21 @@ class PallaSyncPeerEpochEligibilityTest :
         "windowed expires an old key exactly at successor commit plus the configured window" {
             val authority = authority("windowed", windowMs = 20)
             PallaSyncPeerEpochEligibility.eligibleEpochs(authority, 119) shouldBe listOf(0L, 1L, 2L)
-            PallaSyncPeerEpochEligibility.eligibleEpochs(authority, 120) shouldBe listOf(1L, 2L)
-            PallaSyncPeerEpochEligibility.eligibleEpochs(authority, 220) shouldBe listOf(2L)
+            PallaSyncPeerEpochEligibility.eligibleEpochs(authority, 120, handoffVerified = true) shouldBe listOf(1L, 2L)
+            PallaSyncPeerEpochEligibility.eligibleEpochs(authority, 220, handoffVerified = true) shouldBe listOf(2L)
         }
 
-        "immediate only distributes the current epoch and gaps are rejected" {
-            PallaSyncPeerEpochEligibility.eligibleEpochs(authority("immediate"), 50) shouldBe listOf(2L)
+        "windowed expiry is postponed and immediate enrollment is blocked until handoff is verified" {
+            val windowed = authority("windowed", windowMs = 20)
+            PallaSyncPeerEpochEligibility.eligibleEpochs(windowed, 220) shouldBe listOf(0L, 1L, 2L)
+            shouldThrow<IllegalStateException> {
+                PallaSyncPeerEpochEligibility.eligibleEpochs(authority("immediate"), 50)
+            }.message shouldBe "C_MISSING_DEPENDENCY"
+            PallaSyncPeerEpochEligibility.eligibleEpochs(authority("immediate"), 50, handoffVerified = true) shouldBe listOf(2L)
+            PallaSyncPeerEpochEligibility.eligibleEpochs(authority("immediate", numbers = listOf(0)), 50) shouldBe listOf(0L)
+        }
+
+        "epoch gaps are rejected" {
             shouldThrow<IllegalStateException> {
                 PallaSyncPeerEpochEligibility.eligibleEpochs(authority("retain", numbers = listOf(0, 2)), 50)
             }.message shouldBe "C_MISSING_DEPENDENCY"
