@@ -3246,7 +3246,16 @@ internal class PalleriaSyncCoordinator(
                 }
             val payloadJson = payloadResult.getOrNull()
             if (payloadJson.isNullOrBlank()) {
-                quarantine(payloadResult.exceptionOrNull()?.message?.takeIf { it.startsWith("C_") } ?: "C_SCHEMA_VIOLATION")
+                val failureCode = payloadResult.exceptionOrNull()?.message?.takeIf { it.startsWith("C_") }
+                if (recordPageMustRemainUncommitted(failureCode)) {
+                    // The row has not been materialized and cannot be replayed from this page
+                    // after its relay cursor advances. Keep the whole page uncommitted so the
+                    // user can supply the retained epoch key and retry from the same boundary.
+                    return PallaSyncHttpResult.Retryable(
+                        "C_MISSING_DEPENDENCY: epoch key unavailable; record page and relay cursor were retained",
+                    )
+                }
+                quarantine(failureCode ?: "C_SCHEMA_VIOLATION")
                 return@forEach
             }
             val innerRecord =

@@ -294,16 +294,18 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPrefixMaterializer.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncOutboxRebase.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt"
       ],
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalAuthorTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncValidationStateTest.kt",
         "PallaSync/tests/reference/run_android_interop.py",
         "PallaSync/tests/reference/android_rebase.py"
       ],
       "result": "pending",
-      "remaining": "Inject every persistence/cursor boundary with actual restart, capacity failure and uncertain network outcome.",
+      "remaining": "Missing epoch-key dependencies now stop before committing a fetched record page, preserving its relay cursor so recovery can retry the same page; malformed or unauthorized evidence retains its existing quarantine path. Focused dependency-policy unit test, Kotlin compile, detekt and ktlint pass. Still inject every Room persistence/cursor boundary with restart, capacity failure and uncertain network outcome, and prove page retention/retry with an isolated relay and Android instrumentation.",
       "verification_scope": "targeted_partial"
     },
     {

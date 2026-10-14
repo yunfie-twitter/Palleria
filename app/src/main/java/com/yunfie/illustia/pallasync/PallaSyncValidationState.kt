@@ -10,3 +10,6 @@ internal fun validationState(code: String?): String =
         "C_LOCAL_STORAGE_FULL", "C_LOCAL_LIMIT", "C_WRITE_PAUSED_BY_POLICY", "C_COUNTER_EXHAUSTED" -> "operationally_blocked"
         else -> "quarantined"
     }
+
+/** A missing epoch key is recoverable only by retrying the uncommitted record page. */
+internal fun recordPageMustRemainUncommitted(code: String?): Boolean = code == "C_MISSING_DEPENDENCY"
