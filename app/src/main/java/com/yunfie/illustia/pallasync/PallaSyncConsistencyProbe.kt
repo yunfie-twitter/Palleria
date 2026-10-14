@@ -2,6 +2,8 @@ package com.yunfie.illustia.pallasync
 
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -112,7 +114,39 @@ internal class PallaSyncConsistencyProbe(
                 .getValue("min_available_seq")
                 .jsonPrimitive.long == 1L,
         ) { "C_MISSING_DEPENDENCY" }
-        return stream(context, response.head)
+        val target =
+            pendingTarget(context) ?: response.also {
+                retain(
+                    context,
+                    it.head,
+                    "transparency_target",
+                    it.head
+                        .getValue("entry_index")
+                        .jsonPrimitive.long,
+                )
+            }
+        return stream(context, target.head)
+    }
+
+    /** A validated target survives cancellation; never replace an unfinished target mid-suffix. */
+    private suspend fun pendingTarget(context: ProbeContext): ObservedHead? {
+        val saved = store.protocolDao().latestEvidence(context.chain, context.logId, "transparency_target")
+        val head = saved?.let { json.parseToJsonElement(it).jsonObject } ?: return null
+        val targetIndex = head.getValue("entry_index").jsonPrimitive.long
+        return if (!PallaSyncTransparencyProgress.shouldResumeSavedTarget(targetIndex, context.state.transparencyIndex)) {
+            null
+        } else {
+            check(
+                head.getValue("transparency_id").jsonPrimitive.content ==
+                    context.anchor
+                        .getValue("transparency_id")
+                        .jsonPrimitive.content &&
+                    head.getValue("log_id").jsonPrimitive.content == context.logId,
+            ) { "C_TRANSPARENCY_INVALID" }
+            val bytes = head.toString().toByteArray(Charsets.UTF_8)
+            PallaSyncCore.validateTransparencyHead(bytes, context.pin, context.checkpoint)
+            ObservedHead(bytes, head)
+        }
     }
 
     private fun requireMatchingView(
@@ -148,6 +182,7 @@ internal class PallaSyncConsistencyProbe(
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
         do {
+            currentCoroutineContext().ensureActive()
             val url = PallaSyncUrls.transparencyEntries(context.base, context.chain, id, start, through, cursor)
             val checked =
                 remote.execute(request(url, context.chain)) { response ->
@@ -272,6 +307,7 @@ internal class PallaSyncConsistencyProbe(
         val anchor: JsonObject,
     ) {
         val chain: String get() = state.chainId
+        val logId: String get() = checkNotNull(state.logId)
     }
 
     private data class ObservedHead(

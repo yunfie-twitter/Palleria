@@ -683,6 +683,7 @@
       "implementation": [
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLiveHistory.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConsistencyProbe.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
     "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgress.kt",
     "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncHistoryPage.kt",
     "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
@@ -694,7 +695,7 @@
     "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgressTest.kt"
       ],
       "result": "pending",
-  "remaining": "Settings now separates the last locally verified transparency anchor from the latest signature-validated observed head, uses the independent entry_index, and surfaces transparency_id/log_id conflicts; focused status tests pass. Test cancellation/checkpoint restart and large suffix/post-pruning progress on Android; keep pending.",
+      "remaining": "The exact signed target is stored only after its signature and data-head view are checked, then reused across cancellation/restart until the saved verified anchor reaches its entry_index. Each page checks coroutine cancellation before requesting the next page. Focused target-selection tests pass. Run isolated-relay cancellation/process-death at every page boundary and large suffix/post-pruning Android progress tests; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

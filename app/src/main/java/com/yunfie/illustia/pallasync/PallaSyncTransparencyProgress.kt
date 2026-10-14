@@ -12,6 +12,11 @@ internal data class PallaSyncTransparencyProgress(
     val observationConflict: Boolean,
 ) {
     companion object {
+        fun shouldResumeSavedTarget(
+            savedTargetIndex: Long,
+            verifiedIndex: Long,
+        ): Boolean = savedTargetIndex > verifiedIndex
+
         fun fromSavedHead(
             transparencyId: String?,
             logId: String?,

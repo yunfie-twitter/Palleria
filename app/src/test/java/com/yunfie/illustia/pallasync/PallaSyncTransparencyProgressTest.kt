@@ -8,6 +8,13 @@ class PallaSyncTransparencyProgressTest {
     private val log = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
 
     @Test
+    fun `an unfinished signed target is resumed until its exact index is verified`() {
+        PallaSyncTransparencyProgress.shouldResumeSavedTarget(savedTargetIndex = 19, verifiedIndex = 12) shouldBe true
+        PallaSyncTransparencyProgress.shouldResumeSavedTarget(savedTargetIndex = 19, verifiedIndex = 19) shouldBe false
+        PallaSyncTransparencyProgress.shouldResumeSavedTarget(savedTargetIndex = 12, verifiedIndex = 19) shouldBe false
+    }
+
+    @Test
     fun `same transparency id exposes separate signed target without lowering verified anchor`() {
         PallaSyncTransparencyProgress.fromSavedHead(id, log, 12, """{"transparency_id":"$id","log_id":"$log","entry_index":19}""") shouldBe
             PallaSyncTransparencyProgress(12, 19, false)
