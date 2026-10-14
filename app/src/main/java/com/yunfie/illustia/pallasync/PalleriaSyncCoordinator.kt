@@ -85,6 +85,12 @@ internal enum class PallaSyncDeletionRequestResult {
     FAILED,
 }
 
+internal data class PallaSyncDeletionWitnessPreview(
+    val chainId: String,
+    val deletionId: String,
+    val existingWitnessCount: Int,
+)
+
 internal class PalleriaSyncCoordinator(
     client: OkHttpClient = OkHttpClient(),
     context: Context,
@@ -1939,6 +1945,29 @@ internal class PalleriaSyncCoordinator(
                         ).contains(result),
                 ) { "C_LOCAL_STORAGE_FULL" }
                 result
+            }
+        }
+
+    /** Validate the exact imported receipt and witnesses before the confirmation UI is shown. */
+    suspend fun previewDeletionIntentWitness(archiveText: String): PallaSyncDeletionWitnessPreview? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val archive = Json.parseToJsonElement(archiveText).jsonObject
+                check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
+                val receipt = archive.getValue("delete_receipt").jsonObject
+                val bundle = archive.getValue("evidence_bundle").jsonObject
+                val chain = receipt.getValue("chain_id").jsonPrimitive.content
+                check(bundle.getValue("chain_id").jsonPrimitive.content == chain) { "C_DELETION_UNVERIFIED" }
+                val state = checkNotNull(db.dao.getChainState(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.writeState == "active") { "C_WRITE_PAUSED" }
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(PallaSyncCore.objectHash(authorityText) == keystore.authorityHash(chain)) { "C_ROLLBACK_DETECTED" }
+                PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), bundle.toString(), authorityText)
+                PallaSyncDeletionWitnessPreview(
+                    chainId = chain,
+                    deletionId = receipt.getValue("deletion_id").jsonPrimitive.content,
+                    existingWitnessCount = bundle.getValue("witnesses").jsonArray.size,
+                )
             }
         }
 

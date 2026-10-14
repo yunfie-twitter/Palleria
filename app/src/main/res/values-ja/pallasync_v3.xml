@@ -40,12 +40,13 @@
     <string name="pallasync_delete_export_required">証明は検証済みで端末内に保持されています。端末データはまだ消去していません。オフライン媒体へ保存し、確認して続行してください。</string>
     <string name="pallasync_delete_export_failed">証拠ファイルを保存・検証できませんでした。この端末の鍵とデータは保持されています。</string>
     <string name="pallasync_delete_bundle_export">削除証拠bundleを書き出す</string>
-    <string name="pallasync_delete_bundle_export_desc">DeleteReceiptと別のDeletionEvidenceBundleをJSON保存します。任意witnessはまだ含みません。</string>
     <string name="pallasync_delete_bundle_exported">削除証拠bundleを書き出し、読み戻しを確認しました。</string>
+    <string name="pallasync_delete_bundle_export_desc">保存済みのDeleteReceiptと別個のDeletionEvidenceBundleをJSONで書き出します。検証済みの任意witnessも含みます。</string>
     <string name="pallasync_witness_import_title">削除意図のwitnessを確認</string>
     <string name="pallasync_witness_import_summary">DeleteReceipt archiveを読み込み、chainと削除IDを確認して、この端末から任意のwitnessに署名します。</string>
     <string name="pallasync_witness_confirm_title">削除意図のwitnessに署名しますか？</string>
     <string name="pallasync_witness_confirm_summary">この端末は以下の削除receiptを確認したことに署名します。削除を認可せず、物理消去の証明にもなりません。\n%1$s</string>
+    <string name="pallasync_witness_existing_count">有効な既存witness数: %1$d</string>
     <string name="pallasync_witness_confirm_action">署名して書き出す</string>
     <string name="pallasync_witness_exported">witness bundleを書き出し、読み戻しを確認しました。削除を管理する端末へ転送してください。</string>
     <string name="pallasync_witness_export_cancelled">witnessの書出しをキャンセルしました。端末内の署名は保持されています。</string>

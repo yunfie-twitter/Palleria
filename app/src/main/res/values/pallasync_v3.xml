@@ -45,12 +45,13 @@
     <string name="pallasync_delete_export_required">The proof is verified and retained locally. This device has not been erased. Save it to an offline medium and confirm to continue.</string>
     <string name="pallasync_delete_export_failed">The evidence file could not be saved and verified. This device’s keys and data were retained.</string>
     <string name="pallasync_delete_bundle_export">Export deletion evidence bundle</string>
-    <string name="pallasync_delete_bundle_export_desc">Save DeleteReceipt and its separate DeletionEvidenceBundle as JSON. No optional witnesses are included yet.</string>
+    <string name="pallasync_delete_bundle_export_desc">Save the retained DeleteReceipt and its separate DeletionEvidenceBundle as JSON, including any verified optional witnesses.</string>
     <string name="pallasync_delete_bundle_exported">Deletion evidence bundle saved and read back successfully.</string>
     <string name="pallasync_witness_import_title">Confirm intent witness</string>
     <string name="pallasync_witness_import_summary">Import a DeleteReceipt archive, review its chain and deletion ID, and optionally sign an intent witness on this active device.</string>
     <string name="pallasync_witness_confirm_title">Sign deletion intent witness?</string>
     <string name="pallasync_witness_confirm_summary">This device will sign a statement confirming the exact deletion receipt below. It does not authorize deletion or prove physical erasure.\n%1$s</string>
+    <string name="pallasync_witness_existing_count">Existing valid witnesses: %1$d</string>
     <string name="pallasync_witness_confirm_action">Sign and export witness</string>
     <string name="pallasync_witness_exported">Witness bundle saved and read back. Transfer it to the device managing deletion.</string>
     <string name="pallasync_witness_export_cancelled">Witness export cancelled. No signature was removed from this device.</string>

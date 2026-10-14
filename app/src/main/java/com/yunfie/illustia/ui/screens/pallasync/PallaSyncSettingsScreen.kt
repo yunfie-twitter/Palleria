@@ -36,6 +36,7 @@ import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
+import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.DividerLine
@@ -93,6 +94,7 @@ fun PallaSyncSettingsScreen(
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var witnessInputArchive by remember { mutableStateOf<String?>(null) }
+    var witnessInputPreview by remember { mutableStateOf<PallaSyncDeletionWitnessPreview?>(null) }
     var witnessOutputArchive by remember { mutableStateOf<String?>(null) }
     var exportedDeletionProof by remember { mutableStateOf<String?>(null) }
     var showOfflineDeletionCopyConfirm by remember { mutableStateOf(false) }
@@ -284,6 +286,7 @@ fun PallaSyncSettingsScreen(
                         val archive = bytes.toString(Charsets.UTF_8)
                         val value = Json.parseToJsonElement(archive).jsonObject
                         check(value.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
+                        witnessInputPreview = checkNotNull(syncManager.previewDeletionIntentWitness(archive)) { "C_DELETION_UNVERIFIED" }
                         witnessInputArchive = archive
                     } catch (cancelled: CancellationException) {
                         throw cancelled
@@ -467,16 +470,10 @@ fun PallaSyncSettingsScreen(
     }
 
     witnessInputArchive?.let { archive ->
+        val preview = checkNotNull(witnessInputPreview)
         val info =
-            runCatching {
-                val receipt =
-                    Json
-                        .parseToJsonElement(archive)
-                        .jsonObject
-                        .getValue("delete_receipt")
-                        .jsonObject
-                "${receipt.getValue("chain_id").jsonPrimitive.content}\n${receipt.getValue("deletion_id").jsonPrimitive.content}"
-            }.getOrDefault("")
+            "${preview.chainId}\n${preview.deletionId}\n" +
+                stringResource(R.string.pallasync_witness_existing_count, preview.existingWitnessCount)
         MiuixConfirmDialog(
             show = true,
             title = stringResource(R.string.pallasync_witness_confirm_title),
@@ -484,6 +481,7 @@ fun PallaSyncSettingsScreen(
             confirmText = stringResource(R.string.pallasync_witness_confirm_action),
             onConfirm = {
                 witnessInputArchive = null
+                witnessInputPreview = null
                 scope.launch {
                     try {
                         witnessOutputArchive = syncManager.addDeletionIntentWitness(archive, explicitlyConfirmed = true)
@@ -499,7 +497,10 @@ fun PallaSyncSettingsScreen(
                     }
                 }
             },
-            onDismiss = { witnessInputArchive = null },
+            onDismiss = {
+                witnessInputArchive = null
+                witnessInputPreview = null
+            },
         )
     }
 
