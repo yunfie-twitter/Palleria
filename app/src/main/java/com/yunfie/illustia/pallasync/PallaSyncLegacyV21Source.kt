@@ -126,15 +126,13 @@ internal class PallaSyncLegacyV21Source(
                 when (val result = fetchPage(cursor)) {
                     is PallaSyncHttpResult.Success -> {
                         val page = result.value
-                        check(page.afterSequence == cursor) { "C_ROLLBACK_DETECTED" }
+                        validateFrozenPage(cursor, page)
                         for (record in page.records) {
                             currentCoroutineContext().ensureActive()
                             transcript.append(record)
                             cursor = record.sequence
                         }
-                        check(page.throughSequence == cursor && (page.hasMore == page.records.isNotEmpty())) {
-                            "C_ROLLBACK_DETECTED"
-                        }
+                        check(page.throughSequence == cursor) { "C_ROLLBACK_DETECTED" }
                         hasMore = page.hasMore
                     }
 
@@ -365,6 +363,20 @@ internal class PallaSyncLegacyV21Source(
             require(status == "active" || status == "revoked") { "C_SCHEMA_VIOLATION" }
             val sourceHash = checkNotNull(PallaSyncCore.objectHash(value.toString())) { "C_SCHEMA_VIOLATION" }
             return Device(id, value.string("device_public_key"), status == "active", sourceHash)
+        }
+
+        internal fun validateFrozenPage(
+            expectedAfter: Long,
+            page: RecordPage,
+        ) {
+            check(page.afterSequence == expectedAfter) { "C_ROLLBACK_DETECTED" }
+            check(!page.hasMore || page.records.isNotEmpty()) { "C_ROLLBACK_DETECTED" }
+            if (page.records.isEmpty()) {
+                check(page.throughSequence == expectedAfter && !page.hasMore) { "C_ROLLBACK_DETECTED" }
+            } else {
+                check(page.records.first().sequence > expectedAfter) { "C_ROLLBACK_DETECTED" }
+                check(page.records.last().sequence == page.throughSequence) { "C_ROLLBACK_DETECTED" }
+            }
         }
 
         private fun registryHash(devices: List<Device>): String {

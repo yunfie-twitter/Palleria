@@ -87,6 +87,21 @@ class PallaSyncLegacyRecordJniTest {
     }
 
     @Test
+    fun `frozen scan accepts a populated final page and rejects an empty continuation`() {
+        val record = PallaSyncLegacyV21Source.SignedRecord(1, "{}", "record-1", "device-1")
+        PallaSyncLegacyV21Source.validateFrozenPage(
+            0,
+            PallaSyncLegacyV21Source.RecordPage(0, 1, hasMore = false, records = listOf(record)),
+        )
+        shouldThrow<IllegalStateException> {
+            PallaSyncLegacyV21Source.validateFrozenPage(
+                0,
+                PallaSyncLegacyV21Source.RecordPage(0, 0, hasMore = true, records = emptyList()),
+            )
+        }
+    }
+
+    @Test
     fun `v21 device registry verifier rejects incomplete rows`() {
         PallaSyncCore.verifyLegacyDeviceRecordV21("{}") shouldBe false
     }
