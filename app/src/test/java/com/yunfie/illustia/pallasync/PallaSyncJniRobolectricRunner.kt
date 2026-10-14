@@ -12,6 +12,7 @@ class PallaSyncJniRobolectricRunner(
         val builder = InstrumentationConfiguration.Builder(super.createClassLoaderConfig(method))
         listOf(
             "PallaSyncCore",
+            "PallaSyncSnapshotCore",
             "PallaSyncKeySnapshot",
             "PallaSyncPreparedKeys",
             "PallaSyncSecretLifecycle",
