@@ -1722,6 +1722,13 @@ internal class PalleriaSyncCoordinator(
                 val proofText = latestDeletionProof(context.state.chainId, context.logId) ?: return@withLock null
                 val proof = Json.parseToJsonElement(proofText).jsonObject
                 val receipt = proof.getValue("delete_receipt").jsonObject
+                val index =
+                    receipt
+                        .getValue("transparency_index")
+                        .jsonPrimitive.content
+                        .toLong()
+                val retained = retainedDeletionEvidenceArchive(context, receipt, index)
+                if (retained != null) return@withLock retained.toString()
                 val bundle =
                     buildJsonObject {
                         put("type", "PALLASYNC-DELETION-EVIDENCE-v3")
@@ -1737,11 +1744,6 @@ internal class PalleriaSyncCoordinator(
                         put("delete_receipt", receipt)
                         put("evidence_bundle", bundle)
                     }.toString()
-                val index =
-                    receipt
-                        .getValue("transparency_index")
-                        .jsonPrimitive.content
-                        .toLong()
                 val hash = checkNotNull(PallaSyncCore.objectHash(bundle.toString())) { "C_DELETION_UNVERIFIED" }
                 db.protocolDao().retainEvidence(
                     ProtectedEvidenceEntity(
@@ -1770,6 +1772,70 @@ internal class PalleriaSyncCoordinator(
                 archive
             }
         }
+
+    private suspend fun retainedDeletionEvidenceArchive(
+        context: DeletionContext,
+        receipt: JsonObject,
+        index: Long,
+    ): JsonObject? {
+        val archives =
+            db
+                .protocolDao()
+                .evidenceAt(
+                    context.origin,
+                    context.relayKeyId,
+                    context.state.chainId,
+                    context.logId,
+                    "deletion_evidence_bundle",
+                    index,
+                ).map { value ->
+                    val archive = Json.parseToJsonElement(value).jsonObject
+                    check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_DELETION_UNVERIFIED" }
+                    check(archive.getValue("delete_receipt") == receipt) { "C_DELETION_UNVERIFIED" }
+                    PallaSyncCore.validateDeletionEvidenceBundle(
+                        receipt.toString(),
+                        archive.getValue("evidence_bundle").toString(),
+                        context.authorityText,
+                    )
+                    archive
+                }
+        val selected =
+            archives.maxByOrNull { archive ->
+                archive
+                    .getValue("evidence_bundle")
+                    .jsonObject
+                    .getValue("witnesses")
+                    .jsonArray.size
+            }
+        if (selected != null) {
+            val selectedWitnesses =
+                selected
+                    .getValue("evidence_bundle")
+                    .jsonObject
+                    .getValue("witnesses")
+                    .jsonArray
+                    .associateBy {
+                        it.jsonObject
+                            .getValue("witness_device_id")
+                            .jsonPrimitive.content
+                    }
+            archives.forEach { archive ->
+                archive
+                    .getValue("evidence_bundle")
+                    .jsonObject
+                    .getValue("witnesses")
+                    .jsonArray
+                    .forEach { witness ->
+                        val device =
+                            witness.jsonObject
+                                .getValue("witness_device_id")
+                                .jsonPrimitive.content
+                        check(selectedWitnesses[device] == witness) { "C_DELETION_UNVERIFIED" }
+                    }
+            }
+        }
+        return selected
+    }
 
     /** Local file ceremony: one active enrolled device signs one exact receipt after foreground confirmation. */
     @Suppress("LongMethod") // Keep signing, bundle validation, and protected persistence in one serialized operation.

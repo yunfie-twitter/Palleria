@@ -165,6 +165,39 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `deletion evidence bundle revisions remain separately retrievable for one receipt`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                val empty =
+                    ProtectedEvidenceEntity(
+                        "https://relay.example",
+                        "key",
+                        chain,
+                        log,
+                        "deletion_evidence_bundle",
+                        11,
+                        "bundle-empty",
+                        "empty-witness-archive",
+                    )
+                val withWitness = empty.copy(objectHash = "bundle-witness", signedJson = "one-witness-archive")
+                protocol.retainDeletionProof(empty)
+                protocol.retainDeletionProof(withWitness)
+
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "deletion_evidence_bundle", 11).toSet() shouldBe
+                    setOf("empty-witness-archive", "one-witness-archive")
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `provisional acceptance binds a position without applying effects twice`() =
         runBlocking<Unit> {
             val db =
