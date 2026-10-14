@@ -290,6 +290,9 @@ interface ProtocolDao {
         recordId: String,
     ): SignedEventEntity?
 
+    @Query("SELECT * FROM ps_events WHERE chain_id=:chainId AND relay_seq IS NOT NULL ORDER BY relay_seq LIMIT 1")
+    suspend fun firstAcceptedEvent(chainId: String): SignedEventEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertEvent(event: SignedEventEntity)
 

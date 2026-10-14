@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -101,6 +102,7 @@ class PallaSyncRelayInteropTest {
                     checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.lamport >
                         1_000_000L,
                 )
+                exerciseMissingDependencyQuarantineRetry(coordinator, store, state.chainId)
                 exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
                 exerciseBoundOrigin(client, policy, state.chainId, selected)
                 args.getString("peer_transfer_id")?.let { transferId ->
@@ -214,6 +216,34 @@ class PallaSyncRelayInteropTest {
             assertEquals(outbox, store.dao.queuedBatch(chain, 200))
             assertEquals(journal, store.protocolDao().lastMigrationIndex(PallaSyncLocalIntents.journalId(chain)))
         }
+    }
+
+    private suspend fun exerciseMissingDependencyQuarantineRetry(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        chain: String,
+    ) {
+        val event = checkNotNull(store.protocolDao().firstAcceptedEvent(chain))
+        val originalHash = checkNotNull(PallaSyncCore.objectHash(event.signedJson))
+        assertEquals(event.objectHash, originalHash)
+        val inbox = checkNotNull(store.dao.getInboxRecord(chain, event.recordId))
+        assertEquals("applied", inbox.status)
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_MISSING_DEPENDENCY' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        store.protocolDao().quarantine(
+            QuarantineEvidenceEntity(chain, event.objectHash, "C_MISSING_DEPENDENCY", event.signedJson, "unresolved"),
+        )
+
+        assertTrue(
+            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+            coordinator.retryMissingDependencyQuarantine(event.objectHash),
+        )
+        assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        val resolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
+        assertEquals(event.signedJson, resolved.evidenceJson)
+        assertEquals("resolved", resolved.resolutionState)
     }
 
     private fun exerciseBoundOrigin(
