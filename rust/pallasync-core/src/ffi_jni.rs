@@ -2000,6 +2000,24 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifySy
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyLegacySyncRecordV21<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    record_json: JString<'local>,
+    device_public_key: JString<'local>,
+) -> jboolean {
+    let (Some(record_str), Some(public_key_str)) = (
+        read_string(&mut env, &record_json),
+        read_string(&mut env, &device_public_key),
+    ) else {
+        return 0;
+    };
+    u8::from(crypto::verify_sync_record_v21_json(&record_str, &public_key_str).unwrap_or(false))
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyDeviceRecord<
     'local,
 >(

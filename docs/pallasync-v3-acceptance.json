@@ -531,14 +531,18 @@
       "implementation": [
         "PallaSync/src/api/legacy.rs",
         "PallaSync/src/bin/pallasync-operator.rs",
-        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt"
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt",
+        "Palleria/rust/pallasync-core/src/crypto.rs",
+        "Palleria/rust/pallasync-core/src/ffi_jni.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncCore.kt"
       ],
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
+        "Palleria/rust/pallasync-core/tests/legacy_v21.rs",
         "PallaSync/tests/reference/run_legacy_interop.py"
       ],
       "result": "pending",
-      "remaining": "Clarify undefined original parameter signature authority; implement verified frozen Android conversion/report/journal/replay.",
+      "remaining": "The client now exposes a strict v2.1 SyncRecord signature verifier using the legacy context from v2.1 §4.1; it excludes only optional relay_seq/server_sequence fields before JCS verification and rejects unknown members, malformed IDs, invalid key/nonce/ciphertext lengths, invalid version and unsafe integers. Rust tests cover a valid signed record, relay metadata, tampering and invalid fields. v2.1 does not define a ChainParameters signature context, so no verifier is invented for that field. Still implement the frozen-source export, explicit parameter/source trust, legacy AEAD/decryption and state conversion, durable resume journal, independent replay and migration report; A-19 remains pending.",
       "verification_scope": "targeted_partial"
     },
     {

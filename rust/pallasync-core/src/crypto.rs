@@ -1222,6 +1222,102 @@ pub fn verify_capability_token(
 
 pub const LEGACY_SYNC_RECORD_AAD: &[u8] = b"PALLASYNC-AAD-v2";
 pub const LEGACY_DEVICE_RECORD_AAD: &[u8] = b"PALLASYNC-DEVICE-AAD-v2";
+pub const CTX_SYNC_RECORD_V21: &[u8] = b"PALLASYNC-SYNC-RECORD-v2.1\0";
+
+/// Verify an immutable v2.1 SyncRecord during the explicit §9 migration flow.
+/// Relay-assigned sequence members are permitted but removed before signature verification.
+pub fn verify_sync_record_v21_json(
+    record_json: &str,
+    device_public_key_base64_url: &str,
+) -> Result<bool, String> {
+    const REQUIRED: &[&str] = &[
+        "protocol_version",
+        "chain_id",
+        "record_id",
+        "epoch",
+        "collection_name",
+        "action",
+        "encrypted_payload",
+        "payload_nonce",
+        "device_id",
+        "lamport",
+        "created_at_ms",
+        "signature",
+    ];
+    const OPTIONAL: &[&str] = &["relay_seq", "server_sequence"];
+    const MAX_LEGACY_RECORD_BYTES: usize = 8 * 1024 * 1024;
+
+    if record_json.len() > MAX_LEGACY_RECORD_BYTES {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let mut value = crate::strict::jcs::parse(record_json.as_bytes()).map_err(str::to_owned)?;
+    {
+        let object = value.as_object().ok_or("C_SCHEMA_VIOLATION")?;
+        if !REQUIRED.iter().all(|key| object.contains_key(*key))
+            || object
+                .keys()
+                .any(|key| !REQUIRED.contains(&key.as_str()) && !OPTIONAL.contains(&key.as_str()))
+        {
+            return Err("C_SCHEMA_VIOLATION".into());
+        }
+        for field in OPTIONAL {
+            if let Some(sequence) = object.get(*field) {
+                if !sequence
+                    .as_u64()
+                    .is_some_and(|number| number <= crate::strict::jcs::MAX_INTEGER)
+                {
+                    return Err("C_SCHEMA_VIOLATION".into());
+                }
+            }
+        }
+    }
+    let record: models::legacy::SyncRecordV21 =
+        serde_json::from_value(value.clone()).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if record.protocol_version != models::legacy::PROTOCOL_VERSION_2_1
+        || !matches!(record.action.as_str(), "upsert" | "delete")
+        || record.epoch < 0
+        || record.lamport < 0
+        || record.created_at_ms < 0
+        || record.collection_name.is_empty()
+        || record.collection_name.len() > 255
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let record_id = uuid::Uuid::parse_str(&record.record_id).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if record_id.get_version_num() != 7 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    uuid::Uuid::parse_str(&record.device_id).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let chain_id = crate::strict::verify::decode(&record.chain_id, Some(32))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if chain_id.len() != 32 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let nonce = crate::strict::verify::decode(&record.payload_nonce, Some(24))
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if nonce.len() != 24 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let ciphertext = crate::strict::verify::decode(&record.encrypted_payload, None)
+        .map_err(|_| "C_SCHEMA_VIOLATION")?;
+    if ciphertext.len() < 16 {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    crate::strict::verify::decode(&record.signature, Some(64)).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    let verifying_key = decode_verifying_key(device_public_key_base64_url)?;
+
+    let object = value.as_object_mut().ok_or("C_SCHEMA_VIOLATION")?;
+    object.remove("signature");
+    object.remove("relay_seq");
+    object.remove("server_sequence");
+    let canonical = models::to_jcs(&value).map_err(|_| "C_SCHEMA_VIOLATION")?;
+    verify_with_context(
+        &verifying_key,
+        CTX_SYNC_RECORD_V21,
+        &canonical,
+        &record.signature,
+    )
+}
 
 pub fn derive_record_nonce_legacy(record_id: &str) -> [u8; 12] {
     let mut hasher = Sha256::new();

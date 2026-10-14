@@ -674,6 +674,12 @@ object PallaSyncCore {
         devicePublicKeyBase64: String,
     ): Boolean
 
+    /** Verifies an immutable legacy v2.1 SyncRecord only for explicit §9 migration. */
+    external fun verifyLegacySyncRecordV21(
+        recordJson: String,
+        devicePublicKeyBase64: String,
+    ): Boolean
+
     /** Verifies a device record against its embedded public key. */
     external fun verifyDeviceRecord(recordJson: String): Boolean
 
