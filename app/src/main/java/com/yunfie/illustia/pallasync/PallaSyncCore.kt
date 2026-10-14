@@ -569,6 +569,13 @@ object PallaSyncCore {
         authorityJson: String,
     ): String
 
+    /** Validates monotone signed §7.12.3 completion revisions without changing deletion authority. */
+    external fun validateDeletionReceiptRevision(
+        previousReceiptJson: String,
+        nextReceiptJson: String,
+        pinJson: String,
+    ): String
+
     external fun createDeletionWitness(
         receiptJson: String,
         authorityJson: String,

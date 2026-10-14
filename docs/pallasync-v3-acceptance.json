@@ -368,7 +368,7 @@
         "Palleria/rust/pallasync-core/tests/attestations.rs"
       ],
       "result": "pending",
-      "remaining": "Implement authorized deletion CAS/evidence/witness/export/local-erasure UI with recovery deletion guards.",
+      "remaining": "Authorized CAS request, signed GET /deletion verification, retained proof, explicit SAF readback/offline-copy confirmation, local erase and recovery-material cleanup are implemented. Complete relay-backed CAS/unknown-outcome/410 tests, recovery deletion-guard tests and physical SAF/device verification; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {
@@ -710,6 +710,7 @@
       "implementation": [
         "Palleria/rust/pallasync-core/src/attestations.rs",
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
         "Palleria/app/src/main/res/values/pallasync_v3.xml",
@@ -721,7 +722,7 @@
         "PallaSync/tests/reference/test_attestations.py"
       ],
       "result": "pending",
-      "remaining": "Basic witnessed-archive import/explicit signing/merge/export is connected. Add completion-revision-specific bundles, full IT-44 negative and 128-witness cases, distinct-device file-exchange instrumentation and physical SAF verification. Keep this item pending.",
+      "remaining": "The client preserves distinct signed receipt revisions by object hash, validates monotone completion revisions against the prior retained receipt, and creates each exported bundle against that exact receipt hash. Rust tests cover later completion, regression rejection and immutable transparency binding. Run full IT-44 negative and 128-witness cases, JNI/device completion-revision archive roundtrip, distinct-device file-exchange instrumentation and physical SAF verification; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

@@ -104,6 +104,32 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `deletion completion revisions remain separate and latest signed receipt is selected`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                val base =
+                    ProtectedEvidenceEntity("https://relay.example", "key", chain, log, "delete_receipt", 9, "original", "original-receipt")
+                val completion = base.copy(objectHash = "completion", signedJson = "completed-receipt")
+                protocol.retainEvidence(base)
+                protocol.retainEvidence(completion)
+
+                db.deletionEvidenceDao().latestReceiptRevision(chain, log) shouldBe "completed-receipt"
+                db.deletionEvidenceDao().latestReceiptAtSequence("https://relay.example", "key", chain, log, 9) shouldBe "completed-receipt"
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 9).toSet() shouldBe
+                    setOf("original-receipt", "completed-receipt")
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `provisional acceptance binds a position without applying effects twice`() =
         runBlocking<Unit> {
             val db =

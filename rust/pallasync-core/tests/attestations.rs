@@ -246,3 +246,36 @@ fn deletion_witness_requires_current_certified_device_seed_and_binds_receipt() {
     wrong_receipt["completed_at_ms"] = json!(12);
     assert!(validate_deletion_evidence_bundle(&wrong_receipt, &bundle, &authority).is_err());
 }
+
+#[test]
+fn deletion_completion_receipt_revision_is_signed_monotone_and_keeps_original() {
+    let (pin, _, original, _) = deletion_evidence_fixture();
+    let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
+    let mut completed = original.clone();
+    completed["completed_at_ms"] = json!(20);
+    completed["ledger_receipt_hash"] = json!(hash_bytes(&[10; 32]));
+    sign_relay(&relay, &mut completed, CTX_DELETE).unwrap();
+
+    validate_deletion_receipt_revision(&original, &completed, &pin).unwrap();
+    assert_eq!(original["completed_at_ms"], Value::Null);
+
+    let mut regressed = completed.clone();
+    regressed["completed_at_ms"] = json!(19);
+    sign_relay(&relay, &mut regressed, CTX_DELETE).unwrap();
+    assert_eq!(
+        validate_deletion_receipt_revision(&completed, &regressed, &pin)
+            .unwrap_err()
+            .0,
+        "C_DELETION_UNVERIFIED"
+    );
+
+    let mut changed_binding = completed.clone();
+    changed_binding["transparency_hash"] = json!(hash_bytes(&[11; 32]));
+    sign_relay(&relay, &mut changed_binding, CTX_DELETE).unwrap();
+    assert_eq!(
+        validate_deletion_receipt_revision(&original, &changed_binding, &pin)
+            .unwrap_err()
+            .0,
+        "C_DELETION_UNVERIFIED"
+    );
+}

@@ -1375,7 +1375,37 @@ internal class PalleriaSyncCoordinator(
         return body
     }
 
-    private fun validateDeletionProof(
+    private suspend fun validateDeletionReceiptHistory(
+        context: DeletionContext,
+        receipt: JsonObject,
+        pinJson: String,
+        sequence: Long,
+    ) {
+        val deletionId = receipt.getValue("deletion_id").jsonPrimitive.content
+        val previousReceipt =
+            db
+                .deletionEvidenceDao()
+                .latestReceiptAtSequence(
+                    context.origin,
+                    context.relayKeyId,
+                    context.state.chainId,
+                    context.logId,
+                    sequence,
+                )?.let { saved ->
+                    runCatching {
+                        Json
+                            .parseToJsonElement(saved)
+                            .jsonObject
+                            .getValue("delete_receipt")
+                            .jsonObject
+                    }.getOrNull()?.takeIf { it.getValue("deletion_id").jsonPrimitive.content == deletionId }
+                }
+        previousReceipt?.let { previous ->
+            PallaSyncCore.validateDeletionReceiptRevision(previous.toString(), receipt.toString(), pinJson)
+        }
+    }
+
+    private suspend fun validateDeletionProof(
         context: DeletionContext,
         body: String,
         bytes: ByteArray,
@@ -1401,6 +1431,7 @@ internal class PalleriaSyncCoordinator(
                 .getValue("transparency_index")
                 .jsonPrimitive.content
                 .toLong()
+        validateDeletionReceiptHistory(context, receipt, pinJson, sequence)
         val hash = checkNotNull(PallaSyncCore.objectHash(proofText)) { "C_DELETION_UNVERIFIED" }
         return ProtectedEvidenceEntity(
             context.origin,
@@ -1443,17 +1474,21 @@ internal class PalleriaSyncCoordinator(
                         ?.get("log_id")
                         ?.jsonPrimitive
                         ?.content ?: return@withLock null
-                db.protocolDao().latestEvidence(state.chainId, logId, "delete_receipt")
+                latestDeletionProof(state.chainId, logId)
             }
         }
+
+    private suspend fun latestDeletionProof(
+        chainId: String,
+        logId: String,
+    ): String? = db.deletionEvidenceDao().latestReceiptRevision(chainId, logId)
 
     /** Build and retain the §7.12.5 archive wrapper separately from the immutable receipt. */
     suspend fun pendingDeletionEvidenceArchive(): String? =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 val context = deletionContext() ?: return@withLock null
-                val proofText =
-                    db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_receipt") ?: return@withLock null
+                val proofText = latestDeletionProof(context.state.chainId, context.logId) ?: return@withLock null
                 val proof = Json.parseToJsonElement(proofText).jsonObject
                 val receipt = proof.getValue("delete_receipt").jsonObject
                 val bundle =

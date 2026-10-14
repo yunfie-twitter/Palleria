@@ -1385,6 +1385,27 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateDeletionReceiptRevision<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    previous: JString<'local>,
+    next: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let previous = public_value(&mut env, &previous)?;
+        let next = public_value(&mut env, &next)?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(public_value(&mut env, &pin)?)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::attestations::validate_deletion_receipt_revision(&previous, &next, &pin)
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createDeletionWitness<
     'local,
 >(

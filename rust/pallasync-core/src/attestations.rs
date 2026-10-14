@@ -345,6 +345,77 @@ pub fn validate_deletion_proof(
     Ok(proof.clone())
 }
 
+/// Validate that a later signed completion receipt is a monotone revision of the
+/// same deletion and immutable transparency entry (§7.12.3). The enclosing proof
+/// still needs `validate_deletion_proof`; this check never authorizes erasure.
+pub fn validate_deletion_receipt_revision(
+    previous: &Value,
+    next: &Value,
+    pin: &RelayPin,
+) -> Result<Value> {
+    pin.validate()?;
+    for receipt in [previous, next] {
+        fields(
+            receipt,
+            &[
+                ("type", "PALLASYNC-DELETE-RECEIPT-v3"),
+                ("version", "3.0"),
+                ("chain_id", "b32"),
+                ("deletion_id", "uuid"),
+                ("log_id", "uuid"),
+                ("relay_key_id", "b32"),
+                ("authorized_parameters_hash", "b32"),
+                ("authorized_epoch_hash", "b32"),
+                ("authorization_hash", "b32"),
+                ("requested_at_ms", "int"),
+                ("completed_at_ms", "int?"),
+                ("assurance", "crypto-shred|backup-expiry"),
+                ("delete_after_ms", "int?"),
+                ("ledger_receipt_hash", "b32"),
+                ("transparency_id", "uuid"),
+                ("transparency_index", "int"),
+                ("transparency_hash", "b32"),
+                ("relay_signature", "b64"),
+            ],
+            &[],
+        )?;
+        pin.verify(receipt, CTX_DELETE)?;
+    }
+    let immutable = [
+        "type",
+        "version",
+        "chain_id",
+        "deletion_id",
+        "log_id",
+        "relay_key_id",
+        "authorized_parameters_hash",
+        "authorized_epoch_hash",
+        "authorization_hash",
+        "requested_at_ms",
+        "assurance",
+        "delete_after_ms",
+        "transparency_id",
+        "transparency_index",
+        "transparency_hash",
+    ];
+    require(
+        immutable
+            .iter()
+            .all(|field| previous[*field] == next[*field])
+            && n(previous, "transparency_index") > 0
+            && n(previous, "requested_at_ms") > 0
+            && (previous["completed_at_ms"].is_null()
+                || n(previous, "completed_at_ms") >= n(previous, "requested_at_ms"))
+            && (next["completed_at_ms"].is_null()
+                || n(next, "completed_at_ms") >= n(next, "requested_at_ms"))
+            && (previous["completed_at_ms"].is_null()
+                || (!next["completed_at_ms"].is_null()
+                    && n(next, "completed_at_ms") >= n(previous, "completed_at_ms"))),
+        "C_DELETION_UNVERIFIED",
+    )?;
+    Ok(next.clone())
+}
+
 /// Validate the optional, unsigned public witness container independently from the
 /// immutable relay receipt (§7.12.3/§7.12.5/§17.11). Authority must be a checkpoint
 /// already verified from the pinned log; it is never accepted from this archive.

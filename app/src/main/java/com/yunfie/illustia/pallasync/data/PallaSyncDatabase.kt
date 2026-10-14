@@ -36,6 +36,8 @@ abstract class PallaSyncDatabase : RoomDatabase() {
 
     abstract fun protocolDao(): ProtocolDao
 
+    abstract fun deletionEvidenceDao(): DeletionEvidenceDao
+
     companion object {
         private const val MIGRATION_TARGET_VERSION = 3
 

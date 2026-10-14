@@ -724,3 +724,26 @@ interface ProtocolDao {
         }
     }
 }
+
+/** Small focused reader for immutable deletion proof revisions retained after chain erasure. */
+@Dao
+interface DeletionEvidenceDao {
+    @Query(
+        "SELECT signed_json FROM ps_evidence WHERE chain_id=:chainId AND log_id=:logId AND kind='delete_receipt' ORDER BY sequence DESC, rowid DESC LIMIT 1",
+    )
+    suspend fun latestReceiptRevision(
+        chainId: String,
+        logId: String,
+    ): String?
+
+    @Query(
+        "SELECT signed_json FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND log_id=:logId AND kind='delete_receipt' AND sequence=:sequence ORDER BY rowid DESC LIMIT 1",
+    )
+    suspend fun latestReceiptAtSequence(
+        origin: String,
+        keyId: String,
+        chainId: String,
+        logId: String,
+        sequence: Long,
+    ): String?
+}
