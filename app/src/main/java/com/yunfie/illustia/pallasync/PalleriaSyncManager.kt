@@ -307,4 +307,27 @@ class PalleriaSyncManager(
             targetChain,
             freezeConfirmed,
         )
+
+    internal suspend fun revalidateLegacyV21MigrationSource(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.FrozenExportProof> =
+        coordinator.revalidateLegacyV21MigrationSource(
+            migrationId,
+            sourceUrl,
+            parameters,
+            devices,
+            signerDeviceId,
+            signerDeviceSeed,
+            signerDevicePublicKey,
+            targetChain,
+            freezeConfirmed,
+        )
 }

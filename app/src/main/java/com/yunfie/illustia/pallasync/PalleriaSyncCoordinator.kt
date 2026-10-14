@@ -784,6 +784,34 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    /** Re-scan and compare the exact source proof before any resumed migration work (§9.3). */
+    internal suspend fun revalidateLegacyV21MigrationSource(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.FrozenExportProof> {
+        if (localIntents.legacyMigrationProgress(migrationId) == null) {
+            return PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
+        }
+        return beginLegacyV21Migration(
+            migrationId,
+            sourceUrl,
+            parameters,
+            devices,
+            signerDeviceId,
+            signerDeviceSeed,
+            signerDevicePublicKey,
+            targetChain,
+            freezeConfirmed,
+        )
+    }
+
     fun getPallaSyncKeystore(): PallaSyncKeystore = keystore
 
     /** Repairs a process death between staged-key and Room activation commits. */
