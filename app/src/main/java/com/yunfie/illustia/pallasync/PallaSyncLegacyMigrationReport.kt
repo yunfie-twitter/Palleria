@@ -19,11 +19,12 @@ internal object PallaSyncLegacyMigrationReport {
         destination: Uri,
         migration: PallaSyncLocalIntents.LegacyMigrationProgress,
         fetchPage: suspend (afterIndex: Long) -> PallaSyncLocalIntents.LegacyDecisionPage,
+        fetchCandidatePage: suspend (afterIndex: Long) -> PallaSyncLocalIntents.LegacyCandidatePage,
         fetchSourcePage: suspend (afterSequence: Long) -> PallaSyncLocalIntents.LegacySourceEvidencePage,
     ) {
         val temp = File.createTempFile("pallasync-migration-", ".json", cacheDir)
         try {
-            writeReport(temp, migration, fetchPage, fetchSourcePage)
+            writeReport(temp, migration, fetchPage, fetchCandidatePage, fetchSourcePage)
             val expected = digest(temp)
             contentResolver.openOutputStream(destination, "wt").use { output ->
                 checkNotNull(output) { "C_LOCAL_STORAGE_FULL" }
@@ -49,11 +50,12 @@ internal object PallaSyncLegacyMigrationReport {
         file: File,
         migration: PallaSyncLocalIntents.LegacyMigrationProgress,
         fetchPage: suspend (afterIndex: Long) -> PallaSyncLocalIntents.LegacyDecisionPage,
+        fetchCandidatePage: suspend (afterIndex: Long) -> PallaSyncLocalIntents.LegacyCandidatePage,
         fetchSourcePage: suspend (afterSequence: Long) -> PallaSyncLocalIntents.LegacySourceEvidencePage,
     ) {
         file.outputStream().buffered().use { bytes ->
             val writer = BufferedWriter(OutputStreamWriter(bytes, Charsets.UTF_8))
-            writer.write("{\"report_type\":\"pallasync-legacy-migration-report\",\"report_version\":2")
+            writer.write("{\"report_type\":\"pallasync-legacy-migration-report\",\"report_version\":3")
             writer.write(",\"migration_id\":${Json.encodeToString(migration.migrationId)}")
             writer.write(",\"source_chain_id\":${Json.encodeToString(migration.sourceChain)}")
             writer.write(",\"source_protocol\":${Json.encodeToString(migration.sourceProtocol)}")
@@ -85,6 +87,26 @@ internal object PallaSyncLegacyMigrationReport {
                 afterIndex = next
             }
             check(written == migration.decisions) { "C_SCHEMA_VIOLATION" }
+            writer.write("],\"candidates\":[")
+            var afterCandidateIndex = 0L
+            var candidateWritten = 0L
+            first = true
+            while (true) {
+                val pageCursor = afterCandidateIndex
+                val page = fetchCandidatePage(afterCandidateIndex)
+                for (candidate in page.items) {
+                    check(candidate.migrationEntryIndex > pageCursor) { "C_SCHEMA_VIOLATION" }
+                    if (!first) writer.write(",")
+                    writer.write(Json.encodeToString(candidate))
+                    first = false
+                    candidateWritten += 1
+                    afterCandidateIndex = candidate.migrationEntryIndex
+                }
+                val next = page.nextIndex ?: break
+                check(next > pageCursor) { "C_SCHEMA_VIOLATION" }
+                afterCandidateIndex = next
+            }
+            check(candidateWritten == migration.candidates) { "C_SCHEMA_VIOLATION" }
             writer.write("],\"source_records\":[")
             var afterSequence = 0L
             var sourceWritten = 0L

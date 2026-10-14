@@ -92,6 +92,9 @@
     <string name="pallasync_legacy_migration_decision">Sequence %1$d · record %2$s · %3$s · reason %4$s · source hash %5$s</string>
     <string name="pallasync_legacy_migration_loading">Loading verified migration decisions…</string>
     <string name="pallasync_legacy_migration_more">Load next page</string>
+    <string name="pallasync_legacy_migration_candidates_title">Converted candidates: %1$d</string>
+    <string name="pallasync_legacy_migration_candidate">Source %1$d / candidate %2$d — %3$s / %4$s / %5$s: %6$s</string>
+    <string name="pallasync_legacy_migration_more_candidates">Load next candidates</string>
     <string name="pallasync_legacy_migration_report_failed">Could not load the local migration report.</string>
     <string name="pallasync_legacy_migration_export_report">Export report with encrypted source records</string>
     <string name="pallasync_legacy_migration_report_exported">Complete migration report exported.</string>

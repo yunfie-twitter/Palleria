@@ -367,6 +367,12 @@ class PalleriaSyncManager(
         limit: Int = 200,
     ): PallaSyncLocalIntents.LegacySourceEvidencePage = coordinator.legacyMigrationSourceEvidencePage(migrationId, afterSequence, limit)
 
+    internal suspend fun legacyMigrationCandidatePage(
+        migrationId: String,
+        afterIndex: Long,
+        limit: Int = 200,
+    ): PallaSyncLocalIntents.LegacyCandidatePage = coordinator.legacyMigrationCandidatePage(migrationId, afterIndex, limit)
+
     internal suspend fun resumeLegacyV21Migration(
         migrationId: String,
         sourceUrl: String,

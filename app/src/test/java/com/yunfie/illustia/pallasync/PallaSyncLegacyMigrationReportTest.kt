@@ -26,6 +26,13 @@ class PallaSyncLegacyMigrationReportTest {
                             else -> error("unexpected cursor")
                         }
                     },
+                    fetchCandidatePage = { after ->
+                        when (after) {
+                            0L -> PallaSyncLocalIntents.LegacyCandidatePage(listOf(candidate(1)), 1)
+                            1L -> PallaSyncLocalIntents.LegacyCandidatePage(listOf(candidate(2)), null)
+                            else -> error("unexpected candidate cursor")
+                        }
+                    },
                     fetchSourcePage = { after ->
                         when (after) {
                             0L -> PallaSyncLocalIntents.LegacySourceEvidencePage(listOf(sourceEvidence(1)), 1)
@@ -49,6 +56,8 @@ class PallaSyncLegacyMigrationReportTest {
                 val sourceRecords = report.getValue("source_records").jsonArray
                 val sourceSequences = sourceRecords.map { it.jsonObject["sourceSequence"]!!.jsonPrimitive.content }
                 sourceSequences shouldBe listOf("1", "2")
+                val candidates = report.getValue("candidates").jsonArray
+                candidates.map { it.jsonObject["sourceSequence"]!!.jsonPrimitive.content } shouldBe listOf("1", "2")
             } finally {
                 temp.delete()
             }
@@ -66,6 +75,9 @@ class PallaSyncLegacyMigrationReportTest {
                         progress(decisions = 2),
                         fetchPage = {
                             PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(1, "item-1")), null)
+                        },
+                        fetchCandidatePage = {
+                            error("candidate callback must not run after incomplete decision report")
                         },
                         fetchSourcePage = {
                             error("source callback must not run after incomplete decision report")
@@ -112,5 +124,21 @@ class PallaSyncLegacyMigrationReportTest {
             sourceRecordId = "source-$sequence",
             sourceObjectHash = "hash-$sequence",
             signedRecordJson = "{\"sequence\":$sequence}",
+        )
+
+    private fun candidate(sequence: Long) =
+        PallaSyncLocalIntents.LegacyCandidate(
+            migrationEntryIndex = sequence,
+            sourceSequence = sequence,
+            sourceRecordId = "01890f3e-7c00-7000-8000-00000000000$sequence",
+            candidateIndex = 0,
+            sourceObjectHash = "hash-$sequence",
+            event =
+                PallaSyncPendingEvent(
+                    SEARCH_HISTORY_SCHEMA_V3,
+                    "query-$sequence",
+                    "upsert",
+                    Json.parseToJsonElement("{\"query\":\"query-$sequence\"}"),
+                ),
         )
 }

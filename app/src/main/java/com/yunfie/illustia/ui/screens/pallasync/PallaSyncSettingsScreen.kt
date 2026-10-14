@@ -131,6 +131,8 @@ fun PallaSyncSettingsScreen(
     var pendingLegacyReport by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
     var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
+    var legacyCandidates by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacyCandidate>>(emptyList()) }
+    var legacyCandidateCursor by remember { mutableStateOf<Long?>(null) }
     var loadingLegacyDecisions by remember { mutableStateOf(false) }
     var showLegacySourceDialog by remember { mutableStateOf(false) }
     var inspectingLegacySource by remember { mutableStateOf(false) }
@@ -153,6 +155,9 @@ fun PallaSyncSettingsScreen(
                                 migration,
                                 fetchPage = { afterIndex ->
                                     syncManager.legacyMigrationDecisionPage(migration.migrationId, afterIndex)
+                                },
+                                fetchCandidatePage = { afterIndex ->
+                                    syncManager.legacyMigrationCandidatePage(migration.migrationId, afterIndex)
                                 },
                                 fetchSourcePage = { afterSequence ->
                                     syncManager.legacyMigrationSourceEvidencePage(migration.migrationId, afterSequence)
@@ -946,12 +951,17 @@ fun PallaSyncSettingsScreen(
                                         selectedLegacyMigration = migration
                                         legacyDecisions = emptyList()
                                         legacyDecisionCursor = null
+                                        legacyCandidates = emptyList()
+                                        legacyCandidateCursor = null
                                         loadingLegacyDecisions = true
                                         scope.launch {
                                             try {
                                                 val page = syncManager.legacyMigrationDecisionPage(migration.migrationId, 0)
                                                 legacyDecisions = page.items
                                                 legacyDecisionCursor = page.nextIndex
+                                                val candidatePage = syncManager.legacyMigrationCandidatePage(migration.migrationId, 0)
+                                                legacyCandidates = candidatePage.items
+                                                legacyCandidateCursor = candidatePage.nextIndex
                                             } catch (_: Exception) {
                                                 Toast
                                                     .makeText(
@@ -1356,6 +1366,7 @@ fun PallaSyncSettingsScreen(
                     Text(stringResource(R.string.pallasync_legacy_source_not_staged))
                 }
                 migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }
+                Text(stringResource(R.string.pallasync_legacy_migration_candidates_title, migration.candidates))
                 TextButton(
                     text = stringResource(R.string.pallasync_legacy_migration_export_report),
                     onClick = {
@@ -1370,6 +1381,41 @@ fun PallaSyncSettingsScreen(
                         .verticalScroll(rememberScrollState()),
                 ) {
                     if (loadingLegacyDecisions) Text(stringResource(R.string.pallasync_legacy_migration_loading))
+                    legacyCandidates.forEach { candidate ->
+                        Text(
+                            stringResource(
+                                R.string.pallasync_legacy_migration_candidate,
+                                candidate.sourceSequence,
+                                candidate.candidateIndex,
+                                candidate.event.schema,
+                                candidate.event.entityId,
+                                candidate.event.operation,
+                                candidate.event.body,
+                            ),
+                        )
+                        DividerLine()
+                    }
+                    if (legacyCandidateCursor != null && !loadingLegacyDecisions) {
+                        TextButton(
+                            text = stringResource(R.string.pallasync_legacy_migration_more_candidates),
+                            enabled = !loadingLegacyDecisions,
+                            onClick = {
+                                val cursor = legacyCandidateCursor ?: return@TextButton
+                                loadingLegacyDecisions = true
+                                scope.launch {
+                                    try {
+                                        val page = syncManager.legacyMigrationCandidatePage(migration.migrationId, cursor)
+                                        legacyCandidates = page.items
+                                        legacyCandidateCursor = page.nextIndex
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, R.string.pallasync_legacy_migration_report_failed, Toast.LENGTH_LONG).show()
+                                    } finally {
+                                        loadingLegacyDecisions = false
+                                    }
+                                }
+                            },
+                        )
+                    }
                     legacyDecisions.forEach { decision ->
                         Text(
                             stringResource(

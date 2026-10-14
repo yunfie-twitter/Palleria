@@ -99,6 +99,21 @@ internal class PallaSyncLocalIntents(
         val nextSequence: Long?,
     )
 
+    @Serializable
+    internal data class LegacyCandidate(
+        val migrationEntryIndex: Long,
+        val sourceSequence: Long,
+        val sourceRecordId: String,
+        val candidateIndex: Int,
+        val sourceObjectHash: String,
+        val event: PallaSyncPendingEvent,
+    )
+
+    internal data class LegacyCandidatePage(
+        val items: List<LegacyCandidate>,
+        val nextIndex: Long?,
+    )
+
     internal data class LegacyProgressPage(
         val items: List<LegacyMigrationProgress>,
         val nextMigrationId: String?,
@@ -530,6 +545,44 @@ internal class PallaSyncLocalIntents(
                 evidence
             }
         return LegacySourceEvidencePage(items, pageRows.lastOrNull()?.chunkIndex.takeIf { rows.size > limit })
+    }
+
+    suspend fun legacyMigrationCandidatePage(
+        migrationId: String,
+        afterIndex: Long,
+        limit: Int = PAGE_SIZE,
+    ): LegacyCandidatePage {
+        require(afterIndex >= 0 && limit in 1..PAGE_SIZE) { "C_SCHEMA_VIOLATION" }
+        val dao = store.protocolDao()
+        val manifestRow = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+        val manifest = Json.decodeFromString<LegacyManifest>(manifestRow.reportJson)
+        val rows = dao.legacyCandidatePage(migrationId, afterIndex, limit + 1)
+        val pageRows = rows.take(limit)
+        val items =
+            pageRows.map { row ->
+                val identity = row.sourceIdentity.split(':')
+                check(identity.size == 5 && identity[0] == "legacy") { "C_ROLLBACK_DETECTED" }
+                val sequence = identity[1].toLongOrNull() ?: error("C_ROLLBACK_DETECTED")
+                val recordId = identity[2]
+                val candidateIndex = identity[3].toIntOrNull() ?: error("C_ROLLBACK_DETECTED")
+                val objectHash = identity[4]
+                check(
+                    sequence in 1..manifest.sourceHighWater && candidateIndex >= 0 &&
+                        runCatching {
+                            java.util.UUID
+                                .fromString(recordId)
+                                .let { it.version() == 7 && it.toString() == recordId }
+                        }.getOrDefault(false) &&
+                        decodeHash(objectHash) && row.targetChain == manifest.targetChain && row.state == "pending",
+                ) { "C_ROLLBACK_DETECTED" }
+                val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                check(
+                    sourceHash(work.event) == row.sourceHash && work.targetGeneration == manifest.targetGeneration &&
+                        work.event.favoriteOrder == null && work.event.createdAtMs == null,
+                ) { "C_ROLLBACK_DETECTED" }
+                LegacyCandidate(row.chunkIndex, sequence, recordId, candidateIndex, objectHash, work.event)
+            }
+        return LegacyCandidatePage(items, pageRows.lastOrNull()?.chunkIndex.takeIf { rows.size > limit })
     }
 
     private fun sourceEvidenceJournalId(migrationId: String): String = "$migrationId:source"

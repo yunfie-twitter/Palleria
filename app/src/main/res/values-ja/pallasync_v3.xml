@@ -87,6 +87,9 @@
     <string name="pallasync_legacy_migration_decision">sequence %1$d · record %2$s · %3$s · 理由 %4$s · source hash %5$s</string>
     <string name="pallasync_legacy_migration_loading">検証済み移行判断を読み込んでいます…</string>
     <string name="pallasync_legacy_migration_more">次のページを読み込む</string>
+    <string name="pallasync_legacy_migration_candidates_title">変換候補: %1$d件</string>
+    <string name="pallasync_legacy_migration_candidate">source %1$d / 候補 %2$d — %3$s / %4$s / %5$s: %6$s</string>
+    <string name="pallasync_legacy_migration_more_candidates">次の候補ページ</string>
     <string name="pallasync_legacy_migration_report_failed">ローカル移行レポートを読み込めませんでした。</string>
     <string name="pallasync_legacy_migration_export_report">暗号化された移行元レコードを含むレポートを書き出す</string>
     <string name="pallasync_legacy_migration_report_exported">移行レポートを書き出しました。</string>

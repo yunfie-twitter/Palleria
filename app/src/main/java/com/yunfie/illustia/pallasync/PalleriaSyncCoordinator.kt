@@ -1098,6 +1098,13 @@ internal class PalleriaSyncCoordinator(
     ): PallaSyncLocalIntents.LegacySourceEvidencePage =
         withContext(Dispatchers.IO) { localIntents.legacyMigrationSourceEvidencePage(migrationId, afterSequence, limit) }
 
+    internal suspend fun legacyMigrationCandidatePage(
+        migrationId: String,
+        afterIndex: Long,
+        limit: Int = 200,
+    ): PallaSyncLocalIntents.LegacyCandidatePage =
+        withContext(Dispatchers.IO) { localIntents.legacyMigrationCandidatePage(migrationId, afterIndex, limit) }
+
     /** Revalidates the source proof before authoring any remaining migration candidates (§9.3). */
     internal suspend fun resumeLegacyV21Migration(
         migrationId: String,

@@ -212,6 +212,10 @@ class PallaSyncLocalIntentsTest {
                 val evidencePage = intents.legacyMigrationSourceEvidencePage(migration, 0)
                 evidencePage.items.single().signedRecordJson shouldBe sourceJson
                 evidencePage.items.single().sourceObjectHash shouldBe objectHash
+                val candidatePage = intents.legacyMigrationCandidatePage(migration, 0)
+                val candidate = candidatePage.items.single()
+                candidate.event.entityId shouldBe "candidate"
+                candidatePage.items.single().sourceSequence shouldBe 1L
                 runCatching { intents.resumeLegacyMigration(migration, keys()) }.isFailure shouldBe true
                 store.dao.queuedBatch(chain, 200) shouldBe emptyList()
                 store.dao.getChainState(chain)?.authorSeq shouldBe 0
