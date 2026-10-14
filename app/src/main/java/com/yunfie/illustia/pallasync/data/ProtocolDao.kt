@@ -150,6 +150,14 @@ interface ProtocolDao {
     ): List<MigrationJournalEntity>
 
     @Query(
+        "SELECT * FROM ps_migrations WHERE chunk_index=0 AND state LIKE 'legacy_%' AND migration_id>:afterId ORDER BY migration_id LIMIT :limit",
+    )
+    suspend fun legacyMigrationManifestPage(
+        afterId: String,
+        limit: Int,
+    ): List<MigrationJournalEntity>
+
+    @Query(
         "UPDATE ps_migrations SET state='constructed',report_json=:report WHERE migration_id=:id AND chunk_index=:index AND source_hash=:hash",
     )
     suspend fun bindReplayDestination(

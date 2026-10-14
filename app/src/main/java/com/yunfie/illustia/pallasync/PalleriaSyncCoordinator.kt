@@ -815,6 +815,12 @@ internal class PalleriaSyncCoordinator(
     internal suspend fun legacyMigrationProgress(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress? =
         withContext(Dispatchers.IO) { localIntents.legacyMigrationProgress(migrationId) }
 
+    internal suspend fun legacyMigrationProgressPage(
+        afterMigrationId: String = "",
+        limit: Int = 20,
+    ): PallaSyncLocalIntents.LegacyProgressPage =
+        withContext(Dispatchers.IO) { localIntents.legacyMigrationProgressPage(afterMigrationId, limit) }
+
     internal suspend fun legacyMigrationDecisionPage(
         migrationId: String,
         afterIndex: Long,

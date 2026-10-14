@@ -65,6 +65,7 @@ internal class PallaSyncLocalIntents(
     )
 
     internal data class LegacyMigrationProgress(
+        val migrationId: String,
         val sourceChain: String,
         val targetChain: String,
         val sourceHighWater: Long,
@@ -81,6 +82,11 @@ internal class PallaSyncLocalIntents(
     internal data class LegacyDecisionPage(
         val items: List<LegacySourceDecision>,
         val nextIndex: Long?,
+    )
+
+    internal data class LegacyProgressPage(
+        val items: List<LegacyMigrationProgress>,
+        val nextMigrationId: String?,
     )
 
     companion object {
@@ -363,6 +369,7 @@ internal class PallaSyncLocalIntents(
         if (!row.state.startsWith("legacy_")) return null
         val manifest = Json.decodeFromString<LegacyManifest>(row.reportJson)
         return LegacyMigrationProgress(
+            migrationId,
             manifest.sourceChain,
             manifest.targetChain,
             manifest.sourceHighWater,
@@ -375,6 +382,16 @@ internal class PallaSyncLocalIntents(
             manifest.quarantinedCount,
             manifest.schemaCounts,
         )
+    }
+
+    suspend fun legacyMigrationProgressPage(
+        afterMigrationId: String = "",
+        limit: Int = 20,
+    ): LegacyProgressPage {
+        require(limit in 1..20 && afterMigrationId.length <= 200) { "C_SCHEMA_VIOLATION" }
+        val rows = store.protocolDao().legacyMigrationManifestPage(afterMigrationId, limit)
+        val items = rows.mapNotNull { row -> legacyMigrationProgress(row.migrationId) }
+        return LegacyProgressPage(items, rows.lastOrNull()?.migrationId)
     }
 
     /** Bounded keyset read for the migration report; decision rows never enter sync/outbox paths. */

@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -38,6 +40,7 @@ import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
+import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -112,6 +115,11 @@ fun PallaSyncSettingsScreen(
     var trustedSnapshotCandidates by remember {
         mutableStateOf<List<com.yunfie.illustia.pallasync.PallaSyncTrustedSnapshotCandidate>>(emptyList())
     }
+    var legacyMigrations by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacyMigrationProgress>>(emptyList()) }
+    var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
+    var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
+    var legacyDecisionCursor by remember { mutableStateOf<Long?>(null) }
+    var loadingLegacyDecisions by remember { mutableStateOf(false) }
 
     val relayExportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PALLASYNC_EXPORT_MEDIA_TYPE)) { uri ->
@@ -144,14 +152,16 @@ fun PallaSyncSettingsScreen(
             }
         }
 
-    LaunchedEffect(state.settings.pallaSyncEnabled) {
-        if (!state.settings.pallaSyncEnabled) {
+    LaunchedEffect(state.settings.pallaSyncEnabled, hasLocalChain) {
+        if (!state.settings.pallaSyncEnabled && !hasLocalChain) {
             clientStatus = null
+            legacyMigrations = emptyList()
             return@LaunchedEffect
         }
         while (isActive) {
             try {
-                clientStatus = syncManager.getClientStatus()
+                if (state.settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
+                legacyMigrations = syncManager.legacyMigrationProgressPage(limit = 20).items
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -838,6 +848,58 @@ fun PallaSyncSettingsScreen(
             }
 
             item {
+                if (legacyMigrations.isNotEmpty()) {
+                    Section(stringResource(R.string.pallasync_legacy_migration_title)) {
+                        ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+                            legacyMigrations.forEachIndexed { index, migration ->
+                                SettingLinkRow(
+                                    title =
+                                        stringResource(
+                                            R.string.pallasync_legacy_migration_item,
+                                            migration.sourceChain,
+                                            migration.targetChain,
+                                        ),
+                                    summary =
+                                        stringResource(
+                                            R.string.pallasync_legacy_migration_summary,
+                                            migration.stagedThrough,
+                                            migration.sourceHighWater,
+                                            migration.candidates,
+                                            migration.pending,
+                                            migration.constructed,
+                                            migration.quarantined,
+                                        ),
+                                    onClick = {
+                                        selectedLegacyMigration = migration
+                                        legacyDecisions = emptyList()
+                                        legacyDecisionCursor = null
+                                        loadingLegacyDecisions = true
+                                        scope.launch {
+                                            try {
+                                                val page = syncManager.legacyMigrationDecisionPage(migration.migrationId, 0)
+                                                legacyDecisions = page.items
+                                                legacyDecisionCursor = page.nextIndex
+                                            } catch (_: Exception) {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        R.string.pallasync_legacy_migration_report_failed,
+                                                        Toast.LENGTH_LONG,
+                                                    ).show()
+                                            } finally {
+                                                loadingLegacyDecisions = false
+                                            }
+                                        }
+                                    },
+                                )
+                                if (index < legacyMigrations.lastIndex) DividerLine()
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
                 clientStatus?.let { status ->
                     Section(stringResource(R.string.pallasync_progress_title)) {
                         ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
@@ -944,6 +1006,73 @@ fun PallaSyncSettingsScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    selectedLegacyMigration?.let { migration ->
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_legacy_migration_report_title),
+            onDismissRequest = { selectedLegacyMigration = null },
+        ) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    stringResource(
+                        R.string.pallasync_legacy_migration_report_progress,
+                        migration.stagedThrough,
+                        migration.sourceHighWater,
+                        migration.decisions,
+                        migration.candidates,
+                        migration.pending,
+                        migration.constructed,
+                        migration.quarantined,
+                    ),
+                )
+                migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 380.dp)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    if (loadingLegacyDecisions) Text(stringResource(R.string.pallasync_legacy_migration_loading))
+                    legacyDecisions.forEach { decision ->
+                        Text(
+                            stringResource(
+                                R.string.pallasync_legacy_migration_decision,
+                                decision.sourceSequence,
+                                decision.sourceRecordId,
+                                decision.disposition,
+                                decision.reasonCode ?: "—",
+                                decision.sourceObjectHash,
+                            ),
+                        )
+                        DividerLine()
+                    }
+                    if (legacyDecisionCursor != null && !loadingLegacyDecisions) {
+                        TextButton(
+                            text = stringResource(R.string.pallasync_legacy_migration_more),
+                            enabled = !loadingLegacyDecisions,
+                            onClick = {
+                                val cursor = legacyDecisionCursor ?: return@TextButton
+                                loadingLegacyDecisions = true
+                                scope.launch {
+                                    try {
+                                        val page = syncManager.legacyMigrationDecisionPage(migration.migrationId, cursor)
+                                        legacyDecisions = page.items
+                                        legacyDecisionCursor = page.nextIndex
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, R.string.pallasync_legacy_migration_report_failed, Toast.LENGTH_LONG).show()
+                                    } finally {
+                                        loadingLegacyDecisions = false
+                                    }
+                                }
+                            },
+                        )
+                    }
+                }
+                TextButton(text = stringResource(R.string.action_cancel), onClick = { selectedLegacyMigration = null })
             }
         }
     }

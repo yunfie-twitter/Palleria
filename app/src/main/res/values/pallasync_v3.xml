@@ -83,6 +83,15 @@
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>
+    <string name="pallasync_legacy_migration_title">Legacy migration reports</string>
+    <string name="pallasync_legacy_migration_item">%1$s → %2$s</string>
+    <string name="pallasync_legacy_migration_summary">Staged %1$d / %2$d · candidates %3$d · pending %4$d · constructed %5$d · quarantined %6$d</string>
+    <string name="pallasync_legacy_migration_report_title">Legacy migration report</string>
+    <string name="pallasync_legacy_migration_report_progress">Scanned %1$d / %2$d · decisions %3$d · candidates %4$d · pending %5$d · constructed %6$d · quarantined %7$d</string>
+    <string name="pallasync_legacy_migration_decision">Sequence %1$d · record %2$s · %3$s · reason %4$s · source hash %5$s</string>
+    <string name="pallasync_legacy_migration_loading">Loading verified migration decisions…</string>
+    <string name="pallasync_legacy_migration_more">Load next page</string>
+    <string name="pallasync_legacy_migration_report_failed">Could not load the local migration report.</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

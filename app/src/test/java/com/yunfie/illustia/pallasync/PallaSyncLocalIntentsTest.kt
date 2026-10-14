@@ -218,6 +218,10 @@ class PallaSyncLocalIntentsTest {
                     it.quarantined shouldBe 1
                     it.schemaCounts shouldBe mapOf(SEARCH_HISTORY_SCHEMA_V3 to 1L)
                 }
+                val migrationPage = intents.legacyMigrationProgressPage(limit = 20)
+                migrationPage.items.single().migrationId shouldBe migration
+                migrationPage.items.single().sourceChain shouldBe "source-chain"
+                migrationPage.nextMigrationId shouldBe migration
 
                 intents.resumeLegacyMigration(migration, keys())
                 intents.resumeLegacyMigration(migration, keys())
