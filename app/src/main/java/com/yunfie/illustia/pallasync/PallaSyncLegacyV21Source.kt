@@ -2,6 +2,9 @@ package com.yunfie.illustia.pallasync
 
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -24,6 +27,19 @@ import java.util.UUID
 internal class PallaSyncLegacyV21Source(
     private val remote: PallaSyncRemoteService,
 ) {
+    @Serializable
+    internal data class EntityCandidate(
+        val collection: String,
+        @SerialName("legacy_entity_id") val legacyEntityId: String,
+        @SerialName("entity_id") val entityId: String,
+        val operation: String,
+        val body: kotlinx.serialization.json.JsonElement,
+        @SerialName("legacy_lamport") val legacyLamport: Long,
+        @SerialName("legacy_created_at_ms") val legacyCreatedAtMs: Long,
+        @SerialName("normalization_changed") val normalizationChanged: Boolean,
+        @SerialName("normalization_collision") val normalizationCollision: Boolean,
+    )
+
     internal data class Parameters(
         val chainId: String,
         val chainSalt: String,
@@ -217,6 +233,20 @@ internal class PallaSyncLegacyV21Source(
         }
     }
 
+    /** Native signature/AEAD validation and schema conversion; plaintext buffers are cleared after decode. */
+    internal fun convertRecord(
+        session: Long,
+        record: SignedRecord,
+        device: Device,
+    ): List<EntityCandidate> {
+        val converted = PallaSyncCore.convertLegacyRecord(session, record.json, record.deviceId, device.publicKey)
+        return try {
+            Json.decodeFromString(String(converted, Charsets.UTF_8))
+        } finally {
+            converted.fill(0)
+        }
+    }
+
     companion object {
         private const val MEDIA_TYPE = "application/vnd.palleria.sync.v2+json"
 
@@ -380,7 +410,7 @@ internal class PallaSyncLegacyV21Source(
             }
         }
 
-        private fun registryHash(devices: List<Device>): String {
+        internal fun registryHash(devices: List<Device>): String {
             val digest = MessageDigest.getInstance("SHA-256")
             digest.update("PALLASYNC-LEGACY-DEVICE-REGISTRY-v1\u0000".toByteArray(Charsets.UTF_8))
             for (device in devices.sortedBy(Device::deviceId)) {

@@ -296,6 +296,8 @@ class PalleriaSyncManager(
     internal suspend fun beginLegacyV21Migration(
         migrationId: String,
         sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
         parameters: PallaSyncLegacyV21Source.Parameters,
         devices: List<PallaSyncLegacyV21Source.Device>,
         signerDeviceId: String,
@@ -307,6 +309,8 @@ class PalleriaSyncManager(
         coordinator.beginLegacyV21Migration(
             migrationId,
             sourceUrl,
+            seedPhrase,
+            passphrase,
             parameters,
             devices,
             signerDeviceId,
@@ -319,6 +323,8 @@ class PalleriaSyncManager(
     internal suspend fun revalidateLegacyV21MigrationSource(
         migrationId: String,
         sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
         parameters: PallaSyncLegacyV21Source.Parameters,
         devices: List<PallaSyncLegacyV21Source.Device>,
         signerDeviceId: String,
@@ -330,6 +336,8 @@ class PalleriaSyncManager(
         coordinator.revalidateLegacyV21MigrationSource(
             migrationId,
             sourceUrl,
+            seedPhrase,
+            passphrase,
             parameters,
             devices,
             signerDeviceId,
@@ -356,6 +364,8 @@ class PalleriaSyncManager(
     internal suspend fun resumeLegacyV21Migration(
         migrationId: String,
         sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
         parameters: PallaSyncLegacyV21Source.Parameters,
         devices: List<PallaSyncLegacyV21Source.Device>,
         signerDeviceId: String,
@@ -367,6 +377,8 @@ class PalleriaSyncManager(
         coordinator.resumeLegacyV21Migration(
             migrationId,
             sourceUrl,
+            seedPhrase,
+            passphrase,
             parameters,
             devices,
             signerDeviceId,

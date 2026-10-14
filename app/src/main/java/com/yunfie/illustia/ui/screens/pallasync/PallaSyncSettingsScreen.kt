@@ -1250,12 +1250,26 @@ fun PallaSyncSettingsScreen(
                                     is PallaSyncHttpResult.Retryable -> error(result.message)
                                     PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
                                 }
-                            val migrationId = "legacy:${UUID.randomUUID()}"
+                            var migrationId: String? = null
+                            var afterMigrationId = ""
+                            do {
+                                val page = syncManager.legacyMigrationProgressPage(afterMigrationId, 20)
+                                migrationId =
+                                    page.items
+                                        .firstOrNull {
+                                            it.sourceProtocol == "2.1" && it.sourceChain == input.sourceChainId &&
+                                                it.targetChain == targetChain
+                                        }?.migrationId
+                                afterMigrationId = page.nextMigrationId.orEmpty()
+                            } while (migrationId == null && afterMigrationId.isNotEmpty())
+                            val selectedMigrationId = migrationId ?: "legacy:${UUID.randomUUID()}"
                             when (
                                 val result =
                                     syncManager.beginLegacyV21Migration(
-                                        migrationId,
+                                        selectedMigrationId,
                                         normalizedSource,
+                                        input.mnemonic,
+                                        input.passphrase,
                                         parameters,
                                         devices,
                                         input.sourceDeviceId,
@@ -1267,7 +1281,7 @@ fun PallaSyncSettingsScreen(
                             ) {
                                 is PallaSyncHttpResult.Success -> {
                                     val progress =
-                                        checkNotNull(syncManager.legacyMigrationProgress(migrationId)) { "C_SCHEMA_VIOLATION" }
+                                        checkNotNull(syncManager.legacyMigrationProgress(selectedMigrationId)) { "C_SCHEMA_VIOLATION" }
                                     legacyMigrations =
                                         (legacyMigrations + progress).distinctBy { it.migrationId }
                                     showLegacySourceDialog = false
@@ -1332,7 +1346,7 @@ fun PallaSyncSettingsScreen(
                         migration.exportHash,
                     ),
                 )
-                if (migration.decisions == 0L) {
+                if (migration.sourceHighWater == 0L && migration.stagedThrough == 0L && migration.decisions == 0L) {
                     Text(stringResource(R.string.pallasync_legacy_source_not_staged))
                 }
                 migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }

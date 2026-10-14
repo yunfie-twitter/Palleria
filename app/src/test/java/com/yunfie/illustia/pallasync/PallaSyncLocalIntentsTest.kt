@@ -160,6 +160,61 @@ class PallaSyncLocalIntentsTest {
         }
 
     @Test
+    fun `legacy source scan seals only exact staged transcript and waits for resolution before authoring`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:resume-safe:$chain"
+                val exportHash = encode(ByteArray(32) { 7 })
+                val objectHash = encode(ByteArray(32) { 8 })
+                val sourceRecordId = "01890f3e-7c00-7000-8000-000000000001"
+                intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = true)
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 1,
+                    mappings =
+                        listOf(
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                1,
+                                sourceRecordId,
+                                0,
+                                objectHash,
+                                event("candidate"),
+                            ),
+                        ),
+                    decisions =
+                        listOf(
+                            PallaSyncLocalIntents.LegacySourceDecision(
+                                1,
+                                sourceRecordId,
+                                objectHash,
+                                "converted",
+                            ),
+                        ),
+                    report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = false),
+                )
+
+                runCatching { intents.completeLegacySourceScan(migration, 1, 0, exportHash) }.isFailure shouldBe true
+                intents.legacyMigrationProgress(migration)?.sourceComplete shouldBe false
+                store.protocolDao().migrationChunk(migration, 0)?.state shouldBe "legacy_staging"
+
+                intents.completeLegacySourceScan(migration, 1, 1, exportHash)
+                intents.completeLegacySourceScan(migration, 1, 1, exportHash)
+                intents.legacyMigrationProgress(migration)?.sourceComplete shouldBe true
+                store.protocolDao().migrationChunk(migration, 0)?.state shouldBe "legacy_candidates_staged"
+                runCatching { intents.resumeLegacyMigration(migration, keys()) }.isFailure shouldBe true
+                store.dao.queuedBatch(chain, 200) shouldBe emptyList()
+                store.dao.getChainState(chain)?.authorSeq shouldBe 0
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `frozen legacy source page and destination author mapping resume idempotently`() =
         runBlocking<Unit> {
             val db = database()

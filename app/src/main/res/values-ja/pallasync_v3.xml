@@ -103,9 +103,9 @@
     <string name="pallasync_legacy_source_freeze_title">すべての旧端末の書き込みを停止しました</string>
     <string name="pallasync_legacy_source_freeze_summary">v2 freeze APIはありません。旧端末を停止したか、変更不能なexportを使っていることを確認します。</string>
     <string name="pallasync_legacy_source_inspect">移行元を検証してjournalを作る</string>
-    <string name="pallasync_legacy_source_verified_journal_started">凍結済みv2.1移行元を検証しjournalを作成しました。レコード変換・アップロードはまだ行っていません。</string>
+    <string name="pallasync_legacy_source_verified_journal_started">凍結済みv2.1移行元を再検証し、暗号化レコードを変換候補としてjournalに保存しました。競合解決・署名・アップロードは未完了です。同じ移行元と移行先を選ぶとjournalから再開します。</string>
     <string name="pallasync_legacy_source_failed">選択した移行元を検証できませんでした。移行は開始していません。</string>
-    <string name="pallasync_legacy_source_not_staged">source proofは保存済みですが、変換と移行先へのアップロードはまだ始まっていません。</string>
+    <string name="pallasync_legacy_source_not_staged">source exportにレコードがありません。proofと空の変換journalを確認してください。</string>
     <string name="pallasync_quarantine_title">未解決のプロトコル証拠</string>
     <string name="pallasync_quarantine_explanation">対象オブジェクトと証拠は保持されています。理由とhashを確認してください。解決にはプロトコルで認可された証拠が必要です。</string>
     <string name="pallasync_quarantine_item">%1$s · %2$s</string>

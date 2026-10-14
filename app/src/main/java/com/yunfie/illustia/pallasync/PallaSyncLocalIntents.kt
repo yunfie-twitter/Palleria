@@ -243,7 +243,7 @@ internal class PallaSyncLocalIntents(
                 val outcomeValid =
                     when (decision.disposition) {
                         "converted" -> {
-                            decision.reasonCode == null && sourceMappings.isNotEmpty() && mappingsMatchDecision
+                            decision.reasonCode == null && mappingsMatchDecision
                         }
 
                         "quarantined", "excluded" -> {
@@ -330,6 +330,38 @@ internal class PallaSyncLocalIntents(
                 "legacy_staging",
                 nextState,
                 Json.encodeToString(updated),
+            ) == 1,
+        ) { "C_LOCAL_STORAGE_FULL" }
+    }
+
+    /** Finalizes source conversion only after the second full transcript matches the frozen proof (§9.3). */
+    suspend fun completeLegacySourceScan(
+        migrationId: String,
+        expectedHighWater: Long,
+        expectedRecordCount: Long,
+        expectedExportHash: String,
+    ) = store.transaction {
+        val dao = store.protocolDao()
+        val row = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+        val manifest = Json.decodeFromString<LegacyManifest>(row.reportJson)
+        check(
+            manifest.sourceHighWater == expectedHighWater && manifest.exportHash == expectedExportHash &&
+                manifest.stagedThrough == expectedHighWater && manifest.sourceRecordsVisited == expectedRecordCount &&
+                manifest.decisionCount == expectedRecordCount,
+        ) { "C_ROLLBACK_DETECTED" }
+        if (manifest.sourceComplete) {
+            check(row.state == "legacy_candidates_staged") { "C_ROLLBACK_DETECTED" }
+            return@transaction
+        }
+        check(row.state == "legacy_staging") { "C_ROLLBACK_DETECTED" }
+        val completed = manifest.copy(sourceComplete = true)
+        check(
+            dao.updateMigrationManifest(
+                migrationId,
+                manifest.exportHash,
+                "legacy_staging",
+                "legacy_candidates_staged",
+                Json.encodeToString(completed),
             ) == 1,
         ) { "C_LOCAL_STORAGE_FULL" }
     }

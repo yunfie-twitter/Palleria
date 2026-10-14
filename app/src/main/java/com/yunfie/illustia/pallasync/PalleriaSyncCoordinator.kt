@@ -67,6 +67,7 @@ private const val MAX_EXPORT_CHUNK_BYTES = 8_388_608
 private const val MAX_DELETION_WITNESSES = 128
 private const val MAX_PEER_HISTORY_BYTES = 3_500_000
 private const val MAX_SNAPSHOT_UPLOAD_RECORDS = 64
+private val LEGACY_QUARANTINE_CODES = setOf("C_AEAD_FAILURE", "C_SIGNATURE_INVALID", "C_SCHEMA_VIOLATION", "C_UNSUPPORTED_SCHEMA")
 
 private data class DeletionContext(
     val state: ChainStateEntity,
@@ -745,6 +746,8 @@ internal class PalleriaSyncCoordinator(
     internal suspend fun beginLegacyV21Migration(
         migrationId: String,
         sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
         parameters: PallaSyncLegacyV21Source.Parameters,
         devices: List<PallaSyncLegacyV21Source.Device>,
         signerDeviceId: String,
@@ -774,6 +777,25 @@ internal class PalleriaSyncCoordinator(
                 targetChain = targetChain,
                 freezeConfirmed = freezeConfirmed,
             )
+            val staged =
+                stageLegacyV21Candidates(
+                    migrationId,
+                    sourceUrl,
+                    parameters,
+                    devices,
+                    signerDeviceId,
+                    signerDeviceSeed,
+                    signerDevicePublicKey,
+                    proof.value,
+                    seedPhrase,
+                    passphrase,
+                )
+            when (staged) {
+                is PallaSyncHttpResult.Success -> Unit
+                is PallaSyncHttpResult.ProtocolError -> return staged
+                is PallaSyncHttpResult.Retryable -> return staged
+                PallaSyncHttpResult.Gone -> return PallaSyncHttpResult.Gone
+            }
             proof
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -784,10 +806,242 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    /** Decrypts and journals one bounded source record at a time, then seals only a matching full transcript (§9.2–§9.3). */
+    private suspend fun stageLegacyV21Candidates(
+        migrationId: String,
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        signerDevicePublicKey: String,
+        frozenProof: PallaSyncLegacyV21Source.FrozenExportProof,
+        seedPhrase: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<Unit> =
+        withContext(Dispatchers.IO) {
+            val normalized = normalizeServerUrl(sourceUrl) ?: return@withContext PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            val base = normalized.toHttpUrl()
+            val registryHash = PallaSyncLegacyV21Source.registryHash(devices)
+            if (registryHash != frozenProof.verifiedDeviceRegistryHash) {
+                return@withContext PallaSyncHttpResult.ProtocolError("C_DEVICE_EQUIVOCATION")
+            }
+            val progress =
+                localIntents.legacyMigrationProgress(migrationId)
+                    ?: return@withContext PallaSyncHttpResult.ProtocolError("C_MISSING_DEPENDENCY")
+            if (progress.sourceChain != frozenProof.sourceChain || progress.exportHash != frozenProof.exportHash ||
+                progress.sourceHighWater != frozenProof.highWater
+            ) {
+                return@withContext PallaSyncHttpResult.ProtocolError("C_RECORD_ID_CONFLICT")
+            }
+            val transcript = PallaSyncLegacyV21Source.ExportTranscript(parameters.chainId, registryHash)
+            var cursor = 0L
+            var stagedThrough = progress.stagedThrough
+            var session = 0L
+            try {
+                var hasMore = true
+                while (hasMore) {
+                    currentCoroutineContext().ensureActive()
+                    when (
+                        val result =
+                            legacyV21Source.getRecordPage(
+                                base,
+                                parameters.chainId,
+                                cursor,
+                                devices,
+                                signerDeviceId,
+                                signerDeviceSeed,
+                                policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+                            )
+                    ) {
+                        is PallaSyncHttpResult.Success -> {
+                            val page = result.value
+                            PallaSyncLegacyV21Source.validateFrozenPage(cursor, page)
+                            for (record in page.records) {
+                                currentCoroutineContext().ensureActive()
+                                transcript.append(record)
+                                cursor = record.sequence
+                                if (record.sequence <= stagedThrough) continue
+                                check(record.sequence == stagedThrough + 1) { "C_ROLLBACK_DETECTED" }
+                                if (session == 0L) {
+                                    session =
+                                        PallaSyncCore.beginLegacyMigrationSession(
+                                            seedPhrase,
+                                            passphrase,
+                                            parameters.chainSalt,
+                                            parameters.chainId,
+                                            parameters.adminPublicKey,
+                                        )
+                                }
+                                val objectHash = checkNotNull(PallaSyncCore.objectHash(record.json)) { "C_SCHEMA_VIOLATION" }
+                                val device = devices.singleOrNull { it.deviceId == record.deviceId } ?: error("C_MISSING_DEPENDENCY")
+                                val candidates =
+                                    try {
+                                        legacyV21Source.convertRecord(session, record, device)
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: IllegalStateException) {
+                                        val code =
+                                            error.message?.takeIf { it in LEGACY_QUARANTINE_CODES }
+                                                ?: throw error
+                                        stageLegacyQuarantine(migrationId, stagedThrough, record, objectHash, code)
+                                        stagedThrough = record.sequence
+                                        continue
+                                    } catch (_: IllegalArgumentException) {
+                                        stageLegacyQuarantine(migrationId, stagedThrough, record, objectHash, "C_SCHEMA_VIOLATION")
+                                        stagedThrough = record.sequence
+                                        continue
+                                    }
+                                val mappings =
+                                    candidates.mapIndexed { index, candidate ->
+                                        PallaSyncLocalIntents.LegacyEventMapping(
+                                            sourceSequence = record.sequence,
+                                            sourceRecordId = record.recordId,
+                                            candidateIndex = index,
+                                            sourceObjectHash = objectHash,
+                                            event =
+                                                PallaSyncPendingEvent(
+                                                    schema = candidate.collection,
+                                                    entityId = candidate.entityId,
+                                                    operation = candidate.operation,
+                                                    body = candidate.body,
+                                                ),
+                                        )
+                                    }
+                                val decision =
+                                    PallaSyncLocalIntents.LegacySourceDecision(
+                                        sourceSequence = record.sequence,
+                                        sourceRecordId = record.recordId,
+                                        sourceObjectHash = objectHash,
+                                        disposition = "converted",
+                                        normalizationChanged = candidates.any { it.normalizationChanged },
+                                        normalizationCollision = candidates.any { it.normalizationCollision },
+                                    )
+                                localIntents.stageLegacyBatch(
+                                    migrationId,
+                                    expectedAfterSequence = stagedThrough,
+                                    throughSequence = record.sequence,
+                                    mappings = mappings,
+                                    decisions = listOf(decision),
+                                    report =
+                                        PallaSyncLocalIntents.LegacyBatchReport(
+                                            sourceRecordsVisited = 1,
+                                            quarantinedCount = 0,
+                                            normalizationCount = if (decision.normalizationChanged) 1 else 0,
+                                            collisionCount = if (decision.normalizationCollision) 1 else 0,
+                                            complete = false,
+                                        ),
+                                )
+                                stagedThrough = record.sequence
+                            }
+                            check(page.throughSequence == cursor) { "C_ROLLBACK_DETECTED" }
+                            hasMore = page.hasMore
+                        }
+
+                        is PallaSyncHttpResult.ProtocolError -> {
+                            return@withContext result
+                        }
+
+                        is PallaSyncHttpResult.Retryable -> {
+                            return@withContext result
+                        }
+
+                        PallaSyncHttpResult.Gone -> {
+                            return@withContext PallaSyncHttpResult.Gone
+                        }
+                    }
+                }
+                if (frozenProof.highWater == 0L && stagedThrough == 0L && progress.decisions == 0L) {
+                    localIntents.stageLegacyBatch(
+                        migrationId,
+                        expectedAfterSequence = 0,
+                        throughSequence = 0,
+                        mappings = emptyList(),
+                        decisions = emptyList(),
+                        report = PallaSyncLocalIntents.LegacyBatchReport(0, 0, 0, 0, complete = false),
+                    )
+                }
+                check(
+                    cursor == frozenProof.highWater && transcript.recordCount == frozenProof.recordCount &&
+                        transcript.finish() == frozenProof.exportHash,
+                ) { "C_RECORD_ID_CONFLICT" }
+                when (
+                    val after =
+                        legacyV21Source.getDevices(
+                            base,
+                            parameters,
+                            signerDeviceId,
+                            signerDeviceSeed,
+                            signerDevicePublicKey,
+                            policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+                        )
+                ) {
+                    is PallaSyncHttpResult.Success -> {
+                        check(PallaSyncLegacyV21Source.registryHash(after.value) == registryHash) { "C_DEVICE_EQUIVOCATION" }
+                    }
+
+                    is PallaSyncHttpResult.ProtocolError -> {
+                        return@withContext after
+                    }
+
+                    is PallaSyncHttpResult.Retryable -> {
+                        return@withContext after
+                    }
+
+                    PallaSyncHttpResult.Gone -> {
+                        return@withContext PallaSyncHttpResult.Gone
+                    }
+                }
+                localIntents.completeLegacySourceScan(
+                    migrationId,
+                    expectedHighWater = frozenProof.highWater,
+                    expectedRecordCount = frozenProof.recordCount,
+                    expectedExportHash = frozenProof.exportHash,
+                )
+                PallaSyncHttpResult.Success(Unit)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: IllegalStateException) {
+                PallaSyncHttpResult.ProtocolError(error.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY")
+            } catch (_: IllegalArgumentException) {
+                PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            } finally {
+                if (session != 0L) PallaSyncCore.endLegacyMigrationSession(session)
+            }
+        }
+
+    private suspend fun stageLegacyQuarantine(
+        migrationId: String,
+        after: Long,
+        record: PallaSyncLegacyV21Source.SignedRecord,
+        objectHash: String,
+        code: String,
+    ) {
+        localIntents.stageLegacyBatch(
+            migrationId,
+            expectedAfterSequence = after,
+            throughSequence = record.sequence,
+            mappings = emptyList(),
+            decisions =
+                listOf(
+                    PallaSyncLocalIntents.LegacySourceDecision(
+                        sourceSequence = record.sequence,
+                        sourceRecordId = record.recordId,
+                        sourceObjectHash = objectHash,
+                        disposition = "quarantined",
+                        reasonCode = code,
+                    ),
+                ),
+            report = PallaSyncLocalIntents.LegacyBatchReport(1, 1, 0, 0, complete = false),
+        )
+    }
+
     /** Re-scan and compare the exact source proof before any resumed migration work (§9.3). */
     internal suspend fun revalidateLegacyV21MigrationSource(
         migrationId: String,
         sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
         parameters: PallaSyncLegacyV21Source.Parameters,
         devices: List<PallaSyncLegacyV21Source.Device>,
         signerDeviceId: String,
@@ -802,6 +1056,8 @@ internal class PalleriaSyncCoordinator(
         return beginLegacyV21Migration(
             migrationId,
             sourceUrl,
+            seedPhrase,
+            passphrase,
             parameters,
             devices,
             signerDeviceId,
@@ -832,6 +1088,8 @@ internal class PalleriaSyncCoordinator(
     internal suspend fun resumeLegacyV21Migration(
         migrationId: String,
         sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
         parameters: PallaSyncLegacyV21Source.Parameters,
         devices: List<PallaSyncLegacyV21Source.Device>,
         signerDeviceId: String,
@@ -844,6 +1102,8 @@ internal class PalleriaSyncCoordinator(
             revalidateLegacyV21MigrationSource(
                 migrationId,
                 sourceUrl,
+                seedPhrase,
+                passphrase,
                 parameters,
                 devices,
                 signerDeviceId,

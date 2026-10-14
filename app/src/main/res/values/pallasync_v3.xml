@@ -108,9 +108,9 @@
     <string name="pallasync_legacy_source_freeze_title">I stopped every old client from writing</string>
     <string name="pallasync_legacy_source_freeze_summary">The protocol has no v2 freeze endpoint. Confirm that old writers are stopped or the source is an immutable export.</string>
     <string name="pallasync_legacy_source_inspect">Verify source and create migration journal</string>
-    <string name="pallasync_legacy_source_verified_journal_started">Frozen v2.1 source verified and journal created. No records have been converted or uploaded yet.</string>
+    <string name="pallasync_legacy_source_verified_journal_started">Frozen v2.1 source revalidated and encrypted records stored as conversion candidates. Conflict resolution, signing, and upload remain incomplete. Selecting the same source and target resumes this journal.</string>
     <string name="pallasync_legacy_source_failed">Could not verify the selected source; no migration was started.</string>
-    <string name="pallasync_legacy_source_not_staged">Source proof is stored, but conversion and destination upload have not started.</string>
+    <string name="pallasync_legacy_source_not_staged">The source export contains no records. Its proof and empty conversion journal were verified.</string>
     <string name="pallasync_quarantine_title">Unresolved protocol evidence</string>
     <string name="pallasync_quarantine_explanation">These objects and their evidence are retained. Review the reason and hash; resolution requires protocol-authorized evidence.</string>
     <string name="pallasync_quarantine_item">%1$s · %2$s</string>
