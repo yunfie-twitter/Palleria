@@ -1335,6 +1335,96 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_objectHa
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginSnapshotVerification<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    record_key: JByteArray<'local>,
+    header: JString<'local>,
+    compaction_id: JString<'local>,
+    part_count: jint,
+) -> jlong {
+    let result = (|| {
+        let key = Zeroizing::new(
+            env.convert_byte_array(&record_key)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        );
+        let header = public_value(&mut env, &header)?;
+        let id = read_string(&mut env, &compaction_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::snapshot::begin_verification(
+            &key,
+            &header,
+            &id,
+            part_count
+                .try_into()
+                .map_err(|_| ClientError("C_SNAPSHOT_INVALID"))?,
+        )
+    })();
+    match result {
+        Ok(handle) => handle as jlong,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifySnapshotPart<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    part: JString<'local>,
+) -> jboolean {
+    let result = (|| {
+        let part = public_value(&mut env, &part)?;
+        crate::snapshot::verification_part(handle as u64, &part)
+    })();
+    match result {
+        Ok(()) => 1,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_finishSnapshotVerification<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    commitment: JString<'local>,
+) -> jboolean {
+    let result = read_string(&mut env, &commitment)
+        .ok_or(ClientError("C_SCHEMA_VIOLATION"))
+        .and_then(|value| crate::snapshot::finish_verification(handle as u64, &value));
+    match result {
+        Ok(()) => 1,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_abortSnapshotVerification<
+    'local,
+>(
+    _env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+) {
+    crate::snapshot::abort_verification(handle as u64);
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateDeletionProof<
     'local,
 >(

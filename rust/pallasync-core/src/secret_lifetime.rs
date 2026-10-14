@@ -37,12 +37,16 @@ pub fn foreground(value: bool) {
             state.checked_add(1)
         }
     });
+    if !value {
+        crate::snapshot::abort_all_verifications();
+    }
     start();
 }
 pub fn invalidate() {
     let _ = LIFETIME.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |state| {
         state.checked_add(2)
     });
+    crate::snapshot::abort_all_verifications();
     start();
 }
 pub(crate) fn start() {
@@ -58,6 +62,7 @@ pub(crate) fn start() {
                 crate::recovery_flow::expire_collectors();
                 crate::device_session::expire();
                 crate::epoch_session::expire();
+                crate::snapshot::expire_verifications();
             }
         });
     });

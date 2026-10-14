@@ -1,0 +1,66 @@
+package com.yunfie.illustia.pallasync
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class PallaSyncSnapshotVerifierAndroidTest {
+    @Test
+    fun jniVerifierConsumesCompleteStreamOnceAndRejectsWrongCommitment() {
+        val key =
+            byteArrayOf(
+                0xD9.toByte(),
+                0x6F,
+                0xF7.toByte(),
+                0x6D,
+                0x5C,
+                0x3A,
+                0xD5.toByte(),
+                0xDF.toByte(),
+                0x74,
+                0x29,
+                0x15,
+                0x3B,
+                0x52,
+                0x12,
+                0x6E,
+                0x43,
+                0xA8.toByte(),
+                0x18,
+                0xC2.toByte(),
+                0x23,
+                0xF5.toByte(),
+                0x3F,
+                0xA3.toByte(),
+                0xF5.toByte(),
+                0x2D,
+                0x7C,
+                0xE1.toByte(),
+                0x02,
+                0x02,
+                0x6C,
+                0x09,
+                0x74,
+            )
+        val header =
+            """{"chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","covered_log_hash":"0zeJRLV2xNFxHkbAzYH-TSb1kOcmVyl9r4kiBsQLCHQ","covered_through_seq":0,"epoch_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","generation":0,"kind":"header","lamport_max":0,"log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+        val part =
+            """{"collection":"pallasync.snapshot/3","compaction_id":"55555555-5555-4555-8555-555555555555","entries":[$header],"part_count":1,"part_index":0,"type":"PALLASYNC-SNAPSHOT-v3"}"""
+        PallaSyncSnapshotVerifier.begin(key, header, "55555555-5555-4555-8555-555555555555", 1).use { verifier ->
+            verifier.acceptDecryptedAuthenticatedPart(part)
+            verifier.finish("cEWZYwyPF0UbkBBP8J9BJnU69OPDBciCrjHKk2gt1bU")
+            assertThrows(IllegalStateException::class.java) { verifier.acceptDecryptedAuthenticatedPart(part) }
+        }
+
+        PallaSyncSnapshotVerifier.begin(key, header, "55555555-5555-4555-8555-555555555555", 1).use { verifier ->
+            verifier.acceptDecryptedAuthenticatedPart(part)
+            assertThrows(IllegalStateException::class.java) {
+                verifier.finish("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            }
+        }
+        assertEquals(null, PallaSyncCore.objectHash("{\"same\":1,\"same\":2}"))
+    }
+}

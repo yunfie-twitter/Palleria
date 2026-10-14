@@ -10,6 +10,14 @@ use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use hmac::{Hmac, Mac};
 use serde_json::{Value, json};
 use sha2::Sha256;
+use std::{
+    collections::HashMap,
+    sync::{
+        Mutex, OnceLock,
+        atomic::{AtomicU64, Ordering},
+    },
+    time::{Duration, Instant},
+};
 use subtle::ConstantTimeEq;
 
 fn invalid() -> ClientError {
@@ -233,6 +241,91 @@ pub struct StateStream {
     expected_part: u32,
     part_count: u32,
     failed: bool,
+}
+
+struct VerifierSession {
+    stream: StateStream,
+    compaction_id: String,
+    last_activity: Instant,
+}
+
+static VERIFIERS: OnceLock<Mutex<HashMap<u64, VerifierSession>>> = OnceLock::new();
+static NEXT_VERIFIER: AtomicU64 = AtomicU64::new(1);
+
+fn verifiers() -> &'static Mutex<HashMap<u64, VerifierSession>> {
+    VERIFIERS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Begin a short-lived native snapshot verification session (§16.6). The key is copied
+/// only into the streaming HMAC state and is never returned to the managed runtime.
+pub fn begin_verification(
+    record_key: &[u8],
+    header: &Value,
+    compaction_id: &str,
+    part_count: u32,
+) -> Result<u64> {
+    require(record_key.len() == 32 && wire::uuid(compaction_id))?;
+    let key: &[u8; 32] = record_key.try_into().map_err(|_| invalid())?;
+    let stream = StateStream::new(key, header, part_count)?;
+    let handle = NEXT_VERIFIER.fetch_add(1, Ordering::Relaxed);
+    require(handle != 0)?;
+    let mut sessions = verifiers().lock().map_err(|_| invalid())?;
+    require(sessions.len() < 8)?;
+    sessions.insert(
+        handle,
+        VerifierSession {
+            stream,
+            compaction_id: compaction_id.to_owned(),
+            last_activity: Instant::now(),
+        },
+    );
+    Ok(handle)
+}
+
+/// Add one already decrypted and independently authenticated snapshot part.
+pub fn verification_part(handle: u64, part: &Value) -> Result {
+    let mut sessions = verifiers().lock().map_err(|_| invalid())?;
+    let session = sessions.get_mut(&handle).ok_or_else(invalid)?;
+    if session.last_activity.elapsed() > Duration::from_secs(60) {
+        sessions.remove(&handle);
+        return Err(invalid());
+    }
+    let result = session.stream.part(part, &session.compaction_id);
+    if result.is_err() {
+        sessions.remove(&handle);
+    } else {
+        session.last_activity = Instant::now();
+    }
+    result
+}
+
+/// Finish exactly once. A failed/incomplete commitment destroys the session.
+pub fn finish_verification(handle: u64, commitment: &str) -> Result {
+    let session = verifiers()
+        .lock()
+        .map_err(|_| invalid())?
+        .remove(&handle)
+        .ok_or_else(invalid)?;
+    require(session.last_activity.elapsed() <= Duration::from_secs(60))?;
+    session.stream.finish(commitment)
+}
+
+pub fn abort_verification(handle: u64) {
+    if let Ok(mut sessions) = verifiers().lock() {
+        sessions.remove(&handle);
+    }
+}
+
+pub fn expire_verifications() {
+    if let Ok(mut sessions) = verifiers().lock() {
+        sessions.retain(|_, session| session.last_activity.elapsed() <= Duration::from_secs(60));
+    }
+}
+
+pub fn abort_all_verifications() {
+    if let Ok(mut sessions) = verifiers().lock() {
+        sessions.clear();
+    }
 }
 impl StateStream {
     pub fn new(record_key: &[u8; 32], expected_header: &Value, part_count: u32) -> Result<Self> {
