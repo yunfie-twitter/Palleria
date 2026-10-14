@@ -62,6 +62,15 @@ class PallaSyncSnapshotInstallDaoTest {
                 page.single().entryJson shouldBe "{\"kind\":\"header\"}"
                 dao.entryPage(CHAIN, COMPACTION, 0, 0, 10).map { it.entryJson } shouldBe
                     listOf("{\"kind\":\"entity\"}")
+                PallaSyncSnapshotSemanticComparator.compare(dao, CHAIN, COMPACTION) { emit ->
+                    emit("{\"kind\":\"header\"}")
+                    emit("{\"kind\":\"entity\"}")
+                }
+                shouldThrow<IllegalStateException> {
+                    PallaSyncSnapshotSemanticComparator.compare(dao, CHAIN, COMPACTION) { emit ->
+                        emit("{\"kind\":\"header\"}")
+                    }
+                }
             } finally {
                 db.close()
             }

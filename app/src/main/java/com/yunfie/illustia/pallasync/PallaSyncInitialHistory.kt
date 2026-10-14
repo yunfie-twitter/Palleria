@@ -184,6 +184,18 @@ internal class PallaSyncInitialHistory(
             )
         }
         stateStager.complete()
+        val coveredSeq = compaction.getValue("covered_through_seq").jsonPrimitive.long
+        val coveredHash = compaction.getValue("covered_log_hash").jsonPrimitive.content
+        PallaSyncSnapshotSemanticComparator.compareWithExactLocalReplay(
+            store,
+            chain,
+            input.compactionId,
+            input.logId,
+            input.expectedGeneration,
+            input.epochHash,
+            coveredSeq,
+            coveredHash,
+        )
     }
 
     private suspend fun snapshotVerificationInput(
