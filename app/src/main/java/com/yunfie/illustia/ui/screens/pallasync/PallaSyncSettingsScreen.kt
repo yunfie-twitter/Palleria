@@ -722,6 +722,16 @@ fun PallaSyncSettingsScreen(
                             )
                             Text(
                                 stringResource(
+                                    R.string.pallasync_progress_transparency,
+                                    status.verifiedTransparencyIndex,
+                                    status.observedTransparencyTargetIndex,
+                                ),
+                            )
+                            if (status.transparencyObservationConflict) {
+                                Text(stringResource(R.string.pallasync_progress_transparency_conflict))
+                            }
+                            Text(
+                                stringResource(
                                     if (status.partial) R.string.pallasync_progress_partial else R.string.pallasync_progress_current,
                                     status.initialPullCompleted,
                                 ),

@@ -2621,10 +2621,20 @@ internal class PalleriaSyncCoordinator(
         withContext(Dispatchers.IO) {
             val state = db.dao.getActiveChainState() ?: return@withContext null
             val protocol = db.protocolDao()
+            val transparencyProgress =
+                PallaSyncTransparencyProgress.fromSavedHead(
+                    transparencyId = state.transparencyId,
+                    logId = state.logId,
+                    verifiedIndex = state.transparencyIndex,
+                    savedHeadJson = state.logId?.let { protocol.latestEvidence(state.chainId, it, "transparency_head") },
+                )
             PallaSyncClientStatus(
                 targetSeq = state.downloadedSeq,
                 verifiedSeq = state.verifiedSeq,
                 materializedSeq = state.materializedSeq,
+                verifiedTransparencyIndex = transparencyProgress.verifiedIndex,
+                observedTransparencyTargetIndex = transparencyProgress.observedTargetIndex,
+                transparencyObservationConflict = transparencyProgress.observationConflict,
                 pendingOutbox = db.dao.pendingOutboxCount(state.chainId),
                 authorGaps = protocol.unresolvedAuthorGapCount(state.chainId),
                 unresolvedQuarantine = protocol.unresolvedQuarantineCount(state.chainId),

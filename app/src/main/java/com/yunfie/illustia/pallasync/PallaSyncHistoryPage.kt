@@ -15,6 +15,9 @@ data class PallaSyncClientStatus(
     val targetSeq: Long,
     val verifiedSeq: Long,
     val materializedSeq: Long,
+    val verifiedTransparencyIndex: Long,
+    val observedTransparencyTargetIndex: Long,
+    val transparencyObservationConflict: Boolean,
     val pendingOutbox: Long,
     val authorGaps: Long,
     val unresolvedQuarantine: Long,
@@ -28,5 +31,7 @@ data class PallaSyncClientStatus(
     val seenCeiling: Long,
 ) {
     val partial: Boolean
-        get() = !initialPullCompleted || verifiedSeq < targetSeq || materializedSeq < verifiedSeq
+        get() =
+            !initialPullCompleted || verifiedSeq < targetSeq || materializedSeq < verifiedSeq ||
+                verifiedTransparencyIndex < observedTransparencyTargetIndex || transparencyObservationConflict
 }

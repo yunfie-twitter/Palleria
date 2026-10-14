@@ -683,14 +683,18 @@
       "implementation": [
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLiveHistory.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConsistencyProbe.kt",
+    "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgress.kt",
+    "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncHistoryPage.kt",
+    "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
         "PallaSync/src/api/read.rs"
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/client_response.rs",
-        "PallaSync/tests/reference/run_relay_interop.py"
+    "PallaSync/tests/reference/run_relay_interop.py",
+    "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgressTest.kt"
       ],
       "result": "pending",
-      "remaining": "Test cancellation/checkpoint restart and target/verified UI for large transparency suffixes and post-pruning histories.",
+  "remaining": "Settings now separates the last locally verified transparency anchor from the latest signature-validated observed head, uses the independent entry_index, and surfaces transparency_id/log_id conflicts; focused status tests pass. Test cancellation/checkpoint restart and large suffix/post-pruning progress on Android; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {
