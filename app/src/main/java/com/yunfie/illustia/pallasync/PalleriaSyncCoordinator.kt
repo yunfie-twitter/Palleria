@@ -3307,7 +3307,7 @@ internal class PalleriaSyncCoordinator(
                     savedHeadJson = state.logId?.let { protocol.latestEvidence(state.chainId, it, "transparency_head") },
                 )
             PallaSyncClientStatus(
-                targetSeq = state.downloadedSeq,
+                downloadedSeq = state.downloadedSeq,
                 verifiedSeq = state.verifiedSeq,
                 materializedSeq = state.materializedSeq,
                 verifiedTransparencyIndex = transparencyProgress.verifiedIndex,

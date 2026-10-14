@@ -12,7 +12,7 @@ data class PallaSyncHistoryPage(
 
 /** Local bounded status summary; sequence positions are independent verified pipeline marks. */
 data class PallaSyncClientStatus(
-    val targetSeq: Long,
+    val downloadedSeq: Long,
     val verifiedSeq: Long,
     val materializedSeq: Long,
     val verifiedTransparencyIndex: Long,
@@ -32,6 +32,6 @@ data class PallaSyncClientStatus(
 ) {
     val partial: Boolean
         get() =
-            !initialPullCompleted || verifiedSeq < targetSeq || materializedSeq < verifiedSeq ||
+            !initialPullCompleted || verifiedSeq < downloadedSeq || materializedSeq < verifiedSeq ||
                 verifiedTransparencyIndex < observedTransparencyTargetIndex || transparencyObservationConflict
 }

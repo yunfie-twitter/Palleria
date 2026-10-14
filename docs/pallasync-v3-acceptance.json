@@ -274,7 +274,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
       ],
       "result": "pending",
-      "remaining": "Settings and device-history screens display distinct downloaded/verified/materialized positions, separate transparency checkpoint/target, pending outbox/author gaps/quarantine, and logical history counts against safety ceilings. Kotlin/JVM 490/490, Android instrumentation 27/27, detekt, ktlint, and Kotlin compile pass. Run real-size Android history stress at safety ceilings and record memory/disk/first-page results; keep pending.",
+      "remaining": "Settings and device-history screens display distinct downloaded/verified/materialized positions, separate transparency checkpoint/target, pending outbox/author gaps/quarantine, and logical history counts against safety ceilings. The settings label now correctly names its first position as downloaded rather than conflating it with a remote target; status progression/partial-state tests cover D/V/M and transparency separately. Kotlin/JVM 490/490, Android instrumentation 27/27, detekt, ktlint, and Kotlin compile pass. Run real-size Android history stress at safety ceilings and record memory/disk/first-page results; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

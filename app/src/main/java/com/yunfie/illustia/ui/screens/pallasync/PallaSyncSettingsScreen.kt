@@ -793,7 +793,7 @@ fun PallaSyncSettingsScreen(
                             Text(
                                 stringResource(
                                     R.string.pallasync_progress_positions,
-                                    status.targetSeq,
+                                    status.downloadedSeq,
                                     status.verifiedSeq,
                                     status.materializedSeq,
                                 ),

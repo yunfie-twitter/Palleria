@@ -65,10 +65,10 @@
     <string name="pallasync_snapshot_publish_failed">Snapshot publication paused. Local signed parts and receipts were retained for retry.</string>
     <string name="pallasync_progress_title">Sync progress and local history capacity</string>
     <string name="pallasync_progress_state">Write state: %1$s</string>
-    <string name="pallasync_progress_positions">Observed target %1$d · verified %2$d · materialized %3$d</string>
+    <string name="pallasync_progress_positions">Downloaded %1$d · verified %2$d · materialized %3$d</string>
     <string name="pallasync_progress_transparency">Transparency entry_index: verified anchor %1$d · last signed target %2$d (separate counter)</string>
     <string name="pallasync_progress_transparency_conflict">The latest signed transparency head names a different chain; it is not counted as verified progress.</string>
-    <string name="pallasync_progress_partial">Partial: initial pull complete = %1$b. Verified and materialized positions can still lag the target.</string>
+    <string name="pallasync_progress_partial">Partial: initial pull complete = %1$b. Verified and materialized positions can still lag the downloaded position.</string>
     <string name="pallasync_progress_current">Verified and materialized through the observed target. An isolated relay can still hide unseen history.</string>
     <string name="pallasync_progress_blockers">Pending outbox %1$d · author gaps %2$d · unresolved quarantine %3$d</string>
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>

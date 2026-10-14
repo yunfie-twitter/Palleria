@@ -177,7 +177,7 @@ fun DeviceViewHistoryScreen(
                     Text(
                         stringResource(
                             R.string.pallasync_v3_history_sync_positions,
-                            status.targetSeq,
+                            status.downloadedSeq,
                             status.verifiedSeq,
                             status.materializedSeq,
                         ),
