@@ -54,6 +54,13 @@ internal object PallaSyncSnapshotCore {
         pinJson: String,
     ): String
 
+    /** §10.12/§10.17: bind the posted compaction, original LogEntry and signed receipt. */
+    external fun validateCompactionPublishResponse(
+        body: ByteArray,
+        compactionJson: String,
+        pinJson: String,
+    ): String
+
     /** §10.12: validate the strict, bounded CompactionRecord catalogue response. */
     external fun validateCompactionPage(
         body: ByteArray,

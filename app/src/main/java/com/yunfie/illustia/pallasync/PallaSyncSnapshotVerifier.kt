@@ -66,6 +66,19 @@ internal class PallaSyncSnapshotVerifier private constructor(
                 ).jsonObject
         }
 
+        fun validatePublishedCompaction(
+            response: ByteArray,
+            compaction: JsonObject,
+            pin: JsonObject,
+        ): JsonObject {
+            val compactionJson = checkNotNull(PallaSyncCore.canonicalJson(compaction.toString())) { "C_SNAPSHOT_INVALID" }
+            val pinJson = checkNotNull(PallaSyncCore.canonicalJson(pin.toString())) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            return Json
+                .parseToJsonElement(
+                    PallaSyncSnapshotCore.validateCompactionPublishResponse(response, compactionJson, pinJson),
+                ).jsonObject
+        }
+
         fun begin(
             recordKey: ByteArray,
             headerJson: String,

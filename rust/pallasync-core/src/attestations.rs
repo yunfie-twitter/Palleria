@@ -303,6 +303,40 @@ pub fn validate_snapshot_part_upload(
     Ok(response.clone())
 }
 
+/// Validate the §10.12 CompactionRecord publication result and its original log receipt.
+pub fn validate_compaction_publish_response(
+    response: &Value,
+    compaction: &Value,
+    pin: &RelayPin,
+) -> Result<Value> {
+    fields(
+        response,
+        &[
+            ("compaction_id", "uuid"),
+            ("receipt", "object"),
+            ("upload_receipts", "array"),
+        ],
+        &[],
+    )?;
+    wire::validate(compaction, "compaction")?;
+    require(
+        s(compaction, "chain_id") == pin.chain_id
+            && s(compaction, "log_id") == pin.log_id
+            && s(response, "compaction_id") == s(compaction, "compaction_id"),
+        "C_LOG_HASH_MISMATCH",
+    )?;
+    let receipts = a(response, "upload_receipts");
+    require(receipts.len() == 1, "C_ACCEPTANCE_UNPROVEN")?;
+    let entry = &response["receipt"];
+    validate_log_entry(entry)?;
+    require(
+        s(entry, "kind") == "compaction" && entry["object"] == *compaction,
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+    verify_receipt(&receipts[0], compaction, Some(entry), pin)?;
+    Ok(response.clone())
+}
+
 /// Validate the post-delete proof against the previously committed authority and the exact
 /// locally submitted root authorization. A valid relay signature alone never authorizes erasure.
 pub fn validate_deletion_proof(

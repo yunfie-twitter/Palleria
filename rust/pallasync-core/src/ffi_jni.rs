@@ -538,6 +538,26 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_validateCompactionPublishResponse<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    body: JByteArray<'local>,
+    compaction: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let response = public_bytes(&mut env, &body)?;
+        let compaction = public_value(&mut env, &compaction)?;
+        let pin = serde_json::from_value(public_value(&mut env, &pin)?)
+            .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::validate_compaction_publish_response(&response, &compaction, &pin)
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncSnapshotCore_validateCompactionPage<
     'local,
 >(

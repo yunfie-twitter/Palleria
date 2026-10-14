@@ -203,6 +203,81 @@ fn snapshot_part_upload_requires_exact_id_coverage_and_null_sequence_receipts() 
     );
 }
 
+#[test]
+fn compaction_publish_requires_exact_compaction_log_entry_and_signed_receipt() {
+    let relay = ed25519_dalek::SigningKey::from_bytes(&[0x71; 32]);
+    let author = ed25519_dalek::SigningKey::from_bytes(&[0x72; 32]);
+    let pin = RelayPin {
+        origin: "https://relay.example.com".into(),
+        chain_id: "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc".into(),
+        public_key: base64::Engine::encode(
+            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+            relay.verifying_key().as_bytes(),
+        ),
+        log_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc".into(),
+    };
+    let mut compaction = json!({
+        "compaction_id":"55555555-5555-4555-8555-555555555555",
+        "chain_id":pin.chain_id,
+        "generation":0,
+        "device_id":"22222222-2222-4222-8222-222222222222",
+        "log_id":pin.log_id,
+        "covered_through_seq":6,
+        "covered_log_hash":hash_bytes(&[0x73;32]),
+        "epoch_hash":hash_bytes(&[0x74;32]),
+        "snapshot_parts":[{"record_id":"11111111-1111-4111-8111-111111111111","record_hash":hash_bytes(&[0x75;32])}],
+        "state_sha256":hash_bytes(&[0x76;32]),
+        "signature":""
+    });
+    let canonical = jcs::canonicalize_json(&compaction).unwrap();
+    compaction["signature"] = json!(pallasync_core::crypto::sign_with_context(
+        &author,
+        CTX_COMPACTION,
+        &canonical,
+    ));
+    let entry = json!({
+        "relay_seq":7,
+        "received_at_ms":1791684000000u64,
+        "kind":"compaction",
+        "object":compaction
+    });
+    let previous_head = hash_bytes(&[0x77; 32]);
+    let resulting_head = data_link(&previous_head, &entry).unwrap();
+    let mut receipt = json!({
+        "type":"PALLASYNC-UPLOAD-RECEIPT-v3","version":"3.0",
+        "receipt_id":"66666666-6666-4666-8666-666666666666",
+        "chain_id":pin.chain_id,"log_id":pin.log_id,"relay_key_id":pin.key_id().unwrap(),
+        "relay_seq":7,"object_hash":object_hash(&compaction),"entry_hash":object_hash(&entry),
+        "previous_head_hash":previous_head,"resulting_head_hash":resulting_head,
+        "received_at_ms":1791684000000u64,"transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "transparency_index":8,"transparency_hash":hash_bytes(&[0x78;32]),"relay_signature":""
+    });
+    sign_relay(&relay, &mut receipt, CTX_RECEIPT).unwrap();
+    let response = json!({"compaction_id":compaction["compaction_id"],"receipt":entry,"upload_receipts":[receipt]});
+    assert_eq!(
+        validate_compaction_publish_response(&response, &compaction, &pin).unwrap(),
+        response
+    );
+
+    let mut wrong_object = response.clone();
+    wrong_object["receipt"]["object"]["state_sha256"] = json!(hash_bytes(&[0x79; 32]));
+    assert_eq!(
+        validate_compaction_publish_response(&wrong_object, &compaction, &pin)
+            .unwrap_err()
+            .0,
+        "C_ACCEPTANCE_UNPROVEN"
+    );
+
+    let mut missing_attestation = response.clone();
+    missing_attestation["upload_receipts"] = json!([]);
+    assert_eq!(
+        validate_compaction_publish_response(&missing_attestation, &compaction, &pin)
+            .unwrap_err()
+            .0,
+        "C_ACCEPTANCE_UNPROVEN"
+    );
+}
+
 fn deletion_evidence_fixture() -> (RelayPin, Authority, Value, Value) {
     let relay = ed25519_dalek::SigningKey::from_bytes(&[0x41; 32]);
     let admin = ed25519_dalek::SigningKey::from_bytes(&[0x42; 32]);

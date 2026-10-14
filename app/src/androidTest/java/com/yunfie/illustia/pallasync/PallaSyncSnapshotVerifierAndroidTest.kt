@@ -155,4 +155,15 @@ class PallaSyncSnapshotVerifierAndroidTest {
             PallaSyncSnapshotVerifier.validateUploadedParts(response, JsonArray(emptyList()), pin)
         }
     }
+
+    @Test
+    fun jniCompactionPublishValidatorRejectsMissingCompactionAndReceipt() {
+        assertThrows(IllegalStateException::class.java) {
+            PallaSyncSnapshotVerifier.validatePublishedCompaction(
+                "{}".toByteArray(),
+                JsonObject(emptyMap()),
+                JsonObject(emptyMap()),
+            )
+        }
+    }
 }
