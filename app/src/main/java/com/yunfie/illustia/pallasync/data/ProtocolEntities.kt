@@ -63,6 +63,28 @@ data class AuthorSequenceEntity(
     @ColumnInfo(name = "gap_before") val gapBefore: Boolean,
 )
 
+/** A compact author-chain anchor is hash evidence, not a fabricated authored record (§16.6). */
+@Entity(tableName = "ps_snapshot_author_heads", primaryKeys = ["chain_id", "generation", "device_id"])
+data class SnapshotAuthorHeadEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    val generation: Long,
+    @ColumnInfo(name = "device_id") val deviceId: String,
+    @ColumnInfo(name = "device_seq") val deviceSeq: Long,
+    @ColumnInfo(name = "record_hash") val recordHash: String,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+)
+
+/** Historical holes stay explicit after snapshot install and are never inferred to be repaired. */
+@Entity(tableName = "ps_snapshot_author_gaps", primaryKeys = ["chain_id", "generation", "device_id", "first_seq", "last_seq"])
+data class SnapshotAuthorGapEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    val generation: Long,
+    @ColumnInfo(name = "device_id") val deviceId: String,
+    @ColumnInfo(name = "first_seq") val first: Long,
+    @ColumnInfo(name = "last_seq") val last: Long,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+)
+
 @Entity(tableName = "ps_entities", primaryKeys = ["chain_id", "collection", "entity_id"])
 data class EntityRegisterEntity(
     @ColumnInfo(name = "chain_id") val chainId: String,

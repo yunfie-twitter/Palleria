@@ -13,6 +13,8 @@ import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import com.yunfie.illustia.pallasync.data.SignedEventEntity
+import com.yunfie.illustia.pallasync.data.SnapshotAuthorGapEntity
+import com.yunfie.illustia.pallasync.data.SnapshotAuthorHeadEntity
 import com.yunfie.illustia.pallasync.data.SnapshotPartEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -145,6 +147,10 @@ class PallaSyncProtocolStoreTest {
                 val protocol = db.protocolDao()
                 val dao = db.pallaSyncDao()
                 dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                db.snapshotStateDao().insertSnapshotAuthorHead(
+                    SnapshotAuthorHeadEntity(chain, 0, deviceA, 5, "snapshot-head-hash", log),
+                )
+                db.snapshotStateDao().insertSnapshotAuthorGap(SnapshotAuthorGapEntity(chain, 0, deviceA, 1, 2, log))
                 val request =
                     ProtectedEvidenceEntity(
                         "https://relay.example",
@@ -174,6 +180,8 @@ class PallaSyncProtocolStoreTest {
                     dao.clearVerifiedDeletedChain(chain)
                 }
                 dao.getChainState(chain) shouldBe null
+                protocol.snapshotAuthorHead(chain, 0, deviceA, 5) shouldBe null
+                protocol.unresolvedAuthorGapCount(chain) shouldBe 0
                 protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_request", 0) shouldBe emptyList()
                 protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 9) shouldBe listOf("{\"proof\":true}")
             } finally {
@@ -472,6 +480,60 @@ class PallaSyncProtocolStoreTest {
                 dao.entity(chain, SEARCH_HISTORY_SCHEMA_V3, "must-not-apply") shouldBe null
                 dao.event(chain, record(7)) shouldBe null
                 db.pallaSyncDao().getChainState(chain)?.lamport shouldBe 9
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun `snapshot author anchor validates suffix predecessor and preserves unresolved gaps`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val dao = db.protocolDao()
+                db.pallaSyncDao().updateChainState(ChainStateEntity(chain, 0, 0, "{}"))
+                db.snapshotStateDao().insertSnapshotAuthorHead(
+                    SnapshotAuthorHeadEntity(chain, 0, deviceA, 5, "snapshot-head-hash", log),
+                )
+                db.snapshotStateDao().insertSnapshotAuthorGap(SnapshotAuthorGapEntity(chain, 0, deviceA, 1, 2, log))
+                db.snapshotStateDao().insertSnapshotAuthorGap(SnapshotAuthorGapEntity(chain, 0, deviceA, 4, 4, log))
+
+                dao.applyVerifiedRecord(
+                    event(record(20), 1),
+                    0,
+                    deviceA,
+                    PallaSyncInnerRecord(
+                        SEARCH_HISTORY_SCHEMA_V3,
+                        6,
+                        "snapshot-head-hash",
+                        listOf(operation("after-snapshot", "upsert", 6)),
+                    ),
+                )
+                dao.author(chain, 0, deviceA, 6)?.previousHash shouldBe "snapshot-head-hash"
+                dao.unresolvedAuthorGapCount(chain) shouldBe 2
+
+                val result =
+                    runCatching {
+                        dao.applyVerifiedRecord(
+                            event(record(21), 2),
+                            0,
+                            deviceA,
+                            PallaSyncInnerRecord(
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                7,
+                                "wrong-predecessor",
+                                listOf(operation("must-not-apply", "upsert", 7)),
+                            ),
+                        )
+                    }
+                result.exceptionOrNull()?.message shouldBe "C_DEVICE_EQUIVOCATION"
+                dao.entity(chain, SEARCH_HISTORY_SCHEMA_V3, "must-not-apply") shouldBe null
+                dao.unresolvedAuthorGapCount(chain) shouldBe 2
             } finally {
                 db.close()
             }

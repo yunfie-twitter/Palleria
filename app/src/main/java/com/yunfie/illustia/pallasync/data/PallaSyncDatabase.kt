@@ -17,6 +17,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         EpochKeyEntity::class,
         SignedEventEntity::class,
         AuthorSequenceEntity::class,
+        SnapshotAuthorHeadEntity::class,
+        SnapshotAuthorGapEntity::class,
         EntityRegisterEntity::class,
         ScopeRegisterEntity::class,
         HistoryIndexEntity::class,
@@ -33,7 +35,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -92,6 +94,18 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_10_11 =
+            object : Migration(10, 11) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_author_heads(chain_id TEXT NOT NULL,generation INTEGER NOT NULL,device_id TEXT NOT NULL,device_seq INTEGER NOT NULL,record_hash TEXT NOT NULL,compaction_id TEXT NOT NULL,PRIMARY KEY(chain_id,generation,device_id))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_author_gaps(chain_id TEXT NOT NULL,generation INTEGER NOT NULL,device_id TEXT NOT NULL,first_seq INTEGER NOT NULL,last_seq INTEGER NOT NULL,compaction_id TEXT NOT NULL,PRIMARY KEY(chain_id,generation,device_id,first_seq,last_seq))",
+                    )
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -113,6 +127,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             MIGRATION_7_8,
                             MIGRATION_8_9,
                             MIGRATION_9_10,
+                            MIGRATION_10_11,
                         ).build()
                 INSTANCE = instance
                 instance

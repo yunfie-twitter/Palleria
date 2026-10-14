@@ -327,6 +327,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStaging.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/SnapshotDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolEntities.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/PallaSyncDatabase.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
@@ -358,7 +359,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStagingTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotPublicationDaoTest.kt",
-    "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotInstallDaoTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotInstallDaoTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStateReaderTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotProducerTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAttestationJniTest.kt",
@@ -366,7 +367,7 @@
         "PallaSync/tests/reference/test_snapshot.py"
       ],
       "result": "pending",
-      "remaining": "The incoming snapshot verifier streams each signature- and AEAD-authenticated plaintext part into a separate Room staging journal; JCS entries are retained atomically with exact part identity. Plaintext entry queries remain gated until every part is present and the native ordered commitment verifies, and conflicting restart retries are rejected. Where an existing local state is independently verified at the exact covered checkpoint, an additional bounded stream comparison now rejects any semantic difference; no match is inferred when the checkpoint differs or is absent. Version 9→10 migration, focused DAO/migration/comparator tests, detekt and ktlint pass. The verified-state producer/publication path remains as previously described; no pruning is triggered or authorized, consistent with §7.8/§16.7. Still required: isolated-relay and independent-client execution; cancellation, unknown outcome, concurrent log advance and restart fault tests; atomic state-table installation, suffix replay, explicit trusted-source bootstrap/handoff and separately authorized pruning. Full IT-01–IT-50 / Appendix C-D conformance and Android instrumentation remain incomplete.",
+      "remaining": "The incoming snapshot verifier streams each signature- and AEAD-authenticated plaintext part into a separate Room staging journal; JCS entries are retained atomically with exact part identity. Plaintext entry queries remain gated until every part is present and the native ordered commitment verifies, and conflicting restart retries are rejected. Where an existing local state is independently verified at the exact covered checkpoint, an additional bounded stream comparison now rejects any semantic difference; no match is inferred when the checkpoint differs or is absent. Room v10→11 now stores compact snapshot author heads and unresolved author_gap ranges separately rather than fabricating record IDs; suffix author-chain checks compare the first post-snapshot predecessor against the retained head hash and continue to report snapshot gaps. Chain erasure clears both tables. Focused suffix/equivocation/gap-retention and migration tests pass. The verified-state producer/publication path remains as previously described; no pruning is triggered or authorized, consistent with §7.8/§16.7. Still required: isolated-relay and independent-client execution; cancellation, unknown outcome, concurrent log advance and restart fault tests; atomic state-table installation, suffix replay orchestration, explicit trusted-source bootstrap/handoff and separately authorized pruning. Full IT-01–IT-50 / Appendix C-D conformance and Android instrumentation remain incomplete.",
       "verification_scope": "targeted_partial"
     },
     {

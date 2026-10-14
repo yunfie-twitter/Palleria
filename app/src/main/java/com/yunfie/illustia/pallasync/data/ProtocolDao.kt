@@ -49,10 +49,30 @@ private const val LIVE_ENTITY_PREDICATE = """
 """
 private const val LIVE_ORDERED_ENTITIES = "SELECT e.*" + LIVE_ENTITY_PREDICATE
 
+private suspend fun ProtocolDao.conflictsWithSnapshotAuthorEvidence(
+    signed: SignedEventEntity,
+    generation: Long,
+    deviceId: String,
+    inner: PallaSyncInnerRecord,
+    same: AuthorSequenceEntity?,
+    previous: AuthorSequenceEntity?,
+): Boolean {
+    val snapshotPrevious =
+        if (inner.deviceSeq > 1 && previous == null) {
+            snapshotAuthorHead(signed.chainId, generation, deviceId, inner.deviceSeq - 1)
+        } else {
+            null
+        }
+    val snapshotSame =
+        if (same == null) snapshotAuthorHead(signed.chainId, generation, deviceId, inner.deviceSeq) else null
+    return (snapshotSame != null && snapshotSame.recordHash != signed.objectHash) ||
+        (snapshotPrevious != null && snapshotPrevious.recordHash != inner.prevRecordHash)
+}
+
 /** Effects of a verified, decrypted record commit together (§11.1/§15.4). */
 @Dao
 // The logical tables share one transaction boundary; Room requires these accessors on the DAO.
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 interface ProtocolDao {
     @Query("SELECT * FROM ps_migrations WHERE migration_id=:id AND chunk_index=:index")
     suspend fun migrationChunk(
@@ -259,6 +279,16 @@ interface ProtocolDao {
         seq: Long,
     ): AuthorSequenceEntity?
 
+    @Query(
+        "SELECT * FROM ps_snapshot_author_heads WHERE chain_id=:chainId AND generation=:generation AND device_id=:deviceId AND device_seq=:seq",
+    )
+    suspend fun snapshotAuthorHead(
+        chainId: String,
+        generation: Long,
+        deviceId: String,
+        seq: Long,
+    ): SnapshotAuthorHeadEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAuthor(author: AuthorSequenceEntity)
 
@@ -343,6 +373,12 @@ interface ProtocolDao {
     @Query("DELETE FROM ps_authors WHERE chain_id=:chain")
     suspend fun deleteAuthors(chain: String)
 
+    @Query("DELETE FROM ps_snapshot_author_heads WHERE chain_id=:chain")
+    suspend fun deleteSnapshotAuthorHeads(chain: String)
+
+    @Query("DELETE FROM ps_snapshot_author_gaps WHERE chain_id=:chain")
+    suspend fun deleteSnapshotAuthorGaps(chain: String)
+
     @Query("DELETE FROM ps_entities WHERE chain_id=:chain")
     suspend fun deleteEntities(chain: String)
 
@@ -389,6 +425,8 @@ interface ProtocolDao {
         deleteEpochs(chainId)
         deleteEvents(chainId)
         deleteAuthors(chainId)
+        deleteSnapshotAuthorHeads(chainId)
+        deleteSnapshotAuthorGaps(chainId)
         deleteEntities(chainId)
         deleteRegisters(chainId)
         deleteHistory(chainId)
@@ -404,7 +442,10 @@ interface ProtocolDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun quarantine(evidence: QuarantineEvidenceEntity)
 
-    @Query("SELECT COUNT(*) FROM ps_authors WHERE chain_id=:chainId AND gap_before=1")
+    @Query(
+        "SELECT (SELECT COUNT(*) FROM ps_authors WHERE chain_id=:chainId AND gap_before=1) + " +
+            "(SELECT COUNT(*) FROM ps_snapshot_author_gaps WHERE chain_id=:chainId)",
+    )
     suspend fun unresolvedAuthorGapCount(chainId: String): Long
 
     @Query("SELECT COUNT(*) FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state IN ('unresolved','pending_resolution')")
@@ -612,6 +653,7 @@ interface ProtocolDao {
         val old = event(signed.chainId, signed.recordId)
         val same = author(signed.chainId, generation, deviceId, inner.deviceSeq)
         val previous = if (inner.deviceSeq > 1) author(signed.chainId, generation, deviceId, inner.deviceSeq - 1) else null
+        val snapshotConflict = conflictsWithSnapshotAuthorEvidence(signed, generation, deviceId, inner, same, previous)
         val next = author(signed.chainId, generation, deviceId, inner.deviceSeq + 1)
         return when {
             old != null && old.objectHash != signed.objectHash -> {
@@ -627,6 +669,10 @@ interface ProtocolDao {
             }
 
             previous != null && previous.recordHash != inner.prevRecordHash -> {
+                "C_DEVICE_EQUIVOCATION"
+            }
+
+            snapshotConflict -> {
                 "C_DEVICE_EQUIVOCATION"
             }
 
@@ -647,7 +693,10 @@ interface ProtocolDao {
         inner: PallaSyncInnerRecord,
     ) {
         if (author(signed.chainId, generation, deviceId, inner.deviceSeq) == null) {
-            val gap = inner.deviceSeq > 1 && author(signed.chainId, generation, deviceId, inner.deviceSeq - 1) == null
+            val gap =
+                inner.deviceSeq > 1 &&
+                    author(signed.chainId, generation, deviceId, inner.deviceSeq - 1) == null &&
+                    snapshotAuthorHead(signed.chainId, generation, deviceId, inner.deviceSeq - 1) == null
             insertAuthor(
                 AuthorSequenceEntity(
                     signed.chainId,

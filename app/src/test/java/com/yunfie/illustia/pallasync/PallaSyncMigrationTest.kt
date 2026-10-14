@@ -21,7 +21,7 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncMigrationTest {
     @Test
-    fun `version ten snapshot installation staging migration is additive`() {
+    fun `version eleven snapshot author anchors migration is additive`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val helper =
             FrameworkSQLiteOpenHelperFactory().create(
@@ -47,6 +47,7 @@ class PallaSyncMigrationTest {
             val db = helper.writableDatabase
             PallaSyncDatabase.MIGRATION_8_9.migrate(db)
             PallaSyncDatabase.MIGRATION_9_10.migrate(db)
+            PallaSyncDatabase.MIGRATION_10_11.migrate(db)
             db.query("SELECT value FROM prior_state WHERE id=1").use { cursor ->
                 cursor.moveToFirst() shouldBe true
                 cursor.getString(0) shouldBe "preserved"
@@ -54,11 +55,12 @@ class PallaSyncMigrationTest {
             val sql =
                 "SELECT COUNT(*) FROM sqlite_master " +
                     "WHERE type='table' AND name IN ('ps_snapshot_publications','ps_snapshot_publication_parts'," +
-                    "'ps_snapshot_installs','ps_snapshot_install_parts','ps_snapshot_install_entries')"
+                    "'ps_snapshot_installs','ps_snapshot_install_parts','ps_snapshot_install_entries'," +
+                    "'ps_snapshot_author_heads','ps_snapshot_author_gaps')"
             val journalTables = db.query(sql)
             journalTables.use { cursor ->
                 cursor.moveToFirst() shouldBe true
-                cursor.getInt(0) shouldBe 5
+                cursor.getInt(0) shouldBe 7
             }
         } finally {
             helper.close()
@@ -67,7 +69,7 @@ class PallaSyncMigrationTest {
     }
 
     @Test
-    fun `supported old layouts retain exact outbox and state through version ten and reopen`() =
+    fun `supported old layouts retain exact outbox and state through version eleven and reopen`() =
         runBlocking<Unit> {
             val context = ApplicationProvider.getApplicationContext<Context>()
             for (version in 1..6) {
@@ -164,6 +166,7 @@ class PallaSyncMigrationTest {
                             PallaSyncDatabase.MIGRATION_7_8,
                             PallaSyncDatabase.MIGRATION_8_9,
                             PallaSyncDatabase.MIGRATION_9_10,
+                            PallaSyncDatabase.MIGRATION_10_11,
                         ).build()
                 repeat(2) { attempt ->
                     val db = open()
