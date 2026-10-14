@@ -458,6 +458,7 @@ internal class PalleriaSyncCoordinator(
                 acceptPublishedSnapshot(context, compaction, response, signedText)
             }
         requireSnapshotResult(relay.publish(signed))
+        expireHistoricalEpochKeys(context.state.chainId, context.origin)
         return true
     }
 
@@ -2603,8 +2604,28 @@ internal class PalleriaSyncCoordinator(
                 }
             }
             policy.retry.progress(PallaSyncUrls.extractOrigin(baseUrl))
+            expireHistoricalEpochKeys(chainState.chainId, PallaSyncUrls.extractOrigin(baseUrl))
             SyncCycleOutcome.Success
         }
+
+    private suspend fun expireHistoricalEpochKeys(
+        chain: String,
+        origin: String,
+    ) {
+        val authorityText = db.protocolDao().currentAuthority(chain) ?: return
+        val authority = Json.parseToJsonElement(authorityText).jsonObject
+        val expired =
+            PallaSyncRetentionHandoff(db, keystore::expireRetainedEpochSecrets).expireAfterHandoff(
+                chain,
+                authority,
+                policy.retry.correctedTime(origin),
+            )
+        if (expired.isNotEmpty()) {
+            log(
+                "Expired cached keys for historical epochs ${expired.joinToString()}; the verified current-epoch snapshot preserves materialized state, while raw old-epoch archive replay is no longer available",
+            )
+        }
+    }
 
     private fun refreshRelayHealth(baseUrl: HttpUrl): PallaSyncHttpResult<Unit> {
         val request =

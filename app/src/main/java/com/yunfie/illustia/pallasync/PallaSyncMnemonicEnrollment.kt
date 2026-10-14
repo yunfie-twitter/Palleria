@@ -71,7 +71,7 @@ internal class PallaSyncMnemonicEnrollment(
         return candidate.keys to after
     }
 
-    private fun candidate(
+    private suspend fun candidate(
         root: PallaSyncRootSession,
         name: String,
         base: HttpUrl,
@@ -97,7 +97,8 @@ internal class PallaSyncMnemonicEnrollment(
                 .jsonObject
         val epoch = current.getValue("epoch").jsonPrimitive.long
         val eligibleEpochs =
-            PallaSyncPeerEpochEligibility.eligibleEpochs(
+            PallaSyncRetentionHandoff(store, keys::expireRetainedEpochSecrets).eligibleEpochs(
+                chain,
                 checkpoint.authority,
                 policy.retry.correctedTime(origin),
             )

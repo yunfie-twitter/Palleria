@@ -1,0 +1,197 @@
+package com.yunfie.illustia.pallasync
+
+import com.yunfie.illustia.pallasync.data.SnapshotPublicationEntity
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+
+/** §13.5: a locally published, receipt-verified complete current-epoch state is the handoff proof. */
+internal class PallaSyncRetentionHandoff(
+    private val store: PallaSyncLocalStore,
+    private val expireEpochSecrets: (String, Collection<Long>) -> Boolean,
+) {
+    @Suppress("ReturnCount")
+    suspend fun eligibleEpochs(
+        chain: String,
+        authority: JsonObject,
+        nowMs: Long,
+    ): List<Long> {
+        val epochs = currentGenerationEpochs(authority)
+        val policy =
+            authority
+                .getValue("parameters")
+                .jsonObject
+                .getValue("policy")
+                .jsonObject
+                .getValue("epoch_retention")
+                .jsonPrimitive.content
+        val strict = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, nowMs, handoffVerified = true)
+        if (policy == "retain") return strict
+        if (policy == "immediate" && epochs.size == 1) return strict
+        val withoutProof =
+            if (policy == "immediate") {
+                emptyList()
+            } else {
+                PallaSyncPeerEpochEligibility.eligibleEpochs(authority, nowMs)
+            }
+        if (policy == "windowed" && withoutProof == strict) return withoutProof
+        val handoff = hasVerifiedCurrentEpochSnapshot(chain, authority)
+        return PallaSyncPeerEpochEligibility
+            .eligibleEpochs(authority, nowMs, handoffVerified = handoff)
+            .also { result ->
+                check(result.isNotEmpty() && result.last() == epochs.last()) { "C_MISSING_DEPENDENCY" }
+            }
+    }
+
+    /** Erases expired cache keys only after checking current signed head, complete parts and acceptance log. */
+    @Suppress("ReturnCount")
+    suspend fun expireAfterHandoff(
+        chain: String,
+        authority: JsonObject,
+        nowMs: Long,
+    ): List<Long> {
+        if (!hasVerifiedCurrentEpochSnapshot(chain, authority)) return emptyList()
+        val eligible = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, nowMs, handoffVerified = true).toSet()
+        val expired = currentGenerationEpochs(authority).filterNot { it in eligible }
+        if (expired.isEmpty()) return emptyList()
+        check(hasVerifiedCurrentEpochSnapshot(chain, authority)) { "C_MISSING_DEPENDENCY" }
+        check(expireEpochSecrets(chain, expired)) { "C_LOCAL_STORAGE_FULL" }
+        return expired
+    }
+
+    @Suppress("CyclomaticComplexMethod", "ComplexCondition", "ReturnCount")
+    private suspend fun hasVerifiedCurrentEpochSnapshot(
+        chain: String,
+        authority: JsonObject,
+    ): Boolean {
+        val state = store.dao.getChainState(chain) ?: return false
+        val generation = authority.getValue("generation").jsonPrimitive.long
+        val epochs = currentGenerationEpochs(authority)
+        val currentEpoch = epochs.lastOrNull() ?: return false
+        val epochRecord =
+            authority
+                .getValue("epochs")
+                .jsonObject
+                .getValue(currentEpoch.toString())
+                .jsonObject
+                .getValue("record")
+                .jsonObject
+        val epochHash = PallaSyncCore.objectHash(epochRecord.toString()) ?: return false
+        val pin = authority.getValue("pin").jsonObject
+        if (
+            state.writeState != "active" || state.generation != generation || state.keyEpoch != currentEpoch ||
+            state.epochHash != epochHash || state.logId != pin.getValue("log_id").jsonPrimitive.content ||
+            state.verifiedSeq != state.materializedSeq || state.verifiedHash == null ||
+            store.dao.pendingOutboxCount(chain) != 0L ||
+            store.snapshotInstallDao().unresolvedQuarantineCount(chain) != 0L ||
+            store.protocolDao().unresolvedAuthorGapCount(chain) != 0L
+        ) {
+            return false
+        }
+        val publication =
+            store
+                .snapshotDatabase()
+                .snapshotPublicationDao()
+                .latestPublishedForEpoch(chain, generation, currentEpoch) ?: return false
+        if (!publicationMatchesHead(publication, epochHash, state)) return false
+        return verifyPublishedCompaction(publication, pin.getValue("log_id").jsonPrimitive.content, state.verifiedSeq)
+    }
+
+    private fun currentGenerationEpochs(authority: JsonObject): List<Long> {
+        val generation = authority.getValue("generation").jsonPrimitive.long
+        val values = authority.getValue("epochs").jsonObject
+        val numbers = values.keys.map { it.toLongOrNull() ?: error("C_SCHEMA_VIOLATION") }.sorted()
+        val currentGeneration =
+            numbers.filter { epoch ->
+                values
+                    .getValue(epoch.toString())
+                    .jsonObject
+                    .getValue("record")
+                    .jsonObject
+                    .getValue("generation")
+                    .jsonPrimitive.long ==
+                    generation
+            }
+        check(currentGeneration.isNotEmpty() && currentGeneration.zipWithNext().all { (a, b) -> b == a + 1 }) {
+            "C_MISSING_DEPENDENCY"
+        }
+        return currentGeneration
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun publicationMatchesHead(
+        publication: SnapshotPublicationEntity,
+        epochHash: String,
+        state: com.yunfie.illustia.pallasync.data.ChainStateEntity,
+    ): Boolean {
+        val header = Json.parseToJsonElement(publication.headerJson).jsonObject
+        val compaction = publication.compactionJson?.let { Json.parseToJsonElement(it).jsonObject } ?: return false
+        return publication.status == "published" && publication.chainId == state.chainId &&
+            publication.generation == state.generation && publication.epoch == state.keyEpoch &&
+            publication.logId == state.logId && publication.coveredThroughSeq == state.verifiedSeq &&
+            publication.stateSha256 == compaction.getValue("state_sha256").jsonPrimitive.content &&
+            header.getValue("kind").jsonPrimitive.content == "header" &&
+            header.getValue("chain_id").jsonPrimitive.content == state.chainId &&
+            header.getValue("generation").jsonPrimitive.long == state.generation &&
+            header.getValue("log_id").jsonPrimitive.content == state.logId &&
+            header.getValue("epoch_hash").jsonPrimitive.content == epochHash &&
+            header.getValue("covered_through_seq").jsonPrimitive.long == publication.coveredThroughSeq &&
+            header.getValue("covered_log_hash").jsonPrimitive.content == state.verifiedHash &&
+            compaction.getValue("compaction_id").jsonPrimitive.content == publication.compactionId &&
+            compaction.getValue("chain_id").jsonPrimitive.content == state.chainId &&
+            compaction.getValue("generation").jsonPrimitive.long == state.generation &&
+            compaction.getValue("log_id").jsonPrimitive.content == state.logId &&
+            compaction.getValue("epoch_hash").jsonPrimitive.content == epochHash &&
+            compaction.getValue("covered_through_seq").jsonPrimitive.long == publication.coveredThroughSeq &&
+            compaction.getValue("covered_log_hash").jsonPrimitive.content == header.getValue("covered_log_hash").jsonPrimitive.content
+    }
+
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    private suspend fun verifyPublishedCompaction(
+        publication: SnapshotPublicationEntity,
+        logId: String,
+        verifiedSequence: Long,
+    ): Boolean {
+        val compaction = Json.parseToJsonElement(checkNotNull(publication.compactionJson)).jsonObject
+        val entries =
+            store
+                .compactionCatalogueDao()
+                .verifiedEntries(publication.chainId, logId, publication.compactionId)
+        val accepted = entries.singleOrNull() ?: return false
+        if (accepted.relaySeq > verifiedSequence) return false
+        val acceptedObject = Json.parseToJsonElement(accepted.signedJson).jsonObject
+        if (
+            accepted.validationState != "authority_verified" ||
+            acceptedObject.getValue("kind").jsonPrimitive.content != "compaction" ||
+            PallaSyncCore.canonicalJson(acceptedObject.getValue("object").toString()) !=
+            PallaSyncCore.canonicalJson(compaction.toString())
+        ) {
+            return false
+        }
+        val parts = store.snapshotDatabase().snapshotPublicationDao().parts(publication.chainId, publication.compactionId)
+        val references = compaction.getValue("snapshot_parts").jsonArray
+        if (parts.size != publication.partCount || references.size != publication.partCount) return false
+        return parts.indices.all { index ->
+            val part = parts[index]
+            val reference = references[index].jsonObject
+            val signedPart = Json.parseToJsonElement(part.signedJson).jsonObject
+            val receipt = part.uploadReceiptJson?.let { Json.parseToJsonElement(it).jsonObject } ?: return@all false
+            val calculatedHash = PallaSyncCore.objectHash(part.signedJson)
+            part.partIndex == index && part.status == "receipted" && part.recordId ==
+                signedPart
+                    .getValue(
+                        "record_id",
+                    ).jsonPrimitive.content &&
+                part.recordHash == calculatedHash && reference.getValue("record_id").jsonPrimitive.content == part.recordId &&
+                reference.getValue("record_hash").jsonPrimitive.content == part.recordHash &&
+                receipt.getValue("chain_id").jsonPrimitive.content == publication.chainId &&
+                receipt.getValue("log_id").jsonPrimitive.content == logId &&
+                receipt.getValue("object_hash").jsonPrimitive.content == part.recordHash &&
+                receipt["relay_seq"] == JsonNull && receipt["entry_hash"] == JsonNull
+        }
+    }
+}

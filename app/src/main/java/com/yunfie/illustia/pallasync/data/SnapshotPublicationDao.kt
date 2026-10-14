@@ -20,6 +20,15 @@ interface SnapshotPublicationDao {
         compaction: String,
     ): SnapshotPublicationEntity?
 
+    @Query(
+        "SELECT * FROM ps_snapshot_publications WHERE chain_id=:chain AND generation=:generation AND epoch=:epoch AND status='published' ORDER BY covered_through_seq DESC,compaction_id LIMIT 1",
+    )
+    suspend fun latestPublishedForEpoch(
+        chain: String,
+        generation: Long,
+        epoch: Long,
+    ): SnapshotPublicationEntity?
+
     /** At most two rows let the caller fail closed if multiple resumable publications exist. */
     @Query(
         "SELECT * FROM ps_snapshot_publications WHERE chain_id=:chain AND status IN ('preparing','uploading','compaction_ready') ORDER BY compaction_id LIMIT 2",

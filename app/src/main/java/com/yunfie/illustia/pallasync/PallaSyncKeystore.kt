@@ -206,6 +206,7 @@ class PallaSyncKeystore(
         try {
             check(secret.size == KEY_BYTES && epoch in 0..MAX_EPOCH) { "C_SCHEMA_VIOLATION" }
             val key = "epoch.$chain.$epoch.secret"
+            check(!sharedPrefs.getBoolean("epoch.$chain.$epoch.expired", false)) { "C_MISSING_DEPENDENCY" }
             val encoded =
                 java.util.Base64
                     .getUrlEncoder()
@@ -218,11 +219,46 @@ class PallaSyncKeystore(
             secret.fill(0)
         }
 
+    /** Delete only retained historical secrets after §13.5's complete-state handoff. */
+    internal fun expireRetainedEpochSecrets(
+        chain: String,
+        epochs: Collection<Long>,
+    ): Boolean {
+        check(sharedPrefs.getString("active_chain_id", null) == chain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val activeEpoch = sharedPrefs.getLong("key_epoch_number", -1L)
+        val expired = epochs.distinct().sorted()
+        check(expired.all { it in 0 until activeEpoch }) { "C_EPOCH_FORK" }
+        if (expired.isEmpty()) return true
+        val editor = sharedPrefs.edit()
+        expired.forEach { epoch ->
+            editor.remove("epoch.$chain.$epoch.secret")
+            editor.putBoolean("epoch.$chain.$epoch.expired", true)
+        }
+        return editor.commit() &&
+            expired.all { epoch ->
+                sharedPrefs.getString("epoch.$chain.$epoch.secret", null) == null &&
+                    sharedPrefs.getBoolean("epoch.$chain.$epoch.expired", false)
+            }
+    }
+
+    internal fun expiredEpochs(chain: String): Set<Long> =
+        sharedPrefs.all.keys
+            .mapNotNull { key ->
+                val prefix = "epoch.$chain."
+                if (!key.startsWith(prefix) || !key.endsWith(".expired")) return@mapNotNull null
+                key
+                    .removePrefix(prefix)
+                    .removeSuffix(".expired")
+                    .toLongOrNull()
+                    ?.takeIf { sharedPrefs.getBoolean(key, false) }
+            }.toSet()
+
     internal fun keysForEpoch(
         keys: PallaSyncKeySnapshot,
         epoch: Long,
     ): PallaSyncKeySnapshot? {
         val chain = checkNotNull(keys.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        if (sharedPrefs.getBoolean("epoch.$chain.$epoch.expired", false)) return null
         return if (keys.epoch == epoch && keys.epochSecretBase64Url.isNotEmpty()) {
             keys
         } else {
