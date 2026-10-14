@@ -11,6 +11,7 @@ import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import com.yunfie.illustia.pallasync.data.SignedEventEntity
+import com.yunfie.illustia.pallasync.data.SnapshotPartEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
@@ -29,6 +30,40 @@ class PallaSyncProtocolStoreTest {
     private val deviceA = "11111111-1111-4111-8111-111111111111"
     private val deviceB = "ffffffff-ffff-4fff-8fff-ffffffffffff"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `snapshot staging resumes exact ciphertext and rejects conflicting part identity`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.snapshotDao()
+                val first =
+                    SnapshotPartEntity(
+                        chainId = chain,
+                        compactionId = log,
+                        partIndex = 0,
+                        partHash = "record-hash",
+                        signedJson = "{\"ciphertext\":\"opaque\"}",
+                        coveredSeq = 42,
+                        coverageJson = "{\"compaction\":\"signed\"}",
+                        stagingState = "downloaded",
+                    )
+                protocol.retainDownloaded(first)
+                protocol.retainDownloaded(first)
+                protocol.part(chain, log, 0) shouldBe first
+                protocol.parts(chain, log) shouldBe listOf(first)
+                runCatching { protocol.retainDownloaded(first.copy(partHash = "different-hash")) }
+                    .exceptionOrNull()
+                    ?.message shouldBe "C_SNAPSHOT_INVALID"
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `progress counts outstanding author gaps and unresolved quarantine states`() =
