@@ -3,10 +3,12 @@ package com.yunfie.illustia.pallasync
 import com.yunfie.illustia.pallasync.data.SnapshotDao
 import com.yunfie.illustia.pallasync.data.SnapshotPartEntity
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 
 /**
  * Durable resume journal for exact encrypted snapshot SyncRecords (§16.6). It stores only the
@@ -24,6 +26,9 @@ internal class PallaSyncSnapshotStaging(
 ) {
     private val compactionJson: String
     private val partReferences: List<Pair<String, String>>
+
+    val partCount: Int
+        get() = partReferences.size
 
     init {
         require(chainId.isNotBlank() && compactionId.isNotBlank() && generation >= 0 && epoch >= 0 && coveredThroughSeq >= 0) {
@@ -50,10 +55,16 @@ internal class PallaSyncSnapshotStaging(
 
     suspend fun retainDownloaded(
         partIndex: Int,
-        signedRecordJson: String,
+        validatedResponseJson: String,
     ): SnapshotPartEntity {
         val (expectedRecordId, expectedHash) = partReferences.getOrNull(partIndex) ?: error("C_SNAPSHOT_INVALID")
+        val response = Json.parseToJsonElement(validatedResponseJson).jsonObject
+        val signedRecordJson = response.getValue("record").toString()
         val canonicalRecord = checkNotNull(PallaSyncCore.canonicalJson(signedRecordJson)) { "C_SNAPSHOT_INVALID" }
+        val uploadReceipt =
+            checkNotNull(PallaSyncCore.canonicalJson(response.getValue("upload_receipt").toString())) {
+                "C_SNAPSHOT_INVALID"
+            }
         val record = Json.parseToJsonElement(canonicalRecord).jsonObject
         check(
             record.getValue("record_id").jsonPrimitive.content == expectedRecordId &&
@@ -69,6 +80,7 @@ internal class PallaSyncSnapshotStaging(
                 partIndex = partIndex,
                 partHash = expectedHash,
                 signedJson = canonicalRecord,
+                uploadReceiptJson = uploadReceipt,
                 coveredSeq = coveredThroughSeq,
                 coverageJson = compactionJson,
                 stagingState = STAGE_DOWNLOADED,
@@ -79,10 +91,57 @@ internal class PallaSyncSnapshotStaging(
 
     fun expectedRecordId(partIndex: Int): String = partReferences.getOrNull(partIndex)?.first ?: error("C_SNAPSHOT_INVALID")
 
-    suspend fun resumeDownloaded(): List<SnapshotPartEntity> = dao.parts(chainId, compactionId)
+    /** Reverify durable receipt evidence on resume; legacy rows without a receipt must be read back again. */
+    suspend fun verifiedDownloaded(
+        partIndex: Int,
+        pinJson: String,
+    ): SnapshotPartEntity? {
+        val part = dao.part(chainId, compactionId, partIndex) ?: return null
+        val reference = partReferences.getOrNull(partIndex) ?: error("C_SNAPSHOT_INVALID")
+        check(
+            part.chainId == chainId &&
+                part.compactionId == compactionId &&
+                part.partIndex == partIndex &&
+                part.stagingState == STAGE_DOWNLOADED &&
+                part.partHash == reference.second &&
+                part.coveredSeq == coveredThroughSeq &&
+                part.coverageJson == compactionJson,
+        ) { "C_SNAPSHOT_INVALID" }
+        if (part.uploadReceiptJson != LEGACY_MISSING_RECEIPT) {
+            val wrapper =
+                buildJsonObject {
+                    put("record", Json.parseToJsonElement(part.signedJson))
+                    put("upload_receipt", Json.parseToJsonElement(part.uploadReceiptJson))
+                }.toString()
+            val checked =
+                Json
+                    .parseToJsonElement(
+                        PallaSyncSnapshotCore.validateSnapshotPartResponse(
+                            wrapper.toByteArray(),
+                            reference.first,
+                            pinJson,
+                        ),
+                    ).jsonObject
+            val canonicalRecord =
+                checkNotNull(PallaSyncCore.canonicalJson(checked.getValue("record").toString())) {
+                    "C_SNAPSHOT_INVALID"
+                }
+            val canonicalReceipt =
+                checkNotNull(PallaSyncCore.canonicalJson(checked.getValue("upload_receipt").toString())) {
+                    "C_SNAPSHOT_INVALID"
+                }
+            check(
+                canonicalRecord == part.signedJson &&
+                    canonicalReceipt == part.uploadReceiptJson &&
+                    PallaSyncCore.objectHash(canonicalRecord) == reference.second,
+            ) { "C_SNAPSHOT_INVALID" }
+        }
+        return part.takeUnless { it.uploadReceiptJson == LEGACY_MISSING_RECEIPT }
+    }
 
     private companion object {
         const val MAX_SNAPSHOT_PARTS = 65_536
         const val STAGE_DOWNLOADED = "downloaded"
+        const val LEGACY_MISSING_RECEIPT = "null"
     }
 }

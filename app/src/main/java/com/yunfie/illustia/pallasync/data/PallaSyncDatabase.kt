@@ -28,7 +28,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -45,6 +45,15 @@ abstract class PallaSyncDatabase : RoomDatabase() {
     companion object {
         private const val MIGRATION_TARGET_VERSION = 3
 
+        val MIGRATION_7_8 =
+            object : Migration(7, 8) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // v7 staging rows predate receipt persistence; `null` marks them for
+                    // readback instead of inventing evidence or trusting the old row.
+                    db.execSQL("ALTER TABLE ps_snapshots ADD COLUMN upload_receipt_json TEXT NOT NULL DEFAULT 'null'")
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -56,8 +65,15 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             context.applicationContext,
                             PallaSyncDatabase::class.java,
                             "pallasync_database",
-                        ).addMigrations(MIGRATION_1_3, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, ProtocolMigration)
-                        .build()
+                        ).addMigrations(
+                            MIGRATION_1_3,
+                            MIGRATION_2_3,
+                            MIGRATION_3_4,
+                            MIGRATION_4_5,
+                            MIGRATION_5_6,
+                            ProtocolMigration,
+                            MIGRATION_7_8,
+                        ).build()
                 INSTANCE = instance
                 instance
             }

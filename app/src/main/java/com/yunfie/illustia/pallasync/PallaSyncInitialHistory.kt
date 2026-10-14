@@ -120,7 +120,22 @@ internal class PallaSyncInitialHistory(
     ): SnapshotPartEntity {
         val recordId = staging.expectedRecordId(partIndex)
         val response = fetchSnapshotPart(recordId, pinJson)
-        return staging.retainDownloaded(partIndex, response.getValue("record").toString())
+        return staging.retainDownloaded(partIndex, response.toString())
+    }
+
+    /** Stream the complete listed part sequence, revalidating durable receipts and fetching gaps. */
+    suspend fun fetchAndStageSnapshotParts(
+        pinJson: String,
+        staging: PallaSyncSnapshotStaging,
+        consumePart: suspend (Int, SnapshotPartEntity) -> Unit,
+    ) {
+        for (partIndex in 0 until staging.partCount) {
+            currentCoroutineContext().ensureActive()
+            val part =
+                staging.verifiedDownloaded(partIndex, pinJson)
+                    ?: fetchAndStageSnapshotPart(partIndex, pinJson, staging)
+            consumePart(partIndex, part)
+        }
     }
 
     /** §10.12: accept catalogue entries only when they exactly match a receipt-verified replayed log entry. */

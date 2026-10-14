@@ -91,11 +91,12 @@ class PallaSyncProtocolStoreTest {
                         partIndex = 0,
                         partHash = "record-hash",
                         signedJson = "{\"ciphertext\":\"opaque\"}",
+                        uploadReceiptJson = "{\"receipt\":\"signed\"}",
                         coveredSeq = 42,
                         coverageJson = "{\"compaction\":\"signed\"}",
                         stagingState = "downloaded",
                     )
-                protocol.retainDownloaded(first)
+                protocol.retainDownloaded(first.copy(uploadReceiptJson = "null"))
                 protocol.retainDownloaded(first)
                 protocol.part(chain, log, 0) shouldBe first
                 protocol.parts(chain, log) shouldBe listOf(first)

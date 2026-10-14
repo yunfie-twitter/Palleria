@@ -46,9 +46,13 @@ class PallaSyncSnapshotStagingTest {
                     )
                 staging.expectedRecordId(0) shouldBe recordId
                 runCatching { staging.expectedRecordId(1) }.exceptionOrNull()?.message shouldBe "C_SNAPSHOT_INVALID"
-                staging.retainDownloaded(0, record).signedJson shouldBe PallaSyncCore.canonicalJson(record)
-                staging.resumeDownloaded().size shouldBe 1
-                val conflict = runCatching { staging.retainDownloaded(0, record.replace("opaque", "changed")) }
+                staging.verifiedDownloaded(0, "{}") shouldBe null
+                val response = """{"record":$record,"upload_receipt":{"receipt":"signed"}}"""
+                val staged = staging.retainDownloaded(0, response)
+                staged.signedJson shouldBe PallaSyncCore.canonicalJson(record)
+                staged.uploadReceiptJson shouldBe """{"receipt":"signed"}"""
+                db.snapshotDao().parts(chain, compactionId).size shouldBe 1
+                val conflict = runCatching { staging.retainDownloaded(0, response.replace("opaque", "changed")) }
                 conflict.exceptionOrNull()?.message shouldBe "C_SNAPSHOT_INVALID"
             } finally {
                 db.close()

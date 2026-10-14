@@ -142,6 +142,7 @@ data class SnapshotPartEntity(
     @ColumnInfo(name = "part_index") val partIndex: Int,
     @ColumnInfo(name = "part_hash") val partHash: String,
     @ColumnInfo(name = "signed_json") val signedJson: String,
+    @ColumnInfo(name = "upload_receipt_json", defaultValue = "'null'") val uploadReceiptJson: String,
     @ColumnInfo(name = "covered_seq") val coveredSeq: Long,
     @ColumnInfo(name = "coverage_json") val coverageJson: String,
     @ColumnInfo(name = "staging_state") val stagingState: String,

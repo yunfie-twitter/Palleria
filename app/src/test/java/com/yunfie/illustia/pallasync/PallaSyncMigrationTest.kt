@@ -21,7 +21,7 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncMigrationTest {
     @Test
-    fun `supported old layouts retain exact outbox and state through version seven and reopen`() =
+    fun `supported old layouts retain exact outbox and state through version eight and reopen`() =
         runBlocking<Unit> {
             val context = ApplicationProvider.getApplicationContext<Context>()
             for (version in 1..6) {
@@ -115,8 +115,9 @@ class PallaSyncMigrationTest {
                             PallaSyncDatabase.MIGRATION_4_5,
                             PallaSyncDatabase.MIGRATION_5_6,
                             ProtocolMigration,
+                            PallaSyncDatabase.MIGRATION_7_8,
                         ).build()
-                repeat(2) {
+                repeat(2) { attempt ->
                     val db = open()
                     try {
                         val row =
@@ -130,6 +131,21 @@ class PallaSyncMigrationTest {
                         state?.authorSeq shouldBe 0
                         state?.writeState shouldBe "pending_verification"
                         state?.chainVectorJson shouldBe "{\"device\":11}"
+                        if (attempt == 0) {
+                            db.openHelper.writableDatabase.execSQL(
+                                "INSERT INTO ps_snapshots(chain_id,compaction_id,part_index,part_hash," +
+                                    "signed_json,covered_seq,coverage_json,staging_state) " +
+                                    "VALUES('chain','compaction',0,'hash','{}',0,'{}','downloaded')",
+                            )
+                        }
+                        val missingReceipt =
+                            db.openHelper.readableDatabase
+                                .query("SELECT upload_receipt_json FROM ps_snapshots WHERE chain_id='chain'")
+                                .use { cursor ->
+                                    cursor.moveToFirst() shouldBe true
+                                    cursor.getString(0)
+                                }
+                        missingReceipt shouldBe "null"
                     } finally {
                         db.close()
                     }
