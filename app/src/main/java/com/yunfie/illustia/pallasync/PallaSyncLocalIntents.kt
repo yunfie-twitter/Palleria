@@ -29,6 +29,7 @@ internal class PallaSyncLocalIntents(
         val stagedThrough: Long = 0,
         val sourceRecordsVisited: Long = 0,
         val candidateCount: Long = 0,
+        val decisionCount: Long = 0,
         val quarantinedCount: Long = 0,
         val normalizationCount: Long = 0,
         val collisionCount: Long = 0,
@@ -52,6 +53,15 @@ internal class PallaSyncLocalIntents(
         val complete: Boolean,
     )
 
+    @Serializable
+    internal data class LegacySourceDecision(
+        val sourceSequence: Long,
+        val sourceRecordId: String,
+        val sourceObjectHash: String,
+        val disposition: String,
+        val reasonCode: String? = null,
+    )
+
     internal data class LegacyMigrationProgress(
         val sourceChain: String,
         val targetChain: String,
@@ -59,6 +69,7 @@ internal class PallaSyncLocalIntents(
         val stagedThrough: Long,
         val sourceComplete: Boolean,
         val candidates: Long,
+        val decisions: Long,
         val pending: Long,
         val constructed: Long,
         val quarantined: Long,
@@ -157,6 +168,7 @@ internal class PallaSyncLocalIntents(
         expectedAfterSequence: Long,
         throughSequence: Long,
         mappings: List<LegacyEventMapping>,
+        decisions: List<LegacySourceDecision>,
         report: LegacyBatchReport,
     ) = store.transaction {
         val dao = store.protocolDao()
@@ -184,7 +196,8 @@ internal class PallaSyncLocalIntents(
         check(mappings.map { it.event.schema }.distinct().size <= 64) { "C_LOCAL_LIMIT" }
         check(
             report.sourceRecordsVisited == throughSequence - expectedAfterSequence &&
-                report.quarantinedCount <= report.sourceRecordsVisited,
+                report.quarantinedCount <= report.sourceRecordsVisited &&
+                decisions.size.toLong() == report.sourceRecordsVisited,
         ) { "C_ROLLBACK_DETECTED" }
         check(!report.complete || throughSequence == manifest.sourceHighWater) { "C_ROLLBACK_DETECTED" }
         val state = checkNotNull(store.dao.getChainState(manifest.targetChain)) { "C_MISSING_DEPENDENCY" }
@@ -194,6 +207,39 @@ internal class PallaSyncLocalIntents(
         }
         check(mappings.map { "${it.sourceSequence}:${it.sourceRecordId}:${it.candidateIndex}" }.distinct().size == mappings.size) {
             "C_RECORD_ID_CONFLICT"
+        }
+        check(decisions.map(LegacySourceDecision::sourceSequence).distinct().size == decisions.size) { "C_RECORD_ID_CONFLICT" }
+        check(decisions.all { it.sourceSequence > expectedAfterSequence && it.sourceSequence <= throughSequence }) {
+            "C_SCHEMA_VIOLATION"
+        }
+        val mappingsPerSource = mappings.groupingBy(LegacyEventMapping::sourceSequence).eachCount()
+        check(
+            decisions.all { decision ->
+                val idValid =
+                    runCatching {
+                        val id = java.util.UUID.fromString(decision.sourceRecordId)
+                        id.version() == 7 && id.toString() == decision.sourceRecordId
+                    }.getOrDefault(false)
+                val outcomeValid =
+                    when (decision.disposition) {
+                        "converted" -> {
+                            decision.reasonCode == null && mappingsPerSource.getOrDefault(decision.sourceSequence, 0) > 0
+                        }
+
+                        "quarantined", "excluded" -> {
+                            decision.reasonCode?.matches(Regex("C_[A-Z_]+")) == true &&
+                                mappingsPerSource.getOrDefault(decision.sourceSequence, 0) == 0
+                        }
+
+                        else -> {
+                            false
+                        }
+                    }
+                idValid && decodeHash(decision.sourceObjectHash) && outcomeValid
+            },
+        ) { "C_SCHEMA_VIOLATION" }
+        check(decisions.count { it.disposition == "quarantined" }.toLong() == report.quarantinedCount) {
+            "C_ROLLBACK_DETECTED"
         }
         var index = checkNotNull(dao.lastMigrationIndex(migrationId))
         for (mapping in mappings) {
@@ -217,11 +263,28 @@ internal class PallaSyncLocalIntents(
                 ),
             )
         }
+        for (decision in decisions) {
+            currentCoroutineContext().ensureActive()
+            check(index < PallaSyncConflictResolver.MAX_COUNTER) { "C_COUNTER_EXHAUSTED" }
+            val decisionJson = Json.encodeToString(decision)
+            dao.putMigrationChunk(
+                MigrationJournalEntity(
+                    migrationId,
+                    ++index,
+                    decision.sourceObjectHash,
+                    "legacy-decision:${decision.sourceSequence}:${decision.sourceRecordId}",
+                    manifest.targetChain,
+                    "legacy_decision_${decision.disposition}",
+                    decisionJson,
+                ),
+            )
+        }
         val updated =
             manifest.copy(
                 stagedThrough = throughSequence,
                 sourceRecordsVisited = manifest.sourceRecordsVisited + report.sourceRecordsVisited,
                 candidateCount = manifest.candidateCount + mappings.size,
+                decisionCount = manifest.decisionCount + decisions.size,
                 quarantinedCount = manifest.quarantinedCount + report.quarantinedCount,
                 normalizationCount = manifest.normalizationCount + report.normalizationCount,
                 collisionCount = manifest.collisionCount + report.collisionCount,
@@ -288,6 +351,7 @@ internal class PallaSyncLocalIntents(
             manifest.stagedThrough,
             manifest.sourceComplete,
             manifest.candidateCount,
+            manifest.decisionCount,
             dao.migrationStateCount(migrationId, "pending"),
             dao.migrationStateCount(migrationId, "constructed"),
             manifest.quarantinedCount,

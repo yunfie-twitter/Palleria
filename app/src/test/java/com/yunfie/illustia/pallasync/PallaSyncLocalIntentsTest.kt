@@ -184,10 +184,19 @@ class PallaSyncLocalIntentsTest {
                         listOf(
                             PallaSyncLocalIntents.LegacyEventMapping(
                                 1,
-                                "legacy-record",
+                                "01890f3e-7c00-7000-8000-000000000001",
                                 0,
                                 sourceHash,
                                 event("imported"),
+                            ),
+                        ),
+                    decisions =
+                        listOf(
+                            PallaSyncLocalIntents.LegacySourceDecision(
+                                1,
+                                "01890f3e-7c00-7000-8000-000000000001",
+                                sourceHash,
+                                "converted",
                             ),
                         ),
                     report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = true),
@@ -196,6 +205,7 @@ class PallaSyncLocalIntentsTest {
                     it.sourceHighWater shouldBe 1
                     it.sourceComplete shouldBe true
                     it.candidates shouldBe 1
+                    it.decisions shouldBe 1
                     it.pending shouldBe 1
                     it.schemaCounts shouldBe mapOf(SEARCH_HISTORY_SCHEMA_V3 to 1L)
                 }
@@ -206,7 +216,10 @@ class PallaSyncLocalIntentsTest {
                 store.dao.getChainState(chain)?.authorSeq shouldBe 1
                 val journal = checkNotNull(store.protocolDao().migrationChunk(migration, 1))
                 journal.state shouldBe "constructed"
-                journal.sourceIdentity shouldBe "legacy:1:legacy-record:0:$sourceHash"
+                journal.sourceIdentity shouldBe "legacy:1:01890f3e-7c00-7000-8000-000000000001:0:$sourceHash"
+                val decision = checkNotNull(store.protocolDao().migrationChunk(migration, 2))
+                decision.state shouldBe "legacy_decision_converted"
+                Json.decodeFromString<PallaSyncLocalIntents.LegacySourceDecision>(decision.reportJson).sourceObjectHash shouldBe sourceHash
                 intents.legacyMigrationProgress(migration)?.let {
                     it.pending shouldBe 0
                     it.constructed shouldBe 1
