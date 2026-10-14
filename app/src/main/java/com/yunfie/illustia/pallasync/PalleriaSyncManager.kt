@@ -231,4 +231,38 @@ class PalleriaSyncManager(
         compactionHash: String,
         explicitlyConfirmed: Boolean,
     ): Boolean = coordinator.trustAndInstallSnapshot(compactionId, compactionHash, explicitlyConfirmed)
+
+    internal suspend fun fetchLegacyV21Parameters(
+        sourceUrl: String,
+        chainId: String,
+        seedPhrase: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.Parameters> =
+        coordinator.fetchLegacyV21Parameters(sourceUrl, chainId, seedPhrase, passphrase)
+
+    internal suspend fun fetchLegacyV21Devices(
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        deviceId: String,
+        deviceSeed: String,
+        devicePublicKey: String,
+    ): PallaSyncHttpResult<List<PallaSyncLegacyV21Source.Device>> =
+        coordinator.fetchLegacyV21Devices(sourceUrl, parameters, deviceId, deviceSeed, devicePublicKey)
+
+    internal suspend fun fetchLegacyV21RecordPage(
+        sourceUrl: String,
+        chainId: String,
+        afterSequence: Long,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.RecordPage> =
+        coordinator.fetchLegacyV21RecordPage(
+            sourceUrl,
+            chainId,
+            afterSequence,
+            devices,
+            signerDeviceId,
+            signerDeviceSeed,
+        )
 }

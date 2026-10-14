@@ -83,7 +83,13 @@ internal class PallaSyncRemoteService(
         onSuccess: (Response) -> PallaSyncHttpResult<T>,
     ): PallaSyncHttpResult<T> {
         val chainRequest = request.url.encodedPath == "/pallasync/v3/chains" || request.url.encodedPath.startsWith("/pallasync/v3/chains/")
-        if (chainRequest) policy.retry.before(request)?.let { return it }
+        val legacySourceRequest =
+            request.method == "GET" && request.url.encodedPath.startsWith("/pallasync/v2/chains/") &&
+                request.url.encodedPath
+                    .substringAfter("/pallasync/v2/chains/")
+                    .contains('/')
+        val trackedRequest = chainRequest || legacySourceRequest
+        if (trackedRequest) policy.retry.before(request)?.let { return it }
         val call = client.newCall(request)
         calls.add(call)
         var hint: PallaSyncProblemHint? = null
@@ -129,7 +135,7 @@ internal class PallaSyncRemoteService(
             } finally {
                 calls.remove(call)
             }
-        if (chainRequest && attempted) policy.retry.observe(request, result, hint, relayDate)
+        if (trackedRequest && attempted) policy.retry.observe(request, result, hint, relayDate)
         return result
     }
 

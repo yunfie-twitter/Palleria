@@ -1,0 +1,336 @@
+package com.yunfie.illustia.pallasync
+
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.longOrNull
+import okhttp3.HttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import java.util.Base64
+import java.util.UUID
+
+/** Read-only v2.1 source adapter for the explicit §9 migration flow. */
+internal class PallaSyncLegacyV21Source(
+    private val remote: PallaSyncRemoteService,
+) {
+    internal data class Parameters(
+        val chainId: String,
+        val chainSalt: String,
+        val adminPublicKey: String,
+        val creatorDeviceId: String,
+        val creatorPublicKey: String,
+        val signatureVerified: Boolean = false,
+    )
+
+    internal data class Device(
+        val deviceId: String,
+        val publicKey: String,
+        val active: Boolean,
+    )
+
+    internal data class SignedRecord(
+        val sequence: Long,
+        val json: String,
+        val recordId: String,
+        val deviceId: String,
+    )
+
+    internal data class RecordPage(
+        val afterSequence: Long,
+        val throughSequence: Long,
+        val hasMore: Boolean,
+        val records: List<SignedRecord>,
+    )
+
+    internal fun getParameters(
+        base: HttpUrl,
+        chainId: String,
+        seedPhrase: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<Parameters> {
+        require(decode(chainId).size == 32) { "C_SCHEMA_VIOLATION" }
+        val request = request(base, "/pallasync/v2/chains/$chainId/parameters", null)
+        return remote.execute(request) { response ->
+            val value = Json.parseToJsonElement(response.pallaSyncText()).jsonObject
+            val parameters = parseParameters(value, chainId)
+            check(
+                PallaSyncCore.validateLegacyV21Identity(
+                    seedPhrase,
+                    passphrase,
+                    parameters.chainId,
+                    parameters.chainSalt,
+                    parameters.adminPublicKey,
+                ),
+            ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            PallaSyncHttpResult.Success(parameters)
+        }
+    }
+
+    /**
+     * Read the registry using the old enrolled device key, then require that exact active key to
+     * appear as a self-signed registry row before allowing it to authorize record pages.
+     */
+    internal fun getDevices(
+        base: HttpUrl,
+        parameters: Parameters,
+        deviceId: String,
+        deviceSeed: String,
+        devicePublicKey: String,
+        nowMs: Long,
+    ): PallaSyncHttpResult<List<Device>> {
+        val path = "/pallasync/v2/chains/${parameters.chainId}/devices"
+        val token = PallaSyncCore.legacyV21GetToken(deviceSeed, parameters.chainId, deviceId, path, "", nowMs)
+        val request = request(base, path, token)
+        return remote.execute(request) { response ->
+            val root = Json.parseToJsonElement(response.pallaSyncText())
+            val rows =
+                when (root) {
+                    is JsonArray -> {
+                        root
+                    }
+
+                    is JsonObject -> {
+                        check(root.keys == setOf("devices", "next_cursor") && root["next_cursor"] == JsonNull) {
+                            "C_SCHEMA_VIOLATION"
+                        }
+                        root["devices"]?.jsonArray ?: error("C_SCHEMA_VIOLATION")
+                    }
+
+                    else -> {
+                        error("C_SCHEMA_VIOLATION")
+                    }
+                }
+            val devices =
+                rows.map { element ->
+                    val row = element.jsonObject
+                    val raw = row.toString()
+                    check(PallaSyncCore.verifyLegacyDeviceRecordV21(raw)) { "C_SIGNATURE_INVALID" }
+                    val parsed = parseDevice(row, parameters.chainId)
+                    parsed
+                }
+            check(devices.map(Device::deviceId).distinct().size == devices.size) { "C_DEVICE_EQUIVOCATION" }
+            val signer = devices.singleOrNull { it.deviceId == deviceId }
+            check(
+                signer != null && signer.active && signer.publicKey == devicePublicKey,
+            ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            PallaSyncHttpResult.Success(devices)
+        }
+    }
+
+    /** A page is complete only when the relay explicitly says there is no next cursor. */
+    internal fun getRecordPage(
+        base: HttpUrl,
+        chainId: String,
+        afterSequence: Long,
+        devices: List<Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+        nowMs: Long,
+    ): PallaSyncHttpResult<RecordPage> {
+        require(afterSequence in 0..PallaSyncConflictResolver.MAX_COUNTER) { "C_SCHEMA_VIOLATION" }
+        val query = "after_seq=$afterSequence&limit=200"
+        val path = "/pallasync/v2/chains/$chainId/records"
+        val token = PallaSyncCore.legacyV21GetToken(signerDeviceSeed, chainId, signerDeviceId, path, query, nowMs)
+        val request = request(base, "$path?$query", token)
+        return remote.execute(request) { response ->
+            val nextSequence = response.header("PallaSync-Next-Seq") ?: error("C_SCHEMA_VIOLATION")
+            val hasMore = response.header("PallaSync-Has-More") ?: error("C_SCHEMA_VIOLATION")
+            val page =
+                decodePage(
+                    response.pallaSyncText(),
+                    afterSequence,
+                    nextSequence,
+                    hasMore,
+                )
+            val byDevice = devices.associateBy(Device::deviceId)
+            for (record in page.records) {
+                check(Json.parseToJsonElement(record.json).jsonObject.string("chain_id") == chainId) {
+                    "C_BOOTSTRAP_TRUST_REQUIRED"
+                }
+                val device = byDevice[record.deviceId] ?: error("C_MISSING_DEPENDENCY")
+                check(PallaSyncCore.verifyLegacySyncRecordV21(record.json, device.publicKey)) { "C_SIGNATURE_INVALID" }
+            }
+            PallaSyncHttpResult.Success(page)
+        }
+    }
+
+    companion object {
+        private const val MEDIA_TYPE = "application/vnd.palleria.sync.v2+json"
+
+        internal fun parseParameters(
+            value: JsonObject,
+            requestedChainId: String,
+        ): Parameters {
+            val required =
+                setOf(
+                    "protocol_version",
+                    "chain_id",
+                    "chain_salt",
+                    "created_at_ms",
+                    "creator_device_id",
+                    "creator_public_key",
+                    "admin_public_key",
+                    "signature",
+                )
+            check(value.keys == required && value.string("protocol_version") == "2.1") { "C_SCHEMA_VIOLATION" }
+            val chainId = value.string("chain_id")
+            val salt = value.string("chain_salt")
+            val admin = value.string("admin_public_key")
+            val creatorDevice = value.string("creator_device_id")
+            val creatorPublic = value.string("creator_public_key")
+            val signature = value.string("signature")
+            require(chainId == requestedChainId && decode(chainId).size == 32) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            require(decode(salt).size == 32 && decode(admin).size == 32 && decode(creatorPublic).size == 32) {
+                "C_SCHEMA_VIOLATION"
+            }
+            require(decode(signature).size == 64) { "C_SCHEMA_VIOLATION" }
+            require(value["created_at_ms"]?.jsonPrimitive?.long?.let { it >= 0 } == true) { "C_SCHEMA_VIOLATION" }
+            require(UUID.fromString(creatorDevice).toString() == creatorDevice) { "C_SCHEMA_VIOLATION" }
+            // v2.1 §4.1 defines no ChainParameters signature context; root-derived pins are checked separately.
+            return Parameters(chainId, salt, admin, creatorDevice, creatorPublic)
+        }
+
+        internal fun parseDevice(
+            value: JsonObject,
+            chainId: String,
+        ): Device {
+            val required =
+                setOf(
+                    "protocol_version",
+                    "chain_id",
+                    "device_id",
+                    "device_public_key",
+                    "encrypted_device_name",
+                    "device_name_nonce",
+                    "status",
+                    "created_at_ms",
+                    "updated_at_ms",
+                    "signature",
+                )
+            check(value.keys == required && value.string("protocol_version") == "2.1" && value.string("chain_id") == chainId) {
+                "C_SCHEMA_VIOLATION"
+            }
+            val id = value.string("device_id")
+            require(UUID.fromString(id).toString() == id) { "C_SCHEMA_VIOLATION" }
+            val createdAt = value["created_at_ms"]?.jsonPrimitive?.long ?: error("C_SCHEMA_VIOLATION")
+            val updatedAt = value["updated_at_ms"]?.jsonPrimitive?.long ?: error("C_SCHEMA_VIOLATION")
+            require(createdAt >= 0 && updatedAt >= createdAt) {
+                "C_SCHEMA_VIOLATION"
+            }
+            val status = value.string("status")
+            require(status == "active" || status == "revoked") { "C_SCHEMA_VIOLATION" }
+            return Device(id, value.string("device_public_key"), status == "active")
+        }
+
+        internal fun decodePage(
+            raw: String,
+            afterSequence: Long,
+            nextSequenceHeader: String? = null,
+            hasMoreHeader: String? = null,
+        ): RecordPage {
+            require(afterSequence in 0..PallaSyncConflictResolver.MAX_COUNTER) { "C_SCHEMA_VIOLATION" }
+            val root = Json.parseToJsonElement(raw)
+            val pageObject = root as? JsonObject ?: error("C_SCHEMA_VIOLATION")
+            check(pageObject.keys == setOf("records", "next_cursor", "server_time_ms")) { "C_SCHEMA_VIOLATION" }
+            require(
+                pageObject["server_time_ms"]
+                    ?.jsonPrimitive
+                    ?.long
+                    ?.let { it in 0..PallaSyncConflictResolver.MAX_COUNTER } == true,
+            ) {
+                "C_SCHEMA_VIOLATION"
+            }
+            val rows = pageObject["records"]!!.jsonArray
+            val nextCursor = pageObject["next_cursor"]!!
+            val result = ArrayList<SignedRecord>(rows.size)
+            var cursor = afterSequence
+            for (rowElement in rows) {
+                val row = rowElement.jsonObject
+                val sequence = row.sequence()
+                require(sequence > cursor && sequence <= PallaSyncConflictResolver.MAX_COUNTER) { "C_ROLLBACK_DETECTED" }
+                require(row.string("protocol_version") == "2.1") { "C_SCHEMA_VIOLATION" }
+                val recordId = row.string("record_id")
+                val deviceId = row.string("device_id")
+                val parsedRecordId = UUID.fromString(recordId)
+                require(
+                    parsedRecordId.version() == 7 && parsedRecordId.toString() == recordId &&
+                        UUID.fromString(deviceId).toString() == deviceId,
+                ) {
+                    "C_SCHEMA_VIOLATION"
+                }
+                val encoded = row.toString()
+                result += SignedRecord(sequence, encoded, recordId, deviceId)
+                cursor = sequence
+            }
+            val more =
+                run {
+                    val next = nextCursor as? JsonPrimitive ?: error("C_SCHEMA_VIOLATION")
+                    if (next == JsonNull) {
+                        false
+                    } else {
+                        require(next.isString && next.content == cursor.toString() && cursor > afterSequence) {
+                            "C_ROLLBACK_DETECTED"
+                        }
+                        true
+                    }
+                }
+            check(!more || result.isNotEmpty()) { "C_ROLLBACK_DETECTED" }
+            if (nextSequenceHeader != null || hasMoreHeader != null) {
+                val headerSequence = nextSequenceHeader?.toLongOrNull() ?: error("C_SCHEMA_VIOLATION")
+                require(headerSequence.toString() == nextSequenceHeader && headerSequence in 0..PallaSyncConflictResolver.MAX_COUNTER) {
+                    "C_SCHEMA_VIOLATION"
+                }
+                val headerMore =
+                    when (hasMoreHeader) {
+                        "true" -> true
+                        "false" -> false
+                        else -> error("C_SCHEMA_VIOLATION")
+                    }
+                check(headerSequence == cursor && headerMore == more) { "C_ROLLBACK_DETECTED" }
+            }
+            return RecordPage(afterSequence, cursor, more, result)
+        }
+
+        private fun JsonObject.sequence(): Long {
+            val server = this["server_sequence"]?.jsonPrimitive?.longOrNull
+            val relay = this["relay_seq"]?.jsonPrimitive?.longOrNull
+            require(server != null || relay != null) { "C_SCHEMA_VIOLATION" }
+            require(server == null || relay == null || server == relay) { "C_ROLLBACK_DETECTED" }
+            return server ?: checkNotNull(relay)
+        }
+
+        private fun JsonObject.string(key: String): String =
+            this[key]?.jsonPrimitive?.takeIf(JsonPrimitive::isString)?.content ?: error("C_SCHEMA_VIOLATION")
+
+        private fun decode(value: String): ByteArray =
+            runCatching { Base64.getUrlDecoder().decode(value) }
+                .getOrElse { error("C_SCHEMA_VIOLATION") }
+                .also { decoded ->
+                    require(Base64.getUrlEncoder().withoutPadding().encodeToString(decoded) == value) { "C_SCHEMA_VIOLATION" }
+                }
+
+        private fun request(
+            base: HttpUrl,
+            pathAndQuery: String,
+            token: String?,
+        ): Request {
+            val requestUrl = base.newBuilder().encodedPath(pathAndQuery.substringBefore('?'))
+            pathAndQuery.substringAfter('?', "").takeIf(String::isNotEmpty)?.let(requestUrl::encodedQuery)
+            val builder =
+                Request
+                    .Builder()
+                    .url(requestUrl.build())
+                    .header("Accept", MEDIA_TYPE)
+                    .get()
+            token?.let { builder.header("Authorization", "PallaSync $it") }
+            return builder.build()
+        }
+    }
+}

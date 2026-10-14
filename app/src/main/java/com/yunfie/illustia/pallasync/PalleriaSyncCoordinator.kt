@@ -49,6 +49,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -139,6 +140,7 @@ internal class PalleriaSyncCoordinator(
     private val localIntents by lazy { PallaSyncLocalIntents(db, localAuthor, ::orderLocalEvents) }
     private val membership by lazy { PallaSyncMembershipReader(db) }
     private val liveHistory by lazy { PallaSyncLiveHistory(db, remote, keystore, consistencyProbe, ::makeCapabilityToken) }
+    private val legacyV21Source by lazy { PallaSyncLegacyV21Source(remote) }
     private val epochLifecycle by lazy {
         PallaSyncEpochLifecycle(db, keystore, remote, policy, crypto, PallaSyncEpochJournal(appContext), localAuthor)
     }
@@ -639,6 +641,59 @@ internal class PalleriaSyncCoordinator(
         when (val normalized = PallaSyncUrls.normalize(rawUrl)) {
             is PallaSyncHttpResult.Success -> normalized.value.toString().trimEnd('/')
             else -> null
+        }
+
+    internal suspend fun fetchLegacyV21Parameters(
+        sourceUrl: String,
+        chainId: String,
+        seedPhrase: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.Parameters> =
+        withContext(Dispatchers.IO) {
+            val normalized = normalizeServerUrl(sourceUrl) ?: return@withContext PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            legacyV21Source.getParameters(normalized.toHttpUrl(), chainId, seedPhrase, passphrase)
+        }
+
+    internal suspend fun fetchLegacyV21Devices(
+        sourceUrl: String,
+        parameters: PallaSyncLegacyV21Source.Parameters,
+        deviceId: String,
+        deviceSeed: String,
+        devicePublicKey: String,
+    ): PallaSyncHttpResult<List<PallaSyncLegacyV21Source.Device>> =
+        withContext(Dispatchers.IO) {
+            val normalized = normalizeServerUrl(sourceUrl) ?: return@withContext PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            val base = normalized.toHttpUrl()
+            legacyV21Source.getDevices(
+                base,
+                parameters,
+                deviceId,
+                deviceSeed,
+                devicePublicKey,
+                policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+            )
+        }
+
+    internal suspend fun fetchLegacyV21RecordPage(
+        sourceUrl: String,
+        chainId: String,
+        afterSequence: Long,
+        devices: List<PallaSyncLegacyV21Source.Device>,
+        signerDeviceId: String,
+        signerDeviceSeed: String,
+    ): PallaSyncHttpResult<PallaSyncLegacyV21Source.RecordPage> =
+        withContext(Dispatchers.IO) {
+            val normalized = normalizeServerUrl(sourceUrl) ?: return@withContext PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+            val base = normalized.toHttpUrl()
+            legacyV21Source.getRecordPage(
+                base,
+                chainId,
+                afterSequence,
+                devices,
+                signerDeviceId,
+                signerDeviceSeed,
+                policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+            )
         }
 
     fun getPallaSyncKeystore(): PallaSyncKeystore = keystore

@@ -10,6 +10,62 @@ import java.util.Base64
 
 class PallaSyncLegacyRecordJniTest {
     @Test
+    fun `v21 parameters expose root pins without claiming signature verification`() {
+        val chainId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        val zero32 = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32))
+        val zero64 = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(64))
+        val raw =
+            """{"protocol_version":"2.1","chain_id":"$chainId","chain_salt":"$zero32","created_at_ms":1700000000000,"creator_device_id":"01890f3e-7c00-7000-8000-000000000002","creator_public_key":"$zero32","admin_public_key":"$zero32","signature":"$zero64"}"""
+        val parameters =
+            PallaSyncLegacyV21Source.parseParameters(
+                Json.parseToJsonElement(raw).jsonObject,
+                chainId,
+            )
+        parameters.signatureVerified shouldBe false
+        parameters.chainId shouldBe chainId
+        shouldThrow<IllegalArgumentException> {
+            PallaSyncLegacyV21Source.parseParameters(Json.parseToJsonElement(raw).jsonObject, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+        }
+    }
+
+    @Test
+    fun `v21 record pages require monotonic relay sequences and an exact advancing cursor`() {
+        val record =
+            """{"protocol_version":"2.1","record_id":"01890f3e-7c00-7000-8000-000000000001","device_id":"01890f3e-7c00-7000-8000-000000000002","server_sequence":3,"relay_seq":3}"""
+        val page =
+            PallaSyncLegacyV21Source.decodePage(
+                """{"records":[$record],"next_cursor":"3","server_time_ms":1700000000000}""",
+                2,
+                "3",
+                "true",
+            )
+        page.throughSequence shouldBe 3L
+        page.hasMore shouldBe true
+        page.records.single().recordId shouldBe "01890f3e-7c00-7000-8000-000000000001"
+
+        shouldThrow<IllegalArgumentException> {
+            PallaSyncLegacyV21Source.decodePage(
+                """{"records":[$record],"next_cursor":"2","server_time_ms":1700000000000}""",
+                2,
+            )
+        }
+        shouldThrow<IllegalArgumentException> {
+            PallaSyncLegacyV21Source.decodePage(
+                """{"records":[$record],"next_cursor":null,"server_time_ms":1700000000000}""",
+                3,
+            )
+        }
+        shouldThrow<IllegalStateException> {
+            PallaSyncLegacyV21Source.decodePage(
+                """{"records":[$record],"next_cursor":"3","server_time_ms":1700000000000}""",
+                2,
+                "4",
+                "true",
+            )
+        }
+    }
+
+    @Test
     fun `v21 device registry verifier rejects incomplete rows`() {
         PallaSyncCore.verifyLegacyDeviceRecordV21("{}") shouldBe false
     }
