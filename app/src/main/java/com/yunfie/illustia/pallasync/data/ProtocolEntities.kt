@@ -148,6 +148,34 @@ data class SnapshotPartEntity(
     @ColumnInfo(name = "staging_state") val stagingState: String,
 )
 
+/** Restart-safe local publication journal; it contains only signed ciphertext and relay receipts. */
+@Entity(tableName = "ps_snapshot_publications", primaryKeys = ["chain_id", "compaction_id"])
+data class SnapshotPublicationEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+    val generation: Long,
+    val epoch: Long,
+    @ColumnInfo(name = "covered_through_seq") val coveredThroughSeq: Long,
+    @ColumnInfo(name = "log_id") val logId: String,
+    @ColumnInfo(name = "header_json") val headerJson: String,
+    @ColumnInfo(name = "part_count") val partCount: Int,
+    @ColumnInfo(name = "state_sha256") val stateSha256: String? = null,
+    @ColumnInfo(name = "compaction_json") val compactionJson: String? = null,
+    val status: String = "preparing",
+)
+
+@Entity(tableName = "ps_snapshot_publication_parts", primaryKeys = ["chain_id", "compaction_id", "part_index"])
+data class SnapshotPublicationPartEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "compaction_id") val compactionId: String,
+    @ColumnInfo(name = "part_index") val partIndex: Int,
+    @ColumnInfo(name = "record_id") val recordId: String,
+    @ColumnInfo(name = "record_hash") val recordHash: String,
+    @ColumnInfo(name = "signed_json") val signedJson: String,
+    @ColumnInfo(name = "upload_receipt_json") val uploadReceiptJson: String? = null,
+    val status: String = "prepared",
+)
+
 @Entity(tableName = "ps_evidence", primaryKeys = ["origin", "relay_key_id", "chain_id", "log_id", "kind", "sequence", "object_hash"])
 data class ProtectedEvidenceEntity(
     val origin: String,

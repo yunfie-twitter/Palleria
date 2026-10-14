@@ -22,13 +22,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         HistoryIndexEntity::class,
         QuarantineEvidenceEntity::class,
         SnapshotPartEntity::class,
+        SnapshotPublicationEntity::class,
+        SnapshotPublicationPartEntity::class,
         ProtectedEvidenceEntity::class,
         AuthorityHistoryEntity::class,
         MigrationJournalEntity::class,
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -39,6 +41,8 @@ abstract class PallaSyncDatabase : RoomDatabase() {
     abstract fun compactionCatalogueDao(): CompactionCatalogueDao
 
     abstract fun snapshotDao(): SnapshotDao
+
+    abstract fun snapshotPublicationDao(): SnapshotPublicationDao
 
     abstract fun snapshotStateDao(): SnapshotStateDao
 
@@ -53,6 +57,18 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                     // v7 staging rows predate receipt persistence; `null` marks them for
                     // readback instead of inventing evidence or trusting the old row.
                     db.execSQL("ALTER TABLE ps_snapshots ADD COLUMN upload_receipt_json TEXT NOT NULL DEFAULT 'null'")
+                }
+            }
+
+        val MIGRATION_8_9 =
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_publications (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,generation INTEGER NOT NULL,epoch INTEGER NOT NULL,covered_through_seq INTEGER NOT NULL,log_id TEXT NOT NULL,header_json TEXT NOT NULL,part_count INTEGER NOT NULL,state_sha256 TEXT,compaction_json TEXT,status TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_publication_parts (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,part_index INTEGER NOT NULL,record_id TEXT NOT NULL,record_hash TEXT NOT NULL,signed_json TEXT NOT NULL,upload_receipt_json TEXT,status TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id,part_index))",
+                    )
                 }
             }
 
@@ -75,6 +91,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             MIGRATION_5_6,
                             ProtocolMigration,
                             MIGRATION_7_8,
+                            MIGRATION_8_9,
                         ).build()
                 INSTANCE = instance
                 instance

@@ -21,7 +21,51 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncMigrationTest {
     @Test
-    fun `supported old layouts retain exact outbox and state through version eight and reopen`() =
+    fun `version nine snapshot publication journal migration is additive`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val helper =
+            FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration
+                    .builder(context)
+                    .name("pallasync-publication-migration-v8")
+                    .callback(
+                        object : SupportSQLiteOpenHelper.Callback(8) {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                db.execSQL("CREATE TABLE prior_state(id INTEGER NOT NULL PRIMARY KEY,value TEXT NOT NULL)")
+                                db.execSQL("INSERT INTO prior_state(id,value) VALUES(1,'preserved')")
+                            }
+
+                            override fun onUpgrade(
+                                db: SupportSQLiteDatabase,
+                                oldVersion: Int,
+                                newVersion: Int,
+                            ) = Unit
+                        },
+                    ).build(),
+            )
+        try {
+            val db = helper.writableDatabase
+            PallaSyncDatabase.MIGRATION_8_9.migrate(db)
+            db.query("SELECT value FROM prior_state WHERE id=1").use { cursor ->
+                cursor.moveToFirst() shouldBe true
+                cursor.getString(0) shouldBe "preserved"
+            }
+            val sql =
+                "SELECT COUNT(*) FROM sqlite_master " +
+                    "WHERE type='table' AND name IN ('ps_snapshot_publications','ps_snapshot_publication_parts')"
+            val journalTables = db.query(sql)
+            journalTables.use { cursor ->
+                cursor.moveToFirst() shouldBe true
+                cursor.getInt(0) shouldBe 2
+            }
+        } finally {
+            helper.close()
+            context.deleteDatabase("pallasync-publication-migration-v8")
+        }
+    }
+
+    @Test
+    fun `supported old layouts retain exact outbox and state through version nine and reopen`() =
         runBlocking<Unit> {
             val context = ApplicationProvider.getApplicationContext<Context>()
             for (version in 1..6) {
@@ -116,6 +160,7 @@ class PallaSyncMigrationTest {
                             PallaSyncDatabase.MIGRATION_5_6,
                             ProtocolMigration,
                             PallaSyncDatabase.MIGRATION_7_8,
+                            PallaSyncDatabase.MIGRATION_8_9,
                         ).build()
                 repeat(2) { attempt ->
                     val db = open()
