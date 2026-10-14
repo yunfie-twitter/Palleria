@@ -58,6 +58,11 @@
     <string name="pallasync_witness_import_cancelled">Witness import cancelled.</string>
     <string name="pallasync_witness_import_failed">The deletion receipt archive could not be read.</string>
     <string name="pallasync_witness_create_failed">This device could not validate or sign the deletion receipt.</string>
+    <string name="pallasync_snapshot_publish">Publish a verified snapshot</string>
+    <string name="pallasync_snapshot_publish_desc">Create and publish a resumable encrypted snapshot. This does not prune history.</string>
+    <string name="pallasync_snapshot_publish_running">Publishing exact encrypted parts and signed receipts…</string>
+    <string name="pallasync_snapshot_publish_succeeded">The snapshot and its transparency evidence were verified and retained.</string>
+    <string name="pallasync_snapshot_publish_failed">Snapshot publication paused. Local signed parts and receipts were retained for retry.</string>
     <string name="pallasync_progress_title">Sync progress and local history capacity</string>
     <string name="pallasync_progress_state">Write state: %1$s</string>
     <string name="pallasync_progress_positions">Observed target %1$d · verified %2$d · materialized %3$d</string>

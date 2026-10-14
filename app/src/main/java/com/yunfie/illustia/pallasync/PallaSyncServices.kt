@@ -27,6 +27,8 @@ internal class PallaSyncLocalStore(
 
     fun deletionEvidenceDao() = database.deletionEvidenceDao()
 
+    fun snapshotDatabase(): PallaSyncDatabase = database
+
     suspend fun <T> transaction(block: suspend () -> T): T = database.withTransaction { block() }
 }
 

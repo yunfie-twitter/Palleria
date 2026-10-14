@@ -100,6 +100,7 @@ fun PallaSyncSettingsScreen(
     var showOfflineDeletionCopyConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var isCreatingChain by remember { mutableStateOf(false) }
+    var publishingSnapshot by remember { mutableStateOf(false) }
     var showTrustDialog by remember { mutableStateOf(false) }
     var showPolicyDialog by remember { mutableStateOf(false) }
     var generatedMnemonic by remember { mutableStateOf<String?>(null) }
@@ -681,6 +682,40 @@ fun PallaSyncSettingsScreen(
                             )
                         }
                         if (state.settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_snapshot_publish),
+                                summary =
+                                    stringResource(
+                                        if (publishingSnapshot) {
+                                            R.string.pallasync_snapshot_publish_running
+                                        } else {
+                                            R.string.pallasync_snapshot_publish_desc
+                                        },
+                                    ),
+                                onClick = {
+                                    if (!publishingSnapshot) {
+                                        publishingSnapshot = true
+                                        scope.launch {
+                                            try {
+                                                val success = syncManager.publishSnapshot()
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        if (success) {
+                                                            R.string.pallasync_snapshot_publish_succeeded
+                                                        } else {
+                                                            R.string.pallasync_snapshot_publish_failed
+                                                        },
+                                                        Toast.LENGTH_LONG,
+                                                    ).show()
+                                            } finally {
+                                                publishingSnapshot = false
+                                            }
+                                        }
+                                    }
+                                },
+                            )
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_sync_now),

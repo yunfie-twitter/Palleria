@@ -172,6 +172,7 @@ class PallaSyncSnapshotPublicationDaoTest {
                 dao.begin(publication)
                 dao.begin(publication)
                 dao.publication(CHAIN, COMPACTION) shouldBe publication
+                dao.resumablePublications(CHAIN) shouldBe listOf(publication)
 
                 val part =
                     SnapshotPublicationPartEntity(
@@ -207,6 +208,7 @@ class PallaSyncSnapshotPublicationDaoTest {
                 dao.markPublished(CHAIN, COMPACTION, compaction) shouldBe 1
                 dao.markPublished(CHAIN, COMPACTION, compaction) shouldBe 0
                 dao.publication(CHAIN, COMPACTION)?.status shouldBe "published"
+                dao.resumablePublications(CHAIN) shouldBe emptyList()
             } finally {
                 db.close()
             }

@@ -53,6 +53,11 @@
     <string name="pallasync_witness_import_cancelled">witnessの読込みをキャンセルしました。</string>
     <string name="pallasync_witness_import_failed">削除receipt archiveを読み込めませんでした。</string>
     <string name="pallasync_witness_create_failed">この端末で削除receiptを検証または署名できませんでした。</string>
+    <string name="pallasync_snapshot_publish">検証済みsnapshotを公開</string>
+    <string name="pallasync_snapshot_publish_desc">再開可能な暗号化snapshotを作成・公開します。履歴のpruneは行いません。</string>
+    <string name="pallasync_snapshot_publish_running">暗号化partと署名receiptを公開しています…</string>
+    <string name="pallasync_snapshot_publish_succeeded">snapshotとtransparency証拠を検証し保存しました。</string>
+    <string name="pallasync_snapshot_publish_failed">snapshot公開を一時停止しました。署名済みpartとreceiptは再試行用に保持しています。</string>
     <string name="pallasync_progress_title">同期進捗とローカル履歴容量</string>
     <string name="pallasync_progress_state">書込み状態: %1$s</string>
     <string name="pallasync_progress_positions">観測target %1$d · 検証済み %2$d · 適用済み %3$d</string>

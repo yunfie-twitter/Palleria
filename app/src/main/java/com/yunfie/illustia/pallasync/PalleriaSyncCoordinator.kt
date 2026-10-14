@@ -65,6 +65,7 @@ private const val MAX_PROTOCOL_COUNTER = 4_294_967_295L
 private const val MAX_EXPORT_CHUNK_BYTES = 8_388_608
 private const val MAX_DELETION_WITNESSES = 128
 private const val MAX_PEER_HISTORY_BYTES = 3_500_000
+private const val MAX_SNAPSHOT_UPLOAD_RECORDS = 64
 
 private data class DeletionContext(
     val state: ChainStateEntity,
@@ -76,6 +77,18 @@ private data class DeletionContext(
     val origin: String,
     val logId: String,
     val relayKeyId: String,
+)
+
+private data class SnapshotPublicationContext(
+    val state: ChainStateEntity,
+    val authority: JsonObject,
+    val authorityText: String,
+    val keys: PallaSyncKeySnapshot,
+    val base: HttpUrl,
+    val origin: String,
+    val pin: JsonObject,
+    val compactionId: String,
+    val journal: PallaSyncSnapshotPublicationJournal,
 )
 
 /** Application-scoped implementation of PallaSync state transitions and polling. */
@@ -255,6 +268,307 @@ internal class PalleriaSyncCoordinator(
                 return false
             }
         return outcome == SyncCycleOutcome.Success || outcome == SyncCycleOutcome.Idle
+    }
+
+    /** Explicit §10.11–§10.12 publication; it never prunes the event log. */
+    suspend fun publishSnapshot(): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                try {
+                    val publication = prepareSnapshotPublication()
+                    val produced = produceSnapshotParts(publication)
+                    publishSnapshotCompaction(publication, produced)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: IllegalStateException) {
+                    val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SNAPSHOT_INVALID"
+                    log("Snapshot publication paused with exact local parts retained: $code")
+                    false
+                } catch (failure: IllegalArgumentException) {
+                    log("Snapshot publication paused with exact local parts retained: ${failure.message}")
+                    false
+                }
+            }
+        }
+
+    private suspend fun prepareSnapshotPublication(): SnapshotPublicationContext {
+        val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        requireProtectedAuthority(state.chainId)
+        check(state.writeState == "active") { "C_WRITE_PAUSED" }
+        val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+        val authority = Json.parseToJsonElement(authorityText).jsonObject
+        val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        validateSnapshotPublisher(state, authority, keys)
+        val base =
+            when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                is PallaSyncHttpResult.Success -> normalized.value
+                else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+            }
+        val origin = PallaSyncUrls.extractOrigin(base)
+        check(
+            authority
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content == origin,
+        ) {
+            "C_BOOTSTRAP_TRUST_REQUIRED"
+        }
+        policy.requireCurrent(origin)
+        requireSnapshotResult(refreshRelayHealth(base))
+        requireSnapshotResult(consistencyProbe.run(base, state.chainId))
+        val pin =
+            buildJsonObject {
+                put("origin", origin)
+                put("chain_id", state.chainId)
+                put("public_key", policy.trustedRelayKey(origin))
+                put("log_id", checkNotNull(state.logId))
+            }
+        val resumable = db.snapshotDatabase().snapshotPublicationDao().resumablePublications(state.chainId)
+        check(resumable.size <= 1) { "C_LOCAL_LIMIT" }
+        val compactionId = resumable.singleOrNull()?.compactionId ?: UUID.randomUUID().toString()
+        return SnapshotPublicationContext(
+            state,
+            authority,
+            authorityText,
+            keys,
+            base,
+            origin,
+            pin,
+            compactionId,
+            PallaSyncSnapshotPublicationJournal(db.snapshotDatabase(), state.chainId, compactionId, state.keyEpoch),
+        )
+    }
+
+    private fun validateSnapshotPublisher(
+        state: ChainStateEntity,
+        authority: JsonObject,
+        keys: PallaSyncKeySnapshot,
+    ) {
+        check(keys.chainId == state.chainId && keys.epoch == state.keyEpoch) { "C_EPOCH_FORK" }
+        val deviceId = checkNotNull(keys.deviceId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val epoch =
+            authority
+                .getValue("epochs")
+                .jsonObject
+                .getValue(state.keyEpoch.toString())
+                .jsonObject
+                .getValue("record")
+                .jsonObject
+        val admission = checkNotNull(authority.getValue("devices").jsonObject[deviceId]?.jsonObject) { "C_MISSING_DEPENDENCY" }
+        val record = admission.getValue("record").jsonObject
+        check(
+            epoch.getValue("members").jsonArray.any { it.jsonPrimitive.content == deviceId } &&
+                epoch.getValue("generation").jsonPrimitive.long == state.generation &&
+                admission.getValue("revoked_seq").jsonPrimitive.content == "null" &&
+                record.getValue("generation").jsonPrimitive.long == state.generation &&
+                record.getValue("device_public_key").jsonPrimitive.content == keys.publicKeyBase64Url,
+        ) { "C_DEVICE_REVOKED" }
+    }
+
+    private suspend fun produceSnapshotParts(context: SnapshotPublicationContext): PallaSyncProducedSnapshot {
+        val state = context.state
+        val keys = context.keys
+        val journal = context.journal
+        val pending = ArrayList<JsonObject>()
+        var transparencyCheckedForSavedParts = false
+        var nextPartIndex = 0
+        PallaSyncEpochSession.begin(keysForChainLocked(state.chainId) ?: keys, context.authorityText, state.keyEpoch).use { epochSession ->
+            val relay =
+                PallaSyncSnapshotPartRelay(
+                    remote,
+                    context.base,
+                    state.chainId,
+                    context.pin,
+                    relayLimits,
+                    ::makeCapabilityToken,
+                ) { records, response ->
+                    requireSnapshotResult(consistencyProbe.run(context.base, state.chainId))
+                    journal.verifyAndRetainUploadReceipts(records, response) { receipt ->
+                        verifySnapshotReceiptInclusion(state.chainId, context.authority, receipt)
+                    }
+                }
+
+            suspend fun flushParts() {
+                if (pending.isEmpty()) return
+                val batch = pending.toList()
+                requireSnapshotResult(relay.upload(batch))
+                pending.clear()
+            }
+            val produced =
+                PallaSyncSnapshotProducer(db.snapshotDatabase()).produce(
+                    chainId = state.chainId,
+                    compactionId = context.compactionId,
+                    deviceId = checkNotNull(keys.deviceId),
+                    epochSession = epochSession,
+                    signingSeed = { Base64.getUrlDecoder().decode(keys.signingKeyBase64Url) },
+                    devicePublicKeyBase64Url = keys.publicKeyBase64Url,
+                    journal = journal,
+                ) { _, recordJson, _ ->
+                    val partIndex = nextPartIndex++
+                    val record = Json.parseToJsonElement(recordJson).jsonObject
+                    val savedReceipt = journal.prepared(partIndex)?.uploadReceiptJson
+                    if (savedReceipt != null) {
+                        flushParts()
+                        if (!transparencyCheckedForSavedParts) {
+                            requireSnapshotResult(consistencyProbe.run(context.base, state.chainId))
+                            transparencyCheckedForSavedParts = true
+                        }
+                        verifySnapshotReceiptInclusion(
+                            state.chainId,
+                            context.authority,
+                            Json.parseToJsonElement(savedReceipt).jsonObject,
+                        )
+                    } else {
+                        pending += record
+                        check(recordUploadBatchSize(pending.map { it.toString() }, relayLimits) == pending.size) {
+                            "C_LOCAL_LIMIT"
+                        }
+                        if (pending.size >= minOf(MAX_SNAPSHOT_UPLOAD_RECORDS, relayLimits.maxRecordsPerUpload)) flushParts()
+                    }
+                }
+            flushParts()
+            return produced
+        }
+    }
+
+    private suspend fun publishSnapshotCompaction(
+        context: SnapshotPublicationContext,
+        produced: PallaSyncProducedSnapshot,
+    ): Boolean {
+        val keys = context.keys
+        val unsigned = snapshotCompactionUnsigned(context, produced)
+        val signed =
+            PallaSyncDeviceSession.beginToken(keys.signingKeyBase64Url).use { deviceSession ->
+                Json
+                    .parseToJsonElement(
+                        deviceSession.signCompaction(unsigned.toString(), checkNotNull(keys.deviceId), keys.publicKeyBase64Url),
+                    ).jsonObject
+            }
+        val signedText = checkNotNull(PallaSyncCore.canonicalJson(signed.toString())) { "C_SNAPSHOT_INVALID" }
+        context.journal.finalize(produced.stateCommitment, signedText)
+        val relay =
+            PallaSyncSnapshotCompactionRelay(
+                remote,
+                context.base,
+                context.state.chainId,
+                context.pin,
+                ::makeCapabilityToken,
+            ) { compaction, response ->
+                acceptPublishedSnapshot(context, compaction, response, signedText)
+            }
+        requireSnapshotResult(relay.publish(signed))
+        return true
+    }
+
+    private fun snapshotCompactionUnsigned(
+        context: SnapshotPublicationContext,
+        produced: PallaSyncProducedSnapshot,
+    ): JsonObject {
+        val parts =
+            JsonArray(
+                produced.parts.map { part ->
+                    buildJsonObject {
+                        put("record_id", part.recordId)
+                        put("record_hash", part.recordHash)
+                    }
+                },
+            )
+        return buildJsonObject {
+            put("compaction_id", context.compactionId)
+            put("chain_id", context.state.chainId)
+            put("generation", produced.header.getValue("generation"))
+            put("device_id", checkNotNull(context.keys.deviceId))
+            put("log_id", produced.header.getValue("log_id"))
+            put("covered_through_seq", produced.header.getValue("covered_through_seq"))
+            put("covered_log_hash", produced.header.getValue("covered_log_hash"))
+            put("epoch_hash", produced.header.getValue("epoch_hash"))
+            put("snapshot_parts", parts)
+            put("state_sha256", produced.stateCommitment)
+        }
+    }
+
+    private suspend fun acceptPublishedSnapshot(
+        context: SnapshotPublicationContext,
+        compaction: JsonObject,
+        response: JsonObject,
+        signedText: String,
+    ) {
+        val chain = context.state.chainId
+        requireSnapshotResult(liveHistory.pull(context.base, chain, context.keys))
+        val receipt =
+            response
+                .getValue("upload_receipts")
+                .jsonArray
+                .single()
+                .jsonObject
+        verifySnapshotReceiptInclusion(chain, context.authority, receipt)
+        val entry =
+            checkNotNull(
+                db.protocolDao().logEntry(
+                    chain,
+                    checkNotNull(context.state.logId),
+                    receipt.getValue("relay_seq").jsonPrimitive.long,
+                ),
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+        check(
+            PallaSyncCore.canonicalJson(entry.signedJson) ==
+                PallaSyncCore.canonicalJson(response.getValue("receipt").toString()),
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        check(Json.parseToJsonElement(entry.signedJson).jsonObject.getValue("object") == compaction) { "C_ACCEPTANCE_UNPROVEN" }
+        check(context.journal.markPublished(signedText) == 1) { "C_LOCAL_STORAGE_FULL" }
+    }
+
+    private fun requireSnapshotResult(result: PallaSyncHttpResult<*>) {
+        when (result) {
+            is PallaSyncHttpResult.Success -> Unit
+            is PallaSyncHttpResult.ProtocolError -> error(result.message)
+            is PallaSyncHttpResult.Retryable -> error(result.message)
+            PallaSyncHttpResult.Gone -> error("C_DELETION_UNVERIFIED")
+        }
+    }
+
+    private suspend fun verifySnapshotReceiptInclusion(
+        chainId: String,
+        authority: JsonObject,
+        receipt: JsonObject,
+    ) {
+        val state = checkNotNull(db.dao.getChainState(chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val pinAuthority = authority.getValue("pin").jsonObject
+        val origin = pinAuthority.getValue("origin").jsonPrimitive.content
+        val logId = checkNotNull(state.logId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val index = receipt.getValue("transparency_index").jsonPrimitive.long
+        check(
+            state.transparencyId == receipt.getValue("transparency_id").jsonPrimitive.content &&
+                state.transparencyIndex >= index && state.transparencyHash != null,
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        val proof =
+            db
+                .protocolDao()
+                .evidenceAt(
+                    origin,
+                    receipt.getValue("relay_key_id").jsonPrimitive.content,
+                    chainId,
+                    logId,
+                    "transparency",
+                    index,
+                ).singleOrNull() ?: error("C_MISSING_DEPENDENCY")
+        val pin =
+            buildJsonObject {
+                put("origin", origin)
+                put("chain_id", chainId)
+                put("public_key", policy.trustedRelayKey(origin))
+                put("log_id", logId)
+            }
+        val anchor =
+            buildJsonObject {
+                put("transparency_id", checkNotNull(state.transparencyId))
+                put("index", state.transparencyIndex)
+                put("hash", checkNotNull(state.transparencyHash))
+            }
+        check(PallaSyncCore.validateReceiptInclusion(receipt.toString(), proof, pin.toString(), anchor.toString())) {
+            "C_TRANSPARENCY_INVALID"
+        }
     }
 
     /** §17.4/§17.10: stream a pinned device-authorized export without recovery envelopes. */

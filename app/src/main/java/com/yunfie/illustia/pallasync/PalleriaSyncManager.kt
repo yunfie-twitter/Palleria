@@ -50,6 +50,8 @@ class PalleriaSyncManager(
 
     suspend fun syncNow(): Boolean = coordinator.syncNow()
 
+    internal suspend fun publishSnapshot(): Boolean = coordinator.publishSnapshot()
+
     internal suspend fun exportRelayArchive(output: java.io.OutputStream) = coordinator.exportRelayArchive(output)
 
     internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)

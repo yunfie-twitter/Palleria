@@ -20,6 +20,12 @@ interface SnapshotPublicationDao {
         compaction: String,
     ): SnapshotPublicationEntity?
 
+    /** At most two rows let the caller fail closed if multiple resumable publications exist. */
+    @Query(
+        "SELECT * FROM ps_snapshot_publications WHERE chain_id=:chain AND status IN ('preparing','uploading','compaction_ready') ORDER BY compaction_id LIMIT 2",
+    )
+    suspend fun resumablePublications(chain: String): List<SnapshotPublicationEntity>
+
     @Query("SELECT * FROM ps_snapshot_publication_parts WHERE chain_id=:chain AND compaction_id=:compaction ORDER BY part_index")
     suspend fun parts(
         chain: String,
