@@ -373,6 +373,124 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    /** Exports only the already verified public authority cut pinned by this live offer. */
+    internal suspend fun peerAuthorityForOffer(transcript: PallaSyncPeerJournal.Transcript): String =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val chain =
+                    transcript.offer
+                        .getValue("chain_id")
+                        .jsonPrimitive.content
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.chainId == chain && transcript.stage == PallaSyncPeerJournal.Stage.OFFERED) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authority = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+                check(
+                    crypto.objectHash(authority) == transcript.authorityHash && keystore.authorityHash(chain) == transcript.authorityHash,
+                ) {
+                    "C_ROLLBACK_DETECTED"
+                }
+                authority
+            }
+        }
+
+    internal suspend fun pollPeerEnrollmentRequest(transcript: PallaSyncPeerJournal.Transcript): JsonObject? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                peerApprover.pendingRequest(base, transcript)
+            }
+        }
+
+    @Suppress("TooGenericExceptionCaught") // A native SAS handle must be released for every throwable, including cancellation.
+    internal suspend fun beginPeerEnrollmentApproval(
+        transcript: PallaSyncPeerJournal.Transcript,
+        item: JsonObject,
+    ): PallaSyncPeerApprovalWork =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                val session = peerApprover.begin(base, transcript)
+                try {
+                    val (bound, sas) =
+                        peerApprover.bind(
+                            transcript,
+                            session,
+                            item,
+                            policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base)),
+                        )
+                    PallaSyncPeerApprovalWork(bound, session, sas)
+                } catch (failure: Throwable) {
+                    session.close()
+                    throw failure
+                }
+            }
+        }
+
+    internal suspend fun confirmPeerEnrollmentSas(work: PallaSyncPeerApprovalWork): PallaSyncPeerJournal.Transcript =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                val next = peerApprover.confirmedTransfer(base, work.transcript, work.session, work.sas, confirmed = true)
+                work.transcript = next
+                next
+            }
+        }
+
+    internal suspend fun cancelPeerEnrollmentApproval(work: PallaSyncPeerApprovalWork) =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                try {
+                    peerApprover.cancel(work.transcript, work.session)
+                } finally {
+                    work.close()
+                }
+            }
+        }
+
+    @Suppress("TooGenericExceptionCaught") // Refresh the durable exact-submission stage even when transport completion is uncertain.
+    internal suspend fun approvePeerEnrollment(
+        work: PallaSyncPeerApprovalWork,
+        submittedBody: String,
+    ): PallaSyncPeerJournal.Transcript =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                try {
+                    val next = peerApprover.approve(base, work.transcript, work.session, submittedBody)
+                    work.transcript = next
+                    next
+                } catch (failure: Throwable) {
+                    peerJournal.read(work.transcript.requestId)?.let { work.transcript = it }
+                    throw failure
+                } finally {
+                    work.close()
+                }
+            }
+        }
+
+    internal suspend fun retryPeerEnrollmentApproval(transcript: PallaSyncPeerJournal.Transcript): PallaSyncPeerJournal.Transcript =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                peerApprover.retryApproval(base, transcript)
+            }
+        }
+
     suspend fun rotateEpoch(
         mnemonic: String,
         reason: String = "manual",

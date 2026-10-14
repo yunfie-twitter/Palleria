@@ -84,6 +84,30 @@ class PalleriaSyncManager(
 
     internal suspend fun createPeerDeviceOffer(): PallaSyncPeerJournal.Transcript = coordinator.createPeerDeviceOffer()
 
+    internal suspend fun peerAuthorityForOffer(transcript: PallaSyncPeerJournal.Transcript): String =
+        coordinator.peerAuthorityForOffer(transcript)
+
+    internal suspend fun pollPeerEnrollmentRequest(transcript: PallaSyncPeerJournal.Transcript): kotlinx.serialization.json.JsonObject? =
+        coordinator.pollPeerEnrollmentRequest(transcript)
+
+    internal suspend fun beginPeerEnrollmentApproval(
+        transcript: PallaSyncPeerJournal.Transcript,
+        item: kotlinx.serialization.json.JsonObject,
+    ): PallaSyncPeerApprovalWork = coordinator.beginPeerEnrollmentApproval(transcript, item)
+
+    internal suspend fun confirmPeerEnrollmentSas(work: PallaSyncPeerApprovalWork): PallaSyncPeerJournal.Transcript =
+        coordinator.confirmPeerEnrollmentSas(work)
+
+    internal suspend fun cancelPeerEnrollmentApproval(work: PallaSyncPeerApprovalWork) = coordinator.cancelPeerEnrollmentApproval(work)
+
+    internal suspend fun approvePeerEnrollment(
+        work: PallaSyncPeerApprovalWork,
+        submittedBody: String,
+    ): PallaSyncPeerJournal.Transcript = coordinator.approvePeerEnrollment(work, submittedBody)
+
+    internal suspend fun retryPeerEnrollmentApproval(transcript: PallaSyncPeerJournal.Transcript): PallaSyncPeerJournal.Transcript =
+        coordinator.retryPeerEnrollmentApproval(transcript)
+
     suspend fun rotateEpoch(
         mnemonic: String,
         reason: String = "manual",

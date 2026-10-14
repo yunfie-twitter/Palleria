@@ -166,6 +166,9 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerApprover.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelay.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerJournal.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerApprovalWork.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncDevicesScreen.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncMnemonicEnrollment.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncEpochLifecycle.kt",
         "PallaSync/src/api/mutation.rs"
@@ -184,7 +187,7 @@
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelayBoundary.kt"
       ],
       "result": "pending",
-      "remaining": "Connect peer offer/request/certificate/file UI, pending-key delivery/readback/ack and independently test complete approval; implement fresh key rotation.",
+      "remaining": "Approver UI now exports the verified public authority cut, polls/binds one request, requires explicit SAS confirmation, transfers the signed certificate/current envelope, native-verifies the returning DeviceRecord/envelopes, submits approval and exports the signed acceptance response. Unknown POST outcome retries only the journaled identical approval. The selected transfer file contains public/signed objects and ciphertext but has no added local encryption wrapper because §18.1 specifies no wrapper cryptosuite. Still build the subject scanner/import/session/key-persistence/envelope-readback/ack activation side, atomic fresh-key enrollment/revocation, and independently test the complete ceremony; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

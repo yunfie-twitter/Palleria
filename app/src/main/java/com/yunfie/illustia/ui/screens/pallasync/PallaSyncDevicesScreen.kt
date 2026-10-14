@@ -1,5 +1,8 @@
 package com.yunfie.illustia.ui.screens.pallasync
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,11 +38,16 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -50,7 +59,11 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private const val MAX_PEER_TRANSFER_BYTES = 4_194_304
+
+// SAF/JCS boundary maps provider and malformed-file failures to protocol-safe UI outcomes.
 @Composable
+@Suppress("TooGenericExceptionCaught", "ThrowsCount")
 fun PallaSyncDevicesScreen(
     state: IllustiaUiState,
     onBack: () -> Unit,
@@ -63,6 +76,13 @@ fun PallaSyncDevicesScreen(
     val scope = rememberCoroutineScope()
     var devices by remember { mutableStateOf<List<PallaSyncDeviceEntity>>(emptyList()) }
     var peerOffer by remember { mutableStateOf<String?>(null) }
+    var offerTranscript by remember { mutableStateOf<com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Transcript?>(null) }
+    var approvalWork by remember { mutableStateOf<com.yunfie.illustia.pallasync.PallaSyncPeerApprovalWork?>(null) }
+    var peerBusy by remember { mutableStateOf(false) }
+    var peerError by remember { mutableStateOf<String?>(null) }
+    var pendingPeerTransfer by remember { mutableStateOf<String?>(null) }
+    var acceptedPeerResponse by remember { mutableStateOf<String?>(null) }
+    var submittedPeerBody by remember { mutableStateOf<String?>(null) }
     var creatingOffer by remember { mutableStateOf(false) }
     var offerError by remember { mutableStateOf<String?>(null) }
     val offerBitmap =
@@ -79,6 +99,78 @@ fun PallaSyncDevicesScreen(
                 }.getOrNull()
             }
         }
+
+    val peerTransferExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val value = pendingPeerTransfer
+            if (uri != null && value != null) {
+                scope.launch {
+                    try {
+                        val returned =
+                            withContext(Dispatchers.IO) {
+                                val bytes = value.toByteArray(Charsets.UTF_8)
+                                check(bytes.size <= MAX_PEER_TRANSFER_BYTES) { "C_SCHEMA_VIOLATION" }
+                                checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use {
+                                    it.write(bytes)
+                                    it.flush()
+                                }
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
+                                    input.readBytes().also { check(it.contentEquals(bytes)) { "C_MISSING_DEPENDENCY" } }
+                                }
+                            }
+                        check(returned.toString(Charsets.UTF_8) == value) { "C_MISSING_DEPENDENCY" }
+                        Toast.makeText(context, R.string.pallasync_peer_file_exported, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_LOCAL_STORAGE_FULL"
+                    } finally {
+                        pendingPeerTransfer = null
+                    }
+                }
+            } else {
+                pendingPeerTransfer = null
+            }
+        }
+
+    val peerApprovalImporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                scope.launch {
+                    try {
+                        val bytes =
+                            withContext(Dispatchers.IO) {
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
+                                    input.readBytes().also { check(it.size <= MAX_PEER_TRANSFER_BYTES) { "C_SCHEMA_VIOLATION" } }
+                                }
+                            }
+                        val value = bytes.toString(Charsets.UTF_8)
+                        val objectValue = Json.parseToJsonElement(value).jsonObject
+                        check(objectValue.keys == setOf("device_record", "envelopes", "admin_operation")) { "C_SCHEMA_VIOLATION" }
+                        submittedPeerBody = value
+                        peerError = null
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_SCHEMA_VIOLATION"
+                    }
+                }
+            }
+        }
+
+    DisposableEffect(approvalWork?.session?.handle) {
+        onDispose { approvalWork?.close() }
+    }
+
+    val cancelApproval = {
+        val work = approvalWork
+        approvalWork = null
+        if (work != null) {
+            scope.launch {
+                runCatching { syncManager.cancelPeerEnrollmentApproval(work) }
+            }
+        }
+    }
 
     LaunchedEffect(state.settings.pallaSyncEnabled) {
         if (!state.settings.pallaSyncEnabled) return@LaunchedEffect
@@ -112,7 +204,211 @@ fun PallaSyncDevicesScreen(
                 offerBitmap?.let { Image(bitmap = it, contentDescription = stringResource(R.string.pallasync_peer_offer_qr)) }
                 if (offerBitmap == null) Text(stringResource(R.string.pallasync_peer_offer_qr_failed))
                 Text(peerOffer.orEmpty())
+                Text(stringResource(R.string.pallasync_peer_authority_guidance))
+                TextButton(
+                    text = stringResource(R.string.pallasync_peer_authority_export),
+                    enabled = !peerBusy && offerTranscript != null,
+                    onClick = {
+                        val transcript = offerTranscript ?: return@TextButton
+                        peerBusy = true
+                        peerError = null
+                        scope.launch {
+                            try {
+                                pendingPeerTransfer = syncManager.peerAuthorityForOffer(transcript)
+                                peerTransferExporter.launch("pallasync-authority-${transcript.requestId}.json")
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY"
+                            } finally {
+                                peerBusy = false
+                            }
+                        }
+                    },
+                )
+                TextButton(
+                    text =
+                        stringResource(
+                            if (peerBusy) R.string.pallasync_peer_request_checking else R.string.pallasync_peer_request_check,
+                        ),
+                    enabled = !peerBusy && offerTranscript != null,
+                    onClick = {
+                        val transcript = offerTranscript ?: return@TextButton
+                        peerBusy = true
+                        peerError = null
+                        scope.launch {
+                            try {
+                                val item = syncManager.pollPeerEnrollmentRequest(transcript)
+                                if (item == null) {
+                                    Toast.makeText(context, R.string.pallasync_peer_request_none, Toast.LENGTH_LONG).show()
+                                } else {
+                                    approvalWork = syncManager.beginPeerEnrollmentApproval(transcript, item)
+                                    submittedPeerBody = null
+                                }
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
+                            } finally {
+                                peerBusy = false
+                            }
+                        }
+                    },
+                )
+                peerError?.let { Text(it) }
                 TextButton(text = stringResource(R.string.action_cancel), onClick = { peerOffer = null })
+            }
+        }
+    }
+
+    approvalWork?.let { work ->
+        val transcript = work.transcript
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_peer_approval_title),
+            summary = stringResource(R.string.pallasync_peer_approval_guidance),
+            onDismissRequest = cancelApproval,
+        ) {
+            androidx.compose.foundation.layout.Column(
+                Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (transcript.stage == com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Stage.BOUND) {
+                    Text(work.sas)
+                    Text(stringResource(R.string.pallasync_peer_sas_compare))
+                    Button(
+                        enabled = !peerBusy,
+                        onClick = {
+                            peerBusy = true
+                            peerError = null
+                            scope.launch {
+                                try {
+                                    val transferred = syncManager.confirmPeerEnrollmentSas(work)
+                                    approvalWork = work.copy(transcript = transferred)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (failure: Exception) {
+                                    peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
+                                } finally {
+                                    peerBusy = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.pallasync_peer_sas_confirm))
+                    }
+                }
+                if (transcript.stage == com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Stage.TRANSFERRED) {
+                    Text(stringResource(R.string.pallasync_peer_transfer_guidance))
+                    TextButton(
+                        text = stringResource(R.string.pallasync_peer_transfer_export),
+                        enabled = !peerBusy,
+                        onClick = {
+                            val certificate = transcript.certificate
+                            val envelope = transcript.envelope
+                            if (certificate == null || envelope == null) {
+                                peerError = "C_MISSING_DEPENDENCY"
+                            } else {
+                                pendingPeerTransfer =
+                                    buildJsonObject {
+                                        put("certificate", certificate)
+                                        put("envelope", envelope)
+                                    }.toString()
+                                peerTransferExporter.launch("pallasync-certificate-envelope-${transcript.requestId}.json")
+                            }
+                        },
+                    )
+                    TextButton(
+                        text = stringResource(R.string.pallasync_peer_body_import),
+                        enabled = !peerBusy,
+                        onClick = { peerApprovalImporter.launch(arrayOf("application/json", "text/json", "*/*")) },
+                    )
+                    submittedPeerBody?.let {
+                        Text(stringResource(R.string.pallasync_peer_body_ready))
+                        Button(
+                            enabled = !peerBusy,
+                            onClick = {
+                                val body = submittedPeerBody ?: return@Button
+                                peerBusy = true
+                                peerError = null
+                                scope.launch {
+                                    try {
+                                        val accepted = syncManager.approvePeerEnrollment(work, body)
+                                        acceptedPeerResponse = accepted.acceptance?.toString() ?: error("C_ACCEPTANCE_UNPROVEN")
+                                        approvalWork = null
+                                        submittedPeerBody = null
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (failure: Exception) {
+                                        peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_ACCEPTANCE_UNPROVEN"
+                                        if (work.transcript.stage == com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Stage.SUBMITTED) {
+                                            approvalWork = work.copy(transcript = work.transcript)
+                                        } else {
+                                            approvalWork = null
+                                        }
+                                    } finally {
+                                        peerBusy = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.pallasync_peer_approval_submit))
+                        }
+                    }
+                }
+                if (transcript.stage == com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Stage.SUBMITTED) {
+                    Text(stringResource(R.string.pallasync_peer_approval_unknown))
+                    Button(
+                        enabled = !peerBusy,
+                        onClick = {
+                            peerBusy = true
+                            peerError = null
+                            scope.launch {
+                                try {
+                                    val accepted = syncManager.retryPeerEnrollmentApproval(work.transcript)
+                                    acceptedPeerResponse = accepted.acceptance?.toString() ?: error("C_ACCEPTANCE_UNPROVEN")
+                                    approvalWork = null
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (failure: Exception) {
+                                    peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_ACCEPTANCE_UNPROVEN"
+                                } finally {
+                                    peerBusy = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.pallasync_peer_approval_retry))
+                    }
+                }
+                peerError?.let { Text(it) }
+                TextButton(text = stringResource(R.string.action_cancel), onClick = cancelApproval)
+            }
+        }
+    }
+
+    acceptedPeerResponse?.let { response ->
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_peer_approved_title),
+            summary = stringResource(R.string.pallasync_peer_approved_guidance),
+            onDismissRequest = { acceptedPeerResponse = null },
+        ) {
+            androidx.compose.foundation.layout.Column(
+                Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    text = stringResource(R.string.pallasync_peer_approval_receipt_export),
+                    onClick = {
+                        pendingPeerTransfer = response
+                        peerTransferExporter.launch("pallasync-approval-response.json")
+                    },
+                )
+                TextButton(text = stringResource(R.string.action_cancel), onClick = { acceptedPeerResponse = null })
             }
         }
     }
@@ -156,6 +452,7 @@ fun PallaSyncDevicesScreen(
                                     scope.launch {
                                         try {
                                             val transcript = syncManager.createPeerDeviceOffer()
+                                            offerTranscript = transcript
                                             peerOffer = transcript.offer.toString()
                                         } catch (failure: IllegalStateException) {
                                             offerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
