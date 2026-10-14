@@ -2035,6 +2035,7 @@ internal class PalleriaSyncCoordinator(
     ): String? = db.deletionEvidenceDao().latestReceiptRevision(chainId, logId)
 
     /** Build and retain the §7.12.5 archive wrapper separately from the immutable receipt. */
+    @Suppress("LongMethod") // Keep receipt binding, archive size enforcement, and durable evidence retention atomic.
     suspend fun pendingDeletionEvidenceArchive(): String? =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
@@ -2048,7 +2049,11 @@ internal class PalleriaSyncCoordinator(
                         .jsonPrimitive.content
                         .toLong()
                 val retained = retainedDeletionEvidenceArchive(context, receipt, index)
-                if (retained != null) return@withLock retained.toString()
+                if (retained != null) {
+                    val archive = retained.toString()
+                    check(archive.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
+                    return@withLock archive
+                }
                 val bundle =
                     buildJsonObject {
                         put("type", "PALLASYNC-DELETION-EVIDENCE-v3")
@@ -2064,6 +2069,7 @@ internal class PalleriaSyncCoordinator(
                         put("delete_receipt", receipt)
                         put("evidence_bundle", bundle)
                     }.toString()
+                check(archive.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
                 val hash = checkNotNull(PallaSyncCore.objectHash(bundle.toString())) { "C_DELETION_UNVERIFIED" }
                 db.protocolDao().retainEvidence(
                     ProtectedEvidenceEntity(
@@ -2166,6 +2172,7 @@ internal class PalleriaSyncCoordinator(
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 if (!explicitlyConfirmed) return@withLock null
+                check(archiveText.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
                 val archive = Json.parseToJsonElement(archiveText).jsonObject
                 check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
                 val receipt = archive.getValue("delete_receipt").jsonObject
@@ -2227,6 +2234,7 @@ internal class PalleriaSyncCoordinator(
                         put("delete_receipt", receipt)
                         put("evidence_bundle", nextBundle)
                     }.toString()
+                check(result.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
                 val pin = authority.getValue("pin").jsonObject
                 val hash = checkNotNull(PallaSyncCore.objectHash(nextBundle.toString())) { "C_DELETION_UNVERIFIED" }
                 val index =
@@ -2266,6 +2274,7 @@ internal class PalleriaSyncCoordinator(
     suspend fun previewDeletionIntentWitness(archiveText: String): PallaSyncDeletionWitnessPreview? =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
+                check(archiveText.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
                 val archive = Json.parseToJsonElement(archiveText).jsonObject
                 check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
                 val receipt = archive.getValue("delete_receipt").jsonObject

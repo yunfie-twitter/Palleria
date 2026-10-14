@@ -68,8 +68,6 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 
-private const val MAX_DELETION_EVIDENCE_ARCHIVE_BYTES = 262_144
-
 @Composable
 @Suppress("ThrowsCount") // SAF provider failures are mapped to explicit retained-state UI outcomes.
 fun PallaSyncSettingsScreen(
@@ -206,7 +204,7 @@ fun PallaSyncSettingsScreen(
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO) {
                             val bytes = archive.toByteArray(Charsets.UTF_8)
-                            check(bytes.size <= MAX_DELETION_EVIDENCE_ARCHIVE_BYTES) { "C_LOCAL_LIMIT" }
+                            check(bytes.size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
                             checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
                                 output.write(bytes)
                                 output.flush()
@@ -215,7 +213,7 @@ fun PallaSyncSettingsScreen(
                                 checkNotNull(
                                     context.contentResolver.openInputStream(uri),
                                 ) { "C_DELETION_UNVERIFIED" }.use {
-                                    PallaSyncDeletionEvidenceArchive.readBounded(it, MAX_DELETION_EVIDENCE_ARCHIVE_BYTES)
+                                    PallaSyncDeletionEvidenceArchive.readBounded(it, PallaSyncDeletionEvidenceArchive.MAX_BYTES)
                                 }
                             check(readBack.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
                         }
@@ -243,6 +241,7 @@ fun PallaSyncSettingsScreen(
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO) {
                             val bytes = archive.toByteArray(Charsets.UTF_8)
+                            check(bytes.size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
                             checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
                                 output.write(bytes)
                                 output.flush()
@@ -250,7 +249,9 @@ fun PallaSyncSettingsScreen(
                             val readBack =
                                 checkNotNull(
                                     context.contentResolver.openInputStream(uri),
-                                ) { "C_DELETION_UNVERIFIED" }.use { it.readBytes() }
+                                ) { "C_DELETION_UNVERIFIED" }.use {
+                                    PallaSyncDeletionEvidenceArchive.readBounded(it, PallaSyncDeletionEvidenceArchive.MAX_BYTES)
+                                }
                             check(readBack.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
                         }
                         Toast.makeText(context, R.string.pallasync_witness_exported, Toast.LENGTH_LONG).show()
@@ -281,7 +282,7 @@ fun PallaSyncSettingsScreen(
                                 checkNotNull(
                                     context.contentResolver.openInputStream(uri),
                                 ) { "C_SCHEMA_VIOLATION" }.use {
-                                    PallaSyncDeletionEvidenceArchive.readBounded(it, MAX_DELETION_EVIDENCE_ARCHIVE_BYTES)
+                                    PallaSyncDeletionEvidenceArchive.readBounded(it, PallaSyncDeletionEvidenceArchive.MAX_BYTES)
                                 }
                             }
                         val archive = bytes.toString(Charsets.UTF_8)

@@ -5,6 +5,8 @@ import java.io.InputStream
 
 /** Bounded SAF import for the public §7.12.5 receipt-and-witness archive. */
 internal object PallaSyncDeletionEvidenceArchive {
+    const val MAX_BYTES = 262_144
+
     fun readBounded(
         input: InputStream,
         maximumBytes: Int,
