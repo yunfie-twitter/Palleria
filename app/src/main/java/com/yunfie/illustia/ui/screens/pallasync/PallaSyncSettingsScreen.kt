@@ -203,6 +203,7 @@ fun PallaSyncSettingsScreen(
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO) {
                             val bytes = archive.toByteArray(Charsets.UTF_8)
+                            check(bytes.size <= MAX_DELETION_EVIDENCE_ARCHIVE_BYTES) { "C_LOCAL_LIMIT" }
                             checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
                                 output.write(bytes)
                                 output.flush()
@@ -210,7 +211,9 @@ fun PallaSyncSettingsScreen(
                             val readBack =
                                 checkNotNull(
                                     context.contentResolver.openInputStream(uri),
-                                ) { "C_DELETION_UNVERIFIED" }.use { it.readBytes() }
+                                ) { "C_DELETION_UNVERIFIED" }.use {
+                                    PallaSyncDeletionEvidenceArchive.readBounded(it, MAX_DELETION_EVIDENCE_ARCHIVE_BYTES)
+                                }
                             check(readBack.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
                         }
                         Toast.makeText(context, R.string.pallasync_delete_bundle_exported, Toast.LENGTH_LONG).show()
