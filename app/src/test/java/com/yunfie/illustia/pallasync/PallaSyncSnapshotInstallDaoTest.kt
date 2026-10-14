@@ -91,6 +91,77 @@ class PallaSyncSnapshotInstallDaoTest {
         }
 
     @Test
+    @Suppress("LongMethod")
+    fun `explicitly trusted verified snapshot bootstraps only through covered cursor`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                db.pallaSyncDao().updateChainState(
+                    ChainStateEntity(
+                        CHAIN,
+                        lamport = 0,
+                        keyEpoch = 0,
+                        chainVectorJson = "{}",
+                        lastRelaySeq = 0,
+                        initialPullCompleted = false,
+                        generation = 0,
+                        logId = LOG,
+                        epochHash = EPOCH_HASH,
+                    ),
+                )
+                val dao = db.snapshotInstallDao()
+                dao.begin(
+                    SnapshotInstallEntity(
+                        CHAIN,
+                        COMPACTION,
+                        "{}",
+                        partCount = 1,
+                        stateSha256 = "commitment",
+                        coveredThroughSeq = 1,
+                        coveredLogHash = COVERED_HASH,
+                        generation = 0,
+                        status = "staging",
+                    ),
+                )
+                val rows =
+                    listOf(
+                        snapshotEntry(0, header()),
+                        snapshotEntry(1, entity()),
+                        snapshotEntry(2, author()),
+                        snapshotEntry(3, authorGap()),
+                    )
+                dao.retainVerifiedPart(
+                    SnapshotInstallPartEntity(CHAIN, COMPACTION, 0, RECORD, "part-hash", rows.size),
+                    rows,
+                )
+                dao.markVerified(CHAIN, COMPACTION)
+
+                shouldThrow<IllegalStateException> {
+                    dao.installVerifiedState(CHAIN, COMPACTION, expectedIndexRevision = 0)
+                }.message shouldBe "C_MISSING_DEPENDENCY"
+                dao.installVerifiedState(
+                    CHAIN,
+                    COMPACTION,
+                    expectedIndexRevision = 0,
+                    explicitlyTrustedBootstrap = true,
+                )
+
+                db.pallaSyncDao().getChainState(CHAIN)?.let {
+                    listOf(it.lastRelaySeq, it.verifiedSeq, it.materializedSeq, it.initialPullCompleted, it.verifiedHash) shouldBe
+                        listOf(1L, 1L, 1L, false, COVERED_HASH)
+                }
+                dao.install(CHAIN, COMPACTION)?.status shouldBe "installed"
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `staged plaintext is hidden until all exact parts are retained and verified`() =
         runBlocking<Unit> {
             val db =

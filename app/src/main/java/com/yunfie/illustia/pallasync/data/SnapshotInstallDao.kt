@@ -71,7 +71,7 @@ interface SnapshotInstallDao {
     suspend fun insertHistoryRows(rows: List<HistoryIndexEntity>)
 
     @Query(
-        "UPDATE pallasync_chain_state SET lamport=MAX(lamport,:lamport),downloaded_seq=MAX(downloaded_seq,:covered),verified_seq=:covered,materialized_seq=:covered,verified_hash=:coveredHash,index_revision=index_revision+1 WHERE chainId=:chain AND index_revision=:revision AND log_id=:logId AND generation=:generation AND epoch_hash=:epochHash",
+        "UPDATE pallasync_chain_state SET lamport=MAX(lamport,:lamport),downloaded_seq=MAX(downloaded_seq,:covered),verified_seq=:covered,materialized_seq=:covered,verified_hash=:coveredHash,last_relay_seq=CASE WHEN :trustedBootstrap THEN :covered ELSE last_relay_seq END,index_revision=index_revision+1 WHERE chainId=:chain AND index_revision=:revision AND log_id=:logId AND generation=:generation AND epoch_hash=:epochHash",
     )
     suspend fun advanceInstalledSnapshot(
         chain: String,
@@ -82,6 +82,7 @@ interface SnapshotInstallDao {
         covered: Long,
         coveredHash: String,
         lamport: Long,
+        trustedBootstrap: Boolean,
     ): Int
 
     @Query("UPDATE ps_snapshot_installs SET status='installed' WHERE chain_id=:chain AND compaction_id=:compaction AND status='verified'")
@@ -212,6 +213,7 @@ interface SnapshotInstallDao {
         chain: String,
         compaction: String,
         expectedIndexRevision: Long,
+        explicitlyTrustedBootstrap: Boolean = false,
     ) {
         val manifest = checkNotNull(install(chain, compaction)) { "C_SNAPSHOT_INVALID" }
         if (manifest.status == "installed") return
@@ -225,8 +227,11 @@ interface SnapshotInstallDao {
                 headerField(chain, compaction, "covered_log_hash") == manifest.coveredLogHash &&
                 headerField(chain, compaction, "lamport_max").toLongOrNull() in 0..PallaSyncConflictResolver.MAX_COUNTER,
         ) { "C_SNAPSHOT_INVALID" }
+        val validBootstrap =
+            explicitlyTrustedBootstrap && !state.initialPullCompleted &&
+                state.lastRelaySeq <= manifest.coveredThroughSeq
         check(
-            state.indexRevision == expectedIndexRevision && state.initialPullCompleted &&
+            state.indexRevision == expectedIndexRevision && (state.initialPullCompleted || validBootstrap) &&
                 state.logId != null && state.logId == headerField(chain, compaction, "log_id") &&
                 state.generation == manifest.generation && state.epochHash == headerField(chain, compaction, "epoch_hash") &&
                 manifest.coveredThroughSeq >= state.verifiedSeq &&
@@ -388,6 +393,7 @@ interface SnapshotInstallDao {
                 manifest.coveredThroughSeq,
                 manifest.coveredLogHash,
                 headerField(chain, compaction, "lamport_max").toLong(),
+                validBootstrap,
             ) == 1,
         ) { "C_MISSING_DEPENDENCY" }
         check(markInstalled(chain, compaction) == 1) { "C_LOCAL_STORAGE_FULL" }
