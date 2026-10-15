@@ -738,7 +738,10 @@ internal class PalleriaSyncCoordinator(
                 val stableSource = checkNotNull(db.pallaSyncDao().getChainState(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 check(
                     stableSource.logId == state.logId && stableSource.generation == state.generation &&
-                        stableSource.verifiedSeq == stableSource.materializedSeq && stableSource.verifiedHash != null &&
+                        stableSource.initialPullCompleted &&
+                        stableSource.downloadedSeq == stableSource.verifiedSeq &&
+                        stableSource.verifiedSeq == stableSource.materializedSeq &&
+                        stableSource.lastRelaySeq == stableSource.materializedSeq && stableSource.verifiedHash != null &&
                         db.protocolDao().unresolvedQuarantineCount(state.chainId) == 0L,
                 ) { "C_MISSING_DEPENDENCY" }
                 val root =
