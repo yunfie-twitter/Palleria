@@ -293,6 +293,11 @@ class PalleriaSyncManager(
             freezeConfirmed,
         )
 
+    internal suspend fun fetchLegacyV20Records(
+        sourceUrl: String,
+        chainId: String,
+    ): PallaSyncHttpResult<List<PallaSyncLegacyV20Source.Record>> = coordinator.fetchLegacyV20Records(sourceUrl, chainId)
+
     internal suspend fun beginLegacyV21Migration(
         migrationId: String,
         sourceUrl: String,
@@ -316,6 +321,25 @@ class PalleriaSyncManager(
             signerDeviceId,
             signerDeviceSeed,
             signerDevicePublicKey,
+            targetChain,
+            freezeConfirmed,
+        )
+
+    internal suspend fun beginLegacyV20Migration(
+        migrationId: String,
+        sourceUrl: String,
+        seedPhrase: String,
+        passphrase: String,
+        sourceChain: String,
+        targetChain: String,
+        freezeConfirmed: Boolean,
+    ): PallaSyncHttpResult<PallaSyncLegacyV20Source.FrozenExportProof> =
+        coordinator.beginLegacyV20Migration(
+            migrationId,
+            sourceUrl,
+            seedPhrase,
+            passphrase,
+            sourceChain,
             targetChain,
             freezeConfirmed,
         )

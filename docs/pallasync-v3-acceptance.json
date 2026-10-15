@@ -344,6 +344,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolEntities.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLegacyV21Source.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLegacyV20Source.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncManager.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRemoteService.kt",
@@ -543,6 +544,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncCore.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLegacyRecordJniTest.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLegacyV21Source.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLegacyV20Source.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
@@ -552,6 +554,7 @@
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLegacyRecordJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLegacyV20SourceTest.kt",
         "Palleria/rust/pallasync-core/tests/legacy_v21.rs",
         "Palleria/rust/pallasync-core/tests/legacy_migration.rs",
         "Palleria/rust/pallasync-core/tests/legacy_v20.rs",

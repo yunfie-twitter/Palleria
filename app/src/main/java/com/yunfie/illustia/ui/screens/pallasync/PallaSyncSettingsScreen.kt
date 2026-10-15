@@ -1235,37 +1235,6 @@ fun PallaSyncSettingsScreen(
                                 ).use { root ->
                                     check(root.identity.chainId == targetChain) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                                 }
-                            val parameters =
-                                when (
-                                    val result =
-                                        syncManager.fetchLegacyV21Parameters(
-                                            normalizedSource,
-                                            input.sourceChainId,
-                                            input.mnemonic,
-                                            input.passphrase,
-                                        )
-                                ) {
-                                    is PallaSyncHttpResult.Success -> result.value
-                                    is PallaSyncHttpResult.ProtocolError -> error(result.message)
-                                    is PallaSyncHttpResult.Retryable -> error(result.message)
-                                    PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
-                                }
-                            val devices =
-                                when (
-                                    val result =
-                                        syncManager.fetchLegacyV21Devices(
-                                            normalizedSource,
-                                            parameters,
-                                            input.sourceDeviceId,
-                                            input.sourceDeviceSeed,
-                                            input.sourceDevicePublicKey,
-                                        )
-                                ) {
-                                    is PallaSyncHttpResult.Success -> result.value
-                                    is PallaSyncHttpResult.ProtocolError -> error(result.message)
-                                    is PallaSyncHttpResult.Retryable -> error(result.message)
-                                    PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
-                                }
                             var migrationId: String? = null
                             var afterMigrationId = ""
                             do {
@@ -1273,14 +1242,55 @@ fun PallaSyncSettingsScreen(
                                 migrationId =
                                     page.items
                                         .firstOrNull {
-                                            it.sourceProtocol == "2.1" && it.sourceChain == input.sourceChainId &&
+                                            it.sourceProtocol == input.sourceProtocol && it.sourceChain == input.sourceChainId &&
                                                 it.targetChain == targetChain
                                         }?.migrationId
                                 afterMigrationId = page.nextMigrationId.orEmpty()
                             } while (migrationId == null && afterMigrationId.isNotEmpty())
                             val selectedMigrationId = migrationId ?: "legacy:${UUID.randomUUID()}"
-                            when (
-                                val result =
+                            val result =
+                                if (input.sourceProtocol == "2.0") {
+                                    syncManager.beginLegacyV20Migration(
+                                        selectedMigrationId,
+                                        normalizedSource,
+                                        input.mnemonic,
+                                        input.passphrase,
+                                        input.sourceChainId,
+                                        targetChain,
+                                        input.writersStopped,
+                                    )
+                                } else {
+                                    val parameters =
+                                        when (
+                                            val fetched =
+                                                syncManager.fetchLegacyV21Parameters(
+                                                    normalizedSource,
+                                                    input.sourceChainId,
+                                                    input.mnemonic,
+                                                    input.passphrase,
+                                                )
+                                        ) {
+                                            is PallaSyncHttpResult.Success -> fetched.value
+                                            is PallaSyncHttpResult.ProtocolError -> error(fetched.message)
+                                            is PallaSyncHttpResult.Retryable -> error(fetched.message)
+                                            PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
+                                        }
+                                    val devices =
+                                        when (
+                                            val fetched =
+                                                syncManager.fetchLegacyV21Devices(
+                                                    normalizedSource,
+                                                    parameters,
+                                                    input.sourceDeviceId,
+                                                    input.sourceDeviceSeed,
+                                                    input.sourceDevicePublicKey,
+                                                )
+                                        ) {
+                                            is PallaSyncHttpResult.Success -> fetched.value
+                                            is PallaSyncHttpResult.ProtocolError -> error(fetched.message)
+                                            is PallaSyncHttpResult.Retryable -> error(fetched.message)
+                                            PallaSyncHttpResult.Gone -> error("C_MISSING_DEPENDENCY")
+                                        }
                                     syncManager.beginLegacyV21Migration(
                                         selectedMigrationId,
                                         normalizedSource,
@@ -1294,7 +1304,8 @@ fun PallaSyncSettingsScreen(
                                         targetChain,
                                         input.writersStopped,
                                     )
-                            ) {
+                                }
+                            when (result) {
                                 is PallaSyncHttpResult.Success -> {
                                     val progress =
                                         checkNotNull(syncManager.legacyMigrationProgress(selectedMigrationId)) { "C_SCHEMA_VIOLATION" }

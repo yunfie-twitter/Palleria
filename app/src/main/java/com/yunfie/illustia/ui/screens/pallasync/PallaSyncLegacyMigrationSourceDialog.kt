@@ -31,6 +31,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 
 internal data class PallaSyncLegacyMigrationInput(
+    val sourceProtocol: String,
     val sourceUrl: String,
     val sourceChainId: String,
     val sourceDeviceId: String,
@@ -48,6 +49,7 @@ internal fun PallaSyncLegacyMigrationSourceDialog(
     onDismiss: () -> Unit,
     onInspect: (PallaSyncLegacyMigrationInput) -> Unit,
 ) {
+    var sourceProtocol by remember { mutableStateOf("2.1") }
     var sourceUrl by remember { mutableStateOf("") }
     var chainId by remember { mutableStateOf("") }
     var deviceId by remember { mutableStateOf("") }
@@ -111,6 +113,16 @@ internal fun PallaSyncLegacyMigrationSourceDialog(
                 fun changed() {
                     interaction++
                 }
+                Column(Modifier.fillMaxWidth()) {
+                    TextButton(text = "v2.0${if (sourceProtocol == "2.0") " ✓" else ""}", onClick = {
+                        sourceProtocol = "2.0"
+                        changed()
+                    })
+                    TextButton(text = "v2.1${if (sourceProtocol == "2.1") " ✓" else ""}", onClick = {
+                        sourceProtocol = "2.1"
+                        changed()
+                    })
+                }
                 TextField(
                     sourceUrl,
                     {
@@ -135,41 +147,37 @@ internal fun PallaSyncLegacyMigrationSourceDialog(
                         ),
                     modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-chain"),
                 )
-                TextField(
-                    deviceId,
-                    {
-                        deviceId = it
-                        changed()
-                    },
-                    label =
-                        stringResource(
-                            R.string.pallasync_legacy_source_device,
-                        ),
-                    modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-device"),
-                )
-                TextField(
-                    publicKey,
-                    {
-                        publicKey = it
-                        changed()
-                    },
-                    label =
-                        stringResource(
-                            R.string.pallasync_legacy_source_public_key,
-                        ),
-                    modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-public-key"),
-                )
-                TextField(
-                    deviceSeed,
-                    {
-                        deviceSeed = it
-                        changed()
-                    },
-                    label = stringResource(R.string.pallasync_legacy_source_device_seed),
-                    modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-seed"),
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password),
-                )
+                if (sourceProtocol == "2.1") {
+                    TextField(
+                        deviceId,
+                        {
+                            deviceId = it
+                            changed()
+                        },
+                        label = stringResource(R.string.pallasync_legacy_source_device),
+                        modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-device"),
+                    )
+                    TextField(
+                        publicKey,
+                        {
+                            publicKey = it
+                            changed()
+                        },
+                        label = stringResource(R.string.pallasync_legacy_source_public_key),
+                        modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-public-key"),
+                    )
+                    TextField(
+                        deviceSeed,
+                        {
+                            deviceSeed = it
+                            changed()
+                        },
+                        label = stringResource(R.string.pallasync_legacy_source_device_seed),
+                        modifier = Modifier.fillMaxWidth().testTag("pallasync-legacy-source-seed"),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password),
+                    )
+                }
                 TextField(
                     mnemonic,
                     {
@@ -206,11 +214,12 @@ internal fun PallaSyncLegacyMigrationSourceDialog(
                 TextButton(
                     text = stringResource(R.string.pallasync_legacy_source_inspect),
                     enabled =
-                        sourceUrl.isNotBlank() && chainId.isNotBlank() && deviceId.isNotBlank() &&
-                            publicKey.isNotBlank() && deviceSeed.isNotBlank() && mnemonic.isNotBlank() && writersStopped,
+                        sourceUrl.isNotBlank() && chainId.isNotBlank() && mnemonic.isNotBlank() && writersStopped &&
+                            (sourceProtocol == "2.0" || (deviceId.isNotBlank() && publicKey.isNotBlank() && deviceSeed.isNotBlank())),
                     onClick = {
                         val input =
                             PallaSyncLegacyMigrationInput(
+                                sourceProtocol,
                                 sourceUrl.trim(),
                                 chainId.trim(),
                                 deviceId.trim(),
