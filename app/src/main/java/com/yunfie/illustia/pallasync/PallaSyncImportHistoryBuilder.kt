@@ -17,7 +17,7 @@ internal class PallaSyncImportHistoryBuilder(
     private val dao: ProtocolDao,
 ) {
     suspend fun build(chainId: String): PallaSyncImportRelay.History {
-        val rows = mutableListOf<LogEntryEntity>()
+        val controls = mutableListOf<VerifiedControl>()
         val logIds = dao.repairSourceLogIds(chainId)
         check(logIds.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
         for (logId in logIds) {
@@ -34,38 +34,25 @@ internal class PallaSyncImportHistoryBuilder(
                         "C_MISSING_DEPENDENCY"
                     }
                     check(row.validationState == "authority_verified") { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                    rows += row
+                    parseVerifiedControl(chainId, row)?.let(controls::add)
                     after = row.relaySeq
                 }
             }
             check(after == highWater) { "C_MISSING_DEPENDENCY" }
         }
-        return fromVerifiedRows(chainId, rows)
+        return fromControls(chainId, controls)
     }
 
     companion object {
         internal fun fromVerifiedRows(
             chainId: String,
             rows: List<LogEntryEntity>,
-        ): PallaSyncImportRelay.History {
-            val objects = mutableListOf<VerifiedControl>()
-            rows.forEach { row ->
-                check(row.chainId == chainId && row.validationState == "authority_verified") {
-                    "C_BOOTSTRAP_TRUST_REQUIRED"
-                }
-                val entry = Json.parseToJsonElement(row.signedJson).jsonObject
-                check(PallaSyncCore.objectHash(entry.toString()) == row.entryHash) { "C_LOG_HASH_MISMATCH" }
-                val kind = entry.getValue("kind").jsonPrimitive.content
-                if (kind in IMPORT_KINDS) {
-                    val value = entry.getValue("object") as? JsonObject ?: error("C_SCHEMA_VIOLATION")
-                    val objectChain = value["chain_id"] as? JsonPrimitive
-                    check(objectChain?.isString == true && objectChain.content == chainId) {
-                        "C_RECOVERY_ROOT_MISMATCH"
-                    }
-                    objects += VerifiedControl(kind, row.logId, row.relaySeq, value)
-                }
-            }
+        ): PallaSyncImportRelay.History = fromControls(chainId, rows.mapNotNull { parseVerifiedControl(chainId, it) })
 
+        private fun fromControls(
+            chainId: String,
+            objects: List<VerifiedControl>,
+        ): PallaSyncImportRelay.History {
             fun ordered(kind: String): JsonArray =
                 JsonArray(
                     objects
@@ -84,6 +71,25 @@ internal class PallaSyncImportHistoryBuilder(
                 )
             PallaSyncImportRelay.canonicalBody(chainId, history)
             return history
+        }
+
+        private fun parseVerifiedControl(
+            chainId: String,
+            row: LogEntryEntity,
+        ): VerifiedControl? {
+            check(row.chainId == chainId && row.validationState == "authority_verified") {
+                "C_BOOTSTRAP_TRUST_REQUIRED"
+            }
+            val entry = Json.parseToJsonElement(row.signedJson).jsonObject
+            check(PallaSyncCore.objectHash(entry.toString()) == row.entryHash) { "C_LOG_HASH_MISMATCH" }
+            val kind = entry.getValue("kind").jsonPrimitive.content
+            if (kind !in IMPORT_KINDS) return null
+            val value = entry.getValue("object") as? JsonObject ?: error("C_SCHEMA_VIOLATION")
+            val objectChain = value["chain_id"] as? JsonPrimitive
+            check(objectChain?.isString == true && objectChain.content == chainId) {
+                "C_RECOVERY_ROOT_MISMATCH"
+            }
+            return VerifiedControl(kind, row.logId, row.relaySeq, value)
         }
 
         private val IMPORT_KINDS = setOf("parameters", "epoch", "device", "envelope", "compaction")
