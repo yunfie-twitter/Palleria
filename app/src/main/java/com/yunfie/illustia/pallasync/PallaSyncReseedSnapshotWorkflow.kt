@@ -1,6 +1,10 @@
 package com.yunfie.illustia.pallasync
 
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -8,6 +12,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import okhttp3.HttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.Base64
@@ -155,3 +163,54 @@ private fun zeroHash(
 
 private fun isUuid4(value: String): Boolean =
     runCatching { UUID.fromString(value) }.getOrNull()?.let { it.toString() == value && it.version() == 4 && it.variant() == 2 } == true
+
+/** A-scope generation commit; only a caller that proves the receipt may return success. */
+internal class PallaSyncReseedCommitRelay(
+    private val remote: PallaSyncRemoteService,
+) {
+    suspend fun <T> commit(
+        root: PallaSyncRootSession,
+        target: HttpUrl,
+        canonicalBody: String,
+        validateResponse: (ByteArray) -> T,
+    ): PallaSyncHttpResult<T> {
+        check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
+        val bodyBytes = canonicalBody.toByteArray(Charsets.UTF_8)
+        check(bodyBytes.size <= PALLASYNC_HARD_LIMITS.maxRequestBytes) { "C_LOCAL_LIMIT" }
+        val body = Json.parseToJsonElement(canonicalBody).jsonObject
+        check(
+            body.keys == setOf("parameters", "epoch", "envelopes", "compaction", "admin_operation", "device_records") &&
+                checkNotNull(PallaSyncCore.canonicalJson(canonicalBody)) == canonicalBody &&
+                body
+                    .getValue("parameters")
+                    .jsonObject
+                    .getValue("chain_id")
+                    .jsonPrimitive.content == root.identity.chainId,
+        ) { "C_SCHEMA_VIOLATION" }
+        currentCoroutineContext().ensureActive()
+        val url = PallaSyncUrls.parameters(target, root.identity.chainId)
+        val origin = PallaSyncUrls.extractOrigin(target)
+        val token =
+            checkNotNull(root.token(origin, "PUT", url.encodedPath, body = bodyBytes)) {
+                "C_RELAY_POLICY_CONSENT_REQUIRED"
+            }
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .header("Authorization", "PallaSync $token")
+                .put(canonicalBody.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
+                .build()
+        return runInterruptible(Dispatchers.IO) {
+            remote.execute(request) { response ->
+                check(response.code == HTTP_OK) { "C_SCHEMA_VIOLATION" }
+                PallaSyncHttpResult.Success(validateResponse(response.pallaSyncBytes()))
+            }
+        }
+    }
+
+    private companion object {
+        const val HTTP_OK = 200
+    }
+}
