@@ -282,3 +282,30 @@ data class MigrationJournalEntity(
     val state: String,
     @ColumnInfo(name = "report_json") val reportJson: String,
 )
+
+@Entity(
+    tableName = "ps_legacy_migration_candidates",
+    primaryKeys = ["migration_id", "entry_index"],
+    indices = [Index(value = ["migration_id", "group_key"]), Index(value = ["migration_id", "source_sequence", "candidate_index"])],
+)
+data class LegacyMigrationCandidateEntity(
+    @ColumnInfo(name = "migration_id") val migrationId: String,
+    @ColumnInfo(name = "entry_index") val entryIndex: Long,
+    @ColumnInfo(name = "group_key") val groupKey: String,
+    @ColumnInfo(name = "source_sequence") val sourceSequence: Long,
+    @ColumnInfo(name = "candidate_index") val candidateIndex: Int,
+    @ColumnInfo(name = "source_record_id") val sourceRecordId: String,
+    @ColumnInfo(name = "source_object_hash") val sourceObjectHash: String,
+    val schema: String,
+    @ColumnInfo(name = "entity_id") val entityId: String,
+    val operation: String,
+    @ColumnInfo(name = "requires_choice") val requiresChoice: Boolean,
+)
+
+@Entity(tableName = "ps_legacy_migration_choices", primaryKeys = ["migration_id", "group_key"])
+data class LegacyMigrationChoiceEntity(
+    @ColumnInfo(name = "migration_id") val migrationId: String,
+    @ColumnInfo(name = "group_key") val groupKey: String,
+    @ColumnInfo(name = "selected_entry_index") val selectedEntryIndex: Long,
+    @ColumnInfo(name = "user_confirmed") val userConfirmed: Boolean,
+)

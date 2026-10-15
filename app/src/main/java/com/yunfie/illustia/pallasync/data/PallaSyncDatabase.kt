@@ -32,10 +32,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProtectedEvidenceEntity::class,
         AuthorityHistoryEntity::class,
         MigrationJournalEntity::class,
+        LegacyMigrationCandidateEntity::class,
+        LegacyMigrationChoiceEntity::class,
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -106,6 +108,24 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_11_12 =
+            object : Migration(11, 12) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_legacy_migration_candidates (migration_id TEXT NOT NULL,entry_index INTEGER NOT NULL,group_key TEXT NOT NULL,source_sequence INTEGER NOT NULL,candidate_index INTEGER NOT NULL,source_record_id TEXT NOT NULL,source_object_hash TEXT NOT NULL,schema TEXT NOT NULL,entity_id TEXT NOT NULL,operation TEXT NOT NULL,requires_choice INTEGER NOT NULL,PRIMARY KEY(migration_id,entry_index))",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX index_ps_legacy_migration_candidates_migration_id_group_key ON ps_legacy_migration_candidates(migration_id,group_key)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX index_ps_legacy_migration_candidates_migration_id_source_sequence_candidate_index ON ps_legacy_migration_candidates(migration_id,source_sequence,candidate_index)",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_legacy_migration_choices (migration_id TEXT NOT NULL,group_key TEXT NOT NULL,selected_entry_index INTEGER NOT NULL,user_confirmed INTEGER NOT NULL,PRIMARY KEY(migration_id,group_key))",
+                    )
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -128,6 +148,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             MIGRATION_8_9,
                             MIGRATION_9_10,
                             MIGRATION_10_11,
+                            MIGRATION_11_12,
                         ).build()
                 INSTANCE = instance
                 instance

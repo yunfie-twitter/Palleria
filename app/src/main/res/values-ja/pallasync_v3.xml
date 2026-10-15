@@ -89,6 +89,10 @@
     <string name="pallasync_legacy_migration_more">次のページを読み込む</string>
     <string name="pallasync_legacy_migration_candidates_title">変換候補: %1$d件</string>
     <string name="pallasync_legacy_migration_candidate">source %1$d / 候補 %2$d — %3$s / %4$s / %5$s: %6$s</string>
+    <string name="pallasync_legacy_migration_candidate_choose">この候補を選択</string>
+    <string name="pallasync_legacy_migration_candidate_selected">選択済み</string>
+    <string name="pallasync_legacy_migration_finalize_choices">選択を保存して移行を準備</string>
+    <string name="pallasync_legacy_migration_choices_saved">選択を保存しました。移行再開前にsourceを再検証してください。</string>
     <string name="pallasync_legacy_migration_more_candidates">次の候補ページ</string>
     <string name="pallasync_legacy_migration_report_failed">ローカル移行レポートを読み込めませんでした。</string>
     <string name="pallasync_legacy_migration_export_report">暗号化された移行元レコードを含むレポートを書き出す</string>

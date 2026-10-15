@@ -1393,6 +1393,45 @@ fun PallaSyncSettingsScreen(
                                 candidate.event.body,
                             ),
                         )
+                        if (candidate.requiresChoice) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(
+                                    text =
+                                        stringResource(
+                                            if (candidate.selectedByUser) {
+                                                R.string.pallasync_legacy_migration_candidate_selected
+                                            } else {
+                                                R.string.pallasync_legacy_migration_candidate_choose
+                                            },
+                                        ),
+                                    enabled = !candidate.selectedByUser && !loadingLegacyDecisions && migration.sourceComplete,
+                                    onClick = {
+                                        loadingLegacyDecisions = true
+                                        scope.launch {
+                                            try {
+                                                syncManager.chooseLegacyMigrationCandidate(
+                                                    migration.migrationId,
+                                                    candidate.groupKey,
+                                                    candidate.migrationEntryIndex,
+                                                )
+                                                val refreshed = syncManager.legacyMigrationCandidatePage(migration.migrationId, 0)
+                                                legacyCandidates = refreshed.items
+                                                legacyCandidateCursor = refreshed.nextIndex
+                                            } catch (_: Exception) {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        R.string.pallasync_legacy_migration_report_failed,
+                                                        Toast.LENGTH_LONG,
+                                                    ).show()
+                                            } finally {
+                                                loadingLegacyDecisions = false
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                        }
                         DividerLine()
                     }
                     if (legacyCandidateCursor != null && !loadingLegacyDecisions) {
@@ -1409,6 +1448,30 @@ fun PallaSyncSettingsScreen(
                                         legacyCandidateCursor = page.nextIndex
                                     } catch (_: Exception) {
                                         Toast.makeText(context, R.string.pallasync_legacy_migration_report_failed, Toast.LENGTH_LONG).show()
+                                    } finally {
+                                        loadingLegacyDecisions = false
+                                    }
+                                }
+                            },
+                        )
+                    }
+                    if (migration.sourceComplete) {
+                        TextButton(
+                            text = stringResource(R.string.pallasync_legacy_migration_finalize_choices),
+                            enabled = !loadingLegacyDecisions,
+                            onClick = {
+                                loadingLegacyDecisions = true
+                                scope.launch {
+                                    try {
+                                        syncManager.finalizeLegacyMigrationChoices(migration.migrationId)
+                                        Toast.makeText(context, R.string.pallasync_legacy_migration_choices_saved, Toast.LENGTH_LONG).show()
+                                    } catch (error: Exception) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                error.message ?: context.getString(R.string.pallasync_legacy_migration_report_failed),
+                                                Toast.LENGTH_LONG,
+                                            ).show()
                                     } finally {
                                         loadingLegacyDecisions = false
                                     }

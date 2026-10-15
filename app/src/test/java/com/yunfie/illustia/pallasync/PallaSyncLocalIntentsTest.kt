@@ -324,6 +324,124 @@ class PallaSyncLocalIntentsTest {
             }
         }
 
+    @Test
+    fun `ambiguous legacy candidates require a persisted user choice before losers are excluded`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:choice:$chain"
+                val exportHash = encode(ByteArray(32) { 5 })
+                val sourceRecordId = "01890f3e-7c00-7000-8000-000000000001"
+                val sourceJson = "{\"ciphertext\":\"ambiguous\"}"
+                val objectHash = checkNotNull(PallaSyncCore.objectHash(sourceJson))
+                intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = true)
+                intents.archiveLegacySourceRecord(migration, 1, sourceRecordId, objectHash, sourceJson)
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 1,
+                    mappings =
+                        listOf(
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                1,
+                                sourceRecordId,
+                                0,
+                                objectHash,
+                                event("same-entity"),
+                                normalizationCollision = true,
+                            ),
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                1,
+                                sourceRecordId,
+                                1,
+                                objectHash,
+                                event("same-entity").copy(body = buildJsonObject { put("query", "second") }),
+                                normalizationCollision = true,
+                            ),
+                        ),
+                    decisions =
+                        listOf(PallaSyncLocalIntents.LegacySourceDecision(1, sourceRecordId, objectHash, "converted")),
+                    report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = false),
+                )
+                intents.completeLegacySourceScan(migration, 1, 1, exportHash)
+
+                runCatching { intents.finalizeLegacyMigrationChoices(migration) }.isFailure shouldBe true
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 2
+                store.protocolDao().migrationChunk(migration, 0)?.state shouldBe "legacy_candidates_staged"
+
+                val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
+                candidates.size shouldBe 2
+                intents.chooseLegacyMigrationCandidate(migration, candidates[1].groupKey, candidates[1].migrationEntryIndex)
+                intents
+                    .legacyMigrationCandidatePage(migration, 0)
+                    .items
+                    .single {
+                        it.migrationEntryIndex ==
+                            candidates[1].migrationEntryIndex
+                    }.selectedByUser shouldBe
+                    true
+                intents.finalizeLegacyMigrationChoices(migration)
+
+                store.protocolDao().migrationChunk(migration, 0)?.state shouldBe "legacy_staged"
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 1
+                store.protocolDao().migrationStateCount(migration, "legacy_candidate_excluded") shouldBe 1
+                store.dao.queuedBatch(chain, 200) shouldBe emptyList()
+                store.dao.getChainState(chain)?.authorSeq shouldBe 0
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun `ordinary repeated entity updates remain separate migration operations`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:updates:$chain"
+                val exportHash = encode(ByteArray(32) { 6 })
+                val sourceRecordId = "01890f3e-7c00-7000-8000-000000000001"
+                val sourceJson = "{\"ciphertext\":\"updates\"}"
+                val objectHash = checkNotNull(PallaSyncCore.objectHash(sourceJson))
+                intents.beginLegacyMigration(migration, "source-chain", "2.1", 1, exportHash, chain, freezeConfirmed = true)
+                intents.archiveLegacySourceRecord(migration, 1, sourceRecordId, objectHash, sourceJson)
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 1,
+                    mappings =
+                        listOf(
+                            PallaSyncLocalIntents.LegacyEventMapping(1, sourceRecordId, 0, objectHash, event("same-entity")),
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                1,
+                                sourceRecordId,
+                                1,
+                                objectHash,
+                                event("same-entity").copy(body = buildJsonObject { put("query", "later-value") }),
+                            ),
+                        ),
+                    decisions =
+                        listOf(PallaSyncLocalIntents.LegacySourceDecision(1, sourceRecordId, objectHash, "converted")),
+                    report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = false),
+                )
+                intents.completeLegacySourceScan(migration, 1, 1, exportHash)
+                intents.finalizeLegacyMigrationChoices(migration)
+
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 2
+                store.protocolDao().migrationStateCount(migration, "legacy_candidate_excluded") shouldBe 0
+                val candidatePage = intents.legacyMigrationCandidatePage(migration, 0)
+                val migratedEntities = candidatePage.items.map { it.event.entityId }.toSet()
+                migratedEntities shouldBe setOf("same-entity")
+            } finally {
+                db.close()
+            }
+        }
+
     private fun database() =
         Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), PallaSyncDatabase::class.java).build()
 

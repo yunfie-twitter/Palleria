@@ -913,6 +913,7 @@ internal class PalleriaSyncCoordinator(
                                                     operation = candidate.operation,
                                                     body = candidate.body,
                                                 ),
+                                            normalizationCollision = candidate.normalizationCollision,
                                         )
                                     }
                                 val decision =
@@ -1104,6 +1105,15 @@ internal class PalleriaSyncCoordinator(
         limit: Int = 200,
     ): PallaSyncLocalIntents.LegacyCandidatePage =
         withContext(Dispatchers.IO) { localIntents.legacyMigrationCandidatePage(migrationId, afterIndex, limit) }
+
+    internal suspend fun chooseLegacyMigrationCandidate(
+        migrationId: String,
+        groupKey: String,
+        entryIndex: Long,
+    ) = withContext(Dispatchers.IO) { localIntents.chooseLegacyMigrationCandidate(migrationId, groupKey, entryIndex) }
+
+    internal suspend fun finalizeLegacyMigrationChoices(migrationId: String) =
+        withContext(Dispatchers.IO) { localIntents.finalizeLegacyMigrationChoices(migrationId) }
 
     /** Revalidates the source proof before authoring any remaining migration candidates (§9.3). */
     internal suspend fun resumeLegacyV21Migration(

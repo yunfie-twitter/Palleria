@@ -94,6 +94,10 @@
     <string name="pallasync_legacy_migration_more">Load next page</string>
     <string name="pallasync_legacy_migration_candidates_title">Converted candidates: %1$d</string>
     <string name="pallasync_legacy_migration_candidate">Source %1$d / candidate %2$d — %3$s / %4$s / %5$s: %6$s</string>
+    <string name="pallasync_legacy_migration_candidate_choose">Use this candidate</string>
+    <string name="pallasync_legacy_migration_candidate_selected">Selected by you</string>
+    <string name="pallasync_legacy_migration_finalize_choices">Save choices and prepare migration</string>
+    <string name="pallasync_legacy_migration_choices_saved">Choices saved. Revalidate the source before resuming migration.</string>
     <string name="pallasync_legacy_migration_more_candidates">Load next candidates</string>
     <string name="pallasync_legacy_migration_report_failed">Could not load the local migration report.</string>
     <string name="pallasync_legacy_migration_export_report">Export report with encrypted source records</string>

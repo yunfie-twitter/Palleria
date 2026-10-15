@@ -104,6 +104,86 @@ interface ProtocolDao {
         limit: Int,
     ): List<MigrationJournalEntity>
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun putLegacyMigrationCandidate(value: LegacyMigrationCandidateEntity)
+
+    @Query(
+        "SELECT DISTINCT group_key FROM ps_legacy_migration_candidates WHERE migration_id=:id AND group_key>:afterGroupKey ORDER BY group_key LIMIT :limit",
+    )
+    suspend fun legacyMigrationCandidateGroupPage(
+        id: String,
+        afterGroupKey: String,
+        limit: Int,
+    ): List<String>
+
+    @Query(
+        "SELECT * FROM ps_legacy_migration_candidates WHERE migration_id=:id AND group_key=:groupKey AND entry_index>:afterEntryIndex ORDER BY entry_index LIMIT :limit",
+    )
+    suspend fun legacyMigrationCandidatesInGroup(
+        id: String,
+        groupKey: String,
+        afterEntryIndex: Long,
+        limit: Int,
+    ): List<LegacyMigrationCandidateEntity>
+
+    @Query("SELECT COUNT(*) FROM ps_legacy_migration_candidates WHERE migration_id=:id AND group_key=:groupKey")
+    suspend fun legacyMigrationCandidateGroupCount(
+        id: String,
+        groupKey: String,
+    ): Long
+
+    @Query(
+        "SELECT * FROM ps_legacy_migration_candidates WHERE migration_id=:id AND group_key=:groupKey AND entry_index=:entryIndex",
+    )
+    suspend fun legacyMigrationCandidate(
+        id: String,
+        groupKey: String,
+        entryIndex: Long,
+    ): LegacyMigrationCandidateEntity?
+
+    @Query("SELECT * FROM ps_legacy_migration_candidates WHERE migration_id=:id AND entry_index=:entryIndex")
+    suspend fun legacyMigrationCandidateByEntry(
+        id: String,
+        entryIndex: Long,
+    ): LegacyMigrationCandidateEntity?
+
+    @Query("SELECT * FROM ps_legacy_migration_choices WHERE migration_id=:id AND group_key=:groupKey")
+    suspend fun legacyMigrationCandidateChoice(
+        id: String,
+        groupKey: String,
+    ): LegacyMigrationChoiceEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putLegacyMigrationCandidateChoice(value: LegacyMigrationChoiceEntity)
+
+    @Query(
+        "UPDATE ps_migrations SET state='legacy_candidate_excluded' WHERE migration_id=:id AND chunk_index=:entryIndex AND source_hash=:sourceHash AND state='pending'",
+    )
+    suspend fun excludeLegacyMigrationCandidate(
+        id: String,
+        entryIndex: Long,
+        sourceHash: String,
+    ): Int
+
+    @Query(
+        "UPDATE ps_migrations SET report_json=:report WHERE migration_id=:id AND chunk_index=:entryIndex AND source_hash=:sourceHash AND state='pending'",
+    )
+    suspend fun updateLegacyMigrationCandidate(
+        id: String,
+        entryIndex: Long,
+        sourceHash: String,
+        report: String,
+    ): Int
+
+    @Query(
+        "SELECT c.* FROM ps_legacy_migration_candidates c JOIN ps_legacy_migration_choices choice ON choice.migration_id=c.migration_id AND choice.group_key=c.group_key AND choice.selected_entry_index=c.entry_index WHERE c.migration_id=:id AND c.schema=:schema AND c.operation='upsert' ORDER BY c.source_sequence,c.candidate_index LIMIT :limit",
+    )
+    suspend fun selectedLegacyMigrationFavorites(
+        id: String,
+        schema: String,
+        limit: Int,
+    ): List<LegacyMigrationCandidateEntity>
+
     @Query(
         "UPDATE ps_migrations SET report_json=:report WHERE migration_id=:id AND chunk_index=:index AND source_hash=:hash AND state=:state",
     )

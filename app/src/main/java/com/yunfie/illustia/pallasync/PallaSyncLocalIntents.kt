@@ -1,5 +1,7 @@
 package com.yunfie.illustia.pallasync
 
+import com.yunfie.illustia.pallasync.data.LegacyMigrationCandidateEntity
+import com.yunfie.illustia.pallasync.data.LegacyMigrationChoiceEntity
 import com.yunfie.illustia.pallasync.data.MigrationJournalEntity
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -43,6 +45,7 @@ internal class PallaSyncLocalIntents(
         val candidateIndex: Int,
         val sourceObjectHash: String,
         val event: PallaSyncPendingEvent,
+        val normalizationCollision: Boolean = false,
     )
 
     internal data class LegacyBatchReport(
@@ -102,16 +105,38 @@ internal class PallaSyncLocalIntents(
     @Serializable
     internal data class LegacyCandidate(
         val migrationEntryIndex: Long,
+        val groupKey: String = "",
         val sourceSequence: Long,
         val sourceRecordId: String,
         val candidateIndex: Int,
         val sourceObjectHash: String,
         val event: PallaSyncPendingEvent,
+        val requiresChoice: Boolean = false,
+        val selectedByUser: Boolean = false,
     )
 
     internal data class LegacyCandidatePage(
         val items: List<LegacyCandidate>,
         val nextIndex: Long?,
+    )
+
+    internal data class LegacyCandidateGroup(
+        val groupKey: String,
+        val schema: String,
+        val entityId: String,
+        val candidateCount: Long,
+        val selectedEntryIndex: Long?,
+        val userConfirmed: Boolean,
+    )
+
+    internal data class LegacyCandidateGroupPage(
+        val items: List<LegacyCandidateGroup>,
+        val nextGroupKey: String?,
+    )
+
+    internal data class LegacyCandidateGroupDetail(
+        val group: LegacyCandidateGroup,
+        val candidates: List<LegacyCandidate>,
     )
 
     internal data class LegacyProgressPage(
@@ -133,6 +158,15 @@ internal class PallaSyncLocalIntents(
             } finally {
                 bytes.fill(0)
             }
+        }
+
+        private fun legacyGroupKey(
+            schema: String,
+            entityId: String,
+            discriminator: String? = null,
+        ): String {
+            val bytes = "$schema\u0000$entityId\u0000${discriminator.orEmpty()}".toByteArray(Charsets.UTF_8)
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
         }
     }
 
@@ -303,17 +337,38 @@ internal class PallaSyncLocalIntents(
             }
             check(mapping.event.createdAtMs == null && mapping.event.favoriteOrder == null) { "C_SCHEMA_VIOLATION" }
             check(index < PallaSyncConflictResolver.MAX_COUNTER) { "C_COUNTER_EXHAUSTED" }
+            val entryIndex = ++index
             val eventHash = sourceHash(mapping.event)
             val work = PallaSyncReplayWork(mapping.event, targetGeneration = manifest.targetGeneration)
             dao.putMigrationChunk(
                 MigrationJournalEntity(
                     migrationId,
-                    ++index,
+                    entryIndex,
                     eventHash,
                     "legacy:${mapping.sourceSequence}:${mapping.sourceRecordId}:${mapping.candidateIndex}:${mapping.sourceObjectHash}",
                     manifest.targetChain,
                     "pending",
                     Json.encodeToString(work),
+                ),
+            )
+            dao.putLegacyMigrationCandidate(
+                LegacyMigrationCandidateEntity(
+                    migrationId = migrationId,
+                    entryIndex = entryIndex,
+                    groupKey =
+                        legacyGroupKey(
+                            mapping.event.schema,
+                            mapping.event.entityId,
+                            if (mapping.normalizationCollision) "collision:${mapping.sourceSequence}" else "entry:$entryIndex",
+                        ),
+                    sourceSequence = mapping.sourceSequence,
+                    candidateIndex = mapping.candidateIndex,
+                    sourceRecordId = mapping.sourceRecordId,
+                    sourceObjectHash = mapping.sourceObjectHash,
+                    schema = mapping.event.schema,
+                    entityId = mapping.event.entityId,
+                    operation = mapping.event.operation,
+                    requiresChoice = mapping.normalizationCollision,
                 ),
             )
         }
@@ -580,9 +635,250 @@ internal class PallaSyncLocalIntents(
                     sourceHash(work.event) == row.sourceHash && work.targetGeneration == manifest.targetGeneration &&
                         work.event.favoriteOrder == null && work.event.createdAtMs == null,
                 ) { "C_ROLLBACK_DETECTED" }
-                LegacyCandidate(row.chunkIndex, sequence, recordId, candidateIndex, objectHash, work.event)
+                val metadata = checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, row.chunkIndex)) { "C_ROLLBACK_DETECTED" }
+                val groupKey = metadata.groupKey
+                check(
+                    groupKey ==
+                        legacyGroupKey(
+                            work.event.schema,
+                            work.event.entityId,
+                            if (metadata.requiresChoice) "collision:${metadata.sourceSequence}" else "entry:${row.chunkIndex}",
+                        ),
+                ) { "C_ROLLBACK_DETECTED" }
+                val choice = dao.legacyMigrationCandidateChoice(migrationId, groupKey)
+                LegacyCandidate(
+                    row.chunkIndex,
+                    groupKey,
+                    sequence,
+                    recordId,
+                    candidateIndex,
+                    objectHash,
+                    work.event,
+                    requiresChoice = metadata.requiresChoice,
+                    selectedByUser = choice?.let { it.userConfirmed && it.selectedEntryIndex == row.chunkIndex } == true,
+                )
             }
         return LegacyCandidatePage(items, pageRows.lastOrNull()?.chunkIndex.takeIf { rows.size > limit })
+    }
+
+    /** Bounded view of collision groups; persisted choices are local review metadata (§9.2). */
+    suspend fun legacyMigrationCandidateGroupPage(
+        migrationId: String,
+        afterGroupKey: String = "",
+        limit: Int = 50,
+    ): LegacyCandidateGroupPage {
+        require(limit in 1..50 && afterGroupKey.length <= 64) { "C_SCHEMA_VIOLATION" }
+        val dao = store.protocolDao()
+        val keys = dao.legacyMigrationCandidateGroupPage(migrationId, afterGroupKey, limit + 1)
+        val pageKeys = keys.take(limit)
+        val items = pageKeys.map { key -> legacyCandidateGroup(migrationId, key) }
+        return LegacyCandidateGroupPage(items, pageKeys.lastOrNull().takeIf { keys.size > limit })
+    }
+
+    suspend fun legacyMigrationCandidateGroup(
+        migrationId: String,
+        groupKey: String,
+    ): LegacyCandidateGroupDetail {
+        require(groupKey.length == 43) { "C_SCHEMA_VIOLATION" }
+        val dao = store.protocolDao()
+        val group = legacyCandidateGroup(migrationId, groupKey)
+        val candidateRows = dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, 0, 201)
+        check(candidateRows.size.toLong() == group.candidateCount && candidateRows.size <= 200) { "C_LOCAL_LIMIT" }
+        val candidates =
+            candidateRows.map { candidate ->
+                val row = checkNotNull(dao.migrationChunk(migrationId, candidate.entryIndex)) { "C_ROLLBACK_DETECTED" }
+                check(row.state in setOf("pending", "legacy_candidate_excluded")) { "C_ROLLBACK_DETECTED" }
+                val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                check(
+                    row.sourceHash ==
+                        sourceHash(
+                            work.event,
+                        ) && candidate.groupKey ==
+                        legacyGroupKey(
+                            work.event.schema,
+                            work.event.entityId,
+                            if (candidate.requiresChoice) "collision:${candidate.sourceSequence}" else "entry:${row.chunkIndex}",
+                        ) &&
+                        candidate.schema == work.event.schema && candidate.entityId == work.event.entityId &&
+                        candidate.operation == work.event.operation,
+                ) { "C_ROLLBACK_DETECTED" }
+                val identity = row.sourceIdentity.split(':')
+                check(
+                    identity.size == 5 && identity[1].toLongOrNull() == candidate.sourceSequence &&
+                        identity[2] == candidate.sourceRecordId && identity[3].toIntOrNull() == candidate.candidateIndex &&
+                        identity[4] == candidate.sourceObjectHash,
+                ) { "C_ROLLBACK_DETECTED" }
+                LegacyCandidate(
+                    candidate.entryIndex,
+                    candidate.groupKey,
+                    candidate.sourceSequence,
+                    candidate.sourceRecordId,
+                    candidate.candidateIndex,
+                    candidate.sourceObjectHash,
+                    work.event,
+                    requiresChoice = candidate.requiresChoice,
+                    selectedByUser =
+                        dao.legacyMigrationCandidateChoice(migrationId, candidate.groupKey)?.let {
+                            it.userConfirmed &&
+                                it.selectedEntryIndex == candidate.entryIndex
+                        } ==
+                            true,
+                )
+            }
+        return LegacyCandidateGroupDetail(group, candidates)
+    }
+
+    /** Save only an explicit choice from a verified candidate set; no candidate is authored yet. */
+    suspend fun chooseLegacyMigrationCandidate(
+        migrationId: String,
+        groupKey: String,
+        entryIndex: Long,
+    ) = store.transaction {
+        val dao = store.protocolDao()
+        val manifest = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+        check(manifest.state == "legacy_candidates_staged") { "C_MISSING_DEPENDENCY" }
+        val metadata = checkNotNull(dao.legacyMigrationCandidate(migrationId, groupKey, entryIndex)) { "C_SCHEMA_VIOLATION" }
+        val row = checkNotNull(dao.migrationChunk(migrationId, entryIndex)) { "C_ROLLBACK_DETECTED" }
+        val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+        check(
+            row.state == "pending" && row.targetChain == checkNotNull(manifest.targetChain) &&
+                row.sourceHash == sourceHash(work.event) && metadata.groupKey ==
+                legacyGroupKey(
+                    work.event.schema,
+                    work.event.entityId,
+                    if (metadata.requiresChoice) "collision:${metadata.sourceSequence}" else "entry:$entryIndex",
+                ),
+        ) { "C_ROLLBACK_DETECTED" }
+        dao.putLegacyMigrationCandidateChoice(
+            LegacyMigrationChoiceEntity(migrationId, groupKey, entryIndex, userConfirmed = true),
+        )
+    }
+
+    /** Do not author a partially reviewed migration. Ambiguous groups require an explicit choice. */
+    suspend fun finalizeLegacyMigrationChoices(migrationId: String) =
+        store.transaction {
+            val dao = store.protocolDao()
+            val root = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+            check(root.state == "legacy_candidates_staged") { "C_MISSING_DEPENDENCY" }
+            val manifest = Json.decodeFromString<LegacyManifest>(root.reportJson)
+            check(
+                manifest.sourceComplete && dao.legacySourceEvidenceCount(sourceEvidenceJournalId(migrationId)) == manifest.sourceHighWater,
+            ) {
+                "C_ROLLBACK_DETECTED"
+            }
+            var after = ""
+            while (true) {
+                currentCoroutineContext().ensureActive()
+                val keys = dao.legacyMigrationCandidateGroupPage(migrationId, after, 50)
+                if (keys.isEmpty()) break
+                for (key in keys) {
+                    currentCoroutineContext().ensureActive()
+                    val count = dao.legacyMigrationCandidateGroupCount(migrationId, key)
+                    check(count > 0) { "C_ROLLBACK_DETECTED" }
+                    val firstMember = dao.legacyMigrationCandidatesInGroup(migrationId, key, 0, 1).single()
+                    val choice = dao.legacyMigrationCandidateChoice(migrationId, key)
+                    val selected =
+                        when {
+                            count == 1L -> firstMember.entryIndex
+
+                            choice?.userConfirmed == true &&
+                                dao.legacyMigrationCandidate(migrationId, key, choice.selectedEntryIndex) != null
+                            -> choice.selectedEntryIndex
+
+                            else -> error("C_MISSING_DEPENDENCY")
+                        }
+                    val selectedRow = checkNotNull(dao.migrationChunk(migrationId, selected)) { "C_ROLLBACK_DETECTED" }
+                    check(selectedRow.state == "pending" && selectedRow.targetChain == manifest.targetChain) { "C_ROLLBACK_DETECTED" }
+                    val selectedWork = Json.decodeFromString<PallaSyncReplayWork>(selectedRow.reportJson)
+                    val selectedMetadata =
+                        checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, selected)) {
+                            "C_ROLLBACK_DETECTED"
+                        }
+                    val discriminator =
+                        if (selectedMetadata.requiresChoice) {
+                            "collision:${selectedMetadata.sourceSequence}"
+                        } else {
+                            "entry:$selected"
+                        }
+                    check(
+                        sourceHash(selectedWork.event) == selectedRow.sourceHash &&
+                            key ==
+                            legacyGroupKey(
+                                selectedWork.event.schema,
+                                selectedWork.event.entityId,
+                                discriminator,
+                            ),
+                    ) {
+                        "C_ROLLBACK_DETECTED"
+                    }
+                    dao.putLegacyMigrationCandidateChoice(
+                        LegacyMigrationChoiceEntity(migrationId, key, selected, userConfirmed = choice?.userConfirmed == true),
+                    )
+                    var afterEntry = 0L
+                    while (true) {
+                        val members = dao.legacyMigrationCandidatesInGroup(migrationId, key, afterEntry, PAGE_SIZE)
+                        if (members.isEmpty()) break
+                        for (loser in members.filter { it.entryIndex != selected }) {
+                            val loserRow = checkNotNull(dao.migrationChunk(migrationId, loser.entryIndex)) { "C_ROLLBACK_DETECTED" }
+                            check(
+                                loserRow.state == "pending" &&
+                                    dao.excludeLegacyMigrationCandidate(migrationId, loser.entryIndex, loserRow.sourceHash) == 1,
+                            ) { "C_ROLLBACK_DETECTED" }
+                        }
+                        afterEntry = members.last().entryIndex
+                        if (members.size < PAGE_SIZE) break
+                    }
+                }
+                after = keys.last()
+                if (keys.size < 50) break
+            }
+            check(
+                dao.migrationStateCount(migrationId, "pending") ==
+                    manifest.candidateCount - dao.migrationStateCount(migrationId, "legacy_candidate_excluded"),
+            ) {
+                "C_ROLLBACK_DETECTED"
+            }
+            check(
+                dao.updateMigrationManifest(
+                    migrationId,
+                    root.sourceHash,
+                    "legacy_candidates_staged",
+                    "legacy_staged",
+                    root.reportJson,
+                ) == 1,
+            ) {
+                "C_LOCAL_STORAGE_FULL"
+            }
+        }
+
+    private suspend fun legacyCandidateGroup(
+        migrationId: String,
+        groupKey: String,
+    ): LegacyCandidateGroup {
+        val dao = store.protocolDao()
+        val first =
+            checkNotNull(dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, 0, 1).firstOrNull()) {
+                "C_MISSING_DEPENDENCY"
+            }
+        check(
+            groupKey ==
+                legacyGroupKey(
+                    first.schema,
+                    first.entityId,
+                    if (first.requiresChoice) "collision:${first.sourceSequence}" else "entry:${first.entryIndex}",
+                ),
+        ) { "C_ROLLBACK_DETECTED" }
+        val choice = dao.legacyMigrationCandidateChoice(migrationId, groupKey)
+        val count = dao.legacyMigrationCandidateGroupCount(migrationId, groupKey)
+        check(count > 0 && (choice == null || choice.selectedEntryIndex >= 0)) { "C_ROLLBACK_DETECTED" }
+        return LegacyCandidateGroup(
+            groupKey,
+            first.schema,
+            first.entityId,
+            count,
+            choice?.selectedEntryIndex,
+            choice?.userConfirmed == true,
+        )
     }
 
     private fun sourceEvidenceJournalId(migrationId: String): String = "$migrationId:source"
@@ -657,7 +953,16 @@ internal class PallaSyncLocalIntents(
         }
         try {
             if (!work.localPrepared) {
-                val ordered = order(chain, listOf(original)).single()
+                val orderingIntent =
+                    if (
+                        row.migrationId.startsWith("legacy:") && original.schema == FAVORITE_TAG_SCHEMA_V3 &&
+                        original.operation == "upsert"
+                    ) {
+                        original.copy(favoriteOrder = listOf(original.entityId))
+                    } else {
+                        original
+                    }
+                val ordered = order(chain, listOf(orderingIntent)).single()
                 work = work.copy(event = ordered, sourceEvent = original.takeIf { it != ordered }, localPrepared = true)
                 update(row, work)
             }
