@@ -159,3 +159,175 @@ fn reseed_admin_operation_requires_reseed_session_and_strict_signed_inputs() {
     );
     root_session::end(reseed);
 }
+
+#[test]
+fn reseed_admin_operation_signs_the_exact_generation_and_cas_payload() {
+    use pallasync_core::{crypto, recovery as recovery_signing};
+
+    let bundle = crypto::create_genesis_bundle(
+        MNEMONIC,
+        "",
+        "Reseed test",
+        "os-keystore",
+        "https://relay.example.com",
+    )
+    .unwrap();
+    let genesis = jcs::parse(bundle.genesis_request_body_json.as_bytes()).unwrap();
+    let current_parameters = genesis["parameters"].clone();
+    let current_epoch = genesis["epoch"].clone();
+
+    let mut parameters = current_parameters.clone();
+    parameters["generation"] = json!(1);
+    parameters["previous_parameters_hash"] = json!(object_hash(&current_parameters));
+    let roots = recovery::RecoveryInput::from_user(MNEMONIC, "")
+        .unwrap()
+        .roots()
+        .unwrap();
+    recovery_signing::sign(
+        &mut parameters,
+        &roots.admin_key,
+        pallasync_core::strict::verify::CTX_PARAMETERS,
+    )
+    .unwrap();
+
+    let mut epoch = current_epoch.clone();
+    epoch["generation"] = json!(1);
+    epoch["epoch"] = json!(current_epoch["epoch"].as_u64().unwrap() + 1);
+    epoch["reason"] = json!("reseed");
+    epoch["previous_epoch_hash"] = json!(object_hash(&current_epoch));
+    let mut device = genesis["device_record"].clone();
+    device["generation"] = json!(1);
+    device["enrollment"]["generation"] = json!(1);
+    recovery_signing::sign(
+        &mut device["enrollment"],
+        &roots.admin_key,
+        pallasync_core::strict::verify::CTX_ENROLLMENT,
+    )
+    .unwrap();
+    let device_seed = base64::Engine::decode(
+        &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+        &bundle.device_signing_key,
+    )
+    .unwrap();
+    let device_signing = ed25519_dalek::SigningKey::from_bytes(&device_seed.try_into().unwrap());
+    recovery_signing::sign(
+        &mut device,
+        &device_signing,
+        pallasync_core::strict::verify::CTX_DEVICE_RECORD,
+    )
+    .unwrap();
+
+    let previous_epoch_hash = object_hash(&current_epoch);
+    let mut envelopes = genesis["envelopes"].as_array().unwrap().clone();
+    for envelope in &mut envelopes {
+        envelope["generation"] = json!(1);
+        envelope["epoch"] = epoch["epoch"].clone();
+        envelope["previous_epoch_hash"] = json!(previous_epoch_hash);
+        envelope["epoch_commitment"] = epoch["epoch_commitment"].clone();
+        envelope["signer_kind"] = json!("admin");
+        envelope["signer_device_id"] = serde_json::Value::Null;
+        recovery_signing::sign(
+            envelope,
+            &roots.admin_key,
+            pallasync_core::strict::verify::CTX_ENVELOPE,
+        )
+        .unwrap();
+    }
+    let recovery_envelope = envelopes
+        .iter()
+        .find(|envelope| envelope["recipient_kind"] == "recovery")
+        .unwrap();
+    epoch["recovery_envelope_hash"] = json!(object_hash(recovery_envelope));
+    recovery_signing::sign(
+        &mut epoch,
+        &roots.admin_key,
+        pallasync_core::strict::verify::CTX_EPOCH,
+    )
+    .unwrap();
+
+    let log_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    let mut compaction = json!({
+        "compaction_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "chain_id":bundle.chain_id,
+        "generation":1,
+        "device_id":device["device_id"],
+        "log_id":log_id,
+        "covered_through_seq":0,
+        "covered_log_hash":pallasync_core::attestations::data_zero(&bundle.chain_id, log_id).unwrap(),
+        "epoch_hash":object_hash(&epoch),
+        "snapshot_parts":[{"record_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","record_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}],
+        "state_sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "signature":""
+    });
+    recovery_signing::sign(
+        &mut compaction,
+        &device_signing,
+        pallasync_core::strict::verify::CTX_COMPACTION,
+    )
+    .unwrap();
+    let payload = json!({
+        "parameters":parameters,
+        "epoch":epoch,
+        "envelopes":envelopes,
+        "compaction":compaction,
+        "device_records":[device]
+    });
+    pallasync_core::public_wire::validate(&current_parameters, "parameters").unwrap();
+    pallasync_core::public_wire::validate(&current_epoch, "epoch").unwrap();
+    pallasync_core::public_wire::validate(&payload["parameters"], "parameters").unwrap();
+    pallasync_core::public_wire::validate(&payload["epoch"], "epoch").unwrap();
+    pallasync_core::public_wire::validate(&payload["compaction"], "compaction").unwrap();
+    pallasync_core::public_wire::validate(&payload["device_records"][0], "device").unwrap();
+    pallasync_core::admin_action::schema("reseed", &payload).unwrap();
+    let handle = root_session::begin(
+        MNEMONIC.as_bytes(),
+        b"",
+        Operation::Reseed,
+        Some(&bundle.chain_id),
+        Some(&roots.admin_public_key),
+    )
+    .unwrap();
+    let operation: serde_json::Value = serde_json::from_str(
+        &root_session::reseed_admin_operation(
+            handle,
+            &current_parameters.to_string(),
+            &current_epoch.to_string(),
+            &payload["parameters"].to_string(),
+            &payload["epoch"].to_string(),
+            &payload["envelopes"].to_string(),
+            &payload["compaction"].to_string(),
+            &payload["device_records"].to_string(),
+            1,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    pallasync_core::admin_action::verify(&operation, &payload, &current_parameters, &current_epoch)
+        .unwrap();
+    assert_eq!(operation["target_hash"], object_hash(&payload));
+    assert_eq!(
+        operation["expected_parameters_hash"],
+        object_hash(&current_parameters)
+    );
+    assert_eq!(
+        operation["expected_epoch_hash"],
+        object_hash(&current_epoch)
+    );
+    assert_eq!(
+        root_session::reseed_admin_operation(
+            handle,
+            &current_parameters.to_string(),
+            &current_epoch.to_string(),
+            &payload["parameters"].to_string(),
+            &payload["epoch"].to_string(),
+            "[]",
+            &payload["compaction"].to_string(),
+            &payload["device_records"].to_string(),
+            2,
+        )
+        .unwrap_err()
+        .0,
+        "C_SCHEMA_VIOLATION"
+    );
+    root_session::end(handle);
+}

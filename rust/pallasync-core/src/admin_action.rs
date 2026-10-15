@@ -154,6 +154,7 @@ pub fn verify(operation: &Value, payload: &Value, parameters: &Value, epoch: &Va
             require(
                 s(&payload["parameters"], "previous_parameters_hash") == object_hash(parameters),
             )?;
+            verify_reseed_objects(operation, payload)?;
         }
         "delete_chain" => require(
             payload["expected_parameters_hash"] == operation["expected_parameters_hash"]
@@ -163,6 +164,111 @@ pub fn verify(operation: &Value, payload: &Value, parameters: &Value, epoch: &Va
         _ => unreachable!("closed action schema"),
     }
     Ok(())
+}
+
+/// Re-seed is an atomic replacement generation: every fresh member has one signed
+/// certificate and device record, every member has exactly one new-epoch envelope,
+/// optional root-recovery envelope hash is exact, and compaction is signed by a fresh
+/// member. This validates only public evidence; it never opens any envelope.
+fn verify_reseed_objects(operation: &Value, payload: &Value) -> Result {
+    let epoch = &payload["epoch"];
+    let generation = n(operation, "generation") + 1;
+    let chain_id = s(operation, "chain_id");
+    let mut members = HashSet::new();
+    for member in a(epoch, "members") {
+        let id = member.as_str().ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        require(members.insert(id))?;
+    }
+    require(!members.is_empty())?;
+
+    let admin_key = s(&payload["parameters"], "admin_public_key");
+    let mut devices = std::collections::HashMap::new();
+    for device in a(payload, "device_records") {
+        require(
+            s(device, "chain_id") == chain_id
+                && n(device, "generation") == generation
+                && members.contains(s(device, "device_id")),
+        )?;
+        let id = s(device, "device_id");
+        require(devices.insert(id, device).is_none())?;
+        let certificate = &device["enrollment"];
+        require(
+            s(certificate, "signer_kind") == "admin" && certificate["signer_device_id"].is_null(),
+        )?;
+        verify_signed(
+            device,
+            s(device, "device_public_key"),
+            crate::strict::verify::CTX_DEVICE_RECORD,
+        )?;
+        verify_signed(
+            certificate,
+            admin_key,
+            crate::strict::verify::CTX_ENROLLMENT,
+        )?;
+    }
+    require(devices.len() == members.len())?;
+
+    let mut envelope_members = HashSet::new();
+    let mut recovery_envelopes = Vec::new();
+    for envelope in a(payload, "envelopes") {
+        require(
+            s(envelope, "chain_id") == chain_id
+                && n(envelope, "generation") == generation
+                && envelope["epoch"] == epoch["epoch"]
+                && envelope["previous_epoch_hash"] == epoch["previous_epoch_hash"]
+                && envelope["epoch_commitment"] == epoch["epoch_commitment"]
+                && s(envelope, "signer_kind") == "admin"
+                && envelope["signer_device_id"].is_null(),
+        )?;
+        verify_signed(envelope, admin_key, crate::strict::verify::CTX_ENVELOPE)?;
+        if s(envelope, "recipient_kind") == "device" {
+            let id = s(envelope, "recipient_device_id");
+            require(members.contains(id) && envelope_members.insert(id))?;
+            let device = devices.get(id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+            let recipient_key =
+                crate::strict::verify::decode(s(device, "device_kex_public_key"), Some(32))
+                    .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+            require(
+                s(envelope, "recipient_key_hash")
+                    == crate::strict::verify::hash_bytes(&recipient_key),
+            )?;
+        } else {
+            recovery_envelopes.push(envelope);
+        }
+    }
+    require(envelope_members == members)?;
+    match epoch["recovery_envelope_hash"].as_str() {
+        Some(expected) => {
+            require(
+                recovery_envelopes.len() == 1 && object_hash(recovery_envelopes[0]) == expected,
+            )?;
+        }
+        None => require(recovery_envelopes.is_empty())?,
+    }
+
+    let compaction = &payload["compaction"];
+    require(
+        s(compaction, "chain_id") == chain_id
+            && n(compaction, "generation") == generation
+            && s(compaction, "epoch_hash") == object_hash(epoch),
+    )?;
+    let author = s(compaction, "device_id");
+    let device = devices
+        .get(author)
+        .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+    verify_signed(
+        compaction,
+        s(device, "device_public_key"),
+        crate::strict::verify::CTX_COMPACTION,
+    )?;
+    Ok(())
+}
+
+fn verify_signed(value: &Value, key: &str, context: &[u8]) -> Result {
+    require(
+        crate::strict::verify::verify_signed_json(key, s(value, "signature"), value, context)
+            .unwrap_or(false),
+    )
 }
 
 /// Sorting relay control entries cannot change an admin's signed array order. A
