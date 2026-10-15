@@ -1362,6 +1362,14 @@ fun PallaSyncSettingsScreen(
                         migration.exportHash,
                     ),
                 )
+                Text(
+                    stringResource(
+                        R.string.pallasync_legacy_migration_receipts,
+                        migration.accepted,
+                        migration.candidates - migration.excluded,
+                        migration.state,
+                    ),
+                )
                 if (migration.sourceHighWater == 0L && migration.stagedThrough == 0L && migration.decisions == 0L) {
                     Text(stringResource(R.string.pallasync_legacy_source_not_staged))
                 }
@@ -1398,13 +1406,16 @@ fun PallaSyncSettingsScreen(
                                 TextButton(
                                     text =
                                         stringResource(
-                                            if (candidate.selectedByUser) {
-                                                R.string.pallasync_legacy_migration_candidate_selected
-                                            } else {
-                                                R.string.pallasync_legacy_migration_candidate_choose
+                                            when {
+                                                candidate.excluded -> R.string.pallasync_legacy_migration_candidate_excluded
+                                                candidate.selectedByUser -> R.string.pallasync_legacy_migration_candidate_selected
+                                                else -> R.string.pallasync_legacy_migration_candidate_choose
                                             },
                                         ),
-                                    enabled = !candidate.selectedByUser && !loadingLegacyDecisions && migration.sourceComplete,
+                                    enabled =
+                                        migration.state == "legacy_candidates_staged" &&
+                                            !candidate.excluded && !candidate.selectedByUser &&
+                                            !loadingLegacyDecisions && migration.sourceComplete,
                                     onClick = {
                                         loadingLegacyDecisions = true
                                         scope.launch {

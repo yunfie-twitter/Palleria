@@ -68,7 +68,10 @@ internal object PallaSyncLegacyMigrationReport {
             writer.write(",\"decision_count\":${migration.decisions}")
             writer.write(",\"pending_count\":${migration.pending}")
             writer.write(",\"constructed_count\":${migration.constructed}")
+            writer.write(",\"accepted_count\":${migration.accepted}")
+            writer.write(",\"excluded_count\":${migration.excluded}")
             writer.write(",\"quarantined_count\":${migration.quarantined}")
+            writer.write(",\"migration_state\":${Json.encodeToString(migration.state)}")
             writer.write(",\"schema_counts\":${Json.encodeToString(migration.schemaCounts)}")
             writer.write(",\"decisions\":[")
             var afterIndex = 0L

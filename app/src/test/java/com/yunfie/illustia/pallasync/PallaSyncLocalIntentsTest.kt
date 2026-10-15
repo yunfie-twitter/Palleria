@@ -422,7 +422,7 @@ class PallaSyncLocalIntentsTest {
                                 sourceRecordId,
                                 1,
                                 objectHash,
-                                event("same-entity").copy(body = buildJsonObject { put("query", "later-value") }),
+                                event("same-entity"),
                             ),
                         ),
                     decisions =
@@ -437,6 +437,44 @@ class PallaSyncLocalIntentsTest {
                 val candidatePage = intents.legacyMigrationCandidatePage(migration, 0)
                 val migratedEntities = candidatePage.items.map { it.event.entityId }.toSet()
                 migratedEntities shouldBe setOf("same-entity")
+
+                intents.resumeLegacyMigration(migration, keys())
+                val uploadProgress = checkNotNull(intents.legacyMigrationProgress(migration))
+                uploadProgress.state shouldBe "legacy_uploading"
+                uploadProgress.pending shouldBe 0
+                uploadProgress.constructed shouldBe 2
+                val uploads = store.dao.queuedBatch(chain, 200)
+                uploads.size shouldBe 2
+                uploads.forEachIndexed { index, upload ->
+                    val objectHash = checkNotNull(upload.objectHash)
+                    val receiptHash = encode(ByteArray(32) { (index + 1).toByte() })
+                    store.transaction {
+                        intents.confirmLegacyMigrationReceipt(chain, checkNotNull(upload.recordId), objectHash, receiptHash)
+                    }
+                }
+                val progress = checkNotNull(intents.legacyMigrationProgress(migration))
+                progress.accepted shouldBe 2
+                progress.state shouldBe "legacy_complete"
+                val first = uploads.first()
+                val firstReceiptHash = encode(ByteArray(32) { 1 })
+                store.transaction {
+                    intents.confirmLegacyMigrationReceipt(
+                        chain,
+                        checkNotNull(first.recordId),
+                        checkNotNull(first.objectHash),
+                        firstReceiptHash,
+                    )
+                }
+                runCatching {
+                    store.transaction {
+                        intents.confirmLegacyMigrationReceipt(
+                            chain,
+                            checkNotNull(first.recordId),
+                            checkNotNull(first.objectHash),
+                            encode(ByteArray(32) { 9 }),
+                        )
+                    }
+                }.isFailure shouldBe true
             } finally {
                 db.close()
             }

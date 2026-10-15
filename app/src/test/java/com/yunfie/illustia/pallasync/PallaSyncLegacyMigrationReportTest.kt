@@ -46,6 +46,9 @@ class PallaSyncLegacyMigrationReportTest {
                 report.getValue("report_type").jsonPrimitive.content shouldBe "pallasync-legacy-migration-report"
                 report.getValue("source_high_water").jsonPrimitive.content shouldBe "2"
                 report.getValue("source_protocol").jsonPrimitive.content shouldBe "2.1"
+                report.getValue("accepted_count").jsonPrimitive.content shouldBe "1"
+                report.getValue("excluded_count").jsonPrimitive.content shouldBe "0"
+                report.getValue("migration_state").jsonPrimitive.content shouldBe "legacy_uploading"
                 report.getValue("source_export_hash").jsonPrimitive.content shouldBe
                     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                 report.getValue("decisions").jsonArray.map {
@@ -106,6 +109,9 @@ class PallaSyncLegacyMigrationReportTest {
             constructed = 2,
             quarantined = 0,
             schemaCounts = mapOf("pallasync.search-history/3" to 2),
+            accepted = 1,
+            excluded = 0,
+            state = "legacy_uploading",
         )
 
     private fun decision(

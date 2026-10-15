@@ -3427,6 +3427,12 @@ internal class PalleriaSyncCoordinator(
                         signedJson = receiptJson,
                     )
                 db.protocolDao().retainEvidence(evidence)
+                localIntents.confirmLegacyMigrationReceipt(
+                    submitted.chainId,
+                    accepted.recordId,
+                    hash,
+                    checkNotNull(crypto.objectHash(receiptJson)) { "C_SCHEMA_VIOLATION" },
+                )
                 val present = dao.outboxEvent(submitted.id)
                 if (present != null) {
                     check(present == submitted) { "C_RECORD_ID_CONFLICT" }

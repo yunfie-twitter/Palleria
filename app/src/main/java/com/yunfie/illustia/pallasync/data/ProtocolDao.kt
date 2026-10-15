@@ -96,7 +96,7 @@ interface ProtocolDao {
     ): List<MigrationJournalEntity>
 
     @Query(
-        "SELECT * FROM ps_migrations WHERE migration_id=:id AND state='pending' AND source_identity LIKE 'legacy:%' AND chunk_index>:after ORDER BY chunk_index LIMIT :limit",
+        "SELECT * FROM ps_migrations WHERE migration_id=:id AND state IN ('pending','constructed','receipt_verified','legacy_candidate_excluded') AND source_identity LIKE 'legacy:%' AND chunk_index>:after ORDER BY chunk_index LIMIT :limit",
     )
     suspend fun legacyCandidatePage(
         id: String,
@@ -259,13 +259,35 @@ interface ProtocolDao {
     ): List<MigrationJournalEntity>
 
     @Query(
-        "UPDATE ps_migrations SET state='constructed',report_json=:report WHERE migration_id=:id AND chunk_index=:index AND source_hash=:hash",
+        "UPDATE ps_migrations SET state='constructed',report_json=:report,destination_record_id=:recordId,destination_object_hash=:objectHash WHERE migration_id=:id AND chunk_index=:index AND source_hash=:hash",
     )
     suspend fun bindReplayDestination(
         id: String,
         index: Long,
         hash: String,
         report: String,
+        recordId: String,
+        objectHash: String,
+    ): Int
+
+    @Query(
+        "SELECT * FROM ps_migrations WHERE migration_id LIKE 'legacy:%' AND target_chain=:chain AND chunk_index>0 AND destination_record_id=:recordId",
+    )
+    suspend fun legacyMigrationReceiptCandidates(
+        chain: String,
+        recordId: String,
+    ): List<MigrationJournalEntity>
+
+    @Query(
+        "UPDATE ps_migrations SET state='receipt_verified',verified_receipt_hash=:receiptHash WHERE migration_id=:migrationId AND chunk_index=:entryIndex AND target_chain=:chain AND destination_record_id=:recordId AND destination_object_hash=:objectHash AND state='constructed'",
+    )
+    suspend fun confirmLegacyMigrationReceipt(
+        migrationId: String,
+        entryIndex: Long,
+        chain: String,
+        recordId: String,
+        objectHash: String,
+        receiptHash: String,
     ): Int
 
     /** Invoked inside the same Room transaction as the exact signed record/outbox/tail. */
@@ -282,12 +304,17 @@ interface ProtocolDao {
         }
         val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
         check(work.destinationRecordId == null || work.destinationRecordId == record) { "C_RECORD_ID_CONFLICT" }
+        val destinationHash = checkNotNull(event(chain, record)?.objectHash) { "C_ACCEPTANCE_UNPROVEN" }
+        check(row.destinationRecordId == null || row.destinationRecordId == record) { "C_RECORD_ID_CONFLICT" }
+        check(row.destinationObjectHash == null || row.destinationObjectHash == destinationHash) { "C_RECORD_ID_CONFLICT" }
         check(
             bindReplayDestination(
                 migration,
                 index,
                 sourceHash,
                 Json.encodeToString(work.copy(destinationRecordId = record, blockedCode = null)),
+                record,
+                destinationHash,
             ) ==
                 1,
         ) { "C_LOCAL_STORAGE_FULL" }

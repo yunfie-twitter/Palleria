@@ -272,7 +272,11 @@ data class AuthorityHistoryEntity(
     @ColumnInfo(name = "validation_state") val validationState: String,
 )
 
-@Entity(tableName = "ps_migrations", primaryKeys = ["migration_id", "chunk_index"])
+@Entity(
+    tableName = "ps_migrations",
+    primaryKeys = ["migration_id", "chunk_index"],
+    indices = [Index(value = ["target_chain", "destination_record_id"])],
+)
 data class MigrationJournalEntity(
     @ColumnInfo(name = "migration_id") val migrationId: String,
     @ColumnInfo(name = "chunk_index") val chunkIndex: Long,
@@ -281,6 +285,9 @@ data class MigrationJournalEntity(
     @ColumnInfo(name = "target_chain") val targetChain: String?,
     val state: String,
     @ColumnInfo(name = "report_json") val reportJson: String,
+    @ColumnInfo(name = "destination_record_id") val destinationRecordId: String? = null,
+    @ColumnInfo(name = "destination_object_hash") val destinationObjectHash: String? = null,
+    @ColumnInfo(name = "verified_receipt_hash") val verifiedReceiptHash: String? = null,
 )
 
 @Entity(
