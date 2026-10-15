@@ -700,6 +700,44 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    /** §10.3/§17.5: stage a complete retained source history on an explicitly selected relay. */
+    internal suspend fun stageReseedHistory(
+        targetRelayUrl: String,
+        mnemonic: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<PallaSyncImportStageResponse.Staged> =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val adminPublicKey = authority.getValue("admin_public_key").jsonPrimitive.content
+                val target =
+                    when (val normalized = PallaSyncUrls.normalize(targetRelayUrl)) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                val origin = PallaSyncUrls.extractOrigin(target)
+                policy.requireCurrent(origin)
+                val root =
+                    PallaSyncRootSession.beginText(
+                        mnemonic,
+                        passphrase,
+                        PallaSyncRootSession.Operation.RESEED,
+                        state.chainId,
+                        adminPublicKey,
+                        policy::requireCurrent,
+                        policy.retry::correctedTime,
+                    )
+                try {
+                    PallaSyncImportRelay(remote).stageFromVerifiedStore(root, target, db.protocolDao())
+                } finally {
+                    root.close()
+                }
+            }
+        }
+
     private suspend fun performRetainedHistoryRepair(
         root: PallaSyncRootSession,
         base: HttpUrl,

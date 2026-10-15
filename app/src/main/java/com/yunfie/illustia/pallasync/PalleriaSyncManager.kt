@@ -59,6 +59,12 @@ class PalleriaSyncManager(
         passphrase: String,
     ): PallaSyncRecordRepairSummary = coordinator.repairRetainedRelayHistory(mnemonic, passphrase)
 
+    internal suspend fun stageReseedHistory(
+        targetRelayUrl: String,
+        mnemonic: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<PallaSyncImportStageResponse.Staged> = coordinator.stageReseedHistory(targetRelayUrl, mnemonic, passphrase)
+
     internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)
 
     suspend fun getServerUrl(): String = coordinator.getServerUrl()
