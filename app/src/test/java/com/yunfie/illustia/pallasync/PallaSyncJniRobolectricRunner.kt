@@ -10,10 +10,14 @@ class PallaSyncJniRobolectricRunner(
 ) : RobolectricTestRunner(testClass) {
     override fun createClassLoaderConfig(method: FrameworkMethod): InstrumentationConfiguration {
         val builder = InstrumentationConfiguration.Builder(super.createClassLoaderConfig(method))
+        // JNI adapter wrappers are shared with the parent loader, so their serialized
+        // value types must also have one class identity across Robolectric sandboxes.
+        builder.doNotAcquirePackage("kotlinx.serialization")
         listOf(
             "PallaSyncCore",
             "PallaSyncSnapshotCore",
             "PallaSyncEpochSession",
+            "PallaSyncEpochSession\$Companion",
             "PallaSyncKeySnapshot",
             "PallaSyncPreparedKeys",
             "PallaSyncPreparedKeys\$PublicResult",
