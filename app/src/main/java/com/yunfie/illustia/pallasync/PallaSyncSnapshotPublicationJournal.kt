@@ -19,6 +19,12 @@ internal class PallaSyncSnapshotPublicationJournal(
 ) : PallaSyncSnapshotPartJournal {
     private val dao get() = database.snapshotPublicationDao()
 
+    internal fun matches(
+        chain: String,
+        compaction: String,
+        targetEpoch: Long,
+    ): Boolean = chainId == chain && compactionId == compaction && epoch == targetEpoch
+
     override suspend fun begin(
         header: JsonObject,
         partCount: Int,

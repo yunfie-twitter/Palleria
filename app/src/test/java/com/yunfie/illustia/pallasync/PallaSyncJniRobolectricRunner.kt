@@ -13,6 +13,7 @@ class PallaSyncJniRobolectricRunner(
         listOf(
             "PallaSyncCore",
             "PallaSyncSnapshotCore",
+            "PallaSyncEpochSession",
             "PallaSyncKeySnapshot",
             "PallaSyncPreparedKeys",
             "PallaSyncPreparedKeys\$PublicResult",

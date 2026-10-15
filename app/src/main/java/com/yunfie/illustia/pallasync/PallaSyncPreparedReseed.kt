@@ -108,6 +108,11 @@ class PallaSyncPreparedReseed(
         return PallaSyncEpochSession.begin(context, material[EPOCH_SECRET].copyOf())
     }
 
+    internal fun signingSeedCopy(): ByteArray {
+        check(!closed) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        return material[DEVICE_SIGNING].copyOf()
+    }
+
     override fun close() {
         material.forEach { it.fill(0) }
         closed = true

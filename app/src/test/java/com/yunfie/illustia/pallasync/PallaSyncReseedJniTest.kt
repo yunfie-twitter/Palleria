@@ -1,7 +1,13 @@
 package com.yunfie.illustia.pallasync
 
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import com.yunfie.illustia.pallasync.data.ChainStateEntity
+import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -71,6 +77,85 @@ class PallaSyncReseedJniTest {
                     }
                 }
             }
+    }
+
+    @Test
+    fun `prepared reseed encrypts full state at staged incarnation boundary`() {
+        runBlocking {
+            val fixture = fixture()
+            val authority = authority(fixture)
+            val chain =
+                fixture
+                    .getValue("identity")
+                    .jsonObject
+                    .getValue("chain_id")
+                    .jsonPrimitive.content
+            val database =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            PallaSyncCore.setSecretForeground(true)
+            val sourceLogId = "44444444-4444-4444-8444-444444444444"
+            val stagedLogId = "55555555-5555-4555-8555-555555555555"
+            val compactionId = "66666666-6666-4666-8666-666666666666"
+            try {
+                database.pallaSyncDao().updateChainState(
+                    ChainStateEntity(
+                        chainId = chain,
+                        lamport = 9,
+                        keyEpoch = 0,
+                        chainVectorJson = "{}",
+                        generation = 0,
+                        logId = sourceLogId,
+                        epochHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                        verifiedSeq = 0,
+                        materializedSeq = 0,
+                        verifiedHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                        indexRevision = 0,
+                    ),
+                )
+                PallaSyncRootSession
+                    .beginText(
+                        MNEMONIC,
+                        "",
+                        PallaSyncRootSession.Operation.RESEED,
+                        chain,
+                        fixture
+                            .getValue("identity")
+                            .jsonObject
+                            .getValue("admin_public_key")
+                            .jsonPrimitive.content,
+                    ).use { root ->
+                        root.prepareReseed(authority.toString(), "fresh target device", NOW).use { prepared ->
+                            val uploaded = mutableListOf<String>()
+                            val journal = PallaSyncSnapshotPublicationJournal(database, chain, compactionId, prepared.publicResult.epoch)
+                            val snapshot =
+                                prepared.produceSnapshot(database, stagedLogId, compactionId, journal) { _, record, _ ->
+                                    uploaded += record
+                                }
+                            snapshot.header
+                                .getValue("generation")
+                                .jsonPrimitive.long shouldBe 1L
+                            snapshot.header
+                                .getValue("log_id")
+                                .jsonPrimitive.content shouldBe stagedLogId
+                            snapshot.header
+                                .getValue("covered_through_seq")
+                                .jsonPrimitive.long shouldBe 0L
+                            snapshot.header
+                                .getValue("lamport_max")
+                                .jsonPrimitive.long shouldBe 9L
+                            snapshot.parts.size shouldBe 1
+                            uploaded.size shouldBe 1
+                        }
+                    }
+            } finally {
+                PallaSyncCore.setSecretForeground(false)
+                database.close()
+            }
+        }
     }
 
     @Test
