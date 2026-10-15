@@ -720,6 +720,27 @@ internal class PalleriaSyncCoordinator(
                     }
                 val origin = PallaSyncUrls.extractOrigin(target)
                 policy.requireCurrent(origin)
+                val source =
+                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                val sourceOrigin = PallaSyncUrls.extractOrigin(source)
+                val sourcePin = authority.getValue("pin").jsonObject
+                check(
+                    sourceOrigin == sourcePin.getValue("origin").jsonPrimitive.content &&
+                        sourcePin.getValue("public_key").jsonPrimitive.content == policy.trustedRelayKey(sourceOrigin) &&
+                        state.logId == sourcePin.getValue("log_id").jsonPrimitive.content,
+                ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                policy.requireCurrent(sourceOrigin)
+                requireSnapshotResult(refreshRelayHealth(source))
+                requireSnapshotResult(consistencyProbe.run(source, state.chainId))
+                val stableSource = checkNotNull(db.pallaSyncDao().getChainState(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(
+                    stableSource.logId == state.logId && stableSource.generation == state.generation &&
+                        stableSource.verifiedSeq == stableSource.materializedSeq && stableSource.verifiedHash != null &&
+                        db.protocolDao().unresolvedQuarantineCount(state.chainId) == 0L,
+                ) { "C_MISSING_DEPENDENCY" }
                 val root =
                     PallaSyncRootSession.beginText(
                         mnemonic,
