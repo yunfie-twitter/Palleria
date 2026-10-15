@@ -6,14 +6,17 @@ import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.pallasync.data.AuthorSequenceEntity
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.EntityRegisterEntity
+import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProjectionStateEntity
 import com.yunfie.illustia.pallasync.data.ScopeRegisterEntity
 import com.yunfie.illustia.pallasync.data.WinnerColumns
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -25,6 +28,89 @@ import java.util.UUID
 @Config(sdk = [28], application = android.app.Application::class)
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncSnapshotStateReaderTest {
+    @Test
+    fun `reseed snapshot header uses new incarnation zero boundary and preserves source lamport`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val chain = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
+                val logId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+                db.pallaSyncDao().updateChainState(
+                    ChainStateEntity(
+                        chainId = chain,
+                        lamport = 19,
+                        keyEpoch = 4,
+                        chainVectorJson = "{}",
+                        generation = 1,
+                        logId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                        epochHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                        verifiedSeq = 7,
+                        materializedSeq = 7,
+                        verifiedHash = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+                        indexRevision = 12,
+                    ),
+                )
+                val pendingOutboxId =
+                    db.pallaSyncDao().insertOutboxEvent(
+                        OutboxEntity(chainId = chain, deviceSeq = 1, status = "queued", eventJson = "{}"),
+                    )
+                val chainBytes =
+                    java.util.Base64
+                        .getUrlDecoder()
+                        .decode(chain)
+                val id = UUID.fromString(logId)
+                val hash =
+                    java.security.MessageDigest.getInstance("SHA-256").digest(
+                        "PALLASYNC-LOG-v3\u0000".toByteArray(Charsets.US_ASCII) + chainBytes +
+                            ByteBuffer
+                                .allocate(16)
+                                .putLong(id.mostSignificantBits)
+                                .putLong(id.leastSignificantBits)
+                                .array(),
+                    )
+                val coveredHash =
+                    java.util.Base64
+                        .getUrlEncoder()
+                        .withoutPadding()
+                        .encodeToString(hash)
+                val header =
+                    buildJsonObject {
+                        put("kind", "header")
+                        put("chain_id", chain)
+                        put("generation", 2)
+                        put("log_id", logId)
+                        put("covered_through_seq", 0)
+                        put("covered_log_hash", coveredHash)
+                        put("epoch_hash", "Qzw3mcqTS3voWwnO-9MYyi7rPGjqJyvi_H1EOpmiLA8")
+                        put("lamport_max", 19)
+                    }
+
+                val entries = mutableListOf<kotlinx.serialization.json.JsonObject>()
+                PallaSyncSnapshotStateReader(db).stream(chain, reseedHeader = header, preservePendingOutbox = true, emit = entries::add)
+                entries.first() shouldBe header
+                entries.first()["covered_through_seq"]!!.jsonPrimitive.long shouldBe 0L
+                entries.first()["generation"]!!.jsonPrimitive.long shouldBe 2L
+                db.pallaSyncDao().pendingOutboxCount(chain) shouldBe 1L
+                db.pallaSyncDao().outboxEvent(pendingOutboxId)?.status shouldBe "queued"
+
+                val badHeader =
+                    buildJsonObject {
+                        header.forEach { (key, value) -> put(key, value) }
+                        put("extra", true)
+                    }
+                runCatching {
+                    PallaSyncSnapshotStateReader(db).stream(chain, reseedHeader = badHeader, preservePendingOutbox = true) {}
+                }.exceptionOrNull()?.message shouldBe "C_SNAPSHOT_INVALID"
+            } finally {
+                db.close()
+            }
+        }
+
     @Test
     @Suppress("LongMethod")
     fun `streams complete authoritative state in canonical kind order across keyset pages`() =

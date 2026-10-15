@@ -29,6 +29,20 @@ internal class PallaSyncSnapshotStateReader(
     suspend fun stream(
         chainId: String,
         emit: suspend (JsonObject) -> Unit,
+    ) = streamInternal(chainId, null, false, emit)
+
+    suspend fun stream(
+        chainId: String,
+        reseedHeader: JsonObject?,
+        preservePendingOutbox: Boolean,
+        emit: suspend (JsonObject) -> Unit,
+    ) = streamInternal(chainId, reseedHeader, preservePendingOutbox, emit)
+
+    private suspend fun streamInternal(
+        chainId: String,
+        reseedHeader: JsonObject?,
+        preservePendingOutbox: Boolean,
+        emit: suspend (JsonObject) -> Unit,
     ) {
         val dao = database.protocolDao()
         val chainDao = database.pallaSyncDao()
@@ -40,12 +54,19 @@ internal class PallaSyncSnapshotStateReader(
                 before.lamport in 0..PallaSyncConflictResolver.MAX_COUNTER &&
                 before.verifiedSeq >= 0,
         ) { "C_SNAPSHOT_INVALID" }
-        require(chainDao.pendingOutboxCount(chainId) == 0L) { "C_SNAPSHOT_INVALID" }
+        val pendingOutbox = chainDao.pendingOutboxCount(chainId)
+        require(
+            if (reseedHeader == null) {
+                pendingOutbox == 0L && !preservePendingOutbox
+            } else {
+                preservePendingOutbox
+            },
+        ) { "C_SNAPSHOT_INVALID" }
         require(dao.unresolvedQuarantineCount(chainId) == 0L) { "C_SNAPSHOT_INVALID" }
         val revision = before.indexRevision
         val covered = before.verifiedSeq
 
-        emit(
+        val sourceHeader =
             buildJsonObject {
                 put("kind", "header")
                 put("chain_id", chainId)
@@ -55,8 +76,9 @@ internal class PallaSyncSnapshotStateReader(
                 put("covered_log_hash", before.verifiedHash)
                 put("epoch_hash", before.epochHash)
                 put("lamport_max", before.lamport)
-            },
-        )
+            }
+        val header = reseedHeader?.also { validateReseedHeader(chainId, before, it) } ?: sourceHeader
+        emit(header)
 
         streamEntities(chainId, emit)
         streamRegisters(chainId, "clear", emit)
@@ -69,9 +91,72 @@ internal class PallaSyncSnapshotStateReader(
         require(
             after.indexRevision == revision && after.verifiedSeq == covered && after.materializedSeq == covered &&
                 after.verifiedHash == before.verifiedHash && after.logId == before.logId &&
-                chainDao.pendingOutboxCount(chainId) == 0L && dao.unresolvedQuarantineCount(chainId) == 0L,
+                chainDao.pendingOutboxCount(chainId) == pendingOutbox && dao.unresolvedQuarantineCount(chainId) == 0L,
         ) { "C_SNAPSHOT_INVALID" }
     }
+
+    private fun validateReseedHeader(
+        chainId: String,
+        source: com.yunfie.illustia.pallasync.data.ChainStateEntity,
+        header: JsonObject,
+    ) {
+        require(header.keys == RESEED_HEADER_FIELDS) { "C_SNAPSHOT_INVALID" }
+        val logId = header["log_id"]?.jsonPrimitive?.content
+        require(source.generation < MAX_GENERATION) { "C_SNAPSHOT_INVALID" }
+        require(header["kind"]?.jsonPrimitive?.content == "header") { "C_SNAPSHOT_INVALID" }
+        require(header["chain_id"]?.jsonPrimitive?.content == chainId) { "C_SNAPSHOT_INVALID" }
+        require(header["generation"]?.jsonPrimitive?.long == source.generation + 1L) { "C_SNAPSHOT_INVALID" }
+        require(logId?.let(::isUuid4) == true) { "C_SNAPSHOT_INVALID" }
+        require(header["covered_through_seq"]?.jsonPrimitive?.long == 0L) { "C_SNAPSHOT_INVALID" }
+        require(header["covered_log_hash"]?.jsonPrimitive?.content == dataZero(chainId, checkNotNull(logId))) {
+            "C_SNAPSHOT_INVALID"
+        }
+        require(header["epoch_hash"]?.jsonPrimitive?.content?.let(::isHash32) == true) { "C_SNAPSHOT_INVALID" }
+        require(header["lamport_max"]?.jsonPrimitive?.long == source.lamport) { "C_SNAPSHOT_INVALID" }
+    }
+
+    private fun dataZero(
+        chainId: String,
+        logId: String,
+    ): String {
+        val chain =
+            java.util.Base64
+                .getUrlDecoder()
+                .decode(chainId)
+        require(chain.size == 32 && isUuid4(logId)) { "C_SNAPSHOT_INVALID" }
+        val id = java.util.UUID.fromString(logId)
+        val uuidBytes =
+            ByteBuffer
+                .allocate(16)
+                .putLong(id.mostSignificantBits)
+                .putLong(id.leastSignificantBits)
+                .array()
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        digest.update("PALLASYNC-LOG-v3\u0000".toByteArray(Charsets.US_ASCII))
+        digest.update(chain)
+        digest.update(uuidBytes)
+        return java.util.Base64
+            .getUrlEncoder()
+            .withoutPadding()
+            .encodeToString(digest.digest())
+    }
+
+    private fun isHash32(value: String): Boolean =
+        runCatching {
+            val decoded =
+                java.util.Base64
+                    .getUrlDecoder()
+                    .decode(value)
+            decoded.size == 32 && java.util.Base64
+                .getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(decoded) == value
+        }.getOrDefault(false)
+
+    private fun isUuid4(value: String): Boolean =
+        runCatching { java.util.UUID.fromString(value) }.getOrNull()?.let {
+            it.toString() == value && it.version() == UUID_VERSION && it.variant() == UUID_VARIANT
+        } == true
 
     private suspend fun streamEntities(
         chain: String,
@@ -400,5 +485,7 @@ internal class PallaSyncSnapshotStateReader(
         const val MAX_GENERATION = 4_294_967_295L
         const val UUID_VERSION = 4
         const val UUID_VARIANT = 2
+        val RESEED_HEADER_FIELDS =
+            setOf("kind", "chain_id", "generation", "log_id", "covered_through_seq", "covered_log_hash", "epoch_hash", "lamport_max")
     }
 }

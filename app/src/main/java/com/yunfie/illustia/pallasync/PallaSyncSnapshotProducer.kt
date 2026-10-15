@@ -56,10 +56,12 @@ internal class PallaSyncSnapshotProducer(
         signingSeed: () -> ByteArray,
         devicePublicKeyBase64Url: String? = null,
         journal: PallaSyncSnapshotPartJournal? = null,
+        reseedHeader: JsonObject? = null,
+        preservePendingOutbox: Boolean = false,
         publishPart: suspend (recordId: String, signedRecordJson: String, recordHash: String) -> Unit,
     ): PallaSyncProducedSnapshot {
         require(isUuid4(compactionId) && isUuid4(deviceId)) { "C_SNAPSHOT_INVALID" }
-        val plan = plan(chainId, compactionId)
+        val plan = plan(chainId, compactionId, reseedHeader, preservePendingOutbox)
         check(plan.partCount in 1..MAX_SNAPSHOT_PARTS) { "C_LOCAL_LIMIT" }
         if (journal != null) {
             check(!devicePublicKeyBase64Url.isNullOrBlank()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -77,7 +79,7 @@ internal class PallaSyncSnapshotProducer(
         var current = SnapshotPartBuffer(compactionId)
         var partIndex = 0
         try {
-            stateReader.stream(chainId) { entry ->
+            stateReader.stream(chainId, reseedHeader, preservePendingOutbox) { entry ->
                 if (expectedHeader) {
                     check(canonical(entry) == plan.headerJson) { "C_SNAPSHOT_INVALID" }
                     expectedHeader = false
@@ -130,12 +132,14 @@ internal class PallaSyncSnapshotProducer(
     private suspend fun plan(
         chainId: String,
         compactionId: String,
+        reseedHeader: JsonObject?,
+        preservePendingOutbox: Boolean,
     ): Plan {
         var header: JsonObject? = null
         var headerJson: String? = null
         var count = 0
         var buffer = SnapshotPartBuffer(compactionId)
-        stateReader.stream(chainId) { entry ->
+        stateReader.stream(chainId, reseedHeader, preservePendingOutbox) { entry ->
             if (header == null) {
                 check(entry["kind"]?.jsonPrimitive?.content == "header") { "C_SNAPSHOT_INVALID" }
                 header = entry
