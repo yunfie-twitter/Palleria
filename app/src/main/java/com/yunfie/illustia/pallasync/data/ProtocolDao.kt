@@ -363,6 +363,47 @@ interface ProtocolDao {
         limit: Int,
     ): List<LogEntryEntity>
 
+    @Query("SELECT DISTINCT log_id FROM ps_log WHERE chain_id=:chainId AND validation_state='authority_verified' ORDER BY log_id")
+    suspend fun repairSourceLogIds(chainId: String): List<String>
+
+    @Query("SELECT MAX(relay_seq) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified'")
+    suspend fun repairSourceHighWater(
+        chainId: String,
+        logId: String,
+    ): Long?
+
+    @Query(
+        "UPDATE ps_events SET log_id=:logId,relay_seq=:relaySeq,receipt_json=:receipt,validation_state='materialized' WHERE chain_id=:chainId AND record_id=:recordId AND object_hash=:objectHash",
+    )
+    suspend fun rebindRepairedEvent(
+        chainId: String,
+        recordId: String,
+        objectHash: String,
+        logId: String,
+        relaySeq: Long,
+        receipt: String,
+    ): Int
+
+    @Transaction
+    suspend fun retainRepairedEvent(repaired: SignedEventEntity) {
+        val old = event(repaired.chainId, repaired.recordId)
+        if (old == null) {
+            insertEvent(repaired)
+        } else {
+            check(old.objectHash == repaired.objectHash && old.signedJson == repaired.signedJson) { "C_RECORD_ID_CONFLICT" }
+            check(
+                rebindRepairedEvent(
+                    repaired.chainId,
+                    repaired.recordId,
+                    repaired.objectHash,
+                    repaired.logId,
+                    checkNotNull(repaired.relaySeq),
+                    checkNotNull(repaired.receiptJson),
+                ) == 1,
+            ) { "C_LOCAL_STORAGE_FULL" }
+        }
+    }
+
     @Query(
         "UPDATE ps_log SET validation_state=:state WHERE chain_id=:chainId AND log_id=:logId AND relay_seq=:sequence AND entry_hash=:hash",
     )

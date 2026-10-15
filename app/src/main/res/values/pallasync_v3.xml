@@ -3,6 +3,12 @@
     <string name="pallasync_v3_mnemonic">Save your recovery mnemonic</string>
     <string name="pallasync_export_title">Export relay archive</string>
     <string name="pallasync_export_device_summary">Save this chain’s relay archive without recovery envelopes. Signed objects still need verification before restore; this is not a complete recovery archive.</string>
+    <string name="pallasync_repair_history">Repair from retained verified history</string>
+    <string name="pallasync_repair_history_desc">Use the chain administrator mnemonic to submit retained current-generation records with their original verified log entries.</string>
+    <string name="pallasync_repair_history_confirm">This sends retained current-generation encrypted records and their original signed log entries to the selected relay for repair. Each response receipt and the updated transparency checkpoint are verified before local evidence is stored. Local data is retained if repair is incomplete.</string>
+    <string name="pallasync_repair_history_complete">Repair accepted %1$d of %2$d retained record(s).</string>
+    <string name="pallasync_repair_history_incomplete">Repair accepted %1$d of %2$d records; some records remain unresolved. Local data was retained.</string>
+    <string name="pallasync_repair_history_failed">History repair could not be verified. Local data was retained.</string>
     <string name="pallasync_export_saved">Relay archive saved and its hash verified. Signed objects still need validation before restore.</string>
     <string name="pallasync_export_cancelled">Export cancelled.</string>
     <string name="pallasync_export_failed">Relay export failed. Local keys and data were retained.</string>

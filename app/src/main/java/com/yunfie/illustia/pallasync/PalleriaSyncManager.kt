@@ -54,6 +54,11 @@ class PalleriaSyncManager(
 
     internal suspend fun exportRelayArchive(output: java.io.OutputStream) = coordinator.exportRelayArchive(output)
 
+    internal suspend fun repairRetainedRelayHistory(
+        mnemonic: String,
+        passphrase: String,
+    ): PallaSyncRecordRepairSummary = coordinator.repairRetainedRelayHistory(mnemonic, passphrase)
+
     internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)
 
     suspend fun getServerUrl(): String = coordinator.getServerUrl()

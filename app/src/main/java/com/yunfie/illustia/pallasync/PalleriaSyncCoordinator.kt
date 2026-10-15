@@ -7,6 +7,7 @@ import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.GlitchTipTelemetry.span
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
+import com.yunfie.illustia.pallasync.data.LogEntryEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PALLASYNC_SEARCH_SAFETY_LIMIT
 import com.yunfie.illustia.pallasync.data.PALLASYNC_SEEN_SAFETY_LIMIT
@@ -69,6 +70,13 @@ private const val MAX_PEER_HISTORY_BYTES = 3_500_000
 private const val MAX_SNAPSHOT_UPLOAD_RECORDS = 64
 private val LEGACY_QUARANTINE_CODES = setOf("C_AEAD_FAILURE", "C_SIGNATURE_INVALID", "C_SCHEMA_VIOLATION", "C_UNSUPPORTED_SCHEMA")
 
+internal data class PallaSyncRecordRepairSummary(
+    val submitted: Int,
+    val accepted: Int,
+    val rejectedCodes: List<String>,
+    val repairRequired: Boolean,
+)
+
 private data class DeletionContext(
     val state: ChainStateEntity,
     val parametersHash: String,
@@ -79,6 +87,13 @@ private data class DeletionContext(
     val origin: String,
     val logId: String,
     val relayKeyId: String,
+)
+
+private data class RepairBatchResult(
+    val submitted: Int,
+    val accepted: Int,
+    val rejectedCodes: List<String>,
+    val repairRequired: Boolean,
 )
 
 private data class SnapshotPublicationContext(
@@ -626,6 +641,180 @@ internal class PalleriaSyncCoordinator(
                     } while (true)
                     archive.finish()
                 }
+            }
+        }
+    }
+
+    /** §10.13: retransmit only current-generation records with retained verified source LogEntries. */
+    internal suspend fun repairRetainedRelayHistory(
+        mnemonic: String,
+        passphrase: String,
+    ): PallaSyncRecordRepairSummary =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val pinObject = authority.getValue("pin").jsonObject
+                val origin = pinObject.getValue("origin").jsonPrimitive.content
+                val base =
+                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                check(PallaSyncUrls.extractOrigin(base) == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                policy.requireCurrent(origin)
+                val root =
+                    PallaSyncRootSession.beginText(
+                        mnemonic,
+                        passphrase,
+                        PallaSyncRootSession.Operation.RESEED,
+                        state.chainId,
+                        authority.getValue("admin_public_key").jsonPrimitive.content,
+                        policy::requireCurrent,
+                        policy.retry::correctedTime,
+                    )
+                try {
+                    val targetLogId = pinObject.getValue("log_id").jsonPrimitive.content
+                    check(state.logId == targetLogId) { "C_LOG_ID_MISMATCH" }
+                    val targetPin =
+                        buildJsonObject {
+                            put("origin", origin)
+                            put("chain_id", state.chainId)
+                            put("public_key", pinObject.getValue("public_key"))
+                            put("log_id", targetLogId)
+                        }.toString()
+                    val repair = PallaSyncRecordRepairRelay(remote)
+                    val dao = db.protocolDao()
+                    var submittedCount = 0
+                    var acceptedCount = 0
+                    var repairRequired = false
+                    val rejectedCodes = mutableListOf<String>()
+                    for (sourceLogId in dao.repairSourceLogIds(state.chainId)) {
+                        val through = dao.repairSourceHighWater(state.chainId, sourceLogId)
+                        if (through == null) continue
+                        var after = 0L
+                        var pending = mutableListOf<PallaSyncRecordRepairRelay.SourceRecord>()
+
+                        suspend fun flush() {
+                            if (pending.isEmpty()) return
+                            currentCoroutineContext().ensureActive()
+                            val batch = pending.toList()
+                            val batchResult = submitRepairBatch(root, base, sourceLogId, targetPin, origin, state, batch)
+                            submittedCount += batchResult.submitted
+                            acceptedCount += batchResult.accepted
+                            repairRequired = repairRequired || batchResult.repairRequired
+                            rejectedCodes += batchResult.rejectedCodes
+                            pending = mutableListOf()
+                        }
+
+                        while (after < through) {
+                            currentCoroutineContext().ensureActive()
+                            val page = dao.logPage(state.chainId, sourceLogId, after, through, PALLASYNC_PAGE_SIZE)
+                            check(page.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
+                            for (row in page) {
+                                check(row.validationState == "authority_verified") { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                                val entry = Json.parseToJsonElement(row.signedJson).jsonObject
+                                if (entry.getValue("kind").jsonPrimitive.content == "record") {
+                                    val record = entry.getValue("object").jsonObject
+                                    if (record.getValue("generation").jsonPrimitive.long == state.generation) {
+                                        val candidate = PallaSyncRecordRepairRelay.SourceRecord(entry, record)
+                                        if (pending.isNotEmpty() && !repair.fits(sourceLogId, pending + candidate)) flush()
+                                        check(repair.fits(sourceLogId, listOf(candidate))) { "C_LOCAL_LIMIT" }
+                                        pending.add(candidate)
+                                        if (pending.size == PALLASYNC_HARD_LIMITS.maxRecordsPerUpload) flush()
+                                    }
+                                }
+                            }
+                            after = page.last().relaySeq
+                        }
+                        flush()
+                    }
+                    check(submittedCount > 0) { "C_MISSING_DEPENDENCY" }
+                    PallaSyncRecordRepairSummary(submittedCount, acceptedCount, rejectedCodes, repairRequired)
+                } finally {
+                    root.close()
+                }
+            }
+        }
+
+    private suspend fun submitRepairBatch(
+        root: PallaSyncRootSession,
+        base: HttpUrl,
+        sourceLogId: String,
+        targetPin: String,
+        origin: String,
+        state: ChainStateEntity,
+        batch: List<PallaSyncRecordRepairRelay.SourceRecord>,
+    ): RepairBatchResult {
+        val repair = PallaSyncRecordRepairRelay(remote)
+        val response = repair.submit(root, base, sourceLogId, targetPin, batch)
+        val outcome =
+            when (response) {
+                is PallaSyncHttpResult.Success -> response.value
+                is PallaSyncHttpResult.ProtocolError -> error(response.message)
+                is PallaSyncHttpResult.Retryable -> error(response.message)
+                PallaSyncHttpResult.Gone -> error("C_DELETION_UNVERIFIED")
+            }
+        retainUploadEvidence(outcome, state.chainId, origin)
+        val probe = consistencyProbe.run(base, state.chainId)
+        check(probe is PallaSyncHttpResult.Success) {
+            when (probe) {
+                is PallaSyncHttpResult.ProtocolError -> probe.message
+                is PallaSyncHttpResult.Retryable -> probe.message
+                PallaSyncHttpResult.Gone -> "C_DELETION_UNVERIFIED"
+                is PallaSyncHttpResult.Success -> "C_SCHEMA_VIOLATION"
+            }
+        }
+        verifyUploadInclusions(outcome, state.chainId, origin)
+        retainRepairedBatch(state, outcome, batch)
+        return RepairBatchResult(batch.size, outcome.accepted.size, outcome.rejected.map { it.code }, outcome.repairRequired)
+    }
+
+    private suspend fun retainRepairedBatch(
+        state: ChainStateEntity,
+        outcome: PallaSyncPostRecordsResponse,
+        batch: List<PallaSyncRecordRepairRelay.SourceRecord>,
+    ) {
+        val dao = db.protocolDao()
+        val byId =
+            batch.associateBy {
+                it.record
+                    .getValue("record_id")
+                    .jsonPrimitive.content
+            }
+        val receiptsByHash = outcome.uploadReceipts.associateBy { it.getValue("object_hash").jsonPrimitive.content }
+        db.transaction {
+            outcome.accepted.forEach { accepted ->
+                val source = checkNotNull(byId[accepted.recordId]) { "C_ACCEPTANCE_UNPROVEN" }
+                val objectHash = checkNotNull(crypto.objectHash(source.record.toString())) { "C_SCHEMA_VIOLATION" }
+                val receipt = checkNotNull(receiptsByHash[objectHash]) { "C_ACCEPTANCE_UNPROVEN" }
+                val logEntry = Json.encodeToString(accepted.receipt)
+                val seq = accepted.receipt.relaySeq
+                dao.retainLogEntry(
+                    LogEntryEntity(
+                        state.chainId,
+                        outcome.logId,
+                        seq,
+                        checkNotNull(crypto.objectHash(logEntry)),
+                        logEntry,
+                        receipt.toString(),
+                        "authority_verified",
+                    ),
+                )
+                dao.retainRepairedEvent(
+                    SignedEventEntity(
+                        state.chainId,
+                        accepted.recordId,
+                        outcome.logId,
+                        seq,
+                        objectHash,
+                        source.record.toString(),
+                        logEntry,
+                        "materialized",
+                    ),
+                )
             }
         }
     }

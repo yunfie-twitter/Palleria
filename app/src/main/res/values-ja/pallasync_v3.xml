@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pallasync_repair_history">検証済み履歴から修復</string>
+    <string name="pallasync_repair_history_desc">チェーン管理者のニーモニックを使い、保持されている現世代のレコードと元の検証済みログ項目をリレーへ再送します。</string>
+    <string name="pallasync_repair_history_confirm">保持されている現世代の暗号化レコードと元の署名済みログ項目を選択中のリレーへ送信します。応答receiptと更新後の透明性チェックポイントを検証してからローカル証拠を保存します。修復が不完全でもローカルデータは保持します。</string>
+    <string name="pallasync_repair_history_complete">保持レコード %2$d 件中 %1$d 件の修復が受理されました。</string>
+    <string name="pallasync_repair_history_incomplete">%2$d 件中 %1$d 件が受理されました。一部は未解決のままです。ローカルデータは保持されています。</string>
+    <string name="pallasync_repair_history_failed">履歴修復を検証できませんでした。ローカルデータは保持されています。</string>
     <string name="pallasync_v3_mnemonic">復旧用mnemonicを保存</string>
     <string name="pallasync_v3_mnemonic_explanation">24単語を安全なオフラインの場所に控えてください。アプリには保存されません。この画面を離れるか10分経過すると表示を消去します。</string>
     <string name="pallasync_v3_mnemonic_saved">単語を控えました</string>

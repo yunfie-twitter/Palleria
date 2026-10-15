@@ -97,6 +97,8 @@ fun PallaSyncSettingsScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
     var deletingChain by remember { mutableStateOf(false) }
+    var showRepairRootInput by remember { mutableStateOf(false) }
+    var repairingRelayHistory by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var witnessInputArchive by remember { mutableStateOf<String?>(null) }
@@ -521,6 +523,44 @@ fun PallaSyncSettingsScreen(
         )
     }
 
+    if (showRepairRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_repair_history),
+            explanation = stringResource(R.string.pallasync_repair_history_confirm),
+            busy = repairingRelayHistory,
+            onDismiss = { showRepairRootInput = false },
+            onConfirm = { mnemonic, passphrase ->
+                repairingRelayHistory = true
+                scope.launch {
+                    try {
+                        val result = syncManager.repairRetainedRelayHistory(mnemonic, passphrase)
+                        Toast
+                            .makeText(
+                                context,
+                                context.getString(
+                                    if (result.rejectedCodes.isEmpty() && !result.repairRequired) {
+                                        R.string.pallasync_repair_history_complete
+                                    } else {
+                                        R.string.pallasync_repair_history_incomplete
+                                    },
+                                    result.accepted,
+                                    result.submitted,
+                                ),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        Toast.makeText(context, R.string.pallasync_repair_history_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        repairingRelayHistory = false
+                        showRepairRootInput = false
+                    }
+                }
+            },
+        )
+    }
+
     if (showOfflineDeletionCopyConfirm) {
         MiuixConfirmDialog(
             show = true,
@@ -804,6 +844,14 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_export_title),
                                 summary = stringResource(R.string.pallasync_export_device_summary),
                                 onClick = { relayExportLauncher.launch("pallasync-device-export.jsonl") },
+                            )
+                        }
+                        if (state.settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_repair_history),
+                                summary = stringResource(R.string.pallasync_repair_history_desc),
+                                onClick = { showRepairRootInput = true },
                             )
                         }
                         if (state.settings.pallaSyncEnabled) {
