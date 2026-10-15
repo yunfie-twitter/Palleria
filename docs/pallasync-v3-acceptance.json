@@ -282,7 +282,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
       ],
       "result": "pending",
-      "remaining": "Settings and device-history screens display distinct downloaded/verified/materialized positions, separate transparency checkpoint/target, pending outbox/author gaps/quarantine, and logical history counts against safety ceilings. The settings label now correctly names its first position as downloaded rather than conflating it with a remote target; status progression/partial-state tests cover D/V/M and transparency separately. Kotlin/JVM 490/490, Android instrumentation 27/27, detekt, ktlint, and Kotlin compile pass. Run real-size Android history stress at safety ceilings and record memory/disk/first-page results; keep pending.",
+      "remaining": "Settings and device-history screens display distinct downloaded/verified/materialized positions, separate transparency checkpoint/target, pending outbox/author gaps/quarantine, and logical history counts against safety ceilings. The settings label now correctly names its first position as downloaded rather than conflating it with a remote target; status progression/partial-state tests cover D/V/M and transparency separately. Prior targeted runs recorded Kotlin/JVM 490/490 and Android instrumentation 27/27, but the latest full connectedDebugAndroidTest run on 2026-10-16 failed 18 of 33 tests, including UI hierarchy failures; see docs/pallasync-v3-validation.md. Do not claim current full instrumentation success. Run real-size Android history stress at safety ceilings and record memory/disk/first-page results; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {
@@ -656,7 +656,7 @@
         "PallaSync/tests/reference/test_recovery.py"
       ],
       "result": "pending",
-      "remaining": "The receiver can now scan the dealer's signed session descriptor QR before creating a secret session, with the bounded local-file path retained as an alternative; the recovery transfer itself remains the exact encrypted file/object format. QR text is bounded to the §18.6 4,194,304-byte transfer maximum and malformed UTF-16 is rejected. Unit boundary tests and an Android UI test for the scan entry point pass; all 29 available instrumentation tests pass when the relay-backed test requiring disposable relay arguments is excluded. Still required: independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
+      "remaining": "The receiver can now scan the dealer's signed session descriptor QR before creating a secret session, with the bounded local-file path retained as an alternative; the recovery transfer itself remains the exact encrypted file/object format. QR text is bounded to the §18.6 4,194,304-byte transfer maximum and malformed UTF-16 is rejected. Unit boundary tests and a prior isolated Android UI test passed, but the latest full connectedDebugAndroidTest run on 2026-10-16 failed 18 of 33 tests, including the QR and other Compose UI tests because no Compose hierarchy was found; see docs/pallasync-v3-validation.md. Current UI instrumentation is unresolved. Still required: independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
       "verification_scope": "targeted_partial"
     },
     {
