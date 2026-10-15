@@ -372,6 +372,12 @@ interface ProtocolDao {
         logId: String,
     ): Long?
 
+    @Query("SELECT MAX(relay_seq) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId")
+    suspend fun importSourceHighWater(
+        chainId: String,
+        logId: String,
+    ): Long?
+
     @Query(
         "UPDATE ps_events SET log_id=:logId,relay_seq=:relaySeq,receipt_json=:receipt,validation_state='materialized' WHERE chain_id=:chainId AND record_id=:recordId AND object_hash=:objectHash",
     )

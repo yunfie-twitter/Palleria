@@ -530,6 +530,9 @@ internal object PallaSyncUrls {
 
     fun chains(baseUrl: HttpUrl): HttpUrl = endpoint(baseUrl, "chains")
 
+    /** §10.3: administrative restore is a top-level A-scope route, not chain/{id}/import. */
+    fun importChain(baseUrl: HttpUrl): HttpUrl = endpoint(baseUrl, "chains", "import")
+
     fun parameters(
         baseUrl: HttpUrl,
         chainId: String,

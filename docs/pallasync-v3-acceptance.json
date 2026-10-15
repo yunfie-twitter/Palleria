@@ -404,6 +404,8 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecordRepairRelay.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRemoteService.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncImportStageResponse.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncImportRelay.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncImportHistoryBuilder.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncWireModels.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
@@ -415,11 +417,12 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncExportArchiveTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRemoteServicePathTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncImportStageResponseTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncImportRelayTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecordRepairRequestTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAttestationJniTest.kt"
       ],
       "result": "pending",
-      "remaining": "Android can now request device-authorized GET C/export pages with signed cursor query and include_recovery=false, stream the bounded JCS JSONL chunks into a SAF-selected archive, and emit a local hash footer. Device exports correctly remain incomplete for recovery. A settings flow now submits retained authority-verified current-generation record/LogEntry pairs to POST C/records/repair under explicit RESEED authority, validates per-record and upload receipts in Rust/JNI, verifies transparency inclusions, and retains verified relay evidence/events. The common HTTP authorizer now distinguishes the top-level A-scope POST /chains/import from /chains/{chain_id} routes instead of mistaking `import` for a chain ID; focused path tests pass. A strict canonical staging-response validator now checks the exact §17.5 fields, selected chain, staged state and UUIDv4 log ID. Still connect verified source-history construction to the import request/UI, verify relay/export signatures and every object/AEAD before restore, implement complete generation+1 re-seed, run independent repair interoperability, and exercise crash/ledger/nonce/storage/production boundaries.",
+      "remaining": "Android can now request device-authorized GET C/export pages with signed cursor query and include_recovery=false, stream the bounded JCS JSONL chunks into a SAF-selected archive, and emit a local hash footer. Device exports correctly remain incomplete for recovery. A settings flow now submits retained authority-verified current-generation record/LogEntry pairs to POST C/records/repair under explicit RESEED authority, validates per-record and upload receipts in Rust/JNI, verifies transparency inclusions, and retains verified relay evidence/events. The common HTTP authorizer now distinguishes the top-level A-scope POST /chains/import from /chains/{chain_id} routes. A strict canonical staging-response validator checks the exact §17.5 fields, selected chain, staged state and UUIDv4 log ID. §10.3 source history can now be assembled from contiguous authority_verified local log incarnations, and a callable staging entry point builds from that DAO state under RESEED authority; focused tests cover control-object filtering and fail-closed trust/chain checks. This staging entry point is not yet wired to a user flow; bounded multi-request chunk continuation, relay/export signature and object/AEAD verification before restore, complete generation+1 re-seed, independent repair interoperability, and crash/ledger/nonce/storage/production boundaries remain required.",
       "verification_scope": "targeted_partial"
     },
     {

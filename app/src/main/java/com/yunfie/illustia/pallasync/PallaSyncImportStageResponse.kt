@@ -9,7 +9,10 @@ import java.util.UUID
 
 /** §17.5: accept only the exact, non-writable staging acknowledgement for the selected chain. */
 internal object PallaSyncImportStageResponse {
+    private const val MIN_RESPONSE_BYTES = 1
     private const val MAX_RESPONSE_BYTES = 4_096
+    private const val UUID_VERSION_4 = 4
+    private const val UUID_RFC_4122_VARIANT = 2
 
     data class Staged(
         val chainId: String,
@@ -20,7 +23,7 @@ internal object PallaSyncImportStageResponse {
         bytes: ByteArray,
         expectedChainId: String,
     ): Staged {
-        check(bytes.size in 1..MAX_RESPONSE_BYTES) { "C_SCHEMA_VIOLATION" }
+        check(bytes.size in MIN_RESPONSE_BYTES..MAX_RESPONSE_BYTES) { "C_SCHEMA_VIOLATION" }
         val text =
             Charsets.UTF_8
                 .newDecoder()
@@ -40,6 +43,6 @@ internal object PallaSyncImportStageResponse {
 
     private fun isUuid4(value: String): Boolean =
         runCatching { UUID.fromString(value) }.getOrNull()?.let {
-            it.version() == 4 && it.variant() == 2 && it.toString() == value
+            it.version() == UUID_VERSION_4 && it.variant() == UUID_RFC_4122_VARIANT && it.toString() == value
         } == true
 }
