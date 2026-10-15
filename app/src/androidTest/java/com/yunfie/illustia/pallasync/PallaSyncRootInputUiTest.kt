@@ -16,7 +16,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -133,8 +132,8 @@ class PallaSyncRootInputUiTest {
             }
         }
         compose.onNodeWithText(compose.activity.getString(R.string.pallasync_v3_root_action_failed)).assertIsDisplayed()
-        compose.onNodeWithTag("pallasync-root-mnemonic").assertTextEquals("")
-        compose.onNodeWithTag("pallasync-root-passphrase").assertTextEquals("")
+        assertEmptyInput("pallasync-root-mnemonic")
+        assertEmptyInput("pallasync-root-passphrase")
     }
 
     @Test
