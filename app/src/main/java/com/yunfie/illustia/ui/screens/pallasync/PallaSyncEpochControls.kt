@@ -172,6 +172,7 @@ internal fun PallaSyncRootActionDialog(
     val context = LocalContext.current
     var busy by remember { mutableStateOf(false) }
     var operation by remember { mutableStateOf<Job?>(null) }
+    var failureCode by remember { mutableStateOf<String?>(null) }
     val cancellation = remember { PallaSyncRootCancellation() }
     DisposableEffect(manager) {
         onDispose {
@@ -183,8 +184,9 @@ internal fun PallaSyncRootActionDialog(
         operation?.cancel()
         cancellation.cancel()
         onDismiss()
-    }, onConfirm = { words, passphrase ->
+    }, failureCode = failureCode, onConfirm = { words, passphrase ->
         busy = true
+        failureCode = null
         operation =
             scope.launch {
                 try {
@@ -196,6 +198,12 @@ internal fun PallaSyncRootActionDialog(
                             Toast.LENGTH_LONG,
                         ).show()
                     onDismiss()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (failure: IllegalStateException) {
+                    failureCode = failure.message?.takeIf { it.startsWith("C_") }.orEmpty()
+                } catch (_: Exception) {
+                    failureCode = ""
                 } finally {
                     busy = false
                 }

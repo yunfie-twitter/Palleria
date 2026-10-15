@@ -21,6 +21,7 @@
     <string name="pallasync_v3_history_first">最初のページ</string>
     <string name="pallasync_v3_history_older">古い履歴を表示</string>
     <string name="pallasync_v3_root_input_explanation">このチェーンのニーモニックとBIP39パスフレーズを入力してください。入力表示は送信・取消・画面からの離脱・10分間の無操作で消去されます。</string>
+    <string name="pallasync_v3_root_action_failed">操作を完了できませんでした。秘密入力は消去されています。接続を確認して再試行してください。</string>
     <string name="pallasync_v3_root_input_words">復旧ニーモニック（24語）</string>
     <string name="pallasync_v3_root_input_passphrase">BIP39パスフレーズ（未設定なら空欄）</string>
     <string name="pallasync_v3_root_working">履歴を検証し、処理を進めています…</string>

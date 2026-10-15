@@ -26,6 +26,7 @@
     <string name="pallasync_v3_history_first">First page</string>
     <string name="pallasync_v3_history_older">Older page</string>
     <string name="pallasync_v3_root_input_explanation">Enter the mnemonic and BIP39 passphrase used for this chain. The input display clears after submission, cancellation, leaving this screen or ten minutes of inactivity.</string>
+    <string name="pallasync_v3_root_action_failed">The operation could not be completed. The secret input was cleared; check the connection and try again.</string>
     <string name="pallasync_v3_root_input_words">Recovery mnemonic (24 words)</string>
     <string name="pallasync_v3_root_input_passphrase">BIP39 passphrase (empty if none)</string>
     <string name="pallasync_v3_root_working">Verifying history and completing the operation…</string>

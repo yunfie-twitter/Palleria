@@ -36,6 +36,7 @@ internal fun PallaSyncRootInputDialog(
     explanation: String,
     busy: Boolean,
     onDismiss: () -> Unit,
+    failureCode: String? = null,
     onConfirm: (String, String) -> Unit,
 ) {
     var mnemonic by remember { mutableStateOf("") }
@@ -76,6 +77,11 @@ internal fun PallaSyncRootInputDialog(
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
             Text(explanation)
             Text(stringResource(R.string.pallasync_v3_root_input_explanation))
+            if (failureCode != null) {
+                Text(
+                    failureCode.ifBlank { stringResource(R.string.pallasync_v3_root_action_failed) },
+                )
+            }
             if (activity == null) {
                 Text(stringResource(R.string.pallasync_v3_secure_input_unavailable))
             } else if (busy) {
