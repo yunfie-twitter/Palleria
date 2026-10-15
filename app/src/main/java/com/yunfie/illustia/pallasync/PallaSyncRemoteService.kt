@@ -41,10 +41,21 @@ internal class PallaSyncRemoteService(
 
     companion object {
         private const val HTTP_RATE_LIMITED = 429
-        private const val CHAIN_ID_INDEX = 3
+        private const val CHAIN_ROUTE_SEGMENTS = 3
         private val SUCCESS_CODES = 200..299
         private val clients = CopyOnWriteArrayList<WeakReference<OkHttpClient>>()
         private val calls = CopyOnWriteArrayList<Call>()
+
+        /** `/chains/import` is global A scope; only `/chains/{chain_id}` and its descendants are chain-scoped. */
+        internal fun chainIdForAuthorization(pathSegments: List<String>): String? {
+            val isChainRoute = pathSegments.take(CHAIN_ROUTE_SEGMENTS) == listOf("pallasync", "v3", "chains")
+            if (pathSegments.size <= CHAIN_ROUTE_SEGMENTS || !isChainRoute) {
+                return null
+            }
+            val isTopLevelImport = pathSegments.size == CHAIN_ROUTE_SEGMENTS + 1 && pathSegments.last() == "import"
+            if (isTopLevelImport) return null
+            return pathSegments[CHAIN_ROUTE_SEGMENTS]
+        }
 
         fun cancelOrigin(origin: String) {
             calls.filter { PallaSyncUrls.extractOrigin(it.request().url) == origin }.forEach { it.cancel() }
@@ -159,9 +170,8 @@ internal class PallaSyncRemoteService(
                 "C_RELAY_DISCLOSURE_INVALID"
             }
         } else {
-            val path = request.url.pathSegments
-            if (path.size > CHAIN_ID_INDEX && path.take(CHAIN_ID_INDEX) == listOf("pallasync", "v3", "chains")) {
-                policy.requireChainOrigin(path[CHAIN_ID_INDEX], PallaSyncUrls.extractOrigin(request.url))
+            chainIdForAuthorization(request.url.pathSegments)?.let { chainId ->
+                policy.requireChainOrigin(chainId, PallaSyncUrls.extractOrigin(request.url))
             }
             policy.requireCurrent(PallaSyncUrls.extractOrigin(request.url))
         }
