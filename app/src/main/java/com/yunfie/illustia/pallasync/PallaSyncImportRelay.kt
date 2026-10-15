@@ -1,6 +1,10 @@
 package com.yunfie.illustia.pallasync
 
 import com.yunfie.illustia.pallasync.data.ProtocolDao
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -100,7 +104,7 @@ internal class PallaSyncImportRelay(
         }
     }
 
-    fun stage(
+    suspend fun stage(
         root: PallaSyncRootSession,
         target: HttpUrl,
         history: History,
@@ -110,7 +114,8 @@ internal class PallaSyncImportRelay(
         val url = PallaSyncUrls.importChain(target)
         val origin = PallaSyncUrls.extractOrigin(target)
         var staged: PallaSyncImportStageResponse.Staged? = null
-        for (chunk in chunkHistories(chainId, history)) {
+        var terminal: PallaSyncHttpResult<PallaSyncImportStageResponse.Staged>? = null
+        forEachImportChunk(chunkHistories(chainId, history)) { chunk ->
             val body = canonicalBody(chainId, chunk)
             val token =
                 checkNotNull(root.token(origin, "POST", url.encodedPath, body = body.toByteArray(Charsets.UTF_8))) {
@@ -125,18 +130,26 @@ internal class PallaSyncImportRelay(
                     .post(body.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
                     .build()
             val result =
-                remote.execute(request) { response ->
-                    check(response.code == HTTP_ACCEPTED) { "C_SCHEMA_VIOLATION" }
-                    PallaSyncHttpResult.Success(PallaSyncImportStageResponse.validate(response.pallaSyncBytes(), chainId))
+                runInterruptible(Dispatchers.IO) {
+                    remote.execute(request) { response ->
+                        check(response.code == HTTP_ACCEPTED) { "C_SCHEMA_VIOLATION" }
+                        PallaSyncHttpResult.Success(PallaSyncImportStageResponse.validate(response.pallaSyncBytes(), chainId))
+                    }
                 }
-            val accepted = (result as? PallaSyncHttpResult.Success)?.value ?: return result
-            if (staged == null) {
-                staged = accepted
+            val accepted = (result as? PallaSyncHttpResult.Success)?.value
+            if (accepted == null) {
+                terminal = result
+                false
             } else {
-                check(staged == accepted) { "C_IMPORT_CONFLICT" }
+                if (staged == null) {
+                    staged = accepted
+                } else {
+                    check(staged == accepted) { "C_IMPORT_CONFLICT" }
+                }
+                true
             }
         }
-        return PallaSyncHttpResult.Success(checkNotNull(staged) { "C_MISSING_DEPENDENCY" })
+        return terminal ?: PallaSyncHttpResult.Success(checkNotNull(staged) { "C_MISSING_DEPENDENCY" })
     }
 
     suspend fun stageFromVerifiedStore(
@@ -147,5 +160,18 @@ internal class PallaSyncImportRelay(
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
         val history = PallaSyncImportHistoryBuilder(dao).build(root.identity.chainId)
         return stage(root, target, history)
+    }
+}
+
+/** Treat an in-flight POST as an uncertain outcome on cancellation; never start a later chunk. */
+internal suspend fun <T> forEachImportChunk(
+    chunks: List<T>,
+    action: suspend (T) -> Boolean,
+) {
+    for (chunk in chunks) {
+        currentCoroutineContext().ensureActive()
+        val hasNext = action(chunk)
+        currentCoroutineContext().ensureActive()
+        if (!hasNext) return
     }
 }

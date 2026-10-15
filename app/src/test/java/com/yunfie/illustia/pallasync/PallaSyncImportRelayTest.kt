@@ -3,12 +3,40 @@ package com.yunfie.illustia.pallasync
 import com.yunfie.illustia.pallasync.data.LogEntryEntity
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 
 class PallaSyncImportRelayTest {
+    @Test
+    fun `stops later chunk after cancellation`() {
+        runBlocking {
+            var requests = 0
+            var cancelled = false
+            val task =
+                launch {
+                    val failure =
+                        runCatching {
+                            forEachImportChunk(listOf(1, 2)) {
+                                requests += 1
+                                if (it == 1) currentCoroutineContext().cancel()
+                                true
+                            }
+                        }
+                    cancelled = failure.exceptionOrNull() is CancellationException
+                }
+            task.join()
+            cancelled shouldBe true
+            requests shouldBe 1
+        }
+    }
+
     @Test
     fun `builds exact canonical import body from source chain history`() {
         val history = history()
