@@ -24,6 +24,30 @@ class PallaSyncAuthorityJniTest :
                         .bufferedReader()
                         .use { it.readText() },
                 ).jsonObject
+        "reseed transparency starts from the specified chain relay T0" {
+            val f = evidence()
+            val receipt =
+                f
+                    .getValue("created")
+                    .jsonObject
+                    .getValue("upload_receipts")
+                    .jsonArray
+                    .first()
+                    .jsonObject
+            val t0 =
+                f
+                    .getValue("transparency_pages")
+                    .jsonArray
+                    .first()
+                    .jsonObject
+                    .getValue("anchor_hash")
+                    .jsonPrimitive.content
+            pallaSyncTransparencyZero(
+                receipt.getValue("chain_id").jsonPrimitive.content,
+                receipt.getValue("transparency_id").jsonPrimitive.content,
+                receipt.getValue("relay_key_id").jsonPrimitive.content,
+            ) shouldBe t0
+        }
         "selected full history and mnemonic enrollment cross every actual JNI validation boundary" {
             val f = evidence()
             var authority =

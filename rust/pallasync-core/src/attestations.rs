@@ -939,7 +939,23 @@ pub fn validate_transparency(entry: &Value, pin: &RelayPin) -> Result {
             "C_TRANSPARENCY_INVALID",
         )?,
     }
-    pin.verify(entry, CTX_TRANSPARENCY)
+    pin.validate()?;
+    require(
+        s(entry, "chain_id") == pin.chain_id && s(entry, "relay_key_id") == pin.key_id()?,
+        "C_RELAY_KEY_MISMATCH",
+    )?;
+    // A relay's transparency namespace survives data-log incarnation changes (§7.12.2/§17.5).
+    // The head stays bound to the current pinned log; individual entries retain the log_id
+    // that was current when each event was recorded and are authenticated by the same relay key.
+    require(
+        verify_signature(
+            &pin.public_key,
+            s(entry, "relay_signature"),
+            &signing_bytes(entry, CTX_TRANSPARENCY, "relay_signature"),
+        )
+        .unwrap_or(false),
+        "C_SIGNATURE_INVALID",
+    )
 }
 pub fn transparency_link(previous: &str, entry: &Value, pin: &RelayPin) -> Result<String> {
     validate_transparency(entry, pin)?;
@@ -967,7 +983,8 @@ pub fn verify_receipt_transparency(receipt: &Value, entry: &Value, pin: &RelayPi
         require(receipt[r] == entry[e], "C_TRANSPARENCY_INVALID")?;
     }
     require(
-        s(entry, "operation") == "accept"
+        s(receipt, "log_id") == s(entry, "log_id")
+            && s(entry, "operation") == "accept"
             && transparency_link(s(entry, "previous_transparency_hash"), entry, pin)?
                 == s(receipt, "transparency_hash"),
         "C_TRANSPARENCY_INVALID",

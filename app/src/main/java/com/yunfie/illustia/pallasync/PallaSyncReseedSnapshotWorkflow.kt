@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -176,6 +177,8 @@ internal class PallaSyncReseedCommitRelay(
         currentEpochJson: String,
         expectedEntriesJson: String,
         targetPinJson: String,
+        stagedSnapshotReceiptsJson: String,
+        persistVerifiedTransparencyPage: suspend (items: List<JsonObject>, anchor: JsonObject) -> Unit,
     ): PallaSyncHttpResult<JsonObject> {
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
         val bodyBytes = canonicalBody.toByteArray(Charsets.UTF_8)
@@ -205,31 +208,72 @@ internal class PallaSyncReseedCommitRelay(
                 .header("Authorization", "PallaSync $token")
                 .put(canonicalBody.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
                 .build()
-        return runInterruptible(Dispatchers.IO) {
-            remote.execute(request) { response ->
-                check(response.code == HTTP_OK) { "C_SCHEMA_VIOLATION" }
-                val checkpoint =
-                    PallaSyncCore.validateReseedCommitAcceptance(
-                        response.pallaSyncBytes(),
-                        buildJsonObject {
-                            put("parameters", body.getValue("parameters"))
-                            put("epoch", body.getValue("epoch"))
-                            put("envelopes", body.getValue("envelopes"))
-                            put("compaction", body.getValue("compaction"))
-                            put("device_records", body.getValue("device_records"))
-                        }.toString(),
-                        body.getValue("admin_operation").toString(),
-                        currentParametersJson,
-                        currentEpochJson,
-                        expectedEntriesJson,
-                        targetPinJson,
-                    )
-                PallaSyncHttpResult.Success(Json.parseToJsonElement(checkpoint).jsonObject)
+        val committed =
+            runInterruptible(Dispatchers.IO) {
+                remote.execute(request) { response ->
+                    check(response.code == HTTP_OK) { "C_SCHEMA_VIOLATION" }
+                    val checkpoint =
+                        PallaSyncCore.validateReseedCommitAcceptance(
+                            response.pallaSyncBytes(),
+                            buildJsonObject {
+                                put("parameters", body.getValue("parameters"))
+                                put("epoch", body.getValue("epoch"))
+                                put("envelopes", body.getValue("envelopes"))
+                                put("compaction", body.getValue("compaction"))
+                                put("device_records", body.getValue("device_records"))
+                            }.toString(),
+                            body.getValue("admin_operation").toString(),
+                            currentParametersJson,
+                            currentEpochJson,
+                            expectedEntriesJson,
+                            targetPinJson,
+                        )
+                    PallaSyncHttpResult.Success(Json.parseToJsonElement(checkpoint).jsonObject)
+                }
             }
-        }
+        val checkpoint = (committed as? PallaSyncHttpResult.Success)?.value ?: return committed.failure()
+        val snapshotReceipts = Json.parseToJsonElement(stagedSnapshotReceiptsJson) as? JsonArray ?: error("C_SCHEMA_VIOLATION")
+        val commitReceipts = checkpoint.getValue("receipts").jsonArray
+        val allReceipts = JsonArray(snapshotReceipts + commitReceipts)
+        val targetPin = Json.parseToJsonElement(targetPinJson).jsonObject
+        val verifiedTransparency =
+            when (
+                val result =
+                    PallaSyncReseedTransparencyVerifier(remote).verifyFromGenesis(
+                        root,
+                        target,
+                        targetPin,
+                        allReceipts,
+                        persistVerifiedTransparencyPage,
+                    )
+            ) {
+                is PallaSyncHttpResult.Success -> result.value
+                else -> return result.failure()
+            }
+        val head = verifiedTransparency.getValue("head").jsonObject
+        check(
+            head.getValue("head_seq") == checkpoint.getValue("head_seq") &&
+                head.getValue("head_hash") == checkpoint.getValue("head_hash") &&
+                head.getValue("parameters_hash") == checkpoint.getValue("parameters_hash") &&
+                head.getValue("epoch_hash") == checkpoint.getValue("epoch_hash"),
+        ) { "C_LOG_HASH_MISMATCH" }
+        return PallaSyncHttpResult.Success(
+            buildJsonObject {
+                checkpoint.forEach { (name, value) -> put(name, value) }
+                put("transparency_anchor", verifiedTransparency.getValue("anchor"))
+            },
+        )
     }
 
     private companion object {
         const val HTTP_OK = 200
+
+        fun PallaSyncHttpResult<*>.failure(): PallaSyncHttpResult<JsonObject> =
+            when (this) {
+                PallaSyncHttpResult.Gone -> PallaSyncHttpResult.Gone
+                is PallaSyncHttpResult.ProtocolError -> this
+                is PallaSyncHttpResult.Retryable -> this
+                is PallaSyncHttpResult.Success -> error("C_SCHEMA_VIOLATION")
+            }
     }
 }

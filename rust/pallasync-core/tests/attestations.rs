@@ -426,6 +426,18 @@ fn signed_page_does_not_skip_gaps_or_reset_a_pinned_prefix() {
         verify_transparency_page(&anchor, std::slice::from_ref(&entry), &head, &pin).unwrap();
     assert_eq!(next.index, 1);
     assert_eq!(anchor, original);
+    let mut prior_incarnation = entry.clone();
+    prior_incarnation["log_id"] = json!("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+    sign_relay(&key, &mut prior_incarnation, CTX_TRANSPARENCY).unwrap();
+    let mut prior_head = head.clone();
+    prior_head["transparency_hash"] =
+        json!(transparency_link(&anchor.hash, &prior_incarnation, &pin).unwrap());
+    sign_relay(&key, &mut prior_head, CTX_HEAD).unwrap();
+    assert!(
+        verify_transparency_page(&anchor, &[prior_incarnation.clone()], &prior_head, &pin).is_ok(),
+        "global transparency suffixes retain entries from earlier data-log incarnations"
+    );
+    assert!(verify_receipt_transparency(&receipt, &prior_incarnation, &pin).is_err());
     assert_eq!(
         verify_transparency_page(&anchor, &[], &head, &pin)
             .unwrap_err()
