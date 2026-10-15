@@ -26,7 +26,7 @@ class PallaSyncLegacyV20SourceTest {
     }
 
     @Test
-    fun `v20 source rejects duplicates wrong chain bad order and unknown members`() {
+    fun `v20 source rejects duplicates wrong chain bad order and conflicting relay sequences`() {
         shouldThrow<IllegalStateException> {
             PallaSyncLegacyV20Source.decodeRecords("[${record(firstId, 10)},${record(firstId, 11)}]", chainId)
         }
@@ -37,10 +37,6 @@ class PallaSyncLegacyV20SourceTest {
         }
         shouldThrow<IllegalStateException> {
             PallaSyncLegacyV20Source.decodeRecords("[${record(firstId, 11)},${record(secondId, 10)}]", chainId)
-        }
-        shouldThrow<IllegalStateException> {
-            val unknown = record(firstId, 10).dropLast(1) + ",\"unknown\":true}"
-            PallaSyncLegacyV20Source.decodeRecords("[$unknown]", chainId)
         }
         shouldThrow<IllegalStateException> {
             val duplicateMember = record(firstId, 10).dropLast(1) + ",\"action\":\"delete\"}"
@@ -57,6 +53,18 @@ class PallaSyncLegacyV20SourceTest {
         shouldThrow<IllegalStateException> {
             PallaSyncLegacyV20Source.decodeRecords("[]", "not-a-chain-id")
         }
+    }
+
+    @Test
+    fun `v20 source retains identifiable schema-invalid signed items for native quarantine`() {
+        val malformedPayload = record(firstId, 10).replace("\"encrypted_payload\":\"$ciphertext\"", "\"encrypted_payload\":17")
+        val unknownMember = record(secondId, 11).dropLast(1) + ",\"unknown\":true}"
+        val decoded = PallaSyncLegacyV20Source.decodeRecords("[$malformedPayload,$unknownMember]", chainId)
+
+        decoded.map { it.sequence } shouldBe listOf(1L, 2L)
+        decoded.map { it.recordId } shouldBe listOf(firstId, secondId)
+        decoded.first().json shouldBe malformedPayload
+        decoded.last().json shouldBe unknownMember
     }
 
     @Test

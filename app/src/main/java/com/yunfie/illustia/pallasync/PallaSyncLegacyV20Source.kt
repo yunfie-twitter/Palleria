@@ -74,7 +74,7 @@ internal object PallaSyncLegacyV20Source {
         var previousCreatedAt = -1L
         return root.mapIndexed { index, item ->
             val value = item as? JsonObject ?: error("C_SCHEMA_VIOLATION")
-            check(value.keys.containsAll(REQUIRED_FIELDS) && value.keys.all { it in ALLOWED_FIELDS }) { "C_SCHEMA_VIOLATION" }
+            check(value.keys.containsAll(SOURCE_INDEX_FIELDS)) { "C_SCHEMA_VIOLATION" }
             val relaySequence = value.optionalSafeSequence("relay_seq")
             val serverSequence = value.optionalSafeSequence("server_sequence")
             check(relaySequence == null || serverSequence == null || relaySequence == serverSequence) {
@@ -90,11 +90,9 @@ internal object PallaSyncLegacyV20Source {
             val createdAt = value.integer("created_at_ms")
             check(createdAt >= previousCreatedAt) { "C_ROLLBACK_DETECTED" }
             previousCreatedAt = createdAt
-            val collection = value.string("collection_name")
-            check(collection.isNotEmpty() && collection.length <= 255) { "C_SCHEMA_VIOLATION" }
-            check(value.string("action") in setOf("upsert", "delete")) { "C_SCHEMA_VIOLATION" }
-            requireCanonicalBase64Url(value.string("encrypted_payload"), minimumBytes = 16)
-            requireCanonicalBase64Url(value.string("signature"), exactBytes = 64)
+            // Non-index fields are deliberately left for the legacy native verifier. Invalid
+            // signature, ciphertext, action, schema, or extra members become per-record quarantine
+            // decisions during the authenticated scan instead of discarding the entire export.
             Record(index + 1L, value.toString(), recordId, deviceId, createdAt)
         }
     }
@@ -220,21 +218,16 @@ internal object PallaSyncLegacyV20Source {
         runCatching { Base64.getUrlDecoder().decode(value) }
             .getOrElse { error("C_SCHEMA_VIOLATION") }
 
-    private val REQUIRED_FIELDS =
+    private val SOURCE_INDEX_FIELDS =
         setOf(
             "protocol_version",
             "chain_id",
             "record_id",
-            "collection_name",
-            "action",
-            "encrypted_payload",
             "device_id",
             "created_at_ms",
-            "signature",
         )
 
     private val RELAY_SEQUENCE_FIELDS = setOf("relay_seq", "server_sequence")
-    private val ALLOWED_FIELDS = REQUIRED_FIELDS + RELAY_SEQUENCE_FIELDS
     private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 
     private val QUARANTINE_CODES =
