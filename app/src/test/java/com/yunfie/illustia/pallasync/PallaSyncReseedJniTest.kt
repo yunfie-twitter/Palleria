@@ -149,6 +149,34 @@ class PallaSyncReseedJniTest {
                                 .jsonPrimitive.long shouldBe 9L
                             snapshot.parts.size shouldBe 1
                             uploaded.size shouldBe 1
+                            val commitBody =
+                                root.createReseedCommitBody(
+                                    prepared,
+                                    fixture
+                                        .getValue("genesis")
+                                        .jsonObject
+                                        .getValue("parameters")
+                                        .toString(),
+                                    fixture
+                                        .getValue("genesis")
+                                        .jsonObject
+                                        .getValue("epoch")
+                                        .toString(),
+                                    snapshot,
+                                    NOW,
+                                )
+                            val body = Json.parseToJsonElement(commitBody).jsonObject
+                            body.keys shouldBe setOf("parameters", "epoch", "envelopes", "compaction", "admin_operation", "device_records")
+                            body
+                                .getValue("compaction")
+                                .jsonObject
+                                .getValue("log_id")
+                                .jsonPrimitive.content shouldBe stagedLogId
+                            body
+                                .getValue("admin_operation")
+                                .jsonObject
+                                .getValue("action")
+                                .jsonPrimitive.content shouldBe "reseed"
                         }
                     }
             } finally {

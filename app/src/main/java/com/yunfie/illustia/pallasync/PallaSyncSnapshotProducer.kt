@@ -18,6 +18,7 @@ internal data class PallaSyncSnapshotPartReference(
 )
 
 internal data class PallaSyncProducedSnapshot(
+    val compactionId: String,
     val header: JsonObject,
     val stateCommitment: String,
     val parts: List<PallaSyncSnapshotPartReference>,
@@ -123,7 +124,7 @@ internal class PallaSyncSnapshotProducer(
             )
             partIndex++
             check(partIndex == plan.partCount) { "C_SNAPSHOT_INVALID" }
-            return PallaSyncProducedSnapshot(plan.header, verifier.finishCommitment(), parts.toList())
+            return PallaSyncProducedSnapshot(compactionId, plan.header, verifier.finishCommitment(), parts.toList())
         } finally {
             verifier.close()
         }
