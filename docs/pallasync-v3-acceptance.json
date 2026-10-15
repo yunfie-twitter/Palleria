@@ -268,6 +268,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncFeedMembership.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncDeletionEvidenceMerge.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt"
       ],
@@ -812,11 +813,12 @@
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/attestations.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncDeletionEvidenceMergeTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt",
         "PallaSync/tests/reference/test_attestations.py"
       ],
       "result": "pending",
-      "remaining": "The client preserves distinct signed receipt revisions by object hash, validates monotone completion revisions against the prior retained receipt, and creates each exported bundle against that exact receipt hash. Export restores and persists the union of independently verified local witness bundles for one exact receipt; conflicting signatures for one device ID fail as equivocation. Room tests cover multiple bundle revisions for one receipt, and focused merge tests cover disjoint-device union/order and conflicts. Rust tests verify 128 certified unique witnesses, reject 129 with C_SCHEMA_VIOLATION, reject a bundle reused against a newly signed completion revision, and cover completion monotonicity. The SAF witness export readback and all deletion-evidence archive inputs use the same 256 KiB bound; malformed UTF-8 is now rejected without replacement during witness and peer-file import (§3.1). Focused Android archive/merge tests, full Rust tests, detekt and ktlint pass. Still run the full IT-44 negative catalogue, JNI/device archive roundtrip, distinct-device file-exchange instrumentation and physical SAF verification; keep pending.",
+      "remaining": "The client preserves distinct signed receipt revisions by object hash, validates monotone completion revisions against the prior retained receipt, and creates each exported bundle against that exact receipt hash. Export restores and persists the union of independently verified local witness bundles for one exact receipt; conflicting signatures for one device ID fail as equivocation. Room tests cover multiple bundle revisions for one receipt, and focused merge tests cover disjoint-device union/order and conflicts. Merge now also rejects archive bundles with mismatched receipt bindings or fields and enforces the 128-witness ceiling; both negative cases pass the focused Android test. Rust tests verify 128 certified unique witnesses, reject 129 with C_SCHEMA_VIOLATION, reject a bundle reused against a newly signed completion revision, and cover completion monotonicity. The SAF witness export readback and all deletion-evidence archive inputs use the same 256 KiB bound; malformed UTF-8 is now rejected without replacement during witness and peer-file import (§3.1). Focused Android archive/merge tests, full Rust tests, detekt and ktlint pass. Still run the full IT-44 negative catalogue, JNI/device archive roundtrip, distinct-device file-exchange instrumentation and physical SAF verification; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {
