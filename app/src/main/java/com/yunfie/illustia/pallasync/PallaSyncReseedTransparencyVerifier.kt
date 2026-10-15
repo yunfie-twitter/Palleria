@@ -24,12 +24,20 @@ import java.util.UUID
 internal class PallaSyncReseedTransparencyVerifier(
     private val remote: PallaSyncRemoteService,
 ) {
-    suspend fun verifyFromGenesis(
+    /** Durable checkpoint supplied only after its page and receipts were committed atomically. */
+    data class Resume(
+        val head: JsonObject,
+        val anchor: JsonObject,
+        val verifiedReceiptIndices: Set<Long>,
+    )
+
+    suspend fun verifySuffix(
         root: PallaSyncRootSession,
         base: HttpUrl,
         pin: JsonObject,
         expectedReceipts: JsonArray,
         persistVerifiedPage: suspend (items: List<JsonObject>, anchor: JsonObject) -> Unit,
+        resume: Resume? = null,
     ): PallaSyncHttpResult<JsonObject> {
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
         check(expectedReceipts.isNotEmpty()) { "C_ACCEPTANCE_UNPROVEN" }
@@ -64,21 +72,40 @@ internal class PallaSyncReseedTransparencyVerifier(
             observed.getValue("log_id").jsonPrimitive.content == pin.getValue("log_id").jsonPrimitive.content &&
                 observed.getValue("transparency_id").jsonPrimitive.content == transparencyId,
         ) { "C_TRANSPARENCY_INVALID" }
+        resume?.let {
+            check(
+                it.head == observed && it.anchor
+                    .getValue("transparency_id")
+                    .jsonPrimitive.content == transparencyId,
+            ) {
+                "C_ROLLBACK_DETECTED"
+            }
+        }
         val through = observed.getValue("entry_index").jsonPrimitive.long
         check(receiptIndices.keys.all { it in 1..through }) { "C_ACCEPTANCE_UNPROVEN" }
-        val anchor =
+        val initialAnchor =
             buildJsonObject {
                 put("transparency_id", transparencyId)
                 put("index", 0)
                 put("hash", pallaSyncTransparencyZero(chainId, transparencyId, relayKeyId))
             }
-        val receiptMatches = mutableSetOf<Long>()
+        val startAnchor = resume?.anchor ?: initialAnchor
+        val startIndex = startAnchor.getValue("index").jsonPrimitive.long
+        check(startIndex in 0..through) { "C_TRANSPARENCY_INVALID" }
+        if (resume != null) {
+            val startsFromVerifiedZero = startIndex == 0L && startAnchor == initialAnchor
+            check(
+                resume.verifiedReceiptIndices == receiptIndices.keys.filterTo(sortedSetOf()) { it <= startIndex } &&
+                    (startsFromVerifiedZero || startIndex > 0L),
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+        }
+        val receiptMatches = resume?.verifiedReceiptIndices?.toMutableSet() ?: mutableSetOf()
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
-        var nextAnchor = anchor
+        var nextAnchor = startAnchor
         do {
             currentCoroutineContext().ensureActive()
-            val url = PallaSyncUrls.transparencyEntries(base, chainId, transparencyId, 0, through, cursor)
+            val url = PallaSyncUrls.transparencyEntries(base, chainId, transparencyId, startIndex, through, cursor)
             val token =
                 checkNotNull(root.token(origin, "GET", url.encodedPath, query = url.encodedQuery.orEmpty())) {
                     "C_RELAY_POLICY_CONSENT_REQUIRED"
