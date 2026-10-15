@@ -7,8 +7,11 @@ import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -455,6 +458,26 @@ class PallaSyncLocalIntentsTest {
                 val progress = checkNotNull(intents.legacyMigrationProgress(migration))
                 progress.accepted shouldBe 2
                 progress.state shouldBe "legacy_complete"
+                val auditRows =
+                    store
+                        .protocolDao()
+                        .pendingMigrationPage(PallaSyncLocalIntents.journalId(chain), 0, 10)
+                val replayWork =
+                    auditRows.map { row ->
+                        Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                    }
+                val auditEvents = replayWork.map(PallaSyncReplayWork::event)
+                val migrationAudit = auditEvents.single { it.schema == AUDIT_SCHEMA_V3 }
+                val auditBody = migrationAudit.body.jsonObject
+                auditBody.getValue("event").jsonPrimitive.content shouldBe "migration"
+                auditBody.getValue("result").jsonPrimitive.content shouldBe "succeeded"
+                auditBody.getValue("subject_id").jsonPrimitive.content shouldBe migration
+                intents.resumeLegacyMigration(migration, keys())
+                val auditRowsAfterResume =
+                    store
+                        .protocolDao()
+                        .pendingMigrationPage(PallaSyncLocalIntents.journalId(chain), 0, 10)
+                auditRowsAfterResume.count { it.sourceIdentity == AUDIT_SCHEMA_V3 } shouldBe 1
                 val first = uploads.first()
                 val firstReceiptHash = encode(ByteArray(32) { 1 })
                 store.transaction {

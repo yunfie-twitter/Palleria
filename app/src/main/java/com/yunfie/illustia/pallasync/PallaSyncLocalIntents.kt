@@ -8,8 +8,12 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.Base64
+import java.util.UUID
 
 /** §§11.1/16.4. Unsigned application intent, separate from immutable signed outbox objects.
  * Uses the existing application journal table, never a relay object or recovery store.
@@ -599,6 +603,23 @@ internal class PallaSyncLocalIntents(
         if (accepted == manifest.candidateCount - excluded &&
             dao.pendingMigrationCount(migrationId) == 0L && dao.migrationStateCount(migrationId, "constructed") == 0L
         ) {
+            stage(
+                checkNotNull(root.targetChain) { "C_ROLLBACK_DETECTED" },
+                listOf(
+                    PallaSyncPendingEvent(
+                        AUDIT_SCHEMA_V3,
+                        UUID.randomUUID().toString(),
+                        SYNC_OPERATION_UPSERT,
+                        buildJsonObject {
+                            put("event", "migration")
+                            put("subject_id", migrationId)
+                            put("object_hash", JsonNull)
+                            put("result", "succeeded")
+                        },
+                        createdAtMs = System.currentTimeMillis(),
+                    ),
+                ),
+            )
             check(
                 dao.updateMigrationManifest(
                     migrationId,
