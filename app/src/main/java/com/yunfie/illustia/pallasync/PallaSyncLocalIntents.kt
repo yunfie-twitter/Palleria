@@ -8,12 +8,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.Base64
-import java.util.UUID
 
 /** §§11.1/16.4. Unsigned application intent, separate from immutable signed outbox objects.
  * Uses the existing application journal table, never a relay object or recovery store.
@@ -508,7 +504,7 @@ internal class PallaSyncLocalIntents(
     ) {
         val dao = store.protocolDao()
         val manifestRow = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
-        if (manifestRow.state == "legacy_complete") return
+        if (manifestRow.state == "legacy_receipts_complete") return
         check(manifestRow.state in setOf("legacy_staged", "legacy_uploading")) { "C_MISSING_DEPENDENCY" }
         val manifest = Json.decodeFromString<LegacyManifest>(manifestRow.reportJson)
         check(manifest.sourceComplete && manifestRow.targetChain != null) { "C_MISSING_DEPENDENCY" }
@@ -531,7 +527,7 @@ internal class PallaSyncLocalIntents(
                 ) == 1,
             ) { "C_LOCAL_STORAGE_FULL" }
         }
-        completeLegacyMigrationIfSettled(migrationId)
+        settleLegacyMigrationReceipts(migrationId)
     }
 
     suspend fun legacyMigrationProgress(migrationId: String): LegacyMigrationProgress? {
@@ -589,13 +585,13 @@ internal class PallaSyncLocalIntents(
                 "C_RECORD_ID_CONFLICT"
             }
         }
-        completeLegacyMigrationIfSettled(candidate.migrationId)
+        settleLegacyMigrationReceipts(candidate.migrationId)
     }
 
-    private suspend fun completeLegacyMigrationIfSettled(migrationId: String) {
+    private suspend fun settleLegacyMigrationReceipts(migrationId: String) {
         val dao = store.protocolDao()
         val root = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_ROLLBACK_DETECTED" }
-        if (root.state == "legacy_complete") return
+        if (root.state == "legacy_receipts_complete") return
         check(root.state in setOf("legacy_uploading", "legacy_staged")) { "C_ROLLBACK_DETECTED" }
         val manifest = Json.decodeFromString<LegacyManifest>(root.reportJson)
         val excluded = dao.migrationStateCount(migrationId, "legacy_candidate_excluded")
@@ -603,29 +599,12 @@ internal class PallaSyncLocalIntents(
         if (accepted == manifest.candidateCount - excluded &&
             dao.pendingMigrationCount(migrationId) == 0L && dao.migrationStateCount(migrationId, "constructed") == 0L
         ) {
-            stage(
-                checkNotNull(root.targetChain) { "C_ROLLBACK_DETECTED" },
-                listOf(
-                    PallaSyncPendingEvent(
-                        AUDIT_SCHEMA_V3,
-                        UUID.randomUUID().toString(),
-                        SYNC_OPERATION_UPSERT,
-                        buildJsonObject {
-                            put("event", "migration")
-                            put("subject_id", migrationId)
-                            put("object_hash", JsonNull)
-                            put("result", "succeeded")
-                        },
-                        createdAtMs = System.currentTimeMillis(),
-                    ),
-                ),
-            )
             check(
                 dao.updateMigrationManifest(
                     migrationId,
                     root.sourceHash,
                     root.state,
-                    "legacy_complete",
+                    "legacy_receipts_complete",
                     root.reportJson,
                 ) == 1,
             ) { "C_LOCAL_STORAGE_FULL" }

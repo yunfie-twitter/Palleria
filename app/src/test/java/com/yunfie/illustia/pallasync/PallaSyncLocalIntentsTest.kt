@@ -457,27 +457,18 @@ class PallaSyncLocalIntentsTest {
                 }
                 val progress = checkNotNull(intents.legacyMigrationProgress(migration))
                 progress.accepted shouldBe 2
-                progress.state shouldBe "legacy_complete"
+                progress.state shouldBe "legacy_receipts_complete"
                 val auditRows =
                     store
                         .protocolDao()
                         .pendingMigrationPage(PallaSyncLocalIntents.journalId(chain), 0, 10)
-                val replayWork =
-                    auditRows.map { row ->
-                        Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
-                    }
-                val auditEvents = replayWork.map(PallaSyncReplayWork::event)
-                val migrationAudit = auditEvents.single { it.schema == AUDIT_SCHEMA_V3 }
-                val auditBody = migrationAudit.body.jsonObject
-                auditBody.getValue("event").jsonPrimitive.content shouldBe "migration"
-                auditBody.getValue("result").jsonPrimitive.content shouldBe "succeeded"
-                auditBody.getValue("subject_id").jsonPrimitive.content shouldBe migration
+                auditRows.none { it.sourceIdentity == AUDIT_SCHEMA_V3 } shouldBe true
                 intents.resumeLegacyMigration(migration, keys())
                 val auditRowsAfterResume =
                     store
                         .protocolDao()
                         .pendingMigrationPage(PallaSyncLocalIntents.journalId(chain), 0, 10)
-                auditRowsAfterResume.count { it.sourceIdentity == AUDIT_SCHEMA_V3 } shouldBe 1
+                auditRowsAfterResume.count { it.sourceIdentity == AUDIT_SCHEMA_V3 } shouldBe 0
                 val first = uploads.first()
                 val firstReceiptHash = encode(ByteArray(32) { 1 })
                 store.transaction {
