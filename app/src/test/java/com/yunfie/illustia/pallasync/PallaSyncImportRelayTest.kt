@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 
 class PallaSyncImportRelayTest {
@@ -79,6 +80,55 @@ class PallaSyncImportRelayTest {
     fun `import URL is the global administrative route`() {
         val base = (PallaSyncUrls.normalize("https://relay.example.com") as PallaSyncHttpResult.Success).value
         PallaSyncUrls.importChain(base).encodedPath shouldBe "/pallasync/v3/chains/import"
+    }
+
+    @Test
+    fun `reseed receipt list follows staged controls and atomic commit append order`() {
+        val staged =
+            PallaSyncImportRelay.History(
+                parameters = Json.parseToJsonElement("""[{"generation":2},{"generation":1}]""") as JsonArray,
+                epochs = Json.parseToJsonElement("""[{"epoch":2},{"epoch":1}]""") as JsonArray,
+                devices = Json.parseToJsonElement("""[{"device_id":"b"},{"device_id":"a"}]""") as JsonArray,
+                envelopes = Json.parseToJsonElement("""[{"envelope_id":"b"},{"envelope_id":"a"}]""") as JsonArray,
+                compactions = JsonArray(emptyList()),
+            )
+        val body =
+            """{"parameters":{"generation":3},"epoch":{"epoch":3},"envelopes":[{"recipient_kind":"recovery"},{"recipient_kind":"device"}],"compaction":{"compaction_id":"c"},"admin_operation":{"operation_id":"op"},"device_records":[{"device_id":"fresh"}]}"""
+        val entries = PallaSyncImportRelay.expectedReseedCommitEntries(staged, body)
+        entries.map {
+            it.jsonObject
+                .getValue("kind")
+                .jsonPrimitive.content
+        } shouldBe
+            listOf(
+                "parameters",
+                "parameters",
+                "device",
+                "device",
+                "envelope",
+                "envelope",
+                "epoch",
+                "epoch",
+                "parameters",
+                "device",
+                "envelope",
+                "envelope",
+                "admin",
+                "epoch",
+                "compaction",
+            )
+        entries[0]
+            .jsonObject
+            .getValue("object")
+            .jsonObject
+            .getValue("generation")
+            .jsonPrimitive.content shouldBe "1"
+        entries[1]
+            .jsonObject
+            .getValue("object")
+            .jsonObject
+            .getValue("generation")
+            .jsonPrimitive.content shouldBe "2"
     }
 
     @Test

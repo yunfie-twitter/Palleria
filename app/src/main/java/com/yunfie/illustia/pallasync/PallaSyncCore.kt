@@ -680,6 +680,17 @@ object PallaSyncCore {
         key: String,
     ): String
 
+    /** Verifies exact §17.5 data-log receipt order and leaves transparency target advancement to suffix validation. */
+    external fun validateReseedCommitAcceptance(
+        body: ByteArray,
+        payload: String,
+        adminOperation: String,
+        currentParameters: String,
+        currentEpoch: String,
+        expectedEntries: String,
+        pin: String,
+    ): String
+
     external fun validateHealth(
         health: ByteArray,
         origin: String,

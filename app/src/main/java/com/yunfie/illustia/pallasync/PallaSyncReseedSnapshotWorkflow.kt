@@ -168,12 +168,15 @@ private fun isUuid4(value: String): Boolean =
 internal class PallaSyncReseedCommitRelay(
     private val remote: PallaSyncRemoteService,
 ) {
-    suspend fun <T> commit(
+    suspend fun commit(
         root: PallaSyncRootSession,
         target: HttpUrl,
         canonicalBody: String,
-        validateResponse: (ByteArray) -> T,
-    ): PallaSyncHttpResult<T> {
+        currentParametersJson: String,
+        currentEpochJson: String,
+        expectedEntriesJson: String,
+        targetPinJson: String,
+    ): PallaSyncHttpResult<JsonObject> {
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
         val bodyBytes = canonicalBody.toByteArray(Charsets.UTF_8)
         check(bodyBytes.size <= PALLASYNC_HARD_LIMITS.maxRequestBytes) { "C_LOCAL_LIMIT" }
@@ -205,7 +208,23 @@ internal class PallaSyncReseedCommitRelay(
         return runInterruptible(Dispatchers.IO) {
             remote.execute(request) { response ->
                 check(response.code == HTTP_OK) { "C_SCHEMA_VIOLATION" }
-                PallaSyncHttpResult.Success(validateResponse(response.pallaSyncBytes()))
+                val checkpoint =
+                    PallaSyncCore.validateReseedCommitAcceptance(
+                        response.pallaSyncBytes(),
+                        buildJsonObject {
+                            put("parameters", body.getValue("parameters"))
+                            put("epoch", body.getValue("epoch"))
+                            put("envelopes", body.getValue("envelopes"))
+                            put("compaction", body.getValue("compaction"))
+                            put("device_records", body.getValue("device_records"))
+                        }.toString(),
+                        body.getValue("admin_operation").toString(),
+                        currentParametersJson,
+                        currentEpochJson,
+                        expectedEntriesJson,
+                        targetPinJson,
+                    )
+                PallaSyncHttpResult.Success(Json.parseToJsonElement(checkpoint).jsonObject)
             }
         }
     }

@@ -162,6 +162,7 @@ fn reseed_admin_operation_requires_reseed_session_and_strict_signed_inputs() {
 
 #[test]
 fn reseed_admin_operation_signs_the_exact_generation_and_cas_payload() {
+    use ed25519_dalek::Signer;
     use pallasync_core::{crypto, recovery as recovery_signing};
 
     let bundle = crypto::create_genesis_bundle(
@@ -312,6 +313,114 @@ fn reseed_admin_operation_signs_the_exact_generation_and_cas_payload() {
     assert_eq!(
         operation["expected_epoch_hash"],
         object_hash(&current_epoch)
+    );
+    let mut commit_envelopes = payload["envelopes"].as_array().unwrap().clone();
+    commit_envelopes.sort_by_key(|envelope| {
+        (
+            envelope["recipient_kind"].as_str().unwrap().to_owned(),
+            envelope["recipient_device_id"]
+                .as_str()
+                .unwrap_or("")
+                .to_owned(),
+        )
+    });
+    let mut expected_entries = vec![
+        json!({"kind":"parameters","object":payload["parameters"]}),
+        json!({"kind":"device","object":payload["device_records"][0]}),
+    ];
+    expected_entries.extend(
+        commit_envelopes
+            .into_iter()
+            .map(|object| json!({"kind":"envelope","object":object})),
+    );
+    expected_entries.push(json!({"kind":"admin","object":operation}));
+    expected_entries.push(json!({"kind":"epoch","object":payload["epoch"]}));
+    expected_entries.push(json!({"kind":"compaction","object":payload["compaction"]}));
+
+    let relay_seed = [0x71; 32];
+    let relay_signing = ed25519_dalek::SigningKey::from_bytes(&relay_seed);
+    let relay_public = base64::Engine::encode(
+        &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+        relay_signing.verifying_key().as_bytes(),
+    );
+    let pin = pallasync_core::attestations::RelayPin {
+        origin: "https://relay.example.com".into(),
+        chain_id: bundle.chain_id.clone(),
+        public_key: relay_public.clone(),
+        log_id: log_id.into(),
+    };
+    let mut head = pallasync_core::attestations::data_zero(&bundle.chain_id, log_id).unwrap();
+    let mut receipts = Vec::new();
+    for (offset, expected) in expected_entries.iter().enumerate() {
+        let seq = offset as u64 + 1;
+        let object = &expected["object"];
+        let kind = expected["kind"].as_str().unwrap();
+        let mut entry = json!({"relay_seq":seq,"received_at_ms":1_800_000_000_100u64 + seq,"kind":kind,"object":object});
+        if kind == "epoch" {
+            entry["committed_at_ms"] = entry["received_at_ms"].clone();
+        }
+        let next = pallasync_core::attestations::data_link(&head, &entry).unwrap();
+        let mut receipt = json!({
+            "type":"PALLASYNC-UPLOAD-RECEIPT-v3","version":"3.0",
+            "receipt_id":uuid::Uuid::new_v4().to_string(),"chain_id":bundle.chain_id,
+            "log_id":log_id,"relay_key_id":pin.key_id().unwrap(),"relay_seq":seq,
+            "object_hash":object_hash(object),"entry_hash":object_hash(&entry),
+            "previous_head_hash":head,"resulting_head_hash":next,
+            "received_at_ms":entry["received_at_ms"],
+            "transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "transparency_index":100 + seq,"transparency_hash":base64::Engine::encode(
+                &base64::engine::general_purpose::URL_SAFE_NO_PAD, [seq as u8; 32]),
+            "relay_signature":""
+        });
+        receipt["relay_signature"] = json!(base64::Engine::encode(
+            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+            relay_signing
+                .sign(&pallasync_core::strict::verify::signing_bytes(
+                    &receipt,
+                    pallasync_core::strict::verify::CTX_RECEIPT,
+                    "relay_signature",
+                ))
+                .to_bytes(),
+        ));
+        head = next;
+        receipts.push(receipt);
+    }
+    let response = json!({
+        "parameters_hash":object_hash(&payload["parameters"]),
+        "epoch_hash":object_hash(&payload["epoch"]),"log_id":log_id,
+        "head_seq":expected_entries.len(),"head_hash":head,"upload_receipts":receipts
+    });
+    let accepted = pallasync_core::attestations::verify_reseed_commit_acceptance(
+        &response,
+        &payload,
+        &operation,
+        &current_parameters,
+        &current_epoch,
+        &expected_entries,
+        &pin,
+    )
+    .unwrap();
+    assert_eq!(accepted["head_hash"], head);
+    assert_eq!(accepted["generation"], 1);
+    assert_eq!(
+        accepted["transparency_target_index"],
+        100 + expected_entries.len() as u64
+    );
+    let mut tampered = response.clone();
+    tampered["head_hash"] = json!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    assert_eq!(
+        pallasync_core::attestations::verify_reseed_commit_acceptance(
+            &tampered,
+            &payload,
+            &operation,
+            &current_parameters,
+            &current_epoch,
+            &expected_entries,
+            &pin,
+        )
+        .unwrap_err()
+        .0,
+        "C_LOG_HASH_MISMATCH"
     );
     assert_eq!(
         root_session::reseed_admin_operation(

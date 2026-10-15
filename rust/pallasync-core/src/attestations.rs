@@ -1376,3 +1376,99 @@ pub fn verify_genesis_acceptance(
         json!({"log_id":pin.log_id,"head_seq":5,"head_hash":hash,"parameters_hash":response["parameters_hash"],"epoch_hash":response["epoch_hash"],"transparency_id":transparency_id,"transparency_index":0,"transparency_hash":transparency_zero(&pin.chain_id,&transparency_id,&pin.key_id()?)?}),
     )
 }
+
+/// Verify the exact ordered data-log receipts returned by atomic §17.5 re-seed commit.
+/// Transparency receipt fields are exposed only as a target; callers must verify the
+/// complete suffix from their retained anchor before advancing that anchor.
+pub fn verify_reseed_commit_acceptance(
+    response: &Value,
+    payload: &Value,
+    admin_operation: &Value,
+    current_parameters: &Value,
+    current_epoch: &Value,
+    expected_entries: &[Value],
+    pin: &RelayPin,
+) -> Result<Value> {
+    fields(
+        response,
+        &[
+            ("parameters_hash", "b32"),
+            ("epoch_hash", "b32"),
+            ("log_id", "uuid"),
+            ("head_seq", "int"),
+            ("head_hash", "b32"),
+            ("upload_receipts", "array"),
+        ],
+        &[],
+    )?;
+    require(
+        response.as_object().is_some_and(|object| object.len() == 6)
+            && pin.chain_id == s(&payload["parameters"], "chain_id")
+            && s(response, "log_id") == pin.log_id
+            && s(response, "parameters_hash") == object_hash(&payload["parameters"])
+            && s(response, "epoch_hash") == object_hash(&payload["epoch"])
+            && n(&payload["parameters"], "generation") == n(current_parameters, "generation") + 1,
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+    crate::admin_action::verify(admin_operation, payload, current_parameters, current_epoch)?;
+    require(
+        !expected_entries.is_empty()
+            && expected_entries.len() == a(response, "upload_receipts").len()
+            && n(response, "head_seq") == expected_entries.len() as u64,
+        "C_ACCEPTANCE_UNPROVEN",
+    )?;
+
+    let mut data_hash = data_zero(&pin.chain_id, &pin.log_id)?;
+    let mut transparency_id: Option<&str> = None;
+    let mut transparency_index = 0;
+    let mut transparency_hash = String::new();
+    let receipts = a(response, "upload_receipts");
+    for (offset, (expected, receipt)) in expected_entries.iter().zip(receipts).enumerate() {
+        fields(expected, &[("kind", "string"), ("object", "object")], &[])?;
+        let kind = s(expected, "kind");
+        let object = &expected["object"];
+        wire::validate(object, kind)?;
+        require(
+            s(object, "chain_id") == pin.chain_id
+                && s(receipt, "object_hash") == object_hash(object)
+                && n(receipt, "relay_seq") == offset as u64 + 1
+                && s(receipt, "previous_head_hash") == data_hash,
+            "C_ACCEPTANCE_UNPROVEN",
+        )?;
+        validate_receipt(receipt, pin)?;
+        match transparency_id {
+            None => transparency_id = Some(s(receipt, "transparency_id")),
+            Some(id) => require(
+                id == s(receipt, "transparency_id")
+                    && n(receipt, "transparency_index") > transparency_index,
+                "C_TRANSPARENCY_INVALID",
+            )?,
+        }
+        let mut entry = json!({
+            "relay_seq": offset as u64 + 1,
+            "received_at_ms": receipt["received_at_ms"],
+            "kind": kind,
+            "object": object,
+        });
+        if kind == "epoch" {
+            entry["committed_at_ms"] = receipt["received_at_ms"].clone();
+        }
+        verify_receipt(receipt, object, Some(&entry), pin)?;
+        data_hash = s(receipt, "resulting_head_hash").into();
+        transparency_index = n(receipt, "transparency_index");
+        transparency_hash = s(receipt, "transparency_hash").into();
+    }
+    require(data_hash == s(response, "head_hash"), "C_LOG_HASH_MISMATCH")?;
+    Ok(json!({
+        "log_id":pin.log_id,
+        "head_seq":n(response,"head_seq"),
+        "head_hash":data_hash,
+        "parameters_hash":s(response,"parameters_hash"),
+        "epoch_hash":s(response,"epoch_hash"),
+        "generation":n(&payload["parameters"],"generation"),
+        "transparency_target_id":transparency_id.ok_or_else(schema)?,
+        "transparency_target_index":transparency_index,
+        "transparency_target_hash":transparency_hash,
+        "receipts":receipts,
+    }))
+}

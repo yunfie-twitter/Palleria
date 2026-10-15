@@ -1358,6 +1358,67 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateReseedCommitAcceptance<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    response_bytes: JByteArray<'local>,
+    payload_text: JString<'local>,
+    operation_text: JString<'local>,
+    parameters_text: JString<'local>,
+    epoch_text: JString<'local>,
+    expected_entries_text: JString<'local>,
+    pin_text: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let response_bytes = env
+            .convert_byte_array(&response_bytes)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let response = crate::strict::jcs::parse(&response_bytes)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let parse_string = |env: &mut JNIEnv<'local>,
+                            value: &JString<'local>|
+         -> Result<serde_json::Value, ClientError> {
+            let text = read_string(env, value).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+            crate::strict::jcs::parse(text.as_bytes())
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+        };
+        let payload = parse_string(&mut env, &payload_text)?;
+        let operation = parse_string(&mut env, &operation_text)?;
+        let parameters = parse_string(&mut env, &parameters_text)?;
+        let epoch = parse_string(&mut env, &epoch_text)?;
+        let expected_entries = parse_string(&mut env, &expected_entries_text)?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(parse_string(&mut env, &pin_text)?)
+                .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let entries = expected_entries
+            .as_array()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let checkpoint = crate::attestations::verify_reseed_commit_acceptance(
+            &response,
+            &payload,
+            &operation,
+            &parameters,
+            &epoch,
+            entries,
+            &pin,
+        )?;
+        Ok::<_, ClientError>(checkpoint.to_string())
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value)
+            .map(|s| s.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateKnownDevice<
     'local,
 >(

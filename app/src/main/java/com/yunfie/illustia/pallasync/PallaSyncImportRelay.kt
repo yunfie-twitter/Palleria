@@ -10,6 +10,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -30,6 +33,110 @@ internal class PallaSyncImportRelay(
 
     companion object {
         private const val HTTP_ACCEPTED = 202
+
+        /** Reproduce the relay's deterministic staged-control append order for §17.5 receipts. */
+        internal fun expectedReseedCommitEntries(
+            history: History,
+            commitBody: String,
+        ): JsonArray {
+            val body =
+                kotlinx.serialization.json.Json
+                    .parseToJsonElement(commitBody)
+                    .jsonObject
+            check(body.keys == setOf("parameters", "epoch", "envelopes", "compaction", "admin_operation", "device_records")) {
+                "C_SCHEMA_VIOLATION"
+            }
+            val entries = mutableListOf<JsonObject>()
+
+            fun add(
+                kind: String,
+                values: Iterable<kotlinx.serialization.json.JsonElement>,
+            ) {
+                values.forEach { value ->
+                    entries +=
+                        buildJsonObject {
+                            put("kind", kind)
+                            put("object", value)
+                        }
+                }
+            }
+            add(
+                "parameters",
+                history.parameters.sortedBy {
+                    it.jsonObject
+                        .getValue("generation")
+                        .jsonPrimitive.long
+                },
+            )
+            add(
+                "device",
+                history.devices.sortedBy {
+                    it.jsonObject
+                        .getValue("device_id")
+                        .jsonPrimitive.content
+                },
+            )
+            add(
+                "envelope",
+                history.envelopes.sortedBy {
+                    it.jsonObject
+                        .getValue("envelope_id")
+                        .jsonPrimitive.content
+                },
+            )
+            add(
+                "epoch",
+                history.epochs.sortedBy {
+                    it.jsonObject
+                        .getValue("epoch")
+                        .jsonPrimitive.long
+                },
+            )
+            entries +=
+                buildJsonObject {
+                    put("kind", "parameters")
+                    put("object", body.getValue("parameters"))
+                }
+            add(
+                "device",
+                body.getValue("device_records").jsonArray.sortedBy {
+                    it.jsonObject
+                        .getValue("device_id")
+                        .jsonPrimitive.content
+                },
+            )
+            add(
+                "envelope",
+                body.getValue("envelopes").jsonArray.sortedWith(
+                    compareBy<kotlinx.serialization.json.JsonElement> {
+                        it.jsonObject
+                            .getValue("recipient_kind")
+                            .jsonPrimitive.content
+                    }.thenBy {
+                        it.jsonObject["recipient_device_id"]
+                            ?.jsonPrimitive
+                            ?.content
+                            .orEmpty()
+                    },
+                ),
+            )
+            entries +=
+                buildJsonObject {
+                    put("kind", "admin")
+                    put("object", body.getValue("admin_operation"))
+                }
+            entries +=
+                buildJsonObject {
+                    put("kind", "epoch")
+                    put("object", body.getValue("epoch"))
+                }
+            entries +=
+                buildJsonObject {
+                    put("kind", "compaction")
+                    put("object", body.getValue("compaction"))
+                }
+            return JsonArray(entries)
+        }
 
         internal fun canonicalBody(
             chainId: String,
