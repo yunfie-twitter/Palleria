@@ -393,6 +393,7 @@ pub fn capability_at(
                 }
                 Operation::Reseed => {
                     (method == "PUT" && tail == Some("/parameters"))
+                        || (method == "POST" && tail == Some("/records/repair"))
                         || (method == "POST" && path == "/pallasync/v3/chains/import")
                 }
                 Operation::Delete => method == "DELETE" && tail == Some(""),

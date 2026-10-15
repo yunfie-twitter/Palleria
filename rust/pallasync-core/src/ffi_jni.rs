@@ -1411,6 +1411,49 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateRecordRepair<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    body: JByteArray<'local>,
+    submitted: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let bytes = env
+            .convert_byte_array(&body)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let response =
+            crate::strict::jcs::parse(&bytes).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let objects = read_string(&mut env, &submitted).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let objects = crate::strict::jcs::parse(objects.as_bytes())
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin = read_string(&mut env, &pin).ok_or(ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let pin: crate::attestations::RelayPin =
+            crate::models::parse(&pin).map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::verify_record_repair_response(
+            &response,
+            objects
+                .as_array()
+                .ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
+            &pin,
+        )?;
+        Ok::<_, ClientError>(response)
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value.to_string())
+            .map(|s| s.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateHealth<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,

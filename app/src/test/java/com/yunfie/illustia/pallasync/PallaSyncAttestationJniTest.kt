@@ -35,6 +35,13 @@ class PallaSyncAttestationJniTest :
                 """.trimIndent()
             val result = PallaSyncCore.validateRecordUpload(body.toByteArray(), "[$record]", pin)
             Json.parseToJsonElement(result) shouldBe Json.parseToJsonElement(body)
+            val repairBody = body.dropLast(1) + ",\"repair_required\":true}"
+            Json.parseToJsonElement(
+                PallaSyncCore.validateRecordRepair(repairBody.toByteArray(), "[$record]", pin),
+            ) shouldBe Json.parseToJsonElement(repairBody)
+            shouldThrow<IllegalStateException> {
+                PallaSyncCore.validateRecordRepair(body.toByteArray(), "[$record]", pin)
+            }.message shouldBe "C_SCHEMA_VIOLATION"
             shouldThrow<IllegalStateException> {
                 PallaSyncCore.validateRecordUpload(body.replace("[$receipt]", "[]").toByteArray(), "[$record]", pin)
             }.message shouldBe "C_ACCEPTANCE_UNPROVEN"

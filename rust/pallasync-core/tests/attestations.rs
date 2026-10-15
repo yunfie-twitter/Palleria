@@ -379,6 +379,28 @@ fn c9_exact_object_entry_data_and_transparency_commitments() {
     verify_receipt_transparency(&receipt, &transparent, &pin).unwrap();
     let response = json!({"accepted":[{"record_id":vector("record")["record_id"],"duplicate":false,"receipt":entry()}],"rejected":[],"upload_receipts":[receipt],"generation":0,"log_id":pin.log_id,"head_seq":7,"head_hash":"9rmeVaK9mN98hMLU6FDa4ZGL77Mgrd5fwceAipags-o"});
     verify_record_upload_response(&response, &[vector("record")], &pin).unwrap();
+    let mut repair_response = response.clone();
+    repair_response["repair_required"] = json!(false);
+    assert_eq!(
+        verify_record_repair_response(&repair_response, &[vector("record")], &pin).unwrap(),
+        false
+    );
+    repair_response["repair_required"] = json!(true);
+    assert_eq!(
+        verify_record_repair_response(&repair_response, &[vector("record")], &pin).unwrap(),
+        true
+    );
+    let mut missing_repair_status = response.clone();
+    assert!(
+        verify_record_repair_response(&missing_repair_status, &[vector("record")], &pin).is_err()
+    );
+    missing_repair_status["repair_required"] = json!("true");
+    assert!(
+        verify_record_repair_response(&missing_repair_status, &[vector("record")], &pin).is_err()
+    );
+    let mut invalid_repair = repair_response.clone();
+    invalid_repair["upload_receipts"] = json!([]);
+    assert!(verify_record_repair_response(&invalid_repair, &[vector("record")], &pin).is_err());
     let mut missing = response.clone();
     missing["upload_receipts"] = json!([]);
     assert!(verify_record_upload_response(&missing, &[vector("record")], &pin).is_err());

@@ -330,6 +330,7 @@ internal data class PallaSyncPostRecordsResponse(
     @SerialName("log_id") val logId: String,
     @SerialName("head_seq") val headSeq: Long,
     @SerialName("head_hash") val headHash: String,
+    @SerialName("repair_required") val repairRequired: Boolean = false,
 )
 
 @Serializable

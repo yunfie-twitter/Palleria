@@ -644,6 +644,13 @@ object PallaSyncCore {
         pin: String,
     ): String
 
+    /** Validates §10.13 per-record receipts plus its required repair_required result. */
+    external fun validateRecordRepair(
+        body: ByteArray,
+        submitted: String,
+        pin: String,
+    ): String
+
     external fun validateGenesisAcceptance(
         body: ByteArray,
         genesis: String,

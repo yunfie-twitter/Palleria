@@ -1179,6 +1179,30 @@ pub fn verify_record_upload_response(
     require(accounted.len() == submitted.len(), "C_ACCEPTANCE_UNPROVEN")
 }
 
+/// §10.13 repair responses retain the ordinary per-record receipt checks and add one
+/// required lifecycle bit. Do not let that extra member weaken the §10.6 exact schema.
+pub fn verify_record_repair_response(
+    response: &Value,
+    submitted: &[Value],
+    pin: &RelayPin,
+) -> Result<bool> {
+    require(
+        response
+            .get("repair_required")
+            .and_then(Value::as_bool)
+            .is_some(),
+        "C_SCHEMA_VIOLATION",
+    )?;
+    let mut ordinary = response.clone();
+    let repair_required = ordinary
+        .as_object_mut()
+        .and_then(|object| object.remove("repair_required"))
+        .and_then(|value| value.as_bool())
+        .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+    verify_record_upload_response(&ordinary, submitted, pin)?;
+    Ok(repair_required)
+}
+
 /// §10.2: establish H0..H5 from the locally authorized genesis and all five signed receipts.
 /// This deliberately leaves transparency at T0 until its complete signed suffix is fetched.
 pub fn verify_genesis_acceptance(

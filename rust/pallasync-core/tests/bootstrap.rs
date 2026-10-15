@@ -258,3 +258,57 @@ fn root_reads_use_only_canonical_catalogue_paths_and_the_corrected_two_minute_cl
     }
     root_session::end(handle);
 }
+
+#[test]
+fn reseed_root_capability_is_limited_to_import_reseed_and_admin_repair_routes() {
+    use pallasync_core::root_session::{self, Operation};
+    let phrase = format!("{} art", vec!["abandon"; 23].join(" "));
+    let handle =
+        root_session::begin(phrase.as_bytes(), b"", Operation::Reseed, None, None).unwrap();
+    let chain = root_session::identity(handle).unwrap()["chain_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let prefix = format!("/pallasync/v3/chains/{chain}");
+    for (method, path) in [
+        ("POST", "/pallasync/v3/chains/import".to_owned()),
+        ("POST", format!("{prefix}/records/repair")),
+        ("PUT", format!("{prefix}/parameters")),
+    ] {
+        assert!(
+            root_session::capability_at(
+                handle,
+                Operation::Reseed,
+                "https://relay.example.com",
+                method,
+                &path,
+                "",
+                b"{}",
+                1791684000000,
+            )
+            .is_ok()
+        );
+    }
+    for (method, path) in [
+        ("POST", format!("{prefix}/records")),
+        ("POST", format!("{prefix}/devices/enroll")),
+        ("DELETE", prefix.clone()),
+    ] {
+        assert_eq!(
+            root_session::capability_at(
+                handle,
+                Operation::Reseed,
+                "https://relay.example.com",
+                method,
+                &path,
+                "",
+                b"{}",
+                1791684000000,
+            )
+            .unwrap_err()
+            .0,
+            "C_RECOVERY_AUTH_REQUIRED"
+        );
+    }
+    root_session::end(handle);
+}
