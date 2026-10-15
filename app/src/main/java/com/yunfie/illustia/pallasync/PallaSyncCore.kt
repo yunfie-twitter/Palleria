@@ -692,7 +692,7 @@ object PallaSyncCore {
 
     /** Signs only a v2.1 read capability for the user's explicitly selected legacy source (§9.1). */
     external fun legacyV21GetToken(
-        deviceSeedBase64: String,
+        deviceSeedBase64: ByteArray,
         chainId: String,
         deviceId: String,
         path: String,
@@ -702,8 +702,8 @@ object PallaSyncCore {
 
     /** Derives the legacy v2.1 identity in a transient native operation and compares public pins. */
     external fun validateLegacyV21Identity(
-        seedPhrase: String,
-        passphrase: String,
+        seedPhrase: ByteArray,
+        passphrase: ByteArray,
         chainId: String,
         chainSaltBase64: String,
         adminPublicKeyBase64: String,
@@ -711,8 +711,8 @@ object PallaSyncCore {
 
     /** Explicit §9.1 migration session; verified payload bytes must be zeroed by the caller. */
     external fun beginLegacyMigrationSession(
-        seedPhrase: String,
-        passphrase: String,
+        seedPhrase: ByteArray,
+        passphrase: ByteArray,
         chainSaltBase64: String,
         chainId: String,
         adminPublicKeyBase64: String,
@@ -720,8 +720,8 @@ object PallaSyncCore {
 
     /** Deterministic v2.0 legacy key path, isolated from the v2.1 random-salt derivation. */
     external fun beginLegacyV20MigrationSession(
-        seedPhrase: String,
-        passphrase: String,
+        seedPhrase: ByteArray,
+        passphrase: ByteArray,
         chainId: String,
     ): Long
 

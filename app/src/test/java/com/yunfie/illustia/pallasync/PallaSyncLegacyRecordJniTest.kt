@@ -120,7 +120,10 @@ class PallaSyncLegacyRecordJniTest {
         val path = "/pallasync/v2/chains/$chainId/records"
         val query = "after_seq=0&limit=200"
 
-        val encoded = PallaSyncCore.legacyV21GetToken(seed, chainId, deviceId, path, query, 1_700_000_000_000)
+        val encoded =
+            withLegacySecretInputs(seed, "") { seedBytes, _ ->
+                PallaSyncCore.legacyV21GetToken(seedBytes, chainId, deviceId, path, query, 1_700_000_000_000)
+            }
         val tokenBytes = Base64.getUrlDecoder().decode(encoded)
         val token = Json.parseToJsonElement(tokenBytes.toString(Charsets.UTF_8)).jsonObject
         token.getValue("method").jsonPrimitive.content shouldBe "GET"
@@ -128,10 +131,21 @@ class PallaSyncLegacyRecordJniTest {
         token.getValue("expires_at_ms").jsonPrimitive.content shouldBe "1700000300000"
 
         shouldThrow<IllegalStateException> {
-            PallaSyncCore.legacyV21GetToken(seed, chainId, deviceId, "/pallasync/v2/chains/$chainId/delete", "", 1_700_000_000_000)
+            withLegacySecretInputs(seed, "") { seedBytes, _ ->
+                PallaSyncCore.legacyV21GetToken(
+                    seedBytes,
+                    chainId,
+                    deviceId,
+                    "/pallasync/v2/chains/$chainId/delete",
+                    "",
+                    1_700_000_000_000,
+                )
+            }
         }
         shouldThrow<IllegalStateException> {
-            PallaSyncCore.legacyV21GetToken(seed, chainId, deviceId, path, "limit=200", 1_700_000_000_000)
+            withLegacySecretInputs(seed, "") { seedBytes, _ ->
+                PallaSyncCore.legacyV21GetToken(seedBytes, chainId, deviceId, path, "limit=200", 1_700_000_000_000)
+            }
         }
     }
 
@@ -142,20 +156,27 @@ class PallaSyncLegacyRecordJniTest {
                 "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art"
         val chainId = "_iefvXsLUE_of7LKvJB_z-e6-OXGP5oG6SClqLIA8Ds"
 
-        val handle = PallaSyncCore.beginLegacyV20MigrationSession(mnemonic, "", chainId)
+        val handle =
+            withLegacySecretInputs(mnemonic, "") { phrase, passphrase ->
+                PallaSyncCore.beginLegacyV20MigrationSession(phrase, passphrase, chainId)
+            }
         (handle > 0) shouldBe true
         PallaSyncCore.endLegacyMigrationSession(handle)
 
         shouldThrow<IllegalStateException> {
-            PallaSyncCore.beginLegacyV20MigrationSession(
-                mnemonic,
-                "",
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-            )
+            withLegacySecretInputs(mnemonic, "") { phrase, passphrase ->
+                PallaSyncCore.beginLegacyV20MigrationSession(
+                    phrase,
+                    passphrase,
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                )
+            }
         }
 
         shouldThrow<IllegalStateException> {
-            PallaSyncCore.beginLegacyV20MigrationSession(mnemonic, "wrong", chainId)
+            withLegacySecretInputs(mnemonic, "wrong") { phrase, passphrase ->
+                PallaSyncCore.beginLegacyV20MigrationSession(phrase, passphrase, chainId)
+            }
         }
     }
 
@@ -172,14 +193,19 @@ class PallaSyncLegacyRecordJniTest {
             passphrase: String,
             candidateChainId: String = chainId,
             candidateSalt: String = salt,
-        ) = PallaSyncCore.validateLegacyV21Identity(mnemonic, passphrase, candidateChainId, candidateSalt, adminPublicKey)
+        ) = withLegacySecretInputs(mnemonic, passphrase) { phrase, passphraseBytes ->
+            PallaSyncCore.validateLegacyV21Identity(phrase, passphraseBytes, candidateChainId, candidateSalt, adminPublicKey)
+        }
 
         matches("") shouldBe true
         matches("wrong passphrase") shouldBe false
         matches("", candidateChainId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") shouldBe false
         matches("", candidateSalt = "not-a-salt") shouldBe false
 
-        val handle = PallaSyncCore.beginLegacyMigrationSession(mnemonic, "", salt, chainId, adminPublicKey)
+        val handle =
+            withLegacySecretInputs(mnemonic, "") { phrase, passphrase ->
+                PallaSyncCore.beginLegacyMigrationSession(phrase, passphrase, salt, chainId, adminPublicKey)
+            }
         (handle > 0) shouldBe true
         PallaSyncCore.endLegacyMigrationSession(handle)
     }

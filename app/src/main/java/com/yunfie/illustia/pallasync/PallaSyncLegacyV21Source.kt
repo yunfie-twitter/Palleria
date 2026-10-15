@@ -132,15 +132,17 @@ internal class PallaSyncLegacyV21Source(
         return remote.execute(request) { response ->
             val value = Json.parseToJsonElement(response.pallaSyncText()).jsonObject
             val parameters = parseParameters(value, chainId)
-            check(
-                PallaSyncCore.validateLegacyV21Identity(
-                    seedPhrase,
-                    passphrase,
-                    parameters.chainId,
-                    parameters.chainSalt,
-                    parameters.adminPublicKey,
-                ),
-            ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val identityMatches =
+                withLegacySecretInputs(seedPhrase, passphrase) { mnemonicBytes, passphraseBytes ->
+                    PallaSyncCore.validateLegacyV21Identity(
+                        mnemonicBytes,
+                        passphraseBytes,
+                        parameters.chainId,
+                        parameters.chainSalt,
+                        parameters.adminPublicKey,
+                    )
+                }
+            check(identityMatches) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             PallaSyncHttpResult.Success(parameters)
         }
     }
@@ -158,7 +160,10 @@ internal class PallaSyncLegacyV21Source(
         nowMs: Long,
     ): PallaSyncHttpResult<List<Device>> {
         val path = "/pallasync/v2/chains/${parameters.chainId}/devices"
-        val token = PallaSyncCore.legacyV21GetToken(deviceSeed, parameters.chainId, deviceId, path, "", nowMs)
+        val token =
+            withLegacySecretInputs(deviceSeed, "") { seedBytes, _ ->
+                PallaSyncCore.legacyV21GetToken(seedBytes, parameters.chainId, deviceId, path, "", nowMs)
+            }
         val request = request(base, path, token)
         return remote.execute(request) { response ->
             val root = Json.parseToJsonElement(response.pallaSyncText())
@@ -209,7 +214,10 @@ internal class PallaSyncLegacyV21Source(
         require(afterSequence in 0..PallaSyncConflictResolver.MAX_COUNTER) { "C_SCHEMA_VIOLATION" }
         val query = "after_seq=$afterSequence&limit=200"
         val path = "/pallasync/v2/chains/$chainId/records"
-        val token = PallaSyncCore.legacyV21GetToken(signerDeviceSeed, chainId, signerDeviceId, path, query, nowMs)
+        val token =
+            withLegacySecretInputs(signerDeviceSeed, "") { seedBytes, _ ->
+                PallaSyncCore.legacyV21GetToken(seedBytes, chainId, signerDeviceId, path, query, nowMs)
+            }
         val request = request(base, "$path?$query", token)
         return remote.execute(request) { response ->
             val nextSequence = response.header("PallaSync-Next-Seq") ?: error("C_SCHEMA_VIOLATION")

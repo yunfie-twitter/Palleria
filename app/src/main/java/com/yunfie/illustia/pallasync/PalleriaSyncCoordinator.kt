@@ -1112,7 +1112,10 @@ internal class PalleriaSyncCoordinator(
             val target = targetChain
             var session = 0L
             try {
-                session = PallaSyncCore.beginLegacyV20MigrationSession(seedPhrase, passphrase, sourceChain)
+                session =
+                    withLegacySecretInputs(seedPhrase, passphrase) { mnemonicBytes, passphraseBytes ->
+                        PallaSyncCore.beginLegacyV20MigrationSession(mnemonicBytes, passphraseBytes, sourceChain)
+                    }
 
                 suspend fun read(): List<PallaSyncLegacyV20Source.Record> =
                     when (val result = fetchLegacyV20Records(normalized, sourceChain)) {
@@ -1325,13 +1328,15 @@ internal class PalleriaSyncCoordinator(
                                 check(record.sequence == stagedThrough + 1) { "C_ROLLBACK_DETECTED" }
                                 if (session == 0L) {
                                     session =
-                                        PallaSyncCore.beginLegacyMigrationSession(
-                                            seedPhrase,
-                                            passphrase,
-                                            parameters.chainSalt,
-                                            parameters.chainId,
-                                            parameters.adminPublicKey,
-                                        )
+                                        withLegacySecretInputs(seedPhrase, passphrase) { mnemonicBytes, passphraseBytes ->
+                                            PallaSyncCore.beginLegacyMigrationSession(
+                                                mnemonicBytes,
+                                                passphraseBytes,
+                                                parameters.chainSalt,
+                                                parameters.chainId,
+                                                parameters.adminPublicKey,
+                                            )
+                                        }
                                 }
                                 val device = devices.singleOrNull { it.deviceId == record.deviceId } ?: error("C_MISSING_DEPENDENCY")
                                 val candidates =

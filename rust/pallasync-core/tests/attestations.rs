@@ -381,15 +381,9 @@ fn c9_exact_object_entry_data_and_transparency_commitments() {
     verify_record_upload_response(&response, &[vector("record")], &pin).unwrap();
     let mut repair_response = response.clone();
     repair_response["repair_required"] = json!(false);
-    assert_eq!(
-        verify_record_repair_response(&repair_response, &[vector("record")], &pin).unwrap(),
-        false
-    );
+    assert!(!verify_record_repair_response(&repair_response, &[vector("record")], &pin).unwrap());
     repair_response["repair_required"] = json!(true);
-    assert_eq!(
-        verify_record_repair_response(&repair_response, &[vector("record")], &pin).unwrap(),
-        true
-    );
+    assert!(verify_record_repair_response(&repair_response, &[vector("record")], &pin).unwrap());
     let mut missing_repair_status = response.clone();
     assert!(
         verify_record_repair_response(&missing_repair_status, &[vector("record")], &pin).is_err()

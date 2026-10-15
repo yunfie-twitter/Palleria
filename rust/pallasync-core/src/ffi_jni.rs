@@ -1059,6 +1059,18 @@ fn read_string<'local>(env: &mut JNIEnv<'local>, value: &JString<'local>) -> Opt
     env.get_string(value).ok().map(Into::into)
 }
 
+fn read_secret_bytes(
+    env: &mut JNIEnv<'_>,
+    value: &JByteArray<'_>,
+) -> crate::client_error::Result<Zeroizing<Vec<u8>>> {
+    if value.is_null() {
+        return Err(ClientError("C_SCHEMA_VIOLATION"));
+    }
+    env.convert_byte_array(value)
+        .map(Zeroizing::new)
+        .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+}
+
 fn public_result(
     env: &mut JNIEnv<'_>,
     result: crate::client_error::Result<serde_json::Value>,
@@ -2081,7 +2093,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_legacyV2
 >(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
-    device_seed_base64: JString<'local>,
+    device_seed_base64: JByteArray<'local>,
     chain_id: JString<'local>,
     device_id: JString<'local>,
     path: JString<'local>,
@@ -2089,16 +2101,18 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_legacyV2
     now_ms: jlong,
 ) -> jstring {
     let result = (|| {
+        let encoded = read_secret_bytes(&mut env, &device_seed_base64)?;
         let encoded =
-            read_string(&mut env, &device_seed_base64).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+            std::str::from_utf8(&encoded).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
         let seed = Zeroizing::new(
-            crate::strict::verify::decode(&encoded, Some(32))
+            crate::strict::verify::decode(encoded, Some(32))
                 .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
         );
-        let seed: [u8; 32] = seed
-            .as_slice()
-            .try_into()
-            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let seed: Zeroizing<[u8; 32]> = Zeroizing::new(
+            seed.as_slice()
+                .try_into()
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+        );
         let chain_id = read_string(&mut env, &chain_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
         let device_id =
             read_string(&mut env, &device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
@@ -2125,35 +2139,32 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 >(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
-    seed_phrase: JString<'local>,
-    passphrase: JString<'local>,
+    seed_phrase: JByteArray<'local>,
+    passphrase: JByteArray<'local>,
     chain_id: JString<'local>,
     chain_salt: JString<'local>,
     admin_public_key: JString<'local>,
 ) -> jboolean {
-    let (
-        Some(seed_phrase),
-        Some(passphrase),
-        Some(chain_id),
-        Some(chain_salt),
-        Some(admin_public_key),
-    ) = (
-        read_string(&mut env, &seed_phrase),
-        read_string(&mut env, &passphrase),
+    let Ok(seed_phrase) = read_secret_bytes(&mut env, &seed_phrase) else {
+        return 0;
+    };
+    let Ok(passphrase) = read_secret_bytes(&mut env, &passphrase) else {
+        return 0;
+    };
+    let (Some(chain_id), Some(chain_salt), Some(admin_public_key)) = (
         read_string(&mut env, &chain_id),
         read_string(&mut env, &chain_salt),
         read_string(&mut env, &admin_public_key),
-    )
-    else {
+    ) else {
         return 0;
     };
     let result = (|| {
-        let seed_phrase = zeroize::Zeroizing::new(seed_phrase);
-        let passphrase = zeroize::Zeroizing::new(passphrase);
+        let seed_phrase = std::str::from_utf8(&seed_phrase).map_err(|_| "C_SCHEMA_VIOLATION")?;
+        let passphrase = std::str::from_utf8(&passphrase).map_err(|_| "C_SCHEMA_VIOLATION")?;
         let salt = crate::strict::verify::decode(&chain_salt, Some(32))
             .map_err(|_| "C_SCHEMA_VIOLATION")?;
         let salt: [u8; 32] = salt.try_into().map_err(|_| "C_SCHEMA_VIOLATION")?;
-        let keys = crypto::derive_legacy_v21_keys(&seed_phrase, &passphrase, &salt)?;
+        let keys = crypto::derive_legacy_v21_keys(seed_phrase, passphrase, &salt)?;
         crypto::legacy_v21_identity_matches(&keys, &chain_id, &chain_salt, &admin_public_key)
     })();
     u8::from(result.unwrap_or(false))
@@ -2165,19 +2176,19 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginLeg
 >(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
-    seed_phrase: JString<'local>,
-    passphrase: JString<'local>,
+    seed_phrase: JByteArray<'local>,
+    passphrase: JByteArray<'local>,
     chain_salt: JString<'local>,
     chain_id: JString<'local>,
     admin_public_key: JString<'local>,
 ) -> jlong {
     let result = (|| {
-        let seed_phrase = Zeroizing::new(
-            read_string(&mut env, &seed_phrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
-        );
-        let passphrase = Zeroizing::new(
-            read_string(&mut env, &passphrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
-        );
+        let seed_phrase = read_secret_bytes(&mut env, &seed_phrase)?;
+        let passphrase = read_secret_bytes(&mut env, &passphrase)?;
+        let seed_phrase =
+            std::str::from_utf8(&seed_phrase).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let passphrase =
+            std::str::from_utf8(&passphrase).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
         let chain_salt =
             read_string(&mut env, &chain_salt).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
         let chain_id = read_string(&mut env, &chain_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
@@ -2188,7 +2199,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginLeg
         let salt: [u8; 32] = salt
             .try_into()
             .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
-        crate::legacy_migration::begin(&seed_phrase, &passphrase, &salt, &chain_id, &admin)
+        crate::legacy_migration::begin(seed_phrase, passphrase, &salt, &chain_id, &admin)
     })();
     match result {
         Ok(handle) => handle as jlong,
@@ -2205,19 +2216,19 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginLeg
 >(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
-    seed_phrase: JString<'local>,
-    passphrase: JString<'local>,
+    seed_phrase: JByteArray<'local>,
+    passphrase: JByteArray<'local>,
     chain_id: JString<'local>,
 ) -> jlong {
     let result = (|| {
-        let seed_phrase = Zeroizing::new(
-            read_string(&mut env, &seed_phrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
-        );
-        let passphrase = Zeroizing::new(
-            read_string(&mut env, &passphrase).ok_or(ClientError("C_SCHEMA_VIOLATION"))?,
-        );
+        let seed_phrase = read_secret_bytes(&mut env, &seed_phrase)?;
+        let passphrase = read_secret_bytes(&mut env, &passphrase)?;
+        let seed_phrase =
+            std::str::from_utf8(&seed_phrase).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let passphrase =
+            std::str::from_utf8(&passphrase).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
         let chain_id = read_string(&mut env, &chain_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
-        crate::legacy_migration::begin_v20(&seed_phrase, &passphrase, &chain_id)
+        crate::legacy_migration::begin_v20(seed_phrase, passphrase, &chain_id)
     })();
     match result {
         Ok(handle) => handle as jlong,
