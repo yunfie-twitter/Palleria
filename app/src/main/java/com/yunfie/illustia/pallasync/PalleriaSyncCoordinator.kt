@@ -755,12 +755,58 @@ internal class PalleriaSyncCoordinator(
                         policy.retry::correctedTime,
                     )
                 try {
+                    requireReseedSourceHead(root, source, sourceOrigin, stableSource)
                     PallaSyncImportRelay(remote).stageFromVerifiedStore(root, target, db.protocolDao())
                 } finally {
                     root.close()
                 }
             }
         }
+
+    /** An unsigned head can only veto stale source state; the local verified checkpoint remains authoritative. */
+    private suspend fun requireReseedSourceHead(
+        root: PallaSyncRootSession,
+        source: HttpUrl,
+        origin: String,
+        state: ChainStateEntity,
+    ) {
+        val url = PallaSyncUrls.logHead(source, state.chainId)
+        val token =
+            checkNotNull(root.token(origin, "GET", url.encodedPath, query = url.encodedQuery.orEmpty())) {
+                "C_RELAY_POLICY_CONSENT_REQUIRED"
+            }
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .header("Authorization", "PallaSync $token")
+                .get()
+                .build()
+        val head =
+            when (
+                val result =
+                    remote.execute(request) { response ->
+                        PallaSyncHttpResult.Success(
+                            Json.parseToJsonElement(PallaSyncCore.validateLogHead(response.pallaSyncBytes())).jsonObject,
+                        )
+                    }
+            ) {
+                is PallaSyncHttpResult.Success -> result.value
+                is PallaSyncHttpResult.ProtocolError -> error(result.message)
+                is PallaSyncHttpResult.Retryable -> error(result.message)
+                PallaSyncHttpResult.Gone -> error("C_DELETION_UNVERIFIED")
+            }
+        check(
+            head.getValue("log_id").jsonPrimitive.content == state.logId &&
+                head.getValue("generation").jsonPrimitive.long == state.generation &&
+                head.getValue("head_seq").jsonPrimitive.long == state.materializedSeq &&
+                head.getValue("head_hash").jsonPrimitive.content == state.verifiedHash &&
+                head.getValue("parameters_hash").jsonPrimitive.content == state.parametersHash &&
+                head.getValue("epoch_hash").jsonPrimitive.content == state.epochHash &&
+                head.getValue("min_available_seq").jsonPrimitive.long == 1L,
+        ) { "C_MISSING_DEPENDENCY" }
+    }
 
     private suspend fun performRetainedHistoryRepair(
         root: PallaSyncRootSession,
