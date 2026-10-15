@@ -182,7 +182,9 @@ CI ASanがexpiry中にholderのlocked RSWK stateが残るraceを検出しまし�
 
 同変更の`:app:detekt`は失敗し、現在60件のlint指摘を報告します。指摘箇所はlegacy migration、coordinator既存箇所、既存test群などで、新規import builder/relay/staging entry methodは含みません。detekt全体を緑とは記録しません。
 
-§10.3/§17.5 stagingをSettingsへ接続しました。別リレーURLを明示入力し、別画面でroot mnemonic/passphraseを受け取ってから、coordinatorがそのoriginのcurrent privacy consentを確認してstageします。成功toastはstage済みlog IDを示し、target chainはまだwrite可能でないことを説明します。既存の同一relay record repairとは別操作です。UI追加後も`:app:ktlintCheck`、`:app:compileDebugKotlin`、`PallaSyncImportRelayTest` 7件は成功しました。compose instrumentationで実画面操作、複数chunk resume、restore署名/AEAD検証、generation+1 commitは未検証・未実装です。
+§10.3/§17.5 stagingをSettingsへ接続しました。別リレーURLを明示入力し、別画面でroot mnemonic/passphraseを受け取ってから、coordinatorがそのoriginのcurrent privacy consentを確認してstageします。成功toastはstage済みlog IDを示し、target chainはまだwrite可能でないことを説明します。既存の同一relay record repairとは別操作です。UI追加後も`:app:ktlintCheck`、`:app:compileDebugKotlin`、`PallaSyncImportRelayTest` 9件は成功しました。compose instrumentationで実画面操作・restart操作と、restore署名/AEAD検証、generation+1 commitは未検証・未実装です。
+
+import requestが8 MiB request limitに達する場合、固定されたcomplete parameters/epoch/device historyを各requestで再送し、envelope/compactionだけを原配列順のbounded chunkにして連続POSTします。各chunkのHTTP 202 bodyは厳密検証し、同chain・同state・同log IDでない応答は停止します。チャンク列は決定的で、途中失敗後は同じ履歴を最初から再送してrelayのidempotent import stagingを再利用する設計です。`PallaSyncImportRelayTest` 9件、`:app:ktlintCheck`、`:app:compileDebugKotlin`、`git diff --check`が成功しました。authority histories自身がrequest limitを超える場合の分割、プロセスkill/restartと未知HTTP結果のrelay-backed試験は未実施です。
 
 §11.1/§11.2/§12.3/§16.5のローカル状態から、Settingsに観測target・verified・materialized sequence、初回取得状態、pending outbox、author gap、unresolved quarantine、search/viewed/seen件数と安全上限を表示します。値は別々のRoom項目/問い合わせから取得し、部分適用時は分離を明示します。Room host testでgap/quarantine集計を含む`PallaSyncProtocolStoreTest` 9件が成功し、Kotlin compile、unit-test source compile、detekt、ktlintも成功しました。全履歴のarchive画面接続、巨大DB時のquery負荷・実サイズAndroid stressは未検証です。
 

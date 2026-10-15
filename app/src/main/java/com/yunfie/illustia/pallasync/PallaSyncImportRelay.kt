@@ -52,6 +52,52 @@ internal class PallaSyncImportRelay(
             check(text.toByteArray(Charsets.UTF_8).size <= PALLASYNC_HARD_LIMITS.maxRequestBytes) { "C_LOCAL_LIMIT" }
             return text
         }
+
+        internal fun chunkHistories(
+            chainId: String,
+            history: History,
+            maxBytes: Int = PALLASYNC_HARD_LIMITS.maxRequestBytes,
+        ): List<History> {
+            check(history.parameters.isNotEmpty() && history.epochs.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
+            check(maxBytes > 0) { "C_LOCAL_LIMIT" }
+            val common = history.copy(envelopes = JsonArray(emptyList()), compactions = JsonArray(emptyList()))
+            val baseBytes = canonicalBody(chainId, common).toByteArray(Charsets.UTF_8).size
+            check(baseBytes <= maxBytes) { "C_LOCAL_LIMIT" }
+            val chunks = mutableListOf<History>()
+            val envelopes = mutableListOf<kotlinx.serialization.json.JsonElement>()
+            val compactions = mutableListOf<kotlinx.serialization.json.JsonElement>()
+            var usedBytes = baseBytes
+
+            fun flush() {
+                if (envelopes.isEmpty() && compactions.isEmpty()) return
+                val chunk = common.copy(envelopes = JsonArray(envelopes.toList()), compactions = JsonArray(compactions.toList()))
+                check(canonicalBody(chainId, chunk).toByteArray(Charsets.UTF_8).size <= maxBytes) { "C_LOCAL_LIMIT" }
+                chunks += chunk
+                envelopes.clear()
+                compactions.clear()
+                usedBytes = baseBytes
+            }
+
+            fun append(
+                value: kotlinx.serialization.json.JsonElement,
+                destination: MutableList<kotlinx.serialization.json.JsonElement>,
+            ) {
+                val canonical = checkNotNull(PallaSyncCore.canonicalJson(value.toString())) { "C_SCHEMA_VIOLATION" }
+                val itemBytes = canonical.toByteArray(Charsets.UTF_8).size
+                val separatorBytes = if (destination.isEmpty()) 0 else 1
+                if (usedBytes + itemBytes + separatorBytes > maxBytes) {
+                    flush()
+                    check(baseBytes + itemBytes <= maxBytes) { "C_LOCAL_LIMIT" }
+                }
+                destination += value
+                usedBytes += itemBytes + if (destination.size == 1) 0 else 1
+            }
+            history.envelopes.forEach { append(it, envelopes) }
+            history.compactions.forEach { append(it, compactions) }
+            flush()
+            if (chunks.isEmpty()) chunks += common
+            return chunks
+        }
     }
 
     fun stage(
@@ -61,25 +107,36 @@ internal class PallaSyncImportRelay(
     ): PallaSyncHttpResult<PallaSyncImportStageResponse.Staged> {
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
         val chainId = root.identity.chainId
-        val body = canonicalBody(chainId, history)
         val url = PallaSyncUrls.importChain(target)
         val origin = PallaSyncUrls.extractOrigin(target)
-        val token =
-            checkNotNull(root.token(origin, "POST", url.encodedPath, body = body.toByteArray(Charsets.UTF_8))) {
-                "C_RELAY_POLICY_CONSENT_REQUIRED"
+        var staged: PallaSyncImportStageResponse.Staged? = null
+        for (chunk in chunkHistories(chainId, history)) {
+            val body = canonicalBody(chainId, chunk)
+            val token =
+                checkNotNull(root.token(origin, "POST", url.encodedPath, body = body.toByteArray(Charsets.UTF_8))) {
+                    "C_RELAY_POLICY_CONSENT_REQUIRED"
+                }
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .header("Accept", PALLASYNC_MEDIA_TYPE)
+                    .header("Authorization", "PallaSync $token")
+                    .post(body.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
+                    .build()
+            val result =
+                remote.execute(request) { response ->
+                    check(response.code == HTTP_ACCEPTED) { "C_SCHEMA_VIOLATION" }
+                    PallaSyncHttpResult.Success(PallaSyncImportStageResponse.validate(response.pallaSyncBytes(), chainId))
+                }
+            val accepted = (result as? PallaSyncHttpResult.Success)?.value ?: return result
+            if (staged == null) {
+                staged = accepted
+            } else {
+                check(staged == accepted) { "C_IMPORT_CONFLICT" }
             }
-        val request =
-            Request
-                .Builder()
-                .url(url)
-                .header("Accept", PALLASYNC_MEDIA_TYPE)
-                .header("Authorization", "PallaSync $token")
-                .post(body.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
-                .build()
-        return remote.execute(request) { response ->
-            check(response.code == HTTP_ACCEPTED) { "C_SCHEMA_VIOLATION" }
-            PallaSyncHttpResult.Success(PallaSyncImportStageResponse.validate(response.pallaSyncBytes(), chainId))
         }
+        return PallaSyncHttpResult.Success(checkNotNull(staged) { "C_MISSING_DEPENDENCY" })
     }
 
     suspend fun stageFromVerifiedStore(

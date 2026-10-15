@@ -90,6 +90,39 @@ class PallaSyncImportRelayTest {
         }.message shouldBe "C_LOG_HASH_MISMATCH"
     }
 
+    @Test
+    fun `import chunks keep authority heads fixed and preserve every ordered staged object`() {
+        val history =
+            history().copy(
+                envelopes = payloads("envelope", count = 4),
+                compactions = payloads("compaction", count = 3),
+            )
+        val coreBytes =
+            PallaSyncImportRelay
+                .canonicalBody(CHAIN_ID, history.copy(envelopes = JsonArray(emptyList()), compactions = JsonArray(emptyList())))
+                .toByteArray(Charsets.UTF_8)
+                .size
+        val maxBytes = coreBytes + 440
+        val chunks = PallaSyncImportRelay.chunkHistories(CHAIN_ID, history, maxBytes)
+        (chunks.size > 1) shouldBe true
+        chunks.forEach { chunk ->
+            chunk.parameters shouldBe history.parameters
+            chunk.epochs shouldBe history.epochs
+            chunk.devices shouldBe history.devices
+            (PallaSyncImportRelay.canonicalBody(CHAIN_ID, chunk).toByteArray(Charsets.UTF_8).size <= maxBytes) shouldBe true
+        }
+        chunks.flatMap { it.envelopes } shouldBe history.envelopes
+        chunks.flatMap { it.compactions } shouldBe history.compactions
+    }
+
+    @Test
+    fun `import chunker rejects one object larger than the signed body limit`() {
+        val history = history().copy(envelopes = payloads("envelope", count = 1, payloadBytes = 512))
+        shouldThrow<IllegalStateException> {
+            PallaSyncImportRelay.chunkHistories(CHAIN_ID, history, maxBytes = 500)
+        }.message shouldBe "C_LOCAL_LIMIT"
+    }
+
     private fun history(): PallaSyncImportRelay.History =
         PallaSyncImportRelay.History(
             parameters = Json.parseToJsonElement("""[{"chain_id":"$CHAIN_ID"}]""") as JsonArray,
@@ -97,6 +130,19 @@ class PallaSyncImportRelayTest {
             devices = JsonArray(emptyList()),
             envelopes = JsonArray(emptyList()),
             compactions = JsonArray(emptyList()),
+        )
+
+    private fun payloads(
+        kind: String,
+        count: Int,
+        payloadBytes: Int = 256,
+    ): JsonArray =
+        JsonArray(
+            (0 until count).map { index ->
+                Json.parseToJsonElement(
+                    """{"chain_id":"$CHAIN_ID","kind":"$kind","generation":0,"epoch":$index,"payload":"${"x".repeat(payloadBytes)}"}""",
+                )
+            },
         )
 
     private fun row(
