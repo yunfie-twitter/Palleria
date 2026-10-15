@@ -32,12 +32,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProtectedEvidenceEntity::class,
         AuthorityHistoryEntity::class,
         MigrationJournalEntity::class,
+        ReseedJournalEntity::class,
         LegacyMigrationCandidateEntity::class,
         LegacyMigrationChoiceEntity::class,
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -54,6 +55,8 @@ abstract class PallaSyncDatabase : RoomDatabase() {
     abstract fun snapshotInstallDao(): SnapshotInstallDao
 
     abstract fun snapshotStateDao(): SnapshotStateDao
+
+    abstract fun reseedJournalDao(): ReseedJournalDao
 
     abstract fun deletionEvidenceDao(): DeletionEvidenceDao
 
@@ -138,6 +141,15 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_13_14 =
+            object : Migration(13, 14) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_reseed_journal (chain_id TEXT NOT NULL,source_log_id TEXT NOT NULL,source_generation INTEGER NOT NULL,target_origin TEXT NOT NULL,staged_log_id TEXT,compaction_id TEXT,target_pin_json TEXT NOT NULL,prepared_bundle_json TEXT,commit_body_json TEXT,expected_entries_json TEXT,transparency_head_json TEXT,transparency_anchor_json TEXT,verified_receipt_indices_json TEXT NOT NULL DEFAULT '[]',phase INTEGER NOT NULL,updated_at_ms INTEGER NOT NULL,PRIMARY KEY(chain_id))",
+                    )
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -162,6 +174,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             MIGRATION_10_11,
                             MIGRATION_11_12,
                             MIGRATION_12_13,
+                            MIGRATION_13_14,
                         ).build()
                 INSTANCE = instance
                 instance

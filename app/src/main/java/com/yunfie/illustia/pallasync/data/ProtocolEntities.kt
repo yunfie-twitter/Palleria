@@ -316,3 +316,23 @@ data class LegacyMigrationChoiceEntity(
     @ColumnInfo(name = "selected_entry_index") val selectedEntryIndex: Long,
     @ColumnInfo(name = "user_confirmed") val userConfirmed: Boolean,
 )
+
+/** Restart-safe public checkpoint for the staged generation replacement ceremony (§17.5). */
+@Entity(tableName = "ps_reseed_journal", primaryKeys = ["chain_id"])
+data class ReseedJournalEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "source_log_id") val sourceLogId: String,
+    @ColumnInfo(name = "source_generation") val sourceGeneration: Long,
+    @ColumnInfo(name = "target_origin") val targetOrigin: String,
+    @ColumnInfo(name = "staged_log_id") val stagedLogId: String? = null,
+    @ColumnInfo(name = "compaction_id") val compactionId: String? = null,
+    @ColumnInfo(name = "target_pin_json") val targetPinJson: String,
+    @ColumnInfo(name = "prepared_bundle_json") val preparedBundleJson: String? = null,
+    @ColumnInfo(name = "commit_body_json") val commitBodyJson: String? = null,
+    @ColumnInfo(name = "expected_entries_json") val expectedEntriesJson: String? = null,
+    @ColumnInfo(name = "transparency_head_json") val transparencyHeadJson: String? = null,
+    @ColumnInfo(name = "transparency_anchor_json") val transparencyAnchorJson: String? = null,
+    @ColumnInfo(name = "verified_receipt_indices_json") val verifiedReceiptIndicesJson: String = "[]",
+    val phase: Int = 0,
+    @ColumnInfo(name = "updated_at_ms") val updatedAtMs: Long,
+)

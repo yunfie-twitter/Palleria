@@ -16,6 +16,7 @@ import com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
+import com.yunfie.illustia.pallasync.data.ReseedJournalEntity
 import com.yunfie.illustia.pallasync.data.SignedEventEntity
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.store.PALLA_SYNC_SERVER_URL
@@ -720,6 +721,8 @@ internal class PalleriaSyncCoordinator(
                     }
                 val origin = PallaSyncUrls.extractOrigin(target)
                 policy.requireCurrent(origin)
+                requireSnapshotResult(refreshRelayHealth(target))
+                val targetPublicKey = policy.trustedRelayKey(origin)
                 val source =
                     when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
                         is PallaSyncHttpResult.Success -> normalized.value
@@ -744,6 +747,15 @@ internal class PalleriaSyncCoordinator(
                         stableSource.lastRelaySeq == stableSource.materializedSeq && stableSource.verifiedHash != null &&
                         db.protocolDao().unresolvedQuarantineCount(state.chainId) == 0L,
                 ) { "C_MISSING_DEPENDENCY" }
+                val reseedDao = db.snapshotDatabase().reseedJournalDao()
+                val existingReseed = reseedDao.get(state.chainId)
+                check(
+                    existingReseed == null ||
+                        (
+                            existingReseed.sourceLogId == stableSource.logId &&
+                                existingReseed.sourceGeneration == stableSource.generation && existingReseed.targetOrigin == origin
+                        ),
+                ) { "C_MISSING_DEPENDENCY" }
                 val root =
                     PallaSyncRootSession.beginText(
                         mnemonic,
@@ -756,7 +768,40 @@ internal class PalleriaSyncCoordinator(
                     )
                 try {
                     requireReseedSourceHead(root, source, sourceOrigin, stableSource)
-                    PallaSyncImportRelay(remote).stageFromVerifiedStore(root, target, db.protocolDao())
+                    val staged = PallaSyncImportRelay(remote).stageFromVerifiedStore(root, target, db.protocolDao())
+                    if (staged is PallaSyncHttpResult.Success) {
+                        check(existingReseed?.stagedLogId == null || existingReseed.stagedLogId == staged.value.logId) {
+                            "C_IMPORT_CONFLICT"
+                        }
+                        val targetPin =
+                            buildJsonObject {
+                                put("origin", origin)
+                                put("chain_id", state.chainId)
+                                put("public_key", targetPublicKey)
+                                put("log_id", staged.value.logId)
+                            }
+                        val targetPinJson = checkNotNull(PallaSyncCore.canonicalJson(targetPin.toString())) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                        val journal =
+                            existingReseed?.copy(
+                                stagedLogId = staged.value.logId,
+                                compactionId = existingReseed.compactionId ?: UUID.randomUUID().toString(),
+                                targetPinJson = targetPinJson,
+                                phase = maxOf(1, existingReseed.phase),
+                                updatedAtMs = policy.retry.correctedTime(origin),
+                            ) ?: ReseedJournalEntity(
+                                chainId = state.chainId,
+                                sourceLogId = checkNotNull(stableSource.logId),
+                                sourceGeneration = stableSource.generation,
+                                targetOrigin = origin,
+                                stagedLogId = staged.value.logId,
+                                compactionId = UUID.randomUUID().toString(),
+                                targetPinJson = targetPinJson,
+                                phase = 1,
+                                updatedAtMs = policy.retry.correctedTime(origin),
+                            )
+                        reseedDao.saveMonotone(journal)
+                    }
+                    staged
                 } finally {
                     root.close()
                 }
