@@ -74,7 +74,12 @@ internal object PallaSyncLegacyV20Source {
         var previousCreatedAt = -1L
         return root.mapIndexed { index, item ->
             val value = item as? JsonObject ?: error("C_SCHEMA_VIOLATION")
-            check(value.keys == REQUIRED_FIELDS) { "C_SCHEMA_VIOLATION" }
+            check(value.keys.containsAll(REQUIRED_FIELDS) && value.keys.all { it in ALLOWED_FIELDS }) { "C_SCHEMA_VIOLATION" }
+            val relaySequence = value.optionalSafeSequence("relay_seq")
+            val serverSequence = value.optionalSafeSequence("server_sequence")
+            check(relaySequence == null || serverSequence == null || relaySequence == serverSequence) {
+                "C_ROLLBACK_DETECTED"
+            }
             check(value.string("protocol_version") == "2.0") { "C_SCHEMA_VIOLATION" }
             check(value.string("chain_id") == expectedChainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             val recordId = value.string("record_id")
@@ -165,6 +170,13 @@ internal object PallaSyncLegacyV20Source {
     private fun JsonObject.integer(key: String): Long =
         this[key]?.jsonPrimitive?.takeIf { !it.isString }?.long ?: error("C_SCHEMA_VIOLATION")
 
+    private fun JsonObject.optionalSafeSequence(key: String): Long? =
+        this[key]?.let { sequence ->
+            val parsed = sequence.jsonPrimitive.takeIf { !it.isString }?.long ?: error("C_SCHEMA_VIOLATION")
+            check(parsed in 0..MAX_SAFE_INTEGER) { "C_SCHEMA_VIOLATION" }
+            parsed
+        }
+
     private fun requireUuidV7(value: String) {
         val uuid = runCatching { UUID.fromString(value) }.getOrNull()
         check(uuid != null && uuid.version() == 7 && uuid.toString() == value) { "C_SCHEMA_VIOLATION" }
@@ -220,6 +232,10 @@ internal object PallaSyncLegacyV20Source {
             "created_at_ms",
             "signature",
         )
+
+    private val RELAY_SEQUENCE_FIELDS = setOf("relay_seq", "server_sequence")
+    private val ALLOWED_FIELDS = REQUIRED_FIELDS + RELAY_SEQUENCE_FIELDS
+    private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 
     private val QUARANTINE_CODES =
         setOf(

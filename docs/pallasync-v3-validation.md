@@ -3,7 +3,7 @@
 規範は依頼者が指定した `PallaSync-Protocol/docs/v3.0.md` だけです。
 本記録・コード・試験・設定は仕様を変更しません。全機能の適合完了はまだ宣言しません。
 
-§9.1–§9.3のv2.0移行について、旧v2 §4.1/§6.3の非ページ配列endpoint・厳密なSyncRecord構造・UUIDv7・chain/Base64URL検査と昇順・一意性検証を実装しました。読み取りは共通privacy gateを経由します。UIで2.0/2.1を明示選択し、v2.0ではnative sessionが各レコードのchain署名とAEADを検証・復号し、復号バッファ消去後に候補だけを既存の再開可能migration journalへ記録します。開始前に停止確認を要求し、全件を2回認証したordered transcriptと変換中の再読込hashを比較し、破損等の許容コードをquarantine記録します。`:app:ktlintCheck`、`:app:compileDebugKotlin`および`PallaSyncLegacyV20SourceTest` 5件は成功しました。旧v2 `/1`の全レコード最終状態に基づくwinner解決、独立replay/snapshotでの移行完了判定、巨大な非ページレスポンスの実機負荷は未完了であり、移行全体を適合扱いにしません。
+§9.1–§9.3のv2.0移行について、旧v2 §4.1/§6.3の非ページ配列endpoint・必須SyncRecord構造・UUIDv7・chain/Base64URL検査と昇順・一意性を実装しました。v2.1 §4.1の署名対象外relay sequence fieldsが応答に含まれる場合は非負safe integerとして読み、両方ある場合の不一致を拒否し、他の未知fieldsは拒否します。読み取りは共通privacy gateを経由します。UIで2.0/2.1を明示選択し、v2.0ではnative sessionが各レコードのchain署名とAEADを検証・復号し、復号バッファ消去後に候補だけを既存の再開可能migration journalへ記録します。開始前に停止確認を要求し、全件を2回認証したordered transcriptと変換中の再読込hashを比較し、破損等の許容コードをquarantine記録します。`:app:ktlintCheck`、`:app:compileDebugKotlin`および`PallaSyncLegacyV20SourceTest` 5件は成功しました。旧v2 `/1`の全レコード最終状態に基づくwinner解決、独立replay/snapshotでの移行完了判定、巨大な非ページレスポンスの実機負荷は未完了であり、移行全体を適合扱いにしません。
 
 §7.10/§10.15/§17.7/§17.11に従い、root seedを名前付きRust session内に保持したままCAS-bound AdminOperationを送信します。202/410単独では消去せず、同じsessionでGET `/deletion`を取得し、Rustが固定relay pin・既存authority・ローカル要求署名・CAS head・ledger hash・DeleteReceipt署名・transparency entryを照合します。証明をRoomへ保存してreadbackを確認した後、当該chainのRoom状態・outbox・同期鍵とpinを消去し、署名済み証拠は保持します。証明が取得/検証できない場合は鍵と状態を保持し`deletion_unverified`として返します。
 

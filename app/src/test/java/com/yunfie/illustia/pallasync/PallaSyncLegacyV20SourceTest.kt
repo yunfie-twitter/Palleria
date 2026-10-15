@@ -21,6 +21,8 @@ class PallaSyncLegacyV20SourceTest {
         decoded.map { it.sequence } shouldBe listOf(1L, 2L)
         decoded.map { it.recordId } shouldBe listOf(firstId, secondId)
         decoded.map { it.createdAtMs } shouldBe listOf(10L, 11L)
+        val relayed = record(firstId, 10).dropLast(1) + ",\"relay_seq\":4,\"server_sequence\":4}"
+        PallaSyncLegacyV20Source.decodeRecords("[$relayed]", chainId).single().sequence shouldBe 1L
     }
 
     @Test
@@ -43,6 +45,14 @@ class PallaSyncLegacyV20SourceTest {
         shouldThrow<IllegalStateException> {
             val duplicateMember = record(firstId, 10).dropLast(1) + ",\"action\":\"delete\"}"
             PallaSyncLegacyV20Source.decodeRecords("[$duplicateMember]", chainId)
+        }
+        shouldThrow<IllegalStateException> {
+            val invalidSequence = record(firstId, 10).dropLast(1) + ",\"relay_seq\":-1}"
+            PallaSyncLegacyV20Source.decodeRecords("[$invalidSequence]", chainId)
+        }
+        shouldThrow<IllegalStateException> {
+            val conflictingSequence = record(firstId, 10).dropLast(1) + ",\"relay_seq\":4,\"server_sequence\":5}"
+            PallaSyncLegacyV20Source.decodeRecords("[$conflictingSequence]", chainId)
         }
         shouldThrow<IllegalStateException> {
             PallaSyncLegacyV20Source.decodeRecords("[]", "not-a-chain-id")
