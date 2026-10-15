@@ -94,7 +94,15 @@ private data class RepairBatchResult(
     val accepted: Int,
     val rejectedCodes: List<String>,
     val repairRequired: Boolean,
-)
+) {
+    operator fun plus(other: RepairBatchResult) =
+        RepairBatchResult(
+            submitted + other.submitted,
+            accepted + other.accepted,
+            rejectedCodes + other.rejectedCodes,
+            repairRequired || other.repairRequired,
+        )
+}
 
 private data class SnapshotPublicationContext(
     val state: ChainStateEntity,
@@ -685,59 +693,101 @@ internal class PalleriaSyncCoordinator(
                             put("public_key", pinObject.getValue("public_key"))
                             put("log_id", targetLogId)
                         }.toString()
-                    val repair = PallaSyncRecordRepairRelay(remote)
-                    val dao = db.protocolDao()
-                    var submittedCount = 0
-                    var acceptedCount = 0
-                    var repairRequired = false
-                    val rejectedCodes = mutableListOf<String>()
-                    for (sourceLogId in dao.repairSourceLogIds(state.chainId)) {
-                        val through = dao.repairSourceHighWater(state.chainId, sourceLogId)
-                        if (through == null) continue
-                        var after = 0L
-                        var pending = mutableListOf<PallaSyncRecordRepairRelay.SourceRecord>()
-
-                        suspend fun flush() {
-                            if (pending.isEmpty()) return
-                            currentCoroutineContext().ensureActive()
-                            val batch = pending.toList()
-                            val batchResult = submitRepairBatch(root, base, sourceLogId, targetPin, origin, state, batch)
-                            submittedCount += batchResult.submitted
-                            acceptedCount += batchResult.accepted
-                            repairRequired = repairRequired || batchResult.repairRequired
-                            rejectedCodes += batchResult.rejectedCodes
-                            pending = mutableListOf()
-                        }
-
-                        while (after < through) {
-                            currentCoroutineContext().ensureActive()
-                            val page = dao.logPage(state.chainId, sourceLogId, after, through, PALLASYNC_PAGE_SIZE)
-                            check(page.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
-                            for (row in page) {
-                                check(row.validationState == "authority_verified") { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                                val entry = Json.parseToJsonElement(row.signedJson).jsonObject
-                                if (entry.getValue("kind").jsonPrimitive.content == "record") {
-                                    val record = entry.getValue("object").jsonObject
-                                    if (record.getValue("generation").jsonPrimitive.long == state.generation) {
-                                        val candidate = PallaSyncRecordRepairRelay.SourceRecord(entry, record)
-                                        if (pending.isNotEmpty() && !repair.fits(sourceLogId, pending + candidate)) flush()
-                                        check(repair.fits(sourceLogId, listOf(candidate))) { "C_LOCAL_LIMIT" }
-                                        pending.add(candidate)
-                                        if (pending.size == PALLASYNC_HARD_LIMITS.maxRecordsPerUpload) flush()
-                                    }
-                                }
-                            }
-                            after = page.last().relaySeq
-                        }
-                        flush()
-                    }
-                    check(submittedCount > 0) { "C_MISSING_DEPENDENCY" }
-                    PallaSyncRecordRepairSummary(submittedCount, acceptedCount, rejectedCodes, repairRequired)
+                    performRetainedHistoryRepair(root, base, origin, state, targetPin)
                 } finally {
                     root.close()
                 }
             }
         }
+
+    private suspend fun performRetainedHistoryRepair(
+        root: PallaSyncRootSession,
+        base: HttpUrl,
+        origin: String,
+        state: ChainStateEntity,
+        targetPin: String,
+    ): PallaSyncRecordRepairSummary {
+        val dao = db.protocolDao()
+        var totals = RepairBatchResult(0, 0, emptyList(), false)
+        dao.repairSourceLogIds(state.chainId).forEach { sourceLogId ->
+            val through = dao.repairSourceHighWater(state.chainId, sourceLogId)
+            if (through != null) {
+                totals += repairSourceLog(root, base, origin, state, targetPin, sourceLogId, through)
+            }
+        }
+        check(totals.submitted > 0) { "C_MISSING_DEPENDENCY" }
+        return PallaSyncRecordRepairSummary(totals.submitted, totals.accepted, totals.rejectedCodes, totals.repairRequired)
+    }
+
+    private suspend fun repairSourceLog(
+        root: PallaSyncRootSession,
+        base: HttpUrl,
+        origin: String,
+        state: ChainStateEntity,
+        targetPin: String,
+        sourceLogId: String,
+        through: Long,
+    ): RepairBatchResult {
+        val dao = db.protocolDao()
+        val repair = PallaSyncRecordRepairRelay(remote)
+        var totals = RepairBatchResult(0, 0, emptyList(), false)
+        var after = 0L
+        var pending = mutableListOf<PallaSyncRecordRepairRelay.SourceRecord>()
+        while (after < through) {
+            currentCoroutineContext().ensureActive()
+            val page = dao.logPage(state.chainId, sourceLogId, after, through, PALLASYNC_PAGE_SIZE)
+            check(page.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
+            for (row in page) {
+                val candidate = repairCandidate(row, state) ?: continue
+                if (pending.isNotEmpty() && !repair.fits(sourceLogId, pending + candidate)) {
+                    totals += flushRepairBatch(root, base, origin, state, targetPin, sourceLogId, pending)
+                    pending = mutableListOf()
+                }
+                check(repair.fits(sourceLogId, listOf(candidate))) { "C_LOCAL_LIMIT" }
+                pending.add(candidate)
+                if (pending.size == PALLASYNC_HARD_LIMITS.maxRecordsPerUpload) {
+                    totals += flushRepairBatch(root, base, origin, state, targetPin, sourceLogId, pending)
+                    pending = mutableListOf()
+                }
+            }
+            after = page.last().relaySeq
+        }
+        if (pending.isNotEmpty()) {
+            totals += flushRepairBatch(root, base, origin, state, targetPin, sourceLogId, pending)
+        }
+        return totals
+    }
+
+    private fun repairCandidate(
+        row: LogEntryEntity,
+        state: ChainStateEntity,
+    ): PallaSyncRecordRepairRelay.SourceRecord? {
+        check(row.validationState == "authority_verified") { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val entry = Json.parseToJsonElement(row.signedJson).jsonObject
+        return if (entry.getValue("kind").jsonPrimitive.content == "record") {
+            val record = entry.getValue("object").jsonObject
+            if (record.getValue("generation").jsonPrimitive.long == state.generation) {
+                PallaSyncRecordRepairRelay.SourceRecord(entry, record)
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    private suspend fun flushRepairBatch(
+        root: PallaSyncRootSession,
+        base: HttpUrl,
+        origin: String,
+        state: ChainStateEntity,
+        targetPin: String,
+        sourceLogId: String,
+        batch: List<PallaSyncRecordRepairRelay.SourceRecord>,
+    ): RepairBatchResult {
+        currentCoroutineContext().ensureActive()
+        return submitRepairBatch(root, base, sourceLogId, targetPin, origin, state, batch)
+    }
 
     private suspend fun submitRepairBatch(
         root: PallaSyncRootSession,

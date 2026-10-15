@@ -106,33 +106,42 @@ internal class PallaSyncRecordRepairRelay(
                     body = body.toByteArray(Charsets.UTF_8),
                 ),
             ) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
-        val request =
-            Request
-                .Builder()
-                .url(url)
-                .header("Accept", PALLASYNC_MEDIA_TYPE)
-                .header("Authorization", "PallaSync $token")
-                .post(body.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
-                .build()
+        val request = createRequest(url, token, body)
         return remote.execute(request) { response ->
-            val verified =
-                PallaSyncCore.validateRecordRepair(
-                    response.pallaSyncBytes(),
-                    JsonArray(records.map(SourceRecord::record)).toString(),
-                    pinJson,
-                )
-            val parsed =
-                parseRecordUploadResponseBody(
-                    Json,
-                    verified,
-                    records.associate {
-                        it.record
-                            .getValue("record_id")
-                            .jsonPrimitive.content to
-                            it.record
-                    },
-                )
-            parsed
+            parseRepairResponse(response.pallaSyncBytes(), pinJson, records)
         }
+    }
+
+    private fun createRequest(
+        url: HttpUrl,
+        token: String,
+        body: String,
+    ): Request =
+        Request
+            .Builder()
+            .url(url)
+            .header("Accept", PALLASYNC_MEDIA_TYPE)
+            .header("Authorization", "PallaSync $token")
+            .post(body.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
+            .build()
+
+    private fun parseRepairResponse(
+        bytes: ByteArray,
+        pinJson: String,
+        records: List<SourceRecord>,
+    ): PallaSyncHttpResult<PallaSyncPostRecordsResponse> {
+        val verified =
+            PallaSyncCore.validateRecordRepair(
+                bytes,
+                JsonArray(records.map(SourceRecord::record)).toString(),
+                pinJson,
+            )
+        val submitted =
+            records.associate {
+                it.record
+                    .getValue("record_id")
+                    .jsonPrimitive.content to it.record
+            }
+        return parseRecordUploadResponseBody(Json, verified, submitted)
     }
 }
