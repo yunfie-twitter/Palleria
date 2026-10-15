@@ -99,6 +99,11 @@ fun PallaSyncSettingsScreen(
     var deletingChain by remember { mutableStateOf(false) }
     var showRepairRootInput by remember { mutableStateOf(false) }
     var repairingRelayHistory by remember { mutableStateOf(false) }
+    var showReseedImportTarget by remember { mutableStateOf(false) }
+    var showReseedImportRootInput by remember { mutableStateOf(false) }
+    var reseedImportTargetUrl by remember { mutableStateOf("") }
+    var selectedReseedImportTargetUrl by remember { mutableStateOf<String?>(null) }
+    var stagingReseedImport by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var witnessInputArchive by remember { mutableStateOf<String?>(null) }
@@ -470,6 +475,53 @@ fun PallaSyncSettingsScreen(
         }
     }
 
+    if (showReseedImportTarget) {
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_reseed_import_title),
+            summary = stringResource(R.string.pallasync_reseed_import_target_desc),
+            backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+            onDismissRequest = { showReseedImportTarget = false },
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                TextField(
+                    value = reseedImportTargetUrl,
+                    onValueChange = { reseedImportTargetUrl = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        onClick = { showReseedImportTarget = false },
+                        modifier = Modifier.weight(1f),
+                        text = stringResource(R.string.action_cancel),
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        onClick = {
+                            val normalized = syncManager.normalizeServerUrl(reseedImportTargetUrl)
+                            if (normalized == null) {
+                                Toast.makeText(context, R.string.error_pallasync_invalid_server_url, Toast.LENGTH_SHORT).show()
+                            } else {
+                                selectedReseedImportTargetUrl = normalized
+                                showReseedImportTarget = false
+                                showReseedImportRootInput = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        text = stringResource(R.string.action_confirm),
+                    )
+                }
+            }
+        }
+    }
+
     if (showDeleteConfirm) {
         MiuixConfirmDialog(
             show = true,
@@ -555,6 +607,55 @@ fun PallaSyncSettingsScreen(
                     } finally {
                         repairingRelayHistory = false
                         showRepairRootInput = false
+                    }
+                }
+            },
+        )
+    }
+
+    if (showReseedImportRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_reseed_import_title),
+            explanation = stringResource(R.string.pallasync_reseed_import_confirm),
+            busy = stagingReseedImport,
+            onDismiss = {
+                showReseedImportRootInput = false
+                selectedReseedImportTargetUrl = null
+            },
+            onConfirm = { mnemonic, passphrase ->
+                val target = selectedReseedImportTargetUrl
+                if (target == null) {
+                    showReseedImportRootInput = false
+                    Toast.makeText(context, R.string.pallasync_reseed_import_failed, Toast.LENGTH_LONG).show()
+                } else {
+                    stagingReseedImport = true
+                    scope.launch {
+                        try {
+                            val result = syncManager.stageReseedHistory(target, mnemonic, passphrase)
+                            val message =
+                                when (result) {
+                                    is PallaSyncHttpResult.Success -> {
+                                        context.getString(
+                                            R.string.pallasync_reseed_import_staged,
+                                            result.value.chainId,
+                                            result.value.logId,
+                                        )
+                                    }
+
+                                    is PallaSyncHttpResult.ProtocolError, PallaSyncHttpResult.Gone, is PallaSyncHttpResult.Retryable -> {
+                                        context.getString(R.string.pallasync_reseed_import_failed)
+                                    }
+                                }
+                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            Toast.makeText(context, R.string.pallasync_reseed_import_failed, Toast.LENGTH_LONG).show()
+                        } finally {
+                            stagingReseedImport = false
+                            showReseedImportRootInput = false
+                            selectedReseedImportTargetUrl = null
+                        }
                     }
                 }
             },
@@ -852,6 +953,17 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_repair_history),
                                 summary = stringResource(R.string.pallasync_repair_history_desc),
                                 onClick = { showRepairRootInput = true },
+                            )
+                        }
+                        if (state.settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_reseed_import_title),
+                                summary = stringResource(R.string.pallasync_reseed_import_target_desc),
+                                onClick = {
+                                    reseedImportTargetUrl = ""
+                                    showReseedImportTarget = true
+                                },
                             )
                         }
                         if (state.settings.pallaSyncEnabled) {

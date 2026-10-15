@@ -6,6 +6,11 @@
     <string name="pallasync_repair_history_complete">保持レコード %2$d 件中 %1$d 件の修復が受理されました。</string>
     <string name="pallasync_repair_history_incomplete">%2$d 件中 %1$d 件が受理されました。一部は未解決のままです。ローカルデータは保持されています。</string>
     <string name="pallasync_repair_history_failed">履歴修復を検証できませんでした。ローカルデータは保持されています。</string>
+    <string name="pallasync_reseed_import_title">検証済み履歴を別のリレーへステージ</string>
+    <string name="pallasync_reseed_import_target_desc">送信先リレーを選びます。この操作はcontrol historyをstageするだけで、書込み可能なchainを作成したりレコードを移動したりしません。</string>
+    <string name="pallasync_reseed_import_confirm">送信先を確認し、chain管理者のニーモニックを入力してください。送信先originのprivacy policyが最新で、同意済みである必要があります。この操作は署名済みcontrol historyをstageしてlog IDを受け取るだけです。新世代のcommitや暗号化レコードの移動は行いません。</string>
+    <string name="pallasync_reseed_import_staged">chain %1$s の履歴をstageしました。staging log: %2$s。送信先chainはまだ書込みできません。</string>
+    <string name="pallasync_reseed_import_failed">履歴をstageできませんでした。chainの切替commitは行っていません。</string>
     <string name="pallasync_v3_mnemonic">復旧用mnemonicを保存</string>
     <string name="pallasync_v3_mnemonic_explanation">24単語を安全なオフラインの場所に控えてください。アプリには保存されません。この画面を離れるか10分経過すると表示を消去します。</string>
     <string name="pallasync_v3_mnemonic_saved">単語を控えました</string>

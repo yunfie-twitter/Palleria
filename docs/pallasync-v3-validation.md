@@ -182,6 +182,8 @@ CI ASanがexpiry中にholderのlocked RSWK stateが残るraceを検出しまし�
 
 同変更の`:app:detekt`は失敗し、現在60件のlint指摘を報告します。指摘箇所はlegacy migration、coordinator既存箇所、既存test群などで、新規import builder/relay/staging entry methodは含みません。detekt全体を緑とは記録しません。
 
+§10.3/§17.5 stagingをSettingsへ接続しました。別リレーURLを明示入力し、別画面でroot mnemonic/passphraseを受け取ってから、coordinatorがそのoriginのcurrent privacy consentを確認してstageします。成功toastはstage済みlog IDを示し、target chainはまだwrite可能でないことを説明します。既存の同一relay record repairとは別操作です。UI追加後も`:app:ktlintCheck`、`:app:compileDebugKotlin`、`PallaSyncImportRelayTest` 7件は成功しました。compose instrumentationで実画面操作、複数chunk resume、restore署名/AEAD検証、generation+1 commitは未検証・未実装です。
+
 §11.1/§11.2/§12.3/§16.5のローカル状態から、Settingsに観測target・verified・materialized sequence、初回取得状態、pending outbox、author gap、unresolved quarantine、search/viewed/seen件数と安全上限を表示します。値は別々のRoom項目/問い合わせから取得し、部分適用時は分離を明示します。Room host testでgap/quarantine集計を含む`PallaSyncProtocolStoreTest` 9件が成功し、Kotlin compile、unit-test source compile、detekt、ktlintも成功しました。全履歴のarchive画面接続、巨大DB時のquery負荷・実サイズAndroid stressは未検証です。
 
 §10.7/§10.8/§18.1の端末承認側UIを接続しました。保留要求のページ取得、申請にbindするSAS、明示確認後のEnrollmentCertificate/現行EpochKeyEnvelope生成、同一オブジェクトのJSONローカル書出し、相手から戻る`{device_record,envelopes,admin_operation}`のnative検証、relay approval、署名済みresponseの書出しが行えます。HTTP結果不明では暗号化journalの同一approval bodyだけを再試行します。verified authority exportはoffer作成時のhashとKeystore checkpointの一致を再確認し、device secretsを含めません。Peer JNI/JournalとProtocolStoreのhost unit tests、Kotlin compile、detekt、ktlintは成功しました。新端末側QR scan/import/session/DeviceRecord作成/pending-key保存・envelope readback/ack/Room activation、fresh identity rotation、実機での二端末approvalは未実装・未検証です。ローカル出力は仕様上の署名済み公開オブジェクト/ciphertextのJSONで、§18.1にローカルfile wrapper用暗号スイートが定義されないため独自暗号wrapperは加えていません。A-07はpendingのままです。

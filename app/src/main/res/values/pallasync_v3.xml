@@ -9,6 +9,11 @@
     <string name="pallasync_repair_history_complete">Repair accepted %1$d of %2$d retained record(s).</string>
     <string name="pallasync_repair_history_incomplete">Repair accepted %1$d of %2$d records; some records remain unresolved. Local data was retained.</string>
     <string name="pallasync_repair_history_failed">History repair could not be verified. Local data was retained.</string>
+    <string name="pallasync_reseed_import_title">Stage verified history on another relay</string>
+    <string name="pallasync_reseed_import_target_desc">Choose the target relay. This stages control history only; it does not create a writable chain or move records.</string>
+    <string name="pallasync_reseed_import_confirm">Review the target relay and enter the chain administrator mnemonic. The relay policy must be current and consented for that origin. This operation only stages signed control history and returns a staging log ID. It does not commit a new generation or move encrypted records.</string>
+    <string name="pallasync_reseed_import_staged">History staged for chain %1$s. Staging log: %2$s. The target chain is not writable yet.</string>
+    <string name="pallasync_reseed_import_failed">History could not be staged. No chain switch was committed.</string>
     <string name="pallasync_export_saved">Relay archive saved and its hash verified. Signed objects still need validation before restore.</string>
     <string name="pallasync_export_cancelled">Export cancelled.</string>
     <string name="pallasync_export_failed">Relay export failed. Local keys and data were retained.</string>
