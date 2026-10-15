@@ -7,6 +7,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 import java.util.Base64
 
 /** Fresh target-generation keys are held only for the foreground reseed operation. */
@@ -74,6 +75,37 @@ class PallaSyncPreparedReseed(
             epochSecretBase64Url = encode(EPOCH_SECRET),
             epoch = publicResult.epoch,
         )
+    }
+
+    /** Save the candidate as a separate pending identity and require exact encrypted-store readback. */
+    internal fun persistPendingKeys(keystore: PallaSyncKeystore): PallaSyncKeySnapshot {
+        val snapshot = keySnapshot()
+        check(keystore.savePendingChainKeys(snapshot)) { "C_LOCAL_STORAGE_FULL" }
+        val readback = keystore.getPendingChainKeys()
+        if (readback != snapshot) {
+            keystore.clearPendingChainKeys()
+            error("C_COMMITMENT_MISMATCH")
+        }
+        return readback
+    }
+
+    /** Open target-generation crypto using only this operation's fresh epoch secret. */
+    internal fun openEpochSession(): PallaSyncEpochSession {
+        check(!closed) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val epoch = Json.parseToJsonElement(publicResult.epochJson).jsonObject
+        val parameters = Json.parseToJsonElement(publicResult.parametersJson).jsonObject
+        val context =
+            kotlinx.serialization.json.buildJsonObject {
+                put("chain_id", publicResult.chainId)
+                put("generation", publicResult.generation)
+                put("epoch", publicResult.epoch)
+                put("epoch_commitment", publicResult.epochCommitment)
+                put("metadata_profile", parameters.getValue("policy").jsonObject.getValue("metadata_profile"))
+            }
+        check(epoch.getValue("epoch_commitment").jsonPrimitive.content == publicResult.epochCommitment) {
+            "C_COMMITMENT_MISMATCH"
+        }
+        return PallaSyncEpochSession.begin(context, material[EPOCH_SECRET].copyOf())
     }
 
     override fun close() {

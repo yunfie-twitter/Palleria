@@ -66,6 +66,9 @@ class PallaSyncReseedJniTest {
                     val envelopeKinds = result.envelopesJson.map(::recipientKind)
                     envelopeKinds shouldBe listOf("device", "recovery")
                     result.epochHash shouldBe PallaSyncCore.objectHash(result.epochJson)
+                    prepared.openEpochSession().use { targetEpoch ->
+                        targetEpoch.tag("private collection") shouldBe null
+                    }
                 }
             }
     }
