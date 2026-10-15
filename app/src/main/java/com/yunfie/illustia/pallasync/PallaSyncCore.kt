@@ -586,6 +586,19 @@ object PallaSyncCore {
         createdAtMs: Long,
     ): String
 
+    /** Creates the exact §17.5 target-bound AdminOperation while root material stays native. */
+    external fun createReseedAdminOperation(
+        handle: Long,
+        currentParametersJson: String,
+        currentEpochJson: String,
+        parametersJson: String,
+        epochJson: String,
+        envelopesJson: String,
+        compactionJson: String,
+        deviceRecordsJson: String,
+        createdAtMs: Long,
+    ): String
+
     external fun validateDeletionProof(
         body: ByteArray,
         pinJson: String,

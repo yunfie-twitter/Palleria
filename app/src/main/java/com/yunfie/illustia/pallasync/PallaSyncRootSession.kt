@@ -49,6 +49,31 @@ internal class PallaSyncRootSession private constructor(
 
     fun userInteraction() = PallaSyncCore.touchRootSession(handle)
 
+    /** The admin signature binds every exact object committed by §17.5 PUT /parameters. */
+    fun createReseedAdminOperation(
+        currentParametersJson: String,
+        currentEpochJson: String,
+        parametersJson: String,
+        epochJson: String,
+        envelopesJson: String,
+        compactionJson: String,
+        deviceRecordsJson: String,
+        createdAtMs: Long,
+    ): String {
+        check(operation == Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
+        return PallaSyncCore.createReseedAdminOperation(
+            handle,
+            currentParametersJson,
+            currentEpochJson,
+            parametersJson,
+            epochJson,
+            envelopesJson,
+            compactionJson,
+            deviceRecordsJson,
+            createdAtMs,
+        )
+    }
+
     override fun close() = PallaSyncCore.endRootSession(handle)
 
     companion object {

@@ -1949,6 +1949,63 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createDe
         }
     }
 }
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createReseedAdminOperation<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    current_parameters: JString<'local>,
+    current_epoch: JString<'local>,
+    parameters: JString<'local>,
+    epoch: JString<'local>,
+    envelopes: JString<'local>,
+    compaction: JString<'local>,
+    device_records: JString<'local>,
+    created_at_ms: jlong,
+) -> jstring {
+    let result = (|| {
+        let current_parameters =
+            read_string(&mut env, &current_parameters).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let current_epoch =
+            read_string(&mut env, &current_epoch).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let parameters =
+            read_string(&mut env, &parameters).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let epoch = read_string(&mut env, &epoch).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let envelopes =
+            read_string(&mut env, &envelopes).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let compaction =
+            read_string(&mut env, &compaction).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let device_records =
+            read_string(&mut env, &device_records).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        if created_at_ms < 0 {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        crate::root_session::reseed_admin_operation(
+            handle as u64,
+            &current_parameters,
+            &current_epoch,
+            &parameters,
+            &epoch,
+            &envelopes,
+            &compaction,
+            &device_records,
+            created_at_ms,
+        )
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value)
+            .map(|s| s.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_endRootSession<'local>(
     _env: JNIEnv<'local>,

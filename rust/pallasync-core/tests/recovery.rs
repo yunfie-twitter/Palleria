@@ -116,3 +116,46 @@ fn delete_request_is_a_root_signed_cas_bound_admin_operation() {
     );
     root_session::end(handle);
 }
+
+#[test]
+fn reseed_admin_operation_requires_reseed_session_and_strict_signed_inputs() {
+    let wrong_operation =
+        root_session::begin(MNEMONIC.as_bytes(), b"", Operation::Delete, None, None).unwrap();
+    assert_eq!(
+        root_session::reseed_admin_operation(
+            wrong_operation,
+            "{}",
+            "{}",
+            "{}",
+            "{}",
+            "[]",
+            "{}",
+            "[]",
+            1,
+        )
+        .unwrap_err()
+        .0,
+        "C_RECOVERY_AUTH_REQUIRED"
+    );
+    root_session::end(wrong_operation);
+
+    let reseed =
+        root_session::begin(MNEMONIC.as_bytes(), b"", Operation::Reseed, None, None).unwrap();
+    assert_eq!(
+        root_session::reseed_admin_operation(
+            reseed,
+            r#"{"duplicate":1,"duplicate":2}"#,
+            "{}",
+            "{}",
+            "{}",
+            "[]",
+            "{}",
+            "[]",
+            1,
+        )
+        .unwrap_err()
+        .0,
+        "C_SCHEMA_VIOLATION"
+    );
+    root_session::end(reseed);
+}

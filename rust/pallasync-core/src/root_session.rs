@@ -299,6 +299,100 @@ pub fn delete_request(
     })
 }
 
+/// Create the §17.5 AdminOperation only after the caller has assembled the complete
+/// proposed generation and snapshot commitment. The exact signed payload is the one
+/// accepted by PUT /parameters; root material never crosses JNI.
+#[allow(clippy::too_many_arguments)]
+pub fn reseed_admin_operation(
+    handle: u64,
+    current_parameters_json: &str,
+    current_epoch_json: &str,
+    parameters_json: &str,
+    epoch_json: &str,
+    envelopes_json: &str,
+    compaction_json: &str,
+    device_records_json: &str,
+    created_at_ms: i64,
+) -> Result<String> {
+    with(handle, Operation::Reseed, |session| {
+        if created_at_ms < 0 {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        let parse = |input: &str| {
+            crate::strict::jcs::parse(input.as_bytes())
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+        };
+        let current_parameters = parse(current_parameters_json)?;
+        let current_epoch = parse(current_epoch_json)?;
+        let parameters = parse(parameters_json)?;
+        let epoch = parse(epoch_json)?;
+        let envelopes = parse(envelopes_json)?;
+        let compaction = parse(compaction_json)?;
+        let device_records = parse(device_records_json)?;
+        if !envelopes.is_array() || !device_records.is_array() {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        crate::public_wire::validate(&current_parameters, "parameters")
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::public_wire::validate(&current_epoch, "epoch")
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let payload = json!({
+            "parameters": parameters,
+            "epoch": epoch,
+            "envelopes": envelopes,
+            "compaction": compaction,
+            "device_records": device_records,
+        });
+        crate::admin_action::schema("reseed", &payload)?;
+        let chain_id = current_parameters["chain_id"]
+            .as_str()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let admin_public_key = current_parameters["admin_public_key"]
+            .as_str()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        if chain_id != session.roots.chain_id || admin_public_key != session.roots.admin_public_key
+        {
+            return Err(ClientError("C_RECOVERY_ROOT_MISMATCH"));
+        }
+        for (value, context) in [
+            (&parameters, crate::strict::verify::CTX_PARAMETERS),
+            (&epoch, crate::strict::verify::CTX_EPOCH),
+        ] {
+            let valid = crate::strict::verify::verify_signed_json(
+                admin_public_key,
+                value["signature"].as_str().unwrap_or_default(),
+                value,
+                context,
+            )
+            .unwrap_or(false);
+            if !valid {
+                return Err(ClientError("C_SIGNATURE_INVALID"));
+            }
+        }
+        let mut operation = json!({
+            "operation_id": uuid::Uuid::new_v4().to_string(),
+            "chain_id": chain_id,
+            "generation": current_parameters["generation"],
+            "action": "reseed",
+            "expected_parameters_hash": object_hash(&current_parameters),
+            "expected_epoch_hash": object_hash(&current_epoch),
+            "target_hash": object_hash(&payload),
+            "created_at_ms": created_at_ms,
+            "signature": "",
+        });
+        let canonical = crate::models::unsigned_record_jcs(&operation)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        operation["signature"] = json!(crate::crypto::sign_with_context(
+            &session.roots.admin_key,
+            crate::crypto::CTX_ADMIN_OP,
+            &canonical,
+        ));
+        // Verify both ancestry/CAS bindings and the complete exact target before exposing it.
+        crate::admin_action::verify(&operation, &payload, &current_parameters, &current_epoch)?;
+        serde_json::to_string(&operation).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })
+}
+
 fn canonical_number(value: &str, maximum: u64, positive: bool) -> bool {
     value
         .parse::<u64>()
