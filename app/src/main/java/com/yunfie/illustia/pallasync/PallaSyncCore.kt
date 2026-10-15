@@ -335,6 +335,14 @@ object PallaSyncCore {
         deviceSeed: ByteArray,
     ): PallaSyncPreparedEpoch
 
+    /** Fresh target-generation keys and signed public objects; private material stays in Rust until copied into OS storage. */
+    external fun prepareReseedBundle(
+        root: Long,
+        authorityJson: String,
+        deviceName: String,
+        createdAtMs: Long,
+    ): PallaSyncPreparedReseed
+
     external fun validateRetainedLogLink(
         entryJson: String,
         receiptJson: String,

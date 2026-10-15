@@ -2604,3 +2604,78 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_prepareE
         }
     }
 }
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_prepareReseedBundle<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    root: jlong,
+    authority: JString<'local>,
+    device_name: JString<'local>,
+    created_at_ms: jlong,
+) -> jobject {
+    let result = (|| {
+        let authority = serde_json::from_value(public_value(&mut env, &authority)?)
+            .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let device_name =
+            read_string(&mut env, &device_name).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::reseed::prepare(root as u64, &authority, &device_name, created_at_ms)
+    })();
+    let prepared = match result {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            return std::ptr::null_mut();
+        }
+    };
+    let mut allocated = Vec::new();
+    let result = (|| {
+        let matrix = env
+            .new_object_array(6, "[B", JObject::null())
+            .map_err(|_| ClientError("C_LOCAL_LIMIT"))?;
+        for (index, bytes) in [
+            &prepared.material.record,
+            &prepared.material.metadata,
+            &prepared.material.tag,
+            &prepared.material.epoch_secret,
+            &prepared.material.device_signing_seed,
+            &prepared.material.device_kex_private,
+        ]
+        .iter()
+        .enumerate()
+        {
+            allocated.push(
+                env.byte_array_from_slice(*bytes)
+                    .map_err(|_| ClientError("C_LOCAL_LIMIT"))?,
+            );
+            env.set_object_array_element(&matrix, index as jint, allocated.last().unwrap())
+                .map_err(|_| ClientError("C_LOCAL_LIMIT"))?;
+        }
+        let text = env
+            .new_string(prepared.public.to_string())
+            .map_err(|_| ClientError("C_LOCAL_LIMIT"))?;
+        env.new_object(
+            "com/yunfie/illustia/pallasync/PallaSyncPreparedReseed",
+            "([[BLjava/lang/String;)V",
+            &[
+                JValue::Object(&JObject::from(matrix)),
+                JValue::Object(&JObject::from(text)),
+            ],
+        )
+        .map(|value| value.into_raw())
+        .map_err(|_| ClientError("C_LOCAL_LIMIT"))
+    })();
+    match result {
+        Ok(value) => value,
+        Err(error) => {
+            let _ = env.exception_clear();
+            for array in allocated {
+                let _ = env.set_byte_array_region(&array, 0, &[0; 32]);
+            }
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}

@@ -74,6 +74,16 @@ internal class PallaSyncRootSession private constructor(
         )
     }
 
+    /** Generate a fresh local identity and signed generation+1 public controls inside Rust. */
+    fun prepareReseed(
+        authorityJson: String,
+        deviceName: String,
+        createdAtMs: Long,
+    ): PallaSyncPreparedReseed {
+        check(operation == Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
+        return PallaSyncCore.prepareReseedBundle(handle, authorityJson, deviceName, createdAtMs)
+    }
+
     override fun close() = PallaSyncCore.endRootSession(handle)
 
     companion object {

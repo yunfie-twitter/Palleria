@@ -24,6 +24,7 @@ pub mod peer_response;
 pub mod public_wire;
 pub mod recovery;
 pub mod recovery_flow;
+pub mod reseed;
 pub mod root_session;
 pub mod rotation;
 pub mod schema;
