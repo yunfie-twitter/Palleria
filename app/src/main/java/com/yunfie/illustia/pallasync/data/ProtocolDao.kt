@@ -1051,6 +1051,10 @@ interface ProtocolDao {
 /** Small focused reader for immutable deletion proof revisions retained after chain erasure. */
 @Dao
 interface DeletionEvidenceDao {
+    /** §17.7: a retained authenticated deletion ledger prevents this deterministic chain ID being reactivated on any relay. */
+    @Query("SELECT EXISTS(SELECT 1 FROM ps_evidence WHERE chain_id=:chainId AND kind='delete_receipt')")
+    suspend fun hasDeletionReceipt(chainId: String): Boolean
+
     @Query(
         "SELECT signed_json FROM ps_evidence WHERE chain_id=:chainId AND log_id=:logId AND kind='delete_receipt' ORDER BY sequence DESC, rowid DESC LIMIT 1",
     )

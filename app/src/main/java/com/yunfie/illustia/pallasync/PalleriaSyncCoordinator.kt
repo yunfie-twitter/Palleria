@@ -2386,6 +2386,7 @@ internal class PalleriaSyncCoordinator(
         origin: String,
     ) {
         val chain = checkNotNull(prepared.keys.chainId)
+        check(!db.deletionEvidenceDao().hasDeletionReceipt(chain)) { "C_DELETION_UNVERIFIED" }
         val existing = db.dao.getChainState(chain)
         if (existing == null) {
             pinPreparedCheckpoint(prepared)

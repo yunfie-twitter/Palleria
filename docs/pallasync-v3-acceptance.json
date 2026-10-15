@@ -870,14 +870,17 @@
         "PallaSync/src/api/deletion.rs",
         "PallaSync/src/api/import.rs",
         "PallaSync/src/api/export.rs",
-        "Palleria/rust/pallasync-core/src/attestations.rs"
+        "Palleria/rust/pallasync-core/src/attestations.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt"
       ],
       "tests": [
         "PallaSync/tests/v3_integration.rs",
-        "Palleria/rust/pallasync-core/tests/attestations.rs"
+        "Palleria/rust/pallasync-core/tests/attestations.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
       ],
       "result": "pending",
-      "remaining": "Execute stale restore/ledger reconciliation, public deletion export, optional witness and anti-resurrection client workflows.",
+      "remaining": "Activation now refuses any chain_id with a locally retained verified deletion receipt, independent of relay origin, preventing stale restore/reuse; the Room test verifies cross-origin chain-ID blocking. Still execute stale restore/ledger reconciliation and deletion/witness SAF interop against the relay and independent client, verify public deletion export and physical-device anti-resurrection behavior.",
       "verification_scope": "targeted_partial"
     }
   ],

@@ -279,6 +279,39 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `retained deletion receipt blocks deterministic chain reuse across relays`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val evidence = db.protocolDao()
+                val deletionEvidence = db.deletionEvidenceDao()
+                deletionEvidence.hasDeletionReceipt(chain) shouldBe false
+                evidence.retainDeletionProof(
+                    ProtectedEvidenceEntity(
+                        origin = "https://old-relay.example",
+                        relayKeyId = "old-relay-key",
+                        chainId = chain,
+                        logId = log,
+                        kind = "delete_receipt",
+                        sequence = 4,
+                        objectHash = "receipt-hash",
+                        signedJson = "{\"delete_receipt\":true}",
+                    ),
+                )
+
+                deletionEvidence.hasDeletionReceipt(chain) shouldBe true
+                deletionEvidence.hasDeletionReceipt("different-deterministic-chain") shouldBe false
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `provisional acceptance binds a position without applying effects twice`() =
         runBlocking<Unit> {
             val db =

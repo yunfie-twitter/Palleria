@@ -237,3 +237,5 @@ import requestが8 MiB request limitに達する場合、固定されたcomplete
 前回追加した自動`migration/succeeded` auditは§9.3の独立再生要件より早く成功を宣言してしまうため撤回しました。受領証が全件そろった状態を`legacy_receipts_complete`として保持し、独立replayまたは同一canonical stateの検証済みsnapshotが得られるまで移行完了・成功auditとは扱いません。実JNI/Roomの`PallaSyncLocalIntentsTest`でこの保留状態と再開時の重複・偽成功防止を確認します。A-19はpendingです。
 
 移行設定画面に`legacy_receipts_complete`専用の説明を追加し、全receipt確認後も独立replayまたは一致snapshotが必要と明示しました。`:app:ktlintCheck`と`:app:compileDebugKotlin`が成功しました。これは状態説明のUI接続であり、replay検証自体は未実装です。
+
+§17.7の削除anti-resurrectionについて、Palleriaはchain activation前に保存済みの検証済み`delete_receipt`をchain_id横断（origin/log_id非依存）で検索し、見つかった場合は`C_DELETION_UNVERIFIED`でactivationを拒否します。これにより、古いexportや別relayを通じた同一決定的chain_idの再有効化を防ぎます。Room回帰試験はreceiptなし/別chainの許可と、別origin receiptによる拒否を確認します。確認: `:app:ktlintFormat :app:ktlintCheck :app:compileDebugKotlin :app:testDebugUnitTest --tests com.yunfie.illustia.pallasync.PallaSyncProtocolStoreTest`成功。stale DB restoreとrelay deletion ledger照合、別端末間でのreceipt持ち回りおよび実機復元試験は未実施のためA-28はpendingです。
