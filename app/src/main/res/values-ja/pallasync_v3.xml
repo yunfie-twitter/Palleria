@@ -95,6 +95,7 @@
     <string name="pallasync_legacy_migration_finalize_choices">選択を保存して移行を準備</string>
     <string name="pallasync_legacy_migration_choices_saved">選択を保存しました。移行再開前にsourceを再検証してください。</string>
     <string name="pallasync_legacy_migration_receipts">検証済み移行先receipt: %1$d / %2$d · 状態: %3$s</string>
+    <string name="pallasync_legacy_migration_replay_required">移行先の全receiptを検証しました。独立replayまたは一致する検証済みsnapshotで変換後の状態を確認するまで、移行は完了しません。</string>
     <string name="pallasync_legacy_migration_more_candidates">次の候補ページ</string>
     <string name="pallasync_legacy_migration_report_failed">ローカル移行レポートを読み込めませんでした。</string>
     <string name="pallasync_legacy_migration_export_report">暗号化された移行元レコードを含むレポートを書き出す</string>

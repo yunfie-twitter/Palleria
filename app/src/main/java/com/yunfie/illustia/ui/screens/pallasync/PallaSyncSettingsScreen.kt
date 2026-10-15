@@ -1370,6 +1370,9 @@ fun PallaSyncSettingsScreen(
                         migration.state,
                     ),
                 )
+                if (migration.state == "legacy_receipts_complete") {
+                    Text(stringResource(R.string.pallasync_legacy_migration_replay_required))
+                }
                 if (migration.sourceHighWater == 0L && migration.stagedThrough == 0L && migration.decisions == 0L) {
                     Text(stringResource(R.string.pallasync_legacy_source_not_staged))
                 }
