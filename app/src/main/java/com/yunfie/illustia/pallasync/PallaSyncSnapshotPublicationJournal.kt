@@ -116,6 +116,53 @@ internal class PallaSyncSnapshotPublicationJournal(
         }
     }
 
+    /** Persist only signed receipts for staged reseed parts, before their transparency proof exists. */
+    suspend fun retainStagedUploadReceipts(
+        records: List<JsonObject>,
+        response: JsonObject,
+    ) {
+        check(records.isNotEmpty()) { "C_SNAPSHOT_INVALID" }
+        val submittedById = records.associateBy { it.getValue("record_id").jsonPrimitive.content }
+        check(submittedById.size == records.size) { "C_DEVICE_EQUIVOCATION" }
+        val accepted = response.getValue("accepted").jsonArray.map { it.jsonPrimitive.content }
+        check(
+            response.getValue("rejected").jsonArray.isEmpty() && accepted.toSet() == submittedById.keys &&
+                accepted.size == submittedById.size,
+        ) {
+            "C_ACCEPTANCE_UNPROVEN"
+        }
+        val receipts = response.getValue("upload_receipts").jsonArray.map { it.jsonObject }
+        check(receipts.size == records.size) { "C_ACCEPTANCE_UNPROVEN" }
+        val recordsByHash = records.associateBy { checkNotNull(PallaSyncCore.objectHash(it.toString())) }
+        val receiptsByHash = receipts.associateBy { it.getValue("object_hash").jsonPrimitive.content }
+        val receiptSetMatches =
+            recordsByHash.size == records.size && receiptsByHash.size == receipts.size && receiptsByHash.keys == recordsByHash.keys
+        check(receiptSetMatches) {
+            "C_ACCEPTANCE_UNPROVEN"
+        }
+        val publication = dao.publication(chainId, compactionId) ?: error("C_MISSING_DEPENDENCY")
+        val parts = dao.parts(chainId, compactionId).associateBy { it.recordHash }
+        check(parts.size == dao.parts(chainId, compactionId).size) { "C_DEVICE_EQUIVOCATION" }
+        for ((hash, record) in recordsByHash) {
+            val recordId = record.getValue("record_id").jsonPrimitive.content
+            val part = parts[hash] ?: error("C_MISSING_DEPENDENCY")
+            val receipt = receiptsByHash.getValue(hash)
+            check(
+                part.recordId == recordId && part.signedJson == record.toString() &&
+                    receipt.getValue("chain_id").jsonPrimitive.content == chainId &&
+                    receipt.getValue("log_id").jsonPrimitive.content == publication.logId &&
+                    receipt.getValue("object_hash").jsonPrimitive.content == hash &&
+                    receipt["relay_seq"] == JsonNull && receipt["entry_hash"] == JsonNull,
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+            dao.retainStagedReceipt(part, receipt.toString())
+        }
+    }
+
+    suspend fun confirmStagedTransparencySuffix() {
+        val publication = dao.publication(chainId, compactionId) ?: error("C_MISSING_DEPENDENCY")
+        dao.confirmStagedTransparencySuffix(chainId, compactionId, publication.partCount)
+    }
+
     suspend fun finalize(
         commitment: String,
         signedCompactionJson: String,

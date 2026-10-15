@@ -95,6 +95,76 @@ class PallaSyncSnapshotPublicationDaoTest {
         }
 
     @Test
+    fun `staged reseed receipts cannot authorize compaction before suffix verification`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val journal = PallaSyncSnapshotPublicationJournal(db, CHAIN, COMPACTION, epoch = 4)
+                val header =
+                    buildJsonObject {
+                        put("kind", "header")
+                        put("chain_id", CHAIN)
+                        put("generation", 2)
+                        put("log_id", LOG)
+                        put("covered_through_seq", 0)
+                        put("covered_log_hash", HASH)
+                        put("epoch_hash", OTHER_HASH)
+                        put("lamport_max", 7)
+                    }
+                journal.begin(header, 1)
+                val record =
+                    buildJsonObject {
+                        put("record_id", RECORD)
+                        put("chain_id", CHAIN)
+                        put("ciphertext", "opaque")
+                    }
+                val recordHash = checkNotNull(PallaSyncCore.objectHash(record.toString()))
+                val part =
+                    SnapshotPublicationPartEntity(
+                        chainId = CHAIN,
+                        compactionId = COMPACTION,
+                        partIndex = 0,
+                        recordId = RECORD,
+                        recordHash = recordHash,
+                        signedJson = record.toString(),
+                    )
+                journal.retain(part)
+                val receipt =
+                    buildJsonObject {
+                        put("chain_id", CHAIN)
+                        put("log_id", LOG)
+                        put("object_hash", recordHash)
+                        put("relay_seq", JsonNull)
+                        put("entry_hash", JsonNull)
+                        put("receipt_id", "55555555-5555-4555-8555-555555555555")
+                    }
+                val response =
+                    buildJsonObject {
+                        put("accepted", JsonArray(listOf(JsonPrimitive(RECORD))))
+                        put("rejected", JsonArray(emptyList()))
+                        put("upload_receipts", JsonArray(listOf(receipt)))
+                    }
+                journal.retainStagedUploadReceipts(listOf(record), response)
+                journal.prepared(0)?.status shouldBe "staged"
+                runCatching {
+                    db.snapshotPublicationDao().finalizeCompaction(CHAIN, COMPACTION, HASH, "{\"compaction\":true}")
+                }.exceptionOrNull()?.message shouldBe "C_ACCEPTANCE_UNPROVEN"
+
+                journal.confirmStagedTransparencySuffix()
+                journal.prepared(0)?.status shouldBe "receipted"
+                db.snapshotPublicationDao().finalizeCompaction(CHAIN, COMPACTION, HASH, "{\"compaction\":true}")
+                db.snapshotPublicationDao().publication(CHAIN, COMPACTION)?.status shouldBe "compaction_ready"
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `producer journal binds resume state to the complete canonical header`() =
         runBlocking<Unit> {
             val db =

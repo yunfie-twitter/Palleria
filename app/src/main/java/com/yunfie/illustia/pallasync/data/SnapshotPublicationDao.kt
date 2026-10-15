@@ -70,6 +70,30 @@ interface SnapshotPublicationDao {
     ): Int
 
     @Query(
+        "UPDATE ps_snapshot_publication_parts SET upload_receipt_json=:receipt,status='staged' " +
+            "WHERE chain_id=:chain AND compaction_id=:compaction AND part_index=:index AND record_id=:recordId " +
+            "AND record_hash=:recordHash AND signed_json=:signedJson AND upload_receipt_json IS NULL AND status='prepared'",
+    )
+    suspend fun attachStagedReceipt(
+        chain: String,
+        compaction: String,
+        index: Int,
+        recordId: String,
+        recordHash: String,
+        signedJson: String,
+        receipt: String,
+    ): Int
+
+    @Query(
+        "UPDATE ps_snapshot_publication_parts SET status='receipted' " +
+            "WHERE chain_id=:chain AND compaction_id=:compaction AND status='staged' AND upload_receipt_json IS NOT NULL",
+    )
+    suspend fun confirmStagedReceipts(
+        chain: String,
+        compaction: String,
+    ): Int
+
+    @Query(
         "UPDATE ps_snapshot_publications SET state_sha256=:commitment,compaction_json=:compactionJson,status='compaction_ready' " +
             "WHERE chain_id=:chain AND compaction_id=:compaction AND part_count=:partCount " +
             "AND status IN ('preparing','uploading','compaction_ready') " +
@@ -175,6 +199,58 @@ interface SnapshotPublicationDao {
         check(this.part(part.chainId, part.compactionId, part.partIndex)?.uploadReceiptJson == receipt) {
             "C_LOCAL_STORAGE_FULL"
         }
+    }
+
+    /** A reseed receipt is stored as untrusted until the target transparency suffix is verified. */
+    @Transaction
+    suspend fun retainStagedReceipt(
+        part: SnapshotPublicationPartEntity,
+        receipt: String,
+    ) {
+        val publication = publication(part.chainId, part.compactionId) ?: error("C_MISSING_DEPENDENCY")
+        check(publication.status in setOf("preparing", "uploading")) { "C_SNAPSHOT_INVALID" }
+        val old = part(part.chainId, part.compactionId, part.partIndex) ?: error("C_MISSING_DEPENDENCY")
+        check(old.recordId == part.recordId && old.recordHash == part.recordHash && old.signedJson == part.signedJson) {
+            "C_RECORD_ID_CONFLICT"
+        }
+        if (old.uploadReceiptJson == null) {
+            check(
+                attachStagedReceipt(
+                    part.chainId,
+                    part.compactionId,
+                    part.partIndex,
+                    part.recordId,
+                    part.recordHash,
+                    part.signedJson,
+                    receipt,
+                ) == 1,
+            ) { "C_SNAPSHOT_INVALID" }
+        } else {
+            check(old.uploadReceiptJson == receipt && old.status in setOf("staged", "receipted")) { "C_SNAPSHOT_INVALID" }
+        }
+        check(this.part(part.chainId, part.compactionId, part.partIndex)?.uploadReceiptJson == receipt) {
+            "C_LOCAL_STORAGE_FULL"
+        }
+    }
+
+    /** Call only after every staged receipt's entry was covered by a validated, persisted suffix. */
+    @Transaction
+    suspend fun confirmStagedTransparencySuffix(
+        chain: String,
+        compaction: String,
+        expectedPartCount: Int,
+    ) {
+        val publication = publication(chain, compaction) ?: error("C_MISSING_DEPENDENCY")
+        check(publication.partCount == expectedPartCount && publication.status in setOf("preparing", "uploading")) {
+            "C_SNAPSHOT_INVALID"
+        }
+        val saved = parts(chain, compaction)
+        check(
+            saved.size == expectedPartCount && saved.map { it.partIndex } == (0 until expectedPartCount).toList() &&
+                saved.all { it.status == "staged" && it.uploadReceiptJson != null },
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        check(confirmStagedReceipts(chain, compaction) == expectedPartCount) { "C_ACCEPTANCE_UNPROVEN" }
+        check(parts(chain, compaction).all { it.status == "receipted" }) { "C_LOCAL_STORAGE_FULL" }
     }
 
     @Transaction

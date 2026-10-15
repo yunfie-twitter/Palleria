@@ -179,6 +179,7 @@ internal class PallaSyncReseedCommitRelay(
         targetPinJson: String,
         stagedSnapshotReceiptsJson: String,
         persistVerifiedTransparencyPage: suspend (items: List<JsonObject>, anchor: JsonObject) -> Unit,
+        confirmStagedSnapshotReceipts: suspend () -> Unit,
         transparencyResume: PallaSyncReseedTransparencyVerifier.Resume? = null,
     ): PallaSyncHttpResult<JsonObject> {
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
@@ -252,6 +253,7 @@ internal class PallaSyncReseedCommitRelay(
                 is PallaSyncHttpResult.Success -> result.value
                 else -> return result.failure()
             }
+        confirmStagedSnapshotReceipts()
         val head = verifiedTransparency.getValue("head").jsonObject
         check(
             head.getValue("head_seq") == checkpoint.getValue("head_seq") &&
