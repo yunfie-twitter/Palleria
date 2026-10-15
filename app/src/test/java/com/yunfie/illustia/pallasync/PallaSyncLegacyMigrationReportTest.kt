@@ -46,6 +46,11 @@ class PallaSyncLegacyMigrationReportTest {
                 report.getValue("report_type").jsonPrimitive.content shouldBe "pallasync-legacy-migration-report"
                 report.getValue("source_high_water").jsonPrimitive.content shouldBe "2"
                 report.getValue("source_protocol").jsonPrimitive.content shouldBe "2.1"
+                report.getValue("legacy_history_completeness").jsonObject.let { completeness ->
+                    completeness.getValue("status").jsonPrimitive.content shouldBe "unknown"
+                    completeness.getValue("reason").jsonPrimitive.content shouldBe
+                        "v2.1 search, seen, and viewed-history retention may have removed older items"
+                }
                 report.getValue("accepted_count").jsonPrimitive.content shouldBe "1"
                 report.getValue("excluded_count").jsonPrimitive.content shouldBe "0"
                 report.getValue("migration_state").jsonPrimitive.content shouldBe "legacy_uploading"
@@ -61,6 +66,51 @@ class PallaSyncLegacyMigrationReportTest {
                 sourceSequences shouldBe listOf("1", "2")
                 val candidates = report.getValue("candidates").jsonArray
                 candidates.map { it.jsonObject["sourceSequence"]!!.jsonPrimitive.content } shouldBe listOf("1", "2")
+            } finally {
+                temp.delete()
+            }
+        }
+    }
+
+    @Test
+    fun `v20 migration report identifies the legacy view upload truncation as unknown`() {
+        runBlocking {
+            val temp = Files.createTempFile("pallasync-migration-report-v20", ".json").toFile()
+            try {
+                PallaSyncLegacyMigrationReport.writeReport(
+                    temp,
+                    progress(decisions = 2, sourceProtocol = "2.0"),
+                    fetchPage = { after ->
+                        if (after == 0L) {
+                            PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(1, "item-1")), 1)
+                        } else {
+                            PallaSyncLocalIntents.LegacyDecisionPage(listOf(decision(2, "item-2")), null)
+                        }
+                    },
+                    fetchCandidatePage = { after ->
+                        if (after == 0L) {
+                            PallaSyncLocalIntents.LegacyCandidatePage(listOf(candidate(1)), 1)
+                        } else {
+                            PallaSyncLocalIntents.LegacyCandidatePage(listOf(candidate(2)), null)
+                        }
+                    },
+                    fetchSourcePage = { after ->
+                        if (after == 0L) {
+                            PallaSyncLocalIntents.LegacySourceEvidencePage(listOf(sourceEvidence(1)), 1)
+                        } else {
+                            PallaSyncLocalIntents.LegacySourceEvidencePage(listOf(sourceEvidence(2)), null)
+                        }
+                    },
+                )
+                val completeness =
+                    Json
+                        .parseToJsonElement(temp.readText())
+                        .jsonObject
+                        .getValue("legacy_history_completeness")
+                        .jsonObject
+                completeness.getValue("status").jsonPrimitive.content shouldBe "unknown"
+                completeness.getValue("reason").jsonPrimitive.content shouldBe
+                    "v2.0 /1 view-history uploads may be truncated to the last 50 items"
             } finally {
                 temp.delete()
             }
@@ -93,26 +143,28 @@ class PallaSyncLegacyMigrationReportTest {
         }
     }
 
-    private fun progress(decisions: Long) =
-        PallaSyncLocalIntents.LegacyMigrationProgress(
-            migrationId = "migration-id",
-            sourceChain = "source-chain",
-            sourceProtocol = "2.1",
-            exportHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-            targetChain = "target-chain",
-            sourceHighWater = 2,
-            stagedThrough = 2,
-            sourceComplete = true,
-            candidates = 2,
-            decisions = decisions,
-            pending = 0,
-            constructed = 2,
-            quarantined = 0,
-            schemaCounts = mapOf("pallasync.search-history/3" to 2),
-            accepted = 1,
-            excluded = 0,
-            state = "legacy_uploading",
-        )
+    private fun progress(
+        decisions: Long,
+        sourceProtocol: String = "2.1",
+    ) = PallaSyncLocalIntents.LegacyMigrationProgress(
+        migrationId = "migration-id",
+        sourceChain = "source-chain",
+        sourceProtocol = sourceProtocol,
+        exportHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        targetChain = "target-chain",
+        sourceHighWater = 2,
+        stagedThrough = 2,
+        sourceComplete = true,
+        candidates = 2,
+        decisions = decisions,
+        pending = 0,
+        constructed = 2,
+        quarantined = 0,
+        schemaCounts = mapOf("pallasync.search-history/3" to 2),
+        accepted = 1,
+        excluded = 0,
+        state = "legacy_uploading",
+    )
 
     private fun decision(
         sequence: Long,

@@ -59,6 +59,13 @@ internal object PallaSyncLegacyMigrationReport {
             writer.write(",\"migration_id\":${Json.encodeToString(migration.migrationId)}")
             writer.write(",\"source_chain_id\":${Json.encodeToString(migration.sourceChain)}")
             writer.write(",\"source_protocol\":${Json.encodeToString(migration.sourceProtocol)}")
+            val retentionNote =
+                when (migration.sourceProtocol) {
+                    "2.0" -> "v2.0 /1 view-history uploads may be truncated to the last 50 items"
+                    "2.1" -> "v2.1 search, seen, and viewed-history retention may have removed older items"
+                    else -> error("C_SCHEMA_VIOLATION")
+                }
+            writer.write(",\"legacy_history_completeness\":{\"status\":\"unknown\",\"reason\":${Json.encodeToString(retentionNote)}}")
             writer.write(",\"source_export_hash\":${Json.encodeToString(migration.exportHash)}")
             writer.write(",\"target_chain_id\":${Json.encodeToString(migration.targetChain)}")
             writer.write(",\"source_high_water\":${migration.sourceHighWater}")
