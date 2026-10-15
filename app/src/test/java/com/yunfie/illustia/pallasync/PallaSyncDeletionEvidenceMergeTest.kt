@@ -41,6 +41,32 @@ class PallaSyncDeletionEvidenceMergeTest {
         }.message shouldBe "C_DEVICE_EQUIVOCATION"
     }
 
+    @Test
+    fun `archives with a different receipt binding cannot be merged`() {
+        val first = archive("11111111-1111-4111-8111-111111111111", "witness-a")
+        val conflicting =
+            Json
+                .parseToJsonElement(
+                    """{"delete_receipt":{"deletion_id":"deletion"},"evidence_bundle":{"type":"PALLASYNC-DELETION-EVIDENCE-v3","version":"3.0","chain_id":"chain","deletion_id":"deletion","delete_receipt_hash":"other-receipt-hash","witnesses":[{"witness_device_id":"22222222-2222-4222-8222-222222222222","signature":"witness-b"}]}}""",
+                ).jsonObject
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncDeletionEvidenceMerge.merge(listOf(first, conflicting))
+        }.message shouldBe "C_DELETION_UNVERIFIED"
+    }
+
+    @Test
+    fun `merged bundle cannot exceed the protocol witness limit`() {
+        val archives =
+            (0..128).map { index ->
+                archive("00000000-0000-4000-8000-${index.toString().padStart(12, '0')}", "witness-$index")
+            }
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncDeletionEvidenceMerge.merge(archives)
+        }.message shouldBe "C_SCHEMA_VIOLATION"
+    }
+
     private fun archive(
         device: String,
         signature: String,

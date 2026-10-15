@@ -18,9 +18,16 @@ internal object PallaSyncDeletionEvidenceMerge {
         archives.forEach { archive ->
             check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
             check(archive.getValue("delete_receipt") == receipt) { "C_DELETION_UNVERIFIED" }
-            archive
-                .getValue("evidence_bundle")
-                .jsonObject
+            val bundle = archive.getValue("evidence_bundle").jsonObject
+            check(
+                bundle.keys == setOf("type", "version", "chain_id", "deletion_id", "delete_receipt_hash", "witnesses") &&
+                    bundle["type"] == sourceBundle["type"] &&
+                    bundle["version"] == sourceBundle["version"] &&
+                    bundle["chain_id"] == sourceBundle["chain_id"] &&
+                    bundle["deletion_id"] == sourceBundle["deletion_id"] &&
+                    bundle["delete_receipt_hash"] == sourceBundle["delete_receipt_hash"],
+            ) { "C_DELETION_UNVERIFIED" }
+            bundle
                 .getValue("witnesses")
                 .jsonArray
                 .forEach { value ->
@@ -28,6 +35,7 @@ internal object PallaSyncDeletionEvidenceMerge {
                     val device = witness.getValue("witness_device_id").jsonPrimitive.content
                     val previous = witnessesByDevice.putIfAbsent(device, witness)
                     check(previous == null || previous == witness) { "C_DEVICE_EQUIVOCATION" }
+                    check(witnessesByDevice.size <= MAX_WITNESSES) { "C_SCHEMA_VIOLATION" }
                 }
         }
         val bundle =
@@ -44,4 +52,6 @@ internal object PallaSyncDeletionEvidenceMerge {
             put("evidence_bundle", bundle)
         }
     }
+
+    private const val MAX_WITNESSES = 128
 }
