@@ -709,11 +709,12 @@ internal class PalleriaSyncCoordinator(
     ): PallaSyncRecordRepairSummary {
         val dao = db.protocolDao()
         var totals = RepairBatchResult(0, 0, emptyList(), false)
-        dao.repairSourceLogIds(state.chainId).forEach { sourceLogId ->
-            val through = dao.repairSourceHighWater(state.chainId, sourceLogId)
-            if (through != null) {
-                totals += repairSourceLog(root, base, origin, state, targetPin, sourceLogId, through)
-            }
+        val sources = mutableListOf<Pair<String, Long>>()
+        for (sourceLogId in dao.repairSourceLogIds(state.chainId)) {
+            dao.repairSourceHighWater(state.chainId, sourceLogId)?.let { through -> sources.add(sourceLogId to through) }
+        }
+        for ((sourceLogId, through) in sources) {
+            totals += repairSourceLog(root, base, origin, state, targetPin, sourceLogId, through)
         }
         check(totals.submitted > 0) { "C_MISSING_DEPENDENCY" }
         return PallaSyncRecordRepairSummary(totals.submitted, totals.accepted, totals.rejectedCodes, totals.repairRequired)
