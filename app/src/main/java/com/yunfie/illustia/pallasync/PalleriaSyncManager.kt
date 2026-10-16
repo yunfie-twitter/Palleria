@@ -400,6 +400,9 @@ class PalleriaSyncManager(
     internal suspend fun legacyMigrationProgress(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress? =
         coordinator.legacyMigrationProgress(migrationId)
 
+    internal suspend fun verifyLegacyMigrationSnapshot(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress =
+        coordinator.verifyLegacyMigrationSnapshot(migrationId)
+
     internal suspend fun legacyMigrationProgressPage(
         afterMigrationId: String = "",
         limit: Int = 20,

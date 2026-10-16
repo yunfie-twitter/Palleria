@@ -8,10 +8,13 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.Base64
+import java.util.UUID
 
 /** §§11.1/16.4. Unsigned application intent, separate from immutable signed outbox objects.
  * Uses the existing application journal table, never a relay object or recovery store.
@@ -40,6 +43,10 @@ internal class PallaSyncLocalIntents(
         val schemaCounts: Map<String, Long> = emptyMap(),
         val sourceComplete: Boolean = false,
         val legacyFavoriteOrder: List<String>? = null,
+        val completionCompactionId: String? = null,
+        val completionCoveredThroughSeq: Long? = null,
+        val completionCoveredLogHash: String? = null,
+        val completionAuditEntryIndex: Long? = null,
     )
 
     internal data class LegacyEventMapping(
@@ -91,6 +98,9 @@ internal class PallaSyncLocalIntents(
         val accepted: Long = 0,
         val excluded: Long = 0,
         val state: String = "",
+        val completionCompactionId: String? = null,
+        val completionCoveredThroughSeq: Long? = null,
+        val completionCoveredLogHash: String? = null,
     )
 
     internal data class LegacyDecisionPage(
@@ -581,8 +591,163 @@ internal class PallaSyncLocalIntents(
             dao.migrationStateCount(migrationId, "receipt_verified"),
             dao.migrationStateCount(migrationId, "legacy_candidate_excluded"),
             row.state,
+            manifest.completionCompactionId,
+            manifest.completionCoveredThroughSeq,
+            manifest.completionCoveredLogHash,
         )
     }
+
+    /** §9.3: compare a verified matching snapshot to the exact converted replay before auditing success. */
+    suspend fun completeLegacyMigrationWithVerifiedSnapshot(
+        migrationId: String,
+        keys: PallaSyncKeySnapshot,
+    ) {
+        val dao = store.protocolDao()
+        var root = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+        check(root.state in setOf("legacy_receipts_complete", "legacy_completion_audit_pending", "legacy_complete")) {
+            "C_ACCEPTANCE_UNPROVEN"
+        }
+        if (root.state == "legacy_complete") return
+        var manifest = Json.decodeFromString<LegacyManifest>(root.reportJson)
+        check(manifest.sourceComplete && manifest.stagedThrough == manifest.sourceHighWater) { "C_ACCEPTANCE_UNPROVEN" }
+        check(
+            dao.migrationStateCount(migrationId, "pending") == 0L &&
+                dao.migrationStateCount(migrationId, "constructed") == 0L &&
+                dao.migrationStateCount(migrationId, "receipt_verified") +
+                dao.migrationStateCount(migrationId, "legacy_candidate_excluded") == manifest.candidateCount,
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        val chain = manifest.targetChain
+        check(keys.chainId == chain) { "C_RECOVERY_ROOT_MISMATCH" }
+        val state = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+        check(state.generation == manifest.targetGeneration && state.writeState == "active") { "C_ACCEPTANCE_UNPROVEN" }
+        check(store.snapshotInstallDao().pendingOutboxCount(chain) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
+        check(store.snapshotInstallDao().unresolvedQuarantineCount(chain) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
+
+        if (root.state == "legacy_receipts_complete") {
+            var snapshot: com.yunfie.illustia.pallasync.data.SnapshotInstallEntity? = null
+            val installs =
+                store.snapshotInstallDao().matchingVerifiedInstalls(
+                    chain,
+                    state.generation,
+                    state.verifiedSeq,
+                    checkNotNull(state.verifiedHash),
+                )
+            for (candidate in installs) {
+                if (
+                    PallaSyncSnapshotSemanticComparator.compareWithExactLocalReplay(
+                        store,
+                        chain,
+                        candidate.compactionId,
+                        checkNotNull(state.logId),
+                        state.generation,
+                        checkNotNull(state.epochHash),
+                        candidate.coveredThroughSeq,
+                        candidate.coveredLogHash,
+                    ) != null
+                ) {
+                    snapshot = candidate
+                    break
+                }
+            }
+            val matchingSnapshot = checkNotNull(snapshot) { "C_MISSING_DEPENDENCY" }
+            compareLegacyDestinationAndMaterializedRecordIds(migrationId, chain, matchingSnapshot.coveredThroughSeq)
+            val current = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+            check(current.indexRevision == state.indexRevision && current.verifiedHash == matchingSnapshot.coveredLogHash) {
+                "C_ROLLBACK_DETECTED"
+            }
+            val event =
+                PallaSyncPendingEvent(
+                    schema = AUDIT_SCHEMA_V3,
+                    entityId = UUID.randomUUID().toString(),
+                    operation = SYNC_OPERATION_UPSERT,
+                    body =
+                        buildJsonObject {
+                            put("event", "migration")
+                            put("subject_id", manifest.sourceChain)
+                            put("object_hash", JsonNull)
+                            put("result", "succeeded")
+                        },
+                )
+            val nextIndex = (dao.lastMigrationIndex(migrationId) ?: 0L) + 1
+            check(nextIndex <= PallaSyncConflictResolver.MAX_COUNTER) { "C_COUNTER_EXHAUSTED" }
+            val nextManifest =
+                manifest.copy(
+                    completionCompactionId = matchingSnapshot.compactionId,
+                    completionCoveredThroughSeq = matchingSnapshot.coveredThroughSeq,
+                    completionCoveredLogHash = matchingSnapshot.coveredLogHash,
+                    completionAuditEntryIndex = nextIndex,
+                )
+            val work = PallaSyncReplayWork(event, targetGeneration = manifest.targetGeneration)
+            val audit =
+                MigrationJournalEntity(
+                    migrationId = migrationId,
+                    chunkIndex = nextIndex,
+                    sourceHash = sourceHash(event),
+                    sourceIdentity = "legacy-audit:${matchingSnapshot.compactionId}:${matchingSnapshot.coveredThroughSeq}",
+                    targetChain = chain,
+                    state = "pending",
+                    reportJson = Json.encodeToString(work),
+                )
+            store.transaction {
+                root = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
+                check(root.state == "legacy_receipts_complete" && root.reportJson == Json.encodeToString(manifest)) {
+                    "C_ROLLBACK_DETECTED"
+                }
+                dao.putMigrationChunk(audit)
+                check(
+                    dao.updateMigrationManifest(
+                        migrationId,
+                        root.sourceHash,
+                        "legacy_receipts_complete",
+                        "legacy_completion_audit_pending",
+                        Json.encodeToString(nextManifest),
+                    ) == 1,
+                ) { "C_LOCAL_STORAGE_FULL" }
+            }
+            root = checkNotNull(dao.migrationChunk(migrationId, 0))
+            manifest = nextManifest
+        }
+
+        check(root.state == "legacy_completion_audit_pending") { "C_ACCEPTANCE_UNPROVEN" }
+        val auditIndex = checkNotNull(manifest.completionAuditEntryIndex) { "C_ROLLBACK_DETECTED" }
+        val audit = checkNotNull(dao.migrationChunk(migrationId, auditIndex)) { "C_ROLLBACK_DETECTED" }
+        check(
+            audit.sourceIdentity == "legacy-audit:${manifest.completionCompactionId}:${manifest.completionCoveredThroughSeq}" &&
+                audit.targetChain == chain && audit.state in setOf("pending", "constructed", "receipt_verified"),
+        ) { "C_ROLLBACK_DETECTED" }
+        if (audit.state == "pending") {
+            val event = Json.decodeFromString<PallaSyncReplayWork>(audit.reportJson).event
+            author.append(
+                chain,
+                keys,
+                listOf(event),
+                replay = PallaSyncAuthorJournal.ReplayReference(migrationId, auditIndex, audit.sourceHash),
+            )
+        }
+    }
+
+    private suspend fun compareLegacyDestinationAndMaterializedRecordIds(
+        migrationId: String,
+        chain: String,
+        through: Long,
+    ) {
+        var afterMigration = ""
+        var afterEvent = ""
+        while (true) {
+            val destinations = daoDestinationPage(migrationId, chain, afterMigration)
+            val events = store.protocolDao().materializedEventIdPage(chain, through, afterEvent, PAGE_SIZE)
+            check(destinations == events) { "C_SNAPSHOT_INVALID" }
+            if (destinations.isEmpty()) return
+            afterMigration = destinations.last()
+            afterEvent = events.last()
+        }
+    }
+
+    private suspend fun daoDestinationPage(
+        migrationId: String,
+        chain: String,
+        after: String,
+    ): List<String> = store.protocolDao().legacyMigrationDestinationPage(migrationId, chain, after, PAGE_SIZE)
 
     /** Called only inside the same transaction that retains a verified signed upload receipt (§9.3). */
     suspend fun confirmLegacyMigrationReceipt(
@@ -593,7 +758,9 @@ internal class PallaSyncLocalIntents(
     ) {
         check(decodeHash(objectHash) && decodeHash(receiptHash)) { "C_SCHEMA_VIOLATION" }
         val dao = store.protocolDao()
-        val matches = dao.legacyMigrationReceiptCandidates(chain, recordId)
+        val matches =
+            dao.legacyMigrationReceiptCandidates(chain, recordId) +
+                dao.legacyMigrationAuditReceiptCandidates(chain, recordId)
         check(matches.size <= 1) { "C_RECORD_ID_CONFLICT" }
         val candidate = matches.singleOrNull() ?: return
         check(candidate.destinationObjectHash == objectHash) { "C_RECORD_ID_CONFLICT" }
@@ -620,6 +787,30 @@ internal class PallaSyncLocalIntents(
         val dao = store.protocolDao()
         val root = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_ROLLBACK_DETECTED" }
         if (root.state == "legacy_receipts_complete") return
+        if (root.state == "legacy_completion_audit_pending") {
+            val manifest = Json.decodeFromString<LegacyManifest>(root.reportJson)
+            val auditIndex = checkNotNull(manifest.completionAuditEntryIndex) { "C_ROLLBACK_DETECTED" }
+            val audit = checkNotNull(dao.migrationChunk(migrationId, auditIndex)) { "C_ROLLBACK_DETECTED" }
+            check(
+                audit.sourceIdentity == "legacy-audit:${manifest.completionCompactionId}:${manifest.completionCoveredThroughSeq}" &&
+                    audit.state == "receipt_verified" && audit.destinationRecordId != null &&
+                    audit.destinationObjectHash != null && audit.verifiedReceiptHash != null,
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+            store.transaction {
+                val current = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_ROLLBACK_DETECTED" }
+                check(current == root) { "C_ROLLBACK_DETECTED" }
+                check(
+                    dao.updateMigrationManifest(
+                        migrationId,
+                        root.sourceHash,
+                        "legacy_completion_audit_pending",
+                        "legacy_complete",
+                        root.reportJson,
+                    ) == 1,
+                ) { "C_LOCAL_STORAGE_FULL" }
+            }
+            return
+        }
         check(root.state in setOf("legacy_uploading", "legacy_staged")) { "C_ROLLBACK_DETECTED" }
         val manifest = Json.decodeFromString<LegacyManifest>(root.reportJson)
         val excluded = dao.migrationStateCount(migrationId, "legacy_candidate_excluded")

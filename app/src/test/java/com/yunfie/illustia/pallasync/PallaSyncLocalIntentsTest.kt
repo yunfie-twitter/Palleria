@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
+import com.yunfie.illustia.pallasync.data.MigrationJournalEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -25,6 +26,52 @@ class PallaSyncLocalIntentsTest {
     private val chain = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
     private val device = "11111111-1111-4111-8111-111111111111"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `legacy migration succeeds only after its completion audit receipt is verified`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                val migrationId = "legacy:migration-completion"
+                val recordId = "22222222-2222-4222-8222-222222222222"
+                val objectHash = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 1 })
+                val receiptHash = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 2 })
+                val exportHash = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 3 })
+                val coveredHash = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 4 })
+                val manifest =
+                    """{"sourceChain":"legacy-chain","sourceProtocol":"2.1","sourceHighWater":12,"exportHash":"$exportHash","targetChain":"$chain","targetGeneration":0,"stagedThrough":12,"candidateCount":0,"decisionCount":1,"sourceComplete":true,"completionCompactionId":"33333333-3333-4333-8333-333333333333","completionCoveredThroughSeq":2,"completionCoveredLogHash":"$coveredHash","completionAuditEntryIndex":1}"""
+                store.protocolDao().putMigrationChunk(
+                    MigrationJournalEntity(migrationId, 0, "manifest-hash", chain, chain, "legacy_completion_audit_pending", manifest),
+                )
+                store.protocolDao().putMigrationChunk(
+                    MigrationJournalEntity(
+                        migrationId,
+                        1,
+                        "audit-intent-hash",
+                        "legacy-audit:33333333-3333-4333-8333-333333333333:2",
+                        chain,
+                        "receipt_verified",
+                        "{}",
+                        destinationRecordId = recordId,
+                        destinationObjectHash = objectHash,
+                        verifiedReceiptHash = receiptHash,
+                    ),
+                )
+                val intents = PallaSyncLocalIntents(store, author(store, MemoryStorage())) { _, events -> events }
+
+                store.protocolDao().legacyMigrationReceiptCandidates(chain, recordId).size shouldBe 0
+                store.protocolDao().legacyMigrationAuditReceiptCandidates(chain, recordId).size shouldBe 1
+
+                intents.confirmLegacyMigrationReceipt(chain, recordId, objectHash, receiptHash)
+
+                store.protocolDao().migrationChunk(migrationId, 0)?.state shouldBe "legacy_complete"
+                intents.legacyMigrationProgress(migrationId)?.accepted shouldBe 0L
+                intents.legacyMigrationProgress(migrationId)?.state shouldBe "legacy_complete"
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `paused intent survives all author boundaries and is signed exactly once on resume`() =

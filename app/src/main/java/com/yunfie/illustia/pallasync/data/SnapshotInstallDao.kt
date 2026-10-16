@@ -97,6 +97,16 @@ interface SnapshotInstallDao {
         compaction: String,
     ): SnapshotInstallEntity?
 
+    @Query(
+        "SELECT * FROM ps_snapshot_installs WHERE chain_id=:chain AND generation=:generation AND covered_through_seq=:covered AND covered_log_hash=:coveredHash AND status='verified' ORDER BY compaction_id LIMIT 20",
+    )
+    suspend fun matchingVerifiedInstalls(
+        chain: String,
+        generation: Long,
+        covered: Long,
+        coveredHash: String,
+    ): List<SnapshotInstallEntity>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertInstall(install: SnapshotInstallEntity)
 

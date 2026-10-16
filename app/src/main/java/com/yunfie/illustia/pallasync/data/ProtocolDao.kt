@@ -96,7 +96,7 @@ interface ProtocolDao {
     ): List<MigrationJournalEntity>
 
     @Query(
-        "SELECT * FROM ps_migrations WHERE migration_id=:id AND state IN ('pending','constructed','receipt_verified','legacy_candidate_excluded') AND source_identity LIKE 'legacy:%' AND chunk_index>:after ORDER BY chunk_index LIMIT :limit",
+        "SELECT * FROM ps_migrations WHERE migration_id=:id AND state IN ('pending','constructed','receipt_verified','legacy_candidate_excluded') AND source_identity LIKE 'legacy:%' AND source_identity NOT LIKE 'legacy-audit:%' AND chunk_index>:after ORDER BY chunk_index LIMIT :limit",
     )
     suspend fun legacyCandidatePage(
         id: String,
@@ -217,10 +217,10 @@ interface ProtocolDao {
         report: String,
     ): Int
 
-    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state='pending'")
+    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state='pending' AND source_identity NOT LIKE 'legacy-audit:%'")
     suspend fun pendingMigrationCount(id: String): Long
 
-    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state=:state")
+    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND state=:state AND source_identity NOT LIKE 'legacy-audit:%'")
     suspend fun migrationStateCount(
         id: String,
         state: String,
@@ -269,6 +269,9 @@ interface ProtocolDao {
         limit: Int,
     ): List<MigrationJournalEntity>
 
+    @Query("SELECT * FROM ps_migrations WHERE migration_id=:id AND source_identity LIKE 'legacy-audit:%' ORDER BY chunk_index")
+    suspend fun legacyMigrationAuditRows(id: String): List<MigrationJournalEntity>
+
     @Query(
         "UPDATE ps_migrations SET state='constructed',report_json=:report,destination_record_id=:recordId,destination_object_hash=:objectHash WHERE migration_id=:id AND chunk_index=:index AND source_hash=:hash",
     )
@@ -282,12 +285,30 @@ interface ProtocolDao {
     ): Int
 
     @Query(
-        "SELECT * FROM ps_migrations WHERE migration_id LIKE 'legacy:%' AND target_chain=:chain AND chunk_index>0 AND destination_record_id=:recordId",
+        "SELECT * FROM ps_migrations WHERE migration_id LIKE 'legacy:%' AND target_chain=:chain AND chunk_index>0 AND source_identity LIKE 'legacy:%' AND source_identity NOT LIKE 'legacy-audit:%' AND destination_record_id=:recordId",
     )
     suspend fun legacyMigrationReceiptCandidates(
         chain: String,
         recordId: String,
     ): List<MigrationJournalEntity>
+
+    @Query(
+        "SELECT * FROM ps_migrations WHERE migration_id LIKE 'legacy:%' AND target_chain=:chain AND chunk_index>0 AND source_identity LIKE 'legacy-audit:%' AND destination_record_id=:recordId",
+    )
+    suspend fun legacyMigrationAuditReceiptCandidates(
+        chain: String,
+        recordId: String,
+    ): List<MigrationJournalEntity>
+
+    @Query(
+        "SELECT destination_record_id FROM ps_migrations WHERE migration_id=:id AND target_chain=:chain AND state='receipt_verified' AND source_identity LIKE 'legacy:%' AND source_identity NOT LIKE 'legacy-audit:%' AND destination_record_id>:after ORDER BY destination_record_id LIMIT :limit",
+    )
+    suspend fun legacyMigrationDestinationPage(
+        id: String,
+        chain: String,
+        after: String,
+        limit: Int,
+    ): List<String>
 
     @Query(
         "UPDATE ps_migrations SET state='receipt_verified',verified_receipt_hash=:receiptHash WHERE migration_id=:migrationId AND chunk_index=:entryIndex AND target_chain=:chain AND destination_record_id=:recordId AND destination_object_hash=:objectHash AND state='constructed'",
@@ -519,6 +540,16 @@ interface ProtocolDao {
         chainId: String,
         recordId: String,
     ): SignedEventEntity?
+
+    @Query(
+        "SELECT record_id FROM ps_events WHERE chain_id=:chain AND relay_seq<=:through AND validation_state='materialized' AND record_id>:after ORDER BY record_id LIMIT :limit",
+    )
+    suspend fun materializedEventIdPage(
+        chain: String,
+        through: Long,
+        after: String,
+        limit: Int,
+    ): List<String>
 
     @Query("SELECT * FROM ps_events WHERE chain_id=:chainId AND relay_seq IS NOT NULL ORDER BY relay_seq LIMIT 1")
     suspend fun firstAcceptedEvent(chainId: String): SignedEventEntity?

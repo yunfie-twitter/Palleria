@@ -2608,6 +2608,18 @@ internal class PalleriaSyncCoordinator(
     internal suspend fun legacyMigrationProgress(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress? =
         withContext(Dispatchers.IO) { localIntents.legacyMigrationProgress(migrationId) }
 
+    internal suspend fun verifyLegacyMigrationSnapshot(migrationId: String): PallaSyncLocalIntents.LegacyMigrationProgress {
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+                val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                localIntents.completeLegacyMigrationWithVerifiedSnapshot(migrationId, keys)
+            }
+        }
+        syncNow()
+        return checkNotNull(localIntents.legacyMigrationProgress(migrationId)) { "C_MISSING_DEPENDENCY" }
+    }
+
     internal suspend fun legacyMigrationProgressPage(
         afterMigrationId: String = "",
         limit: Int = 20,

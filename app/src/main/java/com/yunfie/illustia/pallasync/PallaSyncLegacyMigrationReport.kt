@@ -104,6 +104,16 @@ internal object PallaSyncLegacyMigrationReport {
         writer.write(",\"excluded_count\":${migration.excluded}")
         writer.write(",\"quarantined_count\":${migration.quarantined}")
         writer.write(",\"migration_state\":${Json.encodeToString(migration.state)}")
+        writer.write(",\"completion_snapshot\":")
+        if (migration.completionCompactionId == null) {
+            writer.write("null")
+        } else {
+            writer.write(
+                "{\"compaction_id\":${Json.encodeToString(migration.completionCompactionId)}," +
+                    "\"covered_through_seq\":${migration.completionCoveredThroughSeq}," +
+                    "\"covered_log_hash\":${Json.encodeToString(migration.completionCoveredLogHash)}}",
+            )
+        }
         writer.write(",\"schema_counts\":${Json.encodeToString(migration.schemaCounts)}")
     }
 

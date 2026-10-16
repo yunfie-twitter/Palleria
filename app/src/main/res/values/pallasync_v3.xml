@@ -121,6 +121,10 @@
     <string name="pallasync_legacy_migration_choices_saved">Choices saved. Revalidate the source before resuming migration.</string>
     <string name="pallasync_legacy_migration_receipts">Verified destination receipts: %1$d / %2$d · state: %3$s</string>
     <string name="pallasync_legacy_migration_replay_required">All destination receipts are verified. Migration is not complete until an independent replay or matching verified snapshot confirms the converted state.</string>
+    <string name="pallasync_legacy_migration_verify_snapshot">Verify a matching snapshot and publish the migration completion audit</string>
+    <string name="pallasync_legacy_migration_audit_pending">Verified snapshot %1$s matches the converted state through sequence %2$d. The migration becomes complete only after its signed audit record receives a verified receipt.</string>
+    <string name="pallasync_legacy_migration_retry_audit">Retry completion audit sync</string>
+    <string name="pallasync_legacy_migration_complete">Migration completed through source mark %1$d; %2$d candidates were explicitly excluded.</string>
     <string name="pallasync_legacy_migration_more_candidates">Load next candidates</string>
     <string name="pallasync_legacy_migration_report_failed">Could not load the local migration report.</string>
     <string name="pallasync_legacy_migration_export_report">Export report with encrypted source records</string>

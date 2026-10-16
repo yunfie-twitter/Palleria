@@ -1690,6 +1690,74 @@ fun PallaSyncSettingsScreen(
                 )
                 if (migration.state == "legacy_receipts_complete") {
                     Text(stringResource(R.string.pallasync_legacy_migration_replay_required))
+                    TextButton(
+                        text = stringResource(R.string.pallasync_legacy_migration_verify_snapshot),
+                        enabled = !loadingLegacyDecisions,
+                        onClick = {
+                            loadingLegacyDecisions = true
+                            scope.launch {
+                                try {
+                                    val updated = syncManager.verifyLegacyMigrationSnapshot(migration.migrationId)
+                                    selectedLegacyMigration = updated
+                                    legacyMigrations = legacyMigrations.map { if (it.migrationId == updated.migrationId) updated else it }
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            R.string.pallasync_legacy_migration_report_failed,
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                } finally {
+                                    loadingLegacyDecisions = false
+                                }
+                            }
+                        },
+                    )
+                }
+                if (migration.state == "legacy_completion_audit_pending") {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_legacy_migration_audit_pending,
+                            migration.completionCompactionId.orEmpty(),
+                            migration.completionCoveredThroughSeq ?: 0L,
+                        ),
+                    )
+                    TextButton(
+                        text = stringResource(R.string.pallasync_legacy_migration_retry_audit),
+                        enabled = !loadingLegacyDecisions,
+                        onClick = {
+                            loadingLegacyDecisions = true
+                            scope.launch {
+                                try {
+                                    val updated = syncManager.verifyLegacyMigrationSnapshot(migration.migrationId)
+                                    selectedLegacyMigration = updated
+                                    legacyMigrations = legacyMigrations.map { if (it.migrationId == updated.migrationId) updated else it }
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            R.string.pallasync_legacy_migration_report_failed,
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                } finally {
+                                    loadingLegacyDecisions = false
+                                }
+                            }
+                        },
+                    )
+                }
+                if (migration.state == "legacy_complete") {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_legacy_migration_complete,
+                            migration.sourceHighWater,
+                            migration.excluded,
+                        ),
+                    )
                 }
                 if (migration.sourceHighWater == 0L && migration.stagedThrough == 0L && migration.decisions == 0L) {
                     Text(stringResource(R.string.pallasync_legacy_source_not_staged))
