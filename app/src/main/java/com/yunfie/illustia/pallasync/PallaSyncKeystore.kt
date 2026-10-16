@@ -363,6 +363,97 @@ class PallaSyncKeystore(
             .commit()
     }
 
+    /** Persist a candidate reseed identity separately from ordinary enrollment candidates. */
+    internal fun savePendingReseed(
+        snapshot: PallaSyncKeySnapshot,
+        publicBundleJson: String,
+        targetOrigin: String,
+    ): Boolean {
+        require(!snapshot.chainId.isNullOrBlank() && !snapshot.deviceId.isNullOrBlank()) { "C_SCHEMA_VIOLATION" }
+        require(publicBundleJson.isNotBlank()) { "C_SCHEMA_VIOLATION" }
+        val normalized = PallaSyncUrls.normalize(targetOrigin)
+        check(normalized is PallaSyncHttpResult.Success && PallaSyncUrls.extractOrigin(normalized.value) == targetOrigin) {
+            "C_BOOTSTRAP_TRUST_REQUIRED"
+        }
+        resumePallaSyncPreparedReseed(publicBundleJson, snapshot).use { prepared ->
+            check(prepared.keySnapshot() == snapshot) { "C_COMMITMENT_MISMATCH" }
+        }
+        val existing = pendingReseed()
+        check(
+            existing == null ||
+                (existing.keys == snapshot && existing.publicBundleJson == publicBundleJson && existing.targetOrigin == targetOrigin),
+        ) { "C_IMPORT_CONFLICT" }
+        val editor =
+            sharedPrefs
+                .edit()
+                .putString("reseed_pending_chain_id", snapshot.chainId)
+                .putString("reseed_pending_device_id", snapshot.deviceId)
+                .putString("reseed_pending_epoch_key", snapshot.encryptionKeyBase64Url)
+                .putString("reseed_pending_signing_key", snapshot.signingKeyBase64Url)
+                .putString("reseed_pending_public_key", snapshot.publicKeyBase64Url)
+                .putString("reseed_pending_kex_private", snapshot.kexPrivateKeyBase64Url)
+                .putString("reseed_pending_kex_public", snapshot.kexPublicKeyBase64Url)
+                .putString("reseed_pending_meta_key", snapshot.deviceMetaKeyBase64Url)
+                .putString("reseed_pending_epoch_secret", snapshot.epochSecretBase64Url)
+                .putString("reseed_pending_tag_key", snapshot.collectionTagKeyBase64Url)
+                .putLong("reseed_pending_epoch_number", snapshot.epoch)
+                .putString("reseed_pending_bundle", publicBundleJson)
+                .putString("reseed_pending_origin", targetOrigin)
+        return editor.commit() && pendingReseed() == PallaSyncPendingReseed(snapshot, publicBundleJson, targetOrigin)
+    }
+
+    internal fun pendingReseed(): PallaSyncPendingReseed? {
+        val chain = sharedPrefs.getString("reseed_pending_chain_id", null)?.takeIf(String::isNotBlank) ?: return null
+        val keys =
+            PallaSyncKeySnapshot(
+                chainId = chain,
+                deviceId = sharedPrefs.getString("reseed_pending_device_id", null)?.takeIf(String::isNotBlank) ?: return null,
+                encryptionKeyBase64Url = sharedPrefs.getString("reseed_pending_epoch_key", null)?.takeIf(String::isNotBlank) ?: return null,
+                signingKeyBase64Url = sharedPrefs.getString("reseed_pending_signing_key", null)?.takeIf(String::isNotBlank) ?: return null,
+                publicKeyBase64Url = sharedPrefs.getString("reseed_pending_public_key", null)?.takeIf(String::isNotBlank) ?: return null,
+                kexPrivateKeyBase64Url =
+                    sharedPrefs.getString("reseed_pending_kex_private", null)?.takeIf(String::isNotBlank) ?: return null,
+                kexPublicKeyBase64Url = sharedPrefs.getString("reseed_pending_kex_public", null)?.takeIf(String::isNotBlank) ?: return null,
+                deviceMetaKeyBase64Url = sharedPrefs.getString("reseed_pending_meta_key", null)?.takeIf(String::isNotBlank) ?: return null,
+                epochSecretBase64Url =
+                    sharedPrefs
+                        .getString(
+                            "reseed_pending_epoch_secret",
+                            null,
+                        )?.takeIf(String::isNotBlank) ?: return null,
+                collectionTagKeyBase64Url =
+                    sharedPrefs
+                        .getString(
+                            "reseed_pending_tag_key",
+                            null,
+                        )?.takeIf(String::isNotBlank) ?: return null,
+                epoch = sharedPrefs.getLong("reseed_pending_epoch_number", -1).takeIf { it >= 0 } ?: return null,
+            )
+        return PallaSyncPendingReseed(
+            keys,
+            sharedPrefs.getString("reseed_pending_bundle", null)?.takeIf(String::isNotBlank) ?: return null,
+            sharedPrefs.getString("reseed_pending_origin", null)?.takeIf(String::isNotBlank) ?: return null,
+        )
+    }
+
+    internal fun clearPendingReseed(): Boolean =
+        sharedPrefs
+            .edit()
+            .remove("reseed_pending_chain_id")
+            .remove("reseed_pending_device_id")
+            .remove("reseed_pending_epoch_key")
+            .remove("reseed_pending_signing_key")
+            .remove("reseed_pending_public_key")
+            .remove("reseed_pending_kex_private")
+            .remove("reseed_pending_kex_public")
+            .remove("reseed_pending_meta_key")
+            .remove("reseed_pending_epoch_secret")
+            .remove("reseed_pending_tag_key")
+            .remove("reseed_pending_epoch_number")
+            .remove("reseed_pending_bundle")
+            .remove("reseed_pending_origin")
+            .commit() && pendingReseed() == null
+
     fun getPendingChainKeys(): PallaSyncKeySnapshot? {
         val chainId =
             sharedPrefs.getString("pending_chain_id", null)?.takeIf { it.isNotBlank() }
@@ -624,3 +715,9 @@ class PallaSyncKeystore(
         editor.commit()
     }
 }
+
+internal data class PallaSyncPendingReseed(
+    val keys: PallaSyncKeySnapshot,
+    val publicBundleJson: String,
+    val targetOrigin: String,
+)

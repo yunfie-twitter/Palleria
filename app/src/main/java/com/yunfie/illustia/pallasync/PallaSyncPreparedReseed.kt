@@ -161,6 +161,21 @@ internal fun resumePallaSyncPreparedReseed(
     val canonical = checkNotNull(PallaSyncCore.canonicalJson(publicBundleJson)) { "C_SCHEMA_VIOLATION" }
     check(canonical == publicBundleJson) { "C_SCHEMA_VIOLATION" }
     val bundle = Json.parseToJsonElement(canonical).jsonObject
+    check(
+        bundle.keys ==
+            setOf(
+                "chain_id",
+                "generation",
+                "device_id",
+                "parameters_hash",
+                "epoch_hash",
+                "epoch_commitment",
+                "parameters",
+                "epoch",
+                "device_record",
+                "envelopes",
+            ),
+    ) { "C_SCHEMA_VIOLATION" }
     val parameters = bundle.getValue("parameters").jsonObject
     val record = bundle.getValue("device_record").jsonObject
     val epoch = bundle.getValue("epoch").jsonObject
@@ -174,6 +189,7 @@ internal fun resumePallaSyncPreparedReseed(
             epoch.getValue("chain_id").jsonPrimitive.content == savedKeys.chainId &&
             epoch.getValue("generation").jsonPrimitive.long == parameters.getValue("generation").jsonPrimitive.long &&
             epoch.getValue("epoch").jsonPrimitive.long == savedKeys.epoch &&
+            epoch.getValue("epoch_commitment").jsonPrimitive.content == bundle.getValue("epoch_commitment").jsonPrimitive.content &&
             PallaSyncCore.objectHash(epoch.toString()) == bundle.getValue("epoch_hash").jsonPrimitive.content &&
             record.getValue("device_id").jsonPrimitive.content == savedKeys.deviceId &&
             record.getValue("chain_id").jsonPrimitive.content == savedKeys.chainId &&

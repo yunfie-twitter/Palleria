@@ -10,6 +10,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -77,7 +78,8 @@ class PallaSyncReseedJniTest {
                         targetEpoch.tag("private collection") shouldBe null
                     }
                     val savedKeys = prepared.keySnapshot()
-                    resumePallaSyncPreparedReseed(prepared.publicBundleJson(), savedKeys).use { resumed ->
+                    val publicBundle = prepared.publicBundleJson()
+                    resumePallaSyncPreparedReseed(publicBundle, savedKeys).use { resumed ->
                         resumed.publicResult shouldBe result
                         resumed.openEpochSession().use { targetEpoch ->
                             targetEpoch.tag("private collection") shouldBe null
@@ -96,9 +98,20 @@ class PallaSyncReseedJniTest {
                             epochSecretBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32)),
                         )
                     shouldThrow<IllegalStateException> {
-                        resumePallaSyncPreparedReseed(prepared.publicBundleJson(), alteredEpochSecret).use { resumed ->
+                        resumePallaSyncPreparedReseed(publicBundle, alteredEpochSecret).use { resumed ->
                             resumed.openEpochSession().use { }
                         }
+                    }
+                    val unknownFieldBundle =
+                        checkNotNull(
+                            PallaSyncCore.canonicalJson(
+                                JsonObject(
+                                    Json.parseToJsonElement(publicBundle).jsonObject + ("unexpected" to JsonPrimitive(true)),
+                                ).toString(),
+                            ),
+                        )
+                    shouldThrow<IllegalStateException> {
+                        resumePallaSyncPreparedReseed(unknownFieldBundle, savedKeys).close()
                     }
                 }
             }

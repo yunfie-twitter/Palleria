@@ -768,7 +768,8 @@ internal class PalleriaSyncCoordinator(
                     )
                 try {
                     requireReseedSourceHead(root, source, sourceOrigin, stableSource)
-                    val staged = PallaSyncImportRelay(remote).stageFromVerifiedStore(root, target, db.protocolDao())
+                    val history = PallaSyncImportHistoryBuilder(db.protocolDao()).build(state.chainId)
+                    val staged = PallaSyncImportRelay(remote).stage(root, target, history)
                     if (staged is PallaSyncHttpResult.Success) {
                         check(existingReseed?.stagedLogId == null || existingReseed.stagedLogId == staged.value.logId) {
                             "C_IMPORT_CONFLICT"
@@ -800,6 +801,14 @@ internal class PalleriaSyncCoordinator(
                                 updatedAtMs = policy.retry.correctedTime(origin),
                             )
                         reseedDao.saveMonotone(journal)
+                        prepareReseedSnapshot(
+                            root = root,
+                            target = target,
+                            authority = authority,
+                            source = stableSource,
+                            history = history,
+                            journal = journal,
+                        )
                     }
                     staged
                 } finally {
@@ -807,6 +816,164 @@ internal class PalleriaSyncCoordinator(
                 }
             }
         }
+
+    /** Stage generation+1 ciphertext under A; receipts stay untrusted until the commit suffix is proven. */
+    private suspend fun prepareReseedSnapshot(
+        root: PallaSyncRootSession,
+        target: HttpUrl,
+        authority: JsonObject,
+        source: ChainStateEntity,
+        history: PallaSyncImportRelay.History,
+        journal: ReseedJournalEntity,
+    ) {
+        val stagedLogId = checkNotNull(journal.stagedLogId) { "C_MISSING_DEPENDENCY" }
+        val compactionId = checkNotNull(journal.compactionId) { "C_MISSING_DEPENDENCY" }
+        val origin = PallaSyncUrls.extractOrigin(target)
+        check(origin == journal.targetOrigin) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+        policy.requireCurrent(origin)
+        val preparedBundle: String
+        val prepared: PallaSyncPreparedReseed
+        val pending = keystore.pendingReseed()
+        if (journal.preparedBundleJson != null) {
+            val candidate = checkNotNull(pending) { "C_MISSING_DEPENDENCY" }
+            check(candidate.targetOrigin == origin && candidate.publicBundleJson == journal.preparedBundleJson) {
+                "C_ROLLBACK_DETECTED"
+            }
+            preparedBundle = journal.preparedBundleJson
+            prepared = resumePallaSyncPreparedReseed(preparedBundle, candidate.keys)
+        } else if (pending != null) {
+            check(pending.keys.chainId == source.chainId && pending.targetOrigin == origin) { "C_IMPORT_CONFLICT" }
+            preparedBundle = pending.publicBundleJson
+            prepared = resumePallaSyncPreparedReseed(preparedBundle, pending.keys)
+        } else {
+            prepared =
+                root.prepareReseed(
+                    checkNotNull(db.protocolDao().currentAuthority(source.chainId)),
+                    "Palleria reseed",
+                    policy.retry.correctedTime(origin),
+                )
+            try {
+                preparedBundle = prepared.publicBundleJson()
+                check(keystore.savePendingReseed(prepared.keySnapshot(), preparedBundle, origin)) { "C_LOCAL_STORAGE_FULL" }
+            } catch (failure: Throwable) {
+                prepared.close()
+                throw failure
+            }
+        }
+        prepared.use {
+            val reseedDao = db.snapshotDatabase().reseedJournalDao()
+            val checkpointed =
+                journal.copy(
+                    preparedBundleJson = preparedBundle,
+                    phase = maxOf(2, journal.phase),
+                    updatedAtMs = policy.retry.correctedTime(origin),
+                )
+            reseedDao.saveMonotone(checkpointed)
+            val result = prepared.publicResult
+            val snapshotJournal =
+                PallaSyncSnapshotPublicationJournal(
+                    db.snapshotDatabase(),
+                    source.chainId,
+                    compactionId,
+                    result.epoch,
+                )
+            val targetPin = Json.parseToJsonElement(journal.targetPinJson).jsonObject
+            val pendingParts = ArrayList<JsonObject>()
+            val uploadRelay =
+                PallaSyncSnapshotPartRelay(
+                    remote,
+                    target,
+                    source.chainId,
+                    targetPin,
+                    relayLimits,
+                    { base, _, method, path, query, body ->
+                        root.token(PallaSyncUrls.extractOrigin(base), method, path, query, body.toByteArray())
+                    },
+                ) { records, response -> snapshotJournal.retainStagedUploadReceipts(records, response) }
+
+            suspend fun flushStagedParts() {
+                if (pendingParts.isEmpty()) return
+                requireSnapshotResult(uploadRelay.upload(pendingParts.toList()))
+                pendingParts.clear()
+            }
+
+            var partIndex = 0
+            val snapshot =
+                prepared.produceSnapshot(
+                    db.snapshotDatabase(),
+                    stagedLogId,
+                    compactionId,
+                    snapshotJournal,
+                ) { _, recordJson, _ ->
+                    val part = snapshotJournal.prepared(partIndex++) ?: error("C_MISSING_DEPENDENCY")
+                    if (part.uploadReceiptJson != null) {
+                        flushStagedParts()
+                    } else {
+                        pendingParts += Json.parseToJsonElement(recordJson).jsonObject
+                        check(recordUploadBatchSize(pendingParts.map { it.toString() }, relayLimits) == pendingParts.size) {
+                            "C_LOCAL_LIMIT"
+                        }
+                        if (pendingParts.size >= minOf(MAX_SNAPSHOT_UPLOAD_RECORDS, relayLimits.maxRecordsPerUpload)) {
+                            flushStagedParts()
+                        }
+                    }
+                }
+            flushStagedParts()
+
+            val currentParametersJson = authority.getValue("parameters").toString()
+            val currentEpochJson =
+                authority
+                    .getValue("epochs")
+                    .jsonObject
+                    .values
+                    .maxBy {
+                        it.jsonObject
+                            .getValue("record")
+                            .jsonObject
+                            .getValue("epoch")
+                            .jsonPrimitive.long
+                    }.jsonObject
+                    .getValue("record")
+                    .toString()
+            val body =
+                journal.commitBodyJson
+                    ?: root.createReseedCommitBody(
+                        prepared,
+                        currentParametersJson,
+                        currentEpochJson,
+                        snapshot,
+                        policy.retry.correctedTime(origin),
+                    )
+            val commit = Json.parseToJsonElement(body).jsonObject
+            val compaction = commit.getValue("compaction").jsonObject
+            check(
+                snapshot.parts.isNotEmpty() &&
+                    compaction.getValue("compaction_id").jsonPrimitive.content == snapshot.compactionId &&
+                    compaction.getValue("log_id").jsonPrimitive.content == stagedLogId &&
+                    compaction.getValue("state_sha256").jsonPrimitive.content == snapshot.stateCommitment &&
+                    compaction.getValue("snapshot_parts").jsonArray.map { value ->
+                        value.jsonObject
+                            .getValue("record_id")
+                            .jsonPrimitive.content to
+                            value.jsonObject
+                                .getValue("record_hash")
+                                .jsonPrimitive.content
+                    } == snapshot.parts.map { it.recordId to it.recordHash },
+            ) {
+                "C_SNAPSHOT_INVALID"
+            }
+            val expected = PallaSyncImportRelay.expectedReseedCommitEntries(history, body).toString()
+            check(journal.expectedEntriesJson == null || journal.expectedEntriesJson == expected) { "C_IMPORT_CONFLICT" }
+            reseedDao.saveMonotone(
+                checkpointed.copy(
+                    commitBodyJson = body,
+                    expectedEntriesJson = expected,
+                    phase = maxOf(3, checkpointed.phase),
+                    updatedAtMs = policy.retry.correctedTime(origin),
+                ),
+            )
+        }
+    }
 
     /** An unsigned head can only veto stale source state; the local verified checkpoint remains authoritative. */
     private suspend fun requireReseedSourceHead(
