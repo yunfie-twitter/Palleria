@@ -748,7 +748,7 @@
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerAndroidTest.kt"
       ],
       "result": "pending",
-      "remaining": "Complete recovery enrollment/full-set rotation/new-root migration and remaining named root operations; validate actual SAF/physical media, public retirement propagation, clone/fault/process-death boundaries and independent three-party ceremonies.",
+      "remaining": "A bounded source-state transformer now streams current entity winners, tombstones, clear registers and retention registers in full source K order for re-authoring; it fails closed on incomplete verified/materialized state, pending outbox, quarantine, author gaps or a changed Room revision. A targeted Robolectric test covers cross-table K ordering and gap rejection. It is not yet connected to recovery UI/coordinator, durable migration journaling, target-chain authoring/receipt completion or old-chain retirement, so §13.8/§18.7 new-root migration remains unimplemented. Complete recovery enrollment/full-set rotation and remaining named root operations; validate actual SAF/physical media, public retirement propagation, clone/fault/process-death boundaries and independent three-party ceremonies.",
       "verification_scope": "targeted_partial"
     },
     {

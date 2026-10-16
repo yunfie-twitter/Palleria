@@ -14,6 +14,7 @@ import com.yunfie.illustia.pallasync.data.WinnerColumns
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
@@ -195,6 +196,105 @@ class PallaSyncSnapshotStateReaderTest {
                         }
                     }.exceptionOrNull()
                 changedDuringStream?.message shouldBe "C_SNAPSHOT_INVALID"
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun `new root migration reauthors every entity and register in complete source conflict order`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val chain = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
+                db.pallaSyncDao().updateChainState(
+                    ChainStateEntity(
+                        chainId = chain,
+                        lamport = 4,
+                        keyEpoch = 0,
+                        chainVectorJson = "{}",
+                        logId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                        epochHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                        verifiedSeq = 4,
+                        materializedSeq = 4,
+                        verifiedHash = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+                        indexRevision = 3,
+                    ),
+                )
+                val protocol = db.protocolDao()
+                val entityOne = PallaSyncConflictResolver.key(1, "upsert", DEVICE_A, RECORD_A, 0)
+                val clear = PallaSyncConflictResolver.key(2, "clear", DEVICE_A, RECORD_B, 0)
+                val tombstone = PallaSyncConflictResolver.key(3, "delete", DEVICE_A, "44444444-4444-4444-8444-444444444444", 0)
+                val retention = PallaSyncConflictResolver.key(4, "upsert", DEVICE_A, "55555555-5555-4555-8555-555555555555", 0)
+                protocol.putEntity(
+                    EntityRegisterEntity(
+                        chain,
+                        "collection",
+                        "before-clear",
+                        entityOne,
+                        "upsert",
+                        "all",
+                        "{\"v\":1}",
+                        "{}",
+                        null,
+                    ),
+                )
+                protocol.putRegister(ScopeRegisterEntity(chain, "collection", "all", "clear", clear, "{}"))
+                protocol.putEntity(
+                    EntityRegisterEntity(
+                        chain,
+                        "collection",
+                        "after-clear",
+                        tombstone,
+                        "delete",
+                        "all",
+                        "{}",
+                        "{}",
+                        null,
+                    ),
+                )
+                protocol.putRegister(
+                    ScopeRegisterEntity(
+                        chain,
+                        "collection",
+                        "all",
+                        "retention",
+                        retention,
+                        """{"scope":"all","limit":20,"stop_on_safety_limit":true}""",
+                    ),
+                )
+
+                val events = mutableListOf<PallaSyncPendingEvent>()
+                PallaSyncSnapshotStateReader(db, pageSize = 2)
+                    .streamForNewRootMigration(chain, events::add)
+
+                events.map { it.entityId } shouldBe listOf("before-clear", "*", "after-clear", "*")
+                events.map { it.operation } shouldBe listOf("upsert", "clear", "delete", "upsert")
+                events[1].context["scope"]!!.jsonPrimitive.content shouldBe "all"
+                events[3].context["scope"]!!.jsonPrimitive.content shouldBe "retention"
+                events[3]
+                    .body
+                    .jsonObject["limit"]!!
+                    .jsonPrimitive.long shouldBe 20L
+
+                db.snapshotStateDao().insertSnapshotAuthorGap(
+                    com.yunfie.illustia.pallasync.data.SnapshotAuthorGapEntity(
+                        chain,
+                        0,
+                        DEVICE_A,
+                        1,
+                        1,
+                        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    ),
+                )
+                runCatching { PallaSyncSnapshotStateReader(db).streamForNewRootMigration(chain) {} }
+                    .exceptionOrNull()
+                    ?.message shouldBe "C_SNAPSHOT_INVALID"
             } finally {
                 db.close()
             }

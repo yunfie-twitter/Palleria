@@ -5,6 +5,9 @@ import com.yunfie.illustia.pallasync.data.EntityRegisterEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProjectionStateEntity
 import com.yunfie.illustia.pallasync.data.ScopeRegisterEntity
+import com.yunfie.illustia.pallasync.data.SnapshotMigrationWinnerRow
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -37,6 +40,98 @@ internal class PallaSyncSnapshotStateReader(
         preservePendingOutbox: Boolean,
         emit: suspend (JsonObject) -> Unit,
     ) = streamInternal(chainId, reseedHeader, preservePendingOutbox, emit)
+
+    /**
+     * Stream the complete materialized state as fresh authoring intents, retaining source K order.
+     * Used only by an explicit new-root migration; source authorship evidence and derived projections
+     * are intentionally not copied to the new chain.
+     */
+    internal suspend fun streamForNewRootMigration(
+        chainId: String,
+        emit: suspend (PallaSyncPendingEvent) -> Unit,
+    ) {
+        val chainDao = database.pallaSyncDao()
+        val source = checkNotNull(chainDao.getChainState(chainId)) { "C_SNAPSHOT_INVALID" }
+        require(
+            source.initialPullCompleted && source.logId != null && source.epochHash != null &&
+                source.verifiedSeq == source.materializedSeq && source.verifiedHash != null &&
+                source.generation in 0..MAX_GENERATION && source.lamport in 0..PallaSyncConflictResolver.MAX_COUNTER,
+        ) { "C_SNAPSHOT_INVALID" }
+        val dao = database.snapshotStateDao()
+        require(
+            chainDao.pendingOutboxCount(chainId) == 0L &&
+                database.protocolDao().unresolvedQuarantineCount(chainId) == 0L &&
+                dao.unresolvedSnapshotAuthorGapCount(chainId) == 0L && dao.unresolvedAuthorGapCount(chainId) == 0L,
+        ) { "C_SNAPSHOT_INVALID" }
+        val revision = source.indexRevision
+        var lamport = -1L
+        var rank = -1
+        var device = byteArrayOf()
+        var record = byteArrayOf()
+        var opIndex = -1
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val page = dao.migrationWinnerPage(chainId, lamport, rank, device, record, opIndex, DEFAULT_PAGE_SIZE)
+            if (page.isEmpty()) break
+            for (row in page) emit(row.toMigrationEvent())
+            val tail = page.last()
+            lamport = tail.lamport
+            rank = tail.opRank
+            device = tail.deviceId
+            record = tail.recordId
+            opIndex = tail.opIndex
+        }
+        val after = checkNotNull(chainDao.getChainState(chainId)) { "C_SNAPSHOT_INVALID" }
+        require(
+            after.indexRevision == revision && after.verifiedSeq == source.verifiedSeq &&
+                after.materializedSeq == source.materializedSeq && after.verifiedHash == source.verifiedHash &&
+                chainDao.pendingOutboxCount(chainId) == 0L &&
+                database.protocolDao().unresolvedQuarantineCount(chainId) == 0L &&
+                dao.unresolvedSnapshotAuthorGapCount(chainId) == 0L && dao.unresolvedAuthorGapCount(chainId) == 0L,
+        ) { "C_SNAPSHOT_INVALID" }
+    }
+
+    private fun SnapshotMigrationWinnerRow.toMigrationEvent(): PallaSyncPendingEvent {
+        val body = parseObject(bodyJson)
+        val sourceContext = parseObject(contextJson)
+        return when (kind) {
+            "entity" -> {
+                require(
+                    (operation == "upsert" && opRank == 0) || (operation == "delete" && opRank == 1),
+                ) { "C_SNAPSHOT_INVALID" }
+                PallaSyncPendingEvent(collection, entityId, operation, body, sourceContext)
+            }
+
+            "clear" -> {
+                require(operation == "clear" && opRank == 1 && scope.isNotEmpty() && body.isEmpty()) { "C_SNAPSHOT_INVALID" }
+                PallaSyncPendingEvent(
+                    collection,
+                    "*",
+                    "clear",
+                    buildJsonObject {},
+                    buildJsonObject { put("scope", scope) },
+                )
+            }
+
+            "retention" -> {
+                require(
+                    operation == "upsert" && opRank == 0 && scope.isNotEmpty() &&
+                        body["scope"]?.jsonPrimitive?.content == scope,
+                ) { "C_SNAPSHOT_INVALID" }
+                PallaSyncPendingEvent(
+                    collection,
+                    "*",
+                    "upsert",
+                    body,
+                    buildJsonObject { put("scope", "retention") },
+                )
+            }
+
+            else -> {
+                error("C_SNAPSHOT_INVALID")
+            }
+        }
+    }
 
     private suspend fun streamInternal(
         chainId: String,
