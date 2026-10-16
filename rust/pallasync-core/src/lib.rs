@@ -2,6 +2,7 @@ pub mod admin_action;
 pub mod attestations;
 pub mod authority;
 pub mod bootstrap;
+pub mod checkpoint;
 pub mod client_error;
 pub mod client_response;
 pub mod crypto;

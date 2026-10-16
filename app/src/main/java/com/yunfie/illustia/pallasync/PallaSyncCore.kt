@@ -491,6 +491,19 @@ object PallaSyncCore {
         expectedPublicKey: String,
     ): String
 
+    external fun signDeviceCheckpoint(
+        handle: Long,
+        checkpointJson: String,
+        expectedDeviceId: String,
+        certifiedPublicKey: String,
+    ): String
+
+    /** Strictly validates and verifies a §7.12.4 checkpoint with a certified key. */
+    external fun verifyDeviceCheckpoint(
+        checkpointJson: String,
+        certifiedPublicKey: String,
+    ): Boolean
+
     external fun decryptOwnPreparedRecord(
         handle: Long,
         recordJson: String,

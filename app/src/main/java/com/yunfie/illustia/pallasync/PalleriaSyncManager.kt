@@ -66,6 +66,10 @@ class PalleriaSyncManager(
         passphrase: String,
     ) = coordinator.exportRelayArchiveWithRecovery(output, mnemonic, passphrase)
 
+    internal suspend fun createDeviceCheckpoint(): String = coordinator.createDeviceCheckpoint()
+
+    internal suspend fun importDeviceCheckpoint(checkpointJson: String): String = coordinator.importDeviceCheckpoint(checkpointJson)
+
     internal suspend fun repairRetainedRelayHistory(
         mnemonic: String,
         passphrase: String,

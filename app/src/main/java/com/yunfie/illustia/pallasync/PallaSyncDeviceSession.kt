@@ -12,6 +12,12 @@ internal class PallaSyncDeviceSession private constructor(
         signingPublicKey: String,
     ): String = PallaSyncCore.signCompactionRecord(handle, compactionJson, deviceId, signingPublicKey)
 
+    fun signCheckpoint(
+        checkpointJson: String,
+        expectedDeviceId: String,
+        certifiedPublicKey: String,
+    ): String = PallaSyncCore.signDeviceCheckpoint(handle, checkpointJson, expectedDeviceId, certifiedPublicKey)
+
     override fun close() = PallaSyncCore.endDeviceSession(handle)
 
     companion object {

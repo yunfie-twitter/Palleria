@@ -863,6 +863,190 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    /** §7.12.4/§17.10: sign a protected public checkpoint at the local verified data prefix. */
+    internal suspend fun createDeviceCheckpoint(): String =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                check(state.logId != null && state.verifiedHash != null) { "C_MISSING_DEPENDENCY" }
+                val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val parameters = authority.getValue("parameters").jsonObject
+                val epoch =
+                    authority
+                        .getValue("epochs")
+                        .jsonObject
+                        .getValue(state.keyEpoch.toString())
+                        .jsonObject
+                        .getValue("record")
+                        .jsonObject
+                val deviceId = checkNotNull(keys.deviceId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                validateSnapshotPublisher(state, authority, keys)
+                check(
+                    crypto.objectHash(parameters.toString()) == state.parametersHash &&
+                        crypto.objectHash(epoch.toString()) == state.epochHash &&
+                        pin.getValue("log_id").jsonPrimitive.content == state.logId &&
+                        pin.getValue("chain_id").jsonPrimitive.content == state.chainId,
+                ) { "C_ROLLBACK_DETECTED" }
+                val transparencyId = checkNotNull(state.transparencyId) { "C_MISSING_DEPENDENCY" }
+                val transparencyHash = checkNotNull(state.transparencyHash) { "C_MISSING_DEPENDENCY" }
+                val template =
+                    buildJsonObject {
+                        put("type", "PALLASYNC-CHECKPOINT-v3")
+                        put("version", "3.0")
+                        put("checkpoint_id", UUID.randomUUID().toString())
+                        put("chain_id", state.chainId)
+                        put("generation", state.generation)
+                        put("device_id", deviceId)
+                        put("relay_origin", pin.getValue("origin").jsonPrimitive.content)
+                        put("relay_key_id", pin.getValue("relay_key_id").jsonPrimitive.content)
+                        put("log_id", checkNotNull(state.logId))
+                        put("seq", state.verifiedSeq)
+                        put("head_hash", checkNotNull(state.verifiedHash))
+                        put("parameters_hash", checkNotNull(state.parametersHash))
+                        put("epoch_hash", checkNotNull(state.epochHash))
+                        put("transparency_id", transparencyId)
+                        put("transparency_index", state.transparencyIndex)
+                        put("transparency_hash", transparencyHash)
+                        put("created_at_ms", policy.retry.correctedTime(pin.getValue("origin").jsonPrimitive.content))
+                        put("signature", "A".repeat(86))
+                    }
+                val signed =
+                    PallaSyncDeviceSession.begin(keys).use {
+                        it.signCheckpoint(template.toString(), deviceId, keys.publicKeyBase64Url)
+                    }
+                val canonical = checkNotNull(PallaSyncCore.canonicalJson(signed)) { "C_SCHEMA_VIOLATION" }
+                PallaSyncCheckpointFile.encode(canonical)
+                canonical
+            }
+        }
+
+    /** Imports only a canonical checkpoint signed by a chain device already certified in local authority. */
+    internal suspend fun importDeviceCheckpoint(checkpointJson: String): String =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                PallaSyncCheckpointFile.encode(checkpointJson)
+                val value = Json.parseToJsonElement(checkpointJson).jsonObject
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val chain = value.getValue("chain_id").jsonPrimitive.content
+                val origin = value.getValue("relay_origin").jsonPrimitive.content
+                val relayKeyId = value.getValue("relay_key_id").jsonPrimitive.content
+                val logId = value.getValue("log_id").jsonPrimitive.content
+                check(
+                    chain == state.chainId && chain == pin.getValue("chain_id").jsonPrimitive.content &&
+                        origin == pin.getValue("origin").jsonPrimitive.content &&
+                        relayKeyId == pin.getValue("relay_key_id").jsonPrimitive.content &&
+                        logId == pin.getValue("log_id").jsonPrimitive.content,
+                ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val deviceId = value.getValue("device_id").jsonPrimitive.content
+                val generation = value.getValue("generation").jsonPrimitive.long
+                val seq = value.getValue("seq").jsonPrimitive.long
+                check(generation == state.generation && seq <= state.verifiedSeq) { "C_MISSING_DEPENDENCY" }
+                val admission = checkNotNull(authority.getValue("devices").jsonObject[deviceId]?.jsonObject) { "C_MISSING_DEPENDENCY" }
+                val deviceRecord = admission.getValue("record").jsonObject
+                val certifiedKey = deviceRecord.getValue("device_public_key").jsonPrimitive.content
+                check(deviceRecord.getValue("generation").jsonPrimitive.long == generation) { "C_MISSING_DEPENDENCY" }
+                val enrolledSeq = admission.getValue("enrolled_seq").jsonPrimitive.long
+                val revokedSeq = admission.getValue("revoked_seq")
+                check(enrolledSeq <= seq && (revokedSeq is kotlinx.serialization.json.JsonNull || revokedSeq.jsonPrimitive.long > seq)) {
+                    "C_DEVICE_REVOKED"
+                }
+                val epochKnown =
+                    authority.getValue("epochs").jsonObject.values.any { accepted ->
+                        val record = accepted.jsonObject.getValue("record").jsonObject
+                        record.getValue("generation").jsonPrimitive.long == generation &&
+                            crypto.objectHash(record.toString()) == value.getValue("epoch_hash").jsonPrimitive.content &&
+                            record.getValue("members").jsonArray.any { it.jsonPrimitive.content == deviceId }
+                    }
+                check(epochKnown) { "C_MISSING_DEPENDENCY" }
+                val params = authority.getValue("parameters")
+                check(crypto.objectHash(params.toString()) == value.getValue("parameters_hash").jsonPrimitive.content) {
+                    "C_MISSING_DEPENDENCY"
+                }
+                check(PallaSyncCore.verifyDeviceCheckpoint(checkpointJson, certifiedKey)) { "C_SIGNATURE_INVALID" }
+                val objectHash = checkNotNull(crypto.objectHash(checkpointJson)) { "C_SCHEMA_VIOLATION" }
+                db.protocolDao().retainEvidence(
+                    ProtectedEvidenceEntity(
+                        origin = origin,
+                        relayKeyId = relayKeyId,
+                        chainId = chain,
+                        logId = logId,
+                        kind = "device_checkpoint",
+                        sequence = seq,
+                        objectHash = objectHash,
+                        signedJson = checkpointJson,
+                    ),
+                )
+
+                val expectedHead =
+                    if (seq == state.verifiedSeq) {
+                        checkNotNull(state.verifiedHash) { "C_MISSING_DEPENDENCY" }
+                    } else {
+                        val history =
+                            Json
+                                .parseToJsonElement(
+                                    PallaSyncCore.beginAuthorityHistory(
+                                        params.toString().toByteArray(Charsets.UTF_8),
+                                        buildJsonObject {
+                                            put("chain_id", chain)
+                                            put("admin_public_key", authority.getValue("admin_public_key"))
+                                        }.toString(),
+                                        origin,
+                                        policy.trustedRelayKey(origin),
+                                    ),
+                                ).jsonObject
+                        var verified = history
+                        var after = 0L
+                        while (after < seq) {
+                            val page = db.protocolDao().logPage(chain, logId, after, seq, PALLASYNC_PAGE_SIZE)
+                            check(page.isNotEmpty() && page.first().relaySeq == after + 1L) { "C_MISSING_DEPENDENCY" }
+                            for (row in page) {
+                                check(row.validationState == "authority_verified" && row.relaySeq == after + 1L) {
+                                    "C_MISSING_DEPENDENCY"
+                                }
+                                verified =
+                                    Json
+                                        .parseToJsonElement(
+                                            PallaSyncCore.advanceAuthorityHistory(
+                                                verified.toString(),
+                                                row.signedJson,
+                                                row.receiptJson,
+                                            ),
+                                        ).jsonObject
+                                after = row.relaySeq
+                            }
+                        }
+                        verified.getValue("head_hash").jsonPrimitive.content
+                    }
+                if (expectedHead != value.getValue("head_hash").jsonPrimitive.content) {
+                    db.pallaSyncDao().updateChainState(state.copy(writeState = "integrity_paused"))
+                    error("C_DEVICE_EQUIVOCATION")
+                }
+                val peerTransparencyIndex = value.getValue("transparency_index").jsonPrimitive.long
+                if (peerTransparencyIndex == state.transparencyIndex &&
+                    (
+                        value.getValue("transparency_id").jsonPrimitive.content != state.transparencyId ||
+                            value.getValue("transparency_hash").jsonPrimitive.content != state.transparencyHash
+                    )
+                ) {
+                    db.pallaSyncDao().updateChainState(state.copy(writeState = "integrity_paused"))
+                    error("C_DEVICE_EQUIVOCATION")
+                }
+                val localTransparencyMatches =
+                    value.getValue("transparency_id").jsonPrimitive.content == state.transparencyId &&
+                        value.getValue("transparency_index").jsonPrimitive.long == state.transparencyIndex &&
+                        value.getValue("transparency_hash").jsonPrimitive.content == state.transparencyHash
+                if (localTransparencyMatches) "verified_data_and_transparency_prefix" else "verified_data_prefix_transparency_unmatched"
+            }
+        }
+
     /** §10.13: retransmit only current-generation records with retained verified source LogEntries. */
     internal suspend fun repairRetainedRelayHistory(
         mnemonic: String,

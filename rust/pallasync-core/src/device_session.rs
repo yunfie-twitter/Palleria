@@ -237,6 +237,27 @@ pub fn sign_compaction(
     Ok(value)
 }
 
+pub fn sign_checkpoint(
+    handle: u64,
+    value: &mut serde_json::Value,
+    expected_device_id: &str,
+    certified_public_key: &str,
+) -> Result<serde_json::Value> {
+    if crate::public_wire::s(value, "device_id") != expected_device_id {
+        return Err(ClientError("C_DEVICE_KEY_MISMATCH"));
+    }
+    let mut all = sessions()
+        .lock()
+        .map_err(|_| ClientError("C_LOCAL_LIMIT"))?;
+    all.retain(|_, session| session.touched.elapsed() < IDLE);
+    let session = all
+        .get_mut(&handle)
+        .ok_or(ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+    session.touched = Instant::now();
+    crate::checkpoint::sign(value, &session.keys.signing, certified_public_key)?;
+    Ok(value.clone())
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TokenBinding {

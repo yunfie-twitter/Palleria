@@ -974,6 +974,33 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_signComp
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_signDeviceCheckpoint<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    checkpoint: JString<'local>,
+    expected_device_id: JString<'local>,
+    certified_public_key: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let mut checkpoint = public_value(&mut env, &checkpoint)?;
+        let expected_device_id =
+            read_string(&mut env, &expected_device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let certified_public_key = read_string(&mut env, &certified_public_key)
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::device_session::sign_checkpoint(
+            handle as u64,
+            &mut checkpoint,
+            &expected_device_id,
+            &certified_public_key,
+        )
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_compareLogHeads<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
@@ -2462,6 +2489,30 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyDe
         return 0;
     };
     u8::from(crypto::verify_device_record_json(&record_str).unwrap_or(false))
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyDeviceCheckpoint<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'_>,
+    checkpoint_json: JString<'local>,
+    certified_public_key: JString<'local>,
+) -> jboolean {
+    let (Some(checkpoint), Some(public_key)) = (
+        read_string(&mut env, &checkpoint_json),
+        read_string(&mut env, &certified_public_key),
+    ) else {
+        return 0;
+    };
+    let parsed = crate::strict::jcs::parse(checkpoint.as_bytes())
+        .map_err(|_| ClientError("C_SCHEMA_VIOLATION"));
+    u8::from(
+        parsed
+            .and_then(|value| crate::checkpoint::verify(&value, &public_key))
+            .is_ok(),
+    )
 }
 
 #[unsafe(no_mangle)]

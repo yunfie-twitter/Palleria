@@ -35,6 +35,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
+import com.yunfie.illustia.pallasync.PallaSyncCheckpointFile
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
@@ -243,6 +244,84 @@ fun PallaSyncSettingsScreen(
             } else {
                 recoveryExportUri = uri
                 showRecoveryExportRootInput = true
+            }
+        }
+
+    val checkpointExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            if (uri == null) {
+                Toast.makeText(context, R.string.pallasync_checkpoint_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val checkpoint = syncManager.createDeviceCheckpoint()
+                            val expected = PallaSyncCheckpointFile.encode(checkpoint)
+                            checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }
+                                .use { PallaSyncCheckpointFile.write(it, checkpoint) }
+                            val actual =
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }
+                                    .use(PallaSyncCheckpointFile::read)
+                                    .toByteArray(Charsets.UTF_8)
+                            check(expected.contentEquals(actual)) { "C_SCHEMA_VIOLATION" }
+                        }
+                        Toast.makeText(context, R.string.pallasync_checkpoint_saved, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_checkpoint_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_checkpoint_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: RuntimeException) {
+                        Toast.makeText(context, R.string.pallasync_checkpoint_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
+    val checkpointImporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) {
+                Toast.makeText(context, R.string.pallasync_checkpoint_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                scope.launch {
+                    try {
+                        val outcome =
+                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val checkpoint =
+                                    checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }
+                                        .use(PallaSyncCheckpointFile::read)
+                                syncManager.importDeviceCheckpoint(checkpoint)
+                            }
+                        Toast
+                            .makeText(
+                                context,
+                                if (outcome == "verified_data_and_transparency_prefix") {
+                                    R.string.pallasync_checkpoint_import_verified
+                                } else {
+                                    R.string.pallasync_checkpoint_import_partial
+                                },
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_checkpoint_import_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_checkpoint_import_failed, Toast.LENGTH_LONG).show()
+                    } catch (error: RuntimeException) {
+                        Toast
+                            .makeText(
+                                context,
+                                if (error.message == "C_DEVICE_EQUIVOCATION") {
+                                    R.string.pallasync_checkpoint_conflict
+                                } else {
+                                    R.string.pallasync_checkpoint_import_failed
+                                },
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    }
+                }
             }
         }
 
@@ -1194,6 +1273,20 @@ fun PallaSyncSettingsScreen(
                             summary = stringResource(R.string.pallasync_pair_device_desc),
                             onClick = onPairDevice,
                         )
+                        if (state.settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_checkpoint_export_title),
+                                summary = stringResource(R.string.pallasync_checkpoint_export_summary),
+                                onClick = { checkpointExporter.launch("pallasync-checkpoint.json") },
+                            )
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_checkpoint_import_title),
+                                summary = stringResource(R.string.pallasync_checkpoint_import_summary),
+                                onClick = { checkpointImporter.launch(arrayOf("application/json")) },
+                            )
+                        }
                         if (state.settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
