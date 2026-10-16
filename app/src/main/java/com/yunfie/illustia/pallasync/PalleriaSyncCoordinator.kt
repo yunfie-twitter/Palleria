@@ -5034,12 +5034,11 @@ internal class PalleriaSyncCoordinator(
                     val existingArchives =
                         db
                             .protocolDao()
-                            .evidenceAt(
+                            .deletionEvidenceArchives(
                                 origin,
                                 authorityEvidence.relayKeyId,
                                 chainId,
                                 authorityEvidence.logId,
-                                "deletion_evidence_bundle",
                                 receiptIndex,
                             ).map { archiveText ->
                                 val archive = PallaSyncDeletionEvidenceArchive.parseStrictObject(archiveText)
@@ -5074,12 +5073,11 @@ internal class PalleriaSyncCoordinator(
                     check(
                         db
                             .protocolDao()
-                            .evidenceAt(
+                            .deletionEvidenceArchives(
                                 origin,
                                 authorityEvidence.relayKeyId,
                                 chainId,
                                 authorityEvidence.logId,
-                                "deletion_evidence_bundle",
                                 receiptIndex,
                             ).contains(archiveText),
                     ) { "C_LOCAL_STORAGE_FULL" }
@@ -5146,12 +5144,11 @@ internal class PalleriaSyncCoordinator(
                     check(
                         db
                             .protocolDao()
-                            .evidenceAt(
+                            .deletionEvidenceArchives(
                                 context.origin,
                                 context.relayKeyId,
                                 context.state.chainId,
                                 context.logId,
-                                "deletion_evidence_bundle",
                                 index,
                             ).contains(archive),
                     ) { "C_LOCAL_STORAGE_FULL" }
@@ -5189,12 +5186,11 @@ internal class PalleriaSyncCoordinator(
                 check(
                     db
                         .protocolDao()
-                        .evidenceAt(
+                        .deletionEvidenceArchives(
                             context.origin,
                             context.relayKeyId,
                             context.state.chainId,
                             context.logId,
-                            "deletion_evidence_bundle",
                             index,
                         ).contains(archive),
                 ) { "C_LOCAL_STORAGE_FULL" }
@@ -5210,12 +5206,11 @@ internal class PalleriaSyncCoordinator(
         val archives =
             db
                 .protocolDao()
-                .evidenceAt(
+                .deletionEvidenceArchives(
                     context.origin,
                     context.relayKeyId,
                     context.state.chainId,
                     context.logId,
-                    "deletion_evidence_bundle",
                     index,
                 ).map { value ->
                     val archive = Json.parseToJsonElement(value).jsonObject
@@ -5329,12 +5324,11 @@ internal class PalleriaSyncCoordinator(
                 check(
                     db
                         .protocolDao()
-                        .evidenceAt(
+                        .deletionEvidenceArchives(
                             pin.getValue("origin").jsonPrimitive.content,
                             receipt.getValue("relay_key_id").jsonPrimitive.content,
                             chain,
                             pin.getValue("log_id").jsonPrimitive.content,
-                            "deletion_evidence_bundle",
                             index,
                         ).contains(result),
                 ) { "C_LOCAL_STORAGE_FULL" }

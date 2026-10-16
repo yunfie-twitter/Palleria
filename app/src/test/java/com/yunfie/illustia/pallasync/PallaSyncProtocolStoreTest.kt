@@ -398,7 +398,7 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
-    fun `deletion evidence bundle revisions remain separately retrievable for one receipt`() =
+    fun `all deletion witness bundle revisions remain retrievable for one receipt`() =
         runBlocking<Unit> {
             val db =
                 Room
@@ -420,11 +420,13 @@ class PallaSyncProtocolStoreTest {
                         "empty-witness-archive",
                     )
                 val withWitness = empty.copy(objectHash = "bundle-witness", signedJson = "one-witness-archive")
+                val withSecondWitness = empty.copy(objectHash = "bundle-witness-2", signedJson = "two-witness-archive")
                 protocol.retainDeletionProof(empty)
                 protocol.retainDeletionProof(withWitness)
+                protocol.retainDeletionProof(withSecondWitness)
 
-                protocol.evidenceAt("https://relay.example", "key", chain, log, "deletion_evidence_bundle", 11).toSet() shouldBe
-                    setOf("empty-witness-archive", "one-witness-archive")
+                protocol.deletionEvidenceArchives("https://relay.example", "key", chain, log, 11).toSet() shouldBe
+                    setOf("empty-witness-archive", "one-witness-archive", "two-witness-archive")
             } finally {
                 db.close()
             }

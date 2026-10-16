@@ -13,8 +13,9 @@ class PallaSyncDeletionEvidenceMergeTest {
     fun `parallel archives merge distinct witnesses in stable device order`() {
         val first = archive("11111111-1111-4111-8111-111111111111", "witness-a")
         val second = archive("22222222-2222-4222-8222-222222222222", "witness-b")
+        val third = archive("33333333-3333-4333-8333-333333333333", "witness-c")
 
-        val merged = checkNotNull(PallaSyncDeletionEvidenceMerge.merge(listOf(first, second)))
+        val merged = checkNotNull(PallaSyncDeletionEvidenceMerge.merge(listOf(first, second, third)))
         val witnesses =
             merged
                 .getValue("evidence_bundle")
@@ -27,7 +28,11 @@ class PallaSyncDeletionEvidenceMergeTest {
                 .getValue("witness_device_id")
                 .jsonPrimitive.content
         } shouldBe
-            listOf("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222")
+            listOf(
+                "11111111-1111-4111-8111-111111111111",
+                "22222222-2222-4222-8222-222222222222",
+                "33333333-3333-4333-8333-333333333333",
+            )
         merged.getValue("delete_receipt") shouldBe first.getValue("delete_receipt")
     }
 
