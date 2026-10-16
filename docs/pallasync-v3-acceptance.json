@@ -497,14 +497,16 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncTrustDialog.kt",
         "Palleria/app/src/main/res/values/pallasync_v3.xml",
-        "Palleria/app/src/main/res/values-ja/pallasync_v3.xml"
+        "Palleria/app/src/main/res/values-ja/pallasync_v3.xml",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialSourceChoice.kt"
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/bootstrap.rs",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAuthorityJniTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAuthorityJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInitialSourceChoiceTest.kt"
       ],
       "result": "pending",
-      "remaining": "The UI now separates unresolved author gaps and states that relay tail completeness is unproven, including during partial pulls. Still add automated UI coverage for every source choice and display the required expected chain/admin fingerprint plus verified parameter/epoch heads and source hashes/coverage before acceptance where available; reject incomplete ancestry in those paths. Compile and ktlint passed, but this does not verify each interactive choice.",
+      "remaining": "The UI now separates unresolved author gaps and states that relay tail completeness is unproven, including during partial pulls. Unit tests cover all four supported explicit source kinds and reject dismissal/unknown kinds. Still add automated UI coverage for every source path, display expected chain/admin fingerprint plus verified parameter/epoch heads and hashes/coverage before acceptance where available, and verify incomplete ancestry rejection interactively. Kotlin compile, focused unit test and ktlint passed; this does not verify each interactive choice.",
       "verification_scope": "targeted_partial"
     },
     {

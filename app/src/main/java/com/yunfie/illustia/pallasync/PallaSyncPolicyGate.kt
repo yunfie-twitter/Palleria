@@ -126,17 +126,7 @@ class PallaSyncPolicyGate internal constructor(
         source: String,
         explicitlyConfirmed: Boolean,
     ) {
-        check(
-            explicitlyConfirmed && source in
-                setOf(
-                    "new_chain_local_state",
-                    "relay_full_replay",
-                    "authenticated_export",
-                    "trusted_snapshot",
-                ),
-        ) {
-            "C_BOOTSTRAP_TRUST_REQUIRED"
-        }
+        PallaSyncInitialSourceChoice.requireExplicit(source, explicitlyConfirmed)
         check(prefs.edit().putString("source:${normalizeOrigin(origin)}", source).commit()) { "C_LOCAL_STORAGE_FULL" }
     }
 
