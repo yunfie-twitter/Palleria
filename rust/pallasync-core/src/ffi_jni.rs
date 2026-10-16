@@ -1164,6 +1164,30 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateExportAttestation<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    line: JString<'local>,
+    pin: JString<'local>,
+) -> jboolean {
+    let result = (|| {
+        let line = public_value(&mut env, &line)?;
+        let pin = serde_json::from_value(public_value(&mut env, &pin)?)
+            .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::validate_export_attestation(&line, &pin)
+    })();
+    match result {
+        Ok(()) => 1,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_observeTransparencyHead<
     'local,
 >(

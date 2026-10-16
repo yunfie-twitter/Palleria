@@ -166,4 +166,49 @@ class PallaSyncExportArchiveTest {
             archive.close()
         }
     }
+
+    @Test
+    fun exportWithPinnedRelayRejectsUnsignedAttestationBeforeWritingLine() {
+        val publicKey = "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ"
+        val relayKeyId = "oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck"
+        val actualHeader =
+            header
+                .replace(
+                    "\"relay_key_id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+                    "\"relay_key_id\":\"$relayKeyId\"",
+                ).replace(
+                    "\"relay_public_key\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+                    "\"relay_public_key\":\"$publicKey\"",
+                )
+        val pin =
+            """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"$publicKey","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+        val expected =
+            PallaSyncExportArchive.ExpectedSource(
+                chainId = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+                generation = 0,
+                logId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                relayPublicKey = publicKey,
+                relayKeyId = relayKeyId,
+                relayPinJson = pin,
+            )
+        val archive = PallaSyncExportArchive.create(ByteArrayOutputStream(), expected)
+        val receipt =
+            PallaSyncExportArchiveTest::class.java
+                .getResourceAsStream("/pallasync/attestations/receipt.json")!!
+                .bufferedReader()
+                .use { it.readText() }
+                .trim()
+                .replace(
+                    Regex("\"relay_signature\":\"[^\"]+\""),
+                    "\"relay_signature\":\"${"A".repeat(86)}\"",
+                )
+        shouldThrow<IllegalStateException> {
+            archive.acceptChunk(
+                "$actualHeader\n{\"kind\":\"upload_receipt\",\"receipt\":$receipt}\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n"
+                    .toByteArray(),
+                null,
+            )
+        }.message shouldBe "C_SIGNATURE_INVALID"
+        archive.close()
+    }
 }

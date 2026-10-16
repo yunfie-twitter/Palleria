@@ -24,6 +24,7 @@ internal class PallaSyncExportArchive private constructor(
         val relayPublicKey: String,
         val relayKeyId: String,
         val includeRecovery: Boolean = false,
+        val relayPinJson: String? = null,
     )
 
     data class Page(
@@ -119,7 +120,30 @@ internal class PallaSyncExportArchive private constructor(
         lines.subList(1, lines.lastIndex).forEach { line ->
             val value = canonicalObject(line)
             validateExportLine(value)
+            validateRelayAttestation(value, line)
             writeArchiveLine(line)
+        }
+    }
+
+    private fun validateRelayAttestation(
+        value: kotlinx.serialization.json.JsonObject,
+        line: String,
+    ) {
+        val pin = expectedSource?.relayPinJson ?: return
+        val kind = value["kind"]?.jsonPrimitive?.content
+        if (kind in RELAY_SIGNED_EXPORT_KINDS) {
+            check(PallaSyncCore.validateExportAttestation(line, pin)) { "C_SIGNATURE_INVALID" }
+        }
+        if (kind == "transparency_head") {
+            val head = value.getValue("head").jsonObject
+            val header = checkNotNull(headerLine).let(::canonicalObject)
+            check(
+                head["transparency_id"] == header["transparency_id"] &&
+                    head["entry_index"] == header["transparency_head_index"] &&
+                    head["transparency_hash"] == header["transparency_head_hash"] &&
+                    head["head_seq"] == header["head_seq"] &&
+                    head["head_hash"] == header["head_hash"],
+            ) { "C_TRANSPARENCY_INVALID" }
         }
     }
 
@@ -195,6 +219,7 @@ internal class PallaSyncExportArchive private constructor(
         private const val UUID_VARIANT_RFC = 2
         private val B64U_32 = Regex("^[A-Za-z0-9_-]{43}$")
         private val CONTROL_OBJECT_TYPES = setOf("parameters", "device", "epoch", "envelope", "admin")
+        private val RELAY_SIGNED_EXPORT_KINDS = setOf("upload_receipt", "transparency_entry", "transparency_head")
 
         internal fun canonicalObject(line: String): kotlinx.serialization.json.JsonObject {
             check(line.isNotBlank() && PallaSyncCore.canonicalJson(line) == line) { "C_SCHEMA_VIOLATION" }

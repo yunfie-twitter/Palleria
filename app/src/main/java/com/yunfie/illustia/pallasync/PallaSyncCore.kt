@@ -586,6 +586,12 @@ object PallaSyncCore {
         anchorJson: String,
     ): Boolean
 
+    /** Verify relay signatures on receipts, transparency entries and heads inside §17.4 exports. */
+    external fun validateExportAttestation(
+        lineJson: String,
+        pinJson: String,
+    ): Boolean
+
     external fun validateRecordsPage(
         body: ByteArray,
         pinJson: String,

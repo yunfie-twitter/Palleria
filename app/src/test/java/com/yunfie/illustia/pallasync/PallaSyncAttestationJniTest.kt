@@ -52,6 +52,28 @@ class PallaSyncAttestationJniTest :
                 PallaSyncCore.validateRecordUpload(body.replace("\"generation\":0", "\"generation\":-0").toByteArray(), "[$record]", pin)
             }.message shouldBe "C_SCHEMA_VIOLATION"
         }
+        "export attestation verifier rejects unsigned receipt and transparency evidence" {
+            val pin =
+                """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+            shouldThrow<IllegalStateException> {
+                PallaSyncCore.validateExportAttestation(
+                    """{"kind":"upload_receipt","receipt":{}}""",
+                    pin,
+                )
+            }.message shouldBe "C_SCHEMA_VIOLATION"
+            shouldThrow<IllegalStateException> {
+                PallaSyncCore.validateExportAttestation(
+                    """{"entry":{},"kind":"transparency_entry"}""",
+                    pin,
+                )
+            }.message shouldBe "C_SCHEMA_VIOLATION"
+            shouldThrow<IllegalStateException> {
+                PallaSyncCore.validateExportAttestation(
+                    """{"head":{},"kind":"transparency_head"}""",
+                    pin,
+                )
+            }.message shouldBe "C_SCHEMA_VIOLATION"
+        }
         "snapshot readback verifier is exposed through JNI" {
             shouldThrow<IllegalStateException> {
                 PallaSyncSnapshotCore.validateSnapshotPartResponse(

@@ -759,6 +759,7 @@ internal class PalleriaSyncCoordinator(
                         logId = pin.getValue("log_id").jsonPrimitive.content,
                         relayPublicKey = policy.trustedRelayKey(origin),
                         relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                        relayPinJson = pin.toString(),
                     )
                 PallaSyncExportArchive.create(output, expectedSource).use { archive ->
                     var cursor: String? = null
@@ -819,6 +820,7 @@ internal class PalleriaSyncCoordinator(
                             relayPublicKey = policy.trustedRelayKey(origin),
                             relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
                             includeRecovery = true,
+                            relayPinJson = pin.toString(),
                         )
                     PallaSyncExportArchive.create(output, expectedSource).use { archive ->
                         var cursor: String? = null

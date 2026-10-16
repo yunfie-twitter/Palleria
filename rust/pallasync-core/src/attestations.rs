@@ -1035,6 +1035,18 @@ pub fn validate_head(head: &Value, pin: &RelayPin) -> Result {
     }
     Ok(())
 }
+
+/// Validate relay-authenticated evidence embedded in a §17.4 export line.
+/// Data-author signatures and cross-line history are verified by authority replay separately.
+pub fn validate_export_attestation(line: &Value, pin: &RelayPin) -> Result {
+    let kind = s(line, "kind");
+    match kind {
+        "upload_receipt" => validate_receipt(&line["receipt"], pin),
+        "transparency_entry" => validate_transparency(&line["entry"], pin),
+        "transparency_head" => validate_head(&line["head"], pin),
+        _ => Ok(()),
+    }
+}
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TransparencyAnchor {
