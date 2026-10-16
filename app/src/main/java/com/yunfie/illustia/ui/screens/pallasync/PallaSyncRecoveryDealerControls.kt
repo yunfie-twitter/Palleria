@@ -13,11 +13,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.yunfie.illustia.R
@@ -49,6 +53,7 @@ internal fun PallaSyncRecoveryDealerControls(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val flow = remember(owner) { PallaSyncRecoveryDealerWorkflow(owner) }
     var evidence by remember { mutableStateOf(flow.evidence) }
@@ -64,6 +69,7 @@ internal fun PallaSyncRecoveryDealerControls(
     var interactionRevision by remember(flow) { mutableStateOf(0) }
     var failed by remember { mutableStateOf(false) }
     var confirmSas by remember { mutableStateOf(false) }
+    val currentStage by rememberUpdatedState(stage)
 
     suspend fun writeOriginal(original: String) {
         // Exact bytes remain available for local IO retry; no new encryption/sequence is manufactured.
@@ -103,8 +109,23 @@ internal fun PallaSyncRecoveryDealerControls(
             }
         }
     }
-    DisposableEffect(flow) {
+    DisposableEffect(flow, lifecycle) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_STOP &&
+                    currentStage !in setOf(PallaSyncRecoveryDealerWorkflow.Stage.ACTIVE, PallaSyncRecoveryDealerWorkflow.Stage.CLOSED)
+                ) {
+                    pending = null
+                    descriptor = null
+                    sas = null
+                    shares = 0
+                    runCatching { flow.close() }
+                    stage = flow.stage
+                }
+            }
+        lifecycle.lifecycle.addObserver(observer)
         onDispose {
+            lifecycle.lifecycle.removeObserver(observer)
             pending = null
             runCatching { flow.close() }
         }

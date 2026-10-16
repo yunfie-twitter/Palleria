@@ -699,7 +699,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflowTest.kt"
       ],
       "result": "pending",
-      "remaining": "Run Android lifecycle/SAF interruption tests and independent physical-holder interoperability; perform dedicated secret-memory instrumentation. The source now closes idle setup/dealer/collector/recipient sessions at the native five-minute lease even when no pair descriptor is active.",
+      "remaining": "Run Android lifecycle/SAF interruption and timeout instrumentation, independent physical-holder interoperability, and dedicated secret-memory instrumentation. Dealer creation and threshold-test sessions now close on ON_STOP as well as the native-aligned idle lease; complete platform-boundary verification remains outstanding.",
       "verification_scope": "targeted_partial"
     },
     {
