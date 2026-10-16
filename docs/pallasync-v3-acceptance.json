@@ -901,6 +901,7 @@
         "Palleria/rust/pallasync-core/tests/attestations.rs",
         "Palleria/rust/pallasync-core/src/checkpoint.rs",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncCheckpointFileTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncCheckpointJniTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
       ],
       "result": "pending",
