@@ -259,13 +259,14 @@ class PalleriaSyncManager(
         cancellation: PallaSyncRootCancellation? = null,
     ): Boolean = coordinator.createGenesis(seedPhrase, serverUrl, passphrase, cancellation)
 
-    suspend fun joinChain(
+    internal suspend fun joinChain(
         seedPhrase: String,
         deviceName: String = Build.MODEL,
         serverUrl: String? = null,
         passphrase: String = "",
         cancellation: PallaSyncRootCancellation? = null,
-    ): Boolean = coordinator.joinChain(seedPhrase, deviceName, serverUrl, passphrase, cancellation)
+        bootstrapReview: suspend (PallaSyncBootstrapReview) -> Boolean,
+    ): Boolean = coordinator.joinChain(seedPhrase, deviceName, serverUrl, passphrase, cancellation, bootstrapReview)
 
     suspend fun enqueueDataEvent(
         schema: String,

@@ -4037,7 +4037,8 @@ internal class PalleriaSyncCoordinator(
         serverUrl: String? = null,
         passphrase: String = "",
         cancellation: PallaSyncRootCancellation? = null,
-    ): Boolean = joinChainInternal(seedPhrase, deviceName, isGenesis = false, serverUrl, passphrase, cancellation)
+        bootstrapReview: suspend (PallaSyncBootstrapReview) -> Boolean,
+    ): Boolean = joinChainInternal(seedPhrase, deviceName, isGenesis = false, serverUrl, passphrase, cancellation, bootstrapReview)
 
     private suspend fun joinChainInternal(
         seedPhrase: String,
@@ -4046,6 +4047,7 @@ internal class PalleriaSyncCoordinator(
         serverUrl: String?,
         passphrase: String,
         cancellation: PallaSyncRootCancellation?,
+        bootstrapReview: suspend (PallaSyncBootstrapReview) -> Boolean = { false },
     ): Boolean {
         var activatedChainId: String? = null
         val joined =
@@ -4053,7 +4055,15 @@ internal class PalleriaSyncCoordinator(
                 withContext(Dispatchers.IO) {
                     operationMutex.withLock {
                         val activated =
-                            joinChainLocked(seedPhrase.trim(), passphrase, deviceName, isGenesis, serverUrl, cancellation)
+                            joinChainLocked(
+                                seedPhrase.trim(),
+                                passphrase,
+                                deviceName,
+                                isGenesis,
+                                serverUrl,
+                                cancellation,
+                                bootstrapReview,
+                            )
                                 ?: return@withLock false
                         val chainId = activated.first
                         val activatedBaseUrl = activated.second
@@ -4095,6 +4105,7 @@ internal class PalleriaSyncCoordinator(
         isGenesis: Boolean,
         serverUrl: String?,
         cancellation: PallaSyncRootCancellation?,
+        bootstrapReview: suspend (PallaSyncBootstrapReview) -> Boolean,
     ): Pair<String, HttpUrl>? =
         PallaSyncRootSession
             .beginText(
@@ -4103,13 +4114,18 @@ internal class PalleriaSyncCoordinator(
                 if (isGenesis) PallaSyncRootSession.Operation.GENESIS else PallaSyncRootSession.Operation.ENROLLMENT,
                 requestGuard = policy::requireCurrent,
                 clock = policy.retry::correctedTime,
-            ).let { root -> useRoot(root, cancellation) { joinChainWithSessionLocked(it, deviceName, isGenesis, serverUrl) } }
+            ).let { root ->
+                useRoot(root, cancellation) {
+                    joinChainWithSessionLocked(it, deviceName, isGenesis, serverUrl, bootstrapReview)
+                }
+            }
 
     private suspend fun joinChainWithSessionLocked(
         rootSession: PallaSyncRootSession,
         deviceName: String,
         isGenesis: Boolean,
         serverUrl: String?,
+        bootstrapReview: suspend (PallaSyncBootstrapReview) -> Boolean,
     ): Pair<String, HttpUrl>? {
         val base = selectedJoinBase(serverUrl)
         val origin = PallaSyncUrls.extractOrigin(base)
@@ -4138,6 +4154,15 @@ internal class PalleriaSyncCoordinator(
                 prepareMnemonicEnrollment(rootSession, deviceName, base, origin)
             }
         checkNotNull(prepared) { "C_MISSING_DEPENDENCY" }
+        if (!isGenesis) {
+            val review =
+                PallaSyncBootstrapReview.fromVerifiedCheckpoint(
+                    origin,
+                    rootSession.identity,
+                    checkNotNull(prepared.checkpoint) { "C_MISSING_DEPENDENCY" },
+                )
+            check(bootstrapReview(review)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        }
         check(keystore.savePendingChainKeys(prepared.keys) && keystore.getPendingChainKeys() == prepared.keys) { "C_LOCAL_STORAGE_FULL" }
         stagePreparedActivation(prepared, isGenesis, origin)
         val collections = SettingsStore(appContext).readSyncedCollections()

@@ -500,15 +500,21 @@
         "Palleria/app/src/main/res/values-ja/pallasync_v3.xml",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialSourceChoice.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotTrustReader.kt",
-        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncTrustedSnapshotDialog.kt"
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncTrustedSnapshotDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncBootstrapReview.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncBootstrapReviewDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncManager.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/DevicePairingScreen.kt"
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/bootstrap.rs",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAuthorityJniTest.kt",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInitialSourceChoiceTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInitialSourceChoiceTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncBootstrapReviewTest.kt"
       ],
       "result": "pending",
-      "remaining": "The trusted-snapshot choice now displays chain/generation, admin public key, verified authority log head, parameters hash, current epoch/hash, compaction and prefix hashes/coverage, state commitment and certified author key before trust. Compilation and ktlint pass. Other first-source UI paths still lack a complete review of expected chain/admin fingerprints and verified source-head metadata; add automated UI tests for every choice and verify incomplete ancestry is rejected through each path before treating §11.6 as complete.",
+      "remaining": "Before installing a first relay-replay checkpoint, the user now reviews the derived chain/admin identity and authenticated log head, parameters/epoch hashes, and transparency anchor; declining fails closed. Unit tests reject mismatched origin, chain and admin and verify the review projection. Trusted snapshot candidates expose comparable verified authority and coverage evidence. Still add interactive Android tests for accept/cancel/process interruption and every source option (including authenticated export/peer), exercise incomplete ancestry rejection end-to-end, and confirm the review overlay behaves correctly over the root-input dialog. Keep §11.6 pending.",
       "verification_scope": "targeted_partial"
     },
     {

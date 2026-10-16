@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncBootstrapReview
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncPeerSubjectEnrollment
 import com.yunfie.illustia.pallasync.PallaSyncPeerTransferFile
@@ -31,7 +32,9 @@ import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -75,6 +78,8 @@ fun DevicePairingScreen(
     var candidate by remember { mutableStateOf<PallaSyncPeerSubjectEnrollment.Candidate?>(null) }
     var pendingExport by remember { mutableStateOf<String?>(null) }
     var importPurpose by remember { mutableStateOf<ImportPurpose?>(null) }
+    var bootstrapReviewState by remember { mutableStateOf<PallaSyncBootstrapReview?>(null) }
+    var bootstrapReviewReply by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
 
     LaunchedEffect(serverUrl) {
         try {
@@ -225,8 +230,39 @@ fun DevicePairingScreen(
                 if (joined) onPairSuccess()
             },
         ) { words, passphrase, cancellation ->
-            manager.joinChain(words, serverUrl = serverUrl, passphrase = passphrase, cancellation = cancellation).also { joined = it }
+            manager
+                .joinChain(
+                    words,
+                    serverUrl = serverUrl,
+                    passphrase = passphrase,
+                    cancellation = cancellation,
+                    bootstrapReview = { review ->
+                        val reply = CompletableDeferred<Boolean>()
+                        withContext(Dispatchers.Main.immediate) {
+                            bootstrapReviewState = review
+                            bootstrapReviewReply = reply
+                        }
+                        try {
+                            reply.await()
+                        } finally {
+                            withContext(NonCancellable + Dispatchers.Main.immediate) {
+                                if (bootstrapReviewReply === reply) {
+                                    bootstrapReviewReply = null
+                                    bootstrapReviewState = null
+                                }
+                            }
+                        }
+                    },
+                ).also { joined = it }
         }
+    }
+
+    bootstrapReviewState?.let { review ->
+        PallaSyncBootstrapReviewDialog(
+            review = review,
+            onConfirm = { bootstrapReviewReply?.complete(true) },
+            onDismiss = { bootstrapReviewReply?.complete(false) },
+        )
     }
 
     Scaffold(
