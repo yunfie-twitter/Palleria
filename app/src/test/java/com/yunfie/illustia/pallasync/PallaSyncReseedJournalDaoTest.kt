@@ -59,6 +59,7 @@ class PallaSyncReseedJournalDaoTest {
                         transparencyHeadJson = "{\"head\":true}",
                         transparencyAnchorJson = "{\"index\":4,\"transparency_id\":\"proof\"}",
                         verifiedReceiptIndicesJson = "[2,4]",
+                        commitResultJson = "{\"head_seq\":7}",
                         phase = 5,
                         updatedAtMs = 12,
                     )
@@ -72,6 +73,9 @@ class PallaSyncReseedJournalDaoTest {
                 dao.saveMonotone(
                     laterProven,
                 )
+                runCatching {
+                    dao.saveMonotone(laterProven.copy(commitResultJson = "{\"head_seq\":8}"))
+                }.exceptionOrNull()?.message shouldBe "C_ROLLBACK_DETECTED"
                 val proofRollbackError =
                     runCatching {
                         dao.saveMonotone(

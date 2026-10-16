@@ -330,6 +330,7 @@ data class ReseedJournalEntity(
     @ColumnInfo(name = "prepared_bundle_json") val preparedBundleJson: String? = null,
     @ColumnInfo(name = "commit_body_json") val commitBodyJson: String? = null,
     @ColumnInfo(name = "expected_entries_json") val expectedEntriesJson: String? = null,
+    @ColumnInfo(name = "commit_result_json") val commitResultJson: String? = null,
     @ColumnInfo(name = "transparency_head_json") val transparencyHeadJson: String? = null,
     @ColumnInfo(name = "transparency_anchor_json") val transparencyAnchorJson: String? = null,
     @ColumnInfo(name = "verified_receipt_indices_json") val verifiedReceiptIndicesJson: String = "[]",

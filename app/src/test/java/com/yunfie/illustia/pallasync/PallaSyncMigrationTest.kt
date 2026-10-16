@@ -170,6 +170,7 @@ class PallaSyncMigrationTest {
                             PallaSyncDatabase.MIGRATION_11_12,
                             PallaSyncDatabase.MIGRATION_12_13,
                             PallaSyncDatabase.MIGRATION_13_14,
+                            PallaSyncDatabase.MIGRATION_14_15,
                         ).build()
                 repeat(2) { attempt ->
                     val db = open()

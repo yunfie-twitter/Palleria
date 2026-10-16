@@ -38,7 +38,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProjectionStateEntity::class,
         LogEntryEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -150,6 +150,13 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_14_15 =
+            object : Migration(14, 15) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE ps_reseed_journal ADD COLUMN commit_result_json TEXT")
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -175,6 +182,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             MIGRATION_11_12,
                             MIGRATION_12_13,
                             MIGRATION_13_14,
+                            MIGRATION_14_15,
                         ).build()
                 INSTANCE = instance
                 instance

@@ -43,6 +43,7 @@ interface ReseedJournalDao {
                     immutableOnce(previous.preparedBundleJson, value.preparedBundleJson) &&
                     immutableOnce(previous.commitBodyJson, value.commitBodyJson) &&
                     immutableOnce(previous.expectedEntriesJson, value.expectedEntriesJson) &&
+                    immutableOnce(previous.commitResultJson, value.commitResultJson) &&
                     immutableOnce(previous.transparencyHeadJson, value.transparencyHeadJson) &&
                     monotoneAnchor(previous, value) && monotoneReceipts(previous, value),
             ) { "C_ROLLBACK_DETECTED" }

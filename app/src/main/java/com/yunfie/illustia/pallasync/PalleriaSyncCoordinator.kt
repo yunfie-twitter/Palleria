@@ -995,23 +995,24 @@ internal class PalleriaSyncCoordinator(
                 val origin = PallaSyncUrls.extractOrigin(target)
                 policy.requireCurrent(origin)
                 requireSnapshotResult(refreshRelayHealth(target))
-                val targetPinText =
-                    checkNotNull(db.snapshotDatabase().reseedJournalDao().get(state.chainId)) {
+                val reseedDao = db.snapshotDatabase().reseedJournalDao()
+                val savedJournal =
+                    checkNotNull(reseedDao.get(state.chainId)) {
                         "C_MISSING_DEPENDENCY"
-                    }.let { journal ->
-                        check(
-                            journal.targetOrigin == origin && journal.sourceLogId == state.logId &&
-                                journal.sourceGeneration == state.generation,
-                        ) {
-                            "C_IMPORT_CONFLICT"
-                        }
-                        check(
-                            journal.phase >= 3 && journal.commitBodyJson != null && journal.expectedEntriesJson != null,
-                        ) {
-                            "C_MISSING_DEPENDENCY"
-                        }
-                        journal.targetPinJson
                     }
+                check(
+                    savedJournal.targetOrigin == origin && savedJournal.sourceLogId == state.logId &&
+                        savedJournal.sourceGeneration == state.generation,
+                ) { "C_IMPORT_CONFLICT" }
+                if (savedJournal.phase >= 5 && savedJournal.commitResultJson != null) {
+                    val pending = checkNotNull(keystore.pendingReseed()) { "C_MISSING_DEPENDENCY" }
+                    check(pending.targetOrigin == origin && pending.keys.chainId == state.chainId) { "C_ROLLBACK_DETECTED" }
+                    return@withLock PallaSyncHttpResult.Success(Json.parseToJsonElement(savedJournal.commitResultJson).jsonObject)
+                }
+                check(
+                    savedJournal.phase >= 3 && savedJournal.commitBodyJson != null && savedJournal.expectedEntriesJson != null,
+                ) { "C_MISSING_DEPENDENCY" }
+                val targetPinText = savedJournal.targetPinJson
                 val targetPinObject = Json.parseToJsonElement(targetPinText).jsonObject
                 check(
                     targetPinObject.getValue("origin").jsonPrimitive.content == origin &&
@@ -1047,7 +1048,7 @@ internal class PalleriaSyncCoordinator(
                 try {
                     requireReseedSourceHead(root, source, sourceOrigin, stable)
                     val history = PallaSyncImportHistoryBuilder(db.protocolDao()).build(state.chainId)
-                    val journalDao = db.snapshotDatabase().reseedJournalDao()
+                    val journalDao = reseedDao
                     val journal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
                     prepareReseedSnapshot(root, target, authority, stable, history, journal)
                     val preparedJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
@@ -1149,6 +1150,15 @@ internal class PalleriaSyncCoordinator(
                         val pending = checkNotNull(keystore.pendingReseed()) { "C_MISSING_DEPENDENCY" }
                         check(pending.targetOrigin == origin && pending.keys.chainId == state.chainId) { "C_ROLLBACK_DETECTED" }
                         val bundle = Json.parseToJsonElement(preparedJournal.preparedBundleJson ?: error("C_MISSING_DEPENDENCY")).jsonObject
+                        val expectedEntries = Json.parseToJsonElement(checkNotNull(preparedJournal.expectedEntriesJson)).jsonArray
+                        val targetAuthority =
+                            verifyReseedTargetAuthority(
+                                root,
+                                targetPin,
+                                history,
+                                expectedEntries,
+                                result.value,
+                            )
                         val newEpoch = bundle.getValue("epoch").jsonObject
                         val newDeviceId = pending.keys.deviceId ?: error("C_BOOTSTRAP_TRUST_REQUIRED")
                         val ackUrl = PallaSyncUrls.deviceKeysAck(target, state.chainId, newDeviceId)
@@ -1205,12 +1215,43 @@ internal class PalleriaSyncCoordinator(
                             }
                         }
                         val finalJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
-                        journalDao.saveMonotone(
-                            finalJournal.copy(
-                                phase = maxOf(5, finalJournal.phase),
-                                updatedAtMs = policy.retry.correctedTime(origin),
-                            ),
-                        )
+                        db.transaction {
+                            val targetLogId = targetPin.getValue("log_id").jsonPrimitive.content
+                            result.value.getValue("receipts").jsonArray.forEachIndexed { index, receiptElement ->
+                                val receipt = receiptElement.jsonObject
+                                val sequence = receipt.getValue("relay_seq").jsonPrimitive.long
+                                db.protocolDao().retainEvidence(
+                                    ProtectedEvidenceEntity(
+                                        origin,
+                                        receipt.getValue("relay_key_id").jsonPrimitive.content,
+                                        state.chainId,
+                                        targetLogId,
+                                        "upload_receipt",
+                                        sequence,
+                                        checkNotNull(PallaSyncCore.objectHash(receipt.toString())),
+                                        receipt.toString(),
+                                    ),
+                                )
+                            }
+                            db.protocolDao().retainAuthority(
+                                com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity(
+                                    state.chainId,
+                                    "checkpoint",
+                                    checkNotNull(PallaSyncCore.objectHash(targetAuthority.toString())),
+                                    bundle.getValue("generation").jsonPrimitive.long,
+                                    targetAuthority.toString(),
+                                    "reseed_candidate",
+                                ),
+                            )
+                            val currentJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                            journalDao.saveMonotone(
+                                currentJournal.copy(
+                                    commitResultJson = result.value.toString(),
+                                    phase = maxOf(5, currentJournal.phase),
+                                    updatedAtMs = policy.retry.correctedTime(origin),
+                                ),
+                            )
+                        }
                     }
                     result
                 } finally {
@@ -1218,6 +1259,87 @@ internal class PalleriaSyncCoordinator(
                 }
             }
         }
+
+    /** Replays the exact §17.5 control receipt sequence from an H0 authority for the staged incarnation. */
+    private fun verifyReseedTargetAuthority(
+        root: PallaSyncRootSession,
+        targetPin: JsonObject,
+        history: PallaSyncImportRelay.History,
+        expectedEntries: JsonArray,
+        checkpoint: JsonObject,
+    ): JsonObject {
+        val firstParameters =
+            history.parameters
+                .minByOrNull {
+                    it.jsonObject
+                        .getValue("generation")
+                        .jsonPrimitive.long
+                }?.jsonObject ?: error("C_MISSING_DEPENDENCY")
+        val initialResponse =
+            buildJsonObject {
+                put("parameters", firstParameters)
+                put("parameters_hash", checkNotNull(PallaSyncCore.objectHash(firstParameters.toString())))
+                put("generation", firstParameters.getValue("generation"))
+                put("log_id", targetPin.getValue("log_id"))
+            }
+        val identity =
+            buildJsonObject {
+                put("chain_id", root.identity.chainId)
+                put("admin_public_key", root.identity.adminPublicKey)
+            }
+        var verified =
+            Json
+                .parseToJsonElement(
+                    PallaSyncCore.beginAuthorityHistory(
+                        initialResponse.toString().toByteArray(Charsets.UTF_8),
+                        identity.toString(),
+                        targetPin.getValue("origin").jsonPrimitive.content,
+                        targetPin.getValue("public_key").jsonPrimitive.content,
+                    ),
+                ).jsonObject
+        val receipts = checkpoint.getValue("receipts").jsonArray
+        check(receipts.size == expectedEntries.size) { "C_ACCEPTANCE_UNPROVEN" }
+        expectedEntries.forEachIndexed { index, expectedElement ->
+            val expected = expectedElement.jsonObject
+            val receipt = receipts[index].jsonObject
+            val receivedAt = receipt.getValue("received_at_ms")
+            val entry =
+                buildJsonObject {
+                    put("relay_seq", receipt.getValue("relay_seq"))
+                    put("received_at_ms", receivedAt)
+                    put("kind", expected.getValue("kind"))
+                    put("object", expected.getValue("object"))
+                    if (expected.getValue("kind").jsonPrimitive.content == "epoch") put("committed_at_ms", receivedAt)
+                }
+            verified =
+                Json
+                    .parseToJsonElement(
+                        PallaSyncCore.advanceAuthorityHistory(verified.toString(), entry.toString(), receipt.toString()),
+                    ).jsonObject
+        }
+        val parameters = verified.getValue("parameters").jsonObject
+        val latestEpoch =
+            verified
+                .getValue("epochs")
+                .jsonObject.values
+                .maxBy {
+                    it.jsonObject
+                        .getValue("record")
+                        .jsonObject
+                        .getValue("epoch")
+                        .jsonPrimitive.long
+                }.jsonObject
+                .getValue("record")
+                .jsonObject
+        check(
+            verified.getValue("pin").jsonObject == targetPin &&
+                verified.getValue("sequence") == checkpoint.getValue("head_seq") &&
+                verified.getValue("head_hash") == checkpoint.getValue("head_hash") &&
+                PallaSyncCore.objectHash(parameters.toString()) == checkpoint.getValue("parameters_hash").jsonPrimitive.content &&
+                PallaSyncCore.objectHash(latestEpoch.toString()) == checkpoint.getValue("epoch_hash").jsonPrimitive.content,
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        return verified
+    }
 
     /** An unsigned head can only veto stale source state; the local verified checkpoint remains authoritative. */
     private suspend fun requireReseedSourceHead(
