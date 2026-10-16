@@ -253,6 +253,20 @@ internal class PallaSyncExportArchive private constructor(
         private val B64U_32 = Regex("^[A-Za-z0-9_-]{43}$")
         private val CONTROL_OBJECT_TYPES = setOf("parameters", "device", "epoch", "envelope", "admin")
         private val RELAY_SIGNED_EXPORT_KINDS = setOf("upload_receipt", "transparency_entry", "transparency_head")
+        private val EXPORT_LINE_VALIDATORS: Map<String, (kotlinx.serialization.json.JsonObject) -> Boolean> =
+            mapOf(
+                "log" to { line -> objectPayload(line, "entry") },
+                "source_receipt" to { line -> objectPayload(line, "receipt") },
+                "upload_receipt" to { line -> objectPayload(line, "receipt") },
+                "snapshot_part" to { line -> objectPayload(line, "record") },
+                "compaction" to { line -> objectPayload(line, "compaction") },
+                "boundary" to { line -> objectPayload(line, "compaction") },
+                "removed_id" to ::validRemovedId,
+                "control" to ::validControl,
+                "omitted" to ::validOmission,
+                "transparency_entry" to { line -> objectPayload(line, "entry") },
+                "transparency_head" to { line -> objectPayload(line, "head") },
+            )
 
         internal fun canonicalObject(line: String): kotlinx.serialization.json.JsonObject {
             check(line.isNotBlank() && PallaSyncCore.canonicalJson(line) == line) { "C_SCHEMA_VIOLATION" }
@@ -276,54 +290,29 @@ internal class PallaSyncExportArchive private constructor(
         /** Validate the archive wrapper shape without treating local hashes as relay signatures. */
         internal fun validateExportLine(value: kotlinx.serialization.json.JsonObject) {
             val kind = value["kind"]?.jsonPrimitive?.content ?: error("C_SCHEMA_VIOLATION")
-            val valid =
-                when (kind) {
-                    "log", "source_receipt", "upload_receipt" -> {
-                        val payload = if (kind == "log") "entry" else "receipt"
-                        value.keys == setOf("kind", payload) && value[payload] is kotlinx.serialization.json.JsonObject
-                    }
-
-                    "snapshot_part" -> {
-                        value.keys == setOf("kind", "record") && value["record"] is kotlinx.serialization.json.JsonObject
-                    }
-
-                    "compaction", "boundary" -> {
-                        value.keys == setOf("kind", "compaction") && value["compaction"] is kotlinx.serialization.json.JsonObject
-                    }
-
-                    "removed_id" -> {
-                        value.keys == setOf("kind", "record_id", "record_hash") &&
-                            value["record_id"]?.jsonPrimitive?.content?.let(::uuid4) == true &&
-                            value["record_hash"]?.jsonPrimitive?.content?.matches(B64U_32) == true
-                    }
-
-                    "control" -> {
-                        value.keys == setOf("kind", "object_type", "object") &&
-                            value["object_type"]?.jsonPrimitive?.content in CONTROL_OBJECT_TYPES &&
-                            value["object"] is kotlinx.serialization.json.JsonObject
-                    }
-
-                    "omitted" -> {
-                        value.keys == setOf("kind", "relay_seq", "object_hash", "reason") &&
-                            value["relay_seq"]?.jsonPrimitive?.longOrNull in 1..MAX_SAFE_INTEGER &&
-                            value["object_hash"]?.jsonPrimitive?.content?.matches(B64U_32) == true &&
-                            value["reason"]?.jsonPrimitive?.content == "recovery_authority"
-                    }
-
-                    "transparency_entry" -> {
-                        value.keys == setOf("kind", "entry") && value["entry"] is kotlinx.serialization.json.JsonObject
-                    }
-
-                    "transparency_head" -> {
-                        value.keys == setOf("kind", "head") && value["head"] is kotlinx.serialization.json.JsonObject
-                    }
-
-                    else -> {
-                        false
-                    }
-                }
-            check(valid) { "C_SCHEMA_VIOLATION" }
+            check(EXPORT_LINE_VALIDATORS[kind]?.invoke(value) == true) { "C_SCHEMA_VIOLATION" }
         }
+
+        private fun objectPayload(
+            line: kotlinx.serialization.json.JsonObject,
+            name: String,
+        ): Boolean = line.keys == setOf("kind", name) && line[name] is kotlinx.serialization.json.JsonObject
+
+        private fun validRemovedId(line: kotlinx.serialization.json.JsonObject): Boolean =
+            line.keys == setOf("kind", "record_id", "record_hash") &&
+                line["record_id"]?.jsonPrimitive?.content?.let(::uuid4) == true &&
+                line["record_hash"]?.jsonPrimitive?.content?.matches(B64U_32) == true
+
+        private fun validControl(line: kotlinx.serialization.json.JsonObject): Boolean =
+            line.keys == setOf("kind", "object_type", "object") &&
+                line["object_type"]?.jsonPrimitive?.content in CONTROL_OBJECT_TYPES &&
+                line["object"] is kotlinx.serialization.json.JsonObject
+
+        private fun validOmission(line: kotlinx.serialization.json.JsonObject): Boolean =
+            line.keys == setOf("kind", "relay_seq", "object_hash", "reason") &&
+                line["relay_seq"]?.jsonPrimitive?.longOrNull in 1..MAX_SAFE_INTEGER &&
+                line["object_hash"]?.jsonPrimitive?.content?.matches(B64U_32) == true &&
+                line["reason"]?.jsonPrimitive?.content == "recovery_authority"
 
         private fun validateExpectedSource(
             header: kotlinx.serialization.json.JsonObject,
