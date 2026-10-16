@@ -345,7 +345,7 @@ androidComponents {
         variant.outputs.forEach { output ->
             def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
             def outputKind = abi ?: "universal"
-            def name = "Palleria-v${android.defaultConfig.versionName}-${variant.name}-${outputKind}.apk"
+            def name = "Palleria-v${project.extensions.getByName('android').defaultConfig.versionName}-${variant.name}-${outputKind}.apk"
             output.outputFileName.set(name)
         }
     }

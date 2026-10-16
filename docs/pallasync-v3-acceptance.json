@@ -614,7 +614,7 @@
         "PallaSync/tests/reference/test_recovery_artifacts.py"
       ],
       "result": "pending",
-      "remaining": "Complete public lifecycle/status propagation, offline issuance/readback/reader UI, and all-valid-threshold independent interoperability.",
+      "remaining": "Recovery release/receive UI includes offline media. Pixel 6a Android 17 test reached the OS credential prompt, but the fixture PIN 246810 was rejected with C_RECOVERY_AUTH_REQUIRED; physical OS-authenticated readback/release is unverified. The public recovery-status UI test passed 2/2 on Pixel; offline issuance/readback/reader and all-valid-threshold independent interoperability remain incomplete.",
       "verification_scope": "targeted_partial"
     },
     {
@@ -656,7 +656,7 @@
         "PallaSync/tests/reference/test_recovery.py"
       ],
       "result": "pending",
-      "remaining": "The receiver can now scan the dealer's signed session descriptor QR before creating a secret session, with the bounded local-file path retained as an alternative; the recovery transfer itself remains the exact encrypted file/object format. QR text is bounded to the §18.6 4,194,304-byte transfer maximum and malformed UTF-16 is rejected. Unit boundary tests and a prior isolated Android UI test passed, but the latest full connectedDebugAndroidTest run on 2026-10-16 failed 18 of 33 tests, including the QR and other Compose UI tests because no Compose hierarchy was found; see docs/pallasync-v3-validation.md. Current UI instrumentation is unresolved. Still required: independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
+      "remaining": "The receiver can now scan the dealer's signed session descriptor QR before creating a secret session, with the bounded local-file path retained as an alternative; the recovery transfer itself remains the exact encrypted file/object format. QR text is bounded to the §18.6 4,194,304-byte transfer maximum and malformed UTF-16 is rejected. Unit boundary tests and a prior isolated Android UI test passed, but the latest full connectedDebugAndroidTest run on 2026-10-16 failed 18 of 33 tests, including the QR and other Compose UI tests because no Compose hierarchy was found; see docs/pallasync-v3-validation.md. A rerun of the QR UI test on Pixel still found no Compose hierarchy, including with the dedicated debug FragmentActivity host; QR receiver UI instrumentation remains unresolved. Still required: independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
       "verification_scope": "targeted_partial"
     },
     {

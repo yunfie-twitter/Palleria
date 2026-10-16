@@ -334,16 +334,20 @@ class PallaSyncRecoveryHolderAndroidTest {
 
     private fun credentialInput(device: UiDevice): BySelector {
         // The OS may first show the biometric sheet's explicit credential fallback.
-        device
-            .wait(
-                Until.findObject(
-                    By.text(
-                        java.util.regex.Pattern
-                            .compile("(?i)use pin|use screen lock"),
-                    ),
+        val credentialFallbacks =
+            listOf(
+                By.res("com.android.systemui", "button_use_credential"),
+                By.text(
+                    java.util.regex.Pattern
+                        .compile("(?i)use pin|use screen lock|use credential"),
                 ),
-                5_000,
-            )?.click()
+            )
+        for (fallback in credentialFallbacks) {
+            if (device.wait(Until.hasObject(fallback), 5_000)) {
+                device.findObject(fallback).click()
+                break
+            }
+        }
         val selectors =
             listOf(
                 By.res("cred_pin_pad"), // Observed Android 17 SystemUI Compose credential pad.
