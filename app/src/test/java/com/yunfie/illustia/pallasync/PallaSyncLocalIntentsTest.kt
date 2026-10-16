@@ -64,6 +64,24 @@ class PallaSyncLocalIntentsTest {
                 store.snapshotInstallDao().insertInstall(
                     SnapshotInstallEntity(
                         chainId = chain,
+                        compactionId = "44444444-4444-4444-8444-444444444444",
+                        compactionJson = "{}",
+                        partCount = 1,
+                        stateSha256 = encode(ByteArray(32) { 8 }),
+                        coveredThroughSeq = 0,
+                        coveredLogHash = encode(ByteArray(32) { 10 }),
+                        generation = 0,
+                        status = "verified",
+                    ),
+                )
+                val missingMatch = runCatching { intents.completeLegacyMigrationWithVerifiedSnapshot(migrationId, keys) }.exceptionOrNull()
+                (missingMatch is IllegalStateException) shouldBe true
+                missingMatch?.message shouldBe "C_MISSING_DEPENDENCY"
+                store.protocolDao().migrationChunk(migrationId, 0)?.state shouldBe "legacy_receipts_complete"
+                store.dao.queuedBatch(chain, 200) shouldBe emptyList()
+                store.snapshotInstallDao().insertInstall(
+                    SnapshotInstallEntity(
+                        chainId = chain,
                         compactionId = compactionId,
                         compactionJson = "{}",
                         partCount = 1,
