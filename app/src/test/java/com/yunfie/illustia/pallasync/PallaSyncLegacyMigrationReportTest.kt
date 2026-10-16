@@ -49,7 +49,8 @@ class PallaSyncLegacyMigrationReportTest {
                 report.getValue("legacy_history_completeness").jsonObject.let { completeness ->
                     completeness.getValue("status").jsonPrimitive.content shouldBe "unknown"
                     completeness.getValue("reason").jsonPrimitive.content shouldBe
-                        "v2.1 search, seen, and viewed-history retention may have removed older items"
+                        "v2.1 retention may have removed older items: search is capped at 100 entries, " +
+                        "seen history at 2,000 items, and viewed history at 1,000 items"
                 }
                 report.getValue("accepted_count").jsonPrimitive.content shouldBe "1"
                 report.getValue("excluded_count").jsonPrimitive.content shouldBe "0"

@@ -75,7 +75,8 @@ internal object PallaSyncLegacyMigrationReport {
                 }
 
                 "2.1" -> {
-                    "v2.1 search, seen, and viewed-history retention may have removed older items"
+                    "v2.1 retention may have removed older items: search is capped at 100 entries, " +
+                        "seen history at 2,000 items, and viewed history at 1,000 items"
                 }
 
                 else -> {
