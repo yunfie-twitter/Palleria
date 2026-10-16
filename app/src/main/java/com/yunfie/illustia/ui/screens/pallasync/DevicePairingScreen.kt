@@ -24,7 +24,9 @@ import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncPeerSubjectEnrollment
+import com.yunfie.illustia.pallasync.PallaSyncPeerTransferFile
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -43,8 +45,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-private const val MAX_PEER_FILE_BYTES = 4_194_304
 
 /** §§5.5/10.4/11.6/18.1: root and physically approved peer enrollment are separate ceremonies. */
 @Composable
@@ -103,8 +103,8 @@ fun DevicePairingScreen(
                             withContext(Dispatchers.IO) {
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }
                                     .use { input ->
-                                        input.readBytes().also { check(it.size <= MAX_PEER_FILE_BYTES) { "C_SCHEMA_VIOLATION" } }
-                                    }.toString(Charsets.UTF_8)
+                                        PallaSyncPeerTransferFile.read(input)
+                                    }
                             }
                         val objectValue = Json.parseToJsonElement(text).jsonObject
                         when (purpose) {
@@ -166,14 +166,14 @@ fun DevicePairingScreen(
                     peerBusy = true
                     try {
                         withContext(Dispatchers.IO) {
-                            val bytes = value.toByteArray(Charsets.UTF_8)
-                            check(bytes.size <= MAX_PEER_FILE_BYTES) { "C_SCHEMA_VIOLATION" }
+                            val bytes = PallaSyncPeerTransferFile.encode(value)
                             checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use {
                                 it.write(bytes)
                                 it.flush()
                             }
                             checkNotNull(context.contentResolver.openInputStream(uri)) { "C_MISSING_DEPENDENCY" }.use { input ->
-                                check(input.readBytes().contentEquals(bytes)) { "C_MISSING_DEPENDENCY" }
+                                val readBack = PallaSyncDeletionEvidenceArchive.readBounded(input, PallaSyncPeerTransferFile.MAX_BYTES)
+                                check(readBack.contentEquals(bytes)) { "C_MISSING_DEPENDENCY" }
                             }
                         }
                         Toast.makeText(context, R.string.pallasync_peer_subject_request_exported, Toast.LENGTH_LONG).show()
