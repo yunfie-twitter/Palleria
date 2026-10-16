@@ -10,6 +10,29 @@ import java.nio.charset.CodingErrorAction
 internal object PallaSyncPeerTransferFile {
     const val MAX_BYTES = 4_194_304
 
+    /** Builds the selected public-history file while enforcing the same bounded transfer limit as its reader. */
+    fun encodeHistory(
+        parameters: String,
+        authority: String,
+        items: Iterable<String>,
+    ): String {
+        val prefix = "{\"format\":\"pallasync-peer-history/3\",\"parameters\":$parameters,\"authority\":$authority,\"items\":["
+        val suffix = "]}"
+        val output = StringBuilder()
+        output.append(prefix)
+        var bytes = utf8Size(prefix).toLong() + utf8Size(suffix)
+        var first = true
+        for (item in items) {
+            val separator = if (first) "" else ","
+            bytes += utf8Size(separator).toLong() + utf8Size(item)
+            check(bytes <= MAX_BYTES) { "C_LOCAL_LIMIT" }
+            output.append(separator).append(item)
+            first = false
+        }
+        output.append(suffix)
+        return output.toString().also { check(utf8Size(it) <= MAX_BYTES) { "C_LOCAL_LIMIT" } }
+    }
+
     @Throws(CharacterCodingException::class)
     fun encode(value: String): ByteArray =
         Charsets.UTF_8

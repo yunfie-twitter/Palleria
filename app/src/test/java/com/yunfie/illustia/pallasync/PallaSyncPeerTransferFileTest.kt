@@ -41,4 +41,19 @@ class PallaSyncPeerTransferFileTest {
     fun `utf8 size counts encoded bytes rather than utf16 code units`() {
         PallaSyncPeerTransferFile.utf8Size("aé😀") shouldBe 7
     }
+
+    @Test
+    fun `selected peer history uses exact bounded file size including wrapper and separators`() {
+        val wrapperBytes =
+            PallaSyncPeerTransferFile.utf8Size(
+                "{\"format\":\"pallasync-peer-history/3\",\"parameters\":{},\"authority\":{},\"items\":[",
+            ) + PallaSyncPeerTransferFile.utf8Size("]}")
+        val exactItem = "\"${"a".repeat(PallaSyncPeerTransferFile.MAX_BYTES - wrapperBytes - 2)}\""
+        val encoded = PallaSyncPeerTransferFile.encodeHistory("{}", "{}", listOf(exactItem))
+        PallaSyncPeerTransferFile.utf8Size(encoded) shouldBe PallaSyncPeerTransferFile.MAX_BYTES
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncPeerTransferFile.encodeHistory("{}", "{}", listOf(exactItem, "null"))
+        }.message shouldBe "C_LOCAL_LIMIT"
+    }
 }

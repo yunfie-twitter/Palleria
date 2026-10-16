@@ -67,8 +67,6 @@ import java.util.UUID
 private const val MAX_PROTOCOL_COUNTER = 4_294_967_295L
 private const val MAX_EXPORT_CHUNK_BYTES = 8_388_608
 private const val MAX_DELETION_WITNESSES = 128
-private const val MAX_PEER_HISTORY_BYTES = 3_500_000
-private const val PEER_HISTORY_WRAPPER_OVERHEAD_BYTES = 256
 private const val MAX_SNAPSHOT_UPLOAD_RECORDS = 64
 private val LEGACY_QUARANTINE_CODES = setOf("C_AEAD_FAILURE", "C_SIGNATURE_INVALID", "C_SCHEMA_VIOLATION", "C_UNSUPPORTED_SCHEMA")
 
@@ -3010,9 +3008,6 @@ internal class PalleriaSyncCoordinator(
             state.verifiedSeq == through && state.verifiedHash == parsedAuthority.getValue("head_hash").jsonPrimitive.content,
         ) { "C_MISSING_DEPENDENCY" }
         val entries = ArrayList<String>()
-        var exportBytes =
-            PallaSyncPeerTransferFile.utf8Size(parameters).toLong() +
-                PallaSyncPeerTransferFile.utf8Size(authority) + PEER_HISTORY_WRAPPER_OVERHEAD_BYTES
         var after = 0L
         while (after < through) {
             val page = db.protocolDao().logPage(chain, logId, after, through, PALLASYNC_PAGE_SIZE)
@@ -3027,16 +3022,12 @@ internal class PalleriaSyncCoordinator(
                             PallaSyncCore.advanceAuthorityHistory(verified.toString(), entry.toString(), receipt.toString()),
                         ).jsonObject
                 val item = "{\"entry\":$entry,\"receipt\":$receipt}"
-                exportBytes += PallaSyncPeerTransferFile.utf8Size(item)
-                check(exportBytes <= MAX_PEER_HISTORY_BYTES) { "C_LOCAL_LIMIT" }
                 entries += item
                 after = row.relaySeq
             }
         }
         check(expectedHash == null || crypto.objectHash(verified.toString()) == expectedHash) { "C_ROLLBACK_DETECTED" }
-        val serializedEntries = entries.joinToString(",")
-        return "{\"format\":\"pallasync-peer-history/3\",\"parameters\":$parameters," +
-            "\"authority\":$authority,\"items\":[$serializedEntries]}"
+        return PallaSyncPeerTransferFile.encodeHistory(parameters, authority, entries)
     }
 
     private suspend fun refreshPeerHistory(
