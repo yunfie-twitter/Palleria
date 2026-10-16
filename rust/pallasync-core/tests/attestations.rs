@@ -470,6 +470,71 @@ fn signed_page_does_not_skip_gaps_or_reset_a_pinned_prefix() {
 }
 
 #[test]
+fn device_checkpoint_transparency_prefix_verifies_signed_contiguous_history() {
+    let pin = pin();
+    let entry = vector("transparency");
+    let transparency_id = entry["transparency_id"].as_str().unwrap();
+    let zero = transparency_zero(&pin.chain_id, transparency_id, &pin.key_id().unwrap()).unwrap();
+    let target_hash = transparency_link(&zero, &entry, &pin).unwrap();
+
+    let verified = verify_transparency_checkpoint_prefix(
+        None,
+        std::slice::from_ref(&entry),
+        transparency_id,
+        1,
+        &target_hash,
+        &pin,
+    )
+    .unwrap();
+    assert_eq!(verified.index, 1);
+    assert_eq!(verified.hash, target_hash);
+
+    let missing =
+        verify_transparency_checkpoint_prefix(None, &[], transparency_id, 1, &target_hash, &pin)
+            .unwrap_err();
+    assert_eq!(missing.0, "C_MISSING_DEPENDENCY");
+
+    let mismatched_target = verify_transparency_checkpoint_prefix(
+        None,
+        std::slice::from_ref(&entry),
+        transparency_id,
+        1,
+        &hash_bytes(&[0x91; 32]),
+        &pin,
+    )
+    .unwrap_err();
+    assert_eq!(mismatched_target.0, "C_TRANSPARENCY_INVALID");
+
+    let partial = verify_transparency_checkpoint_prefix(
+        None,
+        std::slice::from_ref(&entry),
+        transparency_id,
+        2,
+        &hash_bytes(&[0x92; 32]),
+        &pin,
+    )
+    .unwrap();
+    assert_eq!(partial.index, 1);
+    assert_eq!(partial.hash, target_hash);
+
+    let mut skipped = entry.clone();
+    skipped["entry_index"] = json!(2);
+    assert_eq!(
+        verify_transparency_checkpoint_prefix(
+            None,
+            &[skipped],
+            transparency_id,
+            2,
+            &hash_bytes(&[0x92; 32]),
+            &pin,
+        )
+        .unwrap_err()
+        .0,
+        "C_TRANSPARENCY_INVALID"
+    );
+}
+
+#[test]
 fn deletion_evidence_bundle_keeps_receipt_immutable_and_binds_exact_hash() {
     let (_, authority, receipt, bundle, _) = deletion_evidence_fixture();
     validate_deletion_evidence_bundle(&receipt, &bundle, &authority).unwrap();

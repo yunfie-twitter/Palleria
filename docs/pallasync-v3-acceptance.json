@@ -834,6 +834,7 @@
         "Palleria/rust/pallasync-core/src/attestations.rs",
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolEntities.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt",
         "Palleria/app/src/main/res/values/pallasync_v3.xml",
@@ -892,6 +893,7 @@
         "Palleria/rust/pallasync-core/src/checkpoint.rs",
         "Palleria/rust/pallasync-core/src/ffi_jni.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolEntities.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncCheckpointFile.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSettingsScreen.kt"
@@ -905,7 +907,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
       ],
       "result": "pending",
-      "remaining": "Activation now refuses any chain_id with a locally retained verified deletion receipt, independent of relay origin, preventing stale restore/reuse; the Room test verifies cross-origin chain-ID blocking. §7.12.4/§17.10 DeviceCheckpoint creation and canonical 16 KiB SAF export/import are also implemented: native strict schema/context signature checks use the signer key from the protected known-device admission, generation/epoch membership and pinned origin/key/log are checked, and the local retained log is replayed to verify the claimed contiguous data prefix. Same-index transparency contradictions or data-prefix contradictions retain the signed checkpoint and set write_state=integrity_paused. Signed views with an unmatched transparency position are retained but not called fully verified. Rust checkpoint tests and the SAF boundary/malformed-file Android unit suite pass. Still execute stale restore/ledger reconciliation and deletion/witness SAF interop against the relay and independent client, compare different transparency prefixes with full independent evidence, and verify public deletion export and physical-device anti-resurrection/checkpoint exchange behavior.",
+      "remaining": "Activation now refuses any chain_id with a locally retained verified deletion receipt, independent of relay origin, preventing stale restore/reuse; the Room test verifies cross-origin chain-ID blocking. §7.12.4/§17.10 DeviceCheckpoint creation and canonical 16 KiB SAF export/import use native strict schema/context signature checks and the protected known-device admission key; generation/epoch membership and pinned origin/key/log are checked, and the local retained log is replayed to verify the claimed contiguous data prefix. The importer streams signed transparency evidence in bounded keyset pages across retained data-log incarnations from T0 through the peer's claimed transparency index, verifying each signature/hash link against the peer's signed checkpoint hash. Missing local entries remain unmatched; conflicting retained hashes at one index or a signed-prefix contradiction pauses writes and preserves the peer checkpoint. Rust tests cover valid and partial prefixes, missing evidence, wrong hash, and skipped index. Rust/JNI and SAF/JNI unit tests passed. Still execute stale restore/ledger reconciliation and deletion/witness SAF interop against the relay, public deletion export, physical-device anti-resurrection/checkpoint exchange behavior, and end-to-end relay fault injection.",
       "verification_scope": "targeted_partial"
     }
   ],

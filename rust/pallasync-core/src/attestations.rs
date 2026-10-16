@@ -1042,6 +1042,69 @@ pub struct TransparencyAnchor {
     pub index: u64,
     pub hash: String,
 }
+
+/// Verify one contiguous signed transparency suffix against a device-authenticated checkpoint.
+/// Unlike a relay head page, the final hash is supplied by an independently signed DeviceCheckpoint.
+pub fn verify_transparency_checkpoint_prefix(
+    anchor: Option<&TransparencyAnchor>,
+    entries: &[Value],
+    transparency_id: &str,
+    target_index: u64,
+    target_hash: &str,
+    pin: &RelayPin,
+) -> Result<TransparencyAnchor> {
+    require(
+        target_index <= jcs::MAX_INTEGER && decode(target_hash, Some(32)).is_ok(),
+        "C_SCHEMA_VIOLATION",
+    )?;
+    require(
+        entries.len() <= 1000
+            && jcs::canonicalize_json(&Value::Array(entries.to_vec()))
+                .map_err(|_| schema())?
+                .len()
+                <= 8_388_608,
+        "C_SCHEMA_VIOLATION",
+    )?;
+    let mut next = match anchor {
+        Some(anchor) => anchor.clone(),
+        None => TransparencyAnchor {
+            transparency_id: transparency_id.to_owned(),
+            index: 0,
+            hash: transparency_zero(&pin.chain_id, transparency_id, &pin.key_id()?)?,
+        },
+    };
+    require(
+        next.transparency_id == transparency_id
+            && next.index <= target_index
+            && decode(&next.hash, Some(32)).is_ok(),
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    if next.index == 0 {
+        require(
+            next.hash == transparency_zero(&pin.chain_id, transparency_id, &pin.key_id()?)?,
+            "C_TRANSPARENCY_INVALID",
+        )?;
+    }
+    if entries.is_empty() && next.index < target_index {
+        return Err(ClientError("C_MISSING_DEPENDENCY"));
+    }
+    for entry in entries {
+        require(
+            next.index < target_index
+                && n(entry, "entry_index") == next.index + 1
+                && s(entry, "transparency_id") == transparency_id,
+            "C_TRANSPARENCY_INVALID",
+        )?;
+        next.hash = transparency_link(&next.hash, entry, pin)?;
+        next.index += 1;
+    }
+    require(next.index <= target_index, "C_TRANSPARENCY_INVALID")?;
+    if next.index == target_index {
+        require(next.hash == target_hash, "C_TRANSPARENCY_INVALID")?;
+    }
+    Ok(next)
+}
+
 /// At most one page in RAM. The caller atomically saves entries and the returned anchor.
 /// An empty/missing suffix is pending, never a verified advance.
 pub fn verify_transparency_page(

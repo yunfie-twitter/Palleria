@@ -569,6 +569,16 @@ object PallaSyncCore {
         limit: Int,
     ): String
 
+    /** Verify a retained signed transparency suffix against an independently signed device checkpoint. */
+    external fun verifyTransparencyCheckpointPrefix(
+        entriesJson: String,
+        transparencyId: String,
+        targetIndex: Long,
+        targetHash: String,
+        pinJson: String,
+        anchorJson: String,
+    ): String
+
     external fun validateReceiptInclusion(
         receiptJson: String,
         entryJson: String,

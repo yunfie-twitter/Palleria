@@ -262,6 +262,12 @@ data class ProtectedEvidenceEntity(
     @ColumnInfo(name = "signed_json") val signedJson: String,
 )
 
+/** Bounded keyset row for reconstructing public signed transparency prefixes. */
+data class TransparencyEvidenceRow(
+    val sequence: Long,
+    @ColumnInfo(name = "signed_json") val signedJson: String,
+)
+
 @Entity(tableName = "ps_authority", primaryKeys = ["chain_id", "kind", "object_hash"])
 data class AuthorityHistoryEntity(
     @ColumnInfo(name = "chain_id") val chainId: String,

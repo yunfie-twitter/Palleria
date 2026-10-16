@@ -716,6 +716,29 @@ interface ProtocolDao {
         sequence: Long,
     ): List<String>
 
+    @Query(
+        "SELECT DISTINCT sequence,signed_json FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND kind='transparency' AND sequence>:after AND sequence<=:through ORDER BY sequence LIMIT :limit",
+    )
+    suspend fun transparencyEvidencePage(
+        origin: String,
+        keyId: String,
+        chainId: String,
+        after: Long,
+        through: Long,
+        limit: Int,
+    ): List<TransparencyEvidenceRow>
+
+    @Query(
+        "SELECT sequence FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND kind='transparency' AND sequence>:after AND sequence<=:through GROUP BY sequence HAVING COUNT(DISTINCT object_hash)>1 ORDER BY sequence LIMIT 1",
+    )
+    suspend fun transparencyEvidenceConflict(
+        origin: String,
+        keyId: String,
+        chainId: String,
+        after: Long,
+        through: Long,
+    ): Long?
+
     @Query("SELECT signed_json FROM ps_evidence WHERE chain_id=:chainId AND log_id=:logId AND kind=:kind ORDER BY sequence DESC LIMIT 1")
     suspend fun latestEvidence(
         chainId: String,

@@ -1040,12 +1040,109 @@ internal class PalleriaSyncCoordinator(
                     error("C_DEVICE_EQUIVOCATION")
                 }
                 val localTransparencyMatches =
-                    value.getValue("transparency_id").jsonPrimitive.content == state.transparencyId &&
-                        value.getValue("transparency_index").jsonPrimitive.long == state.transparencyIndex &&
-                        value.getValue("transparency_hash").jsonPrimitive.content == state.transparencyHash
+                    verifyRetainedTransparencyCheckpoint(
+                        origin = origin,
+                        relayKeyId = relayKeyId,
+                        chain = chain,
+                        logId = logId,
+                        transparencyId = value.getValue("transparency_id").jsonPrimitive.content,
+                        targetIndex = peerTransparencyIndex,
+                        targetHash = value.getValue("transparency_hash").jsonPrimitive.content,
+                        expectedTransparencyId = state.transparencyId,
+                        certifiedRelayKey = policy.trustedRelayKey(origin),
+                    )
                 if (localTransparencyMatches) "verified_data_and_transparency_prefix" else "verified_data_prefix_transparency_unmatched"
             }
         }
+
+    private suspend fun verifyRetainedTransparencyCheckpoint(
+        origin: String,
+        relayKeyId: String,
+        chain: String,
+        logId: String,
+        transparencyId: String,
+        targetIndex: Long,
+        targetHash: String,
+        expectedTransparencyId: String?,
+        certifiedRelayKey: String,
+    ): Boolean {
+        if (transparencyId != expectedTransparencyId) return false
+        val pin =
+            buildJsonObject {
+                put("origin", origin)
+                put("chain_id", chain)
+                put("public_key", certifiedRelayKey)
+                put("log_id", logId)
+            }.toString()
+        var anchor = ""
+        var verifiedIndex = 0L
+        do {
+            val entries =
+                if (verifiedIndex == targetIndex) {
+                    emptyList()
+                } else {
+                    val protocolDao = db.protocolDao()
+                    if (protocolDao.transparencyEvidenceConflict(origin, relayKeyId, chain, verifiedIndex, targetIndex) != null) {
+                        val state = checkNotNull(db.pallaSyncDao().getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+                        db.pallaSyncDao().updateChainState(state.copy(writeState = "integrity_paused"))
+                        error("C_DEVICE_EQUIVOCATION")
+                    }
+                    protocolDao
+                        .transparencyEvidencePage(origin, relayKeyId, chain, verifiedIndex, targetIndex, PALLASYNC_PAGE_SIZE)
+                        .also { page ->
+                            if (
+                                page.isEmpty() ||
+                                page.withIndex().any { (index, row) -> row.sequence != verifiedIndex + index + 1L }
+                            ) {
+                                return false
+                            }
+                        }.map { row ->
+                            try {
+                                Json.parseToJsonElement(row.signedJson)
+                            } catch (_: kotlinx.serialization.SerializationException) {
+                                val state = checkNotNull(db.pallaSyncDao().getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+                                db.pallaSyncDao().updateChainState(state.copy(writeState = "integrity_paused"))
+                                error("C_DEVICE_EQUIVOCATION")
+                            }
+                        }
+                }
+            currentCoroutineContext().ensureActive()
+            val resultText =
+                try {
+                    PallaSyncCore.verifyTransparencyCheckpointPrefix(
+                        JsonArray(entries).toString(),
+                        transparencyId,
+                        targetIndex,
+                        targetHash,
+                        pin,
+                        anchor,
+                    )
+                } catch (_: IllegalStateException) {
+                    val state = checkNotNull(db.pallaSyncDao().getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+                    db.pallaSyncDao().updateChainState(state.copy(writeState = "integrity_paused"))
+                    error("C_DEVICE_EQUIVOCATION")
+                }
+            val next =
+                Json
+                    .parseToJsonElement(resultText)
+                    .jsonObject
+                    .getValue("next_anchor")
+                    .jsonObject
+            val nextIndex = next.getValue("index").jsonPrimitive.long
+            if (nextIndex < verifiedIndex || nextIndex > targetIndex) {
+                val state = checkNotNull(db.pallaSyncDao().getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+                db.pallaSyncDao().updateChainState(state.copy(writeState = "integrity_paused"))
+                error("C_DEVICE_EQUIVOCATION")
+            }
+            if (nextIndex == verifiedIndex && verifiedIndex < targetIndex) return false
+            anchor = next.toString()
+            verifiedIndex = nextIndex
+        } while (verifiedIndex < targetIndex)
+        val finalAnchor = Json.parseToJsonElement(anchor).jsonObject
+        return finalAnchor.getValue("transparency_id").jsonPrimitive.content == transparencyId &&
+            finalAnchor.getValue("index").jsonPrimitive.long == targetIndex &&
+            finalAnchor.getValue("hash").jsonPrimitive.content == targetHash
+    }
 
     /** §10.13: retransmit only current-generation records with retained verified source LogEntries. */
     internal suspend fun repairRetainedRelayHistory(

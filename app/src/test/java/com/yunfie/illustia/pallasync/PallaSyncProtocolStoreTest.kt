@@ -35,6 +35,50 @@ class PallaSyncProtocolStoreTest {
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 
     @Test
+    fun `transparency evidence pages cross log incarnations and expose same-index conflicts`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val dao = db.protocolDao()
+                val origin = "https://relay.example.test"
+                val relayKeyId = "relay-key"
+                val previousLog = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+                val first =
+                    ProtectedEvidenceEntity(
+                        origin,
+                        relayKeyId,
+                        chain,
+                        previousLog,
+                        "transparency",
+                        1,
+                        "entry-hash-1",
+                        "{\"entry_index\":1}",
+                    )
+                dao.retainEvidence(first)
+                dao.retainEvidence(first.copy(logId = log))
+                dao.transparencyEvidencePage(origin, relayKeyId, chain, 0, 2, 20).map { it.signedJson } shouldBe
+                    listOf("{\"entry_index\":1}")
+                dao.transparencyEvidenceConflict(origin, relayKeyId, chain, 0, 2) shouldBe null
+
+                dao.retainEvidence(
+                    first.copy(
+                        logId = log,
+                        objectHash = "conflicting-entry-hash",
+                        signedJson = "{\"entry_index\":1,\"changed\":true}",
+                    ),
+                )
+                dao.transparencyEvidenceConflict(origin, relayKeyId, chain, 0, 2) shouldBe 1L
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `compaction catalogue lookup selects only authority-verified entries`() =
         runBlocking<Unit> {
             val db =

@@ -1270,6 +1270,60 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_verifyTransparencyCheckpointPrefix<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    entries_json: JString<'local>,
+    transparency_id: JString<'local>,
+    target_index: jlong,
+    target_hash: JString<'local>,
+    pin: JString<'local>,
+    anchor: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let entries_text =
+            read_string(&mut env, &entries_json).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let id =
+            read_string(&mut env, &transparency_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let hash = read_string(&mut env, &target_hash).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let entries = crate::strict::jcs::parse(entries_text.as_bytes())
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let entries: Vec<serde_json::Value> =
+            serde_json::from_value(entries).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(public_value(&mut env, &pin)?)
+                .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let anchor_text =
+            read_string(&mut env, &anchor).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let anchor = if anchor_text.is_empty() {
+            None
+        } else {
+            let value = crate::strict::jcs::parse(anchor_text.as_bytes())
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+            Some(
+                serde_json::from_value::<crate::attestations::TransparencyAnchor>(value)
+                    .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?,
+            )
+        };
+        let target_index: u64 = target_index
+            .try_into()
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let next = crate::attestations::verify_transparency_checkpoint_prefix(
+            anchor.as_ref(),
+            &entries,
+            &id,
+            target_index,
+            &hash,
+            &pin,
+        )?;
+        Ok(serde_json::json!({"next_anchor":next}))
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateProblem<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
