@@ -385,13 +385,16 @@ class PallaSyncProtocolStoreTest {
                 val base =
                     ProtectedEvidenceEntity("https://relay.example", "key", chain, log, "delete_receipt", 9, "original", "original-receipt")
                 val completion = base.copy(objectHash = "completion", signedJson = "completed-receipt")
-                protocol.retainEvidence(base)
-                protocol.retainEvidence(completion)
+                val laterCompletion = base.copy(objectHash = "completion-2", signedJson = "later-completed-receipt")
+                protocol.retainDeletionProof(base)
+                protocol.retainDeletionProof(completion)
+                protocol.retainDeletionProof(laterCompletion)
 
-                db.deletionEvidenceDao().latestReceiptRevision(chain, log) shouldBe "completed-receipt"
-                db.deletionEvidenceDao().latestReceiptAtSequence("https://relay.example", "key", chain, log, 9) shouldBe "completed-receipt"
-                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 9).toSet() shouldBe
-                    setOf("original-receipt", "completed-receipt")
+                db.deletionEvidenceDao().latestReceiptRevision(chain, log) shouldBe "later-completed-receipt"
+                db.deletionEvidenceDao().latestReceiptAtSequence("https://relay.example", "key", chain, log, 9) shouldBe
+                    "later-completed-receipt"
+                protocol.deletionProofsAtSequence("https://relay.example", "key", chain, log, "delete_receipt", 9).toSet() shouldBe
+                    setOf("original-receipt", "completed-receipt", "later-completed-receipt")
             } finally {
                 db.close()
             }

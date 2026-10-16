@@ -728,6 +728,18 @@ interface ProtocolDao {
     ): List<String>
 
     @Query(
+        "SELECT DISTINCT signed_json FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND log_id=:logId AND kind=:kind AND sequence=:sequence ORDER BY object_hash",
+    )
+    suspend fun deletionProofsAtSequence(
+        origin: String,
+        keyId: String,
+        chainId: String,
+        logId: String,
+        kind: String,
+        sequence: Long,
+    ): List<String>
+
+    @Query(
         "SELECT DISTINCT sequence,signed_json FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND kind='transparency' AND sequence>:after AND sequence<=:through ORDER BY sequence LIMIT :limit",
     )
     suspend fun transparencyEvidencePage(
@@ -814,6 +826,15 @@ interface ProtocolDao {
         val retained =
             if (proof.kind == "deletion_evidence_bundle") {
                 deletionEvidenceArchives(proof.origin, proof.relayKeyId, proof.chainId, proof.logId, proof.sequence)
+            } else if (proof.kind == "delete_receipt") {
+                deletionProofsAtSequence(
+                    proof.origin,
+                    proof.relayKeyId,
+                    proof.chainId,
+                    proof.logId,
+                    proof.kind,
+                    proof.sequence,
+                )
             } else {
                 evidenceAt(proof.origin, proof.relayKeyId, proof.chainId, proof.logId, proof.kind, proof.sequence)
             }

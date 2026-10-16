@@ -5042,9 +5042,22 @@ internal class PalleriaSyncCoordinator(
                                 receiptIndex,
                             ).map { archiveText ->
                                 val archive = PallaSyncDeletionEvidenceArchive.parseStrictObject(archiveText)
-                                check(archive.getValue("delete_receipt").jsonObject == receipt) { "C_DELETION_UNVERIFIED" }
+                                check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_DELETION_UNVERIFIED" }
+                                val archivedReceipt = archive.getValue("delete_receipt").jsonObject
+                                val archivedBundle = archive.getValue("evidence_bundle").jsonObject
+                                check(
+                                    archivedReceipt.getValue("chain_id") == receipt.getValue("chain_id") &&
+                                        archivedReceipt.getValue("deletion_id") == receipt.getValue("deletion_id") &&
+                                        archivedReceipt.getValue("transparency_id") == receipt.getValue("transparency_id") &&
+                                        archivedReceipt.getValue("transparency_index") == receipt.getValue("transparency_index"),
+                                ) { "C_DELETION_UNVERIFIED" }
+                                PallaSyncCore.validateDeletionEvidenceBundle(
+                                    archivedReceipt.toString(),
+                                    archivedBundle.toString(),
+                                    authorityText,
+                                )
                                 archive
-                            }
+                            }.filter { it.getValue("delete_receipt").jsonObject == receipt }
                     val archiveText =
                         if (existingArchives.isEmpty()) {
                             buildDeletionEvidenceArchive(receipt, authorityText)
@@ -5215,14 +5228,20 @@ internal class PalleriaSyncCoordinator(
                 ).map { value ->
                     val archive = Json.parseToJsonElement(value).jsonObject
                     check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_DELETION_UNVERIFIED" }
-                    check(archive.getValue("delete_receipt") == receipt) { "C_DELETION_UNVERIFIED" }
+                    val archivedReceipt = archive.getValue("delete_receipt").jsonObject
+                    check(
+                        archivedReceipt.getValue("chain_id") == receipt.getValue("chain_id") &&
+                            archivedReceipt.getValue("deletion_id") == receipt.getValue("deletion_id") &&
+                            archivedReceipt.getValue("transparency_id") == receipt.getValue("transparency_id") &&
+                            archivedReceipt.getValue("transparency_index") == receipt.getValue("transparency_index"),
+                    ) { "C_DELETION_UNVERIFIED" }
                     PallaSyncCore.validateDeletionEvidenceBundle(
-                        receipt.toString(),
+                        archivedReceipt.toString(),
                         archive.getValue("evidence_bundle").toString(),
                         context.authorityText,
                     )
                     archive
-                }
+                }.filter { it.getValue("delete_receipt").jsonObject == receipt }
         val merged = PallaSyncDeletionEvidenceMerge.merge(archives) ?: return null
         val mergedBundle = merged.getValue("evidence_bundle").jsonObject
         PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), mergedBundle.toString(), context.authorityText)
