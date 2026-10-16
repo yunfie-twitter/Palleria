@@ -11,6 +11,13 @@
     <string name="pallasync_reseed_import_confirm">送信先を確認し、chain管理者のニーモニックを入力してください。送信先originのprivacy policyが最新で、同意済みである必要があります。この操作は署名済みcontrol historyをstageしてlog IDを受け取るだけです。新世代のcommitや暗号化レコードの移動は行いません。</string>
     <string name="pallasync_reseed_import_staged">chain %1$s の履歴をstageしました。staging log: %2$s。送信先chainはまだ書込みできません。</string>
     <string name="pallasync_reseed_import_failed">履歴をstageできませんでした。chainの切替commitは行っていません。</string>
+    <string name="pallasync_reseed_commit_title">リレー再seedをcommit</string>
+    <string name="pallasync_reseed_commit_confirm">%1$s に新しいgenerationをcommitし、旧端末identityを退役させ、未解決のローカルoutbox操作を再作成して、この端末の接続先を切り替えます。送信先を確認してください。commitを認可するため、管理者mnemonicをもう一度入力します。</string>
+    <string name="pallasync_reseed_commit_completed">リレー再seedをcommitしました。この端末は選択したリレーを使用しています。</string>
+    <string name="pallasync_reseed_resume_title">リレー再seedを再開</string>
+    <string name="pallasync_reseed_resume_summary">保存済みcommitと保護鍵を再利用して、%1$s への検証済み切替を完了します。</string>
+    <string name="pallasync_reseed_retry_title">再seed commitを再開</string>
+    <string name="pallasync_reseed_retry_summary">結果を確定できないためsourceは停止中です。%1$s の保存済み操作を再確認して続行します。</string>
     <string name="pallasync_v3_mnemonic">復旧用mnemonicを保存</string>
     <string name="pallasync_v3_mnemonic_explanation">24単語を安全なオフラインの場所に控えてください。アプリには保存されません。この画面を離れるか10分経過すると表示を消去します。</string>
     <string name="pallasync_v3_mnemonic_saved">単語を控えました</string>
@@ -153,4 +160,6 @@
     <string name="pallasync_v3_genesis_passphrase_explanation">任意のパスフレーズを設定すると復旧用の識別子が変わります。文字と前後の空白を正確に保ち、この単語列とは別に保管してください。復旧権限を使うたびに必要です。</string>
     <string name="pallasync_v3_root_enroll">復旧権限を使って参加</string>
     <string name="pallasync_v3_relay_replay_source">既存chainの取得元としてこのリレーを選び、取得可能な署名済み履歴を検証します。この取得元だけでは、未観測の履歴が省かれていないことを独立に証明できません。元の24単語と、設定時の正確なパスフレーズが必要です。</string>
+    <string name="pallasync_reseed_source_conflict_title">旧relayに未importの変更があります</string>
+    <string name="pallasync_reseed_source_conflict_summary">source %1$s に未importの署名済み履歴エントリが%2$d件あります（sequence %3$d〜%4$d）。targetへは複製されていません。sourceを保持し、内容を確認して必要な変更を手動で再適用してください。</string>
 </resources>

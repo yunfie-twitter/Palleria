@@ -494,6 +494,129 @@ class PallaSyncLocalIntentsTest {
             }
         }
 
+    @Test
+    fun `v21 migration freezes the last event in verified relay sequence order`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:sequence:$chain"
+                val exportHash = encode(ByteArray(32) { 7 })
+                val recordIds =
+                    listOf(
+                        "01890f3e-7c00-7000-8000-000000000001",
+                        "01890f3e-7c00-7000-8000-000000000002",
+                    )
+                val sourceJson = listOf("{\"ciphertext\":\"older\"}", "{\"ciphertext\":\"newer\"}")
+                val hashes = sourceJson.map { checkNotNull(PallaSyncCore.objectHash(it)) }
+                intents.beginLegacyMigration(migration, "source-chain", "2.1", 2, exportHash, chain, freezeConfirmed = true)
+                recordIds.indices.forEach { index ->
+                    intents.archiveLegacySourceRecord(migration, index + 1L, recordIds[index], hashes[index], sourceJson[index])
+                }
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 2,
+                    mappings =
+                        listOf(
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                1,
+                                recordIds[0],
+                                0,
+                                hashes[0],
+                                event("same-entity").copy(body = buildJsonObject { put("query", "older") }),
+                                legacyEventSequenceOrdered = true,
+                            ),
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                2,
+                                recordIds[1],
+                                0,
+                                hashes[1],
+                                event("same-entity").copy(body = buildJsonObject { put("query", "newer") }),
+                                legacyEventSequenceOrdered = true,
+                            ),
+                        ),
+                    decisions =
+                        recordIds.indices.map { index ->
+                            PallaSyncLocalIntents.LegacySourceDecision(index + 1L, recordIds[index], hashes[index], "converted")
+                        },
+                    report = PallaSyncLocalIntents.LegacyBatchReport(2, 0, 0, 0, complete = false),
+                )
+                intents.completeLegacySourceScan(migration, 2, 2, exportHash)
+                intents.finalizeLegacyMigrationChoices(migration)
+
+                val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
+                candidates.single { it.excluded }.event.body shouldBe buildJsonObject { put("query", "older") }
+                candidates.single { !it.excluded }.event.body shouldBe buildJsonObject { put("query", "newer") }
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 1
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun `v20 favorite snapshots retain the first distinct occurrence and its list order`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:v20-favorite-distinct:$chain"
+                val exportHash = encode(ByteArray(32) { 9 })
+                val recordIds =
+                    listOf(
+                        "01890f3e-7c00-7000-8000-000000000005",
+                        "01890f3e-7c00-7000-8000-000000000006",
+                    )
+                val sourceJson = listOf("{\"snapshot\":1}", "{\"snapshot\":2}")
+                val hashes = sourceJson.map { checkNotNull(PallaSyncCore.objectHash(it)) }
+                intents.beginLegacyMigration(migration, "source-chain", "2.0", 2, exportHash, chain, freezeConfirmed = true)
+                recordIds.indices.forEach { index ->
+                    intents.archiveLegacySourceRecord(migration, index + 1L, recordIds[index], hashes[index], sourceJson[index])
+                }
+                val favorite =
+                    PallaSyncPendingEvent(
+                        "palleria.favorite_tag/3",
+                        "tag",
+                        "upsert",
+                        buildJsonObject { put("tag", "tag") },
+                    )
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 2,
+                    mappings =
+                        recordIds.indices.map { index ->
+                            PallaSyncLocalIntents.LegacyEventMapping(
+                                index + 1L,
+                                recordIds[index],
+                                0,
+                                hashes[index],
+                                favorite,
+                                legacyFavoriteSnapshotUnique = true,
+                            )
+                        },
+                    decisions =
+                        recordIds.indices.map { index ->
+                            PallaSyncLocalIntents.LegacySourceDecision(index + 1L, recordIds[index], hashes[index], "converted")
+                        },
+                    report = PallaSyncLocalIntents.LegacyBatchReport(2, 0, 0, 0, complete = false),
+                )
+                intents.completeLegacySourceScan(migration, 2, 2, exportHash)
+                intents.finalizeLegacyMigrationChoices(migration)
+
+                val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
+                candidates.single { !it.excluded }.sourceSequence shouldBe 1L
+                candidates.single { it.excluded }.sourceSequence shouldBe 2L
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 1
+            } finally {
+                db.close()
+            }
+        }
+
     private fun database() =
         Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), PallaSyncDatabase::class.java).build()
 

@@ -43,6 +43,7 @@ import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PallaSyncHttpResult
 import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
+import com.yunfie.illustia.pallasync.PallaSyncReseedSourceConflict
 import com.yunfie.illustia.pallasync.PallaSyncRootSession
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
@@ -101,9 +102,17 @@ fun PallaSyncSettingsScreen(
     var repairingRelayHistory by remember { mutableStateOf(false) }
     var showReseedImportTarget by remember { mutableStateOf(false) }
     var showReseedImportRootInput by remember { mutableStateOf(false) }
+    var showReseedCommitConfirm by remember { mutableStateOf(false) }
+    var showReseedCommitRootInput by remember { mutableStateOf(false) }
     var reseedImportTargetUrl by remember { mutableStateOf("") }
     var selectedReseedImportTargetUrl by remember { mutableStateOf<String?>(null) }
     var stagingReseedImport by remember { mutableStateOf(false) }
+    var committingReseedImport by remember { mutableStateOf(false) }
+    var stagedReseedTargetUrl by remember { mutableStateOf<String?>(null) }
+    var pendingReseedCutoverTarget by remember { mutableStateOf<String?>(null) }
+    var pendingReseedCommitTarget by remember { mutableStateOf<String?>(null) }
+    var reseedSourceConflict by remember { mutableStateOf<PallaSyncReseedSourceConflict.Summary?>(null) }
+    var showReseedSourceConflict by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var witnessInputArchive by remember { mutableStateOf<String?>(null) }
@@ -224,6 +233,9 @@ fun PallaSyncSettingsScreen(
         }
         while (isActive) {
             try {
+                pendingReseedCutoverTarget = syncManager.pendingReseedCutoverTarget()
+                pendingReseedCommitTarget = syncManager.pendingReseedCommitTarget()
+                reseedSourceConflict = syncManager.pendingReseedSourceConflict()
                 if (state.settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
                 val page = syncManager.legacyMigrationProgressPage(limit = 20)
                 legacyMigrations =
@@ -635,6 +647,8 @@ fun PallaSyncSettingsScreen(
                             val message =
                                 when (result) {
                                     is PallaSyncHttpResult.Success -> {
+                                        stagedReseedTargetUrl = target
+                                        showReseedCommitConfirm = true
                                         context.getString(
                                             R.string.pallasync_reseed_import_staged,
                                             result.value.chainId,
@@ -655,6 +669,66 @@ fun PallaSyncSettingsScreen(
                             stagingReseedImport = false
                             showReseedImportRootInput = false
                             selectedReseedImportTargetUrl = null
+                        }
+                    }
+                }
+            },
+        )
+    }
+
+    if (showReseedCommitConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_reseed_commit_title),
+            summary = stringResource(R.string.pallasync_reseed_commit_confirm, stagedReseedTargetUrl.orEmpty()),
+            confirmText = stringResource(R.string.action_confirm),
+            destructive = true,
+            onConfirm = {
+                showReseedCommitConfirm = false
+                showReseedCommitRootInput = true
+            },
+            onDismiss = {
+                showReseedCommitConfirm = false
+                stagedReseedTargetUrl = null
+            },
+        )
+    }
+
+    if (showReseedCommitRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_reseed_commit_title),
+            explanation = stringResource(R.string.pallasync_reseed_commit_confirm, stagedReseedTargetUrl.orEmpty()),
+            busy = committingReseedImport,
+            onDismiss = {
+                showReseedCommitRootInput = false
+                stagedReseedTargetUrl = null
+            },
+            onConfirm = { mnemonic, passphrase ->
+                val target = stagedReseedTargetUrl
+                if (target == null) {
+                    showReseedCommitRootInput = false
+                    Toast.makeText(context, R.string.pallasync_reseed_import_failed, Toast.LENGTH_LONG).show()
+                } else {
+                    committingReseedImport = true
+                    scope.launch {
+                        try {
+                            when (val result = syncManager.commitStagedReseedHistory(target, mnemonic, passphrase)) {
+                                is PallaSyncHttpResult.Success -> {
+                                    Toast.makeText(context, R.string.pallasync_reseed_commit_completed, Toast.LENGTH_LONG).show()
+                                }
+
+                                PallaSyncHttpResult.Gone, is PallaSyncHttpResult.ProtocolError, is PallaSyncHttpResult.Retryable -> {
+                                    Toast.makeText(context, R.string.pallasync_reseed_import_failed, Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            Toast.makeText(context, R.string.pallasync_reseed_import_failed, Toast.LENGTH_LONG).show()
+                        } finally {
+                            committingReseedImport = false
+                            showReseedCommitRootInput = false
+                            stagedReseedTargetUrl = null
                         }
                     }
                 }
@@ -751,6 +825,24 @@ fun PallaSyncSettingsScreen(
                 }
             },
             onDismiss = { showLeaveConfirm = false },
+        )
+    }
+
+    reseedSourceConflict?.let { conflict ->
+        MiuixConfirmDialog(
+            show = showReseedSourceConflict,
+            title = stringResource(R.string.pallasync_reseed_source_conflict_title),
+            summary =
+                stringResource(
+                    R.string.pallasync_reseed_source_conflict_summary,
+                    conflict.sourceOrigin,
+                    conflict.entryCount,
+                    conflict.firstSequence,
+                    conflict.lastSequence,
+                ),
+            confirmText = stringResource(R.string.action_close),
+            onConfirm = { showReseedSourceConflict = false },
+            onDismiss = { showReseedSourceConflict = false },
         )
     }
 
@@ -964,6 +1056,61 @@ fun PallaSyncSettingsScreen(
                                     reseedImportTargetUrl = ""
                                     showReseedImportTarget = true
                                 },
+                            )
+                        }
+                        pendingReseedCutoverTarget?.let { target ->
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_reseed_resume_title),
+                                summary = stringResource(R.string.pallasync_reseed_resume_summary, target),
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            val resumed = syncManager.resumeStagedReseedCutover()
+                                            pendingReseedCutoverTarget = syncManager.pendingReseedCutoverTarget()
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    if (resumed) {
+                                                        R.string.pallasync_reseed_commit_completed
+                                                    } else {
+                                                        R.string.pallasync_reseed_import_failed
+                                                    },
+                                                    Toast.LENGTH_LONG,
+                                                ).show()
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, R.string.pallasync_reseed_import_failed, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                        pendingReseedCommitTarget?.let { target ->
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_reseed_retry_title),
+                                summary = stringResource(R.string.pallasync_reseed_retry_summary, target),
+                                onClick = {
+                                    stagedReseedTargetUrl = target
+                                    showReseedCommitConfirm = true
+                                },
+                            )
+                        }
+                        reseedSourceConflict?.let { conflict ->
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_reseed_source_conflict_title),
+                                summary =
+                                    stringResource(
+                                        R.string.pallasync_reseed_source_conflict_summary,
+                                        conflict.sourceOrigin,
+                                        conflict.entryCount,
+                                        conflict.firstSequence,
+                                        conflict.lastSequence,
+                                    ),
+                                onClick = { showReseedSourceConflict = true },
                             )
                         }
                         if (state.settings.pallaSyncEnabled) {

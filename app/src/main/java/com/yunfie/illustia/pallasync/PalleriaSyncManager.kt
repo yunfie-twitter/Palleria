@@ -72,6 +72,14 @@ class PalleriaSyncManager(
         passphrase: String,
     ): PallaSyncHttpResult<JsonObject> = coordinator.commitStagedReseedHistory(targetRelayUrl, mnemonic, passphrase)
 
+    internal suspend fun pendingReseedCutoverTarget(): String? = coordinator.pendingReseedCutoverTarget()
+
+    internal suspend fun pendingReseedCommitTarget(): String? = coordinator.pendingReseedCommitTarget()
+
+    internal suspend fun pendingReseedSourceConflict(): PallaSyncReseedSourceConflict.Summary? = coordinator.pendingReseedSourceConflict()
+
+    internal suspend fun resumeStagedReseedCutover(): Boolean = coordinator.resumeStagedReseedCutover()
+
     internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)
 
     suspend fun getServerUrl(): String = coordinator.getServerUrl()

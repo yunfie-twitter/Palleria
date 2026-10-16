@@ -91,6 +91,64 @@ class PallaSyncReseedJournalDaoTest {
             }
         }
 
+    @Test
+    fun `source conflict report advances only along the same verified cut`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val dao = db.reseedJournalDao()
+                val initial =
+                    ReseedJournalEntity(
+                        CHAIN,
+                        SOURCE_LOG,
+                        4,
+                        "https://relay.example",
+                        targetPinJson = "{}",
+                        phase = 0,
+                        updatedAtMs = 1,
+                    )
+                dao.saveMonotone(initial)
+                val committed = initial.copy(phase = 4, updatedAtMs = 2)
+                dao.saveMonotone(committed)
+                val first = sourceConflictReport(head = 9, headHash = "head-9", count = 2)
+                dao.saveMonotone(committed.copy(sourceConflictReportJson = first, updatedAtMs = 3))
+                val extended = sourceConflictReport(head = 10, headHash = "head-10", count = 3)
+                dao.saveMonotone(committed.copy(sourceConflictReportJson = extended, updatedAtMs = 4))
+                dao.get(CHAIN)?.sourceConflictReportJson shouldBe extended
+                runCatching {
+                    dao.saveMonotone(committed.copy(sourceConflictReportJson = first, updatedAtMs = 5))
+                }.exceptionOrNull()?.message shouldBe "C_ROLLBACK_DETECTED"
+                val equivocatedHead =
+                    first.replace("\"observed_parameters_hash\":\"parameters-9\"", "\"observed_parameters_hash\":\"other-parameters\"")
+                runCatching {
+                    dao.saveMonotone(committed.copy(sourceConflictReportJson = equivocatedHead, updatedAtMs = 6))
+                }.exceptionOrNull()?.message shouldBe "C_ROLLBACK_DETECTED"
+                val advancedSequenceWithSameHash =
+                    sourceConflictReport(head = 10, headHash = "head-9", count = 3)
+                        .replace("parameters-10", "parameters-9")
+                        .replace("epoch-10", "epoch-9")
+                runCatching {
+                    dao.saveMonotone(
+                        committed.copy(sourceConflictReportJson = advancedSequenceWithSameHash, updatedAtMs = 7),
+                    )
+                }.exceptionOrNull()?.message shouldBe "C_ROLLBACK_DETECTED"
+            } finally {
+                db.close()
+            }
+        }
+
+    private fun sourceConflictReport(
+        head: Long,
+        headHash: String,
+        count: Long,
+    ): String =
+        """{"source_origin":"https://relay.example","source_log_id":"$SOURCE_LOG","source_generation":4,"source_cut_seq":7,"source_cut_hash":"cut","source_cut_parameters_hash":"params","source_cut_epoch_hash":"epoch","observed_head_seq":$head,"observed_head_hash":"$headHash","observed_parameters_hash":"parameters-$head","observed_epoch_hash":"epoch-$head","unimported_entry_count":$count,"unimported_first_seq":8,"unimported_last_seq":$head}"""
+
     private companion object {
         const val CHAIN = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
         const val SOURCE_LOG = "11111111-1111-4111-8111-111111111111"

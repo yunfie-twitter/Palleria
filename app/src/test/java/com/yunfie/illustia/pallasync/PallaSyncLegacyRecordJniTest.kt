@@ -31,7 +31,7 @@ class PallaSyncLegacyRecordJniTest {
     @Test
     fun `v21 record pages require monotonic relay sequences and an exact advancing cursor`() {
         val record =
-            """{"protocol_version":"2.1","record_id":"01890f3e-7c00-7000-8000-000000000001","device_id":"01890f3e-7c00-7000-8000-000000000002","server_sequence":3,"relay_seq":3}"""
+            """{"protocol_version":"2.1","record_id":"01890f3e-7c00-7000-8000-000000000001","device_id":"01890f3e-7c00-7000-8000-000000000002","collection_name":"palleria.search_history/2","lamport":5,"server_sequence":3,"relay_seq":3}"""
         val page =
             PallaSyncLegacyV21Source.decodePage(
                 """{"records":[$record],"next_cursor":"3","server_time_ms":1700000000000}""",
@@ -42,6 +42,8 @@ class PallaSyncLegacyRecordJniTest {
         page.throughSequence shouldBe 3L
         page.hasMore shouldBe true
         page.records.single().recordId shouldBe "01890f3e-7c00-7000-8000-000000000001"
+        page.records.single().collectionName shouldBe "palleria.search_history/2"
+        page.records.single().lamport shouldBe 5L
 
         shouldThrow<IllegalArgumentException> {
             PallaSyncLegacyV21Source.decodePage(

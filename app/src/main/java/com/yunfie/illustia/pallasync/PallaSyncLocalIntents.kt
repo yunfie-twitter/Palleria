@@ -46,6 +46,8 @@ internal class PallaSyncLocalIntents(
         val sourceObjectHash: String,
         val event: PallaSyncPendingEvent,
         val normalizationCollision: Boolean = false,
+        val legacyEventSequenceOrdered: Boolean = false,
+        val legacyFavoriteSnapshotUnique: Boolean = false,
     )
 
     internal data class LegacyBatchReport(
@@ -343,7 +345,13 @@ internal class PallaSyncLocalIntents(
             check(index < PallaSyncConflictResolver.MAX_COUNTER) { "C_COUNTER_EXHAUSTED" }
             val entryIndex = ++index
             val eventHash = sourceHash(mapping.event)
-            val work = PallaSyncReplayWork(mapping.event, targetGeneration = manifest.targetGeneration)
+            val work =
+                PallaSyncReplayWork(
+                    mapping.event,
+                    targetGeneration = manifest.targetGeneration,
+                    legacyEventSequenceOrdered = mapping.legacyEventSequenceOrdered,
+                    legacyFavoriteSnapshotUnique = mapping.legacyFavoriteSnapshotUnique,
+                )
             dao.putMigrationChunk(
                 MigrationJournalEntity(
                     migrationId,
@@ -363,7 +371,12 @@ internal class PallaSyncLocalIntents(
                         legacyGroupKey(
                             mapping.event.schema,
                             mapping.event.entityId,
-                            if (mapping.normalizationCollision) "collision:${mapping.sourceSequence}" else "entry:$entryIndex",
+                            when {
+                                mapping.legacyEventSequenceOrdered -> "legacy-v21-sequence"
+                                mapping.legacyFavoriteSnapshotUnique -> "legacy-v20-favorite-distinct"
+                                mapping.normalizationCollision -> "collision:${mapping.sourceSequence}"
+                                else -> "entry:$entryIndex"
+                            },
                         ),
                     sourceSequence = mapping.sourceSequence,
                     candidateIndex = mapping.candidateIndex,
@@ -717,7 +730,7 @@ internal class PallaSyncLocalIntents(
                         legacyGroupKey(
                             original.schema,
                             original.entityId,
-                            if (metadata.requiresChoice) "collision:${metadata.sourceSequence}" else "entry:${row.chunkIndex}",
+                            legacyCandidateDiscriminator(work, metadata, row.chunkIndex),
                         ),
                 ) { "C_ROLLBACK_DETECTED" }
                 val choice = dao.legacyMigrationCandidateChoice(migrationId, groupKey)
@@ -729,7 +742,8 @@ internal class PallaSyncLocalIntents(
                     candidateIndex,
                     objectHash,
                     original,
-                    requiresChoice = metadata.requiresChoice,
+                    requiresChoice =
+                        metadata.requiresChoice && !work.legacyEventSequenceOrdered && !work.legacyFavoriteSnapshotUnique,
                     selectedByUser = choice?.let { it.userConfirmed && it.selectedEntryIndex == row.chunkIndex } == true,
                     excluded = row.state == "legacy_candidate_excluded",
                 )
@@ -773,7 +787,7 @@ internal class PallaSyncLocalIntents(
                         legacyGroupKey(
                             work.event.schema,
                             work.event.entityId,
-                            if (candidate.requiresChoice) "collision:${candidate.sourceSequence}" else "entry:${row.chunkIndex}",
+                            legacyCandidateDiscriminator(work, candidate, row.chunkIndex),
                         ) &&
                         candidate.schema == work.event.schema && candidate.entityId == work.event.entityId &&
                         candidate.operation == work.event.operation,
@@ -792,7 +806,8 @@ internal class PallaSyncLocalIntents(
                     candidate.candidateIndex,
                     candidate.sourceObjectHash,
                     work.event,
-                    requiresChoice = candidate.requiresChoice,
+                    requiresChoice =
+                        candidate.requiresChoice && !work.legacyEventSequenceOrdered && !work.legacyFavoriteSnapshotUnique,
                     selectedByUser =
                         dao.legacyMigrationCandidateChoice(migrationId, candidate.groupKey)?.let {
                             it.userConfirmed &&
@@ -822,9 +837,10 @@ internal class PallaSyncLocalIntents(
                 legacyGroupKey(
                     work.event.schema,
                     work.event.entityId,
-                    if (metadata.requiresChoice) "collision:${metadata.sourceSequence}" else "entry:$entryIndex",
+                    legacyCandidateDiscriminator(work, metadata, entryIndex),
                 ),
         ) { "C_ROLLBACK_DETECTED" }
+        check(!work.legacyEventSequenceOrdered && !work.legacyFavoriteSnapshotUnique) { "C_MISSING_DEPENDENCY" }
         dao.putLegacyMigrationCandidateChoice(
             LegacyMigrationChoiceEntity(migrationId, groupKey, entryIndex, userConfirmed = true),
         )
@@ -851,18 +867,8 @@ internal class PallaSyncLocalIntents(
                     currentCoroutineContext().ensureActive()
                     val count = dao.legacyMigrationCandidateGroupCount(migrationId, key)
                     check(count > 0) { "C_ROLLBACK_DETECTED" }
-                    val firstMember = dao.legacyMigrationCandidatesInGroup(migrationId, key, 0, 1).single()
                     val choice = dao.legacyMigrationCandidateChoice(migrationId, key)
-                    val selected =
-                        when {
-                            count == 1L -> firstMember.entryIndex
-
-                            choice?.userConfirmed == true &&
-                                dao.legacyMigrationCandidate(migrationId, key, choice.selectedEntryIndex) != null
-                            -> choice.selectedEntryIndex
-
-                            else -> error("C_MISSING_DEPENDENCY")
-                        }
+                    val selected = resolveLegacyGroupSelection(migrationId, key, count, choice)
                     val selectedRow = checkNotNull(dao.migrationChunk(migrationId, selected)) { "C_ROLLBACK_DETECTED" }
                     check(selectedRow.state == "pending" && selectedRow.targetChain == manifest.targetChain) { "C_ROLLBACK_DETECTED" }
                     val selectedWork = Json.decodeFromString<PallaSyncReplayWork>(selectedRow.reportJson)
@@ -870,19 +876,13 @@ internal class PallaSyncLocalIntents(
                         checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, selected)) {
                             "C_ROLLBACK_DETECTED"
                         }
-                    val discriminator =
-                        if (selectedMetadata.requiresChoice) {
-                            "collision:${selectedMetadata.sourceSequence}"
-                        } else {
-                            "entry:$selected"
-                        }
                     check(
                         sourceHash(selectedWork.event) == selectedRow.sourceHash &&
                             key ==
                             legacyGroupKey(
                                 selectedWork.event.schema,
                                 selectedWork.event.entityId,
-                                discriminator,
+                                legacyCandidateDiscriminator(selectedWork, selectedMetadata, selected),
                             ),
                     ) {
                         "C_ROLLBACK_DETECTED"
@@ -941,7 +941,11 @@ internal class PallaSyncLocalIntents(
                 legacyGroupKey(
                     first.schema,
                     first.entityId,
-                    if (first.requiresChoice) "collision:${first.sourceSequence}" else "entry:${first.entryIndex}",
+                    run {
+                        val row = checkNotNull(dao.migrationChunk(migrationId, first.entryIndex)) { "C_ROLLBACK_DETECTED" }
+                        val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                        legacyCandidateDiscriminator(work, first, first.entryIndex)
+                    },
                 ),
         ) { "C_ROLLBACK_DETECTED" }
         val choice = dao.legacyMigrationCandidateChoice(migrationId, groupKey)
@@ -955,6 +959,111 @@ internal class PallaSyncLocalIntents(
             choice?.selectedEntryIndex,
             choice?.userConfirmed == true,
         )
+    }
+
+    private fun legacyCandidateDiscriminator(
+        work: PallaSyncReplayWork,
+        metadata: LegacyMigrationCandidateEntity,
+        entryIndex: Long,
+    ): String =
+        when {
+            work.legacyEventSequenceOrdered -> "legacy-v21-sequence"
+            work.legacyFavoriteSnapshotUnique -> "legacy-v20-favorite-distinct"
+            metadata.requiresChoice -> "collision:${metadata.sourceSequence}"
+            else -> "entry:$entryIndex"
+        }
+
+    private suspend fun resolveLegacyGroupSelection(
+        migrationId: String,
+        groupKey: String,
+        count: Long,
+        choice: LegacyMigrationChoiceEntity?,
+    ): Long {
+        val dao = store.protocolDao()
+        var after = 0L
+        var sequenceOrdered = false
+        var favoriteDistinct = false
+        var unsequenced = false
+        var selectedSequence = Long.MIN_VALUE
+        var selectedCandidateIndex = Int.MIN_VALUE
+        var selectedEntry = Long.MIN_VALUE
+        var firstSequence = Long.MAX_VALUE
+        var firstCandidateIndex = Int.MAX_VALUE
+        var firstEntry = Long.MAX_VALUE
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val rows = dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, after, PAGE_SIZE)
+            if (rows.isEmpty()) break
+            for (candidate in rows) {
+                val row = checkNotNull(dao.migrationChunk(migrationId, candidate.entryIndex)) { "C_ROLLBACK_DETECTED" }
+                val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                if (!work.legacyEventSequenceOrdered) {
+                    if (work.legacyFavoriteSnapshotUnique) {
+                        favoriteDistinct = true
+                        val metadata =
+                            checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, candidate.entryIndex)) {
+                                "C_ROLLBACK_DETECTED"
+                            }
+                        val earlier =
+                            when {
+                                metadata.sourceSequence < firstSequence -> true
+                                metadata.sourceSequence > firstSequence -> false
+                                metadata.candidateIndex < firstCandidateIndex -> true
+                                metadata.candidateIndex > firstCandidateIndex -> false
+                                else -> candidate.entryIndex < firstEntry
+                            }
+                        if (earlier) {
+                            firstSequence = metadata.sourceSequence
+                            firstCandidateIndex = metadata.candidateIndex
+                            firstEntry = candidate.entryIndex
+                        }
+                    } else {
+                        unsequenced = true
+                    }
+                    continue
+                }
+                sequenceOrdered = true
+                val metadata =
+                    checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, candidate.entryIndex)) {
+                        "C_ROLLBACK_DETECTED"
+                    }
+                if (metadata.sourceSequence > selectedSequence ||
+                    (metadata.sourceSequence == selectedSequence && metadata.candidateIndex > selectedCandidateIndex) ||
+                    (
+                        metadata.sourceSequence == selectedSequence && metadata.candidateIndex == selectedCandidateIndex &&
+                            candidate.entryIndex > selectedEntry
+                    )
+                ) {
+                    selectedSequence = metadata.sourceSequence
+                    selectedCandidateIndex = metadata.candidateIndex
+                    selectedEntry = candidate.entryIndex
+                }
+            }
+            after = rows.last().entryIndex
+            if (rows.size < PAGE_SIZE) break
+        }
+        check(!(sequenceOrdered && (unsequenced || favoriteDistinct)) && !(favoriteDistinct && unsequenced)) {
+            "C_ROLLBACK_DETECTED"
+        }
+        val selected =
+            if (sequenceOrdered) {
+                check(selectedEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
+                selectedEntry
+            } else if (favoriteDistinct) {
+                check(firstEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
+                firstEntry
+            } else {
+                when {
+                    count == 1L -> dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, 0, 1).single().entryIndex
+
+                    choice?.userConfirmed == true &&
+                        dao.legacyMigrationCandidate(migrationId, groupKey, choice.selectedEntryIndex) != null -> choice.selectedEntryIndex
+
+                    else -> error("C_MISSING_DEPENDENCY")
+                }
+            }
+        check(dao.legacyMigrationCandidate(migrationId, groupKey, selected) != null) { "C_ROLLBACK_DETECTED" }
+        return selected
     }
 
     private fun sourceEvidenceJournalId(migrationId: String): String = "$migrationId:source"

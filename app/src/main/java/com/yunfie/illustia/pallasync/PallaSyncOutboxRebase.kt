@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.MigrationJournalEntity
 import com.yunfie.illustia.pallasync.data.OutboxEntity
+import com.yunfie.illustia.pallasync.data.SignedEventEntity
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.encodeToString
@@ -22,6 +23,7 @@ internal class PallaSyncOutboxRebase(
     private val authorityHash: (String) -> String?,
     private val epochKeys: (PallaSyncKeySnapshot, Long) -> PallaSyncKeySnapshot?,
     private val transparencyPin: (String) -> JsonObject?,
+    private val sourceTransparencyPin: (String, String) -> JsonObject?,
     private val fault: (Boundary) -> Unit = {},
 ) {
     constructor(
@@ -35,6 +37,7 @@ internal class PallaSyncOutboxRebase(
         keys::authorityHash,
         keys::keysForEpoch,
         keys::transparencyPin,
+        keys::reseedSourceTransparencyPin,
         fault,
     )
 
@@ -67,6 +70,88 @@ internal class PallaSyncOutboxRebase(
         finish(chain, initial)
     }
 
+    /** Replays unresolved old-generation intents only after the replacement authority and keys are pinned. */
+    suspend fun resumeReseed(
+        chain: String,
+        targetKeys: PallaSyncKeySnapshot,
+        sourceKeys: PallaSyncKeySnapshot,
+        sourceAuthority: JsonObject,
+    ) {
+        val targetAuthority = validatedReseedAuthority(chain, targetKeys)
+        validateReseedSource(chain, targetKeys, sourceKeys, sourceAuthority)
+        author.finishPending(chain, targetKeys)
+        val through = store.dao.lastPendingOutboxId(chain) ?: return
+        replayPendingReseed(chain, targetKeys, sourceKeys, sourceAuthority, targetAuthority, through)
+    }
+
+    private suspend fun validatedReseedAuthority(
+        chain: String,
+        targetKeys: PallaSyncKeySnapshot,
+    ): JsonObject {
+        val state = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+        check(state.writeState in setOf("epoch_rebase_required", "active")) { "C_MISSING_DEPENDENCY" }
+        val targetJson = checkNotNull(store.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+        check(PallaSyncCore.objectHash(targetJson) == authorityHash(chain)) { "C_ROLLBACK_DETECTED" }
+        val targetAuthority = Json.parseToJsonElement(targetJson).jsonObject
+        requireCut(state, targetAuthority, targetKeys)
+        return targetAuthority
+    }
+
+    private fun validateReseedSource(
+        chain: String,
+        targetKeys: PallaSyncKeySnapshot,
+        sourceKeys: PallaSyncKeySnapshot,
+        sourceAuthority: JsonObject,
+    ) {
+        check(
+            sourceKeys.chainId == chain && sourceKeys.deviceId != targetKeys.deviceId &&
+                PallaSyncCore.validateCurrentKeyRecipient(sourceAuthority.toString(), checkNotNull(sourceKeys.deviceId)),
+        ) { "C_MISSING_DEPENDENCY" }
+    }
+
+    private suspend fun replayPendingReseed(
+        chain: String,
+        targetKeys: PallaSyncKeySnapshot,
+        sourceKeys: PallaSyncKeySnapshot,
+        sourceAuthority: JsonObject,
+        targetAuthority: JsonObject,
+        through: Long,
+    ) {
+        var after = 0L
+        while (after < through) {
+            currentCoroutineContext().ensureActive()
+            val page = store.dao.pendingOutboxPage(chain, after, PALLASYNC_PAGE_SIZE).takeWhile { it.id <= through }
+            if (page.isEmpty()) break
+            for (source in page) {
+                currentCoroutineContext().ensureActive()
+                val wire = Json.decodeFromString<PallaSyncWireRecord>(source.eventJson)
+                rebaseOrVerifyReseedRecord(source, wire, chain, targetKeys, sourceKeys, sourceAuthority, targetAuthority)
+                after = source.id
+            }
+        }
+    }
+
+    private suspend fun rebaseOrVerifyReseedRecord(
+        source: OutboxEntity,
+        wire: PallaSyncWireRecord,
+        chain: String,
+        targetKeys: PallaSyncKeySnapshot,
+        sourceKeys: PallaSyncKeySnapshot,
+        sourceAuthority: JsonObject,
+        targetAuthority: JsonObject,
+    ) {
+        if (wire.deviceId == sourceKeys.deviceId && wire.generation == generation(sourceAuthority)) {
+            rebase(source, targetKeys, targetAuthority, sourceKeys, sourceAuthority, forceReplacement = true)
+            return
+        }
+        check(
+            wire.deviceId == targetKeys.deviceId && wire.generation == generation(targetAuthority) &&
+                wire.chainId == chain && wire.recordId == source.recordId &&
+                PallaSyncCore.objectHash(source.eventJson) == source.objectHash &&
+                PallaSyncCore.verifySyncRecord(source.eventJson, targetKeys.publicKeyBase64Url),
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+    }
+
     private fun requireCut(
         state: ChainStateEntity,
         authority: JsonObject,
@@ -96,33 +181,87 @@ internal class PallaSyncOutboxRebase(
         source: OutboxEntity,
         keys: PallaSyncKeySnapshot,
         authority: JsonObject,
+        sourceKeys: PallaSyncKeySnapshot = keys,
+        sourceAuthority: JsonObject = authority,
+        forceReplacement: Boolean = false,
     ) {
         val wire = Json.decodeFromString<PallaSyncWireRecord>(source.eventJson)
         val hash = checkNotNull(source.objectHash) { "C_ACCEPTANCE_UNPROVEN" }
-        check(
-            wire.chainId == source.chainId && wire.recordId == source.recordId &&
-                wire.deviceId == keys.deviceId && wire.generation == generation(authority) &&
-                PallaSyncCore.objectHash(source.eventJson) == hash &&
-                PallaSyncCore.verifySyncRecord(source.eventJson, keys.publicKeyBase64Url),
-        ) { "C_RECORD_ID_CONFLICT" }
+        validateSourceRecord(source, wire, hash, sourceKeys, sourceAuthority)
         val saved = checkNotNull(store.protocolDao().event(source.chainId, wire.recordId)) { "C_ACCEPTANCE_UNPROVEN" }
         check(saved.objectHash == hash && PallaSyncCore.objectHash(saved.signedJson) == hash) { "C_RECORD_ID_CONFLICT" }
         if (saved.relaySeq != null) {
-            accepted(source, wire, authority, checkNotNull(saved.receiptJson), saved.relaySeq)
+            preserveAcceptedSource(source, wire, hash, saved, sourceAuthority, forceReplacement)
             return
         }
+        replayUnacceptedSource(source, wire, hash, keys, authority, sourceKeys, sourceAuthority, forceReplacement)
+    }
+
+    private fun validateSourceRecord(
+        source: OutboxEntity,
+        wire: PallaSyncWireRecord,
+        hash: String,
+        sourceKeys: PallaSyncKeySnapshot,
+        sourceAuthority: JsonObject,
+    ) {
+        check(
+            wire.chainId == source.chainId && wire.recordId == source.recordId &&
+                wire.deviceId == sourceKeys.deviceId && wire.generation == generation(sourceAuthority) &&
+                PallaSyncCore.objectHash(source.eventJson) == hash &&
+                PallaSyncCore.verifySyncRecord(source.eventJson, sourceKeys.publicKeyBase64Url),
+        ) { "C_RECORD_ID_CONFLICT" }
+    }
+
+    private suspend fun preserveAcceptedSource(
+        source: OutboxEntity,
+        wire: PallaSyncWireRecord,
+        hash: String,
+        saved: SignedEventEntity,
+        sourceAuthority: JsonObject,
+        forceReplacement: Boolean,
+    ) {
+        val sourceAnchor = sourceTransparencyPin(source.chainId, checkNotNull(PallaSyncCore.objectHash(sourceAuthority.toString())))
+        if (forceReplacement) checkNotNull(sourceAnchor) { "C_ACCEPTANCE_UNPROVEN" }
+        accepted(
+            source,
+            wire,
+            sourceAuthority,
+            checkNotNull(saved.receiptJson),
+            checkNotNull(saved.relaySeq),
+            sourceAnchor,
+        )
+        if (forceReplacement && source.status !in setOf("accepted", "reseed_rebased")) {
+            store.transaction {
+                check(store.dao.outboxEvent(source.id) == source) { "C_RECORD_ID_CONFLICT" }
+                check(store.dao.markReseedRebased(source.id, source.chainId, wire.recordId, hash) == 1) {
+                    "C_ACCEPTANCE_UNPROVEN"
+                }
+            }
+        }
+    }
+
+    private suspend fun replayUnacceptedSource(
+        source: OutboxEntity,
+        wire: PallaSyncWireRecord,
+        hash: String,
+        keys: PallaSyncKeySnapshot,
+        authority: JsonObject,
+        sourceKeys: PallaSyncKeySnapshot,
+        sourceAuthority: JsonObject,
+        forceReplacement: Boolean,
+    ) {
         // A held original signed receipt is evidence even if the materializer has not bound it yet.
         check(source.receiptJson == null && store.protocolDao().recordAcceptance(source.chainId, hash) == null) { "C_ACCEPTANCE_UNPROVEN" }
-        check(wire.epoch <= keys.epoch) { "C_EPOCH_FORK" }
-        if (wire.epoch == keys.epoch) return
-        check(authority.getValue("epochs").jsonObject.containsKey((wire.epoch + 1).toString())) { "C_ACCEPTANCE_UNPROVEN" }
-        val retained = checkNotNull(epochKeys(keys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
+        check(wire.epoch <= sourceKeys.epoch) { "C_EPOCH_FORK" }
+        if (!forceReplacement && wire.epoch == keys.epoch) return
+        check(sourceAuthority.getValue("epochs").jsonObject.containsKey((wire.epoch + 1).toString())) { "C_ACCEPTANCE_UNPROVEN" }
+        val retained = checkNotNull(epochKeys(sourceKeys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
         val inner =
-            PallaSyncEpochSession.begin(retained, authority.toString(), wire.epoch).use {
+            PallaSyncEpochSession.begin(retained, sourceAuthority.toString(), wire.epoch).use {
                 Json.decodeFromString<PallaSyncInnerRecord>(it.decryptRecord(source.eventJson))
             }
         check(inner.deviceSeq == source.deviceSeq) { "C_DEVICE_EQUIVOCATION" }
-        val id = "epoch-rebase:$hash"
+        val id = if (forceReplacement) "reseed-rebase:$hash" else "epoch-rebase:$hash"
         stage(source, inner, id)
         fault(Boundary.SOURCE_STAGED)
         val work = store.protocolDao().migrationChunks(id, MAX_OPERATIONS)
@@ -149,7 +288,13 @@ internal class PallaSyncOutboxRebase(
         store.transaction {
             check(store.dao.outboxEvent(source.id) == source) { "C_RECORD_ID_CONFLICT" }
             check(store.protocolDao().retainAbandonedEvent(source.chainId, wire.recordId, hash) == 1) { "C_ACCEPTANCE_UNPROVEN" }
-            check(store.dao.removeReceiptConfirmedOutbox(source.id, source.chainId, wire.recordId, hash) == 1) { "C_ACCEPTANCE_UNPROVEN" }
+            if (forceReplacement) {
+                check(store.dao.markReseedRebased(source.id, source.chainId, wire.recordId, hash) == 1) { "C_ACCEPTANCE_UNPROVEN" }
+            } else {
+                check(
+                    store.dao.removeReceiptConfirmedOutbox(source.id, source.chainId, wire.recordId, hash) == 1,
+                ) { "C_ACCEPTANCE_UNPROVEN" }
+            }
         }
         fault(Boundary.SOURCE_RETIRED)
     }
@@ -160,7 +305,7 @@ internal class PallaSyncOutboxRebase(
         id: String,
     ) = store.transaction {
         inner.operations.forEachIndexed { index, op ->
-            val event = PallaSyncPendingEvent(inner.collection, op.entityId, op.operation, op.body, op.context)
+            val event = op.toPendingEvent(inner.collection)
             val value = PallaSyncReplayWork(event, source.id)
             val existing = store.protocolDao().migrationChunk(id, index.toLong())
             if (existing == null) {
@@ -193,6 +338,7 @@ internal class PallaSyncOutboxRebase(
         authority: JsonObject,
         receipt: String,
         sequence: Long,
+        sourceAnchor: JsonObject?,
     ) {
         val pin = authority.getValue("pin").jsonObject
         val log = pin.getValue("log_id").jsonPrimitive.content
@@ -224,7 +370,7 @@ internal class PallaSyncOutboxRebase(
                 receipt,
                 inclusion,
                 pin.toString(),
-                checkNotNull(transparencyPin(source.chainId)).toString(),
+                checkNotNull(sourceAnchor ?: transparencyPin(source.chainId)).toString(),
             ),
         ) {
             "C_TRANSPARENCY_INVALID"
@@ -260,3 +406,13 @@ internal class PallaSyncOutboxRebase(
         const val MAX_OPERATIONS = 1024
     }
 }
+
+private fun PallaSyncOperation.toPendingEvent(schema: String): PallaSyncPendingEvent =
+    PallaSyncPendingEvent(
+        schema = schema,
+        entityId = entityId,
+        operation = operation,
+        body = body,
+        context = context,
+        createdAtMs = createdAtMs,
+    )

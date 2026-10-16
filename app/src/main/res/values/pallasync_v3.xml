@@ -14,6 +14,13 @@
     <string name="pallasync_reseed_import_confirm">Review the target relay and enter the chain administrator mnemonic. The relay policy must be current and consented for that origin. This operation only stages signed control history and returns a staging log ID. It does not commit a new generation or move encrypted records.</string>
     <string name="pallasync_reseed_import_staged">History staged for chain %1$s. Staging log: %2$s. The target chain is not writable yet.</string>
     <string name="pallasync_reseed_import_failed">History could not be staged. No chain switch was committed.</string>
+    <string name="pallasync_reseed_commit_title">Commit relay reseed</string>
+    <string name="pallasync_reseed_commit_confirm">This commits a fresh generation on %1$s, retires the old device identity, replays unresolved local outbox operations, and switches this device to that relay. Verify the target before continuing. Enter the administrator mnemonic again to authorize the commit.</string>
+    <string name="pallasync_reseed_commit_completed">Relay reseed committed. This device now uses the selected relay.</string>
+    <string name="pallasync_reseed_resume_title">Resume relay reseed</string>
+    <string name="pallasync_reseed_resume_summary">Finish the verified handoff to %1$s. The saved commit and protected keys are reused.</string>
+    <string name="pallasync_reseed_retry_title">Resume reseed commit</string>
+    <string name="pallasync_reseed_retry_summary">The source is paused while the result is unresolved. Recheck and continue the saved operation for %1$s.</string>
     <string name="pallasync_export_saved">Relay archive saved and its hash verified. Signed objects still need validation before restore.</string>
     <string name="pallasync_export_cancelled">Export cancelled.</string>
     <string name="pallasync_export_failed">Relay export failed. Local keys and data were retained.</string>
@@ -158,4 +165,6 @@
     <string name="pallasync_v3_genesis_passphrase_explanation">An optional passphrase changes your recovery identity. Preserve its exact characters and spaces separately from these words. It is required every time you use recovery authority.</string>
     <string name="pallasync_v3_root_enroll">Join using recovery authority</string>
     <string name="pallasync_v3_relay_replay_source">Select this relay as the source of the existing chain and verify its available signed history. This source does not independently prove that no unseen history was omitted. The original 24 words and exact optional passphrase are required.</string>
+    <string name="pallasync_reseed_source_conflict_title">Unimported changes remain on the source relay</string>
+    <string name="pallasync_reseed_source_conflict_summary">Source %1$s has %2$d verified signed entries that were not imported (sequence %3$d–%4$d). They were not copied to the target. Keep the source relay and review its history before manually reapplying any needed changes.</string>
 </resources>

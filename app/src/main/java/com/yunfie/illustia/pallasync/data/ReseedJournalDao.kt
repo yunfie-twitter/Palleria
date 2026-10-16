@@ -45,6 +45,7 @@ interface ReseedJournalDao {
                     immutableOnce(previous.expectedEntriesJson, value.expectedEntriesJson) &&
                     immutableOnce(previous.commitResultJson, value.commitResultJson) &&
                     immutableOnce(previous.transparencyHeadJson, value.transparencyHeadJson) &&
+                    monotoneSourceConflict(previous, value) &&
                     monotoneAnchor(previous, value) && monotoneReceipts(previous, value),
             ) { "C_ROLLBACK_DETECTED" }
             update(value)
@@ -78,6 +79,53 @@ interface ReseedJournalDao {
         val oldIndices = receiptIndices(old.verifiedReceiptIndicesJson) ?: return false
         val nextIndices = receiptIndices(next.verifiedReceiptIndicesJson) ?: return false
         return nextIndices.containsAll(oldIndices)
+    }
+
+    private fun monotoneSourceConflict(
+        old: ReseedJournalEntity,
+        next: ReseedJournalEntity,
+    ): Boolean {
+        val oldReport = old.sourceConflictReportJson ?: return true
+        val nextReport = next.sourceConflictReportJson ?: return false
+        return runCatching {
+            val previous =
+                kotlinx.serialization.json.Json
+                    .parseToJsonElement(oldReport)
+                    .jsonObject
+            val candidate =
+                kotlinx.serialization.json.Json
+                    .parseToJsonElement(nextReport)
+                    .jsonObject
+            val sameCut =
+                previous.getValue("source_origin") == candidate.getValue("source_origin") &&
+                    previous.getValue("source_log_id") == candidate.getValue("source_log_id") &&
+                    previous.getValue("source_generation") == candidate.getValue("source_generation") &&
+                    previous.getValue("source_cut_seq") == candidate.getValue("source_cut_seq") &&
+                    previous.getValue("source_cut_hash") == candidate.getValue("source_cut_hash") &&
+                    previous.getValue("source_cut_parameters_hash") == candidate.getValue("source_cut_parameters_hash") &&
+                    previous.getValue("source_cut_epoch_hash") == candidate.getValue("source_cut_epoch_hash")
+            val cutSequence = candidate.getValue("source_cut_seq").jsonPrimitive.long
+            val oldHead = previous.getValue("observed_head_seq").jsonPrimitive.long
+            val nextHead = candidate.getValue("observed_head_seq").jsonPrimitive.long
+            val advancesWithNewHash =
+                nextHead > oldHead &&
+                    previous.getValue("observed_head_hash") != candidate.getValue("observed_head_hash")
+            val sameObservedHead =
+                if (advancesWithNewHash) {
+                    true
+                } else {
+                    nextHead == oldHead &&
+                        previous.getValue("observed_head_hash") == candidate.getValue("observed_head_hash") &&
+                        previous.getValue("observed_parameters_hash") == candidate.getValue("observed_parameters_hash") &&
+                        previous.getValue("observed_epoch_hash") == candidate.getValue("observed_epoch_hash")
+                }
+            val coherentRange =
+                nextHead > cutSequence &&
+                    candidate.getValue("unimported_entry_count").jsonPrimitive.long == nextHead - cutSequence &&
+                    candidate.getValue("unimported_first_seq").jsonPrimitive.long == cutSequence + 1 &&
+                    candidate.getValue("unimported_last_seq").jsonPrimitive.long == nextHead
+            sameCut && coherentRange && nextHead >= oldHead && sameObservedHead
+        }.getOrDefault(false)
     }
 
     private fun parseAnchor(json: String): Pair<String, Long>? =

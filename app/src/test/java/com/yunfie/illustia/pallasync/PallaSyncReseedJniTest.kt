@@ -26,6 +26,104 @@ import java.util.Base64
 @Config(sdk = [28], application = android.app.Application::class)
 class PallaSyncReseedJniTest {
     @Test
+    fun `reseed keystore promotion retains source keys and anchor and resumes idempotently`() {
+        PallaSyncCore.setSecretForeground(true)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val fixture = fixture()
+        val authority = authority(fixture)
+        val chain =
+            fixture
+                .getValue("identity")
+                .jsonObject
+                .getValue("chain_id")
+                .jsonPrimitive
+                .content
+        val sourceDevice =
+            fixture
+                .getValue("genesis")
+                .jsonObject
+                .getValue("device_record")
+                .jsonObject
+                .getValue("device_id")
+                .jsonPrimitive
+                .content
+        val sourceKeys = testKeys(chain, sourceDevice, 3)
+        val sourceHash = checkNotNull(PallaSyncCore.objectHash(authority.toString()))
+        val sourceAnchor = anchor("source-log", 12, "A")
+        val targetAnchor = anchor("target-log", 0, "B")
+        val keystore = PallaSyncKeystore(preferences)
+        keystore.saveActiveChainKeys(sourceKeys) shouldBe true
+        keystore.pinInitialDeviceId(chain, sourceDevice) shouldBe true
+        keystore.pinInitialAuthority(chain, sourceHash) shouldBe true
+        keystore.pinInitialTransparency(chain, sourceAnchor) shouldBe true
+
+        val targetKeys = stagePendingReseed(keystore, fixture, authority, chain)
+        assertReseedPromotion(
+            keystore,
+            sourceKeys,
+            targetKeys,
+            chain,
+            sourceDevice,
+            sourceHash,
+            sourceAnchor,
+            targetAnchor,
+        )
+    }
+
+    private fun stagePendingReseed(
+        keystore: PallaSyncKeystore,
+        fixture: JsonObject,
+        authority: JsonObject,
+        chain: String,
+    ): PallaSyncKeySnapshot {
+        val admin =
+            fixture
+                .getValue("identity")
+                .jsonObject
+                .getValue("admin_public_key")
+                .jsonPrimitive
+                .content
+        return PallaSyncRootSession
+            .beginText(MNEMONIC, "", PallaSyncRootSession.Operation.RESEED, chain, admin)
+            .use { root ->
+                root.prepareReseed(authority.toString(), "fresh target device", NOW).use { prepared ->
+                    val keys = prepared.keySnapshot()
+                    keystore.savePendingReseed(keys, prepared.publicBundleJson(), "https://target.example") shouldBe true
+                    keys
+                }
+            }
+    }
+
+    private fun assertReseedPromotion(
+        keystore: PallaSyncKeystore,
+        sourceKeys: PallaSyncKeySnapshot,
+        targetKeys: PallaSyncKeySnapshot,
+        chain: String,
+        sourceDevice: String,
+        sourceHash: String,
+        sourceAnchor: JsonObject,
+        targetAnchor: JsonObject,
+    ) {
+        val targetHash = "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+        keystore.promotePendingReseed(chain, sourceDevice, "D".repeat(43), targetHash, targetAnchor) shouldBe false
+        keystore.getActiveChainKeys() shouldBe sourceKeys
+        keystore.authorityHash(chain) shouldBe sourceHash
+
+        keystore.promotePendingReseed(chain, sourceDevice, sourceHash, targetHash, targetAnchor) shouldBe true
+        keystore.getActiveChainKeys() shouldBe targetKeys
+        keystore.boundDeviceId(chain) shouldBe targetKeys.deviceId
+        keystore.authorityHash(chain) shouldBe targetHash
+        keystore.transparencyPin(chain) shouldBe targetAnchor
+        keystore.reseedSourceTransparencyPin(chain, sourceHash) shouldBe sourceAnchor
+        keystore.getArchivedChainKeys(chain) shouldBe sourceKeys
+        keystore.pendingReseed() shouldBe null
+        keystore.promotePendingReseed(chain, sourceDevice, sourceHash, targetHash, targetAnchor) shouldBe true
+        keystore.getActiveChainKeys() shouldBe targetKeys
+    }
+
+    @Test
     fun `root reseed session prepares a fresh generation identity through JNI`() {
         val fixture = fixture()
         val authority = authority(fixture)
@@ -335,6 +433,44 @@ class PallaSyncReseedJniTest {
         val objectValue = parsed.jsonObject
         return objectValue.getValue("recipient_kind").jsonPrimitive.content
     }
+
+    private fun testKeys(
+        chain: String,
+        device: String,
+        value: Int,
+    ): PallaSyncKeySnapshot {
+        fun encoded(byte: Int): String {
+            val encoder =
+                java.util.Base64
+                    .getUrlEncoder()
+                    .withoutPadding()
+            return encoder.encodeToString(ByteArray(32) { byte.toByte() })
+        }
+        return PallaSyncKeySnapshot(
+            chainId = chain,
+            deviceId = device,
+            encryptionKeyBase64Url = encoded(value),
+            signingKeyBase64Url = encoded(value + 1),
+            publicKeyBase64Url = encoded(value + 2),
+            kexPrivateKeyBase64Url = encoded(value + 3),
+            kexPublicKeyBase64Url = encoded(value + 4),
+            deviceMetaKeyBase64Url = encoded(value + 5),
+            collectionTagKeyBase64Url = encoded(value + 6),
+            epochSecretBase64Url = encoded(value + 7),
+            epoch = 0,
+        )
+    }
+
+    private fun anchor(
+        log: String,
+        index: Long,
+        hashPrefix: String,
+    ): JsonObject =
+        buildJsonObject {
+            put("transparency_id", log)
+            put("index", index)
+            put("hash", hashPrefix.repeat(43).take(43))
+        }
 
     private companion object {
         const val MNEMONIC =

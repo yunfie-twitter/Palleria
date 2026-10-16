@@ -51,7 +51,9 @@ interface PallaSyncDao {
         sequence: Long,
     ): Int
 
-    @Query("UPDATE pallasync_outbox SET status = 'queued' WHERE chain_id = :chainId AND device_seq = 0 AND status != 'accepted'")
+    @Query(
+        "UPDATE pallasync_outbox SET status = 'queued' WHERE chain_id = :chainId AND device_seq = 0 AND status NOT IN ('accepted','reseed_rebased')",
+    )
     suspend fun requeueControlEvents(chainId: String)
 
     @Query(
@@ -89,21 +91,33 @@ interface PallaSyncDao {
     @Query("SELECT * FROM pallasync_outbox WHERE id=:id")
     suspend fun outboxEvent(id: Long): OutboxEntity?
 
-    @Query("SELECT COUNT(*) FROM pallasync_outbox WHERE chain_id=:chain AND status!='accepted'")
+    @Query("SELECT COUNT(*) FROM pallasync_outbox WHERE chain_id=:chain AND status NOT IN ('accepted','reseed_rebased')")
     suspend fun pendingOutboxCount(chain: String): Long
 
-    @Query("SELECT * FROM pallasync_outbox WHERE chain_id=:chain AND id>:after AND status!='accepted' ORDER BY id LIMIT :limit")
+    @Query(
+        "SELECT * FROM pallasync_outbox WHERE chain_id=:chain AND id>:after AND status NOT IN ('accepted','reseed_rebased') ORDER BY id LIMIT :limit",
+    )
     suspend fun pendingOutboxPage(
         chain: String,
         after: Long,
         limit: Int,
     ): List<OutboxEntity>
 
-    @Query("SELECT MAX(id) FROM pallasync_outbox WHERE chain_id=:chain AND status!='accepted'")
+    @Query("SELECT MAX(id) FROM pallasync_outbox WHERE chain_id=:chain AND status NOT IN ('accepted','reseed_rebased')")
     suspend fun lastPendingOutboxId(chain: String): Long?
 
     @Query("DELETE FROM pallasync_outbox WHERE id=:id AND chain_id=:chainId AND record_id=:recordId AND object_hash=:objectHash")
     suspend fun removeReceiptConfirmedOutbox(
+        id: Long,
+        chainId: String,
+        recordId: String,
+        objectHash: String,
+    ): Int
+
+    @Query(
+        "UPDATE pallasync_outbox SET status='reseed_rebased' WHERE id=:id AND chain_id=:chainId AND record_id=:recordId AND object_hash=:objectHash AND status NOT IN ('accepted','reseed_rebased')",
+    )
+    suspend fun markReseedRebased(
         id: Long,
         chainId: String,
         recordId: String,

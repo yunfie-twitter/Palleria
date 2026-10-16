@@ -38,6 +38,7 @@ internal class PallaSyncLegacyV21Source(
         @SerialName("legacy_created_at_ms") val legacyCreatedAtMs: Long,
         @SerialName("normalization_changed") val normalizationChanged: Boolean,
         @SerialName("normalization_collision") val normalizationCollision: Boolean,
+        @SerialName("legacy_snapshot") val legacySnapshot: Boolean = false,
     )
 
     internal data class Parameters(
@@ -61,6 +62,8 @@ internal class PallaSyncLegacyV21Source(
         val json: String,
         val recordId: String,
         val deviceId: String,
+        val collectionName: String? = null,
+        val lamport: Long? = null,
     )
 
     internal data class RecordPage(
@@ -471,7 +474,17 @@ internal class PallaSyncLegacyV21Source(
                     "C_SCHEMA_VIOLATION"
                 }
                 val encoded = row.toString()
-                result += SignedRecord(sequence, encoded, recordId, deviceId)
+                result +=
+                    SignedRecord(
+                        sequence,
+                        encoded,
+                        recordId,
+                        deviceId,
+                        row.string("collection_name"),
+                        row["lamport"]?.jsonPrimitive?.longOrNull?.also {
+                            require(it in 0..PallaSyncConflictResolver.MAX_COUNTER) { "C_SCHEMA_VIOLATION" }
+                        } ?: error("C_SCHEMA_VIOLATION"),
+                    )
                 cursor = sequence
             }
             val more =

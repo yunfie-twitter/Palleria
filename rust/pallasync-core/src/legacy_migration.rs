@@ -49,6 +49,7 @@ pub struct LegacyEntityCandidate {
     pub legacy_created_at_ms: i64,
     pub normalization_changed: bool,
     pub normalization_collision: bool,
+    pub legacy_snapshot: bool,
 }
 
 #[derive(Zeroize, ZeroizeOnDrop)]
@@ -338,6 +339,7 @@ fn v3_candidate(
     body: Value,
     normalization_changed: bool,
     normalization_collision: bool,
+    legacy_snapshot: bool,
 ) -> Result<LegacyEntityCandidate, String> {
     let context = if collection == "palleria.favorite_tag/3" {
         json!({"order_key":"1"})
@@ -363,6 +365,7 @@ fn v3_candidate(
         legacy_created_at_ms: 0,
         normalization_changed,
         normalization_collision,
+        legacy_snapshot,
     })
 }
 
@@ -451,6 +454,7 @@ pub fn convert_v21_snapshot_payload(
                     json!({member:normalized}),
                     changed,
                     false,
+                    true,
                 )?;
                 append_deduplicated(&mut output, &mut seen, candidate);
             }
@@ -482,6 +486,7 @@ pub fn convert_v21_snapshot_payload(
                         json!({"kind":kind,"value":value}),
                         changed,
                         false,
+                        true,
                     )?;
                     append_deduplicated(&mut output, &mut seen, candidate);
                 }
@@ -500,6 +505,7 @@ pub fn convert_v21_snapshot_payload(
                     json!({"id":id}),
                     false,
                     false,
+                    true,
                 )?;
                 append_deduplicated(&mut output, &mut seen, candidate);
             }
@@ -527,6 +533,7 @@ pub fn convert_v21_snapshot_payload(
                     normalized_body,
                     changed,
                     collision,
+                    true,
                 )?;
                 append_deduplicated(&mut viewed, &mut seen, candidate);
             }
@@ -791,5 +798,6 @@ pub fn convert_v21_payload(
         legacy_created_at_ms: payload.created_at_ms,
         normalization_changed,
         normalization_collision,
+        legacy_snapshot: false,
     })
 }

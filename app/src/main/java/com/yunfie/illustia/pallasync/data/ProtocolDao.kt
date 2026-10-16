@@ -431,6 +431,22 @@ interface ProtocolDao {
         hash: String,
     ): AuthorityHistoryEntity?
 
+    @Query(
+        "SELECT * FROM ps_authority WHERE chain_id=:chain AND kind='checkpoint' AND generation=:generation AND validation_state='archived_checkpoint' ORDER BY object_hash LIMIT 1",
+    )
+    suspend fun archivedAuthority(
+        chain: String,
+        generation: Long,
+    ): AuthorityHistoryEntity?
+
+    @Query(
+        "SELECT * FROM ps_authority WHERE chain_id=:chain AND kind='checkpoint' AND generation=:generation AND validation_state='reseed_candidate' ORDER BY object_hash LIMIT 1",
+    )
+    suspend fun reseedCandidateAuthority(
+        chain: String,
+        generation: Long,
+    ): AuthorityHistoryEntity?
+
     @Transaction
     suspend fun retainAuthority(authority: AuthorityHistoryEntity) {
         val old = authorityObject(authority.chainId, authority.kind, authority.objectHash)
@@ -451,6 +467,34 @@ interface ProtocolDao {
 
     @Query("UPDATE ps_authority SET validation_state='archived_checkpoint' WHERE chain_id=:chainId AND kind='checkpoint'")
     suspend fun archiveAuthority(chainId: String)
+
+    @Query(
+        "UPDATE ps_authority SET validation_state='archived_checkpoint' WHERE chain_id=:chainId AND kind='checkpoint' " +
+            "AND validation_state='current_checkpoint'",
+    )
+    suspend fun archiveCurrentAuthority(chainId: String): Int
+
+    @Query(
+        "UPDATE ps_authority SET validation_state='current_checkpoint' WHERE chain_id=:chain AND kind='checkpoint' " +
+            "AND object_hash=:hash AND validation_state='reseed_candidate'",
+    )
+    suspend fun promoteReseedCandidate(
+        chain: String,
+        hash: String,
+    ): Int
+
+    @Transaction
+    suspend fun installReseedAuthority(
+        chain: String,
+        hash: String,
+        authorityJson: String,
+    ) {
+        if (currentAuthority(chain) == authorityJson) return
+        val candidate = checkNotNull(authorityObject(chain, "checkpoint", hash)) { "C_MISSING_DEPENDENCY" }
+        check(candidate.signedJson == authorityJson && candidate.validationState == "reseed_candidate") { "C_ROLLBACK_DETECTED" }
+        check(archiveCurrentAuthority(chain) == 1 && promoteReseedCandidate(chain, hash) == 1) { "C_LOCAL_STORAGE_FULL" }
+        check(currentAuthority(chain) == authorityJson) { "C_LOCAL_STORAGE_FULL" }
+    }
 
     @Transaction
     suspend fun commitAuthority(authority: AuthorityHistoryEntity) {

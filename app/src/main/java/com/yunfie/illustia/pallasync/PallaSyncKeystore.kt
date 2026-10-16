@@ -1,6 +1,7 @@
 package com.yunfie.illustia.pallasync
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -35,18 +36,18 @@ data class PallaSyncKeySnapshot(
     override fun toString(): String = "PallaSync protected device keys"
 }
 
-class PallaSyncKeystore(
-    context: Context,
+class PallaSyncKeystore internal constructor(
+    private val sharedPrefs: SharedPreferences,
 ) {
-    private val masterKey = PallaSyncPlatformKeys.master(context)
-
-    private val sharedPrefs =
-        EncryptedSharedPreferences.create(
-            context,
-            "pallasync_keystore",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+    constructor(context: Context) :
+        this(
+            EncryptedSharedPreferences.create(
+                context,
+                "pallasync_keystore",
+                PallaSyncPlatformKeys.master(context),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            ),
         )
 
     fun saveDevicePrivateKey(seedBase64Url: String) {
@@ -143,6 +144,14 @@ class PallaSyncKeystore(
     internal fun transparencyPin(chainId: String): JsonObject? =
         sharedPrefs
             .getString("transparency.$chainId", null)
+            ?.let { Json.decodeFromString<JsonObject>(it) }
+
+    internal fun reseedSourceTransparencyPin(
+        chain: String,
+        sourceAuthorityHash: String,
+    ): JsonObject? =
+        sharedPrefs
+            .getString("reseed.source.transparency.$chain.$sourceAuthorityHash", null)
             ?.let { Json.decodeFromString<JsonObject>(it) }
 
     internal fun pinInitialTransparency(
@@ -453,6 +462,96 @@ class PallaSyncKeystore(
             .remove("reseed_pending_bundle")
             .remove("reseed_pending_origin")
             .commit() && pendingReseed() == null
+
+    /** Promote a fully acknowledged §17.5 identity while retaining the prior identity for recovery. */
+    internal fun promotePendingReseed(
+        chain: String,
+        sourceDeviceId: String,
+        sourceAuthorityHash: String,
+        targetAuthorityHash: String,
+        targetAnchor: JsonObject,
+    ): Boolean {
+        val pending = pendingReseed()
+        val sourceAnchor = transparencyPin(chain)
+        return if (pending == null) {
+            isReseedAlreadyPromoted(chain, targetAuthorityHash, targetAnchor)
+        } else if (sourceAnchor != null && isPendingReseedPromotionValid(pending, chain, sourceDeviceId, sourceAuthorityHash)) {
+            writeReseedPromotion(pending, chain, sourceAuthorityHash, targetAuthorityHash, targetAnchor, sourceAnchor)
+        } else {
+            false
+        }
+    }
+
+    private fun isReseedAlreadyPromoted(
+        chain: String,
+        targetAuthorityHash: String,
+        targetAnchor: JsonObject,
+    ): Boolean {
+        val active = getActiveChainKeys()
+        val deviceId = active?.deviceId
+        return active != null && deviceId != null && active.chainId == chain && deviceId == boundDeviceId(chain) &&
+            authorityHash(chain) == targetAuthorityHash && transparencyPin(chain) == targetAnchor
+    }
+
+    private fun isPendingReseedPromotionValid(
+        pending: PallaSyncPendingReseed,
+        chain: String,
+        sourceDeviceId: String,
+        sourceAuthorityHash: String,
+    ): Boolean =
+        pending.keys.chainId == chain && boundDeviceId(chain) == sourceDeviceId &&
+            authorityHash(chain) == sourceAuthorityHash && archiveActiveChainKeys(pending.keys)
+
+    private fun writeReseedPromotion(
+        pending: PallaSyncPendingReseed,
+        chain: String,
+        sourceAuthorityHash: String,
+        targetAuthorityHash: String,
+        targetAnchor: JsonObject,
+        sourceAnchor: JsonObject,
+    ): Boolean {
+        val targetDeviceId = pending.keys.deviceId ?: return false
+        val editor =
+            sharedPrefs
+                .edit()
+                .putString("active_chain_id", chain)
+                .putString("device_id", targetDeviceId)
+                .putString("identity.$chain", targetDeviceId)
+                .putString("authority.$chain.hash", targetAuthorityHash)
+                .putString("transparency.$chain", targetAnchor.toString())
+                .putString("epoch_key", pending.keys.encryptionKeyBase64Url)
+                .putString("epoch_secret", pending.keys.epochSecretBase64Url)
+                .putString("collection_tag_key", pending.keys.collectionTagKeyBase64Url)
+                .putLong("key_epoch_number", pending.keys.epoch)
+                .putString("device_private_seed", pending.keys.signingKeyBase64Url)
+                .putString("device_sign_public", pending.keys.publicKeyBase64Url)
+                .putString("device_hpke_private", pending.keys.kexPrivateKeyBase64Url)
+                .putString("device_hpke_public", pending.keys.kexPublicKeyBase64Url)
+                .putString("device_meta_key", pending.keys.deviceMetaKeyBase64Url)
+        editor.putString("reseed.source.transparency.$chain.$sourceAuthorityHash", sourceAnchor.toString())
+        clearPendingReseedFrom(editor)
+        return editor.commit() &&
+            getActiveChainKeys() == pending.keys && boundDeviceId(chain) == targetDeviceId &&
+            authorityHash(chain) == targetAuthorityHash && transparencyPin(chain) == targetAnchor && pendingReseed() == null
+    }
+
+    private fun clearPendingReseedFrom(editor: android.content.SharedPreferences.Editor) {
+        listOf(
+            "reseed_pending_chain_id",
+            "reseed_pending_device_id",
+            "reseed_pending_epoch_key",
+            "reseed_pending_signing_key",
+            "reseed_pending_public_key",
+            "reseed_pending_kex_private",
+            "reseed_pending_kex_public",
+            "reseed_pending_meta_key",
+            "reseed_pending_epoch_secret",
+            "reseed_pending_tag_key",
+            "reseed_pending_epoch_number",
+            "reseed_pending_bundle",
+            "reseed_pending_origin",
+        ).forEach(editor::remove)
+    }
 
     fun getPendingChainKeys(): PallaSyncKeySnapshot? {
         val chainId =

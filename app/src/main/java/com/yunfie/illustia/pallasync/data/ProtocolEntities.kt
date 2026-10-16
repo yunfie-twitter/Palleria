@@ -333,6 +333,7 @@ data class ReseedJournalEntity(
     @ColumnInfo(name = "commit_result_json") val commitResultJson: String? = null,
     @ColumnInfo(name = "transparency_head_json") val transparencyHeadJson: String? = null,
     @ColumnInfo(name = "transparency_anchor_json") val transparencyAnchorJson: String? = null,
+    @ColumnInfo(name = "source_conflict_report_json") val sourceConflictReportJson: String? = null,
     @ColumnInfo(name = "verified_receipt_indices_json") val verifiedReceiptIndicesJson: String = "[]",
     val phase: Int = 0,
     @ColumnInfo(name = "updated_at_ms") val updatedAtMs: Long,
