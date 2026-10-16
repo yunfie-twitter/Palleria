@@ -211,4 +211,38 @@ class PallaSyncExportArchiveTest {
         }.message shouldBe "C_SIGNATURE_INVALID"
         archive.close()
     }
+
+    @Test
+    fun refusesArchiveWhenProtectedPinAndTrustedRelayKeyDisagree() {
+        val publicKey = "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ"
+        val wrongPublicKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        val pin =
+            """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"$wrongPublicKey","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+        val expected =
+            PallaSyncExportArchive.ExpectedSource(
+                chainId = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+                generation = 0,
+                logId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                relayPublicKey = publicKey,
+                relayKeyId = "oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck",
+                relayPinJson = pin,
+            )
+        val actualHeader =
+            header
+                .replace(
+                    "\"relay_key_id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+                    "\"relay_key_id\":\"oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck\"",
+                ).replace(
+                    "\"relay_public_key\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+                    "\"relay_public_key\":\"$publicKey\"",
+                )
+        val archive = PallaSyncExportArchive.create(ByteArrayOutputStream(), expected)
+        shouldThrow<IllegalStateException> {
+            archive.acceptChunk(
+                "$actualHeader\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n".toByteArray(),
+                null,
+            )
+        }.message shouldBe "C_RELAY_KEY_MISMATCH"
+        archive.close()
+    }
 }

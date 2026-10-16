@@ -337,6 +337,23 @@ internal class PallaSyncExportArchive private constructor(
                     header["relay_key_id"]?.jsonPrimitive?.content == expected.relayKeyId &&
                     header["include_recovery"]?.jsonPrimitive?.booleanOrNull == expected.includeRecovery,
             ) { "C_ROLLBACK_DETECTED" }
+            expected.relayPinJson?.let { pinJson ->
+                val canonicalPin = checkNotNull(PallaSyncCore.canonicalJson(pinJson)) { "C_RELAY_KEY_MISMATCH" }
+                val pin = canonicalObject(canonicalPin)
+                val expectedKeyId =
+                    Base64.getUrlEncoder().withoutPadding().encodeToString(
+                        MessageDigest.getInstance("SHA-256").digest(
+                            Base64.getUrlDecoder().decode(expected.relayPublicKey),
+                        ),
+                    )
+                check(
+                    pin.keys == setOf("origin", "chain_id", "public_key", "log_id") &&
+                        pin["chain_id"]?.jsonPrimitive?.content == expected.chainId &&
+                        pin["log_id"]?.jsonPrimitive?.content == expected.logId &&
+                        pin["public_key"]?.jsonPrimitive?.content == expected.relayPublicKey &&
+                        expectedKeyId == expected.relayKeyId,
+                ) { "C_RELAY_KEY_MISMATCH" }
+            }
         }
 
         private fun uuid4(value: String): Boolean =
