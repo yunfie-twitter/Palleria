@@ -617,6 +617,70 @@ class PallaSyncLocalIntentsTest {
             }
         }
 
+    @Test
+    fun `v20 search snapshots merge newest first and author the final order oldest to newest`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:v20-search-merge:$chain"
+                val exportHash = encode(ByteArray(32) { 6 })
+                val recordIds =
+                    listOf(
+                        "01890f3e-7c00-7000-8000-000000000007",
+                        "01890f3e-7c00-7000-8000-000000000008",
+                    )
+                val sourceJson = listOf("{\"snapshot\":1}", "{\"snapshot\":2}")
+                val hashes = sourceJson.map { checkNotNull(PallaSyncCore.objectHash(it)) }
+                intents.beginLegacyMigration(migration, "source-chain", "2.0", 2, exportHash, chain, freezeConfirmed = true)
+                recordIds.indices.forEach { index ->
+                    intents.archiveLegacySourceRecord(migration, index + 1L, recordIds[index], hashes[index], sourceJson[index])
+                }
+
+                // Each incoming /1 search list is most-recent-first. Reverse each list for
+                // increasing v3 last_access_seq, then merge verified snapshots by source order.
+                val mappings =
+                    listOf(
+                        Triple(1, 0, "beta"),
+                        Triple(1, 1, "alpha"),
+                        Triple(2, 0, "alpha"),
+                        Triple(2, 1, "gamma"),
+                    ).map { (source, candidateIndex, query) ->
+                        PallaSyncLocalIntents.LegacyEventMapping(
+                            sourceSequence = source.toLong(),
+                            sourceRecordId = recordIds[source - 1],
+                            candidateIndex = candidateIndex,
+                            sourceObjectHash = hashes[source - 1],
+                            event = event(query),
+                            legacyEventSequenceOrdered = true,
+                        )
+                    }
+                intents.stageLegacyBatch(
+                    migration,
+                    expectedAfterSequence = 0,
+                    throughSequence = 2,
+                    mappings = mappings,
+                    decisions =
+                        recordIds.indices.map { index ->
+                            PallaSyncLocalIntents.LegacySourceDecision(index + 1L, recordIds[index], hashes[index], "converted")
+                        },
+                    report = PallaSyncLocalIntents.LegacyBatchReport(2, 0, 0, 0, complete = false),
+                )
+                intents.completeLegacySourceScan(migration, 2, 2, exportHash)
+                intents.finalizeLegacyMigrationChoices(migration)
+
+                val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
+                candidates.filter { it.excluded }.map { it.event.entityId } shouldBe listOf("alpha")
+                candidates.filterNot { it.excluded }.map { it.event.entityId } shouldBe listOf("beta", "alpha", "gamma")
+                candidates.single { it.event.entityId == "alpha" && !it.excluded }.sourceSequence shouldBe 2L
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 3
+            } finally {
+                db.close()
+            }
+        }
+
     private fun database() =
         Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), PallaSyncDatabase::class.java).build()
 

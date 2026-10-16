@@ -12,7 +12,7 @@ internal data class PallaSyncReplayWork(
     val targetGeneration: Long? = null,
     val localPrepared: Boolean = false,
     val blockedCode: String? = null,
-    /** Marks a v2.1 /2 event whose legacy state is replayed in verified relay-sequence order. */
+    /** Marks state whose legacy last-writer winner and initialization order follow verified source sequence. */
     val legacyEventSequenceOrdered: Boolean = false,
     /** v2.0 favorite snapshots merge by distinct membership; first occurrence fixes list order. */
     val legacyFavoriteSnapshotUnique: Boolean = false,

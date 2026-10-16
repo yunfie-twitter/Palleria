@@ -2235,6 +2235,10 @@ internal class PalleriaSyncCoordinator(
                                         candidate.body,
                                     ),
                                 normalizationCollision = candidate.normalizationCollision,
+                                legacyEventSequenceOrdered =
+                                    candidate.legacySnapshot &&
+                                        candidate.collection in
+                                        setOf("palleria.search_history/3", "palleria.view_history/3"),
                                 legacyFavoriteSnapshotUnique =
                                     candidate.legacySnapshot && candidate.collection == "palleria.favorite_tag/3",
                             )
