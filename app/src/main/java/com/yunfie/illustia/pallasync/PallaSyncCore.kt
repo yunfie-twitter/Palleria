@@ -592,6 +592,19 @@ object PallaSyncCore {
         pinJson: String,
     ): Boolean
 
+    /** Initialize and advance the streaming §17.10 transparency export proof from T0. */
+    external fun initialExportTransparencyHash(
+        transparencyId: String,
+        pinJson: String,
+    ): String
+
+    external fun advanceExportTransparency(
+        lineJson: String,
+        pinJson: String,
+        previousIndex: Long,
+        previousHash: String,
+    ): String
+
     external fun validateRecordsPage(
         body: ByteArray,
         pinJson: String,

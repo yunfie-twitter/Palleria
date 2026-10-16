@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /** Real JNI: Kotlin receives public evidence only after Rust verifies the complete C.9 receipt. */
@@ -73,6 +74,27 @@ class PallaSyncAttestationJniTest :
                     pin,
                 )
             }.message shouldBe "C_SCHEMA_VIOLATION"
+        }
+        "export transparency verifier advances a signed contiguous T0 prefix" {
+            val pin =
+                """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+            val entry =
+                PallaSyncAttestationJniTest::class.java
+                    .getResourceAsStream("/pallasync/attestations/transparency.json")!!
+                    .bufferedReader()
+                    .use { it.readText() }
+                    .trim()
+            val line = checkNotNull(PallaSyncCore.canonicalJson("""{"entry":$entry,"kind":"transparency_entry"}"""))
+            val initial = PallaSyncCore.initialExportTransparencyHash("dddddddd-dddd-4ddd-8ddd-dddddddddddd", pin)
+            Json
+                .parseToJsonElement(entry)
+                .jsonObject
+                .getValue("previous_transparency_hash")
+                .jsonPrimitive.content shouldBe initial
+            PallaSyncCore.advanceExportTransparency(line, pin, 0, "") shouldBe "RQ_hKTkRnkvv4C1-0loGPI52MjYF9TstitAW_hbYkN4"
+            shouldThrow<IllegalStateException> {
+                PallaSyncCore.advanceExportTransparency(line, pin, 1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            }.message shouldBe "C_TRANSPARENCY_INVALID"
         }
         "snapshot readback verifier is exposed through JNI" {
             shouldThrow<IllegalStateException> {

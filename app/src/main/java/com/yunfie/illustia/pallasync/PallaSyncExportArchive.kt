@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
 import java.io.Closeable
 import java.io.OutputStream
@@ -40,6 +41,9 @@ internal class PallaSyncExportArchive private constructor(
     private var failed = false
     private var expectedCursor: String? = null
     private var hasMore = true
+    private var transparencyIndex = 0L
+    private var transparencyHash: String? = null
+    private var transparencyHeadVerified = false
 
     @Suppress("TooGenericExceptionCaught") // Every failure after a partial write must poison the archive.
     fun acceptChunk(
@@ -91,6 +95,13 @@ internal class PallaSyncExportArchive private constructor(
         val previous = headerLine
         if (previous == null) {
             headerLine = line
+            expectedSource?.relayPinJson?.let { pin ->
+                transparencyHash =
+                    PallaSyncCore.initialExportTransparencyHash(
+                        header.getValue("transparency_id").jsonPrimitive.content,
+                        pin,
+                    )
+            }
             writeArchiveLine(line)
         } else {
             check(previous == line) { "C_ROLLBACK_DETECTED" }
@@ -119,6 +130,7 @@ internal class PallaSyncExportArchive private constructor(
     private fun writeItems(lines: List<String>) {
         lines.subList(1, lines.lastIndex).forEach { line ->
             val value = canonicalObject(line)
+            check(expectedSource?.relayPinJson == null || !transparencyHeadVerified) { "C_TRANSPARENCY_INVALID" }
             validateExportLine(value)
             validateRelayAttestation(value, line)
             writeArchiveLine(line)
@@ -134,6 +146,19 @@ internal class PallaSyncExportArchive private constructor(
         if (kind in RELAY_SIGNED_EXPORT_KINDS) {
             check(PallaSyncCore.validateExportAttestation(line, pin)) { "C_SIGNATURE_INVALID" }
         }
+        if (kind == "transparency_entry") {
+            val header = checkNotNull(headerLine).let(::canonicalObject)
+            val entry = value.getValue("entry").jsonObject
+            check(entry["transparency_id"] == header["transparency_id"]) { "C_TRANSPARENCY_INVALID" }
+            transparencyHash =
+                PallaSyncCore.advanceExportTransparency(
+                    line,
+                    pin,
+                    transparencyIndex,
+                    transparencyHash.orEmpty(),
+                )
+            transparencyIndex = Math.addExact(transparencyIndex, 1L)
+        }
         if (kind == "transparency_head") {
             val head = value.getValue("head").jsonObject
             val header = checkNotNull(headerLine).let(::canonicalObject)
@@ -144,11 +169,19 @@ internal class PallaSyncExportArchive private constructor(
                     head["head_seq"] == header["head_seq"] &&
                     head["head_hash"] == header["head_hash"],
             ) { "C_TRANSPARENCY_INVALID" }
+            check(
+                transparencyIndex == header.getValue("transparency_head_index").jsonPrimitive.long &&
+                    transparencyHash == header.getValue("transparency_head_hash").jsonPrimitive.content,
+            ) { "C_TRANSPARENCY_INVALID" }
+            transparencyHeadVerified = true
         }
     }
 
     fun finish() {
         check(!finished && !failed && headerLine != null && !hasMore) { "C_SCHEMA_VIOLATION" }
+        if (expectedSource?.relayPinJson != null) {
+            check(transparencyHeadVerified) { "C_MISSING_DEPENDENCY" }
+        }
         try {
             val footer =
                 """{"archive_sha256":"${Base64.getUrlEncoder().withoutPadding().encodeToString(

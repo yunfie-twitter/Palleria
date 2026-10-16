@@ -1188,6 +1188,74 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_initialExportTransparencyHash<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    transparency_id: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let transparency_id =
+            read_string(&mut env, &transparency_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(public_value(&mut env, &pin)?)
+                .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::transparency_zero(&pin.chain_id, &transparency_id, &pin.key_id()?)
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value)
+            .map(|value| value.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_advanceExportTransparency<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    line: JString<'local>,
+    pin: JString<'local>,
+    previous_index: jlong,
+    previous_hash: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let line = public_value(&mut env, &line)?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(public_value(&mut env, &pin)?)
+                .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let previous_index =
+            u64::try_from(previous_index).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let previous_hash =
+            read_string(&mut env, &previous_hash).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::attestations::advance_export_transparency(
+            &line,
+            &pin,
+            previous_index,
+            (!previous_hash.is_empty()).then_some(previous_hash.as_str()),
+        )
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value)
+            .map(|value| value.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_observeTransparencyHead<
     'local,
 >(

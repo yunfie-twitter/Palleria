@@ -1047,6 +1047,40 @@ pub fn validate_export_attestation(line: &Value, pin: &RelayPin) -> Result {
         _ => Ok(()),
     }
 }
+
+/// Verify one sequential export transparency entry from the pinned relay's T0 anchor.
+pub fn advance_export_transparency(
+    line: &Value,
+    pin: &RelayPin,
+    previous_index: u64,
+    previous_hash: Option<&str>,
+) -> Result<String> {
+    require(
+        s(line, "kind") == "transparency_entry",
+        "C_SCHEMA_VIOLATION",
+    )?;
+    let entry = &line["entry"];
+    validate_transparency(entry, pin)?;
+    let index = n(entry, "entry_index");
+    require(
+        index == previous_index.saturating_add(1),
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    let expected_previous = if previous_index == 0 {
+        require(previous_hash.is_none(), "C_TRANSPARENCY_INVALID")?;
+        transparency_zero(&pin.chain_id, s(entry, "transparency_id"), &pin.key_id()?)?
+    } else {
+        previous_hash
+            .filter(|hash| decode(hash, Some(32)).is_ok())
+            .ok_or(ClientError("C_TRANSPARENCY_INVALID"))?
+            .to_owned()
+    };
+    require(
+        s(entry, "previous_transparency_hash") == expected_previous,
+        "C_TRANSPARENCY_INVALID",
+    )?;
+    transparency_link(&expected_previous, entry, pin)
+}
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TransparencyAnchor {
