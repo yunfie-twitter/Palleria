@@ -165,8 +165,8 @@ internal fun PallaSyncRecoveryCollectDialog(
             }
         }
     }
-    LaunchedEffect(owner, interactionRevision, busy, started, stage) {
-        if (started && !busy && stage != PallaSyncRecoveryCollectorOwner.Stage.CLOSED) {
+    LaunchedEffect(owner, interactionRevision, busy, started, stage, confirmSas, confirmOperation) {
+        if (started && !busy && !confirmSas && !confirmOperation && stage != PallaSyncRecoveryCollectorOwner.Stage.CLOSED) {
             delay(PALLASYNC_RECOVERY_SESSION_IDLE_TIMEOUT_MS)
             cancellation.cancel()
             owner.close()

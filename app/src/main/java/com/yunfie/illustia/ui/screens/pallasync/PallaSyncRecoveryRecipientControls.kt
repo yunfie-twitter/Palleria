@@ -83,8 +83,10 @@ internal fun PallaSyncRecoveryRecipientControls(
             }
         }
     }
-    LaunchedEffect(recipient, interactionRevision, busy, stage) {
-        if (!busy && stage != PallaSyncRecoveryRecipient.Stage.PERSISTED && stage != PallaSyncRecoveryRecipient.Stage.CLOSED) {
+    LaunchedEffect(recipient, interactionRevision, busy, stage, confirming, credentialInput) {
+        if (!busy && !confirming && !credentialInput && stage != PallaSyncRecoveryRecipient.Stage.PERSISTED &&
+            stage != PallaSyncRecoveryRecipient.Stage.CLOSED
+        ) {
             delay(PALLASYNC_RECOVERY_SESSION_IDLE_TIMEOUT_MS)
             owner.close()
             pending = null

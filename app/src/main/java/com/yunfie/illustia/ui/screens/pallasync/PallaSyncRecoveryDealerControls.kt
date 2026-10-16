@@ -130,8 +130,10 @@ internal fun PallaSyncRecoveryDealerControls(
             runCatching { flow.close() }
         }
     }
-    LaunchedEffect(flow, interactionRevision, busy, stage) {
-        if (!busy && stage !in setOf(PallaSyncRecoveryDealerWorkflow.Stage.ACTIVE, PallaSyncRecoveryDealerWorkflow.Stage.CLOSED)) {
+    LaunchedEffect(flow, interactionRevision, busy, stage, confirmSas) {
+        if (!busy && !confirmSas &&
+            stage !in setOf(PallaSyncRecoveryDealerWorkflow.Stage.ACTIVE, PallaSyncRecoveryDealerWorkflow.Stage.CLOSED)
+        ) {
             delay(PALLASYNC_RECOVERY_SESSION_IDLE_TIMEOUT_MS)
             runCatching { flow.close() }
             pending = null
