@@ -53,6 +53,11 @@ class PalleriaSyncManager(
 
     internal suspend fun publishSnapshot(): Boolean = coordinator.publishSnapshot()
 
+    internal suspend fun prunePublishedLog(
+        mnemonic: String,
+        passphrase: String,
+    ): Boolean = coordinator.prunePublishedLog(mnemonic, passphrase)
+
     internal suspend fun exportRelayArchive(output: java.io.OutputStream) = coordinator.exportRelayArchive(output)
 
     internal suspend fun repairRetainedRelayHistory(

@@ -160,7 +160,9 @@ internal class PalleriaSyncCoordinator(
     private val crypto by lazy { PallaSyncCryptoService(policy) }
     private val keystore by lazy { PallaSyncKeystore(appContext) }
     private val recoveryAudits by lazy { PallaSyncRecoverySetStore(appContext).auditQueue }
-    private val consistencyProbe by lazy { PallaSyncConsistencyProbe(db, remote, policy, keystore, ::makeCapabilityToken) }
+    private val consistencyProbe by lazy {
+        PallaSyncConsistencyProbe(db, remote, policy, keystore, ::makeCapabilityToken, ::resolvePruneCompaction)
+    }
     private val projection = PallaSyncProjection(appContext)
     private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
     private val localIntents by lazy { PallaSyncLocalIntents(db, localAuthor, ::orderLocalEvents) }
@@ -335,6 +337,123 @@ internal class PalleriaSyncCoordinator(
                     false
                 }
             }
+        }
+
+    /** Explicit §10.12/§16.7 pruning, bound to a locally verified complete publication. */
+    suspend fun prunePublishedLog(
+        mnemonic: String,
+        passphrase: String,
+    ): Boolean =
+        withEpochRoot(mnemonic, passphrase, null, PallaSyncRootSession.Operation.PRUNE) { root, base ->
+            val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            check(state.writeState == "active" && state.initialPullCompleted) { "C_WRITE_PAUSED" }
+            val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+            val authority = Json.parseToJsonElement(authorityText).jsonObject
+            val origin = PallaSyncUrls.extractOrigin(base)
+            policy.requireCurrent(origin)
+            requireSnapshotResult(consistencyProbe.run(base, state.chainId))
+            val stable = checkNotNull(db.pallaSyncDao().getChainState(state.chainId)) { "C_MISSING_DEPENDENCY" }
+            check(
+                stable.logId == state.logId && stable.generation == state.generation &&
+                    stable.verifiedSeq == state.verifiedSeq && stable.verifiedHash == state.verifiedHash,
+            ) { "C_MISSING_DEPENDENCY" }
+            val compaction =
+                checkNotNull(
+                    PallaSyncRetentionHandoff(db).latestVerifiedPublishedCompaction(state.chainId, authority),
+                ) { "C_MISSING_DEPENDENCY" }
+            val coveredThrough = compaction.getValue("covered_through_seq").jsonPrimitive.long
+            check(coveredThrough <= stable.verifiedSeq) { "C_MISSING_DEPENDENCY" }
+            val compactionId = compaction.getValue("compaction_id").jsonPrimitive.content
+            val logId = checkNotNull(stable.logId)
+            val relayKeyId =
+                Base64.getUrlEncoder().withoutPadding().encodeToString(
+                    MessageDigest.getInstance("SHA-256").digest(Base64.getUrlDecoder().decode(policy.trustedRelayKey(origin))),
+                )
+            val target =
+                buildJsonObject {
+                    put("compaction_id", compactionId)
+                    put("through_seq", coveredThrough)
+                }
+            val saved =
+                db
+                    .protocolDao()
+                    .evidenceAt(origin, relayKeyId, state.chainId, logId, "prune_request", coveredThrough)
+                    .firstOrNull { value ->
+                        runCatching {
+                            Json.parseToJsonElement(value).jsonObject.getValue("target") == target
+                        }.getOrDefault(false)
+                    }
+            val adminOperation =
+                if (saved != null) {
+                    Json
+                        .parseToJsonElement(saved)
+                        .jsonObject
+                        .getValue("admin_operation")
+                        .jsonObject
+                } else {
+                    val operation =
+                        Json
+                            .parseToJsonElement(
+                                root.createPruneAdminOperation(
+                                    authority.getValue("parameters").toString(),
+                                    authority
+                                        .getValue("epochs")
+                                        .jsonObject
+                                        .getValue(stable.keyEpoch.toString())
+                                        .jsonObject
+                                        .getValue("record")
+                                        .toString(),
+                                    compaction.toString(),
+                                    coveredThrough,
+                                    policy.retry.correctedTime(origin),
+                                ),
+                            ).jsonObject
+                    val requestText =
+                        buildJsonObject {
+                            put("target", target)
+                            put("admin_operation", operation)
+                        }.toString()
+                    val evidence =
+                        ProtectedEvidenceEntity(
+                            origin,
+                            relayKeyId,
+                            state.chainId,
+                            logId,
+                            "prune_request",
+                            coveredThrough,
+                            checkNotNull(PallaSyncCore.objectHash(requestText)),
+                            requestText,
+                        )
+                    db.protocolDao().retainEvidence(evidence)
+                    check(
+                        db
+                            .protocolDao()
+                            .evidenceAt(
+                                origin,
+                                relayKeyId,
+                                state.chainId,
+                                logId,
+                                "prune_request",
+                                coveredThrough,
+                            ).contains(requestText),
+                    ) { "C_LOCAL_STORAGE_FULL" }
+                    operation
+                }
+            val relay =
+                PallaSyncLogPruneRelay(
+                    remote,
+                    base,
+                    state.chainId,
+                    { url, _, method, path, query, body ->
+                        root.token(PallaSyncUrls.extractOrigin(url), method, path, query, body.toByteArray(Charsets.UTF_8))
+                    },
+                ) { _, _, response ->
+                    check(response.getValue("min_available_seq").jsonPrimitive.long == coveredThrough + 1L) {
+                        "C_ACCEPTANCE_UNPROVEN"
+                    }
+                    requireSnapshotResult(consistencyProbe.run(base, state.chainId))
+                }
+            relay.prune(compactionId, coveredThrough, adminOperation) is PallaSyncHttpResult.Success
         }
 
     private suspend fun prepareSnapshotPublication(): SnapshotPublicationContext {
@@ -5033,6 +5152,16 @@ internal class PalleriaSyncCoordinator(
                 result
             }
         }
+    }
+
+    private suspend fun resolvePruneCompaction(
+        chainId: String,
+        coveredThroughSeq: Long,
+    ): JsonObject? {
+        val authorityText = db.protocolDao().currentAuthority(chainId) ?: return null
+        val authority = Json.parseToJsonElement(authorityText).jsonObject
+        return PallaSyncRetentionHandoff(db)
+            .verifiedPublishedCompaction(chainId, authority, coveredThroughSeq)
     }
 
     private fun makeCapabilityToken(

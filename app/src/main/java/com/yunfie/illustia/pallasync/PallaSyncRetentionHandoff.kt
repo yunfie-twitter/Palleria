@@ -12,7 +12,7 @@ import kotlinx.serialization.json.long
 /** §13.5: a locally published, receipt-verified complete current-epoch state is the handoff proof. */
 internal class PallaSyncRetentionHandoff(
     private val store: PallaSyncLocalStore,
-    private val expireEpochSecrets: (String, Collection<Long>) -> Boolean,
+    private val expireEpochSecrets: (String, Collection<Long>) -> Boolean = { _, _ -> false },
 ) {
     @Suppress("ReturnCount")
     suspend fun eligibleEpochs(
@@ -63,15 +63,31 @@ internal class PallaSyncRetentionHandoff(
         return expired
     }
 
-    @Suppress("CyclomaticComplexMethod", "ComplexCondition", "ReturnCount")
-    private suspend fun hasVerifiedCurrentEpochSnapshot(
+    /** Non-destructive proof lookup used by §16.7 pruning; the covered prefix may precede the current head. */
+    internal suspend fun latestVerifiedPublishedCompaction(
         chain: String,
         authority: JsonObject,
-    ): Boolean {
-        val state = store.dao.getChainState(chain) ?: return false
+    ): JsonObject? {
+        val state = store.dao.getChainState(chain) ?: return null
+        val epochs = currentGenerationEpochs(authority)
+        val latest =
+            store.snapshotDatabase().snapshotPublicationDao().latestPublishedForEpoch(
+                chain,
+                state.generation,
+                epochs.lastOrNull() ?: return null,
+            ) ?: return null
+        return verifiedPublishedCompaction(chain, authority, latest.coveredThroughSeq)
+    }
+
+    internal suspend fun verifiedPublishedCompaction(
+        chain: String,
+        authority: JsonObject,
+        coveredThroughSeq: Long,
+    ): JsonObject? {
+        val state = store.dao.getChainState(chain) ?: return null
         val generation = authority.getValue("generation").jsonPrimitive.long
         val epochs = currentGenerationEpochs(authority)
-        val currentEpoch = epochs.lastOrNull() ?: return false
+        val currentEpoch = epochs.lastOrNull() ?: return null
         val epochRecord =
             authority
                 .getValue("epochs")
@@ -80,25 +96,66 @@ internal class PallaSyncRetentionHandoff(
                 .jsonObject
                 .getValue("record")
                 .jsonObject
-        val epochHash = PallaSyncCore.objectHash(epochRecord.toString()) ?: return false
+        val epochHash = PallaSyncCore.objectHash(epochRecord.toString()) ?: return null
         val pin = authority.getValue("pin").jsonObject
         if (
             state.writeState != "active" || state.generation != generation || state.keyEpoch != currentEpoch ||
             state.epochHash != epochHash || state.logId != pin.getValue("log_id").jsonPrimitive.content ||
-            state.verifiedSeq != state.materializedSeq || state.verifiedHash == null ||
+            state.verifiedSeq < coveredThroughSeq || state.verifiedSeq != state.materializedSeq || state.verifiedHash == null ||
             store.dao.pendingOutboxCount(chain) != 0L ||
             store.snapshotInstallDao().unresolvedQuarantineCount(chain) != 0L ||
             store.protocolDao().unresolvedAuthorGapCount(chain) != 0L
         ) {
-            return false
+            return null
         }
         val publication =
             store
                 .snapshotDatabase()
                 .snapshotPublicationDao()
-                .latestPublishedForEpoch(chain, generation, currentEpoch) ?: return false
-        if (!publicationMatchesHead(publication, epochHash, state)) return false
-        return verifyPublishedCompaction(publication, pin.getValue("log_id").jsonPrimitive.content, state.verifiedSeq)
+                .latestPublishedForEpoch(chain, generation, currentEpoch) ?: return null
+        if (publication.coveredThroughSeq != coveredThroughSeq ||
+            !publicationCoversVerifiedPrefix(publication, epochHash, state)
+        ) {
+            return null
+        }
+        if (!verifyPublishedCompaction(publication, state.logId, state.verifiedSeq)) return null
+        return publication.compactionJson?.let { Json.parseToJsonElement(it).jsonObject }
+    }
+
+    private fun publicationCoversVerifiedPrefix(
+        publication: SnapshotPublicationEntity,
+        epochHash: String,
+        state: com.yunfie.illustia.pallasync.data.ChainStateEntity,
+    ): Boolean {
+        val header = Json.parseToJsonElement(publication.headerJson).jsonObject
+        val compaction = publication.compactionJson?.let { Json.parseToJsonElement(it).jsonObject } ?: return false
+        return publication.status == "published" && publication.chainId == state.chainId &&
+            publication.generation == state.generation && publication.epoch == state.keyEpoch &&
+            publication.logId == state.logId && publication.coveredThroughSeq <= state.verifiedSeq &&
+            publication.stateSha256 == compaction.getValue("state_sha256").jsonPrimitive.content &&
+            header.getValue("kind").jsonPrimitive.content == "header" &&
+            header.getValue("chain_id").jsonPrimitive.content == state.chainId &&
+            header.getValue("generation").jsonPrimitive.long == state.generation &&
+            header.getValue("log_id").jsonPrimitive.content == state.logId &&
+            header.getValue("epoch_hash").jsonPrimitive.content == epochHash &&
+            header.getValue("covered_through_seq").jsonPrimitive.long == publication.coveredThroughSeq &&
+            compaction.getValue("compaction_id").jsonPrimitive.content == publication.compactionId &&
+            compaction.getValue("chain_id").jsonPrimitive.content == state.chainId &&
+            compaction.getValue("generation").jsonPrimitive.long == state.generation &&
+            compaction.getValue("log_id").jsonPrimitive.content == state.logId &&
+            compaction.getValue("epoch_hash").jsonPrimitive.content == epochHash &&
+            compaction.getValue("covered_through_seq").jsonPrimitive.long == publication.coveredThroughSeq &&
+            compaction.getValue("covered_log_hash").jsonPrimitive.content ==
+            header.getValue("covered_log_hash").jsonPrimitive.content
+    }
+
+    @Suppress("CyclomaticComplexMethod", "ComplexCondition", "ReturnCount")
+    private suspend fun hasVerifiedCurrentEpochSnapshot(
+        chain: String,
+        authority: JsonObject,
+    ): Boolean {
+        val state = store.dao.getChainState(chain) ?: return false
+        return verifiedPublishedCompaction(chain, authority, state.verifiedSeq) != null
     }
 
     private fun currentGenerationEpochs(authority: JsonObject): List<Long> {

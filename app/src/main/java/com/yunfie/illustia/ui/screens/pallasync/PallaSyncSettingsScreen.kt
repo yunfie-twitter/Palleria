@@ -99,6 +99,9 @@ fun PallaSyncSettingsScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
     var deletingChain by remember { mutableStateOf(false) }
+    var showPruneConfirm by remember { mutableStateOf(false) }
+    var showPruneRootInput by remember { mutableStateOf(false) }
+    var pruningLog by remember { mutableStateOf(false) }
     var showRepairRootInput by remember { mutableStateOf(false) }
     var repairingRelayHistory by remember { mutableStateOf(false) }
     var showReseedImportTarget by remember { mutableStateOf(false) }
@@ -582,6 +585,51 @@ fun PallaSyncSettingsScreen(
                     } finally {
                         deletingChain = false
                         showDeleteRootInput = false
+                    }
+                }
+            },
+        )
+    }
+
+    if (showPruneConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_prune_log_title),
+            summary = stringResource(R.string.pallasync_prune_log_confirm),
+            confirmText = stringResource(R.string.pallasync_prune_log_title),
+            destructive = true,
+            onConfirm = {
+                showPruneConfirm = false
+                showPruneRootInput = true
+            },
+            onDismiss = { showPruneConfirm = false },
+        )
+    }
+
+    if (showPruneRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_prune_log_title),
+            explanation = stringResource(R.string.pallasync_prune_log_confirm),
+            busy = pruningLog,
+            onDismiss = { showPruneRootInput = false },
+            onConfirm = { mnemonic, passphrase ->
+                pruningLog = true
+                scope.launch {
+                    try {
+                        val success = syncManager.prunePublishedLog(mnemonic, passphrase)
+                        Toast
+                            .makeText(
+                                context,
+                                if (success) R.string.pallasync_prune_log_succeeded else R.string.pallasync_prune_log_failed,
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        Toast.makeText(context, R.string.pallasync_prune_log_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        pruningLog = false
+                        showPruneRootInput = false
                     }
                 }
             },
@@ -1156,6 +1204,12 @@ fun PallaSyncSettingsScreen(
                                         }
                                     }
                                 },
+                            )
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_prune_log_title),
+                                summary = stringResource(R.string.pallasync_prune_log_desc),
+                                onClick = { if (!pruningLog) showPruneConfirm = true },
                             )
                             DividerLine()
                             SettingLinkRow(

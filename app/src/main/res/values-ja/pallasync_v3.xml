@@ -77,6 +77,11 @@
     <string name="pallasync_snapshot_publish_running">暗号化partと署名receiptを公開しています…</string>
     <string name="pallasync_snapshot_publish_succeeded">snapshotとtransparency証拠を検証し保存しました。</string>
     <string name="pallasync_snapshot_publish_failed">snapshot公開を一時停止しました。署名済みpartとreceiptは再試行用に保持しています。</string>
+    <string name="pallasync_prune_log_title">検証済みrelay履歴をprune</string>
+    <string name="pallasync_prune_log_desc">最新の検証済みsnapshotが対象とするrelay entryを復元不能な形で削除します。完全な最新snapshotとroot承認が必要です。</string>
+    <string name="pallasync_prune_log_confirm">検証済みsnapshotのsequenceまでのrelay logを恒久的に削除します。完全な現在状態と受理証拠の検証が成功した場合だけ実行できます。元のevent本文が必要なら独立したexportを保管してください。</string>
+    <string name="pallasync_prune_log_succeeded">relay pruneが受理され、署名済みtransparency証拠を検証しました。</string>
+    <string name="pallasync_prune_log_failed">pruneを検証できませんでした。同じ操作を安全に再試行できるよう、署名済み要求を保持しています。</string>
     <string name="pallasync_snapshot_bootstrap">信頼するsnapshotから初期同期</string>
     <string name="pallasync_snapshot_bootstrap_desc">署名者とcoverageを確認して選択し、snapshotをinstallした後にsuffixを再生します。</string>
     <string name="pallasync_snapshot_bootstrap_title">snapshotを選択して信頼</string>

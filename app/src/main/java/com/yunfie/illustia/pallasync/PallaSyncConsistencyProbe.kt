@@ -22,6 +22,7 @@ internal class PallaSyncConsistencyProbe(
     private val policy: PallaSyncPolicyGate,
     private val keys: PallaSyncKeystore,
     private val token: (HttpUrl, String, String, String, String, String) -> String?,
+    private val resolvePruneCompaction: suspend (chainId: String, coveredThroughSeq: Long) -> JsonObject?,
 ) {
     private val json = Json
 
@@ -108,12 +109,6 @@ internal class PallaSyncConsistencyProbe(
         )
         PallaSyncCore.validateTransparencyHead(response.bytes, context.pin, context.checkpoint)
         requireMatchingView(context, log, response.head)
-        // A moved pruning boundary is never authorized by an unsigned error or a signed head alone.
-        check(
-            response.head
-                .getValue("min_available_seq")
-                .jsonPrimitive.long == 1L,
-        ) { "C_MISSING_DEPENDENCY" }
         val target =
             pendingTarget(context) ?: response.also {
                 retain(
@@ -125,7 +120,40 @@ internal class PallaSyncConsistencyProbe(
                         .jsonPrimitive.long,
                 )
             }
-        return stream(context, target.head)
+        val trustedHead = keys.verifiedTransparencyHead(context.chain)
+        val minimum =
+            target.head
+                .getValue("min_available_seq")
+                .jsonPrimitive.long
+        val previousMinimum = trustedHead?.get("min_available_seq")?.jsonPrimitive?.long ?: 1L
+        check(minimum >= previousMinimum) { "C_ROLLBACK_DETECTED" }
+        val compaction =
+            if (minimum > previousMinimum) {
+                checkNotNull(trustedHead) { "C_MISSING_DEPENDENCY" }
+                check(
+                    trustedHead.getValue("log_id") == target.head.getValue("log_id") &&
+                        trustedHead.getValue("transparency_id") == target.head.getValue("transparency_id"),
+                ) { "C_TRANSPARENCY_INVALID" }
+                checkNotNull(resolvePruneCompaction(context.chain, minimum - 1L)) { "C_MISSING_DEPENDENCY" }
+            } else {
+                null
+            }
+        val result = stream(context, target.head, trustedHead, compaction, minimum)
+        if (result is PallaSyncHttpResult.Success) {
+            val pin = checkNotNull(keys.transparencyPin(context.chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            check(
+                pin.getValue("index").jsonPrimitive.long ==
+                    target.head
+                        .getValue("entry_index")
+                        .jsonPrimitive.long &&
+                    pin.getValue("hash").jsonPrimitive.content ==
+                    target.head
+                        .getValue("transparency_hash")
+                        .jsonPrimitive.content,
+            ) { "C_TRANSPARENCY_INVALID" }
+            check(keys.retainVerifiedTransparencyHead(context.chain, target.head)) { "C_LOCAL_STORAGE_FULL" }
+        }
+        return result
     }
 
     /** A validated target survives cancellation; never replace an unfinished target mid-suffix. */
@@ -174,8 +202,21 @@ internal class PallaSyncConsistencyProbe(
     private suspend fun stream(
         context: ProbeContext,
         head: JsonObject,
+        trustedHead: JsonObject?,
+        expectedPruneCompaction: JsonObject?,
+        expectedMinimum: Long,
     ): PallaSyncHttpResult<Unit> {
-        var anchor = context.anchor
+        var anchor =
+            if (expectedPruneCompaction != null) {
+                buildJsonObject {
+                    put("transparency_id", checkNotNull(trustedHead).getValue("transparency_id"))
+                    put("index", trustedHead.getValue("entry_index").jsonPrimitive.long)
+                    put("hash", trustedHead.getValue("transparency_hash"))
+                }
+            } else {
+                context.anchor
+            }
+        var matchingPruneEntries = 0
         val start = anchor.getValue("index").jsonPrimitive.long
         val through = head.getValue("entry_index").jsonPrimitive.long
         val id = anchor.getValue("transparency_id").jsonPrimitive.content
@@ -202,8 +243,30 @@ internal class PallaSyncConsistencyProbe(
             if (checked !is PallaSyncHttpResult.Success) return checked.failure()
             val next = checked.value.getValue("next_anchor").jsonObject
             val page = checked.value.getValue("response").jsonObject
+            page.getValue("items").jsonArray.forEach { item ->
+                val entry = item.jsonObject
+                if (entry["operation"]?.jsonPrimitive?.content == "prune") {
+                    val compaction = checkNotNull(expectedPruneCompaction) { "C_TRANSPARENCY_INVALID" }
+                    PallaSyncPruneTransparencyEvidence.validate(
+                        entry,
+                        compaction,
+                        context.chain,
+                        context.logId,
+                        head.getValue("head_hash").jsonPrimitive.content,
+                        expectedMinimum,
+                    )
+                    matchingPruneEntries++
+                }
+            }
             persistPage(context, page, next)
-            check(keys.publishTransparencyPin(context.chain, next)) { "C_LOCAL_STORAGE_FULL" }
+            val savedPin = checkNotNull(keys.transparencyPin(context.chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val nextIndex = next.getValue("index").jsonPrimitive.long
+            val savedIndex = savedPin.getValue("index").jsonPrimitive.long
+            if (nextIndex > savedIndex) {
+                check(keys.publishTransparencyPin(context.chain, next)) { "C_LOCAL_STORAGE_FULL" }
+            } else if (nextIndex == savedIndex) {
+                check(next == savedPin) { "C_TRANSPARENCY_INVALID" }
+            }
             anchor = next
             cursor =
                 page
@@ -213,6 +276,15 @@ internal class PallaSyncConsistencyProbe(
                     ?.content
             check(cursor == null || seenCursors.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
         } while (cursor != null)
+        if (expectedPruneCompaction != null) {
+            check(matchingPruneEntries == 1) { "C_TRANSPARENCY_INVALID" }
+        } else {
+            check(matchingPruneEntries == 0) { "C_TRANSPARENCY_INVALID" }
+        }
+        check(
+            anchor.getValue("index").jsonPrimitive.long == head.getValue("entry_index").jsonPrimitive.long &&
+                anchor.getValue("hash").jsonPrimitive.content == head.getValue("transparency_hash").jsonPrimitive.content,
+        ) { "C_TRANSPARENCY_INVALID" }
         return PallaSyncHttpResult.Success(Unit)
     }
 

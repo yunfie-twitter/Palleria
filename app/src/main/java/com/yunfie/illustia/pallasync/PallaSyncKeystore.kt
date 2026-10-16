@@ -145,6 +145,37 @@ class PallaSyncKeystore internal constructor(
             .getString("transparency.$chainId", null)
             ?.let { Json.decodeFromString<JsonObject>(it) }
 
+    /** Latest signed relay head whose complete transparency suffix passed native verification. */
+    internal fun verifiedTransparencyHead(chainId: String): JsonObject? =
+        sharedPrefs
+            .getString("transparency.verified_head.$chainId", null)
+            ?.let { Json.decodeFromString<JsonObject>(it) }
+
+    /** Call only after the head signature and every transparency entry through its index were verified. */
+    internal fun retainVerifiedTransparencyHead(
+        chainId: String,
+        head: JsonObject,
+    ): Boolean {
+        check(
+            head["type"]?.jsonPrimitive?.content == "PALLASYNC-TRANSPARENCY-HEAD-v3" &&
+                head["chain_id"]?.jsonPrimitive?.content == chainId,
+        ) { "C_TRANSPARENCY_INVALID" }
+        val previous = verifiedTransparencyHead(chainId)
+        if (previous != null) {
+            check(
+                previous["transparency_id"] == head["transparency_id"] &&
+                    previous["log_id"] == head["log_id"] &&
+                    previous.getValue("entry_index").jsonPrimitive.long <= head.getValue("entry_index").jsonPrimitive.long &&
+                    previous.getValue("min_available_seq").jsonPrimitive.long <= head.getValue("min_available_seq").jsonPrimitive.long,
+            ) { "C_ROLLBACK_DETECTED" }
+            if (previous.getValue("entry_index") == head.getValue("entry_index")) {
+                check(previous == head) { "C_TRANSPARENCY_INVALID" }
+            }
+        }
+        return sharedPrefs.edit().putString("transparency.verified_head.$chainId", head.toString()).commit() &&
+            verifiedTransparencyHead(chainId) == head
+    }
+
     internal fun reseedSourceTransparencyPin(
         chain: String,
         sourceAuthorityHash: String,
@@ -159,7 +190,12 @@ class PallaSyncKeystore internal constructor(
     ): Boolean {
         val previous = transparencyPin(chainId)
         check(previous == null || previous == anchor) { "C_ROLLBACK_DETECTED" }
-        return sharedPrefs.edit().putString("transparency.$chainId", anchor.toString()).commit()
+        if (previous != null) return true
+        return sharedPrefs
+            .edit()
+            .putString("transparency.$chainId", anchor.toString())
+            .remove("transparency.verified_head.$chainId")
+            .commit()
     }
 
     internal fun publishTransparencyPin(
@@ -517,6 +553,7 @@ class PallaSyncKeystore internal constructor(
                 .putString("identity.$chain", targetDeviceId)
                 .putString("authority.$chain.hash", targetAuthorityHash)
                 .putString("transparency.$chain", targetAnchor.toString())
+                .remove("transparency.verified_head.$chain")
                 .putString("epoch_key", pending.keys.encryptionKeyBase64Url)
                 .putString("epoch_secret", pending.keys.epochSecretBase64Url)
                 .putString("collection_tag_key", pending.keys.collectionTagKeyBase64Url)
@@ -793,8 +830,13 @@ class PallaSyncKeystore internal constructor(
                 .filter { it.startsWith("pending_") }
                 .forEach(editor::remove)
         }
-        listOf("authority.$chainId.hash", "authority.$chainId.transition", "transparency.$chainId", "identity.$chainId")
-            .forEach(editor::remove)
+        listOf(
+            "authority.$chainId.hash",
+            "authority.$chainId.transition",
+            "transparency.$chainId",
+            "transparency.verified_head.$chainId",
+            "identity.$chainId",
+        ).forEach(editor::remove)
         sharedPrefs.all.keys
             .filter { it.startsWith("archive.$chainId.") }
             .forEach(editor::remove)
