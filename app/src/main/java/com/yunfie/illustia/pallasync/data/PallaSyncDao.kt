@@ -133,6 +133,9 @@ interface PallaSyncDao {
     @Query("SELECT * FROM pallasync_chain_state")
     suspend fun getAllChainStates(): List<ChainStateEntity>
 
+    @Query("SELECT chainId FROM pallasync_chain_state WHERE write_state IN ('active','archived') ORDER BY chainId")
+    suspend fun getNewRootMigrationSourceIds(): List<String>
+
     @Query("SELECT * FROM pallasync_chain_state WHERE write_state NOT IN ('archived','activation_preparing')")
     suspend fun getActiveChainStates(): List<ChainStateEntity>
 

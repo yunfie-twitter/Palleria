@@ -3250,13 +3250,7 @@ internal class PalleriaSyncCoordinator(
     internal suspend fun newRootMigrationSources(): List<String> =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
-                db
-                    .pallaSyncDao()
-                    .getAllChainStates()
-                    .filter { it.writeState == "active" || it.writeState == "archived" }
-                    .map { it.chainId }
-                    .distinct()
-                    .sorted()
+                db.pallaSyncDao().getNewRootMigrationSourceIds()
             }
         }
 
