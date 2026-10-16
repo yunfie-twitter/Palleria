@@ -106,7 +106,7 @@ internal fun PallaSyncRecoveryControls(
                                 action =
                                     RecoverySafetyAction(entry)
                             })
-                            if (entry.compromised || entry.state == "compromised") {
+                            if (entry.state == "active" || entry.compromised || entry.state == "compromised") {
                                 TextButton(
                                     text = stringResource(R.string.pallasync_recovery_new_root_create_chain),
                                     enabled =
@@ -277,10 +277,21 @@ internal fun PallaSyncRecoveryControls(
                 scope.launch {
                     busy = true
                     try {
+                        val selectedChain =
+                            selected
+                                ?.manifest
+                                ?.get("chain_id")
+                                ?.jsonPrimitive
+                                ?.content
                         val current = management.inventory().firstOrNull { it.id == selected?.id }
-                        check(current != null && (current.compromised || current.state == "compromised")) {
-                            "C_RECOVERY_SHARE_COMPROMISED"
-                        }
+                        check(
+                            current != null &&
+                                current.manifest["chain_id"]?.jsonPrimitive?.content == selectedChain &&
+                                (current.state == "active" || current.compromised || current.state == "compromised") &&
+                                !current.replacementPending &&
+                                current.conflictingStatuses == null &&
+                                current.forkEvidence.isEmpty(),
+                        ) { "C_RECOVERY_SET_MISMATCH" }
                         val mnemonic = manager.generateGenesisMnemonic()
                         check(mnemonic.isNotBlank()) { "C_SCHEMA_VIOLATION" }
                         genesisPhrase = mnemonic

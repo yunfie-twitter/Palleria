@@ -1385,7 +1385,7 @@
     <string name="pallasync_recovery_freshness_warning">Hはこの端末が確認した保存・紛失の記録です。他の保有者の現在の可用性や、オフライン媒体の最新状態は保証しません。</string>
     <string name="pallasync_recovery_new_root_migration">新しいroot/chainへ状態を移行</string>
     <string name="pallasync_recovery_new_root_create_chain">新しい単語で移行先chainを作成</string>
-    <string name="pallasync_recovery_new_root_create_chain_warning">漏洩扱いの旧単語と復旧共有は使わず、新しい単語から別のchain/admin identityを作成します。表示された単語を安全に保存してください。作成後、この端末の検証済み旧chain状態を移行してreceiptと論理状態を確認できます。旧chainは一致確認後に別途削除します。端末登録と新しい復旧セットの配布も必要です。</string>
+    <string name="pallasync_recovery_new_root_create_chain_warning">mnemonic漏洩時の緊急移行です。復旧セットが漏洩扱いでなくても開始できます。漏洩した旧単語・旧復旧共有は使わず、新しい単語から別のchain/admin identityを作成します。表示された単語を安全に保存してください。作成後、この端末の検証済み旧chain状態を移行してreceiptと論理状態を確認できます。旧chainは一致確認後に別途削除します。端末登録と新しい復旧セットの配布も必要です。</string>
     <string name="pallasync_recovery_new_root_migration_target">現在の移行先chain: %1$s</string>
     <string name="pallasync_recovery_new_root_migration_progress">署名receipt確認済み: %1$d / %2$d</string>
     <string name="pallasync_recovery_new_root_migration_warning">漏洩扱いの旧chain: %1$s\n現在の移行先chain: %2$s\n移行先は別の新しい単語で作成したchainであることを確認してください。確認すると、旧chainの検証済みローカル状態を移行先へ再署名して同期し、receiptと論理状態を照合します。完了までアプリを終了しないでください。旧chainの退役・削除、新chainの端末登録と新しい復旧セット作成は別途必要です。旧単語や共有を新chainで再利用しません。</string>
