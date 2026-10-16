@@ -696,10 +696,11 @@
         "Palleria/rust/pallasync-core/tests/recovery_flow.rs",
         "Palleria/rust/pallasync-core/tests/secret_lifetime.rs",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflowTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflowTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerLifecycleAndroidTest.kt"
       ],
       "result": "pending",
-      "remaining": "Run Android lifecycle/SAF interruption and timeout instrumentation, independent physical-holder interoperability, and dedicated secret-memory instrumentation. Dealer creation and threshold-test sessions now close on ON_STOP as well as the native-aligned idle lease, which pauses during explicit confirmation and credential dialogs; complete platform-boundary verification remains outstanding.",
+      "remaining": "Run real OS-background/SAF interruption and timeout advancement instrumentation, independent physical-holder interoperability, and dedicated secret-memory instrumentation. The injected Android lifecycle test verifies ON_STOP closes the dealer owner; dealer creation and threshold-test sessions also close on the native-aligned idle lease, which pauses during explicit confirmation and credential dialogs.",
       "verification_scope": "targeted_partial"
     },
     {
