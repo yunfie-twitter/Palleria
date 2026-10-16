@@ -342,6 +342,7 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotStateStager.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncSnapshotVerifier.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConsistencyProbe.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncKeystore.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLogPruneRelay.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPruneTransparencyEvidence.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRetentionHandoff.kt",
@@ -795,6 +796,7 @@
       "implementation": [
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLiveHistory.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConsistencyProbe.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncKeystore.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgress.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncHistoryPage.kt",
@@ -804,10 +806,11 @@
       "tests": [
         "Palleria/rust/pallasync-core/tests/client_response.rs",
         "PallaSync/tests/reference/run_relay_interop.py",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgressTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyProgressTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncKeystoreTransparencyHeadTest.kt"
       ],
       "result": "pending",
-      "remaining": "The exact signed target is stored only after its signature and data-head view are checked, then reused across cancellation/restart until the saved verified anchor reaches its entry_index. Each page checks coroutine cancellation before requesting the next page. Focused target-selection tests pass. Run isolated-relay cancellation/process-death at every page boundary and large suffix/post-pruning Android progress tests; keep pending.",
+      "remaining": "The exact signed target is stored only after its signature and data-head view are checked, then reused across cancellation/restart until a complete verified head is retained. Each page now persists the signed target, verified anchor, data-head hash and minimum-sequence state in encrypted local storage, and restart resumes from that page checkpoint instead of replaying the suffix from the last fully completed head. Targets remain pending until the verified-head record commits, including process death after the last page. Keystore monotonicity/completion-cleanup and focused progress tests pass. Run isolated-relay cancellation/process-death at every page boundary and large suffix/post-pruning Android progress tests; keep pending.",
       "verification_scope": "targeted_partial"
     },
     {

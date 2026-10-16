@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,6 +53,34 @@ class PallaSyncKeystoreTransparencyHeadTest {
         keystore.verifiedTransparencyHead(CHAIN) shouldBe head
     }
 
+    @Test
+    fun `page resume checkpoint is monotone and cleared with completed signed head`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val keystore = PallaSyncKeystore(preferences)
+        val firstAnchor = anchor(index = 8, hash = "A")
+        keystore.pinInitialTransparency(CHAIN, firstAnchor) shouldBe true
+        val target = head(index = 11, minimum = 1, hash = "D")
+        val firstProgress = progress(target, anchor(index = 9, hash = "B"))
+        keystore.publishTransparencyPin(CHAIN, firstProgress.getValue("anchor").jsonObject) shouldBe true
+        keystore.retainTransparencyProgress(CHAIN, firstProgress) shouldBe true
+        PallaSyncKeystore(preferences).transparencyProgress(CHAIN) shouldBe firstProgress
+
+        val secondProgress = progress(target, anchor(index = 10, hash = "C"))
+        keystore.publishTransparencyPin(CHAIN, secondProgress.getValue("anchor").jsonObject) shouldBe true
+        keystore.retainTransparencyProgress(CHAIN, secondProgress) shouldBe true
+        shouldThrow<IllegalStateException> {
+            keystore.retainTransparencyProgress(CHAIN, firstProgress)
+        }.message shouldBe "C_ROLLBACK_DETECTED"
+
+        val finalAnchor = anchor(index = 11, hash = "D")
+        keystore.publishTransparencyPin(CHAIN, finalAnchor) shouldBe true
+        keystore.retainTransparencyProgress(CHAIN, progress(target, finalAnchor)) shouldBe true
+        keystore.retainVerifiedTransparencyHead(CHAIN, target) shouldBe true
+        keystore.transparencyProgress(CHAIN) shouldBe null
+    }
+
     private fun head(
         index: Long,
         minimum: Long,
@@ -64,6 +93,25 @@ class PallaSyncKeystoreTransparencyHeadTest {
         put("entry_index", index)
         put("transparency_hash", hash)
         put("min_available_seq", minimum)
+    }
+
+    private fun anchor(
+        index: Long,
+        hash: String,
+    ) = buildJsonObject {
+        put("transparency_id", TRANSPARENCY)
+        put("index", index)
+        put("hash", hash)
+    }
+
+    private fun progress(
+        target: kotlinx.serialization.json.JsonObject,
+        anchor: kotlinx.serialization.json.JsonObject,
+    ) = buildJsonObject {
+        put("target_head", target)
+        put("anchor", anchor)
+        put("observed_data_head_hash", "E")
+        put("observed_minimum", 1)
     }
 
     private companion object {

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import java.util.UUID
@@ -151,6 +152,47 @@ class PallaSyncKeystore internal constructor(
             .getString("transparency.verified_head.$chainId", null)
             ?.let { Json.decodeFromString<JsonObject>(it) }
 
+    /** Last fully verified page within one signed target, used for O(unverified-suffix) restart. */
+    internal fun transparencyProgress(chainId: String): JsonObject? =
+        sharedPrefs
+            .getString("transparency.progress.$chainId", null)
+            ?.let { Json.decodeFromString<JsonObject>(it) }
+
+    internal fun retainTransparencyProgress(
+        chainId: String,
+        progress: JsonObject,
+    ): Boolean {
+        val target = progress["target_head"] as? JsonObject ?: error("C_TRANSPARENCY_INVALID")
+        val anchor = progress["anchor"] as? JsonObject ?: error("C_TRANSPARENCY_INVALID")
+        val targetIndex = target["entry_index"]?.jsonPrimitive?.long ?: error("C_TRANSPARENCY_INVALID")
+        val anchorIndex = anchor["index"]?.jsonPrimitive?.long ?: error("C_TRANSPARENCY_INVALID")
+        check(
+            target["type"]?.jsonPrimitive?.content == "PALLASYNC-TRANSPARENCY-HEAD-v3" &&
+                target["chain_id"]?.jsonPrimitive?.content == chainId &&
+                anchor["transparency_id"] == target["transparency_id"] &&
+                anchorIndex in 0L..targetIndex &&
+                (anchorIndex != targetIndex || anchor["hash"] == target["transparency_hash"]),
+        ) { "C_TRANSPARENCY_INVALID" }
+        val previous = transparencyProgress(chainId)
+        if (previous != null && previous["target_head"] == target) {
+            check(
+                previous
+                    .getValue("anchor")
+                    .jsonObject
+                    .getValue("index")
+                    .jsonPrimitive.long <=
+                    anchor.getValue("index").jsonPrimitive.long,
+            ) { "C_ROLLBACK_DETECTED" }
+            if (previous.getValue("anchor").jsonObject.getValue("index") == anchor.getValue("index")) {
+                check(previous.getValue("anchor") == anchor) { "C_TRANSPARENCY_INVALID" }
+            }
+        } else {
+            check(previous == null) { "C_TRANSPARENCY_INVALID" }
+        }
+        return sharedPrefs.edit().putString("transparency.progress.$chainId", progress.toString()).commit() &&
+            transparencyProgress(chainId) == progress
+    }
+
     /** Call only after the head signature and every transparency entry through its index were verified. */
     internal fun retainVerifiedTransparencyHead(
         chainId: String,
@@ -172,7 +214,11 @@ class PallaSyncKeystore internal constructor(
                 check(previous == head) { "C_TRANSPARENCY_INVALID" }
             }
         }
-        return sharedPrefs.edit().putString("transparency.verified_head.$chainId", head.toString()).commit() &&
+        return sharedPrefs
+            .edit()
+            .putString("transparency.verified_head.$chainId", head.toString())
+            .remove("transparency.progress.$chainId")
+            .commit() &&
             verifiedTransparencyHead(chainId) == head
     }
 
@@ -554,6 +600,7 @@ class PallaSyncKeystore internal constructor(
                 .putString("authority.$chain.hash", targetAuthorityHash)
                 .putString("transparency.$chain", targetAnchor.toString())
                 .remove("transparency.verified_head.$chain")
+                .remove("transparency.progress.$chain")
                 .putString("epoch_key", pending.keys.encryptionKeyBase64Url)
                 .putString("epoch_secret", pending.keys.epochSecretBase64Url)
                 .putString("collection_tag_key", pending.keys.collectionTagKeyBase64Url)
@@ -835,6 +882,7 @@ class PallaSyncKeystore internal constructor(
             "authority.$chainId.transition",
             "transparency.$chainId",
             "transparency.verified_head.$chainId",
+            "transparency.progress.$chainId",
             "identity.$chainId",
         ).forEach(editor::remove)
         sharedPrefs.all.keys

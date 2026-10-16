@@ -157,7 +157,13 @@ internal class PallaSyncConsistencyProbe(
         val saved = store.protocolDao().latestEvidence(context.chain, context.logId, "transparency_target")
         val head = saved?.let { json.parseToJsonElement(it).jsonObject } ?: return null
         val targetIndex = head.getValue("entry_index").jsonPrimitive.long
-        return if (!PallaSyncTransparencyProgress.shouldResumeSavedTarget(targetIndex, context.state.transparencyIndex)) {
+        val completeIndex =
+            keys
+                .verifiedTransparencyHead(context.chain)
+                ?.get("entry_index")
+                ?.jsonPrimitive
+                ?.long ?: 0L
+        return if (!PallaSyncTransparencyProgress.shouldResumeSavedTarget(targetIndex, completeIndex)) {
             null
         } else {
             check(
@@ -203,22 +209,38 @@ internal class PallaSyncConsistencyProbe(
         expectedMinimum: Long,
     ): PallaSyncHttpResult<Unit> {
         var anchor =
-            trustedHead?.let { verified ->
-                buildJsonObject {
-                    put("transparency_id", verified.getValue("transparency_id"))
-                    put("index", verified.getValue("entry_index").jsonPrimitive.long)
-                    put("hash", verified.getValue("transparency_hash"))
-                }
-            } ?: context.anchor
-        var observedDataHeadHash = trustedHead?.get("head_hash")?.jsonPrimitive?.content
-        var observedMinimum = previousMinimum
+            keys
+                .transparencyProgress(context.chain)
+                ?.takeIf { it.getValue("target_head") == head }
+                ?.get("anchor")
+                ?.jsonObject
+                ?: trustedHead?.let { verified ->
+                    buildJsonObject {
+                        put("transparency_id", verified.getValue("transparency_id"))
+                        put("index", verified.getValue("entry_index").jsonPrimitive.long)
+                        put("hash", verified.getValue("transparency_hash"))
+                    }
+                } ?: context.anchor
+        val savedProgress =
+            keys.transparencyProgress(context.chain)?.takeIf { it.getValue("target_head") == head }
+        var observedDataHeadHash =
+            when {
+                savedProgress == null -> trustedHead?.get("head_hash")?.jsonPrimitive?.content
+
+                savedProgress["observed_data_head_hash"] == null ||
+                    savedProgress["observed_data_head_hash"] == kotlinx.serialization.json.JsonNull -> null
+
+                else -> savedProgress.getValue("observed_data_head_hash").jsonPrimitive.content
+            }
+        var observedMinimum = savedProgress?.get("observed_minimum")?.jsonPrimitive?.long ?: previousMinimum
         var matchingPruneEntries = 0
+        val minimumAlreadyAdvanced = observedMinimum > previousMinimum
         val start = anchor.getValue("index").jsonPrimitive.long
         val through = head.getValue("entry_index").jsonPrimitive.long
         val id = anchor.getValue("transparency_id").jsonPrimitive.content
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
-        do {
+        while (anchor.getValue("index").jsonPrimitive.long < through || cursor != null) {
             currentCoroutineContext().ensureActive()
             val url = PallaSyncUrls.transparencyEntries(context.base, context.chain, id, start, through, cursor)
             val checked =
@@ -267,6 +289,17 @@ internal class PallaSyncConsistencyProbe(
                 check(next == savedPin) { "C_TRANSPARENCY_INVALID" }
             }
             anchor = next
+            check(
+                keys.retainTransparencyProgress(
+                    context.chain,
+                    buildJsonObject {
+                        put("target_head", head)
+                        put("anchor", anchor)
+                        put("observed_data_head_hash", observedDataHeadHash)
+                        put("observed_minimum", observedMinimum)
+                    },
+                ),
+            ) { "C_LOCAL_STORAGE_FULL" }
             cursor =
                 page
                     .getValue("next_cursor")
@@ -274,9 +307,11 @@ internal class PallaSyncConsistencyProbe(
                     .takeIf { it.isString }
                     ?.content
             check(cursor == null || seenCursors.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
-        } while (cursor != null)
+        }
         check(observedMinimum == expectedMinimum) { "C_TRANSPARENCY_INVALID" }
-        check((matchingPruneEntries > 0) == (expectedMinimum > previousMinimum)) { "C_TRANSPARENCY_INVALID" }
+        check(
+            (minimumAlreadyAdvanced || matchingPruneEntries > 0) == (expectedMinimum > previousMinimum),
+        ) { "C_TRANSPARENCY_INVALID" }
         observedDataHeadHash?.let {
             check(it == head.getValue("head_hash").jsonPrimitive.content) { "C_TRANSPARENCY_INVALID" }
         }
