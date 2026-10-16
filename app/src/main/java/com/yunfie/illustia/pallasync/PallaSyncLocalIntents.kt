@@ -1,5 +1,6 @@
 package com.yunfie.illustia.pallasync
 
+import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.LegacyMigrationCandidateEntity
 import com.yunfie.illustia.pallasync.data.LegacyMigrationChoiceEntity
 import com.yunfie.illustia.pallasync.data.MigrationJournalEntity
@@ -15,6 +16,26 @@ import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.Base64
 import java.util.UUID
+
+private fun ChainStateEntity.newRootMigrationAnchor(chainId: String) =
+    NewRootMigrationSourceAnchor(
+        chainId,
+        generation,
+        checkNotNull(logId) { "C_SNAPSHOT_INVALID" },
+        checkNotNull(epochHash) { "C_SNAPSHOT_INVALID" },
+        verifiedSeq,
+        checkNotNull(verifiedHash) { "C_SNAPSHOT_INVALID" },
+        indexRevision,
+    )
+
+internal data class NewRootMigrationCheckpoint(
+    val anchor: NewRootMigrationSourceAnchor,
+    val cursor: NewRootMigrationCursor,
+    val targetGeneration: Long,
+    val lastIntentIndex: Long,
+    val stagedCount: Long,
+    val complete: Boolean,
+)
 
 /** §§11.1/16.4. Unsigned application intent, separate from immutable signed outbox objects.
  * Uses the existing application journal table, never a relay object or recovery store.
@@ -48,6 +69,18 @@ internal class PallaSyncLocalIntents(
         val completionCoveredLogHash: String? = null,
         val completionAuditEntryIndex: Long? = null,
     )
+
+    @Serializable
+    private data class NewRootMigrationManifest(
+        val anchor: NewRootMigrationSourceAnchor,
+        val cursor: NewRootMigrationCursor,
+        val targetGeneration: Long,
+        val lastIntentIndex: Long,
+        val stagedCount: Long,
+        val complete: Boolean,
+    ) {
+        fun checkpoint() = NewRootMigrationCheckpoint(anchor, cursor, targetGeneration, lastIntentIndex, stagedCount, complete)
+    }
 
     internal data class LegacyEventMapping(
         val sourceSequence: Long,
@@ -211,6 +244,139 @@ internal class PallaSyncLocalIntents(
                 MigrationJournalEntity(id, ++index, hash, event.schema, chain, "pending", Json.encodeToString(work)),
             )
         }
+    }
+
+    /** Atomically checkpoints a verified source page with the exact target intents it contributed (§13.8). */
+    suspend fun stageNewRootMigrationPage(
+        targetChain: String,
+        page: NewRootMigrationPage,
+    ): NewRootMigrationCheckpoint =
+        store.transaction {
+            check(targetChain != page.anchor.chainId) { "C_SCHEMA_VIOLATION" }
+            PallaSyncSnapshotStateReader(store.snapshotDatabase()).validateMigrationCursor(page.previous)
+            PallaSyncSnapshotStateReader(store.snapshotDatabase()).validateMigrationCursor(page.next)
+            val sourceState = checkNotNull(store.dao.getChainState(page.anchor.chainId)) { "C_SNAPSHOT_INVALID" }
+            val sourceAnchor = sourceState.newRootMigrationAnchor(page.anchor.chainId)
+            check(
+                sourceAnchor == page.anchor && sourceState.verifiedSeq == sourceState.materializedSeq &&
+                    sourceState.verifiedHash != null,
+            ) { "C_ROLLBACK_DETECTED" }
+            val snapshotDao = store.snapshotDatabase().snapshotStateDao()
+            check(
+                store.dao.pendingOutboxCount(page.anchor.chainId) == 0L &&
+                    store.protocolDao().unresolvedQuarantineCount(page.anchor.chainId) == 0L &&
+                    snapshotDao.unresolvedSnapshotAuthorGapCount(page.anchor.chainId) == 0L &&
+                    snapshotDao.unresolvedAuthorGapCount(page.anchor.chainId) == 0L,
+            ) { "C_SNAPSHOT_INVALID" }
+            val targetState = checkNotNull(store.dao.getChainState(targetChain)) { "C_MISSING_DEPENDENCY" }
+            check(targetState.writeState == "active") { "C_MISSING_DEPENDENCY" }
+
+            val dao = store.protocolDao()
+            val id = journalId(targetChain)
+            val manifestIndex = -1L
+            val existing = dao.migrationChunk(id, manifestIndex)
+            val cursor =
+                if (existing == null) {
+                    check(page.previous == NewRootMigrationCursor()) { "C_ROLLBACK_DETECTED" }
+                    check(targetState.generation in 0..4_294_967_295L) { "C_ROLLBACK_DETECTED" }
+                    null
+                } else {
+                    check(existing.sourceIdentity == "new-root-source:${page.anchor.chainId}" && existing.targetChain == targetChain) {
+                        "C_RECORD_ID_CONFLICT"
+                    }
+                    check(existing.state == "new_root_source") { "C_ROLLBACK_DETECTED" }
+                    Json.decodeFromString<NewRootMigrationManifest>(existing.reportJson).also { manifest ->
+                        val anchorBytes = Json.encodeToString(page.anchor).toByteArray(Charsets.UTF_8)
+                        val anchorHash =
+                            try {
+                                Base64.getUrlEncoder().withoutPadding().encodeToString(
+                                    MessageDigest.getInstance("SHA-256").digest(anchorBytes),
+                                )
+                            } finally {
+                                anchorBytes.fill(0)
+                            }
+                        check(
+                            manifest.anchor == page.anchor && manifest.cursor == page.previous &&
+                                manifest.targetGeneration == targetState.generation && !manifest.complete &&
+                                existing.sourceHash == anchorHash,
+                        ) { "C_ROLLBACK_DETECTED" }
+                    }
+                }
+
+            if (dao.migrationChunk(id, 0) == null) {
+                dao.putMigrationChunk(MigrationJournalEntity(id, 0, id, targetChain, targetChain, "local_intent_cursor", "0"))
+            }
+            val lastIntentIndex = dao.lastMigrationIndex(id) ?: 0L
+            val expectedLastIndex = cursor?.lastIntentIndex ?: lastIntentIndex
+            check(lastIntentIndex == expectedLastIndex) { "C_ROLLBACK_DETECTED" }
+            var nextIndex = lastIntentIndex
+            for (event in page.rows) {
+                currentCoroutineContext().ensureActive()
+                check(nextIndex < PallaSyncConflictResolver.MAX_COUNTER) { "C_COUNTER_EXHAUSTED" }
+                dao.putMigrationChunk(
+                    MigrationJournalEntity(
+                        id,
+                        ++nextIndex,
+                        sourceHash(event),
+                        event.schema,
+                        targetChain,
+                        "pending",
+                        Json.encodeToString(PallaSyncReplayWork(event, targetGeneration = targetState.generation)),
+                    ),
+                )
+            }
+            val manifest =
+                NewRootMigrationManifest(
+                    anchor = page.anchor,
+                    cursor = page.next,
+                    targetGeneration = targetState.generation,
+                    lastIntentIndex = nextIndex,
+                    stagedCount = (cursor?.stagedCount ?: 0L) + page.rows.size,
+                    complete = page.complete,
+                )
+            if (existing == null) {
+                val anchorBytes = Json.encodeToString(page.anchor).toByteArray(Charsets.UTF_8)
+                val anchorHash =
+                    try {
+                        Base64.getUrlEncoder().withoutPadding().encodeToString(
+                            MessageDigest.getInstance("SHA-256").digest(anchorBytes),
+                        )
+                    } finally {
+                        anchorBytes.fill(0)
+                    }
+                dao.putMigrationChunk(
+                    MigrationJournalEntity(
+                        id,
+                        manifestIndex,
+                        anchorHash,
+                        "new-root-source:${page.anchor.chainId}",
+                        targetChain,
+                        "new_root_source",
+                        Json.encodeToString(manifest),
+                    ),
+                )
+            } else {
+                check(
+                    dao.updateMigrationReport(
+                        id,
+                        manifestIndex,
+                        existing.sourceHash,
+                        "new_root_source",
+                        Json.encodeToString(manifest),
+                    ) == 1,
+                ) { "C_LOCAL_STORAGE_FULL" }
+            }
+            manifest.checkpoint()
+        }
+
+    suspend fun newRootMigrationCheckpoint(targetChain: String): NewRootMigrationCheckpoint? {
+        val id = journalId(targetChain)
+        val dao = store.protocolDao()
+        val row = dao.migrationChunk(id, -1) ?: return null
+        check(row.targetChain == targetChain && row.state == "new_root_source") { "C_ROLLBACK_DETECTED" }
+        val checkpoint = Json.decodeFromString<NewRootMigrationManifest>(row.reportJson).checkpoint()
+        check((dao.lastMigrationIndex(id) ?: 0L) == checkpoint.lastIntentIndex) { "C_ROLLBACK_DETECTED" }
+        return checkpoint
     }
 
     /**

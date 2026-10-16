@@ -925,6 +925,75 @@ class PallaSyncLocalIntentsTest {
         Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), PallaSyncDatabase::class.java).build()
 
     @Test
+    fun `new root migration checkpoints page and target intents atomically for restart`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val target = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                val intents = PallaSyncLocalIntents(store, author(store, MemoryStorage())) { _, events -> events }
+                db.pallaSyncDao().updateChainState(
+                    ChainStateEntity(
+                        chain,
+                        1,
+                        0,
+                        "{}",
+                        generation = 2,
+                        logId = log,
+                        epochHash = encode(ByteArray(32) { 3 }),
+                        verifiedSeq = 4,
+                        materializedSeq = 4,
+                        verifiedHash = encode(ByteArray(32) { 4 }),
+                        writeState = "active",
+                        indexRevision = 9,
+                    ),
+                )
+                db.pallaSyncDao().updateChainState(
+                    ChainStateEntity(target, 0, 0, "{}", generation = 0, writeState = "active"),
+                )
+                val anchor = NewRootMigrationSourceAnchor(chain, 2, log, encode(ByteArray(32) { 3 }), 4, encode(ByteArray(32) { 4 }), 9)
+                val event =
+                    PallaSyncPendingEvent(
+                        "entity.v1",
+                        "entity-1",
+                        "upsert",
+                        buildJsonObject { put("value", "copied") },
+                    )
+                val page =
+                    NewRootMigrationPage(
+                        anchor,
+                        NewRootMigrationCursor(),
+                        listOf(event),
+                        NewRootMigrationCursor(1, 0, "AQ", "Ag", 0),
+                        complete = false,
+                    )
+
+                val checkpoint = intents.stageNewRootMigrationPage(target, page)
+                checkpoint.cursor shouldBe page.next
+                checkpoint.targetGeneration shouldBe 0
+                checkpoint.lastIntentIndex shouldBe 1
+                checkpoint.stagedCount shouldBe 1
+                checkpoint.complete shouldBe false
+                val intentRow = checkNotNull(store.protocolDao().migrationChunk(PallaSyncLocalIntents.journalId(target), 1))
+                Json.decodeFromString<PallaSyncReplayWork>(intentRow.reportJson).event shouldBe event
+                store.protocolDao().migrationChunk(PallaSyncLocalIntents.journalId(target), -1)?.state shouldBe "new_root_source"
+
+                val restarted = PallaSyncLocalIntents(store, author(store, MemoryStorage())) { _, events -> events }
+                restarted.newRootMigrationCheckpoint(target) shouldBe checkpoint
+                runCatching { restarted.stageNewRootMigrationPage(target, page) }.exceptionOrNull()?.message shouldBe
+                    "C_ROLLBACK_DETECTED"
+
+                val finalPage = page.copy(previous = page.next, rows = emptyList(), complete = true)
+                val completed = restarted.stageNewRootMigrationPage(target, finalPage)
+                completed.complete shouldBe true
+                completed.stagedCount shouldBe 1
+                completed.lastIntentIndex shouldBe 1
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `audit handoff uncertainty is idempotent and retains the original occurrence time`() =
         runBlocking<Unit> {
             val db = database()

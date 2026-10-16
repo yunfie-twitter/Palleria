@@ -42,6 +42,7 @@ internal data class NewRootMigrationCursor(
 
 internal data class NewRootMigrationPage(
     val anchor: NewRootMigrationSourceAnchor,
+    val previous: NewRootMigrationCursor,
     val rows: List<PallaSyncPendingEvent>,
     val next: NewRootMigrationCursor,
     val complete: Boolean,
@@ -140,7 +141,7 @@ internal class PallaSyncSnapshotStateReader(
         val after = checkNotNull(chainDao.getChainState(chainId)) { "C_SNAPSHOT_INVALID" }
         require(after.indexRevision == anchor.indexRevision && anchorOf(chainId, after) == anchor) { "C_ROLLBACK_DETECTED" }
         requireSourceReadyForNewRootMigration(chainId)
-        return NewRootMigrationPage(anchor, rows.map { it.toMigrationEvent() }, next, rows.size < pageSize)
+        return NewRootMigrationPage(anchor, cursor, rows.map { it.toMigrationEvent() }, next, rows.size < pageSize)
     }
 
     private suspend fun requireSourceReadyForNewRootMigration(chainId: String) {
@@ -153,7 +154,7 @@ internal class PallaSyncSnapshotStateReader(
         ) { "C_SNAPSHOT_INVALID" }
     }
 
-    private fun validateMigrationCursor(cursor: NewRootMigrationCursor) {
+    internal fun validateMigrationCursor(cursor: NewRootMigrationCursor) {
         val initial = cursor == NewRootMigrationCursor()
         val validPosition =
             cursor.lamport in 0..PallaSyncConflictResolver.MAX_COUNTER && cursor.rank in 0..1 &&
