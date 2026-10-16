@@ -104,6 +104,8 @@ class PalleriaSyncManager(
     internal fun relayShutdownNotice(rawOrigin: String): PallaSyncRetryGate.RelayShutdownNotice? =
         coordinator.relayShutdownNotice(rawOrigin)
 
+    internal suspend fun fetchRelayShutdownNotice(): PallaSyncRetryGate.RelayShutdownNotice = coordinator.fetchRelayShutdownNotice()
+
     fun getPallaSyncKeystore(): PallaSyncKeystore = coordinator.getPallaSyncKeystore()
 
     suspend fun recoverInterruptedActivation(): Boolean = coordinator.recoverInterruptedActivation()

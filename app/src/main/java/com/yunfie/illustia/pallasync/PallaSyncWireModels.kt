@@ -612,6 +612,11 @@ internal object PallaSyncUrls {
             .apply { if (cursor != null) addQueryParameter("cursor", cursor) }
             .build()
 
+    fun relayNotice(
+        baseUrl: HttpUrl,
+        chainId: String,
+    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "relay-notice")
+
     fun chain(
         baseUrl: HttpUrl,
         chainId: String,

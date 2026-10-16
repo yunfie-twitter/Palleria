@@ -52,6 +52,12 @@ class PallaSyncUrlsTest :
             PallaSyncUrls.export(base, "chain", null, includeRecovery = true).encodedQuery shouldBe
                 "limit=200&include_recovery=true"
         }
+
+        "relay shutdown notice route is chain scoped and has no query" {
+            val url = PallaSyncUrls.relayNotice(normalizedUrl("https://example.com"), "chain")
+            url.encodedPath shouldBe "/pallasync/v3/chains/chain/relay-notice"
+            url.encodedQuery shouldBe null
+        }
     })
 
 private fun normalizedUrl(raw: String): HttpUrl =

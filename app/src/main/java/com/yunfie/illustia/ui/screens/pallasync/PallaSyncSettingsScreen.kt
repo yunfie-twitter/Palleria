@@ -143,6 +143,7 @@ fun PallaSyncSettingsScreen(
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
     var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
     var relayShutdownNotice by remember { mutableStateOf<PallaSyncRetryGate.RelayShutdownNotice?>(null) }
+    var fetchingRelayNotice by remember { mutableStateOf(false) }
     var showTrustedSnapshotDialog by remember { mutableStateOf(false) }
     var loadingTrustedSnapshots by remember { mutableStateOf(false) }
     var installingTrustedSnapshot by remember { mutableStateOf(false) }
@@ -1591,6 +1592,39 @@ fun PallaSyncSettingsScreen(
                 }
             }
 
+            if (hasLocalChain) {
+                item {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                fetchingRelayNotice = true
+                                try {
+                                    relayShutdownNotice = syncManager.fetchRelayShutdownNotice()
+                                } catch (error: CancellationException) {
+                                    throw error
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, R.string.pallasync_relay_notice_unavailable, Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    fetchingRelayNotice = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !fetchingRelayNotice,
+                    ) {
+                        Text(
+                            stringResource(
+                                if (fetchingRelayNotice) {
+                                    R.string.pallasync_relay_notice_loading
+                                } else {
+                                    R.string.pallasync_relay_notice_fetch
+                                },
+                            ),
+                        )
+                    }
+                }
+            }
+
             relayShutdownNotice?.let { notice ->
                 item {
                     Section(stringResource(R.string.pallasync_relay_shutdown_title)) {
@@ -1601,6 +1635,9 @@ fun PallaSyncSettingsScreen(
                                 Text(stringResource(R.string.pallasync_relay_shutdown_unscheduled))
                             } else {
                                 Text(stringResource(R.string.pallasync_relay_shutdown_at, notice.shutdownAtMs))
+                            }
+                            notice.noticeId?.let { noticeId ->
+                                Text(stringResource(R.string.pallasync_relay_notice_id, noticeId))
                             }
                             notice.migrationOrigin?.let { suggestedOrigin ->
                                 Text(stringResource(R.string.pallasync_relay_shutdown_suggestion, suggestedOrigin))

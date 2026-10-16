@@ -748,6 +748,8 @@ object PallaSyncCore {
         origin: String,
     ): String
 
+    external fun validateRelayNotice(notice: ByteArray): String
+
     external fun validatePolicy(
         markdown: ByteArray,
         disclosure: ByteArray,

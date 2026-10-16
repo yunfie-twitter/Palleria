@@ -178,4 +178,23 @@ class PallaSyncRetryGateTest {
         gate.relayShutdownNotice(origin) shouldBe
             PallaSyncRetryGate.RelayShutdownNotice(1_791_685_000_000, null, writesStopped = false)
     }
+
+    @Test
+    fun `authenticated relay notice stores its public notice id`() {
+        val gate = gate()
+        gate.observeRelayNotice(
+            origin,
+            1_791_685_000_000,
+            "https://target.example",
+            "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
+        )
+        gate.observeHealth(origin, null, null)
+        gate.relayShutdownNotice(origin) shouldBe
+            PallaSyncRetryGate.RelayShutdownNotice(
+                1_791_685_000_000,
+                "https://target.example",
+                writesStopped = false,
+                noticeId = "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
+            )
+    }
 }

@@ -39,12 +39,14 @@ internal class PallaSyncRetryGate(
         val relayShuttingDown: Boolean = false,
         val shutdownAtMs: Long? = null,
         val migrationOrigin: String? = null,
+        val noticeId: String? = null,
     )
 
     data class RelayShutdownNotice(
         val shutdownAtMs: Long?,
         val migrationOrigin: String?,
         val writesStopped: Boolean,
+        val noticeId: String? = null,
     )
 
     fun remaining(origin: String): Long =
@@ -172,7 +174,7 @@ internal class PallaSyncRetryGate(
             if (!state.relayShuttingDown && state.shutdownAtMs == null && state.migrationOrigin == null) {
                 null
             } else {
-                RelayShutdownNotice(state.shutdownAtMs, state.migrationOrigin, state.relayShuttingDown)
+                RelayShutdownNotice(state.shutdownAtMs, state.migrationOrigin, state.relayShuttingDown, state.noticeId)
             }
         }
 
@@ -186,11 +188,33 @@ internal class PallaSyncRetryGate(
             save(
                 origin,
                 state.copy(
-                    shutdownAtMs = shutdownAtMs,
-                    migrationOrigin = migrationOrigin?.let(::validatedMigrationOrigin),
+                    shutdownAtMs = if (state.noticeId == null) shutdownAtMs else state.shutdownAtMs,
+                    migrationOrigin =
+                        if (state.noticeId == null) {
+                            migrationOrigin?.let(::validatedMigrationOrigin)
+                        } else {
+                            state.migrationOrigin
+                        },
                 ),
             )
         }
+    }
+
+    fun observeRelayNotice(
+        origin: String,
+        shutdownAtMs: Long?,
+        migrationOrigin: String?,
+        noticeId: String,
+    ) = synchronized(lock) {
+        val state = load(origin)
+        save(
+            origin,
+            state.copy(
+                shutdownAtMs = shutdownAtMs,
+                migrationOrigin = migrationOrigin?.let(::validatedMigrationOrigin),
+                noticeId = noticeId,
+            ),
+        )
     }
 
     fun needsReconciliation(

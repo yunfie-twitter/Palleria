@@ -41,6 +41,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -2446,6 +2447,45 @@ internal class PalleriaSyncCoordinator(
         val normalized = normalizeServerUrl(rawOrigin) ?: return null
         return policy.retry.relayShutdownNotice(normalized)
     }
+
+    /** §10.14: fetch and strictly validate the authenticated notice for the active chain. */
+    internal suspend fun fetchRelayShutdownNotice(): PallaSyncRetryGate.RelayShutdownNotice =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val origin = pin.getValue("origin").jsonPrimitive.content
+                val base =
+                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                check(PallaSyncUrls.extractOrigin(base) == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                policy.requireChainOrigin(state.chainId, origin)
+                policy.requireCurrent(origin)
+                val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val relay = PallaSyncPeerRelay(db, remote, crypto)
+                val bytes =
+                    relay.requestBytes(
+                        PallaSyncUrls.relayNotice(base, state.chainId),
+                        device,
+                        "GET",
+                        PALLASYNC_MEDIA_TYPE,
+                    ) { response ->
+                        PallaSyncCore.validateRelayNotice(response).toByteArray(Charsets.UTF_8)
+                    }
+                val notice = Json.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonObject
+                policy.retry.observeRelayNotice(
+                    origin,
+                    notice["shutdown_at_ms"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.long,
+                    notice["migration_origin"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
+                    notice.getValue("notice_id").jsonPrimitive.content,
+                )
+                checkNotNull(policy.retry.relayShutdownNotice(origin))
+            }
+        }
 
     /** Read-only v2.0 source endpoint; callers must still authenticate records and prove a frozen transcript. */
     internal suspend fun fetchLegacyV20Records(

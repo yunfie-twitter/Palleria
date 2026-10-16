@@ -9,6 +9,21 @@ import java.util.UUID
 
 class PallaSyncCheckpointJniTest {
     @Test
+    fun `relay notice JNI validator rejects unknown fields and non-origin suggestions`() {
+        val valid =
+            """{"shutdown_at_ms":1791685000000,"migration_origin":"https://target.example","notice_id":"f4e3d90e-2461-4c7c-9f2f-89452a28657c","server_time_ms":1791684000000}"""
+        PallaSyncCore.validateRelayNotice(valid.toByteArray())
+
+        val unknown = valid.dropLast(1) + ",\"detail\":\"ignored\"}"
+        val unknownFailure = runCatching { PallaSyncCore.validateRelayNotice(unknown.toByteArray()) }.exceptionOrNull()
+        (unknownFailure is IllegalStateException) shouldBe true
+
+        val unsafe = valid.replace("https://target.example", "https://target.example/path")
+        val unsafeFailure = runCatching { PallaSyncCore.validateRelayNotice(unsafe.toByteArray()) }.exceptionOrNull()
+        (unsafeFailure is IllegalStateException) shouldBe true
+    }
+
+    @Test
     fun `certified device session signs and native verifier rejects changed or untrusted checkpoints`() {
         val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
         PallaSyncCore.setSecretForeground(true)

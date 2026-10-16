@@ -14,6 +14,10 @@
     <string name="pallasync_relay_shutdown_suggestion">移行先の候補: %1$s</string>
     <string name="pallasync_relay_shutdown_suggestion_limit">これは未信頼の候補で、chainの接続先を変更したり転送を許可したりしません。移行前に接続先リレー、署名鍵、privacy文書、完全な送信元履歴を検証してください。</string>
     <string name="pallasync_relay_shutdown_review_migration">移行先を確認</string>
+    <string name="pallasync_relay_notice_fetch">認証済み停止通知を取得</string>
+    <string name="pallasync_relay_notice_loading">停止通知を取得中…</string>
+    <string name="pallasync_relay_notice_unavailable">リレーの停止通知を検証できませんでした。</string>
+    <string name="pallasync_relay_notice_id">通知ID: %1$s</string>
     <string name="pallasync_reseed_import_target_desc">送信先リレーを選びます。この操作はcontrol historyをstageするだけで、書込み可能なchainを作成したりレコードを移動したりしません。</string>
     <string name="pallasync_reseed_import_confirm">送信先を確認し、chain管理者のニーモニックを入力してください。送信先originのprivacy policyが最新で、同意済みである必要があります。この操作は署名済みcontrol historyをstageしてlog IDを受け取るだけです。新世代のcommitや暗号化レコードの移動は行いません。</string>
     <string name="pallasync_reseed_import_staged">chain %1$s の履歴をstageしました。staging log: %2$s。送信先chainはまだ書込みできません。</string>

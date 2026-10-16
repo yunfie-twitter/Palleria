@@ -888,7 +888,7 @@
         "PallaSync/tests/reference/run_android_interop.py"
       ],
       "result": "pending",
-      "remaining": "Execute start/resume/unknown/destructive/periodic probes and authenticated relay migration with retained contradiction evidence. A 503 RELAY_SHUTTING_DOWN now suspends writes on its origin and presents the migration_origin only as a user-reviewed candidate; it does not implement or verify the complete relay migration cutover. The first user-authorized DELETE now runs the bounded probe, while a retry with the persisted signed delete_request skips post-deletion probes and reuses that exact body. No relay fault-injection proves the probe or complete migration branches yet.",
+      "remaining": "Execute start/resume/unknown/destructive/periodic probes and authenticated relay migration with retained contradiction evidence. §10.14 GET C/relay-notice now uses the device token for the pinned source chain, validates exact fields and normalized candidate origin in Rust/JNI, stores the public notice ID, and presents only an explicit user-reviewed migration candidate. It does not implement or verify complete relay migration cutover. The first user-authorized DELETE now runs the bounded probe, while a retry with the persisted signed delete_request skips post-deletion probes and reuses that exact body. No relay fault-injection proves the probe or complete migration branches yet.",
       "verification_scope": "targeted_partial"
     },
     {

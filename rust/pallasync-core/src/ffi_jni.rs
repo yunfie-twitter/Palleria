@@ -1730,6 +1730,35 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateRelayNotice<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    notice: JByteArray<'local>,
+) -> jstring {
+    let result = (|| {
+        let bytes = env
+            .convert_byte_array(&notice)
+            .map_err(|_| ClientError("C_RELAY_DISCLOSURE_INVALID"))?;
+        let notice = crate::strict::jcs::parse(&bytes)
+            .map_err(|_| ClientError("C_RELAY_DISCLOSURE_INVALID"))?;
+        crate::disclosure::validate_relay_notice(&notice)?;
+        Ok::<_, ClientError>(notice)
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value.to_string())
+            .map(|value| value.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validatePolicy<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
