@@ -56,6 +56,16 @@ class PallaSyncLegacyV20SourceTest {
     }
 
     @Test
+    fun `v20 favorite merge places each later incoming snapshot before retained favorites`() {
+        val merge = PallaSyncLegacyV20Source.FavoriteMerge()
+        merge.accept(listOf("a", "b"))
+        merge.accept(listOf("b", "c"))
+        merge.accept(listOf("d", "a"))
+
+        merge.mostRecentFirst() shouldBe listOf("d", "a", "b", "c")
+    }
+
+    @Test
     fun `v20 source retains identifiable schema-invalid signed items for native quarantine`() {
         val malformedPayload = record(firstId, 10).replace("\"encrypted_payload\":\"$ciphertext\"", "\"encrypted_payload\":17")
         val unknownMember = record(secondId, 11).dropLast(1) + ",\"unknown\":true}"

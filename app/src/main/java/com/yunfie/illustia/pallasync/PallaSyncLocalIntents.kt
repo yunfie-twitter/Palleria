@@ -8,6 +8,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.Base64
 
@@ -37,6 +39,7 @@ internal class PallaSyncLocalIntents(
         val collisionCount: Long = 0,
         val schemaCounts: Map<String, Long> = emptyMap(),
         val sourceComplete: Boolean = false,
+        val legacyFavoriteOrder: List<String>? = null,
     )
 
     internal data class LegacyEventMapping(
@@ -439,6 +442,7 @@ internal class PallaSyncLocalIntents(
         expectedHighWater: Long,
         expectedRecordCount: Long,
         expectedExportHash: String,
+        legacyFavoriteOrder: List<String>? = null,
     ) = store.transaction {
         val dao = store.protocolDao()
         val row = checkNotNull(dao.migrationChunk(migrationId, 0)) { "C_MISSING_DEPENDENCY" }
@@ -450,11 +454,18 @@ internal class PallaSyncLocalIntents(
                 dao.legacySourceEvidenceCount(sourceEvidenceJournalId(migrationId)) == expectedRecordCount,
         ) { "C_ROLLBACK_DETECTED" }
         if (manifest.sourceComplete) {
-            check(row.state == "legacy_candidates_staged") { "C_ROLLBACK_DETECTED" }
+            check(
+                row.state == "legacy_candidates_staged" &&
+                    (legacyFavoriteOrder == null || manifest.legacyFavoriteOrder == legacyFavoriteOrder),
+            ) { "C_ROLLBACK_DETECTED" }
             return@transaction
         }
         check(row.state == "legacy_staging") { "C_ROLLBACK_DETECTED" }
-        val completed = manifest.copy(sourceComplete = true)
+        val completed =
+            manifest.copy(
+                sourceComplete = true,
+                legacyFavoriteOrder = legacyFavoriteOrder ?: manifest.legacyFavoriteOrder,
+            )
         check(
             dao.updateMigrationManifest(
                 migrationId,
@@ -914,6 +925,7 @@ internal class PallaSyncLocalIntents(
             ) {
                 "C_ROLLBACK_DETECTED"
             }
+            prepareLegacyV20FavoriteOrder(migrationId, manifest)
             check(
                 dao.updateMigrationManifest(
                     migrationId,
@@ -926,6 +938,53 @@ internal class PallaSyncLocalIntents(
                 "C_LOCAL_STORAGE_FULL"
             }
         }
+
+    /** Persist exact v2.0 incoming-first distinct merge order before any migrated favorite is authored (§9.2, v2 §5.2). */
+    private suspend fun prepareLegacyV20FavoriteOrder(
+        migrationId: String,
+        manifest: LegacyManifest,
+    ) {
+        val order = manifest.legacyFavoriteOrder ?: return
+        if (manifest.sourceProtocol != "2.0") return
+        check(order.distinct().size == order.size) { "C_ROLLBACK_DETECTED" }
+        val dao = store.protocolDao()
+        val selected =
+            dao.selectedLegacyMigrationFavorites(
+                migrationId,
+                FAVORITE_TAG_SCHEMA_V3,
+                order.size,
+            )
+        check(selected.size == order.size && selected.map { it.entityId }.toSet() == order.toSet()) { "C_ROLLBACK_DETECTED" }
+        val candidateByTag = selected.associateBy(LegacyMigrationCandidateEntity::entityId)
+        val orderKeys = PallaSyncFractionalOrder.place(order, order.toSet(), emptyMap())
+        for (tag in order) {
+            currentCoroutineContext().ensureActive()
+            val candidate = checkNotNull(candidateByTag[tag]) { "C_ROLLBACK_DETECTED" }
+            val row = checkNotNull(dao.migrationChunk(migrationId, candidate.entryIndex)) { "C_ROLLBACK_DETECTED" }
+            check(row.state == "pending" && row.targetChain == manifest.targetChain) { "C_ROLLBACK_DETECTED" }
+            val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+            val original = work.sourceEvent ?: work.event
+            check(
+                work.legacyFavoriteSnapshotUnique && original.schema == FAVORITE_TAG_SCHEMA_V3 &&
+                    original.entityId == tag && original.operation == "upsert" &&
+                    sourceHash(original) == row.sourceHash,
+            ) { "C_ROLLBACK_DETECTED" }
+            val prepared =
+                work.copy(
+                    event = original.copy(context = buildJsonObject { put("order_key", orderKeys.getValue(tag)) }),
+                    sourceEvent = original,
+                    localPrepared = true,
+                )
+            check(
+                dao.updateLegacyMigrationCandidate(
+                    migrationId,
+                    candidate.entryIndex,
+                    row.sourceHash,
+                    Json.encodeToString(prepared),
+                ) == 1,
+            ) { "C_LOCAL_STORAGE_FULL" }
+        }
+    }
 
     private suspend fun legacyCandidateGroup(
         migrationId: String,
@@ -987,9 +1046,9 @@ internal class PallaSyncLocalIntents(
         var selectedSequence = Long.MIN_VALUE
         var selectedCandidateIndex = Int.MIN_VALUE
         var selectedEntry = Long.MIN_VALUE
-        var firstSequence = Long.MAX_VALUE
-        var firstCandidateIndex = Int.MAX_VALUE
-        var firstEntry = Long.MAX_VALUE
+        var favoriteSequence = Long.MIN_VALUE
+        var favoriteCandidateIndex = Int.MIN_VALUE
+        var favoriteEntry = Long.MIN_VALUE
         while (true) {
             currentCoroutineContext().ensureActive()
             val rows = dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, after, PAGE_SIZE)
@@ -1004,18 +1063,18 @@ internal class PallaSyncLocalIntents(
                             checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, candidate.entryIndex)) {
                                 "C_ROLLBACK_DETECTED"
                             }
-                        val earlier =
+                        val later =
                             when {
-                                metadata.sourceSequence < firstSequence -> true
-                                metadata.sourceSequence > firstSequence -> false
-                                metadata.candidateIndex < firstCandidateIndex -> true
-                                metadata.candidateIndex > firstCandidateIndex -> false
-                                else -> candidate.entryIndex < firstEntry
+                                metadata.sourceSequence > favoriteSequence -> true
+                                metadata.sourceSequence < favoriteSequence -> false
+                                metadata.candidateIndex > favoriteCandidateIndex -> true
+                                metadata.candidateIndex < favoriteCandidateIndex -> false
+                                else -> candidate.entryIndex > favoriteEntry
                             }
-                        if (earlier) {
-                            firstSequence = metadata.sourceSequence
-                            firstCandidateIndex = metadata.candidateIndex
-                            firstEntry = candidate.entryIndex
+                        if (later) {
+                            favoriteSequence = metadata.sourceSequence
+                            favoriteCandidateIndex = metadata.candidateIndex
+                            favoriteEntry = candidate.entryIndex
                         }
                     } else {
                         unsequenced = true
@@ -1050,8 +1109,8 @@ internal class PallaSyncLocalIntents(
                 check(selectedEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
                 selectedEntry
             } else if (favoriteDistinct) {
-                check(firstEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
-                firstEntry
+                check(favoriteEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
+                favoriteEntry
             } else {
                 when {
                     count == 1L -> dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, 0, 1).single().entryIndex

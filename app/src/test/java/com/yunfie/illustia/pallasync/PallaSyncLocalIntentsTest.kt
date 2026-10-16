@@ -557,7 +557,7 @@ class PallaSyncLocalIntentsTest {
         }
 
     @Test
-    fun `v20 favorite snapshots retain the first distinct occurrence and its list order`() =
+    fun `v20 favorite snapshots reproduce incoming-first distinct merge order`() =
         runBlocking<Unit> {
             val db = database()
             try {
@@ -577,25 +577,31 @@ class PallaSyncLocalIntentsTest {
                 recordIds.indices.forEach { index ->
                     intents.archiveLegacySourceRecord(migration, index + 1L, recordIds[index], hashes[index], sourceJson[index])
                 }
-                val favorite =
+
+                fun favorite(tag: String) =
                     PallaSyncPendingEvent(
-                        "palleria.favorite_tag/3",
-                        "tag",
+                        FAVORITE_TAG_SCHEMA_V3,
+                        tag,
                         "upsert",
-                        buildJsonObject { put("tag", "tag") },
+                        buildJsonObject { put("tag", tag) },
                     )
                 intents.stageLegacyBatch(
                     migration,
                     expectedAfterSequence = 0,
                     throughSequence = 2,
                     mappings =
-                        recordIds.indices.map { index ->
+                        listOf(
+                            Triple(1, 0, "a"),
+                            Triple(1, 1, "b"),
+                            Triple(2, 0, "b"),
+                            Triple(2, 1, "c"),
+                        ).map { (source, index, tag) ->
                             PallaSyncLocalIntents.LegacyEventMapping(
-                                index + 1L,
-                                recordIds[index],
-                                0,
-                                hashes[index],
-                                favorite,
+                                source.toLong(),
+                                recordIds[source - 1],
+                                index,
+                                hashes[source - 1],
+                                favorite(tag),
                                 legacyFavoriteSnapshotUnique = true,
                             )
                         },
@@ -605,13 +611,30 @@ class PallaSyncLocalIntentsTest {
                         },
                     report = PallaSyncLocalIntents.LegacyBatchReport(2, 0, 0, 0, complete = false),
                 )
-                intents.completeLegacySourceScan(migration, 2, 2, exportHash)
+                intents.completeLegacySourceScan(migration, 2, 2, exportHash, listOf("b", "c", "a"))
                 intents.finalizeLegacyMigrationChoices(migration)
 
                 val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
-                candidates.single { !it.excluded }.sourceSequence shouldBe 1L
-                candidates.single { it.excluded }.sourceSequence shouldBe 2L
-                store.protocolDao().pendingMigrationCount(migration) shouldBe 1
+                candidates.single { it.event.entityId == "b" && !it.excluded }.sourceSequence shouldBe 2L
+                candidates.single { it.event.entityId == "b" && it.excluded }.sourceSequence shouldBe 1L
+                candidates.filterNot { it.excluded }.map { it.event.entityId } shouldBe listOf("a", "b", "c")
+                val preparedKeys =
+                    candidates
+                        .filterNot { it.excluded }
+                        .associate { candidate ->
+                            val work =
+                                Json.decodeFromString<PallaSyncReplayWork>(
+                                    checkNotNull(store.protocolDao().migrationChunk(migration, candidate.migrationEntryIndex)).reportJson,
+                                )
+                            candidate.event.entityId to
+                                work.event.context
+                                    .getValue("order_key")
+                                    .jsonPrimitive
+                                    .content
+                        }
+                listOf("b", "c", "a").map(preparedKeys::getValue) shouldBe
+                    listOf("b", "c", "a").map { tag -> preparedKeys.getValue(tag) }.sorted()
+                store.protocolDao().pendingMigrationCount(migration) shouldBe 3
             } finally {
                 db.close()
             }

@@ -2195,6 +2195,29 @@ internal class PalleriaSyncCoordinator(
                 ) {
                     "C_RECORD_ID_CONFLICT"
                 }
+                val legacyFavoriteMerge = PallaSyncLegacyV20Source.FavoriteMerge()
+                for (record in records) {
+                    currentCoroutineContext().ensureActive()
+                    val candidates =
+                        try {
+                            val bytes = PallaSyncCore.convertLegacyRecord(session, record.json, record.deviceId, "")
+                            try {
+                                Json.decodeFromString<List<PallaSyncLegacyV21Source.EntityCandidate>>(String(bytes, Charsets.UTF_8))
+                            } finally {
+                                bytes.fill(0)
+                            }
+                        } catch (error: IllegalStateException) {
+                            if (error.message?.takeIf { it in LEGACY_QUARANTINE_CODES } == null) throw error
+                            continue
+                        } catch (_: IllegalArgumentException) {
+                            continue
+                        }
+                    val incoming =
+                        candidates
+                            .filter { it.legacySnapshot && it.collection == "palleria.favorite_tag/3" && it.operation == "upsert" }
+                            .map(PallaSyncLegacyV21Source.EntityCandidate::entityId)
+                    legacyFavoriteMerge.accept(incoming)
+                }
                 var after = stagedProgress.stagedThrough
                 for (record in records) {
                     currentCoroutineContext().ensureActive()
@@ -2282,7 +2305,13 @@ internal class PalleriaSyncCoordinator(
                 check(after == proof.highWater) { "C_ROLLBACK_DETECTED" }
                 val finalProgress = localIntents.legacyMigrationProgress(migrationId) ?: error("C_MISSING_DEPENDENCY")
                 check(finalProgress.quarantined == proof.quarantinedCount) { "C_RECORD_ID_CONFLICT" }
-                localIntents.completeLegacySourceScan(migrationId, proof.highWater, proof.highWater, proof.exportHash)
+                localIntents.completeLegacySourceScan(
+                    migrationId,
+                    proof.highWater,
+                    proof.highWater,
+                    proof.exportHash,
+                    legacyFavoriteMerge.mostRecentFirst(),
+                )
                 PallaSyncHttpResult.Success(proof)
             } catch (cancelled: CancellationException) {
                 throw cancelled

@@ -36,6 +36,20 @@ internal object PallaSyncLegacyV20Source {
         val quarantinedCount: Long,
     )
 
+    /** Incremental equivalent of v2.0's (incoming + existing).distinct() favorite reducer. */
+    internal class FavoriteMerge {
+        private val oldestFirst = linkedSetOf<String>()
+
+        fun accept(incomingMostRecentFirst: List<String>) {
+            incomingMostRecentFirst.asReversed().forEach { tag ->
+                oldestFirst.remove(tag)
+                oldestFirst.add(tag)
+            }
+        }
+
+        fun mostRecentFirst(): List<String> = oldestFirst.toList().asReversed()
+    }
+
     /** §6.3: v2.0 exposes the complete array at since_ms=0 and sorts it oldest to newest. */
     internal fun fetchRecords(
         remote: PallaSyncRemoteService,
