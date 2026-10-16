@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
+import com.yunfie.illustia.pallasync.PallaSyncRecoverySetStore
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import kotlinx.coroutines.CancellationException
@@ -27,6 +28,7 @@ internal fun PallaSyncNewRootRetirementControls(
     manager: PalleriaSyncManager,
     sourceChain: String,
     targetChain: String,
+    sourceRecoverySet: PallaSyncRecoverySetStore.Entry?,
     onDeleted: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -37,6 +39,7 @@ internal fun PallaSyncNewRootRetirementControls(
     var exportedProof by remember { mutableStateOf<String?>(null) }
     var inputVisible by remember { mutableStateOf(false) }
     var confirmErase by remember { mutableStateOf(false) }
+    var collectingRecoveryShares by remember { mutableStateOf(false) }
 
     val exporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -78,6 +81,55 @@ internal fun PallaSyncNewRootRetirementControls(
         enabled = !busy,
         onClick = { inputVisible = true },
     )
+    if (sourceRecoverySet != null) {
+        TextButton(
+            text = stringResource(R.string.pallasync_recovery_new_root_retire_with_shares),
+            enabled = !busy,
+            onClick = { collectingRecoveryShares = true },
+        )
+    }
+
+    if (collectingRecoveryShares && sourceRecoverySet != null) {
+        PallaSyncRecoveryCollectDialog(
+            manager = manager,
+            entry = sourceRecoverySet,
+            operation = com.yunfie.illustia.pallasync.PallaSyncRootSession.Operation.DELETE,
+            recoveryChainId = sourceChain,
+            newRootRetirement = sourceChain to targetChain,
+            onDismiss = { collectingRecoveryShares = false },
+            onDeletionRequested = { result ->
+                when (result) {
+                    PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT -> {
+                        busy = true
+                        scope.launch {
+                            try {
+                                proof = manager.pendingNewRootSourceDeletionProof(sourceChain, targetChain)
+                                if (proof == null) {
+                                    Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                                } else {
+                                    exporter.launch("pallasync-old-chain-deletion-proof.json")
+                                }
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                            } finally {
+                                busy = false
+                            }
+                        }
+                    }
+
+                    PallaSyncDeletionRequestResult.PENDING_EVIDENCE -> {
+                        Toast.makeText(context, R.string.pallasync_v3_epoch_deletion_unverified, Toast.LENGTH_LONG).show()
+                    }
+
+                    PallaSyncDeletionRequestResult.FAILED -> {
+                        Toast.makeText(context, R.string.error_pallasync_delete_chain_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+        )
+    }
 
     if (inputVisible) {
         PallaSyncRootInputDialog(

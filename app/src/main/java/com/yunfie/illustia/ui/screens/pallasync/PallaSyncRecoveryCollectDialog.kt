@@ -23,6 +23,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.yunfie.illustia.R
+import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryCollectorOwner
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryLocalFiles
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryManagement
@@ -50,6 +51,9 @@ internal fun PallaSyncRecoveryCollectDialog(
     entry: PallaSyncRecoverySetStore.Entry,
     operation: PallaSyncRootSession.Operation,
     onDismiss: () -> Unit,
+    recoveryChainId: String? = null,
+    newRootRetirement: Pair<String, String>? = null,
+    onDeletionRequested: (PallaSyncDeletionRequestResult) -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -77,10 +81,10 @@ internal fun PallaSyncRecoveryCollectDialog(
     var confirmOperation by remember { mutableStateOf(false) }
     val title =
         stringResource(
-            if (operation == PallaSyncRootSession.Operation.RECOVERY_DISABLE) {
-                R.string.pallasync_recovery_collect_disable
-            } else {
-                R.string.pallasync_recovery_collect_rotate
+            when (operation) {
+                PallaSyncRootSession.Operation.RECOVERY_DISABLE -> R.string.pallasync_recovery_collect_disable
+                PallaSyncRootSession.Operation.DELETE -> R.string.pallasync_recovery_collect_delete_old_root
+                else -> R.string.pallasync_recovery_collect_rotate
             },
         )
     val open =
@@ -206,7 +210,7 @@ internal fun PallaSyncRecoveryCollectDialog(
                         started = true
                         run {
                             withContext(Dispatchers.IO) {
-                                owner.begin(checkNotNull(manager.recoveryChainContext()) { "C_MISSING_DEPENDENCY" }, true)
+                                owner.begin(checkNotNull(manager.recoveryChainContext(recoveryChainId)) { "C_MISSING_DEPENDENCY" }, true)
                             }
                         }
                     },
@@ -267,22 +271,47 @@ internal fun PallaSyncRecoveryCollectDialog(
         MiuixConfirmDialog(
             show = true,
             title = title,
-            summary = stringResource(R.string.pallasync_recovery_collect_operation_confirm),
+            summary =
+                stringResource(
+                    if (operation == PallaSyncRootSession.Operation.DELETE) {
+                        R.string.pallasync_recovery_collect_delete_confirm
+                    } else {
+                        R.string.pallasync_recovery_collect_operation_confirm
+                    },
+                ),
             confirmText = stringResource(R.string.action_confirm),
-            destructive = operation == PallaSyncRootSession.Operation.RECOVERY_DISABLE,
+            destructive = operation in setOf(PallaSyncRootSession.Operation.RECOVERY_DISABLE, PallaSyncRootSession.Operation.DELETE),
             onDismiss = { confirmOperation = false },
             onConfirm = {
                 confirmOperation = false
                 run {
                     withContext(Dispatchers.IO) { owner.finish(true) }
-                    succeeded =
-                        if (operation == PallaSyncRootSession.Operation.RECOVERY_DISABLE) {
-                            management.retireRecovered(entry, owner.recovered(), cancellation)
-                            true
-                        } else {
-                            manager.rotateRecoveredEpoch(owner.recovered(), cancellation)
+                    when {
+                        operation == PallaSyncRootSession.Operation.RECOVERY_DISABLE -> {
+                            succeeded = management.retireRecovered(entry, owner.recovered(), cancellation).state == "retired"
+                            owner.operationFinished(succeeded)
                         }
-                    owner.operationFinished(succeeded)
+
+                        operation == PallaSyncRootSession.Operation.DELETE && newRootRetirement != null -> {
+                            val (sourceChain, targetChain) = newRootRetirement
+                            val result =
+                                manager.requestNewRootSourceDeletionFromRecovery(
+                                    sourceChain,
+                                    targetChain,
+                                    owner.recovered(),
+                                    cancellation,
+                                )
+                            succeeded = result == PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT
+                            owner.operationFinished(result != PallaSyncDeletionRequestResult.FAILED)
+                            onDeletionRequested(result)
+                            if (result != PallaSyncDeletionRequestResult.FAILED) onDismiss()
+                        }
+
+                        else -> {
+                            succeeded = manager.rotateRecoveredEpoch(owner.recovered(), cancellation)
+                            owner.operationFinished(succeeded)
+                        }
+                    }
                     owner.close()
                 }
             },

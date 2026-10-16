@@ -96,7 +96,8 @@ class PalleriaSyncManager(
 
     suspend fun getPendingLocalEditCount(): Long = coordinator.getPendingLocalEditCount()
 
-    internal suspend fun recoveryChainContext(): PallaSyncRecoveryChainContext? = coordinator.recoveryChainContext()
+    internal suspend fun recoveryChainContext(chainId: String? = null): PallaSyncRecoveryChainContext? =
+        coordinator.recoveryChainContext(chainId)
 
     internal suspend fun rotateRecoveredEpoch(
         completion: PallaSyncRecoveryCompletion,
@@ -132,6 +133,14 @@ class PalleriaSyncManager(
             mnemonic,
             passphrase,
         )
+
+    internal suspend fun requestNewRootSourceDeletionFromRecovery(
+        sourceChain: String,
+        targetChain: String,
+        completion: PallaSyncRecoveryCompletion,
+        cancellation: PallaSyncRootCancellation,
+    ): PallaSyncDeletionRequestResult =
+        coordinator.requestNewRootSourceDeletionFromRecovery(sourceChain, targetChain, completion, cancellation)
 
     internal suspend fun pendingNewRootSourceDeletionProof(
         sourceChain: String,

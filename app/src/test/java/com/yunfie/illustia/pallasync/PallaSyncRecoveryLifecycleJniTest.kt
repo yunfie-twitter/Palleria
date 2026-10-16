@@ -228,6 +228,40 @@ class PallaSyncRecoveryLifecycleJniTest :
                     completion.takeRoot(operation, null) { TEST_NOW }.use { root ->
                         root.identity shouldBe originalIdentity
                         parsed(checkNotNull(completion.identityJson)).keys shouldBe setOf("chain_id", "admin_public_key")
+                        val deletionOperation = PallaSyncRootSession.Operation.DELETE
+                        val deletionCeremony = UUID.randomUUID().toString()
+                        val deletionCollector =
+                            PallaSyncCore.beginRecoveryCollection(
+                                manifest.toString(),
+                                active,
+                                originalIdentity.adminPublicKey,
+                                null,
+                                deletionCeremony,
+                                deletionOperation.wire,
+                                0,
+                                true,
+                                false,
+                                false,
+                            )
+                        try {
+                            repeat(TEST_THRESHOLD.toInt()) { index ->
+                                collectStored(
+                                    deletionCollector,
+                                    manifest,
+                                    deletionCeremony,
+                                    packages[index].toString(),
+                                    strictRootUtf8("independent offline credential $index"),
+                                    "recover",
+                                )
+                            }
+                            PallaSyncCore.finishRecoveryCollection(deletionCollector, true).use { deletionCompletion ->
+                                deletionCompletion.takeRoot(deletionOperation, null) { TEST_NOW }.use { deleteRoot ->
+                                    deleteRoot.identity shouldBe originalIdentity
+                                }
+                            }
+                        } finally {
+                            PallaSyncCore.endRecoveryCollection(deletionCollector)
+                        }
                         PallaSyncCore.cancelRecoverySetSessions(manifest.getValue("recovery_set_id").jsonPrimitive.content)
                         shouldThrow<IllegalStateException> { PallaSyncCore.rootIdentity(root.handle) }.message shouldBe
                             "C_RECOVERY_AUTH_REQUIRED"

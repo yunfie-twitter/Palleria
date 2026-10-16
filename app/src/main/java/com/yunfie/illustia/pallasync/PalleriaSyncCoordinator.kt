@@ -190,10 +190,17 @@ internal class PalleriaSyncCoordinator(
 
     suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = membership.read(items)
 
-    internal suspend fun recoveryChainContext(): PallaSyncRecoveryChainContext? =
+    internal suspend fun recoveryChainContext(): PallaSyncRecoveryChainContext? = recoveryChainContext(chainId = null)
+
+    internal suspend fun recoveryChainContext(chainId: String?): PallaSyncRecoveryChainContext? =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
-                val state = db.dao.getActiveChainState() ?: return@withLock null
+                val state =
+                    if (chainId == null) {
+                        db.dao.getActiveChainState()
+                    } else {
+                        db.dao.getChainState(chainId)
+                    } ?: return@withLock null
                 requireProtectedAuthority(state.chainId)
                 val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
                 val parameters = authority.getValue("parameters").jsonObject
@@ -3322,6 +3329,49 @@ internal class PalleriaSyncCoordinator(
                     deletionFailure(failure)
                 } catch (failure: SQLiteException) {
                     deletionFailure(failure)
+                }
+            }
+        }
+
+    /** §5.6/§13.8: consume shares only inside Rust, then authorize old-chain DELETE with the recovered root. */
+    internal suspend fun requestNewRootSourceDeletionFromRecovery(
+        sourceChain: String,
+        targetChain: String,
+        completion: PallaSyncRecoveryCompletion,
+        cancellation: PallaSyncRootCancellation,
+    ): PallaSyncDeletionRequestResult =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                var root: PallaSyncRootSession? = null
+                try {
+                    val migration = verifyNewRootMigrationStateLocked(sourceChain, targetChain)
+                    check(migration.logicalStateMatches == true) { "C_ACCEPTANCE_UNPROVEN" }
+                    val context = createDeletionContext(sourceChain)
+                    root =
+                        completion.takeRoot(
+                            PallaSyncRootSession.Operation.DELETE,
+                            policy::requireCurrent,
+                            policy.retry::correctedTime,
+                        )
+                    check(root.identity.chainId == sourceChain && root.identity.adminPublicKey == context.admin) {
+                        "C_RECOVERY_ROOT_MISMATCH"
+                    }
+                    cancellation.attach(root)
+                    submitDeletionAndErase(root, context)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: IllegalStateException) {
+                    deletionFailure(failure)
+                } catch (failure: IllegalArgumentException) {
+                    deletionFailure(failure)
+                } catch (failure: SQLiteException) {
+                    deletionFailure(failure)
+                } finally {
+                    root?.let {
+                        it.close()
+                        cancellation.release(it)
+                    }
+                    completion.close()
                 }
             }
         }

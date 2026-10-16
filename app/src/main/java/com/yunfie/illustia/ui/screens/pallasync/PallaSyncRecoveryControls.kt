@@ -180,6 +180,15 @@ internal fun PallaSyncRecoveryControls(
                                 )
                             }
                             if (migrationResult == (source to true)) {
+                                val sourceRecoverySet =
+                                    entries.orEmpty().firstOrNull { candidate ->
+                                        candidate.manifest["chain_id"]?.jsonPrimitive?.content == source &&
+                                            candidate.state == "active" &&
+                                            !candidate.compromised &&
+                                            candidate.conflictingStatuses == null &&
+                                            !candidate.replacementPending &&
+                                            candidate.forkEvidence.isEmpty()
+                                    }
                                 val targetRecoveryConfigured =
                                     entries.orEmpty().any { candidate ->
                                         candidate.manifest["chain_id"]?.jsonPrimitive?.content == target &&
@@ -198,7 +207,12 @@ internal fun PallaSyncRecoveryControls(
                                     enabled = !busy,
                                     onClick = onManageDevices,
                                 )
-                                PallaSyncNewRootRetirementControls(manager, source, target) {
+                                PallaSyncNewRootRetirementControls(
+                                    manager,
+                                    source,
+                                    target,
+                                    sourceRecoverySet,
+                                ) {
                                     migrationResult = null
                                     migrationReceiptProgress = null
                                     failed = false
@@ -303,10 +317,15 @@ internal fun PallaSyncRecoveryControls(
         }
     }
     collecting?.let { (entry, operation) ->
-        PallaSyncRecoveryCollectDialog(manager, entry, operation) {
-            collecting = null
-            revision++
-        }
+        PallaSyncRecoveryCollectDialog(
+            manager = manager,
+            entry = entry,
+            operation = operation,
+            onDismiss = {
+                collecting = null
+                revision++
+            },
+        )
     }
     migrating?.let { source ->
         MiuixConfirmDialog(

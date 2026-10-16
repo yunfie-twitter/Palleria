@@ -76,9 +76,11 @@
     <string name="pallasync_recovery_pair_binding">Chain: %1$s\nGeneration: %2$s\nSet: %3$s\nRole: %4$s\nPurpose: %5$s\nEndpoint: %6$s</string>
     <string name="pallasync_recovery_collect_disable">Disable this recovery set using a threshold</string>
     <string name="pallasync_recovery_collect_rotate">Rotate the epoch using a threshold</string>
+    <string name="pallasync_recovery_collect_delete_old_root">Delete the old chain with a threshold-recovered root</string>
     <string name="pallasync_recovery_collect_guidance">Collect only for the named operation shown above. Choose independent holders and a trusted separate reader for offline media. Each release requires live SAS and authentication. Root recovery restores no missing application ciphertext. No recovered mnemonic or passphrase is displayed or stored; cancellation/backgrounding ends temporary collection.</string>
     <string name="pallasync_recovery_collect_begin">Explicitly start collection for this operation</string>
     <string name="pallasync_recovery_collect_operation_confirm">Verify the intended chain, set and operation. Use the verified threshold only for this selected action. Disabling signs retired status and keeps public evidence; retained copies are not revoked. Epoch rotation requires current signed authority, policy consent, original receipts and CAS verification.</string>
+    <string name="pallasync_recovery_collect_delete_confirm">Verify the old chain and the matching new-chain state shown. The threshold-recovered root input is used only to sign the old chain deletion request; it is never shown or written to a file. Old local chain state remains until the deletion proof is saved and read back.</string>
     <string name="pallasync_recovery_collect_succeeded">The selected operation completed and the native root session ended. Distribute any new signed public status to holders; this does not prove that every offline copy is current.</string>
     <string name="pallasync_recovery_audit_storage_failed">Recovery audit could not be saved. Check available storage.</string>
     <string name="pallasync_recovery_resume_replacement">Finish interrupted recovery replacement</string>

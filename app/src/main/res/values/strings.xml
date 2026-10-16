@@ -1394,6 +1394,7 @@
     <string name="pallasync_recovery_new_root_create_recovery_set">新chain用の復旧セットを作成</string>
     <string name="pallasync_recovery_new_root_manage_devices">新chainの端末登録を開く</string>
     <string name="pallasync_recovery_new_root_retire_source">旧chainを証明付きで退役・削除</string>
+    <string name="pallasync_recovery_new_root_retire_with_shares">Shamir共有で旧rootを復元して削除</string>
     <string name="pallasync_recovery_new_root_retire_source_warning">新旧chainの一致を再検証後、漏洩した旧chainだけに署名済み削除要求を送信します。旧root入力が必要です。返された削除証明をファイルへ保存し、読み戻しを確認してから、この端末の旧chain状態と旧chain鍵を消去します。移行先chainは維持します。旧chain削除後にデータを復元できません。</string>
     <string name="pallasync_recovery_action_failed">状態を確認または更新できませんでした。既存の共有と証拠を保持しています。</string>
     <string name="pallasync_recovery_unknown">復旧状態を確認できていません。</string>
