@@ -104,7 +104,7 @@ internal object PallaSyncLegacyV20Source {
     ): String {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.update("PALLASYNC-LEGACY-V20-EXPORT-v1\u0000".toByteArray(Charsets.UTF_8))
-        val chainBytes = decodeChainId(chainId)
+        val chainBytes = decodeCanonicalBase64Url(chainId, CHAIN_ID_BYTES)
         try {
             digest.update(chainBytes)
         } finally {
@@ -114,7 +114,7 @@ internal object PallaSyncLegacyV20Source {
         for (record in records) {
             check(record.sequence == expectedSequence) { "C_ROLLBACK_DETECTED" }
             val objectHash = PallaSyncCore.objectHash(record.json) ?: error("C_SCHEMA_VIOLATION")
-            val decodedHash = decodeHash(objectHash)
+            val decodedHash = decodeCanonicalBase64Url(objectHash, HASH_BYTES)
             try {
                 digest.update(ByteBuffer.allocate(Long.SIZE_BYTES).putLong(record.sequence).array())
                 digest.update(decodedHash)
@@ -177,7 +177,7 @@ internal object PallaSyncLegacyV20Source {
 
     private fun requireUuidV7(value: String) {
         val uuid = runCatching { UUID.fromString(value) }.getOrNull()
-        check(uuid != null && uuid.version() == 7 && uuid.toString() == value) { "C_SCHEMA_VIOLATION" }
+        check(uuid != null && uuid.version() == UUID_V7_VERSION && uuid.toString() == value) { "C_SCHEMA_VIOLATION" }
     }
 
     private fun requireCanonicalBase64Url(
@@ -198,25 +198,18 @@ internal object PallaSyncLegacyV20Source {
         }
     }
 
-    private fun decodeChainId(value: String): ByteArray {
-        val decoded = decodeCanonicalBase64Url(value)
-        check(decoded.size == 32 && Base64.getUrlEncoder().withoutPadding().encodeToString(decoded) == value) {
+    private fun decodeCanonicalBase64Url(
+        value: String,
+        exactBytes: Int,
+    ): ByteArray {
+        val decoded =
+            runCatching { Base64.getUrlDecoder().decode(value) }
+                .getOrElse { error("C_SCHEMA_VIOLATION") }
+        check(decoded.size == exactBytes && Base64.getUrlEncoder().withoutPadding().encodeToString(decoded) == value) {
             "C_SCHEMA_VIOLATION"
         }
         return decoded
     }
-
-    private fun decodeHash(value: String): ByteArray {
-        val decoded = decodeCanonicalBase64Url(value)
-        check(decoded.size == 32 && Base64.getUrlEncoder().withoutPadding().encodeToString(decoded) == value) {
-            "C_SCHEMA_VIOLATION"
-        }
-        return decoded
-    }
-
-    private fun decodeCanonicalBase64Url(value: String): ByteArray =
-        runCatching { Base64.getUrlDecoder().decode(value) }
-            .getOrElse { error("C_SCHEMA_VIOLATION") }
 
     private val SOURCE_INDEX_FIELDS =
         setOf(
@@ -228,6 +221,9 @@ internal object PallaSyncLegacyV20Source {
         )
 
     private val RELAY_SEQUENCE_FIELDS = setOf("relay_seq", "server_sequence")
+    private const val CHAIN_ID_BYTES = 32
+    private const val HASH_BYTES = 32
+    private const val UUID_V7_VERSION = 7
     private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 
     private val QUARANTINE_CODES =
