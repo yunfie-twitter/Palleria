@@ -101,6 +101,9 @@ class PalleriaSyncManager(
 
     fun normalizeServerUrl(rawUrl: String): String? = coordinator.normalizeServerUrl(rawUrl)
 
+    internal fun relayShutdownNotice(rawOrigin: String): PallaSyncRetryGate.RelayShutdownNotice? =
+        coordinator.relayShutdownNotice(rawOrigin)
+
     fun getPallaSyncKeystore(): PallaSyncKeystore = coordinator.getPallaSyncKeystore()
 
     suspend fun recoverInterruptedActivation(): Boolean = coordinator.recoverInterruptedActivation()

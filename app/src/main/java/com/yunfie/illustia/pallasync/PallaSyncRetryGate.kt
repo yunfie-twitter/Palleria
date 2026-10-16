@@ -36,6 +36,15 @@ internal class PallaSyncRetryGate(
         val clockFailures: Int = 0,
         val uncertainScopes: Set<String> = emptySet(),
         val blockedRequests: Map<String, String> = emptyMap(),
+        val relayShuttingDown: Boolean = false,
+        val shutdownAtMs: Long? = null,
+        val migrationOrigin: String? = null,
+    )
+
+    data class RelayShutdownNotice(
+        val shutdownAtMs: Long?,
+        val migrationOrigin: String?,
+        val writesStopped: Boolean,
     )
 
     fun remaining(origin: String): Long =
@@ -65,6 +74,12 @@ internal class PallaSyncRetryGate(
 
     fun before(request: Request): PallaSyncHttpResult<Nothing>? {
         val origin = PallaSyncUrls.extractOrigin(request.url)
+        synchronized(lock) {
+            val state = load(origin)
+            if (state.relayShuttingDown && request.method != "GET") {
+                return PallaSyncHttpResult.ProtocolError("RELAY_SHUTTING_DOWN", 503)
+            }
+        }
         val wait = remaining(origin)
         if (wait > 0) return PallaSyncHttpResult.Retryable("PallaSync retry is deferred", wait)
         return synchronized(lock) {
@@ -95,6 +110,21 @@ internal class PallaSyncRetryGate(
     ) = synchronized(lock) {
         val origin = PallaSyncUrls.extractOrigin(request.url)
         var state = load(origin)
+        if (problem?.code == "RELAY_SHUTTING_DOWN" && result is PallaSyncHttpResult.ProtocolError) {
+            val candidate = problem.migrationOrigin?.let(::validatedMigrationOrigin)
+            state =
+                state.copy(
+                    attempt = 0,
+                    nextWall = 0,
+                    nextElapsed = 0,
+                    waitMs = 0,
+                    relayShuttingDown = true,
+                    shutdownAtMs = problem.shutdownAtMs ?: state.shutdownAtMs,
+                    migrationOrigin = candidate ?: state.migrationOrigin,
+                )
+            save(origin, state)
+            return@synchronized
+        }
         val clockFailure = problem?.code in setOf("TOKEN_EXPIRED", "TOKEN_NOT_YET_VALID")
         val failures = if (clockFailure) (state.clockFailures + 1).coerceAtMost(2) else 0
         var offset = state.offsetMs
@@ -134,6 +164,33 @@ internal class PallaSyncRetryGate(
                 }
             }
         save(origin, state)
+    }
+
+    fun relayShutdownNotice(origin: String): RelayShutdownNotice? =
+        synchronized(lock) {
+            val state = load(origin)
+            if (!state.relayShuttingDown && state.shutdownAtMs == null && state.migrationOrigin == null) {
+                null
+            } else {
+                RelayShutdownNotice(state.shutdownAtMs, state.migrationOrigin, state.relayShuttingDown)
+            }
+        }
+
+    fun observeHealth(
+        origin: String,
+        shutdownAtMs: Long?,
+        migrationOrigin: String?,
+    ) = synchronized(lock) {
+        val state = load(origin)
+        if (!state.relayShuttingDown) {
+            save(
+                origin,
+                state.copy(
+                    shutdownAtMs = shutdownAtMs,
+                    migrationOrigin = migrationOrigin?.let(::validatedMigrationOrigin),
+                ),
+            )
+        }
     }
 
     fun needsReconciliation(
@@ -211,6 +268,17 @@ internal class PallaSyncRetryGate(
         }
         return digest.hash.hex()
     }
+
+    private fun validatedMigrationOrigin(value: String): String? =
+        when (val normalized = PallaSyncUrls.normalize(value)) {
+            is PallaSyncHttpResult.Success -> {
+                PallaSyncUrls.extractOrigin(normalized.value).takeIf { it == value }
+            }
+
+            else -> {
+                null
+            }
+        }
 
     companion object {
         private val lock = Any()

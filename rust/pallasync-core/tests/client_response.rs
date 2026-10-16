@@ -187,7 +187,7 @@ fn rfc9457_extensions_are_discarded_and_catalogue_values_cannot_be_replaced() {
     let valid = json!({"type":"about:blank","title":"Conflict","status":409,"code":"EPOCH_STALE","retryable":true,"server_time_ms":1791684000000u64,"detail":"Fetch signed evidence.","vendor_text":"do not execute","context":{"epoch":4}});
     assert_eq!(
         problem(&valid, 409).unwrap(),
-        json!({"status":409,"code":"EPOCH_STALE","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null})
+        json!({"status":409,"code":"EPOCH_STALE","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"shutdown_at_ms":null,"migration_origin":null})
     );
     let mut bad = valid.clone();
     bad["retryable"] = json!(false);
@@ -199,6 +199,12 @@ fn rfc9457_extensions_are_discarded_and_catalogue_values_cannot_be_replaced() {
     let mut bad = valid.clone();
     bad["context"]["secret"] = json!("not a defined hint");
     assert!(problem(&bad, 409).is_err());
+
+    let shutdown = json!({"type":"about:blank","title":"Service Unavailable","status":503,"code":"RELAY_SHUTTING_DOWN","retryable":true,"server_time_ms":1791684000000u64,"context":{"shutdown_at_ms":1791685000000u64,"migration_origin":"https://target.example"}});
+    assert_eq!(
+        problem(&shutdown, 503).unwrap(),
+        json!({"status":503,"code":"RELAY_SHUTTING_DOWN","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"shutdown_at_ms":1791685000000u64,"migration_origin":"https://target.example"})
+    );
 }
 
 #[test]

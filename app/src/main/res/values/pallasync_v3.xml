@@ -23,6 +23,13 @@
     <string name="pallasync_repair_history_incomplete">Repair accepted %1$d of %2$d records; some records remain unresolved. Local data was retained.</string>
     <string name="pallasync_repair_history_failed">History repair could not be verified. Local data was retained.</string>
     <string name="pallasync_reseed_import_title">Stage verified history on another relay</string>
+    <string name="pallasync_relay_shutdown_title">Relay shutdown</string>
+    <string name="pallasync_relay_shutdown_unscheduled">The pinned relay announced a shutdown but did not provide a time.</string>
+    <string name="pallasync_relay_shutdown_writes_stopped">The pinned relay has stopped accepting writes for shutdown. Local queued data and keys are retained.</string>
+    <string name="pallasync_relay_shutdown_at">The pinned relay reports shutdown time %1$d (Unix milliseconds).</string>
+    <string name="pallasync_relay_shutdown_suggestion">Suggested destination: %1$s</string>
+    <string name="pallasync_relay_shutdown_suggestion_limit">This is an untrusted suggestion. It does not change the chain origin or authorize transfer. Verify the destination relay, signing key, policy, and complete source history before migration.</string>
+    <string name="pallasync_relay_shutdown_review_migration">Review migration target</string>
     <string name="pallasync_reseed_import_target_desc">Choose the target relay. This stages control history only; it does not create a writable chain or move records.</string>
     <string name="pallasync_reseed_import_confirm">Review the target relay and enter the chain administrator mnemonic. The relay policy must be current and consented for that origin. This operation only stages signed control history and returns a staging log ID. It does not commit a new generation or move encrypted records.</string>
     <string name="pallasync_reseed_import_staged">History staged for chain %1$s. Staging log: %2$s. The target chain is not writable yet.</string>

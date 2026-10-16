@@ -298,7 +298,7 @@ pub fn problem(value: &Value, status: u16) -> Result<Value> {
         .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
     }
     Ok(
-        json!({"status":status,"code":code,"retryable":retryable,"server_time_ms":value["server_time_ms"],"retry_after_ms":value["context"]["retry_after_ms"]}),
+        json!({"status":status,"code":code,"retryable":retryable,"server_time_ms":value["server_time_ms"],"retry_after_ms":value["context"]["retry_after_ms"],"shutdown_at_ms":value["context"]["shutdown_at_ms"],"migration_origin":value["context"]["migration_origin"]}),
     )
 }
 

@@ -102,6 +102,8 @@ mlock/VirtualLockとdump抑止はOS制限を受けるbest effortです。KDF/sta
 2026-10-17、§18.6の受取QR再スキャンでキャンセル・不正入力後にも以前のpeer descriptorが残る経路を閉じました。scanner開始時にdescriptorと代替peer fileを外し、結果がnull/不正なら以前の選択に戻らないようにしています。空入力、不正UTF-16、妥当値、4 MiB上限のテストを追加しました。`:app:testDebugUnitTest`は165 suites／634 tests、失敗0・error 0、`:app:ktlintCheck`も成功しました。
 
 同日、bootstrap確認画面の本文・確認・取消をAndroid実機から操作するテストを試しました。Miuix OverlayDialogと一時的に試した標準Compose Dialogの両方でCompose runnerが「No compose hierarchies found」を返し、2ケースとも操作できませんでした。失敗する試験と未検証のDialog変更は残さず、成功扱いにもしていません。従って§11.6の実機操作・process-death境界、§18.6の保護受取モーダル／scanner UI実機検証はpendingです。
+
+§17.6/§19.2 shutdown handling: §19 RFC 9457 validator now returns validated `shutdown_at_ms` and `migration_origin` context hints to Kotlin. Successfully verified health announcements are persisted per origin; 503 `RELAY_SHUTTING_DOWN` clears ordinary retry delay, retains queued data/keys, and blocks subsequent writes to that origin while allowing GET reconciliation/export. Settings displays stopped/scheduled state and the origin suggestion as untrusted text. Only a user click opens the pre-existing target review/reseed flow; it does not fetch the target, transfer data, pin a key, change the active origin or mint a destination token. Rust `client_response` tests pass 7/7; Kotlin retry/classification tests pass 14/14 and `ktlintCheck` passes. Actual relay-notice fetch, complete target bootstrap/reseed/cutover, source freeze, contradiction/fault injection and physical multi-relay migration remain unverified; A-18/A-27 remain pending.
 代替のredacted wire/APIは追加しません。Cloudflareは変更しません。
 公開側のTLS 1.1受理は§17.1の残事項であり、公開環境全体の完全適合は宣言しません。
 クライアントのtransportはTLS 1.2以上です。

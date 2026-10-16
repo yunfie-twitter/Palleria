@@ -45,6 +45,7 @@ import com.yunfie.illustia.pallasync.PallaSyncHttpResult
 import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PallaSyncReseedSourceConflict
+import com.yunfie.illustia.pallasync.PallaSyncRetryGate
 import com.yunfie.illustia.pallasync.PallaSyncRootSession
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
@@ -141,6 +142,7 @@ fun PallaSyncSettingsScreen(
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
     var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
+    var relayShutdownNotice by remember { mutableStateOf<PallaSyncRetryGate.RelayShutdownNotice?>(null) }
     var showTrustedSnapshotDialog by remember { mutableStateOf(false) }
     var loadingTrustedSnapshots by remember { mutableStateOf(false) }
     var installingTrustedSnapshot by remember { mutableStateOf(false) }
@@ -328,6 +330,7 @@ fun PallaSyncSettingsScreen(
     LaunchedEffect(state.settings.pallaSyncEnabled, hasLocalChain) {
         if (!state.settings.pallaSyncEnabled && !hasLocalChain) {
             clientStatus = null
+            relayShutdownNotice = null
             legacyMigrations = emptyList()
             return@LaunchedEffect
         }
@@ -336,6 +339,10 @@ fun PallaSyncSettingsScreen(
                 pendingReseedCutoverTarget = syncManager.pendingReseedCutoverTarget()
                 pendingReseedCommitTarget = syncManager.pendingReseedCommitTarget()
                 reseedSourceConflict = syncManager.pendingReseedSourceConflict()
+                relayShutdownNotice =
+                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        syncManager.relayShutdownNotice(state.settings.pallaSyncServerUrl)
+                    }
                 if (state.settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
                 val page = syncManager.legacyMigrationProgressPage(limit = 20)
                 legacyMigrations =
@@ -1577,6 +1584,37 @@ fun PallaSyncSettingsScreen(
                                             }
                                         },
                                     )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            relayShutdownNotice?.let { notice ->
+                item {
+                    Section(stringResource(R.string.pallasync_relay_shutdown_title)) {
+                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                            if (notice.writesStopped) {
+                                Text(stringResource(R.string.pallasync_relay_shutdown_writes_stopped))
+                            } else if (notice.shutdownAtMs == null) {
+                                Text(stringResource(R.string.pallasync_relay_shutdown_unscheduled))
+                            } else {
+                                Text(stringResource(R.string.pallasync_relay_shutdown_at, notice.shutdownAtMs))
+                            }
+                            notice.migrationOrigin?.let { suggestedOrigin ->
+                                Text(stringResource(R.string.pallasync_relay_shutdown_suggestion, suggestedOrigin))
+                                Text(stringResource(R.string.pallasync_relay_shutdown_suggestion_limit))
+                                Button(
+                                    onClick = {
+                                        // This fills a user-reviewed target field; it does not contact the candidate.
+                                        reseedImportTargetUrl = suggestedOrigin
+                                        showReseedImportTarget = true
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !stagingReseedImport && !committingReseedImport,
+                                ) {
+                                    Text(stringResource(R.string.pallasync_relay_shutdown_review_migration))
                                 }
                             }
                         }

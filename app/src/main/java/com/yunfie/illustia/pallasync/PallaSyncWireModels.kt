@@ -435,6 +435,10 @@ internal fun classifyPallaSyncHttpStatus(
             PallaSyncHttpResult.Gone
         }
 
+        statusCode == 503 && problem?.code == "RELAY_SHUTTING_DOWN" -> {
+            PallaSyncHttpResult.ProtocolError(problem.code, statusCode)
+        }
+
         statusCode in PALLASYNC_AUTOMATIC_RETRY_STATUSES ||
             (statusCode == HTTP_UNAUTHORIZED && problem?.code in setOf("TOKEN_EXPIRED", "TOKEN_NOT_YET_VALID", "TOKEN_REPLAYED")) -> {
             PallaSyncHttpResult.Retryable(

@@ -2442,6 +2442,11 @@ internal class PalleriaSyncCoordinator(
             else -> null
         }
 
+    internal fun relayShutdownNotice(rawOrigin: String): PallaSyncRetryGate.RelayShutdownNotice? {
+        val normalized = normalizeServerUrl(rawOrigin) ?: return null
+        return policy.retry.relayShutdownNotice(normalized)
+    }
+
     /** Read-only v2.0 source endpoint; callers must still authenticate records and prove a frozen transcript. */
     internal suspend fun fetchLegacyV20Records(
         sourceUrl: String,
@@ -5794,6 +5799,11 @@ internal class PalleriaSyncCoordinator(
         ) {
             is PallaSyncHttpResult.Success -> {
                 relayLimits = result.value.limits
+                policy.retry.observeHealth(
+                    PallaSyncUrls.extractOrigin(baseUrl),
+                    result.value.shutdownAtMs,
+                    result.value.migrationOrigin,
+                )
                 PallaSyncHttpResult.Success(Unit)
             }
 

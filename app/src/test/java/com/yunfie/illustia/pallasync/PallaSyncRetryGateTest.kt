@@ -24,12 +24,14 @@ class PallaSyncRetryGateTest {
 
     private fun gate(random: (Long) -> Long = { it }) = PallaSyncRetryGate(prefs, { boot }, { wall }, { elapsed }, random)
 
-    private fun request(body: String = "{}") =
-        Request
-            .Builder()
-            .url("$origin/pallasync/v3/chains/$chain/records")
-            .post(body.toRequestBody())
-            .build()
+    private fun request(
+        body: String = "{}",
+        requestOrigin: String = origin,
+    ) = Request
+        .Builder()
+        .url("$requestOrigin/pallasync/v3/chains/$chain/records")
+        .post(body.toRequestBody())
+        .build()
 
     @Test
     fun `jitter uses the exact capped exponential range and progress resets the attempt`() {
@@ -117,5 +119,63 @@ class PallaSyncRetryGateTest {
         PallaSyncRetryGate.retryAfter("0", rateLimited = true) shouldBe 3_600_000
         PallaSyncRetryGate.retryAfter("3601", rateLimited = true) shouldBe 3_600_000
         PallaSyncRetryGate.retryAfter("Thu, 01 Jan 1970 00:01:00 GMT", nowMs = 20_000) shouldBe 40_000
+    }
+
+    @Test
+    fun `relay shutdown suspends writes and persists destination only as an explicit suggestion`() {
+        val gate = gate { 0 }
+        val hint =
+            PallaSyncProblemHint(
+                503,
+                "RELAY_SHUTTING_DOWN",
+                true,
+                shutdownAtMs = 1_791_685_000_000,
+                migrationOrigin = "https://target.example",
+            )
+        val failure = checkNotNull(classifyPallaSyncHttpStatus(503, hint))
+        failure shouldBe PallaSyncHttpResult.ProtocolError("RELAY_SHUTTING_DOWN", 503)
+        gate.observe(request(), failure, hint)
+
+        gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("RELAY_SHUTTING_DOWN", 503)
+        gate.before(Request.Builder().url("$origin/pallasync/v3/chains/$chain/log/head").build()) shouldBe null
+        gate().relayShutdownNotice(origin) shouldBe
+            PallaSyncRetryGate.RelayShutdownNotice(1_791_685_000_000, "https://target.example", writesStopped = true)
+
+        val unsafe = gate()
+        unsafe.observe(
+            request(),
+            failure,
+            hint.copy(migrationOrigin = "https://target.example/path"),
+        )
+        unsafe.relayShutdownNotice(origin) shouldBe
+            PallaSyncRetryGate.RelayShutdownNotice(
+                1_791_685_000_000,
+                "https://target.example",
+                writesStopped = true,
+            )
+
+        val previouslyAdvertisedOrigin = "https://previously-advertised.example"
+        val previous = gate()
+        previous.observeHealth(previouslyAdvertisedOrigin, 1_791_685_000_000, "https://target.example")
+        previous.observe(
+            request(requestOrigin = previouslyAdvertisedOrigin),
+            failure,
+            hint.copy(shutdownAtMs = null, migrationOrigin = null),
+        )
+        previous.relayShutdownNotice(previouslyAdvertisedOrigin) shouldBe
+            PallaSyncRetryGate.RelayShutdownNotice(1_791_685_000_000, "https://target.example", writesStopped = true)
+    }
+
+    @Test
+    fun `planned shutdown health is persisted as a suggestion without stopping writes`() {
+        val gate = gate()
+        gate.observeHealth(origin, 1_791_685_000_000, "https://target.example")
+        gate.relayShutdownNotice(origin) shouldBe
+            PallaSyncRetryGate.RelayShutdownNotice(1_791_685_000_000, "https://target.example", writesStopped = false)
+        gate.before(request()) shouldBe null
+
+        gate.observeHealth(origin, 1_791_685_000_000, "https://target.example/path")
+        gate.relayShutdownNotice(origin) shouldBe
+            PallaSyncRetryGate.RelayShutdownNotice(1_791_685_000_000, null, writesStopped = false)
     }
 }
