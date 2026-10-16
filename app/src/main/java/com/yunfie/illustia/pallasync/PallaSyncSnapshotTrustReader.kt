@@ -12,6 +12,11 @@ internal data class PallaSyncTrustedSnapshotCandidate(
     val chainId: String,
     val logId: String,
     val generation: Long,
+    val adminPublicKey: String,
+    val parametersHash: String,
+    val authorityHeadSeq: Long,
+    val authorityHeadHash: String,
+    val epochNumber: Long,
     val compactionId: String,
     val compactionHash: String,
     val coveredThroughSeq: Long,
@@ -55,10 +60,30 @@ internal class PallaSyncSnapshotTrustReader(
                 }.jsonObject
                 .getValue("record")
         val epochHash = checkNotNull(PallaSyncCore.objectHash(currentEpoch.toString())) { "C_SCHEMA_VIOLATION" }
+        val epochNumber =
+            currentEpoch
+                .jsonObject
+                .getValue("epoch")
+                .jsonPrimitive.long
+        val parameters = authority.getValue("parameters").jsonObject
+        val parametersHash = checkNotNull(PallaSyncCore.objectHash(parameters.toString())) { "C_SCHEMA_VIOLATION" }
         return store
             .compactionCatalogueDao()
             .verifiedSnapshotsForEpoch(chain, logId, generation, epochHash)
-            .mapNotNull { row -> candidateForRow(row, authority, logId, generation, headSeq, epochHash, deviceKeys, keystore) }
+            .mapNotNull { row ->
+                candidateForRow(
+                    row,
+                    authority,
+                    logId,
+                    generation,
+                    headSeq,
+                    epochHash,
+                    parametersHash,
+                    epochNumber,
+                    deviceKeys,
+                    keystore,
+                )
+            }
     }
 
     private suspend fun candidateForRow(
@@ -68,6 +93,8 @@ internal class PallaSyncSnapshotTrustReader(
         generation: Long,
         headSeq: Long,
         epochHash: String,
+        parametersHash: String,
+        epochNumber: Long,
         deviceKeys: PallaSyncKeySnapshot,
         keystore: PallaSyncKeystore,
     ): PallaSyncTrustedSnapshotCandidate? {
@@ -84,6 +111,11 @@ internal class PallaSyncSnapshotTrustReader(
             chainId = chain,
             logId = logId,
             generation = generation,
+            adminPublicKey = authority.getValue("admin_public_key").jsonPrimitive.content,
+            parametersHash = parametersHash,
+            authorityHeadSeq = authority.getValue("sequence").jsonPrimitive.long,
+            authorityHeadHash = authority.getValue("head_hash").jsonPrimitive.content,
+            epochNumber = epochNumber,
             compactionId = compactionId,
             compactionHash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())),
             coveredThroughSeq = coverage,

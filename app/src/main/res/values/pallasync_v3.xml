@@ -109,7 +109,7 @@
     <string name="pallasync_snapshot_bootstrap_title">Choose and trust one snapshot</string>
     <string name="pallasync_snapshot_bootstrap_warning">The relay and signatures authenticate this snapshot, but cannot prove that its author included every earlier item. Trusting semantic completeness is your decision. The client will verify the snapshot commitment and replay the signed suffix before completing initial sync.</string>
     <string name="pallasync_snapshot_bootstrap_empty">No complete verified snapshot for the current epoch is available from this relay.</string>
-    <string name="pallasync_snapshot_bootstrap_candidate">Chain: %1$s\nLog: %2$s\nCompaction: %3$s\nCompaction hash: %4$s\nCoverage: sequence %5$d, prefix hash %6$s\nState commitment: %7$s\nEpoch hash: %8$s\nAuthor device: %9$s\nCertified author key: %10$s\nParts: %11$d</string>
+    <string name="pallasync_snapshot_bootstrap_candidate">Chain: %1$s\nLog: %2$s\nGeneration: %3$d\nAdmin public key: %4$s\nVerified authority log head: sequence %5$d, hash %6$s\nVerified parameters head hash: %7$s\nCurrent epoch: %8$d, hash %14$s\nCompaction: %9$s\nCompaction hash: %10$s\nCoverage: sequence %11$d, prefix hash %12$s\nState commitment: %13$s\nAuthor device: %15$s\nCertified author key: %16$s\nParts: %17$d</string>
     <string name="pallasync_snapshot_bootstrap_trust_install">Trust this author and install this snapshot</string>
     <string name="pallasync_snapshot_bootstrap_running">Verifying parts and installing the selected snapshot…</string>
     <string name="pallasync_snapshot_bootstrap_installed">Snapshot installed; signed suffix replay has started.</string>
