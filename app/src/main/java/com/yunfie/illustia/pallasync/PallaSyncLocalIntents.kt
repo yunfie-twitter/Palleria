@@ -32,8 +32,16 @@ internal data class NewRootMigrationCheckpoint(
     val anchor: NewRootMigrationSourceAnchor,
     val cursor: NewRootMigrationCursor,
     val targetGeneration: Long,
+    val firstIntentIndex: Long?,
     val lastIntentIndex: Long,
     val stagedCount: Long,
+    val complete: Boolean,
+)
+
+/** Receipt coverage for the staged source range; this is not source/target state equivalence. */
+internal data class NewRootMigrationReceiptStatus(
+    val staged: Long,
+    val receiptVerified: Long,
     val complete: Boolean,
 )
 
@@ -75,11 +83,13 @@ internal class PallaSyncLocalIntents(
         val anchor: NewRootMigrationSourceAnchor,
         val cursor: NewRootMigrationCursor,
         val targetGeneration: Long,
+        val firstIntentIndex: Long?,
         val lastIntentIndex: Long,
         val stagedCount: Long,
         val complete: Boolean,
     ) {
-        fun checkpoint() = NewRootMigrationCheckpoint(anchor, cursor, targetGeneration, lastIntentIndex, stagedCount, complete)
+        fun checkpoint() =
+            NewRootMigrationCheckpoint(anchor, cursor, targetGeneration, firstIntentIndex, lastIntentIndex, stagedCount, complete)
     }
 
     internal data class LegacyEventMapping(
@@ -330,6 +340,7 @@ internal class PallaSyncLocalIntents(
                     anchor = page.anchor,
                     cursor = page.next,
                     targetGeneration = targetState.generation,
+                    firstIntentIndex = cursor?.firstIntentIndex ?: page.rows.takeIf { it.isNotEmpty() }?.let { lastIntentIndex + 1 },
                     lastIntentIndex = nextIndex,
                     stagedCount = (cursor?.stagedCount ?: 0L) + page.rows.size,
                     complete = page.complete,
@@ -375,8 +386,27 @@ internal class PallaSyncLocalIntents(
         val row = dao.migrationChunk(id, -1) ?: return null
         check(row.targetChain == targetChain && row.state == "new_root_source") { "C_ROLLBACK_DETECTED" }
         val checkpoint = Json.decodeFromString<NewRootMigrationManifest>(row.reportJson).checkpoint()
-        check((dao.lastMigrationIndex(id) ?: 0L) == checkpoint.lastIntentIndex) { "C_ROLLBACK_DETECTED" }
+        val currentLastIndex = dao.lastMigrationIndex(id) ?: 0L
+        check(
+            currentLastIndex >= checkpoint.lastIntentIndex &&
+                (checkpoint.complete || currentLastIndex == checkpoint.lastIntentIndex),
+        ) { "C_ROLLBACK_DETECTED" }
         return checkpoint
+    }
+
+    suspend fun newRootMigrationReceiptStatus(targetChain: String): NewRootMigrationReceiptStatus? {
+        val checkpoint = newRootMigrationCheckpoint(targetChain) ?: return null
+        val first = checkpoint.firstIntentIndex
+        if (first == null) {
+            check(checkpoint.stagedCount == 0L) { "C_ROLLBACK_DETECTED" }
+            return NewRootMigrationReceiptStatus(0, 0, checkpoint.complete)
+        }
+        val dao = store.protocolDao()
+        val id = journalId(targetChain)
+        val staged = dao.migrationRangeCount(id, first, checkpoint.lastIntentIndex)
+        val receiptVerified = dao.migrationRangeStateCount(id, first, checkpoint.lastIntentIndex, "receipt_verified")
+        check(staged == checkpoint.stagedCount && receiptVerified <= staged) { "C_ROLLBACK_DETECTED" }
+        return NewRootMigrationReceiptStatus(staged, receiptVerified, checkpoint.complete && staged == receiptVerified)
     }
 
     /**
@@ -928,7 +958,11 @@ internal class PallaSyncLocalIntents(
             dao.legacyMigrationReceiptCandidates(chain, recordId) +
                 dao.legacyMigrationAuditReceiptCandidates(chain, recordId)
         check(matches.size <= 1) { "C_RECORD_ID_CONFLICT" }
-        val candidate = matches.singleOrNull() ?: return
+        val candidate = matches.singleOrNull()
+        if (candidate == null) {
+            confirmNewRootMigrationReceipt(chain, recordId, objectHash, receiptHash)
+            return
+        }
         check(candidate.destinationObjectHash == objectHash) { "C_RECORD_ID_CONFLICT" }
         if (candidate.state == "constructed") {
             check(
@@ -947,6 +981,37 @@ internal class PallaSyncLocalIntents(
             }
         }
         settleLegacyMigrationReceipts(candidate.migrationId)
+    }
+
+    private suspend fun confirmNewRootMigrationReceipt(
+        chain: String,
+        recordId: String,
+        objectHash: String,
+        receiptHash: String,
+    ) {
+        val checkpoint = newRootMigrationCheckpoint(chain) ?: return
+        val first = checkpoint.firstIntentIndex ?: return
+        val dao = store.protocolDao()
+        val candidates = dao.newRootMigrationReceiptCandidates(journalId(chain), first, checkpoint.lastIntentIndex, chain, recordId)
+        check(candidates.size <= 1) { "C_RECORD_ID_CONFLICT" }
+        val candidate = candidates.singleOrNull() ?: return
+        check(candidate.destinationObjectHash == objectHash) { "C_RECORD_ID_CONFLICT" }
+        if (candidate.state == "constructed") {
+            check(
+                dao.confirmLegacyMigrationReceipt(
+                    candidate.migrationId,
+                    candidate.chunkIndex,
+                    chain,
+                    recordId,
+                    objectHash,
+                    receiptHash,
+                ) == 1,
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+        } else {
+            check(candidate.state == "receipt_verified" && candidate.verifiedReceiptHash == receiptHash) {
+                "C_RECORD_ID_CONFLICT"
+            }
+        }
     }
 
     private suspend fun settleLegacyMigrationReceipts(migrationId: String) {

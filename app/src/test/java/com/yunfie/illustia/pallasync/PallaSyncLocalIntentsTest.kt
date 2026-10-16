@@ -949,16 +949,19 @@ class PallaSyncLocalIntentsTest {
                     ),
                 )
                 db.pallaSyncDao().updateChainState(
-                    ChainStateEntity(target, 0, 0, "{}", generation = 0, writeState = "active"),
+                    ChainStateEntity(
+                        target,
+                        0,
+                        0,
+                        "{}",
+                        generation = 0,
+                        logId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                        epochHash = encode(ByteArray(32) { 5 }),
+                        writeState = "active",
+                    ),
                 )
                 val anchor = NewRootMigrationSourceAnchor(chain, 2, log, encode(ByteArray(32) { 3 }), 4, encode(ByteArray(32) { 4 }), 9)
-                val event =
-                    PallaSyncPendingEvent(
-                        "entity.v1",
-                        "entity-1",
-                        "upsert",
-                        buildJsonObject { put("value", "copied") },
-                    )
+                val event = event("new-root-migration")
                 val page =
                     NewRootMigrationPage(
                         anchor,
@@ -988,6 +991,19 @@ class PallaSyncLocalIntentsTest {
                 completed.complete shouldBe true
                 completed.stagedCount shouldBe 1
                 completed.lastIntentIndex shouldBe 1
+                restarted.newRootMigrationReceiptStatus(target)?.complete shouldBe false
+                restarted.stage(target, listOf(event("user-write-after-import")))
+                restarted.resume(target, keys(target))
+                val migrationRow = checkNotNull(store.protocolDao().migrationChunk(PallaSyncLocalIntents.journalId(target), 1))
+                val recordId = checkNotNull(migrationRow.destinationRecordId)
+                val objectHash = checkNotNull(migrationRow.destinationObjectHash)
+                val receiptHash = encode(ByteArray(32) { 6 })
+                runCatching {
+                    restarted.confirmLegacyMigrationReceipt(target, recordId, encode(ByteArray(32) { 7 }), receiptHash)
+                }.exceptionOrNull()?.message shouldBe "C_RECORD_ID_CONFLICT"
+                restarted.confirmLegacyMigrationReceipt(target, recordId, objectHash, receiptHash)
+                restarted.newRootMigrationReceiptStatus(target) shouldBe NewRootMigrationReceiptStatus(1, 1, true)
+                restarted.confirmLegacyMigrationReceipt(target, recordId, objectHash, receiptHash)
             } finally {
                 db.close()
             }
@@ -1059,9 +1075,9 @@ class PallaSyncLocalIntentsTest {
         fault: (PallaSyncLocalAuthor.Boundary) -> Unit = {},
     ) = PallaSyncLocalAuthor(store, PallaSyncAuthorJournal(storage), epochTag = { _, _, _ -> null }, fault = fault)
 
-    private fun keys() =
+    private fun keys(chainId: String = chain) =
         PallaSyncKeySnapshot(
-            chain,
+            chainId,
             device,
             encryptionKeyBase64Url = encode(ByteArray(32) { 2 }),
             signingKeyBase64Url = encode(ByteArray(32) { 1 }),

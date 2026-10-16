@@ -322,6 +322,32 @@ interface ProtocolDao {
         receiptHash: String,
     ): Int
 
+    @Query(
+        "SELECT * FROM ps_migrations WHERE migration_id=:id AND chunk_index BETWEEN :first AND :last AND target_chain=:chain AND destination_record_id=:recordId AND state IN ('constructed','receipt_verified')",
+    )
+    suspend fun newRootMigrationReceiptCandidates(
+        id: String,
+        first: Long,
+        last: Long,
+        chain: String,
+        recordId: String,
+    ): List<MigrationJournalEntity>
+
+    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND chunk_index BETWEEN :first AND :last")
+    suspend fun migrationRangeCount(
+        id: String,
+        first: Long,
+        last: Long,
+    ): Long
+
+    @Query("SELECT COUNT(*) FROM ps_migrations WHERE migration_id=:id AND chunk_index BETWEEN :first AND :last AND state=:state")
+    suspend fun migrationRangeStateCount(
+        id: String,
+        first: Long,
+        last: Long,
+        state: String,
+    ): Long
+
     /** Invoked inside the same Room transaction as the exact signed record/outbox/tail. */
     suspend fun commitReplay(
         migration: String,
