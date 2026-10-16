@@ -81,7 +81,7 @@ internal class PallaSyncPeerSubjectEnrollment(
         configuredOrigin: String,
         nowMs: Long,
     ): Work {
-        val offer = Json.parseToJsonElement(offerJson).jsonObject
+        val offer = PallaSyncDeletionEvidenceArchive.parseStrictObject(offerJson)
         val origin = PallaSyncPolicyGate.normalizeOrigin(offer.getValue("relay_origin").jsonPrimitive.content)
         check(origin == PallaSyncPolicyGate.normalizeOrigin(configuredOrigin)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         policy.requireCurrent(origin, "authenticated_export")

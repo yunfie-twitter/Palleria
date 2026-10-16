@@ -4539,7 +4539,7 @@ internal class PalleriaSyncCoordinator(
             operationMutex.withLock {
                 if (!explicitlyConfirmed) return@withLock null
                 check(archiveText.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
-                val archive = Json.parseToJsonElement(archiveText).jsonObject
+                val archive = PallaSyncDeletionEvidenceArchive.parseStrictObject(archiveText)
                 check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
                 val receipt = archive.getValue("delete_receipt").jsonObject
                 val oldBundle = archive.getValue("evidence_bundle").jsonObject
@@ -4641,7 +4641,7 @@ internal class PalleriaSyncCoordinator(
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 check(archiveText.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) { "C_LOCAL_LIMIT" }
-                val archive = Json.parseToJsonElement(archiveText).jsonObject
+                val archive = PallaSyncDeletionEvidenceArchive.parseStrictObject(archiveText)
                 check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
                 val receipt = archive.getValue("delete_receipt").jsonObject
                 val bundle = archive.getValue("evidence_bundle").jsonObject

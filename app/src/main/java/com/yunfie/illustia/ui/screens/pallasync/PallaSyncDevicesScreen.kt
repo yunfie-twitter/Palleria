@@ -46,10 +46,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -149,7 +147,7 @@ fun PallaSyncDevicesScreen(
                                 }
                             }
                         val value = PallaSyncDeletionEvidenceArchive.decodeUtf8(bytes)
-                        val objectValue = Json.parseToJsonElement(value).jsonObject
+                        val objectValue = PallaSyncDeletionEvidenceArchive.parseStrictObject(value)
                         check(objectValue.keys == setOf("device_record", "envelopes", "admin_operation")) { "C_SCHEMA_VIOLATION" }
                         submittedPeerBody = value
                         peerError = null

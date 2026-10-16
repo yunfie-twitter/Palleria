@@ -106,7 +106,7 @@ fun DevicePairingScreen(
                                         PallaSyncPeerTransferFile.read(input)
                                     }
                             }
-                        val objectValue = Json.parseToJsonElement(text).jsonObject
+                        val objectValue = PallaSyncDeletionEvidenceArchive.parseStrictObject(text)
                         when (purpose) {
                             ImportPurpose.AUTHORITY -> {
                                 authorityJson = text

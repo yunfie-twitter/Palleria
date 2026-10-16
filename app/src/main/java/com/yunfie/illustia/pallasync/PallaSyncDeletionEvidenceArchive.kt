@@ -1,5 +1,8 @@
 package com.yunfie.illustia.pallasync
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
@@ -41,6 +44,16 @@ internal object PallaSyncDeletionEvidenceArchive {
             .onUnmappableCharacter(CodingErrorAction.REPORT)
             .decode(ByteBuffer.wrap(bytes))
             .toString()
+
+    /** Reject duplicate keys and other non-protocol JSON before kotlinx.serialization builds a tree. */
+    fun parseStrictObject(text: String): JsonObject {
+        check(PallaSyncCore.canonicalJson(text) != null) { "C_SCHEMA_VIOLATION" }
+        return try {
+            Json.parseToJsonElement(text).jsonObject
+        } catch (_: IllegalArgumentException) {
+            throw IllegalStateException("C_SCHEMA_VIOLATION")
+        }
+    }
 
     private const val BUFFER_SIZE = 8_192
 }
