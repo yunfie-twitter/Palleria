@@ -61,6 +61,7 @@ internal fun PallaSyncRecoveryDealerControls(
     var selectedHolder by remember { mutableStateOf<Int?>(null) }
     var pending by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var interactionRevision by remember(flow) { mutableStateOf(0) }
     var failed by remember { mutableStateOf(false) }
     var confirmSas by remember { mutableStateOf(false) }
 
@@ -76,6 +77,7 @@ internal fun PallaSyncRecoveryDealerControls(
 
     fun run(action: suspend () -> Unit) {
         if (busy) return
+        interactionRevision += 1
         busy = true
         failed = false
         scope.launch {
@@ -107,13 +109,12 @@ internal fun PallaSyncRecoveryDealerControls(
             runCatching { flow.close() }
         }
     }
-    LaunchedEffect(descriptor) {
-        if (descriptor != null) {
-            delay(300_000)
+    LaunchedEffect(flow, interactionRevision, busy, stage) {
+        if (!busy && stage !in setOf(PallaSyncRecoveryDealerWorkflow.Stage.ACTIVE, PallaSyncRecoveryDealerWorkflow.Stage.CLOSED)) {
+            delay(PALLASYNC_RECOVERY_SESSION_IDLE_TIMEOUT_MS)
             runCatching { flow.close() }
             pending = null
             stage = flow.stage
-            failed = true
         }
     }
     val enabled = !busy && pending == null && stage != PallaSyncRecoveryDealerWorkflow.Stage.CLOSED

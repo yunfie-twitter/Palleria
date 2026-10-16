@@ -686,15 +686,20 @@
         "Palleria/rust/pallasync-core/src/locked_memory.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCompletion.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCollection.kt",
-        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetup.kt"
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetup.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoverySessionTimeout.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryDealerControls.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryCollectDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryRecipientControls.kt"
       ],
       "tests": [
         "Palleria/rust/pallasync-core/tests/recovery_flow.rs",
         "Palleria/rust/pallasync-core/tests/secret_lifetime.rs",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflowTest.kt"
       ],
       "result": "pending",
-      "remaining": "Implement all ceremony UI/authentication/cancellation/failure paths and prove no durable collector shares/RMS/root resume.",
+      "remaining": "Run Android lifecycle/SAF interruption tests and independent physical-holder interoperability; perform dedicated secret-memory instrumentation. The source now closes idle setup/dealer/collector/recipient sessions at the native five-minute lease even when no pair descriptor is active.",
       "verification_scope": "targeted_partial"
     },
     {

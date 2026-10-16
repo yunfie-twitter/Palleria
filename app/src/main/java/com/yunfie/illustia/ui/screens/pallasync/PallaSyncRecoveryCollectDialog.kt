@@ -75,6 +75,7 @@ internal fun PallaSyncRecoveryCollectDialog(
     var sas by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var interactionRevision by remember(owner) { mutableStateOf(0) }
     var failed by remember { mutableStateOf(false) }
     var succeeded by remember { mutableStateOf(false) }
     var confirmSas by remember { mutableStateOf(false) }
@@ -136,6 +137,7 @@ internal fun PallaSyncRecoveryCollectDialog(
 
     fun run(action: suspend () -> Unit) {
         if (busy) return
+        interactionRevision += 1
         busy = true
         failed = false
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -163,9 +165,9 @@ internal fun PallaSyncRecoveryCollectDialog(
             }
         }
     }
-    LaunchedEffect(descriptor) {
-        if (descriptor != null) {
-            delay(300_000)
+    LaunchedEffect(owner, interactionRevision, busy, started, stage) {
+        if (started && !busy && stage != PallaSyncRecoveryCollectorOwner.Stage.CLOSED) {
+            delay(PALLASYNC_RECOVERY_SESSION_IDLE_TIMEOUT_MS)
             cancellation.cancel()
             owner.close()
             pending = null

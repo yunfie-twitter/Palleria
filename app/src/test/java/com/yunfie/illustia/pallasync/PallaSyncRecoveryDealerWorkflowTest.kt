@@ -87,6 +87,24 @@ class PallaSyncRecoveryDealerWorkflowTest {
     }
 
     @Test
+    fun closingPartialThresholdCeremonyCannotResumeOrActivatePreparedSet() {
+        val (flow, store) = create("dealer-workflow-partial-cancel-unit")
+        val packages = List(3) { index -> distribute(flow, index) }
+        flow.beginThresholdTest(true)
+        collect(flow, packages.first(), 0)
+        flow.distinctShares shouldBe 1
+
+        flow.close()
+
+        flow.stage shouldBe PallaSyncRecoveryDealerWorkflow.Stage.CLOSED
+        shouldThrow<IllegalStateException> { flow.finishThresholdTest(true) }.message shouldBe "C_RECOVERY_SESSION_EXPIRED"
+        shouldThrow<IllegalStateException> { flow.activate(5) }.message shouldBe "C_RECOVERY_SESSION_EXPIRED"
+        checkNotNull(store.selected()).state shouldBe "prepared"
+        checkNotNull(store.selected()).usable shouldBe 3
+        checkNotNull(store.selected()).interrupted shouldBe true
+    }
+
+    @Test
     fun replacementActivatesOnlyAfterReadbackAndThresholdThenRetiresThePinnedPreviousSet() {
         val (initialFlow, store) = create("dealer-workflow-replacement-unit")
         val initialPackages = List(3) { index -> distribute(initialFlow, index) }

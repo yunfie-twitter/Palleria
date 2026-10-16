@@ -48,6 +48,7 @@ internal fun PallaSyncRecoveryRecipientControls(
     val recipient = remember(owner) { owner.current() }
     var stage by remember { mutableStateOf(recipient.stage) }
     var busy by remember { mutableStateOf(false) }
+    var interactionRevision by remember(recipient) { mutableStateOf(0) }
     var failed by remember { mutableStateOf(false) }
     var confirming by remember { mutableStateOf(false) }
     var credentialInput by remember { mutableStateOf(false) }
@@ -61,6 +62,7 @@ internal fun PallaSyncRecoveryRecipientControls(
 
     fun run(action: suspend () -> Unit) {
         if (busy) return
+        interactionRevision += 1
         busy = true
         failed = false
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -81,9 +83,9 @@ internal fun PallaSyncRecoveryRecipientControls(
             }
         }
     }
-    LaunchedEffect(recipient) {
-        delay(300_000)
-        if (recipient.stage != PallaSyncRecoveryRecipient.Stage.PERSISTED) {
+    LaunchedEffect(recipient, interactionRevision, busy, stage) {
+        if (!busy && stage != PallaSyncRecoveryRecipient.Stage.PERSISTED && stage != PallaSyncRecoveryRecipient.Stage.CLOSED) {
+            delay(PALLASYNC_RECOVERY_SESSION_IDLE_TIMEOUT_MS)
             owner.close()
             pending = null
             stage = recipient.stage
