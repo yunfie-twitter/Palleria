@@ -22,7 +22,6 @@ private const val MAX_EPOCH = 0xffff_ffffL
 data class PallaSyncKeySnapshot(
     val chainId: String? = null,
     val deviceId: String? = null,
-    val seedPhrase: String = "", // Memory-only; never persisted to disk
     val encryptionKeyBase64Url: String, // record_key
     val signingKeyBase64Url: String, // device_signing_key (Ed25519)
     val publicKeyBase64Url: String, // device_public_key (Ed25519)
@@ -325,7 +324,6 @@ class PallaSyncKeystore internal constructor(
         return PallaSyncKeySnapshot(
             chainId = sharedPrefs.getString("active_chain_id", null),
             deviceId = getDeviceId(),
-            seedPhrase = "",
             encryptionKeyBase64Url = encryptionKey,
             signingKeyBase64Url = signingKey,
             publicKeyBase64Url = publicKey,
@@ -560,7 +558,6 @@ class PallaSyncKeystore internal constructor(
         return PallaSyncKeySnapshot(
             chainId = chainId,
             deviceId = sharedPrefs.getString("pending_device_id", null),
-            seedPhrase = "",
             encryptionKeyBase64Url =
                 sharedPrefs
                     .getString("pending_epoch_key", null)
