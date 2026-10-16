@@ -1391,6 +1391,8 @@
     <string name="pallasync_recovery_new_root_migration_warning">漏洩扱いの旧chain: %1$s\n現在の移行先chain: %2$s\n移行先は別の新しい単語で作成したchainであることを確認してください。確認すると、旧chainの検証済みローカル状態を移行先へ再署名して同期し、receiptと論理状態を照合します。完了までアプリを終了しないでください。旧chainの退役・削除、新chainの端末登録と新しい復旧セット作成は別途必要です。旧単語や共有を新chainで再利用しません。</string>
     <string name="pallasync_recovery_new_root_migration_verified">新chainの論理状態は旧chainの確認済みローカル状態と一致しました。旧chainはまだ退役・削除されていません。</string>
     <string name="pallasync_recovery_new_root_migration_mismatch">新chainと旧chainの論理状態が一致しません。どちらのchainも削除せず、証拠を保持してください。</string>
+    <string name="pallasync_recovery_new_root_create_recovery_set">新chain用の復旧セットを作成</string>
+    <string name="pallasync_recovery_new_root_manage_devices">新chainの端末登録を開く</string>
     <string name="pallasync_recovery_new_root_retire_source">旧chainを証明付きで退役・削除</string>
     <string name="pallasync_recovery_new_root_retire_source_warning">新旧chainの一致を再検証後、漏洩した旧chainだけに署名済み削除要求を送信します。旧root入力が必要です。返された削除証明をファイルへ保存し、読み戻しを確認してから、この端末の旧chain状態と旧chain鍵を消去します。移行先chainは維持します。旧chain削除後にデータを復元できません。</string>
     <string name="pallasync_recovery_action_failed">状態を確認または更新できませんでした。既存の共有と証拠を保持しています。</string>

@@ -518,6 +518,7 @@ internal fun AppNavHost(
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onPairDevice = { onNavigate(AppRoute.DevicePairing) },
+                    onManagePallaSyncDevices = { onNavigate(AppRoute.PallaSyncDevices) },
                     onDeviceClick = { deviceId, deviceName ->
                         onNavigate(AppRoute.DeviceViewHistory(deviceId, deviceName))
                     },

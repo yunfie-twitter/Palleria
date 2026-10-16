@@ -34,7 +34,10 @@ private data class RecoverySafetyAction(
 
 /** §§18.7–18.9: independent set capacities, incomplete preparation and explicit local safety actions. */
 @Composable
-internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
+internal fun PallaSyncRecoveryControls(
+    manager: PalleriaSyncManager,
+    onManageDevices: () -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val management = remember(manager) { PallaSyncRecoveryManagement(context.applicationContext, manager) }
@@ -142,6 +145,24 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
                                 }
                                 activeTargetChain?.let { target ->
                                     if (migrationResult == (sourceChain to true)) {
+                                        val targetRecoveryConfigured =
+                                            current.any { candidate ->
+                                                candidate.manifest["chain_id"]?.jsonPrimitive?.content == target &&
+                                                    candidate.state == "active" &&
+                                                    !candidate.compromised
+                                            }
+                                        if (!targetRecoveryConfigured) {
+                                            TextButton(
+                                                text = stringResource(R.string.pallasync_recovery_new_root_create_recovery_set),
+                                                enabled = !busy,
+                                                onClick = { creating = true },
+                                            )
+                                        }
+                                        TextButton(
+                                            text = stringResource(R.string.pallasync_recovery_new_root_manage_devices),
+                                            enabled = !busy,
+                                            onClick = onManageDevices,
+                                        )
                                         PallaSyncNewRootRetirementControls(manager, sourceChain, target) {
                                             migrationResult = null
                                             migrationReceiptProgress = null

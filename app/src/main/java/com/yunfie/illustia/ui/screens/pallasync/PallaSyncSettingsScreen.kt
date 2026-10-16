@@ -84,6 +84,7 @@ fun PallaSyncSettingsScreen(
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onPairDevice: () -> Unit,
+    onManagePallaSyncDevices: () -> Unit,
     onDeviceClick: (String, String) -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
@@ -1183,7 +1184,7 @@ fun PallaSyncSettingsScreen(
 
             if (state.settings.pallaSyncEnabled || hasLocalChain) {
                 item { PallaSyncEpochControls(syncManager, state.settings.pallaSyncEnabled) }
-                item { PallaSyncRecoveryControls(syncManager) }
+                item { PallaSyncRecoveryControls(syncManager, onManagePallaSyncDevices) }
             }
             if (state.settings.pallaSyncEnabled) {
                 if (devices.isNotEmpty()) {
