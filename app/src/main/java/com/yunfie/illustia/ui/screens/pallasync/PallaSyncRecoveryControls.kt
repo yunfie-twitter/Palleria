@@ -53,12 +53,14 @@ internal fun PallaSyncRecoveryControls(
     var receiving by remember { mutableStateOf(false) }
     var releasing by remember { mutableStateOf(false) }
     var collecting by remember { mutableStateOf<Pair<PallaSyncRecoverySetStore.Entry, PallaSyncRootSession.Operation>?>(null) }
-    var migrating by remember { mutableStateOf<PallaSyncRecoverySetStore.Entry?>(null) }
+    var migrating by remember { mutableStateOf<String?>(null) }
     var migrationResult by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var migrationReceiptProgress by remember { mutableStateOf<Triple<String, Long, Long>?>(null) }
     var activeTargetChain by remember { mutableStateOf<String?>(null) }
+    var targetMigrationJournalExists by remember { mutableStateOf(false) }
+    var migrationSources by remember { mutableStateOf<List<String>?>(null) }
     var serverOrigin by remember { mutableStateOf("") }
-    var createNewRootFor by remember { mutableStateOf<PallaSyncRecoverySetStore.Entry?>(null) }
+    var createNewRootFor by remember { mutableStateOf<String?>(null) }
     var genesisPhrase by remember { mutableStateOf<String?>(null) }
     var showCreateNewRootConfirm by remember { mutableStateOf(false) }
     var showNewRootTrustDialog by remember { mutableStateOf(false) }
@@ -66,7 +68,10 @@ internal fun PallaSyncRecoveryControls(
         try {
             entries = management.inventory()
             heldSetId = management.heldSetId()
-            activeTargetChain = manager.activeNewRootMigrationTarget()
+            val targetChain = manager.activeNewRootMigrationTarget()
+            activeTargetChain = targetChain
+            migrationSources = manager.newRootMigrationSources()
+            targetMigrationJournalExists = targetChain?.let { manager.newRootMigrationProgress(it) != null } == true
             serverOrigin = manager.getServerUrl()
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -96,82 +101,10 @@ internal fun PallaSyncRecoveryControls(
 
                     else -> {
                         current.forEach { entry ->
-                            val sourceChain =
-                                entry
-                                    .manifest
-                                    .getValue("chain_id")
-                                    .jsonPrimitive
-                                    .content
                             PallaSyncRecoverySetCapacity(entry, busy, { action = RecoverySafetyAction(entry, it) }, {
                                 action =
                                     RecoverySafetyAction(entry)
                             })
-                            if (entry.state == "active" || entry.compromised || entry.state == "compromised") {
-                                TextButton(
-                                    text = stringResource(R.string.pallasync_recovery_new_root_create_chain),
-                                    enabled =
-                                        !busy &&
-                                            (activeTargetChain == null || activeTargetChain == sourceChain) &&
-                                            serverOrigin.isNotBlank(),
-                                    onClick = {
-                                        createNewRootFor = entry
-                                        showCreateNewRootConfirm = true
-                                    },
-                                )
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_recovery_new_root_migration_target,
-                                        activeTargetChain ?: stringResource(R.string.pallasync_recovery_unknown),
-                                    ),
-                                )
-                                TextButton(
-                                    text = stringResource(R.string.pallasync_recovery_new_root_migration),
-                                    enabled = !busy && activeTargetChain?.let { it != sourceChain } == true,
-                                    onClick = { migrating = entry },
-                                )
-                                migrationReceiptProgress?.takeIf { it.first == sourceChain }?.let { (_, verified, total) ->
-                                    Text(stringResource(R.string.pallasync_recovery_new_root_migration_progress, verified, total))
-                                }
-                                migrationResult?.takeIf { it.first == sourceChain }?.let { (_, matches) ->
-                                    Text(
-                                        stringResource(
-                                            if (matches) {
-                                                R.string.pallasync_recovery_new_root_migration_verified
-                                            } else {
-                                                R.string.pallasync_recovery_new_root_migration_mismatch
-                                            },
-                                        ),
-                                    )
-                                }
-                                activeTargetChain?.let { target ->
-                                    if (migrationResult == (sourceChain to true)) {
-                                        val targetRecoveryConfigured =
-                                            current.any { candidate ->
-                                                candidate.manifest["chain_id"]?.jsonPrimitive?.content == target &&
-                                                    candidate.state == "active" &&
-                                                    !candidate.compromised
-                                            }
-                                        if (!targetRecoveryConfigured) {
-                                            TextButton(
-                                                text = stringResource(R.string.pallasync_recovery_new_root_create_recovery_set),
-                                                enabled = !busy,
-                                                onClick = { creating = true },
-                                            )
-                                        }
-                                        TextButton(
-                                            text = stringResource(R.string.pallasync_recovery_new_root_manage_devices),
-                                            enabled = !busy,
-                                            onClick = onManageDevices,
-                                        )
-                                        PallaSyncNewRootRetirementControls(manager, sourceChain, target) {
-                                            migrationResult = null
-                                            migrationReceiptProgress = null
-                                            failed = false
-                                            revision++
-                                        }
-                                    }
-                                }
-                            }
                             if (entry.replacementPending && entry.state == "active" && entry.conflictingStatuses == null) {
                                 TextButton(
                                     text = stringResource(R.string.pallasync_recovery_resume_replacement),
@@ -204,6 +137,73 @@ internal fun PallaSyncRecoveryControls(
                                     enabled = !busy,
                                     onClick = { action = RecoverySafetyAction(entry, eraseOwn = true) },
                                 )
+                            }
+                        }
+                    }
+                }
+                activeTargetChain?.let { target ->
+                    Text(stringResource(R.string.pallasync_recovery_new_root_migration_target, target))
+                    val localSources = migrationSources
+                    if (localSources == null) {
+                        Text(stringResource(R.string.pallasync_recovery_unknown))
+                    } else {
+                        val canCreateNewRoot = !busy && !targetMigrationJournalExists && target in localSources && serverOrigin.isNotBlank()
+                        if (canCreateNewRoot) {
+                            TextButton(
+                                text = stringResource(R.string.pallasync_recovery_new_root_create_chain),
+                                enabled = true,
+                                onClick = {
+                                    createNewRootFor = target
+                                    showCreateNewRootConfirm = true
+                                },
+                            )
+                        }
+                        localSources.filter { it != target }.forEach { source ->
+                            Text(source)
+                            TextButton(
+                                text = stringResource(R.string.pallasync_recovery_new_root_migration),
+                                enabled = !busy,
+                                onClick = { migrating = source },
+                            )
+                            migrationReceiptProgress?.takeIf { it.first == source }?.let { (_, verified, total) ->
+                                Text(stringResource(R.string.pallasync_recovery_new_root_migration_progress, verified, total))
+                            }
+                            migrationResult?.takeIf { it.first == source }?.let { (_, matches) ->
+                                Text(
+                                    stringResource(
+                                        if (matches) {
+                                            R.string.pallasync_recovery_new_root_migration_verified
+                                        } else {
+                                            R.string.pallasync_recovery_new_root_migration_mismatch
+                                        },
+                                    ),
+                                )
+                            }
+                            if (migrationResult == (source to true)) {
+                                val targetRecoveryConfigured =
+                                    entries.orEmpty().any { candidate ->
+                                        candidate.manifest["chain_id"]?.jsonPrimitive?.content == target &&
+                                            candidate.state == "active" &&
+                                            !candidate.compromised
+                                    }
+                                if (!targetRecoveryConfigured) {
+                                    TextButton(
+                                        text = stringResource(R.string.pallasync_recovery_new_root_create_recovery_set),
+                                        enabled = !busy,
+                                        onClick = { creating = true },
+                                    )
+                                }
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_recovery_new_root_manage_devices),
+                                    enabled = !busy,
+                                    onClick = onManageDevices,
+                                )
+                                PallaSyncNewRootRetirementControls(manager, source, target) {
+                                    migrationResult = null
+                                    migrationReceiptProgress = null
+                                    failed = false
+                                    revision++
+                                }
                             }
                         }
                     }
@@ -277,21 +277,9 @@ internal fun PallaSyncRecoveryControls(
                 scope.launch {
                     busy = true
                     try {
-                        val selectedChain =
-                            selected
-                                ?.manifest
-                                ?.get("chain_id")
-                                ?.jsonPrimitive
-                                ?.content
-                        val current = management.inventory().firstOrNull { it.id == selected?.id }
-                        check(
-                            current != null &&
-                                current.manifest["chain_id"]?.jsonPrimitive?.content == selectedChain &&
-                                (current.state == "active" || current.compromised || current.state == "compromised") &&
-                                !current.replacementPending &&
-                                current.conflictingStatuses == null &&
-                                current.forkEvidence.isEmpty(),
-                        ) { "C_RECOVERY_SET_MISMATCH" }
+                        val selectedChain = checkNotNull(selected) { "C_MISSING_DEPENDENCY" }
+                        check(manager.activeNewRootMigrationTarget() == selectedChain) { "C_ROLLBACK_DETECTED" }
+                        check(selectedChain in manager.newRootMigrationSources()) { "C_MISSING_DEPENDENCY" }
                         val mnemonic = manager.generateGenesisMnemonic()
                         check(mnemonic.isNotBlank()) { "C_SCHEMA_VIOLATION" }
                         genesisPhrase = mnemonic
@@ -320,18 +308,14 @@ internal fun PallaSyncRecoveryControls(
             revision++
         }
     }
-    migrating?.let { entry ->
+    migrating?.let { source ->
         MiuixConfirmDialog(
             show = true,
             title = stringResource(R.string.pallasync_recovery_new_root_migration),
             summary =
                 stringResource(
                     R.string.pallasync_recovery_new_root_migration_warning,
-                    entry
-                        .manifest
-                        .getValue("chain_id")
-                        .jsonPrimitive
-                        .content,
+                    source,
                     activeTargetChain ?: stringResource(R.string.pallasync_recovery_unknown),
                 ),
             confirmText = stringResource(R.string.action_confirm),
@@ -345,21 +329,9 @@ internal fun PallaSyncRecoveryControls(
                 busy = true
                 scope.launch {
                     try {
-                        val source =
-                            entry
-                                .manifest
-                                .getValue("chain_id")
-                                .jsonPrimitive
-                                .content
                         val target = checkNotNull(manager.activeNewRootMigrationTarget()) { "C_MISSING_DEPENDENCY" }
                         check(target == activeTargetChain && source != target) { "C_ROLLBACK_DETECTED" }
-                        val stillCompromised =
-                            management.inventory().any { current ->
-                                current.id == entry.id && (current.compromised || current.state == "compromised")
-                            }
-                        check(
-                            stillCompromised && (entry.compromised || entry.state == "compromised"),
-                        ) { "C_RECOVERY_SHARE_COMPROMISED" }
+                        check(source in manager.newRootMigrationSources()) { "C_MISSING_DEPENDENCY" }
                         var progress = manager.newRootMigrationProgress(target)
                         while (progress?.checkpoint?.complete != true) {
                             manager.advanceNewRootMigrationPage(source, target)

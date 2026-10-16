@@ -113,6 +113,8 @@ class PalleriaSyncManager(
 
     internal suspend fun activeNewRootMigrationTarget(): String? = coordinator.activeNewRootMigrationTarget()
 
+    internal suspend fun newRootMigrationSources(): List<String> = coordinator.newRootMigrationSources()
+
     internal suspend fun verifyNewRootMigrationState(
         sourceChain: String,
         targetChain: String,

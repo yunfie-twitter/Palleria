@@ -3246,6 +3246,20 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    /** Local chain identities for an explicit §13.8 source selection, independent of recovery-set setup. */
+    internal suspend fun newRootMigrationSources(): List<String> =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                db
+                    .pallaSyncDao()
+                    .getAllChainStates()
+                    .filter { it.writeState == "active" || it.writeState == "archived" }
+                    .map { it.chainId }
+                    .distinct()
+                    .sorted()
+            }
+        }
+
     /** Compare source and target only after every migration intent has a retained signed receipt. */
     internal suspend fun verifyNewRootMigrationState(
         sourceChain: String,
