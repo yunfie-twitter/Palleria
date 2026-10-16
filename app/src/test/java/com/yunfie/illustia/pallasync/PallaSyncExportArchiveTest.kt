@@ -144,4 +144,26 @@ class PallaSyncExportArchiveTest {
         recoveryArchive.includeRecovery shouldBe true
         recoveryArchive.complete shouldBe false
     }
+
+    @Test
+    fun rejectsMalformedExportLineWrappersBeforePersistingThem() {
+        val malformed =
+            listOf(
+                """{"kind":"control","object":{},"object_type":"unknown"}""",
+                """{"extra":true,"kind":"omitted","object_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","reason":"recovery_authority","relay_seq":1}""",
+                """{"kind":"removed_id","record_hash":"bad","record_id":"not-a-uuid"}""",
+                """{"kind":"snapshot_part","record":[]}""",
+                """{"kind":"transparency_head","head":null}""",
+            )
+        malformed.forEach { line ->
+            val archive = PallaSyncExportArchive.create(ByteArrayOutputStream())
+            shouldThrow<IllegalStateException> {
+                archive.acceptChunk(
+                    "$header\n$line\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n".toByteArray(),
+                    null,
+                )
+            }
+            archive.close()
+        }
+    }
 }

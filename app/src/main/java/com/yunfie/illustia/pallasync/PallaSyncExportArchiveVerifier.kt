@@ -67,6 +67,7 @@ internal object PallaSyncExportArchiveVerifier {
                 )
             }
             check(kind in PallaSyncExportArchive.EXPORT_LINE_KINDS) { "C_SCHEMA_VIOLATION" }
+            PallaSyncExportArchive.validateExportLine(value)
             val bytes = (checkNotNull(previousLine) + "\n").toByteArray(Charsets.UTF_8)
             digest.update(bytes)
             lineCount = Math.addExact(lineCount, 1L)
