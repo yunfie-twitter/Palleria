@@ -109,7 +109,7 @@ class PallaSyncLocalIntentsTest {
                 store.dao.queuedBatch(chain, 200).size shouldBe 1
 
                 val receiptHash = encode(ByteArray(32) { 9 })
-                intents.confirmLegacyMigrationReceipt(
+                intents.confirmMigrationReceipt(
                     chain,
                     checkNotNull(audit.destinationRecordId),
                     checkNotNull(audit.destinationObjectHash),
@@ -158,7 +158,7 @@ class PallaSyncLocalIntentsTest {
                 store.protocolDao().legacyMigrationReceiptCandidates(chain, recordId).size shouldBe 0
                 store.protocolDao().legacyMigrationAuditReceiptCandidates(chain, recordId).size shouldBe 1
 
-                intents.confirmLegacyMigrationReceipt(chain, recordId, objectHash, receiptHash)
+                intents.confirmMigrationReceipt(chain, recordId, objectHash, receiptHash)
 
                 store.protocolDao().migrationChunk(migrationId, 0)?.state shouldBe "legacy_complete"
                 intents.legacyMigrationProgress(migrationId)?.accepted shouldBe 0L
@@ -594,7 +594,7 @@ class PallaSyncLocalIntentsTest {
                     val objectHash = checkNotNull(upload.objectHash)
                     val receiptHash = encode(ByteArray(32) { (index + 1).toByte() })
                     store.transaction {
-                        intents.confirmLegacyMigrationReceipt(chain, checkNotNull(upload.recordId), objectHash, receiptHash)
+                        intents.confirmMigrationReceipt(chain, checkNotNull(upload.recordId), objectHash, receiptHash)
                     }
                 }
                 val progress = checkNotNull(intents.legacyMigrationProgress(migration))
@@ -614,7 +614,7 @@ class PallaSyncLocalIntentsTest {
                 val first = uploads.first()
                 val firstReceiptHash = encode(ByteArray(32) { 1 })
                 store.transaction {
-                    intents.confirmLegacyMigrationReceipt(
+                    intents.confirmMigrationReceipt(
                         chain,
                         checkNotNull(first.recordId),
                         checkNotNull(first.objectHash),
@@ -623,7 +623,7 @@ class PallaSyncLocalIntentsTest {
                 }
                 runCatching {
                     store.transaction {
-                        intents.confirmLegacyMigrationReceipt(
+                        intents.confirmMigrationReceipt(
                             chain,
                             checkNotNull(first.recordId),
                             checkNotNull(first.objectHash),
@@ -999,11 +999,11 @@ class PallaSyncLocalIntentsTest {
                 val objectHash = checkNotNull(migrationRow.destinationObjectHash)
                 val receiptHash = encode(ByteArray(32) { 6 })
                 runCatching {
-                    restarted.confirmLegacyMigrationReceipt(target, recordId, encode(ByteArray(32) { 7 }), receiptHash)
+                    restarted.confirmMigrationReceipt(target, recordId, encode(ByteArray(32) { 7 }), receiptHash)
                 }.exceptionOrNull()?.message shouldBe "C_RECORD_ID_CONFLICT"
-                restarted.confirmLegacyMigrationReceipt(target, recordId, objectHash, receiptHash)
+                restarted.confirmMigrationReceipt(target, recordId, objectHash, receiptHash)
                 restarted.newRootMigrationReceiptStatus(target) shouldBe NewRootMigrationReceiptStatus(1, 1, true)
-                restarted.confirmLegacyMigrationReceipt(target, recordId, objectHash, receiptHash)
+                restarted.confirmMigrationReceipt(target, recordId, objectHash, receiptHash)
             } finally {
                 db.close()
             }

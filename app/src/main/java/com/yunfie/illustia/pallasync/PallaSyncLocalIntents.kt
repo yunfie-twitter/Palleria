@@ -946,7 +946,7 @@ internal class PallaSyncLocalIntents(
     ): List<String> = store.protocolDao().legacyMigrationDestinationPage(migrationId, chain, after, PAGE_SIZE)
 
     /** Called only inside the same transaction that retains a verified signed upload receipt (§9.3). */
-    suspend fun confirmLegacyMigrationReceipt(
+    suspend fun confirmMigrationReceipt(
         chain: String,
         recordId: String,
         objectHash: String,
@@ -966,7 +966,7 @@ internal class PallaSyncLocalIntents(
         check(candidate.destinationObjectHash == objectHash) { "C_RECORD_ID_CONFLICT" }
         if (candidate.state == "constructed") {
             check(
-                dao.confirmLegacyMigrationReceipt(
+                dao.confirmMigrationReceipt(
                     candidate.migrationId,
                     candidate.chunkIndex,
                     chain,
@@ -998,7 +998,7 @@ internal class PallaSyncLocalIntents(
         check(candidate.destinationObjectHash == objectHash) { "C_RECORD_ID_CONFLICT" }
         if (candidate.state == "constructed") {
             check(
-                dao.confirmLegacyMigrationReceipt(
+                dao.confirmMigrationReceipt(
                     candidate.migrationId,
                     candidate.chunkIndex,
                     chain,

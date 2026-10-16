@@ -4971,7 +4971,7 @@ internal class PalleriaSyncCoordinator(
                         signedJson = receiptJson,
                     )
                 db.protocolDao().retainEvidence(evidence)
-                localIntents.confirmLegacyMigrationReceipt(
+                localIntents.confirmMigrationReceipt(
                     submitted.chainId,
                     accepted.recordId,
                     hash,

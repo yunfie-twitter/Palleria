@@ -313,7 +313,7 @@ interface ProtocolDao {
     @Query(
         "UPDATE ps_migrations SET state='receipt_verified',verified_receipt_hash=:receiptHash WHERE migration_id=:migrationId AND chunk_index=:entryIndex AND target_chain=:chain AND destination_record_id=:recordId AND destination_object_hash=:objectHash AND state='constructed'",
     )
-    suspend fun confirmLegacyMigrationReceipt(
+    suspend fun confirmMigrationReceipt(
         migrationId: String,
         entryIndex: Long,
         chain: String,
