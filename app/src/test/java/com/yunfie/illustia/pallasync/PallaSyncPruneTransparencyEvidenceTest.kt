@@ -1,6 +1,7 @@
 package com.yunfie.illustia.pallasync
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -8,6 +9,32 @@ import kotlinx.serialization.json.put
 import org.junit.Test
 
 class PallaSyncPruneTransparencyEvidenceTest {
+    @Test
+    fun `data head follows log acceptances while prune keeps its own historical head`() {
+        val acceptedHead = "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+        val laterHead = "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+        val accepted = entry("accept", relaySeq = 43, resultingHead = acceptedHead)
+        val prune = validEntry().let { JsonObject(it + ("resulting_head_hash" to JsonPrimitive(acceptedHead))) }
+        val afterPruneAcceptance = entry("accept", relaySeq = 44, resultingHead = laterHead)
+
+        var dataHead = PallaSyncPruneTransparencyEvidence.advanceDataHead(accepted, HEAD)
+        dataHead = PallaSyncPruneTransparencyEvidence.advanceDataHead(prune, dataHead)
+        dataHead shouldBe acceptedHead
+        dataHead = PallaSyncPruneTransparencyEvidence.advanceDataHead(afterPruneAcceptance, dataHead)
+        dataHead shouldBe laterHead
+    }
+
+    @Test
+    fun `non-data transparency events cannot change the pinned data head`() {
+        val changed =
+            validEntry().let {
+                JsonObject(it + ("resulting_head_hash" to JsonPrimitive("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")))
+            }
+        shouldThrow<IllegalStateException> {
+            PallaSyncPruneTransparencyEvidence.advanceDataHead(changed, HEAD)
+        }.message shouldBe "C_TRANSPARENCY_INVALID"
+    }
+
     @Test
     fun `prune evidence binds exact covered prefix and unchanged data head`() {
         val compaction = compaction(42)
@@ -65,6 +92,16 @@ class PallaSyncPruneTransparencyEvidenceTest {
             put("log_id", LOG)
             put("covered_through_seq", through)
         }
+
+    private fun entry(
+        operation: String,
+        relaySeq: Long,
+        resultingHead: String,
+    ) = buildJsonObject {
+        put("operation", operation)
+        put("relay_seq", relaySeq)
+        put("resulting_head_hash", resultingHead)
+    }
 
     private companion object {
         const val CHAIN = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"

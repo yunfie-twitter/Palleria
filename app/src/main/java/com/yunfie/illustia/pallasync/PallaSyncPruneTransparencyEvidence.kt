@@ -8,6 +8,17 @@ import kotlinx.serialization.json.put
 
 /** Binds an authenticated §17.10 prune entry to its exact §10.12 request and signed compaction. */
 internal object PallaSyncPruneTransparencyEvidence {
+    fun advanceDataHead(
+        entry: JsonObject,
+        currentDataHeadHash: String?,
+    ): String? {
+        val operation = entry["operation"]?.jsonPrimitive?.content ?: error("C_TRANSPARENCY_INVALID")
+        val resulting = entry["resulting_head_hash"]?.jsonPrimitive?.content ?: error("C_TRANSPARENCY_INVALID")
+        if (operation == "accept" && entry["relay_seq"] != kotlinx.serialization.json.JsonNull) return resulting
+        if (currentDataHeadHash != null) check(resulting == currentDataHeadHash) { "C_TRANSPARENCY_INVALID" }
+        return currentDataHeadHash
+    }
+
     fun validate(
         entry: JsonObject,
         compaction: JsonObject,
