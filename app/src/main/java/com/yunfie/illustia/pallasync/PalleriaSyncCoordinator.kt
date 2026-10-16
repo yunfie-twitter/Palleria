@@ -975,6 +975,250 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    /** §17.5: explicitly commit a previously staged generation, then prove its complete transparency suffix. */
+    internal suspend fun commitStagedReseedHistory(
+        targetRelayUrl: String,
+        mnemonic: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<JsonObject> =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                val target =
+                    when (val normalized = PallaSyncUrls.normalize(targetRelayUrl)) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                val origin = PallaSyncUrls.extractOrigin(target)
+                policy.requireCurrent(origin)
+                requireSnapshotResult(refreshRelayHealth(target))
+                val targetPinText =
+                    checkNotNull(db.snapshotDatabase().reseedJournalDao().get(state.chainId)) {
+                        "C_MISSING_DEPENDENCY"
+                    }.let { journal ->
+                        check(
+                            journal.targetOrigin == origin && journal.sourceLogId == state.logId &&
+                                journal.sourceGeneration == state.generation,
+                        ) {
+                            "C_IMPORT_CONFLICT"
+                        }
+                        check(
+                            journal.phase >= 3 && journal.commitBodyJson != null && journal.expectedEntriesJson != null,
+                        ) {
+                            "C_MISSING_DEPENDENCY"
+                        }
+                        journal.targetPinJson
+                    }
+                val targetPinObject = Json.parseToJsonElement(targetPinText).jsonObject
+                check(
+                    targetPinObject.getValue("origin").jsonPrimitive.content == origin &&
+                        targetPinObject.getValue("chain_id").jsonPrimitive.content == state.chainId &&
+                        targetPinObject.getValue("public_key").jsonPrimitive.content == policy.trustedRelayKey(origin),
+                ) { "C_RELAY_KEY_MISMATCH" }
+                val source =
+                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                val sourceOrigin = PallaSyncUrls.extractOrigin(source)
+                policy.requireCurrent(sourceOrigin)
+                requireSnapshotResult(refreshRelayHealth(source))
+                requireSnapshotResult(consistencyProbe.run(source, state.chainId))
+                val stable = checkNotNull(db.pallaSyncDao().getChainState(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                check(
+                    stable.logId == state.logId && stable.generation == state.generation && stable.initialPullCompleted &&
+                        stable.downloadedSeq == stable.verifiedSeq && stable.verifiedSeq == stable.materializedSeq &&
+                        stable.lastRelaySeq == stable.materializedSeq && stable.verifiedHash != null &&
+                        db.protocolDao().unresolvedQuarantineCount(state.chainId) == 0L,
+                ) { "C_MISSING_DEPENDENCY" }
+                val root =
+                    PallaSyncRootSession.beginText(
+                        mnemonic,
+                        passphrase,
+                        PallaSyncRootSession.Operation.RESEED,
+                        state.chainId,
+                        authority.getValue("admin_public_key").jsonPrimitive.content,
+                        policy::requireCurrent,
+                        policy.retry::correctedTime,
+                    )
+                try {
+                    requireReseedSourceHead(root, source, sourceOrigin, stable)
+                    val history = PallaSyncImportHistoryBuilder(db.protocolDao()).build(state.chainId)
+                    val journalDao = db.snapshotDatabase().reseedJournalDao()
+                    val journal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                    prepareReseedSnapshot(root, target, authority, stable, history, journal)
+                    val preparedJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                    val compactionId = checkNotNull(preparedJournal.compactionId) { "C_MISSING_DEPENDENCY" }
+                    val parts = db.snapshotDatabase().snapshotPublicationDao().parts(state.chainId, compactionId)
+                    check(parts.isNotEmpty() && parts.all { it.status in setOf("staged", "receipted") && it.uploadReceiptJson != null }) {
+                        "C_ACCEPTANCE_UNPROVEN"
+                    }
+                    val stagedReceipts = JsonArray(parts.map { Json.parseToJsonElement(checkNotNull(it.uploadReceiptJson)) })
+                    val targetPin = Json.parseToJsonElement(targetPinText).jsonObject
+                    val currentParameters = authority.getValue("parameters").toString()
+                    val currentEpoch =
+                        authority
+                            .getValue("epochs")
+                            .jsonObject.values
+                            .maxBy {
+                                it.jsonObject
+                                    .getValue("record")
+                                    .jsonObject
+                                    .getValue("epoch")
+                                    .jsonPrimitive.long
+                            }.jsonObject
+                            .getValue("record")
+                            .toString()
+                    val resumed =
+                        if (preparedJournal.transparencyHeadJson != null && preparedJournal.transparencyAnchorJson != null) {
+                            PallaSyncReseedTransparencyVerifier.Resume(
+                                Json.parseToJsonElement(preparedJournal.transparencyHeadJson).jsonObject,
+                                Json.parseToJsonElement(preparedJournal.transparencyAnchorJson).jsonObject,
+                                Json
+                                    .parseToJsonElement(
+                                        preparedJournal.verifiedReceiptIndicesJson,
+                                    ).jsonArray
+                                    .map { it.jsonPrimitive.long }
+                                    .toSet(),
+                            )
+                        } else {
+                            null
+                        }
+                    val workflow = PallaSyncReseedCommitRelay(remote)
+                    val result =
+                        workflow.commit(
+                            root = root,
+                            target = target,
+                            canonicalBody = checkNotNull(preparedJournal.commitBodyJson),
+                            currentParametersJson = currentParameters,
+                            currentEpochJson = currentEpoch,
+                            expectedEntriesJson = checkNotNull(preparedJournal.expectedEntriesJson),
+                            targetPinJson = targetPinText,
+                            stagedSnapshotReceiptsJson = stagedReceipts.toString(),
+                            persistVerifiedTransparencyPage = { items, anchor, observedHead, expectedReceiptIndices ->
+                                val receiptIndices =
+                                    expectedReceiptIndices
+                                        .filter { it <= anchor.getValue("index").jsonPrimitive.long }
+                                        .sorted()
+                                db.transaction {
+                                    items.forEach { item ->
+                                        db.protocolDao().retainEvidence(
+                                            ProtectedEvidenceEntity(
+                                                origin,
+                                                item.getValue("relay_key_id").jsonPrimitive.content,
+                                                state.chainId,
+                                                targetPin.getValue("log_id").jsonPrimitive.content,
+                                                "transparency",
+                                                item.getValue("entry_index").jsonPrimitive.long,
+                                                checkNotNull(PallaSyncCore.objectHash(item.toString())),
+                                                item.toString(),
+                                            ),
+                                        )
+                                    }
+                                    val current = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                                    journalDao.saveMonotone(
+                                        current.copy(
+                                            transparencyHeadJson = observedHead.toString(),
+                                            transparencyAnchorJson = anchor.toString(),
+                                            verifiedReceiptIndicesJson = JsonArray(receiptIndices.map(::JsonPrimitive)).toString(),
+                                            phase = maxOf(3, current.phase),
+                                            updatedAtMs = policy.retry.correctedTime(origin),
+                                        ),
+                                    )
+                                }
+                            },
+                            confirmStagedSnapshotReceipts = {
+                                val status = db.snapshotDatabase().snapshotPublicationDao().parts(state.chainId, compactionId)
+                                if (status.all { it.status == "staged" }) {
+                                    PallaSyncSnapshotPublicationJournal(
+                                        db.snapshotDatabase(),
+                                        state.chainId,
+                                        compactionId,
+                                        checkNotNull(keystore.pendingReseed()?.keys?.epoch) { "C_MISSING_DEPENDENCY" },
+                                    ).confirmStagedTransparencySuffix()
+                                } else {
+                                    check(status.isNotEmpty() && status.all { it.status == "receipted" }) { "C_ACCEPTANCE_UNPROVEN" }
+                                }
+                            },
+                            transparencyResume = resumed,
+                        )
+                    if (result is PallaSyncHttpResult.Success) {
+                        val pending = checkNotNull(keystore.pendingReseed()) { "C_MISSING_DEPENDENCY" }
+                        check(pending.targetOrigin == origin && pending.keys.chainId == state.chainId) { "C_ROLLBACK_DETECTED" }
+                        val bundle = Json.parseToJsonElement(preparedJournal.preparedBundleJson ?: error("C_MISSING_DEPENDENCY")).jsonObject
+                        val newEpoch = bundle.getValue("epoch").jsonObject
+                        val newDeviceId = pending.keys.deviceId ?: error("C_BOOTSTRAP_TRUST_REQUIRED")
+                        val ackUrl = PallaSyncUrls.deviceKeysAck(target, state.chainId, newDeviceId)
+                        val ackBody =
+                            checkNotNull(
+                                PallaSyncCore.canonicalJson(
+                                    buildJsonObject {
+                                        put("epoch_hash", bundle.getValue("epoch_hash"))
+                                        put("epoch_commitment", newEpoch.getValue("epoch_commitment"))
+                                    }.toString(),
+                                ),
+                            ) { "C_SCHEMA_VIOLATION" }
+                        val ackToken =
+                            checkNotNull(
+                                crypto.createCapabilityToken(
+                                    chainId = state.chainId,
+                                    deviceId = newDeviceId,
+                                    method = "POST",
+                                    path = ackUrl.encodedPath,
+                                    bodyJson = ackBody,
+                                    signingKeyBase64 = pending.keys.signingKeyBase64Url,
+                                    ttlMs = 120_000L,
+                                    aud = origin,
+                                    signerKind = "device",
+                                ),
+                            ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                        val ack =
+                            remote.execute(
+                                Request
+                                    .Builder()
+                                    .url(ackUrl)
+                                    .header("Accept", PALLASYNC_MEDIA_TYPE)
+                                    .header("Authorization", "PallaSync $ackToken")
+                                    .post(ackBody.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
+                                    .build(),
+                            ) { response ->
+                                PallaSyncHttpResult.Success(
+                                    Json
+                                        .parseToJsonElement(
+                                            PallaSyncCore.validateKeysAck(
+                                                response.pallaSyncBytes(),
+                                                newDeviceId,
+                                                bundle.getValue("epoch_hash").jsonPrimitive.content,
+                                            ),
+                                        ).jsonObject,
+                                )
+                            }
+                        if (ack !is PallaSyncHttpResult.Success) {
+                            return@withLock when (ack) {
+                                PallaSyncHttpResult.Gone -> PallaSyncHttpResult.Gone
+                                is PallaSyncHttpResult.ProtocolError -> ack
+                                is PallaSyncHttpResult.Retryable -> ack
+                                is PallaSyncHttpResult.Success -> error("C_SCHEMA_VIOLATION")
+                            }
+                        }
+                        val finalJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                        journalDao.saveMonotone(
+                            finalJournal.copy(
+                                phase = maxOf(5, finalJournal.phase),
+                                updatedAtMs = policy.retry.correctedTime(origin),
+                            ),
+                        )
+                    }
+                    result
+                } finally {
+                    root.close()
+                }
+            }
+        }
+
     /** An unsigned head can only veto stale source state; the local verified checkpoint remains authoritative. */
     private suspend fun requireReseedSourceHead(
         root: PallaSyncRootSession,

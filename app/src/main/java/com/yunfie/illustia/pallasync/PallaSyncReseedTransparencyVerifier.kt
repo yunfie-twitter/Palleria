@@ -36,7 +36,12 @@ internal class PallaSyncReseedTransparencyVerifier(
         base: HttpUrl,
         pin: JsonObject,
         expectedReceipts: JsonArray,
-        persistVerifiedPage: suspend (items: List<JsonObject>, anchor: JsonObject) -> Unit,
+        persistVerifiedPage: suspend (
+            items: List<JsonObject>,
+            anchor: JsonObject,
+            observedHead: JsonObject,
+            expectedReceiptIndices: Set<Long>,
+        ) -> Unit,
         resume: Resume? = null,
     ): PallaSyncHttpResult<JsonObject> {
         check(root.operation == PallaSyncRootSession.Operation.RESEED) { "C_RECOVERY_AUTH_REQUIRED" }
@@ -171,7 +176,7 @@ internal class PallaSyncReseedTransparencyVerifier(
             }
             nextAnchor = page.getValue("next_anchor").jsonObject
             check(itemAnchor == nextAnchor) { "C_TRANSPARENCY_INVALID" }
-            persistVerifiedPage(items, nextAnchor)
+            persistVerifiedPage(items, nextAnchor, observed, receiptIndices.keys)
             cursor =
                 response
                     .getValue("next_cursor")

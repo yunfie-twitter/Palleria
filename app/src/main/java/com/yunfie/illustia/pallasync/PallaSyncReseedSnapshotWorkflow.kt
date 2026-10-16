@@ -178,7 +178,12 @@ internal class PallaSyncReseedCommitRelay(
         expectedEntriesJson: String,
         targetPinJson: String,
         stagedSnapshotReceiptsJson: String,
-        persistVerifiedTransparencyPage: suspend (items: List<JsonObject>, anchor: JsonObject) -> Unit,
+        persistVerifiedTransparencyPage: suspend (
+            items: List<JsonObject>,
+            anchor: JsonObject,
+            observedHead: JsonObject,
+            expectedReceiptIndices: Set<Long>,
+        ) -> Unit,
         confirmStagedSnapshotReceipts: suspend () -> Unit,
         transparencyResume: PallaSyncReseedTransparencyVerifier.Resume? = null,
     ): PallaSyncHttpResult<JsonObject> {
@@ -253,7 +258,6 @@ internal class PallaSyncReseedCommitRelay(
                 is PallaSyncHttpResult.Success -> result.value
                 else -> return result.failure()
             }
-        confirmStagedSnapshotReceipts()
         val head = verifiedTransparency.getValue("head").jsonObject
         check(
             head.getValue("head_seq") == checkpoint.getValue("head_seq") &&
@@ -261,6 +265,7 @@ internal class PallaSyncReseedCommitRelay(
                 head.getValue("parameters_hash") == checkpoint.getValue("parameters_hash") &&
                 head.getValue("epoch_hash") == checkpoint.getValue("epoch_hash"),
         ) { "C_LOG_HASH_MISMATCH" }
+        confirmStagedSnapshotReceipts()
         return PallaSyncHttpResult.Success(
             buildJsonObject {
                 checkpoint.forEach { (name, value) -> put(name, value) }

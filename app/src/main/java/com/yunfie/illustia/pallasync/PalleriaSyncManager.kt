@@ -6,6 +6,7 @@ import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.models.Illust
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 
 /**
@@ -64,6 +65,12 @@ class PalleriaSyncManager(
         mnemonic: String,
         passphrase: String,
     ): PallaSyncHttpResult<PallaSyncImportStageResponse.Staged> = coordinator.stageReseedHistory(targetRelayUrl, mnemonic, passphrase)
+
+    internal suspend fun commitStagedReseedHistory(
+        targetRelayUrl: String,
+        mnemonic: String,
+        passphrase: String,
+    ): PallaSyncHttpResult<JsonObject> = coordinator.commitStagedReseedHistory(targetRelayUrl, mnemonic, passphrase)
 
     internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)
 
