@@ -98,6 +98,10 @@ mlock/VirtualLockとdump抑止はOS制限を受けるbest effortです。KDF/sta
 同じ公開成果物をPalleria coreが独立に署名検証します。公開fixtureには私有鍵を含めません。これだけで全Android機能の適合とはしません。
 
 §7.7の依頼者確認済み解釈を継続し、Dがrecovery envelopeを露出する/log・/receiptsは403です。
+
+2026-10-17、§18.6の受取QR再スキャンでキャンセル・不正入力後にも以前のpeer descriptorが残る経路を閉じました。scanner開始時にdescriptorと代替peer fileを外し、結果がnull/不正なら以前の選択に戻らないようにしています。空入力、不正UTF-16、妥当値、4 MiB上限のテストを追加しました。`:app:testDebugUnitTest`は165 suites／634 tests、失敗0・error 0、`:app:ktlintCheck`も成功しました。
+
+同日、bootstrap確認OverlayDialogの本文・確認・取消をAndroid実機から操作するテストを試しましたが、Miuix OverlayDialogがCompose hierarchyおよびUiAutomator text selectorへ内容を公開せず、2ケースとも対象textを取得できませんでした。失敗する試験は削除し、成功扱いにしていません。従って§11.6の実機操作・process-death境界、§18.6の保護受取モーダル／scanner UI実機検証はpendingです。
 代替のredacted wire/APIは追加しません。Cloudflareは変更しません。
 公開側のTLS 1.1受理は§17.1の残事項であり、公開環境全体の完全適合は宣言しません。
 クライアントのtransportはTLS 1.2以上です。
