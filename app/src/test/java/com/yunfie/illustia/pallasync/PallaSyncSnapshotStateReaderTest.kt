@@ -282,6 +282,30 @@ class PallaSyncSnapshotStateReaderTest {
                     .jsonObject["limit"]!!
                     .jsonPrimitive.long shouldBe 20L
 
+                val pagedReader = PallaSyncSnapshotStateReader(db, pageSize = 2)
+                val firstPage = pagedReader.newRootMigrationPage(chain)
+                firstPage.rows shouldBe events.take(2)
+                firstPage.complete shouldBe false
+                val secondPage = pagedReader.newRootMigrationPage(chain, firstPage.anchor, firstPage.next)
+                secondPage.rows shouldBe events.drop(2)
+                secondPage.complete shouldBe false
+                val finalPage = pagedReader.newRootMigrationPage(chain, secondPage.anchor, secondPage.next)
+                finalPage.rows shouldBe emptyList()
+                finalPage.complete shouldBe true
+                runCatching {
+                    pagedReader.newRootMigrationPage(
+                        chain,
+                        firstPage.anchor,
+                        NewRootMigrationCursor(lamport = 0, rank = 1),
+                    )
+                }.exceptionOrNull()?.message shouldBe "C_SNAPSHOT_INVALID"
+                db.pallaSyncDao().updateChainState(
+                    checkNotNull(db.pallaSyncDao().getChainState(chain)).copy(indexRevision = 4),
+                )
+                runCatching { pagedReader.newRootMigrationPage(chain, firstPage.anchor, firstPage.next) }
+                    .exceptionOrNull()
+                    ?.message shouldBe "C_ROLLBACK_DETECTED"
+
                 db.snapshotStateDao().insertSnapshotAuthorGap(
                     com.yunfie.illustia.pallasync.data.SnapshotAuthorGapEntity(
                         chain,

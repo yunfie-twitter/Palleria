@@ -18,6 +18,34 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import java.nio.ByteBuffer
+import java.util.Base64
+
+@kotlinx.serialization.Serializable
+internal data class NewRootMigrationSourceAnchor(
+    val chainId: String,
+    val generation: Long,
+    val logId: String,
+    val epochHash: String,
+    val verifiedSeq: Long,
+    val verifiedHash: String,
+    val indexRevision: Long,
+)
+
+@kotlinx.serialization.Serializable
+internal data class NewRootMigrationCursor(
+    val lamport: Long = -1,
+    val rank: Int = -1,
+    val deviceId: String = "",
+    val recordId: String = "",
+    val operationIndex: Int = -1,
+)
+
+internal data class NewRootMigrationPage(
+    val anchor: NewRootMigrationSourceAnchor,
+    val rows: List<PallaSyncPendingEvent>,
+    val next: NewRootMigrationCursor,
+    val complete: Boolean,
+)
 
 /** Streams the canonical §16.6 logical snapshot entries from the authoritative Room tables. */
 @Suppress("TooManyFunctions")
@@ -50,6 +78,25 @@ internal class PallaSyncSnapshotStateReader(
         chainId: String,
         emit: suspend (PallaSyncPendingEvent) -> Unit,
     ) {
+        var anchor: NewRootMigrationSourceAnchor? = null
+        var cursor = NewRootMigrationCursor()
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val page = newRootMigrationPage(chainId, anchor, cursor)
+            anchor = page.anchor
+            page.rows.forEach { emit(it) }
+            cursor = page.next
+            if (page.complete) return
+        }
+    }
+
+    /** One bounded, restartable page bound to an unchanged verified source anchor (§13.8/§16.6). */
+    internal suspend fun newRootMigrationPage(
+        chainId: String,
+        expectedAnchor: NewRootMigrationSourceAnchor? = null,
+        cursor: NewRootMigrationCursor = NewRootMigrationCursor(),
+    ): NewRootMigrationPage {
+        validateMigrationCursor(cursor)
         val chainDao = database.pallaSyncDao()
         val source = checkNotNull(chainDao.getChainState(chainId)) { "C_SNAPSHOT_INVALID" }
         require(
@@ -57,39 +104,91 @@ internal class PallaSyncSnapshotStateReader(
                 source.verifiedSeq == source.materializedSeq && source.verifiedHash != null &&
                 source.generation in 0..MAX_GENERATION && source.lamport in 0..PallaSyncConflictResolver.MAX_COUNTER,
         ) { "C_SNAPSHOT_INVALID" }
+        val anchor =
+            NewRootMigrationSourceAnchor(
+                chainId,
+                source.generation,
+                source.logId,
+                source.epochHash,
+                source.verifiedSeq,
+                source.verifiedHash,
+                source.indexRevision,
+            )
+        require(expectedAnchor == null || expectedAnchor == anchor) { "C_ROLLBACK_DETECTED" }
+        requireSourceReadyForNewRootMigration(chainId)
         val dao = database.snapshotStateDao()
+        val rows =
+            dao.migrationWinnerPage(
+                chainId,
+                cursor.lamport,
+                cursor.rank,
+                decodeCursorBytes(cursor.deviceId),
+                decodeCursorBytes(cursor.recordId),
+                cursor.operationIndex,
+                pageSize,
+            )
+        val next =
+            rows.lastOrNull()?.let { row ->
+                NewRootMigrationCursor(
+                    row.lamport,
+                    row.opRank,
+                    encodeCursorBytes(row.deviceId),
+                    encodeCursorBytes(row.recordId),
+                    row.opIndex,
+                )
+            } ?: cursor
+        val after = checkNotNull(chainDao.getChainState(chainId)) { "C_SNAPSHOT_INVALID" }
+        require(after.indexRevision == anchor.indexRevision && anchorOf(chainId, after) == anchor) { "C_ROLLBACK_DETECTED" }
+        requireSourceReadyForNewRootMigration(chainId)
+        return NewRootMigrationPage(anchor, rows.map { it.toMigrationEvent() }, next, rows.size < pageSize)
+    }
+
+    private suspend fun requireSourceReadyForNewRootMigration(chainId: String) {
+        val chainDao = database.pallaSyncDao()
+        val snapshotDao = database.snapshotStateDao()
         require(
             chainDao.pendingOutboxCount(chainId) == 0L &&
                 database.protocolDao().unresolvedQuarantineCount(chainId) == 0L &&
-                dao.unresolvedSnapshotAuthorGapCount(chainId) == 0L && dao.unresolvedAuthorGapCount(chainId) == 0L,
-        ) { "C_SNAPSHOT_INVALID" }
-        val revision = source.indexRevision
-        var lamport = -1L
-        var rank = -1
-        var device = byteArrayOf()
-        var record = byteArrayOf()
-        var opIndex = -1
-        while (true) {
-            currentCoroutineContext().ensureActive()
-            val page = dao.migrationWinnerPage(chainId, lamport, rank, device, record, opIndex, DEFAULT_PAGE_SIZE)
-            if (page.isEmpty()) break
-            for (row in page) emit(row.toMigrationEvent())
-            val tail = page.last()
-            lamport = tail.lamport
-            rank = tail.opRank
-            device = tail.deviceId
-            record = tail.recordId
-            opIndex = tail.opIndex
-        }
-        val after = checkNotNull(chainDao.getChainState(chainId)) { "C_SNAPSHOT_INVALID" }
-        require(
-            after.indexRevision == revision && after.verifiedSeq == source.verifiedSeq &&
-                after.materializedSeq == source.materializedSeq && after.verifiedHash == source.verifiedHash &&
-                chainDao.pendingOutboxCount(chainId) == 0L &&
-                database.protocolDao().unresolvedQuarantineCount(chainId) == 0L &&
-                dao.unresolvedSnapshotAuthorGapCount(chainId) == 0L && dao.unresolvedAuthorGapCount(chainId) == 0L,
+                snapshotDao.unresolvedSnapshotAuthorGapCount(chainId) == 0L && snapshotDao.unresolvedAuthorGapCount(chainId) == 0L,
         ) { "C_SNAPSHOT_INVALID" }
     }
+
+    private fun validateMigrationCursor(cursor: NewRootMigrationCursor) {
+        val initial = cursor == NewRootMigrationCursor()
+        val validPosition =
+            cursor.lamport in 0..PallaSyncConflictResolver.MAX_COUNTER && cursor.rank in 0..1 &&
+                cursor.deviceId.isNotEmpty() && cursor.recordId.isNotEmpty() &&
+                cursor.operationIndex in 0..PallaSyncConflictResolver.MAX_COUNTER
+        require(initial || validPosition) { "C_SNAPSHOT_INVALID" }
+        if (!initial) {
+            decodeCursorBytes(cursor.deviceId)
+            decodeCursorBytes(cursor.recordId)
+        }
+    }
+
+    private fun anchorOf(
+        chainId: String,
+        state: com.yunfie.illustia.pallasync.data.ChainStateEntity,
+    ) = NewRootMigrationSourceAnchor(
+        chainId,
+        state.generation,
+        checkNotNull(state.logId),
+        checkNotNull(state.epochHash),
+        state.verifiedSeq,
+        checkNotNull(state.verifiedHash),
+        state.indexRevision,
+    )
+
+    private fun decodeCursorBytes(value: String): ByteArray =
+        if (value.isEmpty()) {
+            byteArrayOf()
+        } else {
+            Base64.getUrlDecoder().decode(value).also { bytes ->
+                require(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes) == value) { "C_SNAPSHOT_INVALID" }
+            }
+        }
+
+    private fun encodeCursorBytes(value: ByteArray): String = Base64.getUrlEncoder().withoutPadding().encodeToString(value)
 
     private fun SnapshotMigrationWinnerRow.toMigrationEvent(): PallaSyncPendingEvent {
         val body = parseObject(bodyJson)
