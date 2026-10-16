@@ -371,23 +371,31 @@ fn v3_candidate(
 
 fn append_deduplicated(
     output: &mut Vec<LegacyEntityCandidate>,
-    seen: &mut std::collections::BTreeMap<String, String>,
-    candidate: LegacyEntityCandidate,
+    seen: &mut std::collections::BTreeSet<String>,
+    mut candidate: LegacyEntityCandidate,
 ) {
-    if let Some(previous_source) = seen.get(&candidate.entity_id) {
-        if previous_source != &candidate.legacy_entity_id
-            && let Some(previous) = output
-                .iter_mut()
-                .find(|previous| previous.entity_id == candidate.entity_id)
+    if seen.contains(&candidate.entity_id) {
+        if let Some(previous) = output.iter_mut().find(|previous| {
+            previous.entity_id == candidate.entity_id
+                && previous.legacy_entity_id == candidate.legacy_entity_id
+        }) {
+            previous.normalization_changed |= candidate.normalization_changed;
+            previous.normalization_collision |= candidate.normalization_collision;
+            return;
+        }
+        for previous in output
+            .iter_mut()
+            .filter(|previous| previous.entity_id == candidate.entity_id)
         {
             previous.normalization_collision = true;
         }
+        candidate.normalization_collision = true;
+        // Retain both source spellings: after NFC they map to one v3 entity, so
+        // the migration UI must let the user choose when v2 had no winner rule.
+        output.push(candidate);
         return;
     }
-    seen.insert(
-        candidate.entity_id.clone(),
-        candidate.legacy_entity_id.clone(),
-    );
+    seen.insert(candidate.entity_id.clone());
     output.push(candidate);
 }
 
@@ -438,7 +446,7 @@ pub fn convert_v21_snapshot_payload(
             } else {
                 "palleria.search_history/3"
             };
-            let mut seen = std::collections::BTreeMap::new();
+            let mut seen = std::collections::BTreeSet::new();
             for value in values {
                 let raw = value.as_str().ok_or_else(invalid)?;
                 let (normalized, changed) = normalize(raw);
@@ -464,7 +472,7 @@ pub fn convert_v21_snapshot_payload(
         }
         "palleria.mute_settings/1" => {
             exact_fields(body, &["mutedTags", "mutedUsers", "mutedIllusts"], &[])?;
-            let mut seen = std::collections::BTreeMap::new();
+            let mut seen = std::collections::BTreeSet::new();
             for (field, kind) in [
                 ("mutedTags", "tag"),
                 ("mutedUsers", "user"),
@@ -494,7 +502,7 @@ pub fn convert_v21_snapshot_payload(
         }
         "palleria.view_history/1" => {
             exact_fields(body, &["seenFeedIllusts", "viewedIllusts"], &[])?;
-            let mut seen = std::collections::BTreeMap::new();
+            let mut seen = std::collections::BTreeSet::new();
             for value in body["seenFeedIllusts"].as_array().ok_or_else(invalid)? {
                 let id = legacy_id(value)?;
                 let text = id.to_string();
@@ -522,13 +530,12 @@ pub fn convert_v21_snapshot_payload(
                     }
                     converted.insert("pageCount".into(), json!(count));
                 }
-                let original: String = serde_json::to_string(value).map_err(|_| invalid())?;
                 let mut normalized_body = Value::Object(converted);
                 let (changed, collision) = normalize_view_body(&mut normalized_body)?;
                 let text = id.to_string();
                 let candidate = v3_candidate(
                     "palleria.view_history/3",
-                    original,
+                    text.clone(),
                     format!("viewed:{text}"),
                     normalized_body,
                     changed,

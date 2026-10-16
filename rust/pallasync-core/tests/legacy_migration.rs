@@ -160,15 +160,22 @@ fn converts_v21_replacement_snapshots_without_fabricating_deletes() {
         &json!(["e\u{301}", "é", "landscape"]),
     )
     .unwrap();
-    assert_eq!(favorites.len(), 2);
-    assert_eq!(favorites[0].entity_id, "é");
+    assert_eq!(favorites.len(), 3);
+    assert_eq!(favorites[0].legacy_entity_id, "e\u{301}");
+    assert_eq!(favorites[1].legacy_entity_id, "é");
     assert!(favorites[0].normalization_collision);
-    assert_eq!(favorites[1].entity_id, "landscape");
+    assert!(favorites[1].normalization_collision);
+    assert_eq!(favorites[0].entity_id, "é");
+    assert_eq!(favorites[1].entity_id, "é");
+    assert_eq!(favorites[2].entity_id, "landscape");
     assert!(
         favorites
             .iter()
             .all(|candidate| candidate.operation == "upsert")
     );
+    let exact_duplicate =
+        convert_v21_snapshot_payload("palleria.favorite_tag/1", &json!(["same", "same"])).unwrap();
+    assert_eq!(exact_duplicate.len(), 1);
 
     let search =
         convert_v21_snapshot_payload("palleria.search_history/1", &json!(["newest", "older"]))

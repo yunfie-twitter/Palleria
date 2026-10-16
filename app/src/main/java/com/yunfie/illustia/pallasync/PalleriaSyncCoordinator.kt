@@ -2264,6 +2264,7 @@ internal class PalleriaSyncCoordinator(
                                         setOf("palleria.search_history/3", "palleria.view_history/3"),
                                 legacyFavoriteSnapshotUnique =
                                     candidate.legacySnapshot && candidate.collection == "palleria.favorite_tag/3",
+                                legacyEntityId = candidate.legacyEntityId,
                             )
                         }
                     val decision =
@@ -2441,6 +2442,7 @@ internal class PalleriaSyncCoordinator(
                                             legacyFavoriteSnapshotUnique =
                                                 record.collectionName == "palleria.favorite_tag/1" &&
                                                     candidate.legacySnapshot && candidate.collection == "palleria.favorite_tag/3",
+                                            legacyEntityId = candidate.legacyEntityId,
                                         )
                                     }
                                 val decision =

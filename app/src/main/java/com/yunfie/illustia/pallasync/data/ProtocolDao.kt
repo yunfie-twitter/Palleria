@@ -147,6 +147,17 @@ interface ProtocolDao {
         entryIndex: Long,
     ): LegacyMigrationCandidateEntity?
 
+    @Query(
+        "UPDATE ps_legacy_migration_candidates SET group_key=:groupKey,requires_choice=1 WHERE migration_id=:id AND entry_index=:entryIndex AND group_key=:expectedGroupKey AND requires_choice=:expectedRequiresChoice",
+    )
+    suspend fun markLegacyMigrationNormalizationCollision(
+        id: String,
+        entryIndex: Long,
+        expectedGroupKey: String,
+        groupKey: String,
+        expectedRequiresChoice: Boolean,
+    ): Int
+
     @Query("SELECT * FROM ps_legacy_migration_choices WHERE migration_id=:id AND group_key=:groupKey")
     suspend fun legacyMigrationCandidateChoice(
         id: String,

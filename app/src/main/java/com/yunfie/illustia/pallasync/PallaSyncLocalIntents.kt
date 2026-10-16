@@ -51,6 +51,7 @@ internal class PallaSyncLocalIntents(
         val normalizationCollision: Boolean = false,
         val legacyEventSequenceOrdered: Boolean = false,
         val legacyFavoriteSnapshotUnique: Boolean = false,
+        val legacyEntityId: String? = null,
     )
 
     internal data class LegacyBatchReport(
@@ -354,6 +355,7 @@ internal class PallaSyncLocalIntents(
                     targetGeneration = manifest.targetGeneration,
                     legacyEventSequenceOrdered = mapping.legacyEventSequenceOrdered,
                     legacyFavoriteSnapshotUnique = mapping.legacyFavoriteSnapshotUnique,
+                    legacyEntityId = mapping.legacyEntityId,
                 )
             dao.putMigrationChunk(
                 MigrationJournalEntity(
@@ -376,8 +378,8 @@ internal class PallaSyncLocalIntents(
                             mapping.event.entityId,
                             when {
                                 mapping.legacyEventSequenceOrdered -> "legacy-v21-sequence"
-                                mapping.legacyFavoriteSnapshotUnique -> "legacy-v20-favorite-distinct"
                                 mapping.normalizationCollision -> "collision:${mapping.sourceSequence}"
+                                mapping.legacyFavoriteSnapshotUnique -> "legacy-v20-favorite-distinct"
                                 else -> "entry:$entryIndex"
                             },
                         ),
@@ -461,6 +463,7 @@ internal class PallaSyncLocalIntents(
             return@transaction
         }
         check(row.state == "legacy_staging") { "C_ROLLBACK_DETECTED" }
+        reconcileLegacyFavoriteNormalizationCollisions(migrationId)
         val completed =
             manifest.copy(
                 sourceComplete = true,
@@ -753,8 +756,7 @@ internal class PallaSyncLocalIntents(
                     candidateIndex,
                     objectHash,
                     original,
-                    requiresChoice =
-                        metadata.requiresChoice && !work.legacyEventSequenceOrdered && !work.legacyFavoriteSnapshotUnique,
+                    requiresChoice = metadata.requiresChoice && !work.legacyEventSequenceOrdered,
                     selectedByUser = choice?.let { it.userConfirmed && it.selectedEntryIndex == row.chunkIndex } == true,
                     excluded = row.state == "legacy_candidate_excluded",
                 )
@@ -817,8 +819,7 @@ internal class PallaSyncLocalIntents(
                     candidate.candidateIndex,
                     candidate.sourceObjectHash,
                     work.event,
-                    requiresChoice =
-                        candidate.requiresChoice && !work.legacyEventSequenceOrdered && !work.legacyFavoriteSnapshotUnique,
+                    requiresChoice = candidate.requiresChoice && !work.legacyEventSequenceOrdered,
                     selectedByUser =
                         dao.legacyMigrationCandidateChoice(migrationId, candidate.groupKey)?.let {
                             it.userConfirmed &&
@@ -851,7 +852,7 @@ internal class PallaSyncLocalIntents(
                     legacyCandidateDiscriminator(work, metadata, entryIndex),
                 ),
         ) { "C_ROLLBACK_DETECTED" }
-        check(!work.legacyEventSequenceOrdered && !work.legacyFavoriteSnapshotUnique) { "C_MISSING_DEPENDENCY" }
+        check(!work.legacyEventSequenceOrdered && metadata.requiresChoice) { "C_MISSING_DEPENDENCY" }
         dao.putLegacyMigrationCandidateChoice(
             LegacyMigrationChoiceEntity(migrationId, groupKey, entryIndex, userConfirmed = true),
         )
@@ -1027,10 +1028,78 @@ internal class PallaSyncLocalIntents(
     ): String =
         when {
             work.legacyEventSequenceOrdered -> "legacy-v21-sequence"
-            work.legacyFavoriteSnapshotUnique -> "legacy-v20-favorite-distinct"
+            metadata.requiresChoice && work.legacyFavoriteSnapshotUnique -> "collision"
             metadata.requiresChoice -> "collision:${metadata.sourceSequence}"
+            work.legacyFavoriteSnapshotUnique -> "legacy-v20-favorite-distinct"
             else -> "entry:$entryIndex"
         }
+
+    /**
+     * Frozen v2.0 favorite snapshots can contain distinct raw strings that NFC maps to
+     * one v3 entity across separate source records. Reconcile them after the complete
+     * verified transcript is staged so no collision alternative is silently discarded.
+     */
+    private suspend fun reconcileLegacyFavoriteNormalizationCollisions(migrationId: String) {
+        val dao = store.protocolDao()
+        val firstRawIdentifier = mutableMapOf<Pair<String, String>, String>()
+        val collisions = mutableSetOf<Pair<String, String>>()
+        var after = 0L
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val rows = dao.legacyCandidatePage(migrationId, after, PAGE_SIZE)
+            if (rows.isEmpty()) break
+            for (row in rows) {
+                val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                if (work.legacyFavoriteSnapshotUnique) {
+                    val originalId = work.legacyEntityId ?: continue
+                    val metadata =
+                        checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, row.chunkIndex)) {
+                            "C_ROLLBACK_DETECTED"
+                        }
+                    check(metadata.entityId == work.event.entityId && metadata.schema == work.event.schema) {
+                        "C_ROLLBACK_DETECTED"
+                    }
+                    val entityKey = metadata.schema to metadata.entityId
+                    val firstRaw = firstRawIdentifier.putIfAbsent(entityKey, originalId)
+                    if (firstRaw != null && firstRaw != originalId) collisions += entityKey
+                }
+                after = row.chunkIndex
+            }
+            if (rows.size < PAGE_SIZE) break
+        }
+        after = 0L
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val rows = dao.legacyCandidatePage(migrationId, after, PAGE_SIZE)
+            if (rows.isEmpty()) break
+            for (row in rows) {
+                val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                if (work.legacyFavoriteSnapshotUnique) {
+                    val metadata =
+                        checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, row.chunkIndex)) {
+                            "C_ROLLBACK_DETECTED"
+                        }
+                    if ((metadata.schema to metadata.entityId) in collisions) {
+                        val expectedGroup = metadata.groupKey
+                        val collisionGroup = legacyGroupKey(metadata.schema, metadata.entityId, "collision")
+                        if (expectedGroup != collisionGroup || !metadata.requiresChoice) {
+                            check(
+                                dao.markLegacyMigrationNormalizationCollision(
+                                    migrationId,
+                                    metadata.entryIndex,
+                                    expectedGroup,
+                                    collisionGroup,
+                                    expectedRequiresChoice = metadata.requiresChoice,
+                                ) == 1,
+                            ) { "C_ROLLBACK_DETECTED" }
+                        }
+                    }
+                }
+                after = row.chunkIndex
+            }
+            if (rows.size < PAGE_SIZE) break
+        }
+    }
 
     private suspend fun resolveLegacyGroupSelection(
         migrationId: String,
@@ -1049,20 +1118,22 @@ internal class PallaSyncLocalIntents(
         var favoriteSequence = Long.MIN_VALUE
         var favoriteCandidateIndex = Int.MIN_VALUE
         var favoriteEntry = Long.MIN_VALUE
+        var userChoiceRequired = false
         while (true) {
             currentCoroutineContext().ensureActive()
             val rows = dao.legacyMigrationCandidatesInGroup(migrationId, groupKey, after, PAGE_SIZE)
             if (rows.isEmpty()) break
             for (candidate in rows) {
+                val metadata =
+                    checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, candidate.entryIndex)) {
+                        "C_ROLLBACK_DETECTED"
+                    }
+                userChoiceRequired = userChoiceRequired || metadata.requiresChoice
                 val row = checkNotNull(dao.migrationChunk(migrationId, candidate.entryIndex)) { "C_ROLLBACK_DETECTED" }
                 val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
                 if (!work.legacyEventSequenceOrdered) {
                     if (work.legacyFavoriteSnapshotUnique) {
                         favoriteDistinct = true
-                        val metadata =
-                            checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, candidate.entryIndex)) {
-                                "C_ROLLBACK_DETECTED"
-                            }
                         val later =
                             when {
                                 metadata.sourceSequence > favoriteSequence -> true
@@ -1082,10 +1153,6 @@ internal class PallaSyncLocalIntents(
                     continue
                 }
                 sequenceOrdered = true
-                val metadata =
-                    checkNotNull(dao.legacyMigrationCandidateByEntry(migrationId, candidate.entryIndex)) {
-                        "C_ROLLBACK_DETECTED"
-                    }
                 if (metadata.sourceSequence > selectedSequence ||
                     (metadata.sourceSequence == selectedSequence && metadata.candidateIndex > selectedCandidateIndex) ||
                     (
@@ -1108,6 +1175,12 @@ internal class PallaSyncLocalIntents(
             if (sequenceOrdered) {
                 check(selectedEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
                 selectedEntry
+            } else if (userChoiceRequired) {
+                check(
+                    choice != null && choice.userConfirmed &&
+                        dao.legacyMigrationCandidate(migrationId, groupKey, choice.selectedEntryIndex) != null,
+                ) { "C_MISSING_DEPENDENCY" }
+                choice.selectedEntryIndex
             } else if (favoriteDistinct) {
                 check(favoriteEntry >= 0 && choice?.userConfirmed != true) { "C_ROLLBACK_DETECTED" }
                 favoriteEntry

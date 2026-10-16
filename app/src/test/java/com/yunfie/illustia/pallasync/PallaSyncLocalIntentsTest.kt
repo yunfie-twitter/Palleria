@@ -641,6 +641,80 @@ class PallaSyncLocalIntentsTest {
         }
 
     @Test
+    fun `normalization collision in favorite snapshot retains alternatives and requires explicit choice`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val intents = queue(store, author(store, MemoryStorage()))
+                val migration = "legacy:v20-favorite-collision:$chain"
+                val exportHash = encode(ByteArray(32) { 9 })
+                val recordIds =
+                    listOf(
+                        "01890f3e-7c00-7000-8000-000000000009",
+                        "01890f3e-7c00-7000-8000-000000000010",
+                    )
+                val sourceJson = listOf("{\"snapshot\":1}", "{\"snapshot\":2}")
+                val objectHashes = sourceJson.map { checkNotNull(PallaSyncCore.objectHash(it)) }
+                intents.beginLegacyMigration(migration, "source-chain", "2.0", 2, exportHash, chain, freezeConfirmed = true)
+                recordIds.indices.forEach { index ->
+                    intents.archiveLegacySourceRecord(migration, index + 1L, recordIds[index], objectHashes[index], sourceJson[index])
+                }
+
+                fun favorite() =
+                    PallaSyncPendingEvent(
+                        FAVORITE_TAG_SCHEMA_V3,
+                        "é",
+                        "upsert",
+                        buildJsonObject { put("tag", "é") },
+                    )
+                for (index in recordIds.indices) {
+                    intents.stageLegacyBatch(
+                        migration,
+                        expectedAfterSequence = index.toLong(),
+                        throughSequence = index + 1L,
+                        mappings =
+                            listOf(
+                                PallaSyncLocalIntents.LegacyEventMapping(
+                                    index + 1L,
+                                    recordIds[index],
+                                    0,
+                                    objectHashes[index],
+                                    favorite(),
+                                    legacyFavoriteSnapshotUnique = true,
+                                    legacyEntityId = if (index == 0) "e\u0301" else "é",
+                                ),
+                            ),
+                        decisions =
+                            listOf(
+                                PallaSyncLocalIntents.LegacySourceDecision(
+                                    index + 1L,
+                                    recordIds[index],
+                                    objectHashes[index],
+                                    "converted",
+                                ),
+                            ),
+                        report = PallaSyncLocalIntents.LegacyBatchReport(1, 0, 0, 0, complete = false),
+                    )
+                }
+                intents.completeLegacySourceScan(migration, 2, 2, exportHash, listOf("é"))
+                val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
+                candidates.size shouldBe 2
+                candidates.all { it.requiresChoice } shouldBe true
+                runCatching { intents.finalizeLegacyMigrationChoices(migration) }.isFailure shouldBe true
+                val chosen = candidates.last()
+                intents.chooseLegacyMigrationCandidate(migration, chosen.groupKey, chosen.migrationEntryIndex)
+                intents.finalizeLegacyMigrationChoices(migration)
+                val afterChoice = intents.legacyMigrationCandidatePage(migration, 0).items
+                afterChoice.single { !it.excluded }.migrationEntryIndex shouldBe chosen.migrationEntryIndex
+                afterChoice.single { it.excluded }.migrationEntryIndex shouldBe candidates.first().migrationEntryIndex
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `v20 search snapshots merge newest first and author the final order oldest to newest`() =
         runBlocking<Unit> {
             val db = database()

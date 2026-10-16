@@ -16,4 +16,6 @@ internal data class PallaSyncReplayWork(
     val legacyEventSequenceOrdered: Boolean = false,
     /** v2.0 favorite snapshots merge by distinct membership; first occurrence fixes list order. */
     val legacyFavoriteSnapshotUnique: Boolean = false,
+    /** Original source identifier retained only to resolve NFC collisions during conversion. */
+    val legacyEntityId: String? = null,
 )
