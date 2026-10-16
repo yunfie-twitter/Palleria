@@ -202,7 +202,7 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
-    fun `verified deletion retains signed proof while erasing chain rows and other evidence`() =
+    fun `verified deletion retains signed proof and minimum authority while erasing chain rows`() =
         runBlocking<Unit> {
             val db =
                 Room
@@ -240,7 +240,31 @@ class PallaSyncProtocolStoreTest {
                         "proof-hash",
                         "{\"proof\":true}",
                     )
+                val authority =
+                    ProtectedEvidenceEntity(
+                        "https://relay.example",
+                        "key",
+                        chain,
+                        log,
+                        "deletion_authority",
+                        0,
+                        "authority-hash",
+                        "{\"authority\":true}",
+                    )
+                val ordinaryEvidence =
+                    ProtectedEvidenceEntity(
+                        "https://relay.example",
+                        "key",
+                        chain,
+                        log,
+                        "record_receipt",
+                        7,
+                        "record-hash",
+                        "{\"record\":true}",
+                    )
                 protocol.retainEvidence(request)
+                protocol.retainEvidence(authority)
+                protocol.retainEvidence(ordinaryEvidence)
                 db.withTransaction {
                     protocol.retainDeletionProof(proof)
                     protocol.eraseChainState(chain)
@@ -249,8 +273,11 @@ class PallaSyncProtocolStoreTest {
                 dao.getChainState(chain) shouldBe null
                 protocol.snapshotAuthorHead(chain, 0, deviceA, 5) shouldBe null
                 protocol.unresolvedAuthorGapCount(chain) shouldBe 0
-                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_request", 0) shouldBe emptyList()
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_request", 0) shouldBe listOf(request.signedJson)
                 protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 9) shouldBe listOf("{\"proof\":true}")
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "deletion_authority", 0) shouldBe
+                    listOf(authority.signedJson)
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "record_receipt", 7) shouldBe emptyList()
             } finally {
                 db.close()
             }

@@ -768,7 +768,10 @@ interface ProtocolDao {
     @Query("DELETE FROM ps_migrations WHERE target_chain=:chain OR source_identity=:chain")
     suspend fun deleteChainMigrations(chain: String)
 
-    @Query("DELETE FROM ps_evidence WHERE chain_id=:chain AND kind NOT IN ('delete_receipt','deletion_evidence_bundle')")
+    @Query(
+        "DELETE FROM ps_evidence WHERE chain_id=:chain AND kind NOT IN " +
+            "('delete_receipt','deletion_evidence_bundle','delete_request','deletion_authority')",
+    )
     suspend fun deleteNonDeletionEvidence(chain: String)
 
     @Transaction

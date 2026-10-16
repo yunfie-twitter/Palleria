@@ -456,7 +456,7 @@
         "Palleria/rust/pallasync-core/tests/attestations.rs"
       ],
       "result": "pending",
-      "remaining": "Authorized CAS request, signed GET /deletion verification, retained proof, explicit SAF readback/offline-copy confirmation, local erase and recovery-material cleanup are implemented. Complete relay-backed CAS/unknown-outcome/410 tests, recovery deletion-guard tests and physical SAF/device verification; keep pending.",
+      "remaining": "Authorized CAS request, signed GET /deletion verification, retained proof, explicit SAF readback/offline-copy confirmation, local erase and recovery-material cleanup are implemented. Complete relay-backed CAS/unknown-outcome/410 tests, recovery deletion-guard tests and physical SAF/device verification; keep pending. Local erase now atomically retains the exact verified public authority checkpoint and original signed delete request alongside receipt/bundle evidence, so later GET C/deletion revision verification can use historical local authorization context without retaining keys or application state. Room protocol-store test confirms request/authority retention after chain-row erasure. Mnemonic-based post-erasure fetch/UI and relay-backed lifecycle tests remain incomplete.",
       "verification_scope": "targeted_partial"
     },
     {

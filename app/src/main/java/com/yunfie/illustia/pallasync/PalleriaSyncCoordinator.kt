@@ -4491,7 +4491,52 @@ internal class PalleriaSyncCoordinator(
         context: DeletionContext,
         evidence: ProtectedEvidenceEntity,
     ) {
-        db.transaction { db.protocolDao().retainDeletionProof(evidence) }
+        val request =
+            checkNotNull(
+                db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_request"),
+            ) {
+                "C_DELETION_UNVERIFIED"
+            }
+        val authorityHash = checkNotNull(PallaSyncCore.objectHash(context.authorityText)) { "C_DELETION_UNVERIFIED" }
+        val authorityEvidence =
+            ProtectedEvidenceEntity(
+                context.origin,
+                context.relayKeyId,
+                context.state.chainId,
+                context.logId,
+                "deletion_authority",
+                0,
+                authorityHash,
+                context.authorityText,
+            )
+        db.transaction {
+            db.protocolDao().retainDeletionProof(evidence)
+            db.protocolDao().retainEvidence(authorityEvidence)
+            check(
+                db
+                    .protocolDao()
+                    .evidenceAt(
+                        context.origin,
+                        context.relayKeyId,
+                        context.state.chainId,
+                        context.logId,
+                        "deletion_authority",
+                        0,
+                    ).contains(context.authorityText),
+            ) { "C_LOCAL_STORAGE_FULL" }
+            check(
+                db
+                    .protocolDao()
+                    .evidenceAt(
+                        context.origin,
+                        context.relayKeyId,
+                        context.state.chainId,
+                        context.logId,
+                        "delete_request",
+                        0,
+                    ).contains(request),
+            ) { "C_DELETION_UNVERIFIED" }
+        }
         eraseChainRecoveryMaterial(context.state.chainId)
         db.transaction {
             db.protocolDao().eraseChainState(context.state.chainId)
