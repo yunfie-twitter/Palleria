@@ -19,6 +19,7 @@ import kotlinx.serialization.json.put
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Base64
 
 @RunWith(PallaSyncJniRobolectricRunner::class)
 @Config(sdk = [28], application = android.app.Application::class)
@@ -74,6 +75,30 @@ class PallaSyncReseedJniTest {
                     result.epochHash shouldBe PallaSyncCore.objectHash(result.epochJson)
                     prepared.openEpochSession().use { targetEpoch ->
                         targetEpoch.tag("private collection") shouldBe null
+                    }
+                    val savedKeys = prepared.keySnapshot()
+                    resumePallaSyncPreparedReseed(prepared.publicBundleJson(), savedKeys).use { resumed ->
+                        resumed.publicResult shouldBe result
+                        resumed.openEpochSession().use { targetEpoch ->
+                            targetEpoch.tag("private collection") shouldBe null
+                        }
+                        val seed = resumed.signingSeedCopy()
+                        val expectedSeed = Base64.getUrlDecoder().decode(savedKeys.signingKeyBase64Url)
+                        try {
+                            seed.contentEquals(expectedSeed) shouldBe true
+                        } finally {
+                            seed.fill(0)
+                            expectedSeed.fill(0)
+                        }
+                    }
+                    val alteredEpochSecret =
+                        savedKeys.copy(
+                            epochSecretBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32)),
+                        )
+                    shouldThrow<IllegalStateException> {
+                        resumePallaSyncPreparedReseed(prepared.publicBundleJson(), alteredEpochSecret).use { resumed ->
+                            resumed.openEpochSession().use { }
+                        }
                     }
                 }
             }
