@@ -287,7 +287,12 @@ fun PallaSyncSettingsScreen(
                                 val returned =
                                     checkNotNull(
                                         context.contentResolver.openInputStream(uri),
-                                    ) { "C_DELETION_UNVERIFIED" }.use { it.readBytes() }
+                                    ) { "C_DELETION_UNVERIFIED" }.use {
+                                        PallaSyncDeletionEvidenceArchive.readBounded(
+                                            it,
+                                            PallaSyncDeletionEvidenceArchive.MAX_PROTOCOL_BODY_BYTES,
+                                        )
+                                    }
                                 check(returned.contentEquals(bytes)) { "C_DELETION_UNVERIFIED" }
                                 returned.toString(Charsets.UTF_8)
                             }

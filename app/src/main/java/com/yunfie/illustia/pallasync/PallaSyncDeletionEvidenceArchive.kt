@@ -11,6 +11,7 @@ import java.nio.charset.CodingErrorAction
 /** Bounded SAF import for the public §7.12.5 receipt-and-witness archive. */
 internal object PallaSyncDeletionEvidenceArchive {
     const val MAX_BYTES = 262_144
+    const val MAX_PROTOCOL_BODY_BYTES = 8_388_608
 
     fun readBounded(
         input: InputStream,

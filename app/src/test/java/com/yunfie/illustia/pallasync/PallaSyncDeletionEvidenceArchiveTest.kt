@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.Test
+import java.io.ByteArrayInputStream
 
 class PallaSyncDeletionEvidenceArchiveTest {
     @Test
@@ -24,5 +25,14 @@ class PallaSyncDeletionEvidenceArchiveTest {
                 PallaSyncDeletionEvidenceArchive.parseStrictObject(input)
             }.message shouldBe "C_SCHEMA_VIOLATION"
         }
+    }
+
+    @Test
+    fun `bounded read accepts exact limit and rejects one extra byte`() {
+        PallaSyncDeletionEvidenceArchive.readBounded(ByteArrayInputStream(byteArrayOf(1, 2, 3)), 3).toList() shouldBe
+            listOf<Byte>(1, 2, 3)
+        shouldThrow<IllegalStateException> {
+            PallaSyncDeletionEvidenceArchive.readBounded(ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)), 3)
+        }.message shouldBe "C_SCHEMA_VIOLATION"
     }
 }
