@@ -511,10 +511,12 @@
         "Palleria/rust/pallasync-core/tests/bootstrap.rs",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAuthorityJniTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInitialSourceChoiceTest.kt",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncBootstrapReviewTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncBootstrapReviewTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncBootstrapReviewTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncBootstrapReviewDialogTest.kt"
       ],
       "result": "pending",
-      "remaining": "Before installing a first relay-replay checkpoint, the user now reviews the derived chain/admin identity and authenticated log head, parameters/epoch hashes, and transparency anchor; declining fails closed. Unit tests reject mismatched origin, chain and admin and verify the review projection. Trusted snapshot candidates expose comparable verified authority and coverage evidence. Still add interactive Android tests for accept/cancel/process interruption and every source option (including authenticated export/peer), exercise incomplete ancestry rejection end-to-end, and confirm the review overlay behaves correctly over the root-input dialog. Keep §11.6 pending.",
+      "remaining": "Initial relay-replay recovery now requires an explicit review of the root-derived chain/admin identity and verified log, parameters, epoch and transparency checkpoint before activation. Declining fails closed before pending keys or chain state are installed. The projection unit test rejects a different origin, chain or admin; the Compose body test verifies the source evidence and visible clickable controls. Kotlin/JVM test and ktlint pass. Overlay tap/cancel/process-death behavior and every source option remain unverified on Android; snapshot, relay replay, export and peer choices need end-to-end ancestry/source-selection tests. Keep pending.",
       "verification_scope": "targeted_partial"
     },
     {
