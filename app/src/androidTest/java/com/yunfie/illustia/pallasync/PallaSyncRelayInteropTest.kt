@@ -88,7 +88,22 @@ class PallaSyncRelayInteropTest {
                 val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
                 assertTrue(
                     PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-                    coordinator.joinChain(phrase, "Android integration endpoint", selected),
+                    coordinator.joinChain(
+                        phrase,
+                        "Android integration endpoint",
+                        selected,
+                        bootstrapReview = { review ->
+                            assertEquals(selected, review.relayOrigin)
+                            assertTrue(review.chainId.isNotBlank())
+                            assertTrue(review.adminPublicKey.isNotBlank())
+                            assertTrue(review.logId.isNotBlank())
+                            assertTrue(review.headSeq >= 0)
+                            assertTrue(review.headHash.isNotBlank())
+                            assertTrue(review.parametersHash.isNotBlank())
+                            assertTrue(review.epochHash.isNotBlank())
+                            true
+                        },
+                    ),
                 )
                 coordinator.stopBackgroundSync()
                 val state = checkNotNull(store.dao.getActiveChainState())
