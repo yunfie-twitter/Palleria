@@ -4317,6 +4317,12 @@ internal class PalleriaSyncCoordinator(
         root: PallaSyncRootSession,
         context: DeletionContext,
     ): PallaSyncDeletionRequestResult {
+        // A first DELETE is destructive: establish a current consistency checkpoint first.
+        // If the outcome of a previous DELETE was unknown, reuse its exact signed request and
+        // query the deletion proof route without probing routes that may now return 410.
+        if (db.protocolDao().latestEvidence(context.state.chainId, context.logId, "delete_request") == null) {
+            requireSnapshotResult(consistencyProbe.run(context.base, context.state.chainId))
+        }
         val body = prepareDeletionRequest(root, context)
         val chainUrl = PallaSyncUrls.chain(context.base, context.state.chainId)
         val deletionUrl = chainUrl.newBuilder().addPathSegment("deletion").build()
@@ -4640,7 +4646,7 @@ internal class PalleriaSyncCoordinator(
                                 .header("Authorization", "PallaSync $token")
                                 .get()
                                 .build(),
-                        ) { PallaSyncHttpResult.Success(it.pallaSyncBytes(1_048_576L)) }
+                        ) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }
                     val proofBytes =
                         when (response) {
                             is PallaSyncHttpResult.Success -> response.value
