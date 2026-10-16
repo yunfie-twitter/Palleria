@@ -41,6 +41,7 @@
     <string name="pallasync_v3_mnemonic_saved">I saved these words</string>
     <string name="pallasync_v3_source">Choose the synchronization source</string>
     <string name="pallasync_v3_local_source">Create a new chain from the data on this device.</string>
+    <string name="pallasync_v3_source_completeness_limit">This source choice permits recovery from the selected source; it does not prove that the source has shown every valid history entry. Source trust and relay policy consent are separate decisions.</string>
     <string name="pallasync_v3_trust_key">Confirm the relay signing key</string>
     <string name="pallasync_v3_key_explanation">Compare this fingerprint with the relay operator or an independently trusted device. Confirming this key is a separate trust decision from accepting the storage policy.</string>
     <string name="pallasync_v3_privacy">Relay storage and deletion policy</string>
@@ -118,8 +119,10 @@
     <string name="pallasync_progress_transparency">Transparency entry_index: verified anchor %1$d · last signed target %2$d (separate counter)</string>
     <string name="pallasync_progress_transparency_conflict">The latest signed transparency head names a different chain; it is not counted as verified progress.</string>
     <string name="pallasync_progress_partial">Partial: initial pull complete = %1$b. Verified and materialized positions can still lag the downloaded position.</string>
-    <string name="pallasync_progress_current">All downloaded records are verified and materialized. An isolated relay can still hide unseen history.</string>
-    <string name="pallasync_progress_blockers">Pending outbox %1$d · author gaps %2$d · unresolved quarantine %3$d</string>
+    <string name="pallasync_progress_current">All downloaded records are verified and materialized.</string>
+    <string name="pallasync_progress_author_gaps">Unresolved author sequence gaps: %1$d</string>
+    <string name="pallasync_progress_source_completeness">Relay history completeness is not independently proven; an isolated relay can hide unseen entries.</string>
+    <string name="pallasync_progress_blockers">Pending outbox %1$d · unresolved quarantine %2$d</string>
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>

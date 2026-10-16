@@ -59,6 +59,9 @@ internal fun PallaSyncTrustDialog(
                 when (step) {
                     0 -> {
                         Text(sourceLabel)
+                        if (sourceKind != "new_chain_local_state") {
+                            Text(stringResource(R.string.pallasync_v3_source_completeness_limit))
+                        }
                     }
 
                     1 -> {

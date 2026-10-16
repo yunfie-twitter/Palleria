@@ -1613,11 +1613,12 @@ fun PallaSyncSettingsScreen(
                                     status.initialPullCompleted,
                                 ),
                             )
+                            Text(stringResource(R.string.pallasync_progress_author_gaps, status.authorGaps))
+                            Text(stringResource(R.string.pallasync_progress_source_completeness))
                             Text(
                                 stringResource(
                                     R.string.pallasync_progress_blockers,
                                     status.pendingOutbox,
-                                    status.authorGaps,
                                     status.unresolvedQuarantine,
                                 ),
                             )

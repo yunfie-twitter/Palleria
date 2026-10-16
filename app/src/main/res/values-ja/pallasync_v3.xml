@@ -23,6 +23,7 @@
     <string name="pallasync_v3_mnemonic_saved">単語を控えました</string>
     <string name="pallasync_v3_source">同期元を選択</string>
     <string name="pallasync_v3_local_source">この端末のデータから新しいchainを作成します。</string>
+    <string name="pallasync_v3_source_completeness_limit">選択した同期元から復旧することを許可する選択です。同期元が有効な履歴をすべて提示した証明にはなりません。同期元の信頼とリレー方針への同意は別の判断です。</string>
     <string name="pallasync_v3_trust_key">リレーの署名鍵を確認</string>
     <string name="pallasync_v3_key_explanation">この指紋を運用者または独立して信頼した端末と照合してください。この鍵を信頼する操作と、保存方針への同意は別々に確認します。</string>
     <string name="pallasync_v3_privacy">リレーの保存・削除方針</string>
@@ -100,8 +101,10 @@
     <string name="pallasync_progress_transparency">透明性entry_index: 検証済みanchor %1$d · 最後に署名確認したtarget %2$d（別カウンタ）</string>
     <string name="pallasync_progress_transparency_conflict">最新の署名済みtransparency headが別chainを示しています。検証済み進捗には算入しません。</string>
     <string name="pallasync_progress_partial">一部未完了: 初回取得完了=%1$b。検証済み／適用済み位置がダウンロード済み位置に届いていない場合があります。</string>
-    <string name="pallasync_progress_current">ダウンロード済みのレコードはすべて検証・適用済みです。孤立端末ではリレーが未提示の履歴を隠している可能性があります。</string>
-    <string name="pallasync_progress_blockers">送信待ち %1$d · author欠落 %2$d · 未解決隔離 %3$d</string>
+    <string name="pallasync_progress_current">ダウンロード済みのレコードはすべて検証・適用済みです。</string>
+    <string name="pallasync_progress_author_gaps">未解決のauthor sequence欠落: %1$d</string>
+    <string name="pallasync_progress_source_completeness">リレー履歴の完全性は独立に証明されていません。孤立したリレーは未提示の履歴を隠せます。</string>
+    <string name="pallasync_progress_blockers">送信待ち %1$d · 未解決隔離 %2$d</string>
     <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>
