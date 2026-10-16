@@ -50,7 +50,9 @@ class PallaSyncLegacyMigrationReportTest {
                     completeness.getValue("status").jsonPrimitive.content shouldBe "unknown"
                     completeness.getValue("reason").jsonPrimitive.content shouldBe
                         "v2.1 retention may have removed older items: search is capped at 100 entries, " +
-                        "seen history at 2,000 items, and viewed history at 1,000 items"
+                        "seen history at 2,000 items, and viewed history at 1,000 items. " +
+                        "Any data already deleted or truncated before this frozen export has an unknown missing range; " +
+                        "no missing count is inferred."
                 }
                 report.getValue("accepted_count").jsonPrimitive.content shouldBe "1"
                 report.getValue("excluded_count").jsonPrimitive.content shouldBe "0"
@@ -112,7 +114,9 @@ class PallaSyncLegacyMigrationReportTest {
                 completeness.getValue("status").jsonPrimitive.content shouldBe "unknown"
                 completeness.getValue("reason").jsonPrimitive.content shouldBe
                     "v2.0 /1 search-history retention (MAX_SEARCH_HISTORY is unspecified) and view-history uploads " +
-                    "(last 50 items) may have omitted older entries"
+                    "(last 50 items) may have omitted older entries. " +
+                    "Any data already deleted or truncated before this frozen export has an unknown missing range; " +
+                    "no missing count is inferred."
             } finally {
                 temp.delete()
             }
