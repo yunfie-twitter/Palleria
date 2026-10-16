@@ -700,7 +700,7 @@
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerLifecycleAndroidTest.kt"
       ],
       "result": "pending",
-      "remaining": "Run real OS-background/SAF interruption and timeout advancement instrumentation, independent physical-holder interoperability, and dedicated secret-memory instrumentation. The injected Android lifecycle test verifies ON_STOP closes the dealer owner; dealer creation and threshold-test sessions also close on the native-aligned idle lease, which pauses during explicit confirmation and credential dialogs.",
+      "remaining": "Run real OS-background/SAF interruption, confirmation-dialog pause, independent physical-holder interoperability, and dedicated secret-memory instrumentation. Pixel 6a instrumentation verifies injected ON_STOP closes the dealer owner and the five-minute idle lease closes the native session; OS background and physical media are still not proven.",
       "verification_scope": "targeted_partial"
     },
     {

@@ -24,10 +24,9 @@ class PallaSyncRecoveryDealerLifecycleAndroidTest {
         override val lifecycle = LifecycleRegistry(this)
     }
 
-    @Test
-    fun stopEventAbandonsNonterminalDealerSession() {
+    private fun prepareOwner(name: String): PallaSyncRecoverySetupOwner {
         PallaSyncCore.setSecretForeground(true)
-        val prefs = compose.activity.getSharedPreferences("pallasync-dealer-lifecycle-ui-test", 0)
+        val prefs = compose.activity.getSharedPreferences(name, 0)
         prefs.edit().clear().commit()
         val store = PallaSyncRecoverySetStore(prefs)
         val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
@@ -45,6 +44,12 @@ class PallaSyncRecoveryDealerLifecycleAndroidTest {
             "",
             1,
         )
+        return owner
+    }
+
+    @Test
+    fun stopEventAbandonsNonterminalDealerSession() {
+        val owner = prepareOwner("pallasync-dealer-lifecycle-ui-test")
         val lifecycleOwner = CeremonyLifecycleOwner()
         compose.runOnUiThread {
             lifecycleOwner.lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
@@ -70,6 +75,32 @@ class PallaSyncRecoveryDealerLifecycleAndroidTest {
             assertEquals("C_RECOVERY_SESSION_EXPIRED", failure.message)
         } finally {
             owner.close()
+        }
+    }
+
+    @Test
+    fun nativeAlignedIdleTimeoutClosesTheWholeCeremony() {
+        compose.mainClock.autoAdvance = false
+        val owner = prepareOwner("pallasync-dealer-timeout-ui-test")
+        compose.setContent {
+            MiuixTheme {
+                PallaSyncRecoveryDealerControls(owner, android.net.Uri.EMPTY, android.net.Uri.EMPTY) {}
+            }
+        }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(299_000)
+        compose.runOnIdle { owner.usePrepared { it.userInteraction() } }
+        compose.mainClock.advanceTimeBy(2_000)
+        compose.waitForIdle()
+
+        try {
+            owner.usePrepared { it.userInteraction() }
+            throw AssertionError("idle dealer session remained open past its five-minute lease")
+        } catch (failure: IllegalStateException) {
+            assertEquals("C_RECOVERY_SESSION_EXPIRED", failure.message)
+        } finally {
+            owner.close()
+            compose.mainClock.autoAdvance = true
         }
     }
 }
