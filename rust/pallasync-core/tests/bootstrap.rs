@@ -365,3 +365,50 @@ fn reseed_root_capability_is_limited_to_import_reseed_and_admin_repair_routes() 
     }
     root_session::end(handle);
 }
+
+#[test]
+fn export_root_capability_is_limited_to_the_chain_export_route() {
+    use pallasync_core::root_session::{self, Operation};
+    let phrase = format!("{} art", vec!["abandon"; 23].join(" "));
+    let handle =
+        root_session::begin(phrase.as_bytes(), b"", Operation::Export, None, None).unwrap();
+    let chain = root_session::identity(handle).unwrap()["chain_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let prefix = format!("/pallasync/v3/chains/{chain}");
+    assert!(
+        root_session::capability_at(
+            handle,
+            Operation::Export,
+            "https://relay.example.com",
+            "GET",
+            &format!("{prefix}/export"),
+            "include_recovery=true&limit=200",
+            b"",
+            1791684000000,
+        )
+        .is_ok()
+    );
+    for path in [
+        format!("{prefix}/parameters"),
+        format!("{prefix}/records/repair"),
+    ] {
+        assert_eq!(
+            root_session::capability_at(
+                handle,
+                Operation::Export,
+                "https://relay.example.com",
+                "GET",
+                &path,
+                "",
+                b"",
+                1791684000000,
+            )
+            .unwrap_err()
+            .0,
+            "C_RECOVERY_AUTH_REQUIRED"
+        );
+    }
+    root_session::end(handle);
+}

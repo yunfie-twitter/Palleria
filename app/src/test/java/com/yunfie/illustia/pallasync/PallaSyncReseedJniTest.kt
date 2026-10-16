@@ -26,6 +26,26 @@ import java.util.Base64
 @Config(sdk = [28], application = android.app.Application::class)
 class PallaSyncReseedJniTest {
     @Test
+    fun `root export session signs only its include-recovery export request`() {
+        PallaSyncCore.setSecretForeground(true)
+        PallaSyncRootSession
+            .beginText(
+                MNEMONIC,
+                "",
+                PallaSyncRootSession.Operation.EXPORT,
+                requestGuard = {},
+                clock = { NOW },
+            ).use { root ->
+                val chain = root.identity.chainId
+                val path = "/pallasync/v3/chains/$chain/export"
+                checkNotNull(root.token("https://relay.example", "GET", path, "include_recovery=true&limit=200"))
+                shouldThrow<IllegalStateException> {
+                    root.token("https://relay.example", "GET", "/pallasync/v3/chains/$chain/parameters")
+                }.message shouldBe "C_RECOVERY_AUTH_REQUIRED"
+            }
+    }
+
+    @Test
     fun `reseed keystore promotion retains source keys and anchor and resumes idempotently`() {
         PallaSyncCore.setSecretForeground(true)
         val context = ApplicationProvider.getApplicationContext<Context>()

@@ -30,6 +30,7 @@ pub enum Operation {
     Rotate,
     Revoke,
     Reseed,
+    Export,
     Delete,
     Prune,
     RecoveryCreate,
@@ -45,6 +46,7 @@ impl Operation {
             "rotate" => Self::Rotate,
             "revoke" => Self::Revoke,
             "reseed" => Self::Reseed,
+            "export" => Self::Export,
             "delete" => Self::Delete,
             "prune" => Self::Prune,
             "recovery_create" => Self::RecoveryCreate,
@@ -560,7 +562,10 @@ pub fn capability_at(
             .strip_prefix(&prefix)
             .filter(|tail| tail.is_empty() || tail.starts_with('/'));
         let allowed = if method == "GET" {
-            tail.is_some_and(catalogue_read)
+            match operation {
+                Operation::Export => tail == Some("/export"),
+                _ => tail.is_some_and(catalogue_read),
+            }
         } else {
             match operation {
                 Operation::Genesis => method == "POST" && path == "/pallasync/v3/chains",

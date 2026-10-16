@@ -49,6 +49,8 @@ class PallaSyncUrlsTest :
             PallaSyncUrls.export(base, "chain", null).encodedQuery shouldBe "limit=200&include_recovery=false"
             PallaSyncUrls.export(base, "chain", "a_b", 1_000).encodedQuery shouldBe
                 "limit=1000&include_recovery=false&cursor=a_b"
+            PallaSyncUrls.export(base, "chain", null, includeRecovery = true).encodedQuery shouldBe
+                "limit=200&include_recovery=true"
         }
     })
 

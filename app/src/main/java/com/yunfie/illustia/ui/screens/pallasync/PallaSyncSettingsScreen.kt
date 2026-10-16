@@ -106,6 +106,9 @@ fun PallaSyncSettingsScreen(
     var pruningLog by remember { mutableStateOf(false) }
     var showRepairRootInput by remember { mutableStateOf(false) }
     var repairingRelayHistory by remember { mutableStateOf(false) }
+    var showRecoveryExportRootInput by remember { mutableStateOf(false) }
+    var exportingRecoveryArchive by remember { mutableStateOf(false) }
+    var recoveryExportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var showReseedImportTarget by remember { mutableStateOf(false) }
     var showReseedImportRootInput by remember { mutableStateOf(false) }
     var showReseedCommitConfirm by remember { mutableStateOf(false) }
@@ -230,6 +233,16 @@ fun PallaSyncSettingsScreen(
                         Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
                     }
                 }
+            }
+        }
+
+    val recoveryRelayExportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PALLASYNC_EXPORT_MEDIA_TYPE)) { uri ->
+            if (uri == null) {
+                Toast.makeText(context, R.string.pallasync_export_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                recoveryExportUri = uri
+                showRecoveryExportRootInput = true
             }
         }
 
@@ -719,6 +732,51 @@ fun PallaSyncSettingsScreen(
         )
     }
 
+    if (showRecoveryExportRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_export_recovery_title),
+            explanation = stringResource(R.string.pallasync_export_recovery_summary),
+            busy = exportingRecoveryArchive,
+            onDismiss = {
+                showRecoveryExportRootInput = false
+                recoveryExportUri = null
+            },
+            onConfirm = { mnemonic, passphrase ->
+                val uri = recoveryExportUri
+                exportingRecoveryArchive = true
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            checkNotNull(uri) { "C_LOCAL_STORAGE_FULL" }
+                            checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }
+                                .use { output -> syncManager.exportRelayArchiveWithRecovery(output, mnemonic, passphrase) }
+                            val verified =
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }.use(
+                                    PallaSyncExportArchiveVerifier::verify,
+                                )
+                            check(verified.includeRecovery && !verified.complete) { "C_SCHEMA_VIOLATION" }
+                        }
+                        Toast.makeText(context, R.string.pallasync_export_saved, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: IllegalStateException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: RuntimeException) {
+                        Toast.makeText(context, R.string.pallasync_export_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        exportingRecoveryArchive = false
+                        showRecoveryExportRootInput = false
+                        recoveryExportUri = null
+                    }
+                }
+            },
+        )
+    }
+
     if (showReseedImportRootInput) {
         PallaSyncRootInputDialog(
             title = stringResource(R.string.pallasync_reseed_import_title),
@@ -1142,6 +1200,12 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_export_title),
                                 summary = stringResource(R.string.pallasync_export_device_summary),
                                 onClick = { relayExportLauncher.launch("pallasync-device-export.jsonl") },
+                            )
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_export_recovery_title),
+                                summary = stringResource(R.string.pallasync_export_recovery_summary),
+                                onClick = { recoveryRelayExportLauncher.launch("pallasync-admin-export.jsonl") },
                             )
                         }
                         if (state.settings.pallaSyncEnabled) {

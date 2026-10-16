@@ -599,11 +599,12 @@ internal object PallaSyncUrls {
         chainId: String,
         cursor: String?,
         limit: Int = 200,
+        includeRecovery: Boolean = false,
     ): HttpUrl =
         endpoint(baseUrl, "chains", chainId, "export")
             .newBuilder()
             .addQueryParameter("limit", limit.coerceIn(1, PALLASYNC_EXPORT_MAX_PAGE_SIZE).toString())
-            .addQueryParameter("include_recovery", "false")
+            .addQueryParameter("include_recovery", includeRecovery.toString())
             .apply { if (cursor != null) addQueryParameter("cursor", cursor) }
             .build()
 

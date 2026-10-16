@@ -781,6 +781,88 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    /** §17.4: explicit mnemonic-holder export may include recovery envelope ciphertext. */
+    suspend fun exportRelayArchiveWithRecovery(
+        output: java.io.OutputStream,
+        mnemonic: String,
+        passphrase: String,
+    ) {
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val origin = pin.getValue("origin").jsonPrimitive.content
+                val base =
+                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                check(PallaSyncUrls.extractOrigin(base) == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val root =
+                    PallaSyncRootSession.beginText(
+                        mnemonic,
+                        passphrase,
+                        PallaSyncRootSession.Operation.EXPORT,
+                        state.chainId,
+                        authority.getValue("admin_public_key").jsonPrimitive.content,
+                        policy::requireCurrent,
+                        policy.retry::correctedTime,
+                    )
+                root.use { session ->
+                    val expectedSource =
+                        PallaSyncExportArchive.ExpectedSource(
+                            chainId = pin.getValue("chain_id").jsonPrimitive.content,
+                            generation = state.generation,
+                            logId = pin.getValue("log_id").jsonPrimitive.content,
+                            relayPublicKey = policy.trustedRelayKey(origin),
+                            relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                            includeRecovery = true,
+                        )
+                    PallaSyncExportArchive.create(output, expectedSource).use { archive ->
+                        var cursor: String? = null
+                        do {
+                            currentCoroutineContext().ensureActive()
+                            val url = PallaSyncUrls.export(base, state.chainId, cursor, includeRecovery = true)
+                            val token =
+                                checkNotNull(
+                                    session.token(origin, "GET", url.encodedPath, url.encodedQuery.orEmpty()),
+                                ) {
+                                    "C_RECOVERY_AUTH_REQUIRED"
+                                }
+                            val request =
+                                Request
+                                    .Builder()
+                                    .url(url)
+                                    .header("Accept", PALLASYNC_EXPORT_MEDIA_TYPE)
+                                    .header("Authorization", "PallaSync $token")
+                                    .get()
+                                    .build()
+                            val result =
+                                remote.execute(request) { response ->
+                                    PallaSyncHttpResult.Success(
+                                        response.pallaSyncBytes().also {
+                                            check(it.size <= MAX_EXPORT_CHUNK_BYTES) { "C_LOCAL_LIMIT" }
+                                        },
+                                    )
+                                }
+                            val bytes =
+                                when (result) {
+                                    is PallaSyncHttpResult.Success -> result.value
+                                    else -> throw PallaSyncInitialHistory.Failure(result)
+                                }
+                            val page = archive.acceptChunk(bytes, cursor)
+                            cursor = page.cursor
+                            if (!page.hasMore) break
+                        } while (true)
+                        archive.finish()
+                    }
+                }
+            }
+        }
+    }
+
     /** §10.13: retransmit only current-generation records with retained verified source LogEntries. */
     internal suspend fun repairRetainedRelayHistory(
         mnemonic: String,

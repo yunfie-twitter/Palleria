@@ -19,6 +19,7 @@ internal class PallaSyncRootSession private constructor(
         ROTATE("rotate"),
         REVOKE("revoke"),
         RESEED("reseed"),
+        EXPORT("export"),
         DELETE("delete"),
         PRUNE("prune"),
         RECOVERY_CREATE("recovery_create"),

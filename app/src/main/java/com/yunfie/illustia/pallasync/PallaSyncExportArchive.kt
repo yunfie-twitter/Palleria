@@ -23,6 +23,7 @@ internal class PallaSyncExportArchive private constructor(
         val logId: String,
         val relayPublicKey: String,
         val relayKeyId: String,
+        val includeRecovery: Boolean = false,
     )
 
     data class Page(
@@ -222,7 +223,8 @@ internal class PallaSyncExportArchive private constructor(
                     header["generation"]?.jsonPrimitive?.longOrNull == expected.generation &&
                     header["log_id"]?.jsonPrimitive?.content == expected.logId &&
                     header["relay_public_key"]?.jsonPrimitive?.content == expected.relayPublicKey &&
-                    header["relay_key_id"]?.jsonPrimitive?.content == expected.relayKeyId,
+                    header["relay_key_id"]?.jsonPrimitive?.content == expected.relayKeyId &&
+                    header["include_recovery"]?.jsonPrimitive?.booleanOrNull == expected.includeRecovery,
             ) { "C_ROLLBACK_DETECTED" }
         }
 

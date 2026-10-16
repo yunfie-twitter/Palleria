@@ -40,6 +40,15 @@ class PallaSyncExportArchiveTest {
         }
         otherSource.close()
         archive.close()
+
+        val recoveryMismatch = PallaSyncExportArchive.create(ByteArrayOutputStream(), expected.copy(includeRecovery = true))
+        shouldThrow<IllegalStateException> {
+            recoveryMismatch.acceptChunk(
+                "$header\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n".toByteArray(),
+                null,
+            )
+        }
+        recoveryMismatch.close()
     }
 
     @Test

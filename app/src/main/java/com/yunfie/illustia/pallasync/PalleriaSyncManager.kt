@@ -60,6 +60,12 @@ class PalleriaSyncManager(
 
     internal suspend fun exportRelayArchive(output: java.io.OutputStream) = coordinator.exportRelayArchive(output)
 
+    internal suspend fun exportRelayArchiveWithRecovery(
+        output: java.io.OutputStream,
+        mnemonic: String,
+        passphrase: String,
+    ) = coordinator.exportRelayArchiveWithRecovery(output, mnemonic, passphrase)
+
     internal suspend fun repairRetainedRelayHistory(
         mnemonic: String,
         passphrase: String,
