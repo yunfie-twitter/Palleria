@@ -19,6 +19,8 @@ class PallaSyncUrlsTest :
 
             PallaSyncUrls.recordsEndpoint(base, "a/b").toString() shouldBe
                 "https://example.com/pallasync/v3/chains/a%2Fb/records"
+            PallaSyncUrls.deletion(base, "a/b").toString() shouldBe
+                "https://example.com/pallasync/v3/chains/a%2Fb/deletion"
         }
 
         "query fragment credentials and unsupported schemes are rejected" {

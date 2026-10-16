@@ -66,6 +66,9 @@
     <string name="pallasync_delete_bundle_export">Export deletion evidence bundle</string>
     <string name="pallasync_delete_bundle_export_desc">Save the retained DeleteReceipt and its separate DeletionEvidenceBundle as JSON, including any verified optional witnesses.</string>
     <string name="pallasync_delete_bundle_exported">Deletion evidence bundle saved and read back successfully.</string>
+    <string name="pallasync_delete_revision_refresh_title">Refresh deletion completion evidence</string>
+    <string name="pallasync_delete_revision_refresh_desc">Enter the chain mnemonic to fetch and verify the latest signed deletion receipt, then export its separately bound evidence bundle. No chain data is restored.</string>
+    <string name="pallasync_delete_revision_target">%1$s\nChain: %2$s</string>
     <string name="pallasync_witness_import_title">Confirm intent witness</string>
     <string name="pallasync_witness_import_summary">Import a DeleteReceipt archive, review its chain and deletion ID, and optionally sign an intent witness on this active device.</string>
     <string name="pallasync_witness_confirm_title">Sign deletion intent witness?</string>

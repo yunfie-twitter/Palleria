@@ -277,6 +277,7 @@ class PallaSyncProtocolStoreTest {
                 protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 9) shouldBe listOf("{\"proof\":true}")
                 protocol.evidenceAt("https://relay.example", "key", chain, log, "deletion_authority", 0) shouldBe
                     listOf(authority.signedJson)
+                db.deletionEvidenceDao().retainedDeletionAuthorities() shouldBe listOf(authority)
                 protocol.evidenceAt("https://relay.example", "key", chain, log, "record_receipt", 7) shouldBe emptyList()
             } finally {
                 db.close()

@@ -46,6 +46,7 @@ import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PallaSyncReseedSourceConflict
 import com.yunfie.illustia.pallasync.PallaSyncRootSession
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -98,6 +99,7 @@ fun PallaSyncSettingsScreen(
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
+    var showDeletedReceiptRootInput by remember { mutableStateOf(false) }
     var deletingChain by remember { mutableStateOf(false) }
     var showPruneConfirm by remember { mutableStateOf(false) }
     var showPruneRootInput by remember { mutableStateOf(false) }
@@ -119,6 +121,8 @@ fun PallaSyncSettingsScreen(
     var showReseedSourceConflict by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
+    var deletedChainTargets by remember { mutableStateOf<List<ProtectedEvidenceEntity>>(emptyList()) }
+    var selectedDeletedChain by remember { mutableStateOf<String?>(null) }
     var witnessInputArchive by remember { mutableStateOf<String?>(null) }
     var witnessInputPreview by remember { mutableStateOf<PallaSyncDeletionWitnessPreview?>(null) }
     var witnessOutputArchive by remember { mutableStateOf<String?>(null) }
@@ -418,6 +422,7 @@ fun PallaSyncSettingsScreen(
     LaunchedEffect(state.settings.pallaSyncEnabled) {
         hasLocalChain = syncManager.hasLocalChain()
         pendingDeletionProof = syncManager.pendingDeletionProof()
+        deletedChainTargets = syncManager.retainedDeletedChainTargets()
         if (state.settings.pallaSyncEnabled) {
             val db =
                 com.yunfie.illustia.pallasync.data.PallaSyncDatabase
@@ -585,6 +590,41 @@ fun PallaSyncSettingsScreen(
                     } finally {
                         deletingChain = false
                         showDeleteRootInput = false
+                    }
+                }
+            },
+        )
+    }
+
+    if (showDeletedReceiptRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_delete_revision_refresh_title),
+            explanation = stringResource(R.string.pallasync_delete_revision_refresh_desc),
+            busy = deletingChain,
+            onDismiss = {
+                showDeletedReceiptRootInput = false
+                selectedDeletedChain = null
+            },
+            onConfirm = { mnemonic, passphrase ->
+                val chainId = selectedDeletedChain
+                deletingChain = true
+                scope.launch {
+                    try {
+                        val archive = chainId?.let { syncManager.refreshDeletedChainEvidence(it, mnemonic, passphrase) }
+                        if (archive == null) {
+                            Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                        } else {
+                            pendingDeletionArchive = archive
+                            deletionArchiveExporter.launch("pallasync-deletion-revision.json")
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        deletingChain = false
+                        showDeletedReceiptRootInput = false
+                        selectedDeletedChain = null
                     }
                 }
             },
@@ -1071,6 +1111,17 @@ fun PallaSyncSettingsScreen(
                                             Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
                                         }
                                     }
+                                },
+                            )
+                        }
+                        deletedChainTargets.forEach { target ->
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_delete_revision_refresh_title),
+                                summary = stringResource(R.string.pallasync_delete_revision_target, target.origin, target.chainId),
+                                onClick = {
+                                    selectedDeletedChain = target.chainId
+                                    showDeletedReceiptRootInput = true
                                 },
                             )
                         }

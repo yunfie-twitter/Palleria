@@ -612,6 +612,11 @@ internal object PallaSyncUrls {
         chainId: String,
     ): HttpUrl = endpoint(baseUrl, "chains", chainId)
 
+    fun deletion(
+        baseUrl: HttpUrl,
+        chainId: String,
+    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "deletion")
+
     fun transparencyHead(
         baseUrl: HttpUrl,
         chainId: String,
