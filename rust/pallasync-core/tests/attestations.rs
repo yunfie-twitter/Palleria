@@ -407,6 +407,26 @@ fn c9_exact_object_entry_data_and_transparency_commitments() {
 }
 
 #[test]
+fn export_attestation_verification_accepts_signed_prior_log_incarnations() {
+    let pin = pin();
+    let relay = ed25519_dalek::SigningKey::from_bytes(
+        &(0xa0..=0xbf).collect::<Vec<u8>>().try_into().unwrap(),
+    );
+    let mut receipt = vector("receipt");
+    receipt["log_id"] = json!("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+    sign_relay(&relay, &mut receipt, CTX_RECEIPT).unwrap();
+    assert!(validate_receipt(&receipt, &pin).is_err());
+    validate_export_attestation(&json!({"kind":"upload_receipt","receipt":receipt}), &pin).unwrap();
+
+    let mut invalid = receipt.clone();
+    invalid["received_at_ms"] = json!(1791684000001u64);
+    assert!(
+        validate_export_attestation(&json!({"kind":"upload_receipt","receipt":invalid}), &pin,)
+            .is_err()
+    );
+}
+
+#[test]
 fn signed_page_does_not_skip_gaps_or_reset_a_pinned_prefix() {
     let pin = pin();
     let receipt = vector("receipt");

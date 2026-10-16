@@ -1041,7 +1041,14 @@ pub fn validate_head(head: &Value, pin: &RelayPin) -> Result {
 pub fn validate_export_attestation(line: &Value, pin: &RelayPin) -> Result {
     let kind = s(line, "kind");
     match kind {
-        "upload_receipt" => validate_receipt(&line["receipt"], pin),
+        "upload_receipt" => {
+            let receipt = &line["receipt"];
+            let receipt_pin = RelayPin {
+                log_id: s(receipt, "log_id").to_owned(),
+                ..pin.clone()
+            };
+            validate_receipt(receipt, &receipt_pin)
+        }
         "transparency_entry" => validate_transparency(&line["entry"], pin),
         "transparency_head" => validate_head(&line["head"], pin),
         _ => Ok(()),
