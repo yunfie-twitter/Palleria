@@ -677,12 +677,13 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySlotTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryOfflineMediaTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryQrEntryUiTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryQrSelectionTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetupTest.kt",
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryHolderAndroidTest.kt",
         "PallaSync/tests/reference/test_recovery.py"
       ],
       "result": "pending",
-      "remaining": "The localized QR entry control is host-tested independently from the protected modal and shows the scan/scanned state before any secret session; full protected receive-dialog UI and scanner result handling remain unverified on Android because the instrumentation runner reports no Compose hierarchy. Still required: independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
+      "remaining": "The localized QR entry control is host-tested independently from the protected modal and shows the scan/scanned state before any secret session. A new scan now clears the prior peer descriptor/file before opening the scanner, and cancellation, empty/malformed input, and the 4 MiB bound are covered by PallaSyncRecoveryQrSelectionTest; focused JVM tests and ktlint pass. The attempted Android overlay interaction test failed because Miuix OverlayDialog exposes no Compose hierarchy to the runner or UiAutomator text selectors; it was removed and is not counted as passing. Still required: full protected receive-dialog UI and scanner-result instrumentation, independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
       "verification_scope": "targeted_partial"
     },
     {

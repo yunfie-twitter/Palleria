@@ -29,6 +29,7 @@ import com.yunfie.illustia.pallasync.PallaSyncRecoveryHolder
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryKeyProtector
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryLocalFiles
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryOfflineMedia
+import com.yunfie.illustia.pallasync.PallaSyncRecoveryQrSelection
 import com.yunfie.illustia.pallasync.PallaSyncRecoveryRecipientOwner
 import com.yunfie.illustia.pallasync.PallaSyncRecoverySlot
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
@@ -85,15 +86,13 @@ internal fun PallaSyncRecoveryReceiveDialog(
     val create = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream"), ::select)
     val scanner =
         rememberLauncherForActivityResult(ScanContract()) { result ->
-            result.contents?.let { value ->
-                val descriptor = runCatching { PallaSyncRecoveryLocalFiles.qrDescriptor(value) }.getOrNull()
-                if (descriptor != null) {
-                    scannedPeerDescriptor = descriptor
-                    files = files - RecoveryReceiveFile.PEER
-                    failed = false
-                } else {
-                    failed = true
-                }
+            val descriptor = PallaSyncRecoveryQrSelection.fromScan(result.contents)
+            scannedPeerDescriptor = descriptor
+            if (descriptor != null) {
+                files = files - RecoveryReceiveFile.PEER
+                failed = false
+            } else if (result.contents != null) {
+                failed = true
             }
         }
     DisposableEffect(owner, lifecycle) {
@@ -145,6 +144,9 @@ internal fun PallaSyncRecoveryReceiveDialog(
                             scanned = scannedPeerDescriptor != null,
                             enabled = !busy && !started,
                             onClick = {
+                                // A canceled or invalid rescan must never leave an older QR trusted.
+                                scannedPeerDescriptor = null
+                                files = files - RecoveryReceiveFile.PEER
                                 scanner.launch(
                                     ScanOptions()
                                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
