@@ -73,7 +73,7 @@ class PallaSyncLegacyMigrationReportTest {
     }
 
     @Test
-    fun `v20 migration report identifies the legacy view upload truncation as unknown`() {
+    fun `v20 migration report identifies search retention and view upload truncation as unknown`() {
         runBlocking {
             val temp = Files.createTempFile("pallasync-migration-report-v20", ".json").toFile()
             try {
@@ -110,7 +110,8 @@ class PallaSyncLegacyMigrationReportTest {
                         .jsonObject
                 completeness.getValue("status").jsonPrimitive.content shouldBe "unknown"
                 completeness.getValue("reason").jsonPrimitive.content shouldBe
-                    "v2.0 /1 view-history uploads may be truncated to the last 50 items"
+                    "v2.0 /1 search-history retention (MAX_SEARCH_HISTORY is unspecified) and view-history uploads " +
+                    "(last 50 items) may have omitted older entries"
             } finally {
                 temp.delete()
             }

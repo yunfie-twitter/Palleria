@@ -61,9 +61,18 @@ internal object PallaSyncLegacyMigrationReport {
             writer.write(",\"source_protocol\":${Json.encodeToString(migration.sourceProtocol)}")
             val retentionNote =
                 when (migration.sourceProtocol) {
-                    "2.0" -> "v2.0 /1 view-history uploads may be truncated to the last 50 items"
-                    "2.1" -> "v2.1 search, seen, and viewed-history retention may have removed older items"
-                    else -> error("C_SCHEMA_VIOLATION")
+                    "2.0" -> {
+                        "v2.0 /1 search-history retention (MAX_SEARCH_HISTORY is unspecified) and view-history uploads " +
+                            "(last 50 items) may have omitted older entries"
+                    }
+
+                    "2.1" -> {
+                        "v2.1 search, seen, and viewed-history retention may have removed older items"
+                    }
+
+                    else -> {
+                        error("C_SCHEMA_VIOLATION")
+                    }
                 }
             writer.write(",\"legacy_history_completeness\":{\"status\":\"unknown\",\"reason\":${Json.encodeToString(retentionNote)}}")
             writer.write(",\"source_export_hash\":${Json.encodeToString(migration.exportHash)}")
