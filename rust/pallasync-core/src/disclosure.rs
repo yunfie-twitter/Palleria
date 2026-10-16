@@ -93,39 +93,6 @@ pub fn validate_relay_notice(notice: &Value) -> Result {
     Ok(())
 }
 
-#[cfg(test)]
-mod relay_notice_tests {
-    use super::validate_relay_notice;
-    use serde_json::json;
-
-    #[test]
-    fn relay_notice_requires_exact_members_and_normalized_suggestion() {
-        let valid = json!({
-            "shutdown_at_ms": 1791685000000u64,
-            "migration_origin": "https://target.example",
-            "notice_id": "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
-            "server_time_ms": 1791684000000u64
-        });
-        assert!(validate_relay_notice(&valid).is_ok());
-
-        let empty = json!({
-            "shutdown_at_ms": null,
-            "migration_origin": null,
-            "notice_id": "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
-            "server_time_ms": 1791684000000u64
-        });
-        assert!(validate_relay_notice(&empty).is_ok());
-
-        let mut unknown = valid.clone();
-        unknown["detail"] = json!("ignore me");
-        assert!(validate_relay_notice(&unknown).is_err());
-
-        let mut unsafe_origin = valid;
-        unsafe_origin["migration_origin"] = json!("https://target.example/path");
-        assert!(validate_relay_notice(&unsafe_origin).is_err());
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 pub fn validate_pair(
     markdown: &[u8],
@@ -343,4 +310,37 @@ pub fn validate_quota(policy: &Value, maximum: &Value) -> Result {
         value >= n(q, "minimum_bytes")
             && (q["maximum_bytes"].is_null() || value <= n(q, "maximum_bytes")),
     )
+}
+
+#[cfg(test)]
+mod relay_notice_tests {
+    use super::validate_relay_notice;
+    use serde_json::json;
+
+    #[test]
+    fn relay_notice_requires_exact_members_and_normalized_suggestion() {
+        let valid = json!({
+            "shutdown_at_ms": 1791685000000u64,
+            "migration_origin": "https://target.example",
+            "notice_id": "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
+            "server_time_ms": 1791684000000u64
+        });
+        assert!(validate_relay_notice(&valid).is_ok());
+
+        let empty = json!({
+            "shutdown_at_ms": null,
+            "migration_origin": null,
+            "notice_id": "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
+            "server_time_ms": 1791684000000u64
+        });
+        assert!(validate_relay_notice(&empty).is_ok());
+
+        let mut unknown = valid.clone();
+        unknown["detail"] = json!("ignore me");
+        assert!(validate_relay_notice(&unknown).is_err());
+
+        let mut unsafe_origin = valid;
+        unsafe_origin["migration_origin"] = json!("https://target.example/path");
+        assert!(validate_relay_notice(&unsafe_origin).is_err());
+    }
 }
