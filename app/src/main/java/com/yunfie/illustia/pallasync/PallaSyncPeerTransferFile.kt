@@ -20,6 +20,15 @@ internal object PallaSyncPeerTransferFile {
             .let { buffer -> ByteArray(buffer.remaining()).also(buffer::get) }
             .also { check(it.size <= MAX_BYTES) { "C_SCHEMA_VIOLATION" } }
 
+    @Throws(CharacterCodingException::class)
+    fun utf8Size(value: String): Int =
+        Charsets.UTF_8
+            .newEncoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .encode(CharBuffer.wrap(value))
+            .remaining()
+
     fun read(input: InputStream): String {
         val bytes = PallaSyncDeletionEvidenceArchive.readBounded(input, MAX_BYTES)
         return Charsets.UTF_8

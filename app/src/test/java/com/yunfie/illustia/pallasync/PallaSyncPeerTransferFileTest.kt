@@ -36,4 +36,9 @@ class PallaSyncPeerTransferFileTest {
             PallaSyncPeerTransferFile.encode("\uD800")
         }
     }
+
+    @Test
+    fun `utf8 size counts encoded bytes rather than utf16 code units`() {
+        PallaSyncPeerTransferFile.utf8Size("aé😀") shouldBe 7
+    }
 }
