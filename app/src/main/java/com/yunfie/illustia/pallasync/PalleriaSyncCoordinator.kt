@@ -5156,12 +5156,12 @@ internal class PalleriaSyncCoordinator(
 
     private suspend fun resolvePruneCompaction(
         chainId: String,
-        coveredThroughSeq: Long,
+        entry: JsonObject,
     ): JsonObject? {
         val authorityText = db.protocolDao().currentAuthority(chainId) ?: return null
         val authority = Json.parseToJsonElement(authorityText).jsonObject
         return PallaSyncRetentionHandoff(db)
-            .verifiedPublishedCompaction(chainId, authority, coveredThroughSeq)
+            .publishedCompactionForPruneEntry(chainId, authority, entry)
     }
 
     private fun makeCapabilityToken(

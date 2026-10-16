@@ -29,6 +29,21 @@ interface SnapshotPublicationDao {
         epoch: Long,
     ): SnapshotPublicationEntity?
 
+    /** Keyset pages keep prune-proof lookup bounded even when publication history is large. */
+    @Query(
+        "SELECT * FROM ps_snapshot_publications WHERE chain_id=:chain AND generation=:generation " +
+            "AND status='published' AND (covered_through_seq>:afterCoverage OR " +
+            "(covered_through_seq=:afterCoverage AND compaction_id>:afterCompaction)) " +
+            "ORDER BY covered_through_seq,compaction_id LIMIT :limit",
+    )
+    suspend fun publishedPage(
+        chain: String,
+        generation: Long,
+        afterCoverage: Long,
+        afterCompaction: String,
+        limit: Int,
+    ): List<SnapshotPublicationEntity>
+
     /** At most two rows let the caller fail closed if multiple resumable publications exist. */
     @Query(
         "SELECT * FROM ps_snapshot_publications WHERE chain_id=:chain AND status IN ('preparing','uploading','compaction_ready') ORDER BY compaction_id LIMIT 2",

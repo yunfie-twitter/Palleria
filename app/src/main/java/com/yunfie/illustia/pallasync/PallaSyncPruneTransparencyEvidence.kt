@@ -19,6 +19,22 @@ internal object PallaSyncPruneTransparencyEvidence {
         return currentDataHeadHash
     }
 
+    fun advanceMinimum(
+        entry: JsonObject,
+        compaction: JsonObject?,
+        chainId: String,
+        logId: String,
+        currentDataHeadHash: String,
+        currentMinimum: Long,
+    ): Long {
+        check(entry["operation"]?.jsonPrimitive?.content == "prune") { "C_TRANSPARENCY_INVALID" }
+        val provenCompaction = checkNotNull(compaction) { "C_MISSING_DEPENDENCY" }
+        val nextMinimum = provenCompaction.getValue("covered_through_seq").jsonPrimitive.long + 1L
+        check(nextMinimum in 2..MAX_SAFE_INTEGER && nextMinimum > currentMinimum) { "C_TRANSPARENCY_INVALID" }
+        validate(entry, provenCompaction, chainId, logId, currentDataHeadHash, nextMinimum)
+        return nextMinimum
+    }
+
     fun validate(
         entry: JsonObject,
         compaction: JsonObject,
@@ -27,7 +43,7 @@ internal object PallaSyncPruneTransparencyEvidence {
         expectedHeadHash: String,
         newMinimumSequence: Long,
     ) {
-        check(newMinimumSequence > 1) { "C_TRANSPARENCY_INVALID" }
+        check(newMinimumSequence in 2..MAX_SAFE_INTEGER) { "C_TRANSPARENCY_INVALID" }
         val throughSeq = newMinimumSequence - 1
         check(
             compaction["chain_id"]?.jsonPrimitive?.content == chainId &&
@@ -49,4 +65,6 @@ internal object PallaSyncPruneTransparencyEvidence {
                 entry["code"]?.let { it == kotlinx.serialization.json.JsonNull } == true,
         ) { "C_TRANSPARENCY_INVALID" }
     }
+
+    private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 }

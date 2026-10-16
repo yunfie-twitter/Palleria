@@ -22,7 +22,7 @@ internal class PallaSyncConsistencyProbe(
     private val policy: PallaSyncPolicyGate,
     private val keys: PallaSyncKeystore,
     private val token: (HttpUrl, String, String, String, String, String) -> String?,
-    private val resolvePruneCompaction: suspend (chainId: String, coveredThroughSeq: Long) -> JsonObject?,
+    private val resolvePruneCompaction: suspend (chainId: String, entry: JsonObject) -> JsonObject?,
 ) {
     private val json = Json
 
@@ -127,18 +127,14 @@ internal class PallaSyncConsistencyProbe(
                 .jsonPrimitive.long
         val previousMinimum = trustedHead?.get("min_available_seq")?.jsonPrimitive?.long ?: 1L
         check(minimum >= previousMinimum) { "C_ROLLBACK_DETECTED" }
-        val compaction =
-            if (minimum > previousMinimum) {
-                checkNotNull(trustedHead) { "C_MISSING_DEPENDENCY" }
-                check(
-                    trustedHead.getValue("log_id") == target.head.getValue("log_id") &&
-                        trustedHead.getValue("transparency_id") == target.head.getValue("transparency_id"),
-                ) { "C_TRANSPARENCY_INVALID" }
-                checkNotNull(resolvePruneCompaction(context.chain, minimum - 1L)) { "C_MISSING_DEPENDENCY" }
-            } else {
-                null
-            }
-        val result = stream(context, target.head, trustedHead, compaction, minimum)
+        if (minimum > previousMinimum) {
+            checkNotNull(trustedHead) { "C_MISSING_DEPENDENCY" }
+            check(
+                trustedHead.getValue("log_id") == target.head.getValue("log_id") &&
+                    trustedHead.getValue("transparency_id") == target.head.getValue("transparency_id"),
+            ) { "C_TRANSPARENCY_INVALID" }
+        }
+        val result = stream(context, target.head, trustedHead, previousMinimum, minimum)
         if (result is PallaSyncHttpResult.Success) {
             val pin = checkNotNull(keys.transparencyPin(context.chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             check(
@@ -203,7 +199,7 @@ internal class PallaSyncConsistencyProbe(
         context: ProbeContext,
         head: JsonObject,
         trustedHead: JsonObject?,
-        expectedPruneCompaction: JsonObject?,
+        previousMinimum: Long,
         expectedMinimum: Long,
     ): PallaSyncHttpResult<Unit> {
         var anchor =
@@ -215,7 +211,7 @@ internal class PallaSyncConsistencyProbe(
                 }
             } ?: context.anchor
         var observedDataHeadHash = trustedHead?.get("head_hash")?.jsonPrimitive?.content
-        var observedMinimum = trustedHead?.get("min_available_seq")?.jsonPrimitive?.long ?: 1L
+        var observedMinimum = previousMinimum
         var matchingPruneEntries = 0
         val start = anchor.getValue("index").jsonPrimitive.long
         val through = head.getValue("entry_index").jsonPrimitive.long
@@ -248,18 +244,16 @@ internal class PallaSyncConsistencyProbe(
                 val operation = entry.getValue("operation").jsonPrimitive.content
                 observedDataHeadHash = PallaSyncPruneTransparencyEvidence.advanceDataHead(entry, observedDataHeadHash)
                 if (operation == "prune") {
-                    val compaction = checkNotNull(expectedPruneCompaction) { "C_TRANSPARENCY_INVALID" }
-                    val pruneMinimum = compaction.getValue("covered_through_seq").jsonPrimitive.long + 1L
-                    check(pruneMinimum > observedMinimum) { "C_TRANSPARENCY_INVALID" }
-                    PallaSyncPruneTransparencyEvidence.validate(
-                        entry,
-                        compaction,
-                        context.chain,
-                        context.logId,
-                        checkNotNull(observedDataHeadHash) { "C_MISSING_DEPENDENCY" },
-                        pruneMinimum,
-                    )
-                    observedMinimum = pruneMinimum
+                    val compaction = checkNotNull(resolvePruneCompaction(context.chain, entry)) { "C_MISSING_DEPENDENCY" }
+                    observedMinimum =
+                        PallaSyncPruneTransparencyEvidence.advanceMinimum(
+                            entry,
+                            compaction,
+                            context.chain,
+                            context.logId,
+                            checkNotNull(observedDataHeadHash) { "C_MISSING_DEPENDENCY" },
+                            observedMinimum,
+                        )
                     matchingPruneEntries++
                 }
             }
@@ -281,11 +275,8 @@ internal class PallaSyncConsistencyProbe(
                     ?.content
             check(cursor == null || seenCursors.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
         } while (cursor != null)
-        if (expectedPruneCompaction != null) {
-            check(matchingPruneEntries == 1 && observedMinimum == expectedMinimum) { "C_TRANSPARENCY_INVALID" }
-        } else {
-            check(matchingPruneEntries == 0) { "C_TRANSPARENCY_INVALID" }
-        }
+        check(observedMinimum == expectedMinimum) { "C_TRANSPARENCY_INVALID" }
+        check((matchingPruneEntries > 0) == (expectedMinimum > previousMinimum)) { "C_TRANSPARENCY_INVALID" }
         observedDataHeadHash?.let {
             check(it == head.getValue("head_hash").jsonPrimitive.content) { "C_TRANSPARENCY_INVALID" }
         }

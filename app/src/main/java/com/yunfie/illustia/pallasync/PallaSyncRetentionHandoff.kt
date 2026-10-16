@@ -4,10 +4,12 @@ import com.yunfie.illustia.pallasync.data.SnapshotPublicationEntity
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 
 /** §13.5: a locally published, receipt-verified complete current-epoch state is the handoff proof. */
 internal class PallaSyncRetentionHandoff(
@@ -120,6 +122,78 @@ internal class PallaSyncRetentionHandoff(
         }
         if (!verifyPublishedCompaction(publication, state.logId, state.verifiedSeq)) return null
         return publication.compactionJson?.let { Json.parseToJsonElement(it).jsonObject }
+    }
+
+    /** Resolve a signed transparency prune hash to its exact locally published snapshot proof. */
+    internal suspend fun publishedCompactionForPruneEntry(
+        chain: String,
+        authority: JsonObject,
+        entry: JsonObject,
+    ): JsonObject? {
+        if (entry["operation"]?.jsonPrimitive?.content != "prune") return null
+        val state = store.dao.getChainState(chain) ?: return null
+        val generation = authority.getValue("generation").jsonPrimitive.long
+        val logId =
+            authority
+                .getValue("pin")
+                .jsonObject
+                .getValue("log_id")
+                .jsonPrimitive.content
+        if (state.chainId != chain || state.generation != generation || state.logId != logId) return null
+        val expectedHash = entry.getValue("object_hash").jsonPrimitive.content
+        val dao = store.snapshotDatabase().snapshotPublicationDao()
+        var afterCoverage = -1L
+        var afterCompaction = ""
+        var selected: JsonObject? = null
+        while (true) {
+            val page = dao.publishedPage(chain, generation, afterCoverage, afterCompaction, PUBLICATION_PAGE_SIZE)
+            if (page.isEmpty()) break
+            for (publication in page) {
+                afterCoverage = publication.coveredThroughSeq
+                afterCompaction = publication.compactionId
+                if (publication.logId != logId || publication.coveredThroughSeq > state.verifiedSeq) continue
+                val compaction = publication.compactionJson?.let { Json.parseToJsonElement(it).jsonObject } ?: continue
+                val target =
+                    buildJsonObject {
+                        put("compaction_id", publication.compactionId)
+                        put("through_seq", publication.coveredThroughSeq)
+                    }
+                if (PallaSyncCore.objectHash(target.toString()) != expectedHash) continue
+                check(selected == null) { "C_TRANSPARENCY_INVALID" }
+                val epoch =
+                    authority
+                        .getValue("epochs")
+                        .jsonObject[publication.epoch.toString()]
+                        ?.jsonObject
+                        ?.getValue("record")
+                        ?.jsonObject ?: continue
+                val epochHash = PallaSyncCore.objectHash(epoch.toString()) ?: continue
+                val header = Json.parseToJsonElement(publication.headerJson).jsonObject
+                if (
+                    publication.status != "published" || publication.chainId != chain ||
+                    publication.generation != generation || publication.stateSha256 != compaction["state_sha256"]?.jsonPrimitive?.content ||
+                    compaction["compaction_id"]?.jsonPrimitive?.content != publication.compactionId ||
+                    compaction["chain_id"]?.jsonPrimitive?.content != chain ||
+                    compaction["generation"]?.jsonPrimitive?.long != generation ||
+                    compaction["log_id"]?.jsonPrimitive?.content != logId ||
+                    compaction["epoch_hash"]?.jsonPrimitive?.content != epochHash ||
+                    compaction["covered_through_seq"]?.jsonPrimitive?.long != publication.coveredThroughSeq ||
+                    header["kind"]?.jsonPrimitive?.content != "header" ||
+                    header["chain_id"]?.jsonPrimitive?.content != chain ||
+                    header["generation"]?.jsonPrimitive?.long != generation ||
+                    header["log_id"]?.jsonPrimitive?.content != logId ||
+                    header["epoch_hash"]?.jsonPrimitive?.content != epochHash ||
+                    header["covered_through_seq"]?.jsonPrimitive?.long != publication.coveredThroughSeq ||
+                    header["covered_log_hash"] != compaction["covered_log_hash"]
+                ) {
+                    continue
+                }
+                if (!verifyPublishedCompaction(publication, logId, state.verifiedSeq)) continue
+                selected = compaction
+            }
+            if (page.size < PUBLICATION_PAGE_SIZE) break
+        }
+        return selected
     }
 
     private fun publicationCoversVerifiedPrefix(
@@ -250,5 +324,9 @@ internal class PallaSyncRetentionHandoff(
                 receipt.getValue("object_hash").jsonPrimitive.content == part.recordHash &&
                 receipt["relay_seq"] == JsonNull && receipt["entry_hash"] == JsonNull
         }
+    }
+
+    private companion object {
+        const val PUBLICATION_PAGE_SIZE = 64
     }
 }

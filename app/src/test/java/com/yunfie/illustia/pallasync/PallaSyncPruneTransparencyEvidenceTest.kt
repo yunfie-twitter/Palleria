@@ -54,6 +54,43 @@ class PallaSyncPruneTransparencyEvidenceTest {
     }
 
     @Test
+    fun `separate verified compactions advance minimum through multiple prune entries`() {
+        val first = JsonObject(compaction(42) + ("compaction_id" to JsonPrimitive("first")))
+        val second = JsonObject(compaction(90) + ("compaction_id" to JsonPrimitive("second")))
+        val firstEntry =
+            buildJsonObject {
+                validEntry().forEach { (key, value) -> put(key, value) }
+                put("object_hash", checkNotNull(PallaSyncCore.objectHash("""{"compaction_id":"first","through_seq":42}""")))
+            }
+        val secondEntry =
+            buildJsonObject {
+                validEntry().forEach { (key, value) -> put(key, value) }
+                put("object_hash", checkNotNull(PallaSyncCore.objectHash("""{"compaction_id":"second","through_seq":90}""")))
+            }
+
+        val afterFirst = PallaSyncPruneTransparencyEvidence.advanceMinimum(firstEntry, first, CHAIN, LOG, HEAD, 1)
+        afterFirst shouldBe 43L
+        PallaSyncPruneTransparencyEvidence.advanceMinimum(secondEntry, second, CHAIN, LOG, HEAD, afterFirst) shouldBe 91L
+        shouldThrow<IllegalStateException> {
+            PallaSyncPruneTransparencyEvidence.advanceMinimum(secondEntry, second, CHAIN, LOG, HEAD, 91)
+        }.message shouldBe "C_TRANSPARENCY_INVALID"
+    }
+
+    @Test
+    fun `prune minimum cannot exceed the safe integer wire bound`() {
+        shouldThrow<IllegalStateException> {
+            PallaSyncPruneTransparencyEvidence.advanceMinimum(
+                validEntry(),
+                compaction(9_007_199_254_740_991L),
+                CHAIN,
+                LOG,
+                HEAD,
+                1,
+            )
+        }.message shouldBe "C_TRANSPARENCY_INVALID"
+    }
+
+    @Test
     fun `prune evidence rejects altered request hash head or coverage`() {
         val compaction = compaction(42)
         val entry = validEntry()
