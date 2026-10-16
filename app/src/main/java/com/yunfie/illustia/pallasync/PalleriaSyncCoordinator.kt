@@ -4673,6 +4673,7 @@ internal class PalleriaSyncCoordinator(
                 val authority = Json.parseToJsonElement(authorityText).jsonObject
                 val keys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 check(keys.chainId == chain && keys.deviceId != null) { "C_DEVICE_KEY_MISMATCH" }
+                validateDeletionWitnessReceiptRevision(chain, receipt, authority)
                 PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), oldBundle.toString(), authorityText)
                 val witnessSeed = Base64.getUrlDecoder().decode(keys.signingKeyBase64Url)
                 val witnessText =
@@ -4770,6 +4771,8 @@ internal class PalleriaSyncCoordinator(
                 check(state.writeState == "active") { "C_WRITE_PAUSED" }
                 val authorityText = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 check(PallaSyncCore.objectHash(authorityText) == keystore.authorityHash(chain)) { "C_ROLLBACK_DETECTED" }
+                val authority = Json.parseToJsonElement(authorityText).jsonObject
+                validateDeletionWitnessReceiptRevision(chain, receipt, authority)
                 PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), bundle.toString(), authorityText)
                 PallaSyncDeletionWitnessPreview(
                     chainId = chain,
@@ -4778,6 +4781,34 @@ internal class PalleriaSyncCoordinator(
                 )
             }
         }
+
+    /** Keep optional witnesses bound to the latest locally verified monotone receipt revision (§7.12.3/§17.11). */
+    private suspend fun validateDeletionWitnessReceiptRevision(
+        chainId: String,
+        receipt: JsonObject,
+        authority: JsonObject,
+    ) {
+        val pin = authority.getValue("pin").jsonObject
+        check(receipt.getValue("chain_id").jsonPrimitive.content == chainId) { "C_DELETION_UNVERIFIED" }
+        check(receipt.getValue("log_id").jsonPrimitive.content == pin.getValue("log_id").jsonPrimitive.content) {
+            "C_DELETION_UNVERIFIED"
+        }
+        val latestProof =
+            db
+                .deletionEvidenceDao()
+                .latestReceiptRevision(chainId, pin.getValue("log_id").jsonPrimitive.content)
+                ?: return
+        val latestReceipt =
+            Json
+                .parseToJsonElement(latestProof)
+                .jsonObject
+                .getValue("delete_receipt")
+                .jsonObject
+        check(latestReceipt.getValue("deletion_id") == receipt.getValue("deletion_id")) { "C_DELETION_UNVERIFIED" }
+        if (latestReceipt != receipt) {
+            PallaSyncCore.validateDeletionReceiptRevision(latestReceipt.toString(), receipt.toString(), pin.toString())
+        }
+    }
 
     suspend fun completeDeletionAfterExport(
         exportedProof: String,
