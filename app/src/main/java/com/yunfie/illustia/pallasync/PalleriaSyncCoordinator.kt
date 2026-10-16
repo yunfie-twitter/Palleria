@@ -1089,6 +1089,14 @@ internal class PalleriaSyncCoordinator(
                             null
                         }
                     val workflow = PallaSyncReseedCommitRelay(remote)
+                    db.transaction {
+                        val current = checkNotNull(db.pallaSyncDao().getChainState(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                        check(
+                            current.logId == stable.logId && current.generation == stable.generation &&
+                                current.writeState in setOf("active", "epoch_rebase_required"),
+                        ) { "C_MISSING_DEPENDENCY" }
+                        db.pallaSyncDao().updateChainState(current.copy(writeState = "epoch_rebase_required"))
+                    }
                     val result =
                         workflow.commit(
                             root = root,
@@ -1147,6 +1155,9 @@ internal class PalleriaSyncCoordinator(
                             transparencyResume = resumed,
                         )
                     if (result is PallaSyncHttpResult.Success) {
+                        // Catch an old-generation write accepted by another client while the target commit was in flight.
+                        // The source remains authoritative locally if this final cut no longer matches.
+                        requireReseedSourceHead(root, source, sourceOrigin, stable)
                         val pending = checkNotNull(keystore.pendingReseed()) { "C_MISSING_DEPENDENCY" }
                         check(pending.targetOrigin == origin && pending.keys.chainId == state.chainId) { "C_ROLLBACK_DETECTED" }
                         val bundle = Json.parseToJsonElement(preparedJournal.preparedBundleJson ?: error("C_MISSING_DEPENDENCY")).jsonObject
