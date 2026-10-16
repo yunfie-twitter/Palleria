@@ -299,6 +299,95 @@ pub fn delete_request(
     })
 }
 
+/// Create the §10.12 administrator operation for one exact, verified compaction prefix.
+/// The caller cannot widen the signed range after this operation is created.
+pub fn prune_admin_operation(
+    handle: u64,
+    current_parameters_json: &str,
+    current_epoch_json: &str,
+    compaction_json: &str,
+    through_seq: u64,
+    created_at_ms: i64,
+) -> Result<String> {
+    with(handle, Operation::Prune, |session| {
+        if created_at_ms < 0 || through_seq > 9_007_199_254_740_991 {
+            return Err(ClientError("C_SCHEMA_VIOLATION"));
+        }
+        let parse = |input: &str| {
+            crate::strict::jcs::parse(input.as_bytes())
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+        };
+        let parameters = parse(current_parameters_json)?;
+        let epoch = parse(current_epoch_json)?;
+        let compaction = parse(compaction_json)?;
+        crate::public_wire::validate(&parameters, "parameters")
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::public_wire::validate(&epoch, "epoch")
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        crate::public_wire::validate(&compaction, "compaction")
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+
+        let chain_id = parameters["chain_id"]
+            .as_str()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let admin_public_key = parameters["admin_public_key"]
+            .as_str()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        if chain_id != session.roots.chain_id || admin_public_key != session.roots.admin_public_key
+        {
+            return Err(ClientError("C_RECOVERY_ROOT_MISMATCH"));
+        }
+        for (value, context) in [
+            (&parameters, crate::strict::verify::CTX_PARAMETERS),
+            (&epoch, crate::strict::verify::CTX_EPOCH),
+        ] {
+            if !crate::strict::verify::verify_signed_json(
+                admin_public_key,
+                value["signature"].as_str().unwrap_or_default(),
+                value,
+                context,
+            )
+            .unwrap_or(false)
+            {
+                return Err(ClientError("C_SIGNATURE_INVALID"));
+            }
+        }
+        let expected_epoch_hash = object_hash(&epoch);
+        if compaction["chain_id"] != chain_id
+            || compaction["generation"] != parameters["generation"]
+            || compaction["epoch_hash"].as_str() != Some(expected_epoch_hash.as_str())
+            || compaction["covered_through_seq"].as_u64() != Some(through_seq)
+        {
+            return Err(ClientError("C_SNAPSHOT_INVALID"));
+        }
+        let compaction_id = compaction["compaction_id"]
+            .as_str()
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let payload = json!({"compaction_id": compaction_id, "through_seq": through_seq});
+        crate::admin_action::schema("prune_log", &payload)?;
+        let mut operation = json!({
+            "operation_id": uuid::Uuid::new_v4().to_string(),
+            "chain_id": chain_id,
+            "generation": parameters["generation"],
+            "action": "prune_log",
+            "expected_parameters_hash": object_hash(&parameters),
+            "expected_epoch_hash": expected_epoch_hash,
+            "target_hash": object_hash(&payload),
+            "created_at_ms": created_at_ms,
+            "signature": "",
+        });
+        let canonical = crate::models::unsigned_record_jcs(&operation)
+            .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        operation["signature"] = json!(crate::crypto::sign_with_context(
+            &session.roots.admin_key,
+            crate::crypto::CTX_ADMIN_OP,
+            &canonical,
+        ));
+        crate::admin_action::verify(&operation, &payload, &parameters, &epoch)?;
+        serde_json::to_string(&operation).map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })
+}
+
 /// Create the §17.5 AdminOperation only after the caller has assembled the complete
 /// proposed generation and snapshot commitment. The exact signed payload is the one
 /// accepted by PUT /parameters; root material never crosses JNI.

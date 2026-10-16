@@ -74,6 +74,25 @@ internal class PallaSyncRootSession private constructor(
         )
     }
 
+    /** Signs only the complete sequence covered by the exact current compaction (§10.12/§16.7). */
+    fun createPruneAdminOperation(
+        currentParametersJson: String,
+        currentEpochJson: String,
+        compactionJson: String,
+        throughSeq: Long,
+        createdAtMs: Long,
+    ): String {
+        check(operation == Operation.PRUNE) { "C_RECOVERY_AUTH_REQUIRED" }
+        return PallaSyncCore.createPruneAdminOperation(
+            handle,
+            currentParametersJson,
+            currentEpochJson,
+            compactionJson,
+            throughSeq,
+            createdAtMs,
+        )
+    }
+
     /** Generate a fresh local identity and signed generation+1 public controls inside Rust. */
     fun prepareReseed(
         authorityJson: String,

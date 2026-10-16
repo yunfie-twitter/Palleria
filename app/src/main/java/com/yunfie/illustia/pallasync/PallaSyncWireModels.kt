@@ -622,6 +622,11 @@ internal object PallaSyncUrls {
         chainId: String,
     ): HttpUrl = endpoint(baseUrl, "chains", chainId, "log", "head")
 
+    fun logPrune(
+        baseUrl: HttpUrl,
+        chainId: String,
+    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "log", "prune")
+
     fun transparencyEntries(
         baseUrl: HttpUrl,
         chainId: String,

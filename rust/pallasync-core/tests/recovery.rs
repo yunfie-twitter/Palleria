@@ -5,6 +5,7 @@ use pallasync_core::{
     strict::{jcs, verify::object_hash},
 };
 use serde_json::json;
+use zeroize::Zeroize;
 const MNEMONIC: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
 
 #[test]
@@ -113,6 +114,87 @@ fn delete_request_is_a_root_signed_cas_bound_admin_operation() {
             admin["signature"].as_str().unwrap(),
         )
         .unwrap()
+    );
+    root_session::end(handle);
+}
+
+#[test]
+fn prune_admin_operation_is_root_signed_and_bound_to_complete_compaction_prefix() {
+    use pallasync_core::crypto;
+    let bundle = crypto::create_genesis_bundle(
+        MNEMONIC,
+        "",
+        "Prune test",
+        "os-keystore",
+        "https://relay.example.com",
+    )
+    .unwrap();
+    let genesis: serde_json::Value =
+        serde_json::from_str(&bundle.genesis_request_body_json).unwrap();
+    let parameters = genesis["parameters"].clone();
+    let epoch = genesis["epoch"].clone();
+    let mut seed = URL_SAFE_NO_PAD
+        .decode(bundle.device_signing_key.as_str())
+        .unwrap();
+    let signing = ed25519_dalek::SigningKey::from_bytes(seed.as_slice().try_into().unwrap());
+    seed.zeroize();
+    let log_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    let mut compaction = json!({
+        "compaction_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "chain_id":bundle.chain_id,
+        "generation":0,
+        "device_id":genesis["device_record"]["device_id"],
+        "log_id":log_id,
+        "covered_through_seq":0,
+        "covered_log_hash":pallasync_core::attestations::data_zero(&bundle.chain_id, log_id).unwrap(),
+        "epoch_hash":object_hash(&epoch),
+        "snapshot_parts":[{"record_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","record_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}],
+        "state_sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "signature":""
+    });
+    recovery::sign(
+        &mut compaction,
+        &signing,
+        pallasync_core::crypto::CTX_COMPACTION,
+    )
+    .unwrap();
+
+    let handle = root_session::begin(
+        MNEMONIC.as_bytes(),
+        b"",
+        Operation::Prune,
+        Some(&bundle.chain_id),
+        Some(parameters["admin_public_key"].as_str().unwrap()),
+    )
+    .unwrap();
+    let operation: serde_json::Value = serde_json::from_str(
+        &root_session::prune_admin_operation(
+            handle,
+            &parameters.to_string(),
+            &epoch.to_string(),
+            &compaction.to_string(),
+            0,
+            1_791_684_000_000,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let payload = json!({"compaction_id":compaction["compaction_id"],"through_seq":0});
+    assert_eq!(operation["action"], "prune_log");
+    assert_eq!(operation["target_hash"], object_hash(&payload));
+    pallasync_core::admin_action::verify(&operation, &payload, &parameters, &epoch).unwrap();
+    assert_eq!(
+        root_session::prune_admin_operation(
+            handle,
+            &parameters.to_string(),
+            &epoch.to_string(),
+            &compaction.to_string(),
+            1,
+            1
+        )
+        .unwrap_err()
+        .0,
+        "C_SNAPSHOT_INVALID",
     );
     root_session::end(handle);
 }

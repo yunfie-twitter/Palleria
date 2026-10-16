@@ -594,6 +594,16 @@ object PallaSyncCore {
         createdAtMs: Long,
     ): String
 
+    /** Creates the exact §10.12 AdminOperation for a verified snapshot prefix. */
+    external fun createPruneAdminOperation(
+        handle: Long,
+        currentParametersJson: String,
+        currentEpochJson: String,
+        compactionJson: String,
+        throughSeq: Long,
+        createdAtMs: Long,
+    ): String
+
     /** Creates the exact §17.5 target-bound AdminOperation while root material stays native. */
     external fun createReseedAdminOperation(
         handle: Long,
