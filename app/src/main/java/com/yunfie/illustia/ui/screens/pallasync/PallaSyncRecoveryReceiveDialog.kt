@@ -141,14 +141,8 @@ internal fun PallaSyncRecoveryReceiveDialog(
                 }
                 RecoveryReceiveFile.entries.filter { offline || it != RecoveryReceiveFile.PACKAGE }.forEach { file ->
                     if (file == RecoveryReceiveFile.PEER) {
-                        TextButton(
-                            stringResource(
-                                if (scannedPeerDescriptor == null) {
-                                    R.string.pallasync_recovery_scan_descriptor
-                                } else {
-                                    R.string.pallasync_recovery_descriptor_scanned
-                                },
-                            ),
+                        PallaSyncRecoveryQrEntryButton(
+                            scanned = scannedPeerDescriptor != null,
                             enabled = !busy && !started,
                             onClick = {
                                 scanner.launch(
