@@ -120,6 +120,7 @@ internal class PallaSyncLocalIntents(
         val candidateIndex: Int,
         val sourceObjectHash: String,
         val event: PallaSyncPendingEvent,
+        val legacyEntityId: String? = null,
         val requiresChoice: Boolean = false,
         val selectedByUser: Boolean = false,
         val excluded: Boolean = false,
@@ -756,6 +757,7 @@ internal class PallaSyncLocalIntents(
                     candidateIndex,
                     objectHash,
                     original,
+                    legacyEntityId = work.legacyEntityId,
                     requiresChoice = metadata.requiresChoice && !work.legacyEventSequenceOrdered,
                     selectedByUser = choice?.let { it.userConfirmed && it.selectedEntryIndex == row.chunkIndex } == true,
                     excluded = row.state == "legacy_candidate_excluded",
@@ -819,6 +821,7 @@ internal class PallaSyncLocalIntents(
                     candidate.candidateIndex,
                     candidate.sourceObjectHash,
                     work.event,
+                    legacyEntityId = work.legacyEntityId,
                     requiresChoice = candidate.requiresChoice && !work.legacyEventSequenceOrdered,
                     selectedByUser =
                         dao.legacyMigrationCandidateChoice(migrationId, candidate.groupKey)?.let {

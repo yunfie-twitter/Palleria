@@ -1722,6 +1722,9 @@ fun PallaSyncSettingsScreen(
                                 candidate.event.body,
                             ),
                         )
+                        if (candidate.requiresChoice && candidate.legacyEntityId != null) {
+                            Text(stringResource(R.string.pallasync_legacy_migration_original_identifier, candidate.legacyEntityId))
+                        }
                         if (candidate.requiresChoice) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(

@@ -108,6 +108,7 @@
     <string name="pallasync_legacy_migration_more">次のページを読み込む</string>
     <string name="pallasync_legacy_migration_candidates_title">変換候補: %1$d件</string>
     <string name="pallasync_legacy_migration_candidate">source %1$d / 候補 %2$d — %3$s / %4$s / %5$s: %6$s</string>
+    <string name="pallasync_legacy_migration_original_identifier">旧形式の元識別子: %1$s</string>
     <string name="pallasync_legacy_migration_candidate_choose">この候補を選択</string>
     <string name="pallasync_legacy_migration_candidate_selected">選択済み</string>
     <string name="pallasync_legacy_migration_candidate_excluded">確認後に除外済み</string>

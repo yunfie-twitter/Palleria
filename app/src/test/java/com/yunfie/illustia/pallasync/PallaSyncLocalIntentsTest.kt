@@ -702,6 +702,7 @@ class PallaSyncLocalIntentsTest {
                 val candidates = intents.legacyMigrationCandidatePage(migration, 0).items
                 candidates.size shouldBe 2
                 candidates.all { it.requiresChoice } shouldBe true
+                candidates.map { it.legacyEntityId }.toSet() shouldBe setOf("e\u0301", "é")
                 runCatching { intents.finalizeLegacyMigrationChoices(migration) }.isFailure shouldBe true
                 val chosen = candidates.last()
                 intents.chooseLegacyMigrationCandidate(migration, chosen.groupKey, chosen.migrationEntryIndex)
