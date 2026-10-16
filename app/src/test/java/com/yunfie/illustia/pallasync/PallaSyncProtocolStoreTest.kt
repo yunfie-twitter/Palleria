@@ -220,6 +220,49 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `verified migrated source deletion preserves active target and source deletion proof`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                val dao = db.pallaSyncDao()
+                val target = "fresh-root-target"
+                val targetLog = "fresh-target-log"
+                dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "archived"))
+                dao.updateChainState(ChainStateEntity(target, 0, 0, "{}", logId = targetLog, writeState = "active"))
+                val proof =
+                    ProtectedEvidenceEntity(
+                        "https://relay.example",
+                        "key",
+                        chain,
+                        log,
+                        "delete_receipt",
+                        12,
+                        "proof-hash",
+                        "{\"proof\":true}",
+                    )
+                db.withTransaction {
+                    protocol.retainDeletionProof(proof)
+                    protocol.eraseChainState(chain)
+                    dao.clearVerifiedDeletedChain(chain)
+                }
+
+                dao.getChainState(chain) shouldBe null
+                dao.getChainState(target)?.writeState shouldBe "active"
+                dao.getActiveChainState()?.chainId shouldBe target
+                protocol.evidenceAt("https://relay.example", "key", chain, log, "delete_receipt", 12) shouldBe
+                    listOf(proof.signedJson)
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `deletion completion revisions remain separate and latest signed receipt is selected`() =
         runBlocking<Unit> {
             val db =

@@ -45,6 +45,13 @@ internal data class NewRootMigrationReceiptStatus(
     val complete: Boolean,
 )
 
+/** Progress is intentionally nonterminal until logical source/target comparison succeeds. */
+internal data class NewRootMigrationProgress(
+    val checkpoint: NewRootMigrationCheckpoint,
+    val receipts: NewRootMigrationReceiptStatus,
+    val logicalStateMatches: Boolean?,
+)
+
 /** §§11.1/16.4. Unsigned application intent, separate from immutable signed outbox objects.
  * Uses the existing application journal table, never a relay object or recovery store.
  */

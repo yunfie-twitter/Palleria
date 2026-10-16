@@ -1383,6 +1383,16 @@
     <string name="pallasync_recovery_title">Shamir復旧</string>
     <string name="pallasync_recovery_independent_warning">コピーや別インストールは独立した共有ではありません。端末登録や更新では共有を自動作成しません。</string>
     <string name="pallasync_recovery_freshness_warning">Hはこの端末が確認した保存・紛失の記録です。他の保有者の現在の可用性や、オフライン媒体の最新状態は保証しません。</string>
+    <string name="pallasync_recovery_new_root_migration">新しいroot/chainへ状態を移行</string>
+    <string name="pallasync_recovery_new_root_create_chain">新しい単語で移行先chainを作成</string>
+    <string name="pallasync_recovery_new_root_create_chain_warning">漏洩扱いの旧単語と復旧共有は使わず、新しい単語から別のchain/admin identityを作成します。表示された単語を安全に保存してください。作成後、この端末の検証済み旧chain状態を移行してreceiptと論理状態を確認できます。旧chainは一致確認後に別途削除します。端末登録と新しい復旧セットの配布も必要です。</string>
+    <string name="pallasync_recovery_new_root_migration_target">現在の移行先chain: %1$s</string>
+    <string name="pallasync_recovery_new_root_migration_progress">署名receipt確認済み: %1$d / %2$d</string>
+    <string name="pallasync_recovery_new_root_migration_warning">漏洩扱いの旧chain: %1$s\n現在の移行先chain: %2$s\n移行先は別の新しい単語で作成したchainであることを確認してください。確認すると、旧chainの検証済みローカル状態を移行先へ再署名して同期し、receiptと論理状態を照合します。完了までアプリを終了しないでください。旧chainの退役・削除、新chainの端末登録と新しい復旧セット作成は別途必要です。旧単語や共有を新chainで再利用しません。</string>
+    <string name="pallasync_recovery_new_root_migration_verified">新chainの論理状態は旧chainの確認済みローカル状態と一致しました。旧chainはまだ退役・削除されていません。</string>
+    <string name="pallasync_recovery_new_root_migration_mismatch">新chainと旧chainの論理状態が一致しません。どちらのchainも削除せず、証拠を保持してください。</string>
+    <string name="pallasync_recovery_new_root_retire_source">旧chainを証明付きで退役・削除</string>
+    <string name="pallasync_recovery_new_root_retire_source_warning">新旧chainの一致を再検証後、漏洩した旧chainだけに署名済み削除要求を送信します。旧root入力が必要です。返された削除証明をファイルへ保存し、読み戻しを確認してから、この端末の旧chain状態と旧chain鍵を消去します。移行先chainは維持します。旧chain削除後にデータを復元できません。</string>
     <string name="pallasync_recovery_action_failed">状態を確認または更新できませんでした。既存の共有と証拠を保持しています。</string>
     <string name="pallasync_recovery_unknown">復旧状態を確認できていません。</string>
     <string name="pallasync_recovery_not_provisioned">未設定。共有は自動作成されません。</string>

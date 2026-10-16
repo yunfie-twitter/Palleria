@@ -103,6 +103,52 @@ class PalleriaSyncManager(
         cancellation: PallaSyncRootCancellation,
     ): Boolean = coordinator.rotateRecoveredEpoch(completion, cancellation)
 
+    internal suspend fun advanceNewRootMigrationPage(
+        sourceChain: String,
+        targetChain: String,
+    ): NewRootMigrationCheckpoint = coordinator.advanceNewRootMigrationPage(sourceChain, targetChain)
+
+    internal suspend fun newRootMigrationProgress(targetChain: String): NewRootMigrationProgress? =
+        coordinator.newRootMigrationProgress(targetChain)
+
+    internal suspend fun activeNewRootMigrationTarget(): String? = coordinator.activeNewRootMigrationTarget()
+
+    internal suspend fun verifyNewRootMigrationState(
+        sourceChain: String,
+        targetChain: String,
+    ): NewRootMigrationProgress = coordinator.verifyNewRootMigrationState(sourceChain, targetChain)
+
+    internal suspend fun requestNewRootSourceDeletion(
+        sourceChain: String,
+        targetChain: String,
+        mnemonic: String,
+        passphrase: String = "",
+    ): PallaSyncDeletionRequestResult =
+        coordinator.requestNewRootSourceDeletion(
+            sourceChain,
+            targetChain,
+            mnemonic,
+            passphrase,
+        )
+
+    internal suspend fun pendingNewRootSourceDeletionProof(
+        sourceChain: String,
+        targetChain: String,
+    ): String? = coordinator.pendingNewRootSourceDeletionProof(sourceChain, targetChain)
+
+    internal suspend fun completeNewRootSourceDeletionAfterExport(
+        sourceChain: String,
+        targetChain: String,
+        exportedProof: String,
+        explicitlyConfirmedOfflineCopy: Boolean,
+    ): Boolean =
+        coordinator.completeNewRootSourceDeletionAfterExport(
+            sourceChain,
+            targetChain,
+            exportedProof,
+            explicitlyConfirmedOfflineCopy,
+        )
+
     internal suspend fun enqueueRecoveryAudit(
         chainId: String,
         event: PallaSyncPendingEvent,

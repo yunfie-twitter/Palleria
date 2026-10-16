@@ -3196,6 +3196,191 @@ internal class PalleriaSyncCoordinator(
             true
         }
 
+    /**
+     * Advance one bounded page of the explicitly selected §13.8 source into the active new-root
+     * target. The migration journal is the restart boundary; the caller must run normal sync to
+     * upload the authored target objects and collect signed receipts before verification.
+     */
+    internal suspend fun advanceNewRootMigrationPage(
+        sourceChain: String,
+        targetChain: String,
+    ): NewRootMigrationCheckpoint =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                check(sourceChain != targetChain) { "C_SCHEMA_VIOLATION" }
+                val active = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+                check(active.chainId == targetChain && active.writeState == "active") { "C_MISSING_DEPENDENCY" }
+                checkNotNull(keysForChainLocked(targetChain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(SettingsStore(appContext).read().pallaSyncEnabled) { "C_WRITE_PAUSED_BY_POLICY" }
+                requireProtectedAuthority(targetChain)
+                val checkpoint = localIntents.newRootMigrationCheckpoint(targetChain)
+                if (checkpoint?.complete == true) return@withLock checkpoint
+                val page =
+                    PallaSyncSnapshotStateReader(db.snapshotDatabase()).newRootMigrationPage(
+                        sourceChain,
+                        checkpoint?.anchor,
+                        checkpoint?.cursor ?: NewRootMigrationCursor(),
+                    )
+                check(page.anchor.chainId == sourceChain) { "C_ROLLBACK_DETECTED" }
+                val staged = localIntents.stageNewRootMigrationPage(targetChain, page)
+                resumeLocalIntentsLocked()
+                staged
+            }
+        }
+
+    /** Return source-scan and signed-receipt progress without inferring logical completion. */
+    internal suspend fun newRootMigrationProgress(targetChain: String): NewRootMigrationProgress? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val checkpoint = localIntents.newRootMigrationCheckpoint(targetChain) ?: return@withLock null
+                val receipts = checkNotNull(localIntents.newRootMigrationReceiptStatus(targetChain))
+                NewRootMigrationProgress(checkpoint, receipts, null)
+            }
+        }
+
+    internal suspend fun activeNewRootMigrationTarget(): String? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = activeChainStateLocked() ?: return@withLock null
+                state.chainId.takeIf { state.writeState == "active" && keysForChainLocked(it) != null }
+            }
+        }
+
+    /** Compare source and target only after every migration intent has a retained signed receipt. */
+    internal suspend fun verifyNewRootMigrationState(
+        sourceChain: String,
+        targetChain: String,
+    ): NewRootMigrationProgress =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                check(sourceChain != targetChain) { "C_SCHEMA_VIOLATION" }
+                verifyNewRootMigrationStateLocked(sourceChain, targetChain)
+            }
+        }
+
+    private suspend fun verifyNewRootMigrationStateLocked(
+        sourceChain: String,
+        targetChain: String,
+    ): NewRootMigrationProgress {
+        check(sourceChain != targetChain) { "C_SCHEMA_VIOLATION" }
+        val target = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+        check(target.chainId == targetChain && target.writeState == "active") { "C_MISSING_DEPENDENCY" }
+        checkNotNull(keysForChainLocked(targetChain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        requireProtectedAuthority(sourceChain)
+        requireProtectedAuthority(targetChain)
+        val checkpoint = checkNotNull(localIntents.newRootMigrationCheckpoint(targetChain)) { "C_MISSING_DEPENDENCY" }
+        check(checkpoint.anchor.chainId == sourceChain) { "C_RECORD_ID_CONFLICT" }
+        val receipts = checkNotNull(localIntents.newRootMigrationReceiptStatus(targetChain)) { "C_MISSING_DEPENDENCY" }
+        check(receipts.complete) { "C_ACCEPTANCE_UNPROVEN" }
+        val matches =
+            PallaSyncSnapshotSemanticComparator.compareNewRootMaterializedState(
+                db,
+                sourceChain,
+                targetChain,
+                checkpoint,
+                receipts,
+            )
+        return NewRootMigrationProgress(checkpoint, receipts, matches)
+    }
+
+    /** §13.8: retire the compromised source only after a fresh target is proven equivalent. */
+    internal suspend fun requestNewRootSourceDeletion(
+        sourceChain: String,
+        targetChain: String,
+        mnemonic: String,
+        passphrase: String = "",
+    ): PallaSyncDeletionRequestResult =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                try {
+                    val migration = verifyNewRootMigrationStateLocked(sourceChain, targetChain)
+                    check(migration.logicalStateMatches == true) { "C_ACCEPTANCE_UNPROVEN" }
+                    val context = createDeletionContext(sourceChain)
+                    PallaSyncRootSession
+                        .beginText(
+                            mnemonic,
+                            passphrase,
+                            PallaSyncRootSession.Operation.DELETE,
+                            expectedChain = sourceChain,
+                            expectedAdmin = context.admin,
+                            requestGuard = policy::requireCurrent,
+                            clock = policy.retry::correctedTime,
+                        ).use { root -> submitDeletionAndErase(root, context) }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: IllegalStateException) {
+                    deletionFailure(failure)
+                } catch (failure: IllegalArgumentException) {
+                    deletionFailure(failure)
+                } catch (failure: SQLiteException) {
+                    deletionFailure(failure)
+                }
+            }
+        }
+
+    internal suspend fun pendingNewRootSourceDeletionProof(
+        sourceChain: String,
+        targetChain: String,
+    ): String? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val migration = verifyNewRootMigrationStateLocked(sourceChain, targetChain)
+                if (migration.logicalStateMatches != true) return@withLock null
+                val context = createDeletionContext(sourceChain)
+                latestDeletionProof(sourceChain, context.logId)
+            }
+        }
+
+    internal suspend fun completeNewRootSourceDeletionAfterExport(
+        sourceChain: String,
+        targetChain: String,
+        exportedProof: String,
+        explicitlyConfirmedOfflineCopy: Boolean,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                if (!explicitlyConfirmedOfflineCopy) return@withLock false
+                try {
+                    val migration = verifyNewRootMigrationStateLocked(sourceChain, targetChain)
+                    check(migration.logicalStateMatches == true) { "C_ACCEPTANCE_UNPROVEN" }
+                    val context = createDeletionContext(sourceChain)
+                    check(
+                        db.deletionEvidenceDao().latestReceiptRevision(sourceChain, context.logId) == exportedProof,
+                    ) { "C_DELETION_UNVERIFIED" }
+                    val request =
+                        checkNotNull(db.protocolDao().latestEvidence(sourceChain, context.logId, "delete_request")) {
+                            "C_DELETION_UNVERIFIED"
+                        }
+                    val evidence = validateDeletionProof(context, request, exportedProof.toByteArray(Charsets.UTF_8))
+                    persistAndEraseMigratedSource(context, evidence, targetChain)
+                    true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    deletionFailure(failure)
+                    false
+                }
+            }
+        }
+
+    private suspend fun persistAndEraseMigratedSource(
+        context: DeletionContext,
+        evidence: ProtectedEvidenceEntity,
+        targetChain: String,
+    ) {
+        check(activeChainStateLocked()?.chainId == targetChain && targetChain != context.state.chainId) { "C_ROLLBACK_DETECTED" }
+        db.transaction { db.protocolDao().retainDeletionProof(evidence) }
+        eraseChainRecoveryMaterial(context.state.chainId)
+        db.transaction {
+            db.protocolDao().eraseChainState(context.state.chainId)
+            db.pallaSyncDao().clearVerifiedDeletedChain(context.state.chainId)
+        }
+        check(keystore.clearVerifiedDeletedChain(context.state.chainId)) { "C_LOCAL_STORAGE_FULL" }
+        check(activeChainStateLocked()?.chainId == targetChain) { "C_ROLLBACK_DETECTED" }
+        projection.publish(targetChain, db)
+        log("Verified new-root migration and signed source deletion proof; compromised source chain erased")
+    }
+
     /** §§11.4/13: consume a collected root for this named operation, with the same policy and authority guards. */
     internal suspend fun rotateRecoveredEpoch(
         completion: PallaSyncRecoveryCompletion,
@@ -3917,16 +4102,21 @@ internal class PalleriaSyncCoordinator(
         }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    private suspend fun deletionContext(): DeletionContext? =
+    private suspend fun deletionContext(chainId: String? = null): DeletionContext? =
         try {
-            createDeletionContext()
+            createDeletionContext(chainId)
         } catch (_: Exception) {
             log("C_DELETION_UNVERIFIED: local chain authority or relay context is unavailable")
             null
         }
 
-    private suspend fun createDeletionContext(): DeletionContext {
-        val state = checkNotNull(activeChainStateLocked()) { "C_DELETION_UNVERIFIED" }
+    private suspend fun createDeletionContext(chainId: String? = null): DeletionContext {
+        val state =
+            if (chainId == null) {
+                checkNotNull(activeChainStateLocked()) { "C_DELETION_UNVERIFIED" }
+            } else {
+                checkNotNull(db.dao.getChainState(chainId)) { "C_DELETION_UNVERIFIED" }
+            }
         check(state.generation in 0..MAX_PROTOCOL_COUNTER) { "C_DELETION_UNVERIFIED" }
         val parametersHash = checkNotNull(state.parametersHash) { "C_DELETION_UNVERIFIED" }
         val epochHash = checkNotNull(state.epochHash) { "C_DELETION_UNVERIFIED" }
@@ -3986,8 +4176,10 @@ internal class PalleriaSyncCoordinator(
             }
         val evidence = validateDeletionProof(context, body, proofBytes)
         db.protocolDao().retainDeletionProof(evidence)
-        SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(false)
-        stopBackgroundSync()
+        if (activeChainStateLocked()?.chainId == context.state.chainId) {
+            SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(false)
+            stopBackgroundSync()
+        }
         return PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT
     }
 

@@ -22,6 +22,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.Section
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.jsonPrimitive
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 
@@ -49,10 +50,21 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
     var receiving by remember { mutableStateOf(false) }
     var releasing by remember { mutableStateOf(false) }
     var collecting by remember { mutableStateOf<Pair<PallaSyncRecoverySetStore.Entry, PallaSyncRootSession.Operation>?>(null) }
+    var migrating by remember { mutableStateOf<PallaSyncRecoverySetStore.Entry?>(null) }
+    var migrationResult by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    var migrationReceiptProgress by remember { mutableStateOf<Triple<String, Long, Long>?>(null) }
+    var activeTargetChain by remember { mutableStateOf<String?>(null) }
+    var serverOrigin by remember { mutableStateOf("") }
+    var createNewRootFor by remember { mutableStateOf<PallaSyncRecoverySetStore.Entry?>(null) }
+    var genesisPhrase by remember { mutableStateOf<String?>(null) }
+    var showCreateNewRootConfirm by remember { mutableStateOf(false) }
+    var showNewRootTrustDialog by remember { mutableStateOf(false) }
     LaunchedEffect(management, revision) {
         try {
             entries = management.inventory()
             heldSetId = management.heldSetId()
+            activeTargetChain = manager.activeNewRootMigrationTarget()
+            serverOrigin = manager.getServerUrl()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: IllegalStateException) {
@@ -81,10 +93,64 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
 
                     else -> {
                         current.forEach { entry ->
+                            val sourceChain =
+                                entry
+                                    .manifest
+                                    .getValue("chain_id")
+                                    .jsonPrimitive
+                                    .content
                             PallaSyncRecoverySetCapacity(entry, busy, { action = RecoverySafetyAction(entry, it) }, {
                                 action =
                                     RecoverySafetyAction(entry)
                             })
+                            if (entry.compromised || entry.state == "compromised") {
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_recovery_new_root_create_chain),
+                                    enabled =
+                                        !busy &&
+                                            (activeTargetChain == null || activeTargetChain == sourceChain) &&
+                                            serverOrigin.isNotBlank(),
+                                    onClick = {
+                                        createNewRootFor = entry
+                                        showCreateNewRootConfirm = true
+                                    },
+                                )
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_recovery_new_root_migration_target,
+                                        activeTargetChain ?: stringResource(R.string.pallasync_recovery_unknown),
+                                    ),
+                                )
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_recovery_new_root_migration),
+                                    enabled = !busy && activeTargetChain?.let { it != sourceChain } == true,
+                                    onClick = { migrating = entry },
+                                )
+                                migrationReceiptProgress?.takeIf { it.first == sourceChain }?.let { (_, verified, total) ->
+                                    Text(stringResource(R.string.pallasync_recovery_new_root_migration_progress, verified, total))
+                                }
+                                migrationResult?.takeIf { it.first == sourceChain }?.let { (_, matches) ->
+                                    Text(
+                                        stringResource(
+                                            if (matches) {
+                                                R.string.pallasync_recovery_new_root_migration_verified
+                                            } else {
+                                                R.string.pallasync_recovery_new_root_migration_mismatch
+                                            },
+                                        ),
+                                    )
+                                }
+                                activeTargetChain?.let { target ->
+                                    if (migrationResult == (sourceChain to true)) {
+                                        PallaSyncNewRootRetirementControls(manager, sourceChain, target) {
+                                            migrationResult = null
+                                            migrationReceiptProgress = null
+                                            failed = false
+                                            revision++
+                                        }
+                                    }
+                                }
+                            }
                             if (entry.replacementPending && entry.state == "active" && entry.conflictingStatuses == null) {
                                 TextButton(
                                     text = stringResource(R.string.pallasync_recovery_resume_replacement),
@@ -158,11 +224,141 @@ internal fun PallaSyncRecoveryControls(manager: PalleriaSyncManager) {
             revision++
         })
     }
+    if (showCreateNewRootConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_recovery_new_root_create_chain),
+            summary = stringResource(R.string.pallasync_recovery_new_root_create_chain_warning),
+            confirmText = stringResource(R.string.action_confirm),
+            destructive = true,
+            onDismiss = {
+                showCreateNewRootConfirm = false
+                createNewRootFor = null
+            },
+            onConfirm = {
+                showCreateNewRootConfirm = false
+                showNewRootTrustDialog = true
+            },
+        )
+    }
+    if (showNewRootTrustDialog) {
+        PallaSyncTrustDialog(
+            origin = serverOrigin,
+            sourceKind = "new_chain_local_state",
+            sourceLabel = stringResource(R.string.pallasync_v3_local_source),
+            onDismiss = {
+                showNewRootTrustDialog = false
+                createNewRootFor = null
+            },
+            onAccepted = {
+                showNewRootTrustDialog = false
+                val selected = createNewRootFor
+                scope.launch {
+                    busy = true
+                    try {
+                        val current = management.inventory().firstOrNull { it.id == selected?.id }
+                        check(current != null && (current.compromised || current.state == "compromised")) {
+                            "C_RECOVERY_SHARE_COMPROMISED"
+                        }
+                        val mnemonic = manager.generateGenesisMnemonic()
+                        check(mnemonic.isNotBlank()) { "C_SCHEMA_VIOLATION" }
+                        genesisPhrase = mnemonic
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        failed = true
+                        createNewRootFor = null
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+        )
+    }
+    genesisPhrase?.let { phrase ->
+        PallaSyncGenesisDialog(manager, phrase, serverOrigin) {
+            genesisPhrase = null
+            createNewRootFor = null
+            revision++
+        }
+    }
     collecting?.let { (entry, operation) ->
         PallaSyncRecoveryCollectDialog(manager, entry, operation) {
             collecting = null
             revision++
         }
+    }
+    migrating?.let { entry ->
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_recovery_new_root_migration),
+            summary =
+                stringResource(
+                    R.string.pallasync_recovery_new_root_migration_warning,
+                    entry
+                        .manifest
+                        .getValue("chain_id")
+                        .jsonPrimitive
+                        .content,
+                    activeTargetChain ?: stringResource(R.string.pallasync_recovery_unknown),
+                ),
+            confirmText = stringResource(R.string.action_confirm),
+            destructive = true,
+            onDismiss = { migrating = null },
+            onConfirm = {
+                migrating = null
+                failed = false
+                migrationResult = null
+                migrationReceiptProgress = null
+                busy = true
+                scope.launch {
+                    try {
+                        val source =
+                            entry
+                                .manifest
+                                .getValue("chain_id")
+                                .jsonPrimitive
+                                .content
+                        val target = checkNotNull(manager.activeNewRootMigrationTarget()) { "C_MISSING_DEPENDENCY" }
+                        check(target == activeTargetChain && source != target) { "C_ROLLBACK_DETECTED" }
+                        val stillCompromised =
+                            management.inventory().any { current ->
+                                current.id == entry.id && (current.compromised || current.state == "compromised")
+                            }
+                        check(
+                            stillCompromised && (entry.compromised || entry.state == "compromised"),
+                        ) { "C_RECOVERY_SHARE_COMPROMISED" }
+                        var progress = manager.newRootMigrationProgress(target)
+                        while (progress?.checkpoint?.complete != true) {
+                            manager.advanceNewRootMigrationPage(source, target)
+                            check(manager.syncNow()) { "C_ACCEPTANCE_UNPROVEN" }
+                            val advanced = manager.newRootMigrationProgress(target)
+                            check(advanced != null && advanced.checkpoint.anchor.chainId == source) { "C_ROLLBACK_DETECTED" }
+                            check(advanced.checkpoint.complete || advanced.checkpoint != progress?.checkpoint) { "C_ACCEPTANCE_UNPROVEN" }
+                            progress = advanced
+                            migrationReceiptProgress = Triple(source, advanced.receipts.receiptVerified, advanced.receipts.staged)
+                        }
+                        while (progress?.receipts?.complete != true) {
+                            check(manager.syncNow()) { "C_ACCEPTANCE_UNPROVEN" }
+                            val advanced = manager.newRootMigrationProgress(target) ?: error("C_MISSING_DEPENDENCY")
+                            check(advanced.receipts != progress?.receipts) { "C_ACCEPTANCE_UNPROVEN" }
+                            progress = advanced
+                            migrationReceiptProgress = Triple(source, advanced.receipts.receiptVerified, advanced.receipts.staged)
+                        }
+                        check(manager.syncNow()) { "C_ACCEPTANCE_UNPROVEN" }
+                        val verified = manager.verifyNewRootMigrationState(source, target)
+                        migrationResult = source to (verified.logicalStateMatches == true)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        failed = true
+                    } finally {
+                        busy = false
+                        revision++
+                    }
+                }
+            },
+        )
     }
     action?.let { selected ->
         MiuixConfirmDialog(
