@@ -593,6 +593,16 @@ fn deletion_completion_receipt_revision_is_signed_monotone_and_keeps_original() 
     validate_deletion_receipt_revision(&original, &completed, &pin).unwrap();
     assert_eq!(original["completed_at_ms"], Value::Null);
 
+    let mut hash_only_revision = original.clone();
+    hash_only_revision["ledger_receipt_hash"] = json!(hash_bytes(&[12; 32]));
+    sign_relay(&relay, &mut hash_only_revision, CTX_DELETE).unwrap();
+    assert_eq!(
+        validate_deletion_receipt_revision(&original, &hash_only_revision, &pin)
+            .unwrap_err()
+            .0,
+        "C_DELETION_UNVERIFIED"
+    );
+
     let mut regressed = completed.clone();
     regressed["completed_at_ms"] = json!(19);
     sign_relay(&relay, &mut regressed, CTX_DELETE).unwrap();

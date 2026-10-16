@@ -582,7 +582,9 @@ pub fn validate_deletion_receipt_revision(
                 || n(next, "completed_at_ms") >= n(next, "requested_at_ms"))
             && (previous["completed_at_ms"].is_null()
                 || (!next["completed_at_ms"].is_null()
-                    && n(next, "completed_at_ms") >= n(previous, "completed_at_ms"))),
+                    && n(next, "completed_at_ms") >= n(previous, "completed_at_ms")))
+            && (previous["completed_at_ms"] != next["completed_at_ms"]
+                || previous["ledger_receipt_hash"] == next["ledger_receipt_hash"]),
         "C_DELETION_UNVERIFIED",
     )?;
     Ok(next.clone())
