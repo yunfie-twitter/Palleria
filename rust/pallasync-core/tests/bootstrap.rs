@@ -102,6 +102,59 @@ fn selected_complete_history_binds_receipts_recovery_envelope_and_signed_cut() {
 }
 
 #[test]
+fn complete_authority_can_reconcile_a_signed_pruned_head_for_snapshot_bootstrap() {
+    use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+
+    let f = jcs::parse(include_bytes!("fixtures/python-genesis-acceptance.json")).unwrap();
+    let mut authority = initial_parameters(
+        &f["parameters"],
+        &f["identity"],
+        f["origin"].as_str().unwrap(),
+        f["relay_public_key"].as_str().unwrap(),
+    )
+    .unwrap();
+    let receipts = f["created"]["upload_receipts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .chain(f["record_upload"]["upload_receipts"].as_array().unwrap())
+        .collect::<Vec<_>>();
+    for page in f["log_pages"].as_array().unwrap() {
+        for entry in page["items"].as_array().unwrap() {
+            let receipt = receipts
+                .iter()
+                .find(|receipt| receipt["relay_seq"] == entry["relay_seq"])
+                .unwrap();
+            authority = authority.advance(entry, receipt).unwrap();
+        }
+    }
+
+    let relay = ed25519_dalek::SigningKey::from_bytes(&[0x6d; 32]);
+    authority.pin.public_key = URL_SAFE_NO_PAD.encode(relay.verifying_key().as_bytes());
+    let mut head = f["transparency_head"].clone();
+    head["relay_key_id"] = json!(authority.pin.key_id().unwrap());
+    head["min_available_seq"] = json!(2);
+    let mut unsigned = head.clone();
+    unsigned.as_object_mut().unwrap().remove("relay_signature");
+    head["relay_signature"] = json!(pallasync_core::crypto::sign_with_context(
+        &relay,
+        b"PALLASYNC-TRANSPARENCY-HEAD-v3\0",
+        &jcs::canonicalize_json(&unsigned).unwrap(),
+    ));
+
+    let cut = history_cut(&authority, &json!({"head":head})).unwrap();
+    assert_eq!(cut["head"]["min_available_seq"], 2);
+    assert_eq!(cut["head"]["head_seq"], authority.sequence);
+
+    let mut stale = authority.clone();
+    stale.sequence -= 1;
+    assert_eq!(
+        history_cut(&stale, &json!({"head":head})).unwrap_err().0,
+        "C_MISSING_DEPENDENCY"
+    );
+}
+
+#[test]
 fn independent_enrollment_receipts_cover_the_exact_complete_bundle_and_continue_authority() {
     let f = jcs::parse(include_bytes!("fixtures/python-genesis-acceptance.json")).unwrap();
     let mut authority = pallasync_core::authority::Authority::from_genesis(

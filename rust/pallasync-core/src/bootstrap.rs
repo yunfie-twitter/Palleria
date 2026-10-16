@@ -54,7 +54,6 @@ pub fn history_cut(authority: &Authority, response: &Value) -> Result<Value> {
     fields(response, &[("head", "object")], &[])?;
     let head = &response["head"];
     attestations::validate_head(head, &authority.pin)?;
-    require(n(head, "min_available_seq") == 1, "C_MISSING_DEPENDENCY")?;
     require(
         n(head, "head_seq") == authority.sequence && s(head, "head_hash") == authority.head_hash,
         "C_MISSING_DEPENDENCY",

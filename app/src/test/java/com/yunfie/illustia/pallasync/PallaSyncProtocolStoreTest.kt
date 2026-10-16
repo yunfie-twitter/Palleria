@@ -75,6 +75,43 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `retained compaction count is bounded by the signed minimum and authority head`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val dao = db.compactionCatalogueDao()
+                val compaction = "\"kind\":\"compaction\",\"object\":{}"
+                val base =
+                    LogEntryEntity(
+                        chain,
+                        log,
+                        1,
+                        "hash-1",
+                        "{$compaction}",
+                        "{}",
+                        "authority_verified",
+                    )
+                db.protocolDao().putLogEntry(base)
+                db.protocolDao().putLogEntry(base.copy(relaySeq = 2, entryHash = "hash-2"))
+                db.protocolDao().putLogEntry(
+                    base.copy(relaySeq = 3, entryHash = "hash-3", signedJson = "{\"kind\":\"admin\",\"object\":{}}"),
+                )
+                db.protocolDao().putLogEntry(
+                    base.copy(relaySeq = 4, entryHash = "hash-4", validationState = "pending"),
+                )
+
+                dao.verifiedCountInRetainedSuffix(chain, log, minimumSequence = 2, maximumSequence = 3) shouldBe 1
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `snapshot staging resumes exact ciphertext and rejects conflicting part identity`() =
         runBlocking<Unit> {
             val db =

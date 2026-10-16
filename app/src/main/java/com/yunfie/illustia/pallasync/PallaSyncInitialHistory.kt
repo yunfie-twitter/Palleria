@@ -68,8 +68,13 @@ internal class PallaSyncInitialHistory(
                 .parseToJsonElement(
                     PallaSyncCore.validateInitialHistoryCut(authority.toString(), get(url("transparency/head"))),
                 ).jsonObject
-        verifySnapshotCatalogue(pin, cut.getValue("generation").jsonPrimitive.long, authority.getValue("sequence").jsonPrimitive.long)
         val head = cut.getValue("head").jsonObject
+        verifySnapshotCatalogue(
+            pin,
+            cut.getValue("generation").jsonPrimitive.long,
+            authority.getValue("sequence").jsonPrimitive.long,
+            head.getValue("min_available_seq").jsonPrimitive.long,
+        )
         progress("history_transparency")
         val anchor = transparency(pin, cut, knownAnchor)
         return PallaSyncGenesisCheckpoint(
@@ -415,6 +420,7 @@ internal class PallaSyncInitialHistory(
         pin: JsonObject,
         generation: Long,
         headSeq: Long,
+        minimumSequence: Long,
     ) {
         val pinJson = pin.toString()
         val logId = pin.getValue("log_id").jsonPrimitive.content
@@ -451,6 +457,12 @@ internal class PallaSyncInitialHistory(
                 // are never used as authority or bootstrap candidates for this selected pin.
                 if (compaction.getValue("log_id").jsonPrimitive.content != logId) continue
                 val candidates = store.compactionCatalogueDao().verifiedEntries(chain, logId, id)
+                if (
+                    candidates.isEmpty() &&
+                    compaction.getValue("covered_through_seq").jsonPrimitive.long < minimumSequence - 1L
+                ) {
+                    continue
+                }
                 check(candidates.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
                 val entry = json.parseToJsonElement(candidates.single().signedJson).jsonObject
                 check(
@@ -458,7 +470,7 @@ internal class PallaSyncInitialHistory(
                         PallaSyncCore.canonicalJson(entry.getValue("object").toString()) ==
                         PallaSyncCore.canonicalJson(compaction.toString()),
                 ) { "C_LOG_HASH_MISMATCH" }
-                matched++
+                if (candidates.single().relaySeq in minimumSequence..headSeq) matched++
             }
             cursor =
                 page
@@ -468,7 +480,11 @@ internal class PallaSyncInitialHistory(
                     ?.content
             check(cursor == null || seenCursors.add(checkNotNull(cursor))) { "C_SCHEMA_VIOLATION" }
         } while (cursor != null)
-        check(store.compactionCatalogueDao().verifiedCount(chain, logId) == matched) { "C_MISSING_DEPENDENCY" }
+        check(
+            store
+                .compactionCatalogueDao()
+                .verifiedCountInRetainedSuffix(chain, logId, minimumSequence, headSeq) == matched,
+        ) { "C_MISSING_DEPENDENCY" }
     }
 
     private fun initialAuthority(): JsonObject {

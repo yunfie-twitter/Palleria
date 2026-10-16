@@ -32,4 +32,16 @@ interface CompactionCatalogueDao {
         chainId: String,
         logId: String,
     ): Int
+
+    @Query(
+        "SELECT COUNT(*) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId " +
+            "AND validation_state='authority_verified' AND relay_seq>=:minimumSequence AND relay_seq<=:maximumSequence " +
+            "AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%'",
+    )
+    suspend fun verifiedCountInRetainedSuffix(
+        chainId: String,
+        logId: String,
+        minimumSequence: Long,
+        maximumSequence: Long,
+    ): Int
 }
