@@ -6,6 +6,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
 import com.yunfie.illustia.pallasync.data.MigrationJournalEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+import com.yunfie.illustia.pallasync.data.SnapshotInstallEntity
+import com.yunfie.illustia.pallasync.data.SnapshotInstallEntryEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
@@ -26,6 +28,81 @@ class PallaSyncLocalIntentsTest {
     private val chain = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
     private val device = "11111111-1111-4111-8111-111111111111"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `legacy migration completion compares verified snapshot authors audit and waits for receipt`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                val keys = keys()
+                val epochHash = encode(ByteArray(32) { 5 })
+                val coveredHash = encode(ByteArray(32) { 6 })
+                val exportHash = encode(ByteArray(32) { 7 })
+                val migrationId = "legacy:verified-snapshot-completion"
+                val compactionId = "33333333-3333-4333-8333-333333333333"
+                val intents = PallaSyncLocalIntents(store, author(store, MemoryStorage())) { _, events -> events }
+                store.dao.updateChainState(
+                    ChainStateEntity(
+                        chain,
+                        lamport = 0,
+                        keyEpoch = 0,
+                        chainVectorJson = "{}",
+                        logId = log,
+                        epochHash = epochHash,
+                        verifiedSeq = 0,
+                        materializedSeq = 0,
+                        verifiedHash = coveredHash,
+                        writeState = "active",
+                    ),
+                )
+                intents.beginLegacyMigration(migrationId, "legacy-chain", "2.1", 0, exportHash, chain, freezeConfirmed = true)
+                intents.completeLegacySourceScan(migrationId, 0, 0, exportHash)
+                intents.finalizeLegacyMigrationChoices(migrationId)
+                intents.resumeLegacyMigration(migrationId, keys)
+                store.protocolDao().migrationChunk(migrationId, 0)?.state shouldBe "legacy_receipts_complete"
+                store.snapshotInstallDao().insertInstall(
+                    SnapshotInstallEntity(
+                        chainId = chain,
+                        compactionId = compactionId,
+                        compactionJson = "{}",
+                        partCount = 1,
+                        stateSha256 = encode(ByteArray(32) { 8 }),
+                        coveredThroughSeq = 0,
+                        coveredLogHash = coveredHash,
+                        generation = 0,
+                        status = "verified",
+                    ),
+                )
+                val header =
+                    """{"chain_id":"$chain","covered_log_hash":"$coveredHash","covered_through_seq":0,"epoch_hash":"$epochHash","generation":0,"kind":"header","lamport_max":0,"log_id":"$log"}"""
+                store.snapshotInstallDao().insertEntry(SnapshotInstallEntryEntity(chain, compactionId, 0, 0, header))
+                intents.completeLegacyMigrationWithVerifiedSnapshot(migrationId, keys)
+
+                val root = checkNotNull(store.protocolDao().migrationChunk(migrationId, 0))
+                root.state shouldBe "legacy_completion_audit_pending"
+                val manifestAfter = Json.parseToJsonElement(root.reportJson).jsonObject
+                manifestAfter["completionCompactionId"]?.jsonPrimitive?.content shouldBe compactionId
+                manifestAfter["completionCoveredThroughSeq"]?.jsonPrimitive?.content shouldBe "0"
+                val auditIndex = manifestAfter["completionAuditEntryIndex"]!!.jsonPrimitive.content.toLong()
+                val audit = checkNotNull(store.protocolDao().migrationChunk(migrationId, auditIndex))
+                audit.state shouldBe "constructed"
+                audit.sourceIdentity shouldBe "legacy-audit:$compactionId:0"
+                store.dao.queuedBatch(chain, 200).size shouldBe 1
+
+                val receiptHash = encode(ByteArray(32) { 9 })
+                intents.confirmLegacyMigrationReceipt(
+                    chain,
+                    checkNotNull(audit.destinationRecordId),
+                    checkNotNull(audit.destinationObjectHash),
+                    receiptHash,
+                )
+                store.protocolDao().migrationChunk(migrationId, 0)?.state shouldBe "legacy_complete"
+                intents.legacyMigrationProgress(migrationId)?.state shouldBe "legacy_complete"
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `legacy migration succeeds only after its completion audit receipt is verified`() =
