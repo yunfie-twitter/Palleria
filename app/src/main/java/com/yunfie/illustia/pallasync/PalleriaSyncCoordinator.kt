@@ -3745,120 +3745,13 @@ internal class PalleriaSyncCoordinator(
                         checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
                             "C_BOOTSTRAP_TRUST_REQUIRED"
                         }
-                    val oldId: String
-                    val oldKeys: PallaSyncKeySnapshot
-                    val oldAuthority: JsonObject
-                    val newKeys: PallaSyncKeySnapshot
-                    if (replacementOldId == null) {
-                        check(state.writeState == "active") { "C_WRITE_PAUSED_BY_POLICY" }
-                        oldKeys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                        oldId = checkNotNull(oldKeys.deviceId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                        val oldText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
-                        check(PallaSyncCore.objectHash(oldText) == keystore.authorityHash(state.chainId)) { "C_ROLLBACK_DETECTED" }
-                        oldAuthority = Json.parseToJsonElement(oldText).jsonObject
-                        check(keystore.boundDeviceId(state.chainId) == oldId && PallaSyncCore.validateCurrentKeyRecipient(oldText, oldId)) {
-                            "C_BOOTSTRAP_TRUST_REQUIRED"
+                    val replacement =
+                        if (replacementOldId == null) {
+                            prepareCurrentDeviceReplacement(state, originBase, mnemonic, passphrase, deviceName, cancellation)
+                        } else {
+                            resumeCurrentDeviceReplacement(state, replacementOldId)
                         }
-                        val oldHash = checkNotNull(PallaSyncCore.objectHash(oldText)) { "C_SCHEMA_VIOLATION" }
-                        val oldAnchor =
-                            buildJsonObject {
-                                put("transparency_id", state.transparencyId)
-                                put("index", state.transparencyIndex)
-                                put("hash", state.transparencyHash)
-                            }
-                        check(keystore.retainSourceTransparencyPin(state.chainId, oldHash, oldAnchor)) { "C_LOCAL_STORAGE_FULL" }
-                        val pending =
-                            PallaSyncRootSession.beginText(
-                                mnemonic,
-                                passphrase,
-                                PallaSyncRootSession.Operation.ENROLLMENT,
-                                state.chainId,
-                                oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
-                                policy::requireCurrent,
-                                policy.retry::correctedTime,
-                            )
-                        val enrollment =
-                            useRoot(pending, cancellation) {
-                                PallaSyncMnemonicEnrollment(db, remote, policy, keystore, crypto).prepare(it, deviceName, originBase)
-                            }
-                        newKeys = enrollment.first
-                        check(newKeys.deviceId != oldId && newKeys.chainId == state.chainId) { "C_DEVICE_EQUIVOCATION" }
-                        epochLifecycle.installAndActivateVerifiedCheckpoint(
-                            state.chainId,
-                            oldAuthority,
-                            enrollment.second,
-                            originBase,
-                            oldKeys,
-                        )
-                        check(
-                            keystore.promotePendingReplacementKeys(
-                                state.chainId,
-                                oldId,
-                                checkNotNull(newKeys.deviceId),
-                                oldHash,
-                            ),
-                        ) {
-                            "C_LOCAL_STORAGE_FULL"
-                        }
-                    } else {
-                        oldId = replacementOldId
-                        newKeys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                        check(
-                            newKeys.deviceId != oldId && keystore.boundDeviceId(state.chainId) == newKeys.deviceId,
-                        ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                        oldKeys = checkNotNull(keystore.getArchivedChainKeys(state.chainId)) { "C_MISSING_DEPENDENCY" }
-                        check(oldKeys.deviceId == oldId) { "C_DEVICE_EQUIVOCATION" }
-                        val sourceHash =
-                            checkNotNull(keystore.pendingReplacementSourceAuthorityHash(state.chainId)) {
-                                "C_MISSING_DEPENDENCY"
-                            }
-                        val archived =
-                            checkNotNull(db.protocolDao().authorityObject(state.chainId, "checkpoint", sourceHash)) {
-                                "C_MISSING_DEPENDENCY"
-                            }
-                        oldAuthority = Json.parseToJsonElement(archived.signedJson).jsonObject
-                        check(
-                            PallaSyncCore.validateCurrentKeyRecipient(oldAuthority.toString(), oldId),
-                        ) { "C_ROLLBACK_DETECTED" }
-                    }
-                    check(keystore.boundDeviceId(state.chainId) == newKeys.deviceId && keystore.getActiveChainKeys() == newKeys) {
-                        "C_BOOTSTRAP_TRUST_REQUIRED"
-                    }
-                    outboxRebase.resumeReseed(state.chainId, newKeys, oldKeys, oldAuthority)
-                    val currentAuthority =
-                        Json
-                            .parseToJsonElement(
-                                checkNotNull(db.protocolDao().currentAuthority(state.chainId)),
-                            ).jsonObject
-                    val alreadyRevoked =
-                        currentAuthority
-                            .getValue("devices")
-                            .jsonObject
-                            .getValue(oldId)
-                            .jsonObject
-                            .getValue("revoked_seq")
-                            .jsonPrimitive.content != "null"
-                    if (alreadyRevoked) {
-                        check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
-                        return@withLock true
-                    }
-                    val revokeRoot =
-                        PallaSyncRootSession.beginText(
-                            mnemonic,
-                            passphrase,
-                            PallaSyncRootSession.Operation.REVOKE,
-                            state.chainId,
-                            oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
-                            policy::requireCurrent,
-                            policy.retry::correctedTime,
-                        )
-                    val completed =
-                        useRoot(revokeRoot, cancellation) {
-                            epochLifecycle.rotate(it, originBase, "key_rotation", listOf(oldId), admin = true) ==
-                                PallaSyncEpochLifecycle.Outcome.UPDATED
-                        }
-                    if (completed) check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
-                    completed
+                    completeCurrentDeviceReplacement(state, originBase, replacement, mnemonic, passphrase, cancellation)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (failure: PallaSyncInitialHistory.Failure) {
@@ -3871,6 +3764,120 @@ internal class PalleriaSyncCoordinator(
                 }
             }
         }
+
+    private data class DeviceReplacement(
+        val oldId: String,
+        val oldKeys: PallaSyncKeySnapshot,
+        val oldAuthority: JsonObject,
+        val newKeys: PallaSyncKeySnapshot,
+    )
+
+    private suspend fun prepareCurrentDeviceReplacement(
+        state: ChainStateEntity,
+        base: HttpUrl,
+        mnemonic: String,
+        passphrase: String,
+        deviceName: String,
+        cancellation: PallaSyncRootCancellation?,
+    ): DeviceReplacement {
+        val oldKeys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val oldId = checkNotNull(oldKeys.deviceId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val oldText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+        check(PallaSyncCore.objectHash(oldText) == keystore.authorityHash(state.chainId)) { "C_ROLLBACK_DETECTED" }
+        val oldAuthority = Json.parseToJsonElement(oldText).jsonObject
+        check(keystore.boundDeviceId(state.chainId) == oldId && PallaSyncCore.validateCurrentKeyRecipient(oldText, oldId)) {
+            "C_BOOTSTRAP_TRUST_REQUIRED"
+        }
+        val oldHash = checkNotNull(PallaSyncCore.objectHash(oldText)) { "C_SCHEMA_VIOLATION" }
+        val oldAnchor =
+            buildJsonObject {
+                put("transparency_id", state.transparencyId)
+                put("index", state.transparencyIndex)
+                put("hash", state.transparencyHash)
+            }
+        check(keystore.retainSourceTransparencyPin(state.chainId, oldHash, oldAnchor)) { "C_LOCAL_STORAGE_FULL" }
+        val root =
+            PallaSyncRootSession.beginText(
+                mnemonic,
+                passphrase,
+                PallaSyncRootSession.Operation.ENROLLMENT,
+                state.chainId,
+                oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                policy::requireCurrent,
+                policy.retry::correctedTime,
+            )
+        val enrollment =
+            useRoot(root, cancellation) {
+                PallaSyncMnemonicEnrollment(db, remote, policy, keystore, crypto).prepare(it, deviceName, base)
+            }
+        val newKeys = enrollment.first
+        check(newKeys.deviceId != oldId && newKeys.chainId == state.chainId) { "C_DEVICE_EQUIVOCATION" }
+        epochLifecycle.installAndActivateVerifiedCheckpoint(state.chainId, oldAuthority, enrollment.second, base, oldKeys)
+        check(
+            keystore.promotePendingReplacementKeys(state.chainId, oldId, checkNotNull(newKeys.deviceId), oldHash),
+        ) { "C_LOCAL_STORAGE_FULL" }
+        return DeviceReplacement(oldId, oldKeys, oldAuthority, newKeys)
+    }
+
+    private suspend fun resumeCurrentDeviceReplacement(
+        state: ChainStateEntity,
+        oldId: String,
+    ): DeviceReplacement {
+        val newKeys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        check(newKeys.deviceId != oldId && keystore.boundDeviceId(state.chainId) == newKeys.deviceId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val oldKeys = checkNotNull(keystore.getArchivedChainKeys(state.chainId)) { "C_MISSING_DEPENDENCY" }
+        check(oldKeys.deviceId == oldId) { "C_DEVICE_EQUIVOCATION" }
+        val sourceHash = checkNotNull(keystore.pendingReplacementSourceAuthorityHash(state.chainId)) { "C_MISSING_DEPENDENCY" }
+        val archived = checkNotNull(db.protocolDao().authorityObject(state.chainId, "checkpoint", sourceHash)) { "C_MISSING_DEPENDENCY" }
+        val oldAuthority = Json.parseToJsonElement(archived.signedJson).jsonObject
+        check(PallaSyncCore.validateCurrentKeyRecipient(oldAuthority.toString(), oldId)) { "C_ROLLBACK_DETECTED" }
+        return DeviceReplacement(oldId, oldKeys, oldAuthority, newKeys)
+    }
+
+    private suspend fun completeCurrentDeviceReplacement(
+        state: ChainStateEntity,
+        base: HttpUrl,
+        replacement: DeviceReplacement,
+        mnemonic: String,
+        passphrase: String,
+        cancellation: PallaSyncRootCancellation?,
+    ): Boolean {
+        val (oldId, oldKeys, oldAuthority, newKeys) = replacement
+        check(keystore.boundDeviceId(state.chainId) == newKeys.deviceId && keystore.getActiveChainKeys() == newKeys) {
+            "C_BOOTSTRAP_TRUST_REQUIRED"
+        }
+        outboxRebase.resumeReseed(state.chainId, newKeys, oldKeys, oldAuthority)
+        val currentAuthority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+        val revoked =
+            currentAuthority
+                .getValue(
+                    "devices",
+                ).jsonObject
+                .getValue(oldId)
+                .jsonObject
+                .getValue("revoked_seq")
+                .jsonPrimitive.content
+        if (revoked != "null") {
+            check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
+            return true
+        }
+        val root =
+            PallaSyncRootSession.beginText(
+                mnemonic,
+                passphrase,
+                PallaSyncRootSession.Operation.REVOKE,
+                state.chainId,
+                oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                policy::requireCurrent,
+                policy.retry::correctedTime,
+            )
+        val completed =
+            useRoot(root, cancellation) {
+                epochLifecycle.rotate(it, base, "key_rotation", listOf(oldId), admin = true) == PallaSyncEpochLifecycle.Outcome.UPDATED
+            }
+        if (completed) check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
+        return completed
+    }
 
     /**
      * Advance one bounded page of the explicitly selected §13.8 source into the active new-root
