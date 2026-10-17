@@ -44,7 +44,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRootCancellationJniTest.kt"
       ],
       "result": "pending",
-      "remaining": "Connect passphrase input to every root workflow and complete three-party key vectors.",
+      "remaining": "Connect passphrase input to every root workflow and complete three-party key vectors. Direct ADB instrumentation on emulator-5580 passed all seven PallaSyncRootInputUiTest cases, including exact mnemonic/passphrase submission and clearing. This does not prove every root entry route or three-party vectors.",
       "verification_scope": "targeted_partial"
     },
     {
@@ -99,7 +99,7 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLegacyRecordJniTest.kt"
       ],
       "result": "pending",
-      "remaining": "Legacy migration mnemonic, passphrase and device signing-seed JNI adapters now accept UTF-8 byte arrays with Kotlin/native zeroization, including encoded-seed and decoded key buffers; host JNI tests cover v2.0/v2.1 identity, token and migration sessions, and utility tests cover normal/failure cleanup and malformed UTF-16 rejection. Still required: audit all remaining key-material call sites, real UI/background/backup/recovery authentication boundary tests, and Android instrumentation/device verification.",
+      "remaining": "Legacy migration mnemonic, passphrase and device signing-seed JNI adapters now accept UTF-8 byte arrays with Kotlin/native zeroization, including encoded-seed and decoded key buffers; host JNI tests cover v2.0/v2.1 identity, token and migration sessions, and utility tests cover normal/failure cleanup and malformed UTF-16 rejection. Still required: audit all remaining key-material call sites, real UI/background/backup/recovery authentication boundary tests, and Android instrumentation/device verification. Direct ADB instrumentation on emulator-5580 passed PallaSyncRootInputUiTest 7/7, covering secure window state, clear-on-submit, cancellation, lifecycle dismissal, generated mnemonic disposal and overlapping secure-input leases. Device backup restore, OS process death/background, memory inspection and physical-device behavior remain unverified.",
       "verification_scope": "targeted_partial"
     },
     {
