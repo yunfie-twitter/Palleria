@@ -263,7 +263,7 @@ internal class PallaSyncRecoverySlot(
         private const val UUID_VARIANT = 2
 
         private fun protectedPrefs(context: Context): SharedPreferences {
-            check(context.applicationInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP == 0) { "C_RECOVERY_STORAGE_UNSAFE" }
+            check((context.applicationInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP) == 0) { "C_RECOVERY_STORAGE_UNSAFE" }
             return EncryptedSharedPreferences.create(
                 context,
                 "pallasync_recovery_holder",
