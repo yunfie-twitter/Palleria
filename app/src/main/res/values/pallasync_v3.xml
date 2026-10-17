@@ -212,6 +212,8 @@
     <string name="pallasync_v3_epoch_emergency_explanation">Use recovery authority to issue fresh keys for the currently approved devices.</string>
     <string name="pallasync_v3_device_revoke">Revoke this device</string>
     <string name="pallasync_v3_device_revoke_explanation">Revoke device %1$s and issue fresh keys to the remaining approved devices. The selected device loses access to future keys.</string>
+    <string name="pallasync_v3_device_replace">Re-register this device keys</string>
+    <string name="pallasync_v3_device_replace_explanation">Create a new device ID and keys, verify key readback and acknowledgement, then revoke the old ID. Only unaccepted edits are recreated under the new ID. Keep this screen open until the operation completes.</string>
     <string name="pallasync_v3_sync_paused">Synchronization is paused. Stored keys, data and pending edits are retained.</string>
     <string name="pallasync_v3_unsigned_pending">Unsent local edits: %1$d. Their collections keep a local preview until the edits can be prepared for synchronization. Verified remote state remains stored.</string>
     <string name="pallasync_v3_secure_input_unavailable">A protected input window is unavailable. Close this screen and try again.</string>

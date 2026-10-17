@@ -194,6 +194,8 @@
     <string name="pallasync_v3_epoch_emergency_explanation">復旧権限を使い、現在の承認済み端末へ新しい鍵を発行します。</string>
     <string name="pallasync_v3_device_revoke">この端末を失効させる</string>
     <string name="pallasync_v3_device_revoke_explanation">端末 %1$s を失効させ、残る承認済み端末へ新しい鍵を発行します。選んだ端末は今後の鍵を取得できなくなります。</string>
+    <string name="pallasync_v3_device_replace">この端末の鍵を再登録</string>
+    <string name="pallasync_v3_device_replace_explanation">新しい端末IDと鍵を作り、現在の鍵のreadbackとackを確認してから旧IDを失効させます。未受理の変更だけを新しいIDで再作成します。完了までこの画面を閉じないでください。</string>
     <string name="pallasync_v3_sync_paused">同期は一時停止中です。鍵、データ、未送信の編集は保持されています。</string>
     <string name="pallasync_v3_unsigned_pending">未送信のローカル編集：%1$d件。同期用に構築できるまで、対象のコレクションはローカルの表示を保持します。検証済みの受信状態も保存されています。</string>
     <string name="pallasync_v3_secure_input_unavailable">保護された入力画面を利用できません。この画面を閉じて、もう一度開いてください。</string>

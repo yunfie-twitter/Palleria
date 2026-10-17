@@ -47,6 +47,7 @@ internal fun PallaSyncEpochControls(
     var status by remember { mutableStateOf<PallaSyncEpochStatus?>(null) }
     var pending by remember { mutableStateOf(0L) }
     var selected by remember { mutableStateOf<EpochAction?>(null) }
+    var replaceSelected by remember { mutableStateOf(false) }
     LaunchedEffect(manager) {
         while (isActive) {
             status = manager.getEpochStatus()
@@ -91,7 +92,22 @@ internal fun PallaSyncEpochControls(
                         )
                     TextButton(text = stringResource(action.title), enabled = enabled, onClick = { selected = action })
                 }
+                TextButton(
+                    text = stringResource(R.string.pallasync_v3_device_replace),
+                    enabled = synchronizationEnabled && current?.writeState == "active",
+                    onClick = { replaceSelected = true },
+                )
             }
+        }
+    }
+    if (replaceSelected) {
+        PallaSyncRootActionDialog(
+            manager,
+            stringResource(R.string.pallasync_v3_device_replace),
+            stringResource(R.string.pallasync_v3_device_replace_explanation),
+            onDismiss = { replaceSelected = false },
+        ) { words, passphrase, cancellation ->
+            manager.replaceCurrentDevice(words, passphrase, cancellation)
         }
     }
     selected?.let { action ->

@@ -230,6 +230,19 @@ class PallaSyncKeystore internal constructor(
             .getString("reseed.source.transparency.$chain.$sourceAuthorityHash", null)
             ?.let { Json.decodeFromString<JsonObject>(it) }
 
+    /** Retain an old verified cut while device identity replacement replays unresolved intents. */
+    internal fun retainSourceTransparencyPin(
+        chain: String,
+        sourceAuthorityHash: String,
+        anchor: JsonObject,
+    ): Boolean {
+        val key = "reseed.source.transparency.$chain.$sourceAuthorityHash"
+        val previous = sharedPrefs.getString(key, null)
+        check(previous == null || Json.decodeFromString<JsonObject>(previous) == anchor) { "C_ROLLBACK_DETECTED" }
+        return sharedPrefs.edit().putString(key, anchor.toString()).commit() &&
+            reseedSourceTransparencyPin(chain, sourceAuthorityHash) == anchor
+    }
+
     internal fun pinInitialTransparency(
         chainId: String,
         anchor: JsonObject,
@@ -759,6 +772,75 @@ class PallaSyncKeystore internal constructor(
                 .remove("pending_peer_context")
                 .commit()
         }
+    }
+
+    /** Promote only after the replacement's signed enrollment, envelope readback and key ack verify. */
+    @Suppress("ReturnCount", "ComplexCondition")
+    internal fun promotePendingReplacementKeys(
+        chain: String,
+        oldDeviceId: String,
+        newDeviceId: String,
+        sourceAuthorityHash: String,
+    ): Boolean {
+        val pending = getPendingChainKeys() ?: return false
+        val old = getActiveChainKeys() ?: return false
+        if (pending.chainId != chain || pending.deviceId != newDeviceId || old.chainId != chain || old.deviceId != oldDeviceId) return false
+        if (boundDeviceId(chain) != oldDeviceId || !archiveActiveChainKeys(pending)) return false
+        val editor =
+            sharedPrefs
+                .edit()
+                .putString("identity.$chain", newDeviceId)
+                .putString("active_chain_id", chain)
+                .putString("device_id", newDeviceId)
+                .putString("epoch_key", pending.encryptionKeyBase64Url)
+                .putString("epoch_secret", pending.epochSecretBase64Url)
+                .putString("collection_tag_key", pending.collectionTagKeyBase64Url)
+                .putLong("key_epoch_number", pending.epoch)
+                .putString("device_private_seed", pending.signingKeyBase64Url)
+                .putString("device_sign_public", pending.publicKeyBase64Url)
+                .putString("device_hpke_private", pending.kexPrivateKeyBase64Url)
+                .putString("device_hpke_public", pending.kexPublicKeyBase64Url)
+                .putString("device_meta_key", pending.deviceMetaKeyBase64Url)
+                .putString("replacement_pending_old.$chain", oldDeviceId)
+                .putString("replacement_pending_source.$chain", sourceAuthorityHash)
+        clearPendingChainKeysFrom(editor)
+        return editor.commit() && boundDeviceId(chain) == newDeviceId && getActiveChainKeys() == pending && getPendingChainKeys() == null
+    }
+
+    internal fun pendingReplacementOldDevice(chain: String): String? = sharedPrefs.getString("replacement_pending_old.$chain", null)
+
+    internal fun pendingReplacementSourceAuthorityHash(chain: String): String? =
+        sharedPrefs.getString("replacement_pending_source.$chain", null)
+
+    internal fun finishReplacement(chain: String): Boolean =
+        sharedPrefs
+            .edit()
+            .remove("replacement_pending_old.$chain")
+            .remove("replacement_pending_source.$chain")
+            .commit() && pendingReplacementOldDevice(chain) == null && pendingReplacementSourceAuthorityHash(chain) == null
+
+    private fun clearPendingChainKeysFrom(editor: SharedPreferences.Editor) {
+        listOf(
+            "pending_chain_id",
+            "pending_device_id",
+            "pending_seed_phrase",
+            "pending_epoch_key",
+            "pending_signing_key",
+            "pending_public_key",
+            "pending_kex_private",
+            "pending_kex_public",
+            "pending_meta_key",
+            "pending_epoch_secret",
+            "pending_tag_key",
+            "pending_epoch_number",
+            "pending_genesis_request",
+            "pending_genesis_chain",
+            "pending_genesis_origin",
+            "pending_enrollment_origin",
+            "pending_enrollment_body",
+            "pending_enrollment_ack",
+            "pending_peer_context",
+        ).forEach(editor::remove)
     }
 
     /** Preserve the previous identity and keys until a verified migration resolves its outbox. */

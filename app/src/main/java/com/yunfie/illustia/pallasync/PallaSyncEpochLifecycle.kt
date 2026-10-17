@@ -199,6 +199,17 @@ internal class PallaSyncEpochLifecycle(
         fault(Boundary.AUTHORITY_INSTALLED)
     }
 
+    internal suspend fun installAndActivateVerifiedCheckpoint(
+        chain: String,
+        old: JsonObject,
+        checkpoint: PallaSyncGenesisCheckpoint,
+        base: HttpUrl,
+        current: PallaSyncKeySnapshot,
+    ) {
+        installCut(chain, old, checkpoint)
+        activateCurrent(base, current, checkpoint)
+    }
+
     private suspend fun activateCurrent(
         base: HttpUrl,
         previous: PallaSyncKeySnapshot,

@@ -81,6 +81,64 @@ class PallaSyncKeystoreTransparencyHeadTest {
         keystore.transparencyProgress(CHAIN) shouldBe null
     }
 
+    @Test
+    fun `replacement promotion archives old identity and switches keys atomically`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val keystore = PallaSyncKeystore(preferences)
+        val old = snapshot(OLD_DEVICE, "old")
+        val replacement = snapshot(NEW_DEVICE, "new")
+        keystore.pinInitialDeviceId(CHAIN, OLD_DEVICE) shouldBe true
+        keystore.saveActiveChainKeys(old) shouldBe true
+        keystore.savePendingChainKeys(replacement) shouldBe true
+
+        keystore.promotePendingReplacementKeys(CHAIN, OLD_DEVICE, NEW_DEVICE, "source-authority") shouldBe true
+
+        keystore.boundDeviceId(CHAIN) shouldBe NEW_DEVICE
+        keystore.getActiveChainKeys() shouldBe replacement
+        keystore.getArchivedChainKeys(CHAIN) shouldBe old
+        keystore.pendingReplacementOldDevice(CHAIN) shouldBe OLD_DEVICE
+        keystore.pendingReplacementSourceAuthorityHash(CHAIN) shouldBe "source-authority"
+        keystore.getPendingChainKeys() shouldBe null
+    }
+
+    @Test
+    fun `replacement promotion rejects a mismatched old identity without rebinding`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val keystore = PallaSyncKeystore(preferences)
+        val old = snapshot(OLD_DEVICE, "old")
+        val replacement = snapshot(NEW_DEVICE, "new")
+        keystore.pinInitialDeviceId(CHAIN, OLD_DEVICE) shouldBe true
+        keystore.saveActiveChainKeys(old) shouldBe true
+        keystore.savePendingChainKeys(replacement) shouldBe true
+
+        keystore.promotePendingReplacementKeys(CHAIN, NEW_DEVICE, OLD_DEVICE, "source-authority") shouldBe false
+
+        keystore.boundDeviceId(CHAIN) shouldBe OLD_DEVICE
+        keystore.getActiveChainKeys() shouldBe old
+        keystore.getPendingChainKeys() shouldBe replacement
+    }
+
+    private fun snapshot(
+        deviceId: String,
+        prefix: String,
+    ) = PallaSyncKeySnapshot(
+        chainId = CHAIN,
+        deviceId = deviceId,
+        encryptionKeyBase64Url = "${prefix}_record",
+        signingKeyBase64Url = "${prefix}_signing",
+        publicKeyBase64Url = "${prefix}_public",
+        kexPrivateKeyBase64Url = "${prefix}_kex_private",
+        kexPublicKeyBase64Url = "${prefix}_kex_public",
+        deviceMetaKeyBase64Url = "${prefix}_metadata",
+        collectionTagKeyBase64Url = "${prefix}_tag",
+        epochSecretBase64Url = "${prefix}_epoch_secret",
+        epoch = 3,
+    )
+
     private fun head(
         index: Long,
         minimum: Long,
@@ -118,5 +176,7 @@ class PallaSyncKeystoreTransparencyHeadTest {
         const val CHAIN = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         const val LOG = "11111111-1111-4111-8111-111111111111"
         const val TRANSPARENCY = "22222222-2222-4222-8222-222222222222"
+        const val OLD_DEVICE = "33333333-3333-4333-8333-333333333333"
+        const val NEW_DEVICE = "44444444-4444-4444-8444-444444444444"
     }
 }

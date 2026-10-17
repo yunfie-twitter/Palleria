@@ -257,6 +257,12 @@ class PalleriaSyncManager(
         cancellation: PallaSyncRootCancellation? = null,
     ): Boolean = coordinator.refreshEpochs(mnemonic, passphrase, cancellation)
 
+    suspend fun replaceCurrentDevice(
+        mnemonic: String,
+        passphrase: String = "",
+        cancellation: PallaSyncRootCancellation? = null,
+    ): Boolean = coordinator.replaceCurrentDevice(mnemonic, passphrase, cancellation = cancellation)
+
     suspend fun createGenesis(
         seedPhrase: String,
         serverUrl: String? = null,
