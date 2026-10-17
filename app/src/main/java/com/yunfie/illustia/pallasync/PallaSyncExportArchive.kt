@@ -314,7 +314,7 @@ internal class PallaSyncExportArchive private constructor(
                 line["object_hash"]?.jsonPrimitive?.content?.matches(B64U_32) == true &&
                 line["reason"]?.jsonPrimitive?.content == "recovery_authority"
 
-        private fun validateExpectedSource(
+        internal fun validateExpectedSource(
             header: kotlinx.serialization.json.JsonObject,
             expected: ExpectedSource,
         ) {

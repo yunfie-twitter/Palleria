@@ -1,6 +1,7 @@
 package com.yunfie.illustia.pallasync
 
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
@@ -26,12 +27,21 @@ internal object PallaSyncExportArchiveVerifier {
     private const val HASH_BYTES = 32
     private val HASH_PATTERN = Regex("^[A-Za-z0-9_-]{43}$")
 
-    fun verify(input: InputStream): Header {
+    fun verify(
+        input: InputStream,
+        expectedSource: PallaSyncExportArchive.ExpectedSource? = null,
+    ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
         var lineCount = 0L
         var header: kotlinx.serialization.json.JsonObject? = null
         var previousLine: String? = null
+        val canonicalPin = expectedSource?.relayPinJson?.let(PallaSyncCore::canonicalJson)
+        val pin = canonicalPin?.let(PallaSyncExportArchive::canonicalObject)
+        var transparencyIndex = 0L
+        var transparencyHash: String? = null
+        var transparencyHeadVerified = false
+        var transparencyId: String? = null
         while (true) {
             val line = readLine(source) ?: error("C_SCHEMA_VIOLATION")
             val value = PallaSyncExportArchive.canonicalObject(line)
@@ -39,6 +49,11 @@ internal object PallaSyncExportArchiveVerifier {
             if (header == null) {
                 check(kind == "header") { "C_SCHEMA_VIOLATION" }
                 PallaSyncExportArchive.validateHeader(value)
+                expectedSource?.let { PallaSyncExportArchive.validateExpectedSource(value, it) }
+                if (pin != null) {
+                    transparencyId = value.getValue("transparency_id").jsonPrimitive.content
+                    transparencyHash = PallaSyncCore.initialExportTransparencyHash(checkNotNull(transparencyId), checkNotNull(canonicalPin))
+                }
                 header = value
                 previousLine = line
                 continue
@@ -57,6 +72,13 @@ internal object PallaSyncExportArchiveVerifier {
                 }
                 check(value["line_count"]?.jsonPrimitive?.longOrNull == lineCount) { "C_SCHEMA_VIOLATION" }
                 check(!complete) { "C_SCHEMA_VIOLATION" }
+                if (pin != null) {
+                    check(transparencyHeadVerified) { "C_MISSING_DEPENDENCY" }
+                    check(
+                        transparencyIndex == header.getValue("transparency_head_index").jsonPrimitive.long &&
+                            transparencyHash == header.getValue("transparency_head_hash").jsonPrimitive.content,
+                    ) { "C_TRANSPARENCY_INVALID" }
+                }
                 check(source.read() == -1) { "C_SCHEMA_VIOLATION" }
                 return Header(
                     chainId = header.getValue("chain_id").jsonPrimitive.content,
@@ -68,6 +90,43 @@ internal object PallaSyncExportArchiveVerifier {
             }
             check(kind in PallaSyncExportArchive.EXPORT_LINE_KINDS) { "C_SCHEMA_VIOLATION" }
             PallaSyncExportArchive.validateExportLine(value)
+            if (pin != null) {
+                check(!transparencyHeadVerified) { "C_TRANSPARENCY_INVALID" }
+                if (kind in setOf("upload_receipt", "transparency_entry", "transparency_head")) {
+                    check(PallaSyncCore.validateExportAttestation(line, checkNotNull(canonicalPin))) { "C_SIGNATURE_INVALID" }
+                }
+                when (kind) {
+                    "transparency_entry" -> {
+                        val entry = value.getValue("entry").jsonObject
+                        check(entry["transparency_id"]?.jsonPrimitive?.content == transparencyId) {
+                            "C_TRANSPARENCY_INVALID"
+                        }
+                        transparencyHash =
+                            PallaSyncCore.advanceExportTransparency(
+                                line,
+                                checkNotNull(canonicalPin),
+                                transparencyIndex,
+                                checkNotNull(transparencyHash),
+                            )
+                        transparencyIndex = Math.addExact(transparencyIndex, 1L)
+                    }
+
+                    "transparency_head" -> {
+                        val head = value.getValue("head").jsonObject
+                        val archiveHeader = checkNotNull(header)
+                        check(
+                            head["transparency_id"] == archiveHeader["transparency_id"] &&
+                                head["entry_index"] == archiveHeader["transparency_head_index"] &&
+                                head["transparency_hash"] == archiveHeader["transparency_head_hash"] &&
+                                head["head_seq"] == archiveHeader["head_seq"] &&
+                                head["head_hash"] == archiveHeader["head_hash"] &&
+                                transparencyIndex == archiveHeader.getValue("transparency_head_index").jsonPrimitive.long &&
+                                transparencyHash == archiveHeader.getValue("transparency_head_hash").jsonPrimitive.content,
+                        ) { "C_TRANSPARENCY_INVALID" }
+                        transparencyHeadVerified = true
+                    }
+                }
+            }
             val bytes = (checkNotNull(previousLine) + "\n").toByteArray(Charsets.UTF_8)
             digest.update(bytes)
             lineCount = Math.addExact(lineCount, 1L)

@@ -738,7 +738,7 @@ internal class PalleriaSyncCoordinator(
     }
 
     /** §17.4/§17.10: stream a pinned device-authorized export without recovery envelopes. */
-    suspend fun exportRelayArchive(output: java.io.OutputStream) {
+    suspend fun exportRelayArchive(output: java.io.OutputStream): PallaSyncExportArchive.ExpectedSource =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -780,16 +780,16 @@ internal class PalleriaSyncCoordinator(
                     } while (true)
                     archive.finish()
                 }
+                expectedSource
             }
         }
-    }
 
     /** §17.4: explicit mnemonic-holder export may include recovery envelope ciphertext. */
     suspend fun exportRelayArchiveWithRecovery(
         output: java.io.OutputStream,
         mnemonic: String,
         passphrase: String,
-    ) {
+    ): PallaSyncExportArchive.ExpectedSource =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -862,10 +862,10 @@ internal class PalleriaSyncCoordinator(
                         } while (true)
                         archive.finish()
                     }
+                    expectedSource
                 }
             }
         }
-    }
 
     /** §7.12.4/§17.10: sign a protected public checkpoint at the local verified data prefix. */
     internal suspend fun createDeviceCheckpoint(): String =

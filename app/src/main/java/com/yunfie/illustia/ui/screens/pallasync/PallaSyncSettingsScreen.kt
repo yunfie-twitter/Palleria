@@ -220,12 +220,13 @@ fun PallaSyncSettingsScreen(
                 scope.launch {
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO) {
-                            syncManager.exportRelayArchive(
-                                checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" },
-                            )
+                            val expectedSource =
+                                syncManager.exportRelayArchive(
+                                    checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" },
+                                )
                             val verified =
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }.use(
-                                    PallaSyncExportArchiveVerifier::verify,
+                                    { input -> PallaSyncExportArchiveVerifier.verify(input, expectedSource) },
                                 )
                             check(!verified.includeRecovery && !verified.complete) { "C_SCHEMA_VIOLATION" }
                         }
@@ -876,11 +877,12 @@ fun PallaSyncSettingsScreen(
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO) {
                             checkNotNull(uri) { "C_LOCAL_STORAGE_FULL" }
-                            checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }
-                                .use { output -> syncManager.exportRelayArchiveWithRecovery(output, mnemonic, passphrase) }
+                            val expectedSource =
+                                checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }
+                                    .use { output -> syncManager.exportRelayArchiveWithRecovery(output, mnemonic, passphrase) }
                             val verified =
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }.use(
-                                    PallaSyncExportArchiveVerifier::verify,
+                                    { input -> PallaSyncExportArchiveVerifier.verify(input, expectedSource) },
                                 )
                             check(verified.includeRecovery && !verified.complete) { "C_SCHEMA_VIOLATION" }
                         }

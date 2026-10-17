@@ -213,6 +213,39 @@ class PallaSyncExportArchiveTest {
     }
 
     @Test
+    fun readbackWithTrustedRelayPinRequiresTheSignedTransparencyHeadCut() {
+        val publicKey = "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ"
+        val relayKeyId = "oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck"
+        val pin =
+            """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"$publicKey","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+        val expected =
+            PallaSyncExportArchive.ExpectedSource(
+                chainId = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+                generation = 0,
+                logId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                relayPublicKey = publicKey,
+                relayKeyId = relayKeyId,
+                relayPinJson = pin,
+            )
+        val t0 = PallaSyncCore.initialExportTransparencyHash("dddddddd-dddd-4ddd-8ddd-dddddddddddd", pin)
+        val pinnedHeader =
+            header
+                .replace("\"relay_key_id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"", "\"relay_key_id\":\"$relayKeyId\"")
+                .replace("\"relay_public_key\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"", "\"relay_public_key\":\"$publicKey\"")
+                .replace("\"transparency_head_hash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"", "\"transparency_head_hash\":\"$t0\"")
+        val body = (pinnedHeader + "\n").toByteArray()
+        val hash = Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(body))
+        val archive =
+            body +
+                """{"archive_sha256":"$hash","complete":false,"kind":"footer","line_count":1}""".toByteArray() +
+                '\n'.code.toByte()
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archive), expected)
+        }.message shouldBe "C_MISSING_DEPENDENCY"
+    }
+
+    @Test
     fun refusesArchiveWhenProtectedPinAndTrustedRelayKeyDisagree() {
         val publicKey = "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ"
         val wrongPublicKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
