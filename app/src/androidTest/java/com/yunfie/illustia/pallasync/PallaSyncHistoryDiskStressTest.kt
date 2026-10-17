@@ -111,16 +111,19 @@ class PallaSyncHistoryDiskStressTest {
             }
             val buildMillis = (System.nanoTime() - buildStart) / 1_000_000
             val databaseBytes = context.getDatabasePath(databaseName).length()
-            assertEquals(seenCount.toLong(), database.protocolDao().liveScopeCount(chain, collection, scope))
 
             val dao = database.protocolDao()
+            val projectionStart = System.nanoTime()
             val projection = dao.historyProjection(chain, collection, scope)
+            val projectionMillis = (System.nanoTime() - projectionStart) / 1_000_000
             assertEquals(seenCount.toLong(), projection.liveCount)
             assertEquals(PALLASYNC_SEEN_SAFETY_LIMIT, projection.projectionLimit)
             if (seenCount == PALLASYNC_SEEN_SAFETY_LIMIT.toInt()) assertEquals("seen:0", projection.evictionEntity)
             val beforePssKb = Debug.getPss()
+            val pagingStart = System.nanoTime()
             val first = dao.historySlice(chain, collection, scope, pageSize = PAGE_SIZE)
             val second = dao.historySlice(chain, collection, scope, first.next, PAGE_SIZE)
+            val pagingMillis = (System.nanoTime() - pagingStart) / 1_000_000
             val afterPssKb = Debug.getPss()
             assertEquals(PAGE_SIZE, first.rows.size)
             assertNotNull(first.next)
@@ -136,7 +139,8 @@ class PallaSyncHistoryDiskStressTest {
             Log.i(
                 TAG,
                 "rows=$seenCount dbBytes=$databaseBytes buildMs=$buildMillis firstPage=${first.rows.size} " +
-                    "secondPage=${second.rows.size} pssBeforeKb=$beforePssKb pssAfterKb=$afterPssKb",
+                    "projectionMs=$projectionMillis pagingMs=$pagingMillis secondPage=${second.rows.size} " +
+                    "pssBeforeKb=$beforePssKb pssAfterKb=$afterPssKb",
             )
         } finally {
             database.close()

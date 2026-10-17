@@ -188,6 +188,12 @@
     <string name="pallasync_quarantine_retry_running">証拠を更新して再検証しています…</string>
     <string name="pallasync_quarantine_retry_succeeded">元のオブジェクトを再検証して適用しました。証拠は保持されています。</string>
     <string name="pallasync_quarantine_retry_failed">元のオブジェクトを再検証できませんでした。証拠は保持されています。</string>
+    <string name="pallasync_quarantine_reseed_guidance">両方の分岐を証拠として保持してください。認証済みの移行先を選び、検証済みローカル状態から明示的に再投入します。</string>
+    <string name="pallasync_quarantine_reseed">移行先を確認して再投入</string>
+    <string name="pallasync_quarantine_repair_guidance">保持した原本を固定済みrelayと照合し、検証済みの欠落履歴だけを送信します。</string>
+    <string name="pallasync_quarantine_repair">検証済み履歴を修復</string>
+    <string name="pallasync_quarantine_snapshot_guidance">独立検証済みsnapshotから状態を再計算してからインストールしてください。</string>
+    <string name="pallasync_quarantine_snapshot">検証済みsnapshotを確認</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

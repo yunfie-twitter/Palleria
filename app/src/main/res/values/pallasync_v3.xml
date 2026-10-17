@@ -206,6 +206,12 @@
     <string name="pallasync_quarantine_retry_running">Refreshing evidence and revalidating…</string>
     <string name="pallasync_quarantine_retry_succeeded">Original object revalidated and applied; evidence remains retained.</string>
     <string name="pallasync_quarantine_retry_failed">Could not revalidate the original object; evidence remains retained.</string>
+    <string name="pallasync_quarantine_reseed_guidance">Keep both branches as evidence. Choose an authenticated destination and explicitly reseed from verified local state.</string>
+    <string name="pallasync_quarantine_reseed">Review destination and reseed</string>
+    <string name="pallasync_quarantine_repair_guidance">Compare retained source records with the pinned relay and submit only verified missing history.</string>
+    <string name="pallasync_quarantine_repair">Repair verified relay history</string>
+    <string name="pallasync_quarantine_snapshot_guidance">Recompute state from an independently verified snapshot before installing it.</string>
+    <string name="pallasync_quarantine_snapshot">Review verified snapshots</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

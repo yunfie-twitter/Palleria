@@ -973,6 +973,45 @@ interface ProtocolDao {
     ): Long
 
     @Query(
+        "SELECT EXISTS(SELECT 1 FROM ps_registers WHERE chain_id=:chainId AND collection=:collection " +
+            "AND register_kind='clear' AND scope IN ('all',:scope))",
+    )
+    suspend fun hasRelevantClear(
+        chainId: String,
+        collection: String,
+        scope: String,
+    ): Boolean
+
+    /** ps_history already contains only the winning upsert for an entity; avoid a 10M-row entity join when no clear exists. */
+    @Query("SELECT COUNT(*) FROM ps_history WHERE chain_id=:chainId AND collection=:collection AND scope=:scope")
+    suspend fun indexedHistoryCount(
+        chainId: String,
+        collection: String,
+        scope: String,
+    ): Long
+
+    @Query(
+        "SELECT * FROM ps_history WHERE chain_id=:chainId AND collection=:collection AND scope=:scope " +
+            "ORDER BY last_access_seq DESC,entity_id COLLATE BINARY DESC LIMIT 1 OFFSET :offset",
+    )
+    suspend fun indexedProjectionFloor(
+        chainId: String,
+        collection: String,
+        scope: String,
+        offset: Long,
+    ): HistoryIndexEntity?
+
+    @Query(
+        "SELECT * FROM ps_history WHERE chain_id=:chainId AND collection=:collection AND scope=:scope " +
+            "ORDER BY last_access_seq ASC,entity_id COLLATE BINARY ASC LIMIT 1",
+    )
+    suspend fun indexedOldestHistory(
+        chainId: String,
+        collection: String,
+        scope: String,
+    ): HistoryIndexEntity?
+
+    @Query(
         "SELECT h.*" + LIVE_ENTITY_PREDICATE +
             " AND h.scope=:scope ORDER BY h.last_access_seq DESC,h.entity_id COLLATE BINARY DESC LIMIT 1 OFFSET :offset",
     )
@@ -1022,8 +1061,25 @@ interface ProtocolDao {
             }
         val ceiling = historyCeiling(collection, scope)
         val limit = minOf(policy?.limit ?: ceiling, ceiling)
-        val count = liveScopeCount(chainId, collection, scope)
-        val floor = if (count >= limit) projectionFloor(chainId, collection, scope, limit - 1) else null
+        val hasClear = hasRelevantClear(chainId, collection, scope)
+        val count =
+            if (hasClear) {
+                liveScopeCount(chainId, collection, scope)
+            } else {
+                indexedHistoryCount(chainId, collection, scope)
+            }
+        val floor =
+            if (count >= limit) {
+                if (hasClear) {
+                    projectionFloor(chainId, collection, scope, limit - 1)
+                } else if (count == limit) {
+                    indexedOldestHistory(chainId, collection, scope)
+                } else {
+                    indexedProjectionFloor(chainId, collection, scope, limit - 1)
+                }
+            } else {
+                null
+            }
         return ProjectionStateEntity(
             chainId,
             collection,

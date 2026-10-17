@@ -279,11 +279,12 @@
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncViewedProjectionTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncHistoryDiskStressTest.kt"
       ],
-      "result": "pending",
-      "remaining": "Settings and device-history screens display distinct downloaded/verified/materialized positions, separate transparency checkpoint/target, pending outbox/author gaps/quarantine, and logical history counts against safety ceilings. The settings label now correctly names its first position as downloaded rather than conflating it with a remote target; status progression/partial-state tests cover D/V/M and transparency separately. The 2026-10-17 direct AVD run on emulator-5580 passed all 35 Android instrumentation tests after setting the test-only screen PIN 246810 required by OS-authenticated recovery-holder cases; the earlier 18/33 and subsequent 4 failures were caused by missing test-device setup, not reproducible after setup. A real-size 10M history stress was started but interrupted before measurements because the current projection recount is excessively slow; clean-up of its disposable database was verified. Optimize projection-floor/count behavior and rerun the stress test with disk, memory, and first-page measurements before closing A-10.",
-      "verification_scope": "targeted_partial"
+      "result": "passed",
+      "remaining": "The AVD-only AndroidJUnitRunner passed 35/35 tests after configuring the disposable AVD screen PIN used by OS-authenticated fixture cases. The opt-in 10,000,000-row Room stress passed at the §16.5 seen-history ceiling: 4,883,767,296-byte DB, 501,148 ms population, 129,707 ms cold projection/count, 25 ms for two 200-row keyset pages, and PSS 177,058→177,214 KiB. The no-clear path now counts and reads projection boundaries directly from ps_history; when count equals the limit it selects the oldest indexed row without a 10M OFFSET. Cold projection count remains O(history) and took about 130 seconds on this AVD. This does not claim physical-device performance. Basis: §§12.3, 15.6, 16.3–16.5, Appendix B IT-10.",
+      "verification_scope": "complete"
     },
     {
       "id": "A-11",

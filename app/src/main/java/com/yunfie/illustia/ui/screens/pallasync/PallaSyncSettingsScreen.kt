@@ -1854,6 +1854,37 @@ fun PallaSyncSettingsScreen(
                                         },
                                     )
                                 }
+                                when (entry.reason) {
+                                    "C_EPOCH_FORK", "C_ROLLBACK_DETECTED" -> {
+                                        Text(stringResource(R.string.pallasync_quarantine_reseed_guidance))
+                                        TextButton(
+                                            text = stringResource(R.string.pallasync_quarantine_reseed),
+                                            enabled = !stagingReseedImport && !committingReseedImport,
+                                            onClick = { showReseedImportTarget = true },
+                                        )
+                                    }
+
+                                    "C_LOG_HASH_MISMATCH" -> {
+                                        Text(stringResource(R.string.pallasync_quarantine_repair_guidance))
+                                        TextButton(
+                                            text = stringResource(R.string.pallasync_quarantine_repair),
+                                            enabled = !repairingRelayHistory,
+                                            onClick = { showRepairRootInput = true },
+                                        )
+                                    }
+
+                                    "C_SNAPSHOT_INVALID" -> {
+                                        Text(stringResource(R.string.pallasync_quarantine_snapshot_guidance))
+                                        TextButton(
+                                            text = stringResource(R.string.pallasync_quarantine_snapshot),
+                                            enabled = trustedSnapshotCandidates.isNotEmpty() && !installingTrustedSnapshot,
+                                            onClick = {
+                                                trustedSnapshotFailure = null
+                                                showTrustedSnapshotDialog = true
+                                            },
+                                        )
+                                    }
+                                }
                             }
                             quarantineCursor?.let { cursor ->
                                 if (!loadingQuarantinePage) {
