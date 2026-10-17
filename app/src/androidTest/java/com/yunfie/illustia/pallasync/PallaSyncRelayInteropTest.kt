@@ -347,12 +347,27 @@ class PallaSyncRelayInteropTest {
 
         assertTrue(
             PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-            coordinator.retryMissingDependencyQuarantine(event.objectHash),
+            coordinator.retryQuarantinedRecordEvidence(event.objectHash),
         )
         assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
         val resolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
         assertEquals(event.signedJson, resolved.evidenceJson)
         assertEquals("resolved", resolved.resolutionState)
+
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        store.protocolDao().quarantine(
+            QuarantineEvidenceEntity(chain, event.objectHash, "C_ACCEPTANCE_UNPROVEN", event.signedJson, "unresolved"),
+        )
+        assertTrue(
+            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+            coordinator.retryQuarantinedRecordEvidence(event.objectHash),
+        )
+        val acceptanceResolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
+        assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
+        assertEquals("resolved", acceptanceResolved.resolutionState)
     }
 
     private fun exerciseBoundOrigin(

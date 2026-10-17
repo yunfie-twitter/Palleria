@@ -351,8 +351,8 @@ class PalleriaSyncManager(
         limit: Int = 50,
     ): PallaSyncQuarantinePage = coordinator.getUnresolvedQuarantinePage(afterHash, limit)
 
-    internal suspend fun retryMissingDependencyQuarantine(objectHash: String): Boolean =
-        coordinator.retryMissingDependencyQuarantine(objectHash)
+    internal suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean =
+        coordinator.retryQuarantinedRecordEvidence(objectHash)
 
     internal suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> = coordinator.trustedSnapshotCandidates()
 

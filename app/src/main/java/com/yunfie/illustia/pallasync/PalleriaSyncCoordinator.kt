@@ -6881,8 +6881,8 @@ internal class PalleriaSyncCoordinator(
             PallaSyncQuarantinePage(page, page.lastOrNull()?.objectHash.takeIf { rows.size > limit })
         }
 
-    /** §19.4: refresh authorized evidence, then replay the immutable original only for missing ancestry. */
-    suspend fun retryMissingDependencyQuarantine(objectHash: String): Boolean {
+    /** §19.3/§19.4: fetch missing authority/acceptance evidence, then replay only the immutable original. */
+    suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean {
         require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }
         if (!syncNow()) return false
         return withContext(Dispatchers.IO) {
@@ -6892,7 +6892,7 @@ internal class PalleriaSyncCoordinator(
                     val protocol = db.protocolDao()
                     val evidence = checkNotNull(protocol.quarantineEvidence(state.chainId, objectHash)) { "C_MISSING_DEPENDENCY" }
                     check(
-                        evidence.reason == "C_MISSING_DEPENDENCY" &&
+                        evidence.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN") &&
                             evidence.resolutionState in setOf("unresolved", "pending_resolution") &&
                             crypto.objectHash(evidence.evidenceJson) == objectHash,
                     ) { "C_SCHEMA_VIOLATION" }
@@ -6908,6 +6908,7 @@ internal class PalleriaSyncCoordinator(
                     check(PallaSyncCore.validateRecordAuthority(authorityText, evidence.evidenceJson, relaySequence)) {
                         "C_MISSING_DEPENDENCY"
                     }
+                    verifyQuarantinedRecordAcceptance(protocol, state.chainId, relaySequence, evidence.evidenceJson, authorityText)
                     val keys = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                     val epochKeys = checkNotNull(keystore.keysForEpoch(keys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
                     val payload =
@@ -6933,7 +6934,7 @@ internal class PalleriaSyncCoordinator(
                             )
                         check(applied.status == "applied") { applied.quarantineReason ?: "C_SCHEMA_VIOLATION" }
                         check(db.dao.getInboxRecord(state.chainId, wire.recordId)?.status == "applied") { "C_ROLLBACK_DETECTED" }
-                        check(protocol.resolveMissingDependencyQuarantine(state.chainId, objectHash) == 1) {
+                        check(protocol.resolveQuarantineEvidence(state.chainId, objectHash, evidence.reason) == 1) {
                             "C_ROLLBACK_DETECTED"
                         }
                     }
@@ -6947,6 +6948,49 @@ internal class PalleriaSyncCoordinator(
                     false
                 }
             }
+        }
+    }
+
+    private suspend fun verifyQuarantinedRecordAcceptance(
+        protocol: com.yunfie.illustia.pallasync.data.ProtocolDao,
+        chainId: String,
+        relaySequence: Long,
+        recordJson: String,
+        authorityJson: String,
+    ) {
+        val authority = Json.parseToJsonElement(authorityJson).jsonObject
+        val pin = authority.getValue("pin").jsonObject
+        val logId = pin.getValue("log_id").jsonPrimitive.content
+        val row = checkNotNull(protocol.logEntry(chainId, logId, relaySequence)) { "C_MISSING_DEPENDENCY" }
+        check(
+            row.validationState == "authority_verified" && crypto.objectHash(row.signedJson) == row.entryHash,
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        val entry = Json.parseToJsonElement(row.signedJson).jsonObject
+        val record = Json.parseToJsonElement(recordJson)
+        check(
+            entry.getValue("relay_seq").jsonPrimitive.long == relaySequence &&
+                entry.getValue("kind").jsonPrimitive.content == "record" && entry.getValue("object") == record,
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        val receipt = Json.parseToJsonElement(row.receiptJson).jsonObject
+        check(
+            receipt.getValue("relay_seq").jsonPrimitive.long == relaySequence &&
+                receipt.getValue("object_hash").jsonPrimitive.content == crypto.objectHash(recordJson),
+        ) { "C_ACCEPTANCE_UNPROVEN" }
+        val receiptKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
+        val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        val proof =
+            protocol
+                .evidenceAt(
+                    pin.getValue("origin").jsonPrimitive.content,
+                    receiptKeyId,
+                    chainId,
+                    logId,
+                    "transparency",
+                    transparencyIndex,
+                ).singleOrNull() ?: error("C_MISSING_DEPENDENCY")
+        val anchor = checkNotNull(keystore.transparencyPin(chainId)) { "C_MISSING_DEPENDENCY" }
+        check(PallaSyncCore.validateReceiptInclusion(receipt.toString(), proof, pin.toString(), anchor.toString())) {
+            "C_ACCEPTANCE_UNPROVEN"
         }
     }
 

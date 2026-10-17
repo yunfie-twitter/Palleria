@@ -218,7 +218,7 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
-    fun `missing dependency quarantine resolution preserves original evidence and is idempotent`() =
+    fun `authorized quarantine resolution preserves original evidence and is idempotent`() =
         runBlocking<Unit> {
             val db =
                 Room
@@ -231,14 +231,17 @@ class PallaSyncProtocolStoreTest {
                 val original = "{\"version\":\"pallasync/3\",\"signed\":\"fixture\"}"
                 val hash = checkNotNull(PallaSyncCore.objectHash(original))
                 protocol.quarantine(QuarantineEvidenceEntity(chain, hash, "C_MISSING_DEPENDENCY", original, "unresolved"))
+                protocol.quarantine(QuarantineEvidenceEntity(chain, "acceptance-hash", "C_ACCEPTANCE_UNPROVEN", original, "unresolved"))
 
                 protocol.quarantineEvidence(chain, hash)?.evidenceJson shouldBe original
-                protocol.resolveMissingDependencyQuarantine(chain, hash) shouldBe 1
+                protocol.resolveQuarantineEvidence(chain, hash, "C_ACCEPTANCE_UNPROVEN") shouldBe 0
+                protocol.resolveQuarantineEvidence(chain, hash, "C_MISSING_DEPENDENCY") shouldBe 1
                 protocol.quarantineEvidence(chain, hash)?.let {
                     it.evidenceJson shouldBe original
                     it.resolutionState shouldBe "resolved"
                 }
-                protocol.resolveMissingDependencyQuarantine(chain, hash) shouldBe 0
+                protocol.resolveQuarantineEvidence(chain, hash, "C_MISSING_DEPENDENCY") shouldBe 0
+                protocol.resolveQuarantineEvidence(chain, "acceptance-hash", "C_ACCEPTANCE_UNPROVEN") shouldBe 1
                 protocol.unresolvedQuarantineCount(chain) shouldBe 0
             } finally {
                 db.close()

@@ -1809,7 +1809,7 @@ fun PallaSyncSettingsScreen(
                             unresolvedQuarantine.forEach { entry ->
                                 DividerLine()
                                 Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash))
-                                if (entry.reason == "C_MISSING_DEPENDENCY") {
+                                if (entry.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN")) {
                                     TextButton(
                                         text =
                                             stringResource(
@@ -1825,7 +1825,7 @@ fun PallaSyncSettingsScreen(
                                             scope.launch {
                                                 val resolved =
                                                     try {
-                                                        syncManager.retryMissingDependencyQuarantine(entry.objectHash)
+                                                        syncManager.retryQuarantinedRecordEvidence(entry.objectHash)
                                                     } catch (cancelled: CancellationException) {
                                                         throw cancelled
                                                     } catch (_: Exception) {

@@ -884,11 +884,12 @@ interface ProtocolDao {
     ): QuarantineEvidenceEntity?
 
     @Query(
-        "UPDATE ps_quarantine SET resolution_state='resolved' WHERE chain_id=:chainId AND object_hash=:objectHash AND reason='C_MISSING_DEPENDENCY' AND resolution_state IN ('unresolved','pending_resolution')",
+        "UPDATE ps_quarantine SET resolution_state='resolved' WHERE chain_id=:chainId AND object_hash=:objectHash AND reason=:reason AND resolution_state IN ('unresolved','pending_resolution')",
     )
-    suspend fun resolveMissingDependencyQuarantine(
+    suspend fun resolveQuarantineEvidence(
         chainId: String,
         objectHash: String,
+        reason: String,
     ): Int
 
     @Query(
