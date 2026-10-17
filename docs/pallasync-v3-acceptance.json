@@ -642,7 +642,7 @@
         "PallaSync/tests/reference/test_recovery_artifacts.py"
       ],
       "result": "pending",
-      "remaining": "Recovery release/receive UI includes offline media. Pixel 6a Android 17 test reached the OS credential prompt, but the fixture PIN 246810 was rejected with C_RECOVERY_AUTH_REQUIRED; physical OS-authenticated readback/release is unverified. The public recovery-status UI test passed 2/2 on Pixel; offline issuance/readback/reader and all-valid-threshold independent interoperability remain incomplete.",
+      "remaining": "Recovery release/receive UI includes offline media. Pixel 6a Android 17 test reached the OS credential prompt, but the fixture PIN 246810 was rejected with C_RECOVERY_AUTH_REQUIRED; physical OS-authenticated readback/release is unverified. The public recovery-status UI test passed 2/2 on Pixel; offline issuance/readback/reader and all-valid-threshold independent interoperability remain incomplete. Disposable emulator-5580 has the test-only PIN 246810 configured. A fresh direct ADB run of PallaSyncRecoveryHolderAndroidTest passed 4/4, including authenticated slot readback/release and cancellation. This does not verify physical-device credential behavior, offline media, or independent threshold interoperability.",
       "verification_scope": "targeted_partial"
     },
     {
@@ -686,7 +686,7 @@
         "PallaSync/tests/reference/test_recovery.py"
       ],
       "result": "pending",
-      "remaining": "The localized QR entry control is host-tested independently from the protected modal and shows the scan/scanned state before any secret session. A new scan now clears the prior peer descriptor/file before opening the scanner, and cancellation, empty/malformed input, and the 4 MiB bound are covered by PallaSyncRecoveryQrSelectionTest; focused JVM tests and ktlint pass. The attempted Android overlay interaction test failed because Miuix OverlayDialog exposes no Compose hierarchy to the runner or UiAutomator text selectors; it was removed and is not counted as passing. Still required: full protected receive-dialog UI and scanner-result instrumentation, independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests.",
+      "remaining": "The localized QR entry control is host-tested independently from the protected modal and shows the scan/scanned state before any secret session. A new scan now clears the prior peer descriptor/file before opening the scanner, and cancellation, empty/malformed input, and the 4 MiB bound are covered by PallaSyncRecoveryQrSelectionTest; focused JVM tests and ktlint pass. The attempted Android overlay interaction test failed because Miuix OverlayDialog exposes no Compose hierarchy to the runner or UiAutomator text selectors; it was removed and is not counted as passing. Still required: full protected receive-dialog UI and scanner-result instrumentation, independent three-party device/offline holder/reader interoperability, end-to-end SAS and encrypted-file ceremonies, and OS process/cancel/fault boundary tests. Direct ADB instrumentation on emulator-5580 passed PallaSyncRecoveryCredentialUiTest (2/2), PallaSyncRecoveryStatusUiTest (2/2), and PallaSyncRecoveryPublicStatusAndroidTest (2/2). PallaSyncRecoveryDealerAndroidTest passed 3/3, including incomplete ceremony cancellation and retirement evidence. Physical two-holder/reader SAS and encrypted-file exchange remain pending.",
       "verification_scope": "targeted_partial"
     },
     {
@@ -721,7 +721,7 @@
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerLifecycleAndroidTest.kt"
       ],
       "result": "pending",
-      "remaining": "Run real OS-background/SAF interruption, confirmation-dialog pause, independent physical-holder interoperability, and dedicated secret-memory instrumentation. Pixel 6a instrumentation verifies injected ON_STOP closes the dealer owner and the five-minute idle lease closes the native session; OS background and physical media are still not proven.",
+      "remaining": "Run real OS-background/SAF interruption, confirmation-dialog pause, independent physical-holder interoperability, and dedicated secret-memory instrumentation. Pixel 6a instrumentation verifies injected ON_STOP closes the dealer owner and the five-minute idle lease closes the native session; OS background and physical media are still not proven. Direct ADB instrumentation on emulator-5580 passed PallaSyncRecoveryDealerLifecycleAndroidTest (2/2) and PallaSyncRecoveryAuditAndroidTest (1/1); the holder/auth test passed 4/4. These exercise injected lifecycle closure and local audit handoff, not Android OS process death/background or secret-memory inspection.",
       "verification_scope": "targeted_partial"
     },
     {
