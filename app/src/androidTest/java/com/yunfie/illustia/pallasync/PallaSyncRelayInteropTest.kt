@@ -216,7 +216,14 @@ class PallaSyncRelayInteropTest {
                     PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId))),
                 )
                 if (args.getString("delete_chain") == "true") {
-                    val deletion = coordinator.requestChainDeletion(phrase)
+                    val lostResponse = args.getString("delete_response_lost") == "true"
+                    val firstDeletion = coordinator.requestChainDeletion(phrase)
+                    if (lostResponse) {
+                        assertEquals(PallaSyncDeletionRequestResult.PENDING_EVIDENCE, firstDeletion)
+                        assertNotNull(store.dao.getChainState(state.chainId))
+                        kotlinx.coroutines.delay(1_500)
+                    }
+                    val deletion = if (lostResponse) coordinator.requestChainDeletion(phrase) else firstDeletion
                     assertEquals(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT, deletion)
                     val proof = checkNotNull(coordinator.pendingDeletionProof())
                     val proofFile = java.io.File.createTempFile("pallasync-delete-proof-", ".json", context.cacheDir)

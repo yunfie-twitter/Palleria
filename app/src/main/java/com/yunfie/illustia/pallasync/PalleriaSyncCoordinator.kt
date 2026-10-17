@@ -4944,7 +4944,15 @@ internal class PalleriaSyncCoordinator(
         val deleteResult = remote.executeUnit(deleteRequest)
         log("Deletion request response received; fetching signed proof")
         if (deleteResult !is PallaSyncHttpResult.Success) log("Deletion response did not confirm erasure; checking signed proof")
-        val getToken = checkNotNull(root.token(context.origin, "GET", deletionUrl.encodedPath)) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+        val getToken =
+            try {
+                checkNotNull(root.token(context.origin, "GET", deletionUrl.encodedPath)) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+            } catch (failure: IllegalStateException) {
+                if (failure.message != "C_RELAY_POLICY_UNAVAILABLE") throw failure
+                return PallaSyncDeletionRequestResult.PENDING_EVIDENCE.also {
+                    log("C_DELETION_UNVERIFIED: relay policy refresh is deferred after an unknown DELETE result; local data retained")
+                }
+            }
         val getRequest =
             Request
                 .Builder()

@@ -409,3 +409,7 @@ source race/reportの最新実装後、PallaSync関連のKotlin unit suite全68 
 最終試験 `run_android_interop.py --delete-chain` はAndroid 1件成功（126.233秒）。GET proofのnative認証、bundle/proofのローカル一時ファイルreadback、確認後のchain-local消去と削除receipt保持を確認しました。独立Pythonはreceipt relay署名、ledger/receipt hash binding、transparency署名を確認しました。`:app:assembleDebug :app:assembleDebugAndroidTest :app:ktlintCheck`、Rust `cargo fmt --check`、`cargo test --locked`全suite（PallaSync core）、Android `:app:testDebugUnitTest`の削除archive/merge/Room 3 suites、Python `py_compile`、diff checkも成功しました。
 
 この試験はSAF pickerまたは物理的に独立した媒体の書出し/readbackを通していません。IT-44全負例、completion-revision/witness交換も未完了なのでA-26はpendingのままです。全適合の宣言には使いません。
+
+2026-10-17 §17.11 unknown DELETE outcome fault injection
+
+The isolated relay now can commit a DELETE and intentionally close the client connection before sending the HTTP response. `run_android_interop.py --delete-chain --delete-response-lost` passed on the disposable Android AVD (133.415 seconds): the client returned `PENDING_EVIDENCE`, retained its local chain, waited through retry backoff, replayed the same persisted signed request, fetched and verified GET `/deletion`, read back the local proof/bundle copy, then erased only after explicit confirmation. Independent Python validated the signed receipt, ledger binding and transparency signature. This exercises the unknown-outcome branch in §§10.15/17.11; physical SAF and broader 410/CAS fault cases remain pending.
