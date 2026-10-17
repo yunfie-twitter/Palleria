@@ -107,6 +107,12 @@
     <string name="pallasync_delete_revision_refresh_title">Refresh deletion completion evidence</string>
     <string name="pallasync_delete_revision_refresh_desc">Enter the chain mnemonic to fetch and verify the latest signed deletion receipt, then export its separately bound evidence bundle. No chain data is restored.</string>
     <string name="pallasync_delete_revision_target">%1$s\nChain: %2$s</string>
+    <string name="pallasync_delete_revision_export_retained_title">Export retained receipt revisions</string>
+    <string name="pallasync_delete_revision_export_retained_desc">Choose a previously verified receipt and its separately bound witness bundle.</string>
+    <string name="pallasync_delete_revision_export_none">No locally retained completion bundles are available.</string>
+    <string name="pallasync_delete_revision_export_item">Transparency index %1$d · %2$s</string>
+    <string name="pallasync_delete_revision_export_item_desc">Completion time: %1$s</string>
+    <string name="pallasync_delete_revision_pending">pending</string>
     <string name="pallasync_witness_import_title">Confirm intent witness</string>
     <string name="pallasync_witness_import_summary">Import a DeleteReceipt archive, review its chain and deletion ID, and optionally sign an intent witness on this active device.</string>
     <string name="pallasync_witness_confirm_title">Sign deletion intent witness?</string>

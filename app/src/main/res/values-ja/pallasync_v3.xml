@@ -89,6 +89,12 @@
     <string name="pallasync_delete_revision_refresh_title">削除完了証拠を更新</string>
     <string name="pallasync_delete_revision_refresh_desc">chain mnemonicを入力して最新の署名済み削除receiptを取得・検証し、そのreceiptに結び付いた証拠bundleを書き出します。chain dataは復元しません。</string>
     <string name="pallasync_delete_revision_target">%1$s\nChain: %2$s</string>
+    <string name="pallasync_delete_revision_export_retained_title">保存済みreceipt revisionを書き出す</string>
+    <string name="pallasync_delete_revision_export_retained_desc">検証済みreceiptと、そのreceiptだけに結び付くwitness bundleを選択します。</string>
+    <string name="pallasync_delete_revision_export_none">端末に保存済みの完了bundleはありません。</string>
+    <string name="pallasync_delete_revision_export_item">Transparency index %1$d · %2$s</string>
+    <string name="pallasync_delete_revision_export_item_desc">完了時刻: %1$s</string>
+    <string name="pallasync_delete_revision_pending">未完了</string>
     <string name="pallasync_witness_import_title">削除意図のwitnessを確認</string>
     <string name="pallasync_witness_import_summary">DeleteReceipt archiveを読み込み、chainと削除IDを確認して、この端末から任意のwitnessに署名します。</string>
     <string name="pallasync_witness_confirm_title">削除意図のwitnessに署名しますか？</string>

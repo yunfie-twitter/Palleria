@@ -38,6 +38,7 @@ import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
 import com.yunfie.illustia.pallasync.PallaSyncCheckpointFile
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
+import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceRevision
 import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
@@ -128,6 +129,8 @@ fun PallaSyncSettingsScreen(
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var deletedChainTargets by remember { mutableStateOf<List<ProtectedEvidenceEntity>>(emptyList()) }
     var selectedDeletedChain by remember { mutableStateOf<String?>(null) }
+    var retainedDeletionRevisions by remember { mutableStateOf<List<PallaSyncDeletionEvidenceRevision>>(emptyList()) }
+    var showRetainedDeletionRevisions by remember { mutableStateOf(false) }
     var witnessInputArchive by remember { mutableStateOf<String?>(null) }
     var witnessInputPreview by remember { mutableStateOf<PallaSyncDeletionWitnessPreview?>(null) }
     var witnessOutputArchive by remember { mutableStateOf<String?>(null) }
@@ -736,6 +739,44 @@ fun PallaSyncSettingsScreen(
         )
     }
 
+    if (showRetainedDeletionRevisions) {
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_delete_revision_export_retained_title),
+            onDismissRequest = { showRetainedDeletionRevisions = false },
+        ) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (retainedDeletionRevisions.isEmpty()) {
+                    Text(stringResource(R.string.pallasync_delete_revision_export_none))
+                } else {
+                    retainedDeletionRevisions.forEach { revision ->
+                        SettingLinkRow(
+                            title =
+                                stringResource(
+                                    R.string.pallasync_delete_revision_export_item,
+                                    revision.transparencyIndex,
+                                    revision.completedAtMs?.toString()
+                                        ?: stringResource(R.string.pallasync_delete_revision_pending),
+                                ),
+                            summary =
+                                stringResource(
+                                    R.string.pallasync_delete_revision_export_item_desc,
+                                    revision.completedAtMs?.toString()
+                                        ?: stringResource(R.string.pallasync_delete_revision_pending),
+                                ),
+                            onClick = {
+                                pendingDeletionArchive = revision.archiveJson
+                                showRetainedDeletionRevisions = false
+                                val revisionTag = revision.completedAtMs?.toString() ?: "pending-${revision.transparencyIndex}"
+                                deletionArchiveExporter.launch("pallasync-deletion-revision-$revisionTag.json")
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     if (showPruneConfirm) {
         MiuixConfirmDialog(
             show = true,
@@ -1272,6 +1313,20 @@ fun PallaSyncSettingsScreen(
                                 onClick = {
                                     selectedDeletedChain = target.chainId
                                     showDeletedReceiptRootInput = true
+                                },
+                            )
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_delete_revision_export_retained_title),
+                                summary = stringResource(R.string.pallasync_delete_revision_export_retained_desc),
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            retainedDeletionRevisions = syncManager.retainedDeletedChainEvidenceRevisions(target.chainId)
+                                            showRetainedDeletionRevisions = true
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, R.string.pallasync_delete_export_failed, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
                                 },
                             )
                         }

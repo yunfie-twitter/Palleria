@@ -307,6 +307,10 @@ class PalleriaSyncManager(
 
     internal suspend fun retainedDeletedChainTargets() = coordinator.retainedDeletedChainTargets()
 
+    internal suspend fun retainedDeletedChainEvidenceRevisions(chainId: String) =
+        coordinator
+            .retainedDeletedChainEvidenceRevisions(chainId)
+
     internal suspend fun previewDeletionIntentWitness(archive: String): PallaSyncDeletionWitnessPreview? =
         coordinator.previewDeletionIntentWitness(archive)
 

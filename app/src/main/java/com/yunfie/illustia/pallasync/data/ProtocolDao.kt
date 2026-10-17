@@ -727,6 +727,15 @@ interface ProtocolDao {
         sequence: Long,
     ): List<String>
 
+    /** All locally retained, revision-bound public bundles for post-deletion export. */
+    @Query(
+        "SELECT * FROM ps_evidence WHERE chain_id=:chainId AND log_id=:logId AND kind='deletion_evidence_bundle' ORDER BY sequence,object_hash",
+    )
+    suspend fun deletionEvidenceArchiveHistory(
+        chainId: String,
+        logId: String,
+    ): List<ProtectedEvidenceEntity>
+
     @Query(
         "SELECT DISTINCT signed_json FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND log_id=:logId AND kind=:kind AND sequence=:sequence ORDER BY object_hash",
     )

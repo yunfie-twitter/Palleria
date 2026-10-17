@@ -424,12 +424,26 @@ class PallaSyncProtocolStoreTest {
                     )
                 val withWitness = empty.copy(objectHash = "bundle-witness", signedJson = "one-witness-archive")
                 val withSecondWitness = empty.copy(objectHash = "bundle-witness-2", signedJson = "two-witness-archive")
+                val nextReceiptRevision =
+                    empty.copy(
+                        sequence = 12,
+                        objectHash = "bundle-next-revision",
+                        signedJson = "next-receipt-revision-archive",
+                    )
                 protocol.retainDeletionProof(empty)
                 protocol.retainDeletionProof(withWitness)
                 protocol.retainDeletionProof(withSecondWitness)
+                protocol.retainDeletionProof(nextReceiptRevision)
 
                 protocol.deletionEvidenceArchives("https://relay.example", "key", chain, log, 11).toSet() shouldBe
                     setOf("empty-witness-archive", "one-witness-archive", "two-witness-archive")
+                protocol.deletionEvidenceArchiveHistory(chain, log).map { it.sequence to it.signedJson } shouldBe
+                    listOf(
+                        11L to "empty-witness-archive",
+                        11L to "one-witness-archive",
+                        11L to "two-witness-archive",
+                        12L to "next-receipt-revision-archive",
+                    )
             } finally {
                 db.close()
             }
