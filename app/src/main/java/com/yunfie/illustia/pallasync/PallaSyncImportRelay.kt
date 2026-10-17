@@ -171,55 +171,93 @@ internal class PallaSyncImportRelay(
         ): List<History> {
             check(history.parameters.isNotEmpty() && history.epochs.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
             check(maxBytes > 0) { "C_LOCAL_LIMIT" }
-            val common =
+            val parameterHead = history.parameters.last()
+            val epochHead = history.epochs.last()
+            val fixedHead =
                 history.copy(
+                    parameters = JsonArray(listOf(parameterHead)),
+                    epochs = JsonArray(listOf(epochHead)),
                     devices = JsonArray(emptyList()),
                     envelopes = JsonArray(emptyList()),
                     compactions = JsonArray(emptyList()),
                 )
-            val baseBytes = canonicalBody(chainId, common).toByteArray(Charsets.UTF_8).size
-            check(baseBytes <= maxBytes) { "C_LOCAL_LIMIT" }
+            check(
+                canonicalBody(chainId, fixedHead).toByteArray(Charsets.UTF_8).size <= maxBytes,
+            ) { "C_LOCAL_LIMIT" }
             val chunks = mutableListOf<History>()
-            val devices = mutableListOf<kotlinx.serialization.json.JsonElement>()
-            val envelopes = mutableListOf<kotlinx.serialization.json.JsonElement>()
-            val compactions = mutableListOf<kotlinx.serialization.json.JsonElement>()
-            var usedBytes = baseBytes
+            var parameters = mutableListOf<kotlinx.serialization.json.JsonElement>()
+            var epochs = mutableListOf<kotlinx.serialization.json.JsonElement>()
+            var devices = mutableListOf<kotlinx.serialization.json.JsonElement>()
+            var envelopes = mutableListOf<kotlinx.serialization.json.JsonElement>()
+            var compactions = mutableListOf<kotlinx.serialization.json.JsonElement>()
+
+            fun materialize() =
+                history.copy(
+                    parameters = JsonArray((parameters + parameterHead).distinct()),
+                    epochs = JsonArray((epochs + epochHead).distinct()),
+                    devices = JsonArray(devices.toList()),
+                    envelopes = JsonArray(envelopes.toList()),
+                    compactions = JsonArray(compactions.toList()),
+                )
+
+            fun hasPayload() =
+                parameters.isNotEmpty() ||
+                    epochs.isNotEmpty() ||
+                    devices.isNotEmpty() ||
+                    envelopes.isNotEmpty() ||
+                    compactions.isNotEmpty()
 
             fun flush() {
-                if (devices.isEmpty() && envelopes.isEmpty() && compactions.isEmpty()) return
-                val chunk =
-                    common.copy(
-                        devices = JsonArray(devices.toList()),
-                        envelopes = JsonArray(envelopes.toList()),
-                        compactions = JsonArray(compactions.toList()),
-                    )
+                if (!hasPayload()) return
+                val chunk = materialize()
                 check(canonicalBody(chainId, chunk).toByteArray(Charsets.UTF_8).size <= maxBytes) { "C_LOCAL_LIMIT" }
                 chunks += chunk
-                devices.clear()
-                envelopes.clear()
-                compactions.clear()
-                usedBytes = baseBytes
+                parameters = mutableListOf()
+                epochs = mutableListOf()
+                devices = mutableListOf()
+                envelopes = mutableListOf()
+                compactions = mutableListOf()
             }
 
             fun append(
                 value: kotlinx.serialization.json.JsonElement,
-                destination: MutableList<kotlinx.serialization.json.JsonElement>,
+                kind: Int,
             ) {
-                val canonical = checkNotNull(PallaSyncCore.canonicalJson(value.toString())) { "C_SCHEMA_VIOLATION" }
-                val itemBytes = canonical.toByteArray(Charsets.UTF_8).size
-                val separatorBytes = if (destination.isEmpty()) 0 else 1
-                if (usedBytes + itemBytes + separatorBytes > maxBytes) {
+                fun destination() =
+                    when (kind) {
+                        0 -> parameters
+                        1 -> epochs
+                        2 -> devices
+                        3 -> envelopes
+                        else -> compactions
+                    }
+                var target = destination()
+                target.add(value)
+                val fits =
+                    canonicalBody(chainId, materialize()).toByteArray(Charsets.UTF_8).size <= maxBytes
+                if (!fits) {
+                    target.removeAt(target.lastIndex)
+                    check(hasPayload()) { "C_LOCAL_LIMIT" }
                     flush()
-                    check(baseBytes + itemBytes <= maxBytes) { "C_LOCAL_LIMIT" }
+                    target = destination()
+                    target.add(value)
+                    check(
+                        canonicalBody(chainId, materialize()).toByteArray(Charsets.UTF_8).size <= maxBytes,
+                    ) { "C_LOCAL_LIMIT" }
                 }
-                destination += value
-                usedBytes += itemBytes + if (destination.size == 1) 0 else 1
             }
-            history.devices.forEach { append(it, devices) }
-            history.envelopes.forEach { append(it, envelopes) }
-            history.compactions.forEach { append(it, compactions) }
+
+            history.parameters.dropLast(1).forEach { append(it, 0) }
+            history.epochs.dropLast(1).forEach { append(it, 1) }
+            history.devices.forEach { append(it, 2) }
+            history.envelopes.forEach { append(it, 3) }
+            history.compactions.forEach { append(it, 4) }
             flush()
-            if (chunks.isEmpty()) chunks += common
+            if (chunks.isEmpty()) {
+                val chunk = materialize()
+                check(canonicalBody(chainId, chunk).toByteArray(Charsets.UTF_8).size <= maxBytes) { "C_LOCAL_LIMIT" }
+                chunks += chunk
+            }
             return chunks
         }
     }

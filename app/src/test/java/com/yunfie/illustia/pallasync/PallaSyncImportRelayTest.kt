@@ -169,32 +169,25 @@ class PallaSyncImportRelayTest {
     }
 
     @Test
-    fun `import chunks keep authority heads fixed and preserve every ordered staged object`() {
+    fun `import chunks keep authority heads fixed and split oversized histories`() {
         val history =
             history().copy(
+                parameters = payloads("parameters", count = 5),
+                epochs = payloads("epoch", count = 4),
                 devices = payloads("device", count = 5),
                 envelopes = payloads("envelope", count = 4),
                 compactions = payloads("compaction", count = 3),
             )
-        val coreBytes =
-            PallaSyncImportRelay
-                .canonicalBody(
-                    CHAIN_ID,
-                    history.copy(
-                        devices = JsonArray(emptyList()),
-                        envelopes = JsonArray(emptyList()),
-                        compactions = JsonArray(emptyList()),
-                    ),
-                ).toByteArray(Charsets.UTF_8)
-                .size
-        val maxBytes = coreBytes + 700
+        val maxBytes = 1_800
         val chunks = PallaSyncImportRelay.chunkHistories(CHAIN_ID, history, maxBytes)
         (chunks.size > 1) shouldBe true
         chunks.forEach { chunk ->
-            chunk.parameters shouldBe history.parameters
-            chunk.epochs shouldBe history.epochs
+            chunk.parameters.last() shouldBe history.parameters.last()
+            chunk.epochs.last() shouldBe history.epochs.last()
             (PallaSyncImportRelay.canonicalBody(CHAIN_ID, chunk).toByteArray(Charsets.UTF_8).size <= maxBytes) shouldBe true
         }
+        (chunks.flatMap { it.parameters.dropLast(1) } + history.parameters.last()) shouldBe history.parameters
+        (chunks.flatMap { it.epochs.dropLast(1) } + history.epochs.last()) shouldBe history.epochs
         chunks.flatMap { it.devices } shouldBe history.devices
         chunks.flatMap { it.envelopes } shouldBe history.envelopes
         chunks.flatMap { it.compactions } shouldBe history.compactions
