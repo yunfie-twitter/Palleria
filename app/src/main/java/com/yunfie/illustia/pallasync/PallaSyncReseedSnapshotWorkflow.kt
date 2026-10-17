@@ -142,7 +142,7 @@ internal fun PallaSyncRootSession.createReseedCommitBody(
     return canonical
 }
 
-private fun zeroHash(
+internal fun zeroHash(
     chainId: String,
     logId: String,
 ): String {
@@ -217,7 +217,7 @@ internal class PallaSyncReseedCommitRelay(
                 .build()
         val committed =
             runInterruptible(Dispatchers.IO) {
-                remote.execute(request) { response ->
+                remote.execute(request, migrationDestination = true) { response ->
                     check(response.code == HTTP_OK) { "C_SCHEMA_VIOLATION" }
                     val checkpoint =
                         PallaSyncCore.validateReseedCommitAcceptance(

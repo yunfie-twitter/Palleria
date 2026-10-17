@@ -91,6 +91,7 @@ internal class PallaSyncRemoteService(
     @Suppress("SwallowedException")
     fun <T> execute(
         request: Request,
+        migrationDestination: Boolean = false,
         onSuccess: (Response) -> PallaSyncHttpResult<T>,
     ): PallaSyncHttpResult<T> {
         val chainRequest = request.url.encodedPath == "/pallasync/v3/chains" || request.url.encodedPath.startsWith("/pallasync/v3/chains/")
@@ -108,7 +109,7 @@ internal class PallaSyncRemoteService(
         var attempted = false
         val result =
             try {
-                authorize(request)
+                authorize(request, migrationDestination)
                 attempted = true
                 call.execute().use { response ->
                     hint = problem(response)
@@ -164,14 +165,32 @@ internal class PallaSyncRemoteService(
         }
     }
 
-    private fun authorize(request: Request) {
+    private fun authorize(
+        request: Request,
+        migrationDestination: Boolean,
+    ) {
         if (request.method == "GET" && request.url.encodedPath == "/pallasync/v3/health") {
             check(request.header("Authorization") == null && request.header("Cookie") == null && request.url.query == null) {
                 "C_RELAY_DISCLOSURE_INVALID"
             }
         } else {
             chainIdForAuthorization(request.url.pathSegments)?.let { chainId ->
-                policy.requireChainOrigin(chainId, PallaSyncUrls.extractOrigin(request.url))
+                if (migrationDestination) {
+                    val prefix = "/pallasync/v3/chains/$chainId"
+                    val suffix = request.url.encodedPath.removePrefix(prefix)
+                    val allowed =
+                        when {
+                            request.method == "POST" && suffix == "/snapshots/parts" -> true
+                            request.method == "PUT" && suffix == "/parameters" -> true
+                            request.method == "GET" && suffix in setOf("/transparency/head", "/transparency/entries") -> true
+                            request.method == "POST" && Regex("/devices/[0-9a-f-]{36}/keys/ack").matches(suffix) -> true
+                            else -> false
+                        }
+                    check(allowed) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    policy.requireMigrationDestination(PallaSyncUrls.extractOrigin(request.url))
+                } else {
+                    policy.requireChainOrigin(chainId, PallaSyncUrls.extractOrigin(request.url))
+                }
             }
             policy.requireCurrent(PallaSyncUrls.extractOrigin(request.url))
         }

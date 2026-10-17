@@ -1658,7 +1658,7 @@ internal class PalleriaSyncCoordinator(
                             verifyReseedTargetAuthority(
                                 root,
                                 targetPin,
-                                history,
+                                authority,
                                 expectedEntries,
                                 result.value,
                             )
@@ -1705,6 +1705,7 @@ internal class PalleriaSyncCoordinator(
                                     .header("Authorization", "PallaSync $ackToken")
                                     .post(ackBody.toRequestBody(PALLASYNC_MEDIA_TYPE.toMediaType()))
                                     .build(),
+                                migrationDestination = true,
                             ) { response ->
                                 PallaSyncHttpResult.Success(
                                     Json
@@ -2070,119 +2071,247 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
-    /** Replays the exact §17.5 control receipt sequence from an H0 authority for the staged incarnation. */
+    /** Reconstructs the cutover checkpoint after verifying the target's exact receipts. */
     private fun verifyReseedAuthorityFromSavedEvidence(
         sourceAuthority: JsonObject,
         targetPin: JsonObject,
         expectedEntries: JsonArray,
         checkpoint: JsonObject,
     ): JsonObject {
-        val firstParameters =
+        val operation =
             expectedEntries
-                .firstOrNull {
+                .single {
                     it.jsonObject
                         .getValue("kind")
-                        .jsonPrimitive.content == "parameters"
-                }?.jsonObject
-                ?.getValue("object") as? JsonObject ?: error("C_MISSING_DEPENDENCY")
-        val sourcePin = sourceAuthority.getValue("pin").jsonObject
-        val identity =
-            buildJsonObject {
-                put("chain_id", sourcePin.getValue("chain_id"))
-                put("admin_public_key", sourceAuthority.getValue("admin_public_key"))
+                        .jsonPrimitive.content == "admin"
+                }.jsonObject
+                .getValue("object")
+                .jsonObject
+        val entries = expectedEntries.map { it.jsonObject }
+
+        fun unique(
+            kind: String,
+            predicate: (JsonObject) -> Boolean = { true },
+        ): JsonObject =
+            entries
+                .single { it.getValue("kind").jsonPrimitive.content == kind && predicate(it.getValue("object").jsonObject) }
+                .getValue("object")
+                .jsonObject
+        val parameters =
+            unique("parameters") {
+                it.getValue("generation").jsonPrimitive.long >
+                    sourceAuthority
+                        .getValue("parameters")
+                        .jsonObject
+                        .getValue("generation")
+                        .jsonPrimitive.long
             }
-        return replayReseedAuthority(identity, firstParameters, targetPin, expectedEntries, checkpoint)
+        val targetGeneration = parameters.getValue("generation").jsonPrimitive.long
+        val epoch =
+            unique("epoch") {
+                it.getValue("reason").jsonPrimitive.content == "reseed" &&
+                    it.getValue("generation").jsonPrimitive.long == targetGeneration
+            }
+        val compaction =
+            unique("compaction") {
+                it.getValue("log_id").jsonPrimitive.content == targetPin.getValue("log_id").jsonPrimitive.content
+            }
+        val deviceRecords =
+            JsonArray(
+                entries
+                    .filter { it.getValue("kind").jsonPrimitive.content == "device" }
+                    .map { it.getValue("object") }
+                    .filter {
+                        it.jsonObject
+                            .getValue("generation")
+                            .jsonPrimitive.long ==
+                            parameters.getValue("generation").jsonPrimitive.long
+                    },
+            )
+        val envelopes =
+            JsonArray(
+                entries
+                    .filter { it.getValue("kind").jsonPrimitive.content == "envelope" }
+                    .map { it.getValue("object") }
+                    .filter {
+                        it.jsonObject
+                            .getValue("generation")
+                            .jsonPrimitive.long ==
+                            parameters.getValue("generation").jsonPrimitive.long
+                    },
+            )
+        val payload =
+            buildJsonObject {
+                put("parameters", parameters)
+                put("epoch", epoch)
+                put("envelopes", envelopes)
+                put("compaction", compaction)
+                put("device_records", deviceRecords)
+            }
+        val receipts = checkpoint.getValue("receipts").jsonArray
+        val response =
+            buildJsonObject {
+                put("parameters_hash", checkpoint.getValue("parameters_hash"))
+                put("epoch_hash", checkpoint.getValue("epoch_hash"))
+                put("log_id", checkpoint.getValue("log_id"))
+                put("head_seq", checkpoint.getValue("head_seq"))
+                put("head_hash", checkpoint.getValue("head_hash"))
+                put("upload_receipts", JsonArray(receipts))
+            }
+        checkNotNull(
+            PallaSyncCore.validateReseedCommitAcceptance(
+                response.toString().toByteArray(Charsets.UTF_8),
+                payload.toString(),
+                operation.toString(),
+                sourceAuthority.getValue("parameters").toString(),
+                sourceAuthority
+                    .getValue("epochs")
+                    .jsonObject.values
+                    .maxBy {
+                        it.jsonObject
+                            .getValue("record")
+                            .jsonObject
+                            .getValue("epoch")
+                            .jsonPrimitive.long
+                    }.jsonObject
+                    .getValue("record")
+                    .toString(),
+                expectedEntries.toString(),
+                targetPin.toString(),
+            ),
+        )
+        return buildReseedAuthorityCheckpoint(sourceAuthority, targetPin, parameters, epoch, operation, expectedEntries, checkpoint)
     }
 
-    /** Replays the exact §17.5 control receipt sequence from an H0 authority for the staged incarnation. */
+    /** Import logs group historical controls by kind; replaying them as an ordinary genesis prefix is invalid. */
     private fun verifyReseedTargetAuthority(
         root: PallaSyncRootSession,
         targetPin: JsonObject,
-        history: PallaSyncImportRelay.History,
+        sourceAuthority: JsonObject,
         expectedEntries: JsonArray,
         checkpoint: JsonObject,
     ): JsonObject {
-        val firstParameters =
-            history.parameters
-                .minByOrNull {
-                    it.jsonObject
-                        .getValue("generation")
-                        .jsonPrimitive.long
-                }?.jsonObject ?: error("C_MISSING_DEPENDENCY")
-        val identity =
-            buildJsonObject {
-                put("chain_id", root.identity.chainId)
-                put("admin_public_key", root.identity.adminPublicKey)
-            }
-        return replayReseedAuthority(identity, firstParameters, targetPin, expectedEntries, checkpoint)
+        check(root.identity.chainId == targetPin.getValue("chain_id").jsonPrimitive.content) { "C_RECOVERY_ROOT_MISMATCH" }
+        return verifyReseedAuthorityFromSavedEvidence(sourceAuthority, targetPin, expectedEntries, checkpoint)
     }
 
-    private fun replayReseedAuthority(
-        identity: JsonObject,
-        parameters: JsonObject,
+    private fun buildReseedAuthorityCheckpoint(
+        sourceAuthority: JsonObject,
         targetPin: JsonObject,
+        parameters: JsonObject,
+        epoch: JsonObject,
+        operation: JsonObject,
         expectedEntries: JsonArray,
         checkpoint: JsonObject,
     ): JsonObject {
-        val initialResponse =
-            buildJsonObject {
-                put("parameters", parameters)
-                put("parameters_hash", checkNotNull(PallaSyncCore.objectHash(parameters.toString())))
-                put("generation", parameters.getValue("generation"))
-                put("log_id", targetPin.getValue("log_id"))
-            }
-        var verified =
-            Json
-                .parseToJsonElement(
-                    PallaSyncCore.beginAuthorityHistory(
-                        initialResponse.toString().toByteArray(Charsets.UTF_8),
-                        identity.toString(),
-                        targetPin.getValue("origin").jsonPrimitive.content,
-                        targetPin.getValue("public_key").jsonPrimitive.content,
-                    ),
-                ).jsonObject
+        val entries = expectedEntries.map { it.jsonObject }
         val receipts = checkpoint.getValue("receipts").jsonArray
-        check(receipts.size == expectedEntries.size) { "C_ACCEPTANCE_UNPROVEN" }
-        expectedEntries.forEachIndexed { index, expectedElement ->
-            val expected = expectedElement.jsonObject
+        check(receipts.size == entries.size) { "C_ACCEPTANCE_UNPROVEN" }
+        val seqByHash = mutableMapOf<String, Long>()
+        entries.forEachIndexed { index, entry ->
+            val objectText = entry.getValue("object").toString()
+            val hash = checkNotNull(PallaSyncCore.objectHash(objectText)) { "C_SCHEMA_VIOLATION" }
             val receipt = receipts[index].jsonObject
-            val receivedAt = receipt.getValue("received_at_ms")
-            val entry =
-                buildJsonObject {
-                    put("relay_seq", receipt.getValue("relay_seq"))
-                    put("received_at_ms", receivedAt)
-                    put("kind", expected.getValue("kind"))
-                    put("object", expected.getValue("object"))
-                    if (expected.getValue("kind").jsonPrimitive.content == "epoch") put("committed_at_ms", receivedAt)
-                }
-            verified =
-                Json
-                    .parseToJsonElement(
-                        PallaSyncCore.advanceAuthorityHistory(verified.toString(), entry.toString(), receipt.toString()),
-                    ).jsonObject
+            check(receipt.getValue("object_hash").jsonPrimitive.content == hash) { "C_ACCEPTANCE_UNPROVEN" }
+            seqByHash[hash] = receipt.getValue("relay_seq").jsonPrimitive.long
         }
-        val verifiedParameters = verified.getValue("parameters").jsonObject
-        val latestEpoch =
-            verified
-                .getValue("epochs")
-                .jsonObject.values
-                .maxBy {
+        val importedDevices = sourceAuthority.getValue("devices").jsonObject.toMutableMap()
+        sourceAuthority.getValue("devices").jsonObject.forEach { (id, admitted) ->
+            val value = admitted.jsonObject
+            val record = value.getValue("record").jsonObject
+            val hash = checkNotNull(PallaSyncCore.objectHash(record.toString())) { "C_SCHEMA_VIOLATION" }
+            val sequence = seqByHash[hash] ?: error("C_ACCEPTANCE_UNPROVEN")
+            importedDevices[id] =
+                buildJsonObject {
+                    put("record", record)
+                    put("enrolled_seq", sequence)
+                    put("revoked_seq", value.getValue("revoked_seq"))
+                }
+        }
+        val importedEpochs = sourceAuthority.getValue("epochs").jsonObject.toMutableMap()
+        sourceAuthority.getValue("epochs").jsonObject.forEach { (number, accepted) ->
+            val value = accepted.jsonObject
+            val record = value.getValue("record").jsonObject
+            val hash = checkNotNull(PallaSyncCore.objectHash(record.toString())) { "C_SCHEMA_VIOLATION" }
+            val sequence = seqByHash[hash] ?: error("C_ACCEPTANCE_UNPROVEN")
+            val receipt =
+                receipts
+                    .single {
+                        it.jsonObject
+                            .getValue("relay_seq")
+                            .jsonPrimitive.long == sequence
+                    }.jsonObject
+            importedEpochs[number] =
+                buildJsonObject {
+                    put("record", record)
+                    put("relay_seq", sequence)
+                    put("committed_at_ms", receipt.getValue("received_at_ms"))
+                }
+            record.getValue("revoked_device_ids").jsonArray.forEach { revoked ->
+                val admitted = importedDevices.getValue(revoked.jsonPrimitive.content).jsonObject
+                importedDevices[revoked.jsonPrimitive.content] =
+                    buildJsonObject {
+                        put("record", admitted.getValue("record"))
+                        put("enrolled_seq", admitted.getValue("enrolled_seq"))
+                        put("revoked_seq", sequence)
+                    }
+            }
+        }
+        val newEpochHash = checkNotNull(PallaSyncCore.objectHash(epoch.toString())) { "C_SCHEMA_VIOLATION" }
+        val newEpochSequence = seqByHash[newEpochHash] ?: error("C_ACCEPTANCE_UNPROVEN")
+        val newEpochReceipt =
+            receipts
+                .single {
                     it.jsonObject
-                        .getValue("record")
-                        .jsonObject
-                        .getValue("epoch")
-                        .jsonPrimitive.long
+                        .getValue("relay_seq")
+                        .jsonPrimitive.long == newEpochSequence
                 }.jsonObject
-                .getValue("record")
-                .jsonObject
-        check(
-            verified.getValue("pin").jsonObject == targetPin &&
-                verified.getValue("sequence") == checkpoint.getValue("head_seq") &&
-                verified.getValue("head_hash") == checkpoint.getValue("head_hash") &&
-                PallaSyncCore.objectHash(verifiedParameters.toString()) == checkpoint.getValue("parameters_hash").jsonPrimitive.content &&
-                PallaSyncCore.objectHash(latestEpoch.toString()) == checkpoint.getValue("epoch_hash").jsonPrimitive.content,
-        ) { "C_ACCEPTANCE_UNPROVEN" }
-        return verified
+        epoch.getValue("revoked_device_ids").jsonArray.forEach { revoked ->
+            val id = revoked.jsonPrimitive.content
+            val admitted = importedDevices[id]?.jsonObject ?: error("C_ACCEPTANCE_UNPROVEN")
+            importedDevices[id] =
+                buildJsonObject {
+                    put("record", admitted.getValue("record"))
+                    put("enrolled_seq", admitted.getValue("enrolled_seq"))
+                    put("revoked_seq", newEpochSequence)
+                }
+        }
+        importedEpochs[epoch.getValue("epoch").jsonPrimitive.content] =
+            buildJsonObject {
+                put("record", epoch)
+                put("relay_seq", newEpochSequence)
+                put("committed_at_ms", newEpochReceipt.getValue("received_at_ms"))
+            }
+        entries
+            .filter { it.getValue("kind").jsonPrimitive.content == "device" }
+            .map { it.getValue("object").jsonObject }
+            .filter { it.getValue("generation").jsonPrimitive.long == parameters.getValue("generation").jsonPrimitive.long }
+            .forEach { record ->
+                val id = record.getValue("device_id").jsonPrimitive.content
+                val sequence = seqByHash[checkNotNull(PallaSyncCore.objectHash(record.toString()))] ?: error("C_ACCEPTANCE_UNPROVEN")
+                importedDevices[id] =
+                    buildJsonObject {
+                        put("record", record)
+                        put("enrolled_seq", sequence)
+                        put("revoked_seq", JsonNull)
+                    }
+            }
+        val operationId = operation.getValue("operation_id").jsonPrimitive.content
+        val operationHash = checkNotNull(PallaSyncCore.objectHash(operation.toString())) { "C_SCHEMA_VIOLATION" }
+        return buildJsonObject {
+            put("pin", targetPin)
+            put("admin_public_key", sourceAuthority.getValue("admin_public_key"))
+            put("sequence", checkpoint.getValue("head_seq"))
+            put("head_hash", checkpoint.getValue("head_hash"))
+            put("parameters", parameters)
+            put("devices", JsonObject(importedDevices))
+            put("epochs", JsonObject(importedEpochs))
+            put("staged_envelopes", JsonObject(emptyMap()))
+            put("control_batch", JsonArray(emptyList()))
+            put("pending_admin", JsonNull)
+            put("admin_operations", buildJsonObject { put(operationId, operationHash) })
+            put("action_payloads", JsonObject(emptyMap()))
+        }
     }
 
     /** An unsigned head can only veto stale source state; the local verified checkpoint remains authoritative. */
@@ -6884,7 +7013,10 @@ internal class PalleriaSyncCoordinator(
     /** §19.3/§19.4: fetch missing authority/acceptance evidence, then replay only the immutable original. */
     suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean {
         require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }
-        if (!syncNow()) return false
+        // A quarantined chain can make ordinary sync report partial completion even though it
+        // successfully refreshed the proof needed for this exact item. Never use that summary
+        // boolean as authority; the immutable object, receipt, and inclusion proof below decide.
+        syncNow()
         return withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 try {
@@ -6962,9 +7094,8 @@ internal class PalleriaSyncCoordinator(
         val pin = authority.getValue("pin").jsonObject
         val logId = pin.getValue("log_id").jsonPrimitive.content
         val row = checkNotNull(protocol.logEntry(chainId, logId, relaySequence)) { "C_MISSING_DEPENDENCY" }
-        check(
-            row.validationState == "authority_verified" && crypto.objectHash(row.signedJson) == row.entryHash,
-        ) { "C_ACCEPTANCE_UNPROVEN" }
+        check(row.validationState in setOf("authority_verified", "materialized")) { "C_ACCEPTANCE_UNPROVEN" }
+        check(crypto.objectHash(row.signedJson) == row.entryHash) { "C_ACCEPTANCE_UNPROVEN" }
         val entry = Json.parseToJsonElement(row.signedJson).jsonObject
         val record = Json.parseToJsonElement(recordJson)
         check(

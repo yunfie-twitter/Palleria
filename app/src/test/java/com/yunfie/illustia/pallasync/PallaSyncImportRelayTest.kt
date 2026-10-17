@@ -132,10 +132,10 @@ class PallaSyncImportRelayTest {
     }
 
     @Test
-    fun `history builder includes only verified control objects`() {
+    fun `history builder includes verified controls after materialization`() {
         val rows =
             listOf(
-                row(1, "parameters", "{\"chain_id\":\"$CHAIN_ID\",\"generation\":0}"),
+                row(1, "parameters", "{\"chain_id\":\"$CHAIN_ID\",\"generation\":0}").copy(validationState = "materialized"),
                 row(2, "record", "{\"chain_id\":\"$CHAIN_ID\",\"generation\":0}"),
                 row(3, "epoch", "{\"chain_id\":\"$CHAIN_ID\",\"generation\":0,\"epoch\":0}"),
             )

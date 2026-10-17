@@ -75,7 +75,7 @@ internal class PallaSyncSnapshotPartRelay(
             ?: error("C_SCHEMA_VIOLATION")
 
     private fun execute(prepared: Prepared): PallaSyncHttpResult<JsonObject> =
-        remote.execute(prepared.request) { response ->
+        remote.execute(prepared.request, migrationDestination = true) { response ->
             PallaSyncHttpResult.Success(
                 PallaSyncSnapshotVerifier.validateUploadedParts(
                     response.pallaSyncBytes(),

@@ -424,6 +424,12 @@ interface ProtocolDao {
     @Query("SELECT DISTINCT log_id FROM ps_log WHERE chain_id=:chainId AND validation_state='authority_verified' ORDER BY log_id")
     suspend fun repairSourceLogIds(chainId: String): List<String>
 
+    @Query(
+        "SELECT DISTINCT log_id FROM ps_log WHERE chain_id=:chainId " +
+            "AND validation_state IN ('authority_verified','materialized') ORDER BY log_id",
+    )
+    suspend fun importSourceLogIds(chainId: String): List<String>
+
     @Query("SELECT MAX(relay_seq) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified'")
     suspend fun repairSourceHighWater(
         chainId: String,

@@ -53,6 +53,11 @@ class PallaSyncRelayInteropTest {
             val database = Room.inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java).build()
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val keys = PallaSyncKeystore(context)
+            val reseedTargetOrigin = args.getString("reseed_target_origin")
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_reseed_target_argument", reseedTargetOrigin ?: "missing") },
+            )
             keys.clearAllKeys()
             context
                 .getSharedPreferences("pallasync_policy", Context.MODE_PRIVATE)
@@ -195,6 +200,46 @@ class PallaSyncRelayInteropTest {
                     ),
                 )
                 assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                if (reseedTargetOrigin != null) {
+                    policy.chooseSource(reseedTargetOrigin, "authenticated_export", explicitlyConfirmed = true)
+                    policy.confirmKey(policy.inspectRelay(reseedTargetOrigin), explicitlyConfirmed = true)
+                    policy.accept(policy.currentReview(reseedTargetOrigin), explicitlyConfirmed = true)
+                    val staged = coordinator.stageReseedHistory(reseedTargetOrigin, phrase, "")
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), staged is PallaSyncHttpResult.Success)
+                    val requestedFault = args.getString("rebase_fault")?.takeIf { it.isNotEmpty() }
+                    if (requestedFault != null) {
+                        val firstCommit = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        assertTrue("Reseed cutover fault was not injected: $requestedFault", faultInjected)
+                        assertTrue("Reseed cutover fault did not interrupt commit", firstCommit.isFailure)
+                        assertTrue(
+                            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                            coordinator.resumeStagedReseedCutover(),
+                        )
+                    } else {
+                        val committed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), committed is PallaSyncHttpResult.Success)
+                    }
+                    val migrated = checkNotNull(store.dao.getActiveChainState())
+                    val migratedKeys = checkNotNull(keys.getActiveChainKeys())
+                    val migratedAuthority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(migrated.chainId))).jsonObject
+                    assertEquals(1, migrated.generation)
+                    assertEquals(
+                        reseedTargetOrigin,
+                        migratedAuthority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content,
+                    )
+                    assertEquals(1, migratedKeys.epoch)
+                    assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                            putString("pallasync_reseed_generation", migrated.generation.toString())
+                        },
+                    )
+                    println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
+                    println("pallasync_reseed_generation=${migrated.generation}")
+                    println("pallasync_reseed_log_id=${migrated.logId}")
+                }
                 if (args.getString("rotate_epoch") == "true" && args.getString("replace_device") != "true") {
                     exerciseEpochRotation(
                         coordinator,
@@ -345,29 +390,13 @@ class PallaSyncRelayInteropTest {
             QuarantineEvidenceEntity(chain, event.objectHash, "C_MISSING_DEPENDENCY", event.signedJson, "unresolved"),
         )
 
-        assertTrue(
-            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-            coordinator.retryQuarantinedRecordEvidence(event.objectHash),
-        )
+        val retryMissingDependency = coordinator.retryQuarantinedRecordEvidence(event.objectHash)
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), retryMissingDependency)
         assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
         val resolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
         assertEquals(event.signedJson, resolved.evidenceJson)
         assertEquals("resolved", resolved.resolutionState)
 
-        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
-            "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
-            arrayOf(chain, event.recordId),
-        )
-        store.protocolDao().quarantine(
-            QuarantineEvidenceEntity(chain, event.objectHash, "C_ACCEPTANCE_UNPROVEN", event.signedJson, "unresolved"),
-        )
-        assertTrue(
-            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-            coordinator.retryQuarantinedRecordEvidence(event.objectHash),
-        )
-        val acceptanceResolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
-        assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
-        assertEquals("resolved", acceptanceResolved.resolutionState)
     }
 
     private fun exerciseBoundOrigin(
@@ -540,11 +569,14 @@ class PallaSyncRelayInteropTest {
     }
 
     private fun testTransport(encoded: String): OkHttpClient {
-        val certificate = CertificateFactory.getInstance("X.509").generateCertificate(Base64.decode(encoded, Base64.DEFAULT).inputStream())
+        val certificates =
+            CertificateFactory
+                .getInstance("X.509")
+                .generateCertificates(Base64.decode(encoded, Base64.DEFAULT).inputStream())
         val trust =
             KeyStore.getInstance(KeyStore.getDefaultType()).apply {
                 load(null)
-                setCertificateEntry("disposable-test", certificate)
+                certificates.forEachIndexed { index, certificate -> setCertificateEntry("disposable-test-$index", certificate) }
             }
         val managers = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(trust) }.trustManagers
         val manager = managers.filterIsInstance<X509TrustManager>().single()

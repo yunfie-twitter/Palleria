@@ -18,7 +18,7 @@ internal class PallaSyncImportHistoryBuilder(
 ) {
     suspend fun build(chainId: String): PallaSyncImportRelay.History {
         val controls = mutableListOf<VerifiedControl>()
-        val logIds = dao.repairSourceLogIds(chainId)
+        val logIds = dao.importSourceLogIds(chainId)
         check(logIds.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
         for (logId in logIds) {
             currentCoroutineContext().ensureActive()
@@ -33,7 +33,7 @@ internal class PallaSyncImportHistoryBuilder(
                     check(row.logId == logId && row.chainId == chainId && row.relaySeq == after + 1L) {
                         "C_MISSING_DEPENDENCY"
                     }
-                    check(row.validationState == "authority_verified") { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    check(row.validationState in VERIFIED_STATES) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                     parseVerifiedControl(chainId, row)?.let(controls::add)
                     after = row.relaySeq
                 }
@@ -77,7 +77,7 @@ internal class PallaSyncImportHistoryBuilder(
             chainId: String,
             row: LogEntryEntity,
         ): VerifiedControl? {
-            check(row.chainId == chainId && row.validationState == "authority_verified") {
+            check(row.chainId == chainId && row.validationState in VERIFIED_STATES) {
                 "C_BOOTSTRAP_TRUST_REQUIRED"
             }
             val entry = Json.parseToJsonElement(row.signedJson).jsonObject
@@ -93,6 +93,7 @@ internal class PallaSyncImportHistoryBuilder(
         }
 
         private val IMPORT_KINDS = setOf("parameters", "epoch", "device", "envelope", "compaction")
+        private val VERIFIED_STATES = setOf("authority_verified", "materialized")
 
         private data class VerifiedControl(
             val kind: String,

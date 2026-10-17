@@ -127,7 +127,7 @@ internal class PallaSyncReseedTransparencyVerifier(
                 when (
                     val result =
                         runInterruptible(Dispatchers.IO) {
-                            remote.execute(request) { response ->
+                            remote.execute(request, migrationDestination = true) { response ->
                                 PallaSyncHttpResult.Success(
                                     Json
                                         .parseToJsonElement(
@@ -152,6 +152,7 @@ internal class PallaSyncReseedTransparencyVerifier(
             var itemAnchor = pageAnchor
             items.forEach { entry ->
                 val index = entry.getValue("entry_index").jsonPrimitive.long
+                val entryAnchor = advanceTransparencyAnchor(itemAnchor, entry)
                 receiptIndices[index]?.let { receipt ->
                     val receiptPin =
                         checkNotNull(
@@ -168,11 +169,16 @@ internal class PallaSyncReseedTransparencyVerifier(
                             entry.getValue("object_hash").jsonPrimitive.content == receipt.getValue("object_hash").jsonPrimitive.content &&
                             entry["relay_seq"] == receipt["relay_seq"] &&
                             entry.getValue("resulting_head_hash") == receipt.getValue("resulting_head_hash") &&
-                            PallaSyncCore.validateReceiptInclusion(receipt.toString(), entry.toString(), receiptPin, itemAnchor.toString()),
+                            PallaSyncCore.validateReceiptInclusion(
+                                receipt.toString(),
+                                entry.toString(),
+                                receiptPin,
+                                entryAnchor.toString(),
+                            ),
                     ) { "C_ACCEPTANCE_UNPROVEN" }
                     check(receiptMatches.add(index)) { "C_TRANSPARENCY_INVALID" }
                 }
-                itemAnchor = advanceTransparencyAnchor(itemAnchor, entry)
+                itemAnchor = entryAnchor
             }
             nextAnchor = page.getValue("next_anchor").jsonObject
             check(itemAnchor == nextAnchor) { "C_TRANSPARENCY_INVALID" }
@@ -240,7 +246,7 @@ internal class PallaSyncReseedTransparencyVerifier(
                 .get()
                 .build()
         return runInterruptible(Dispatchers.IO) {
-            remote.execute(request) { response ->
+            remote.execute(request, migrationDestination = true) { response ->
                 PallaSyncHttpResult.Success(
                     Json.parseToJsonElement(PallaSyncCore.observeTransparencyHead(response.pallaSyncBytes(), pinJson)).jsonObject,
                 )

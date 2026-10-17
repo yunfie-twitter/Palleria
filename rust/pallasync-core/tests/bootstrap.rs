@@ -313,7 +313,7 @@ fn root_reads_use_only_canonical_catalogue_paths_and_the_corrected_two_minute_cl
 }
 
 #[test]
-fn reseed_root_capability_is_limited_to_import_reseed_and_admin_repair_routes() {
+fn reseed_root_capability_is_limited_to_import_reseed_snapshot_parts_and_admin_repair_routes() {
     use pallasync_core::root_session::{self, Operation};
     let phrase = format!("{} art", vec!["abandon"; 23].join(" "));
     let handle =
@@ -326,6 +326,7 @@ fn reseed_root_capability_is_limited_to_import_reseed_and_admin_repair_routes() 
     for (method, path) in [
         ("POST", "/pallasync/v3/chains/import".to_owned()),
         ("POST", format!("{prefix}/records/repair")),
+        ("POST", format!("{prefix}/snapshots/parts")),
         ("PUT", format!("{prefix}/parameters")),
     ] {
         assert!(

@@ -120,6 +120,12 @@ class PallaSyncPolicyGate internal constructor(
         check(previous == null || previous == normalizeOrigin(origin)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
     }
 
+    /** A migration target is usable only after its key, source choice, and current privacy consent are explicit. */
+    internal fun requireMigrationDestination(origin: String) {
+        requireCurrent(origin, "authenticated_export")
+        trustedRelayKey(origin)
+    }
+
     /** Source choice, key trust and document agreement are distinct foreground actions. */
     fun chooseSource(
         origin: String,

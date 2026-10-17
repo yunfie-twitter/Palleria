@@ -895,7 +895,7 @@
         "PallaSync/tests/reference/run_android_interop.py"
       ],
       "result": "pending",
-      "remaining": "Execute start/resume/unknown/destructive/periodic probes and authenticated relay migration with retained contradiction evidence. §10.14 GET C/relay-notice now uses the device token for the pinned source chain, validates exact fields and normalized candidate origin in Rust/JNI, stores the public notice ID, and presents only an explicit user-reviewed migration candidate. It does not implement or verify complete relay migration cutover. The first user-authorized DELETE now runs the bounded probe, while a retry with the persisted signed delete_request skips post-deletion probes and reuses that exact body. No relay fault-injection proves the probe or complete migration branches yet.",
+      "remaining": "The isolated Android-to-two-relay generation+1 migration now passes through explicit target review, staged history/snapshot import, signed receipt and transparency validation, fresh-device acknowledgement, and local origin cutover; independent Python verifies the target parameters and device/enrollment signatures. The §10.14 notice route, source-conflict evidence and bounded probe are present. Still run start/resume/unknown/destructive/periodic probe fault cases, source freeze and source/target split-view contradictions, and process-death injection at every Room/Keystore/outbox/origin journal boundary. No full bounded-probe/migration fault matrix has passed.",
       "verification_scope": "targeted_partial"
     },
     {
