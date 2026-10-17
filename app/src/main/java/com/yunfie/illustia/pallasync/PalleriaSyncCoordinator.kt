@@ -5227,63 +5227,78 @@ internal class PalleriaSyncCoordinator(
                     db
                         .protocolDao()
                         .deletionEvidenceArchiveHistory(chainId, authorityEvidence.logId)
-                archiveRows.map { row ->
-                    check(
-                        row.origin == authorityEvidence.origin && row.relayKeyId == authorityEvidence.relayKeyId &&
-                            row.chainId == chainId && row.logId == authorityEvidence.logId,
-                    ) { "C_RELAY_KEY_MISMATCH" }
-                    check(row.signedJson.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) {
-                        "C_LOCAL_LIMIT"
-                    }
-                    val archive = PallaSyncDeletionEvidenceArchive.parseStrictObject(row.signedJson)
-                    check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
-                    val receipt = archive.getValue("delete_receipt").jsonObject
-                    val bundle = archive.getValue("evidence_bundle").jsonObject
-                    val index =
-                        receipt
-                            .getValue("transparency_index")
-                            .jsonPrimitive
-                            .content
-                            .toLong()
-                    check(
-                        index == row.sequence && receipt.getValue("chain_id").jsonPrimitive.content == chainId,
-                    ) {
-                        "C_DELETION_UNVERIFIED"
-                    }
-                    val proofCandidates =
-                        db
-                            .protocolDao()
-                            .deletionProofsAtSequence(
-                                authorityEvidence.origin,
-                                authorityEvidence.relayKeyId,
-                                chainId,
-                                authorityEvidence.logId,
-                                "delete_receipt",
-                                index,
-                            )
-                    val proofMatches =
-                        proofCandidates.any { proofText ->
-                            val verified =
-                                PallaSyncCore.validateDeletionProof(
-                                    proofText.toByteArray(Charsets.UTF_8),
-                                    pinJson,
-                                    authorityText,
-                                    request,
-                                )
-                            Json
-                                .parseToJsonElement(verified)
-                                .jsonObject
-                                .getValue("delete_receipt")
-                                .jsonObject == receipt
+                val verifiedRevisions =
+                    archiveRows.map { row ->
+                        check(
+                            row.origin == authorityEvidence.origin && row.relayKeyId == authorityEvidence.relayKeyId &&
+                                row.chainId == chainId && row.logId == authorityEvidence.logId,
+                        ) { "C_RELAY_KEY_MISMATCH" }
+                        check(row.signedJson.toByteArray(Charsets.UTF_8).size <= PallaSyncDeletionEvidenceArchive.MAX_BYTES) {
+                            "C_LOCAL_LIMIT"
                         }
-                    check(proofMatches) { "C_DELETION_UNVERIFIED" }
-                    PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), bundle.toString(), authorityText)
-                    PallaSyncDeletionEvidenceRevision(
-                        transparencyIndex = index,
-                        completedAtMs = receipt["completed_at_ms"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
-                        archiveJson = row.signedJson,
-                    )
-                }
+                        val archive = PallaSyncDeletionEvidenceArchive.parseStrictObject(row.signedJson)
+                        check(archive.keys == setOf("delete_receipt", "evidence_bundle")) { "C_SCHEMA_VIOLATION" }
+                        val receipt = archive.getValue("delete_receipt").jsonObject
+                        val bundle = archive.getValue("evidence_bundle").jsonObject
+                        val index =
+                            receipt
+                                .getValue("transparency_index")
+                                .jsonPrimitive
+                                .content
+                                .toLong()
+                        check(
+                            index == row.sequence && receipt.getValue("chain_id").jsonPrimitive.content == chainId,
+                        ) {
+                            "C_DELETION_UNVERIFIED"
+                        }
+                        val proofCandidates =
+                            db
+                                .protocolDao()
+                                .deletionProofsAtSequence(
+                                    authorityEvidence.origin,
+                                    authorityEvidence.relayKeyId,
+                                    chainId,
+                                    authorityEvidence.logId,
+                                    "delete_receipt",
+                                    index,
+                                )
+                        val proofMatches =
+                            proofCandidates.any { proofText ->
+                                val verified =
+                                    PallaSyncCore.validateDeletionProof(
+                                        proofText.toByteArray(Charsets.UTF_8),
+                                        pinJson,
+                                        authorityText,
+                                        request,
+                                    )
+                                Json
+                                    .parseToJsonElement(verified)
+                                    .jsonObject
+                                    .getValue("delete_receipt")
+                                    .jsonObject == receipt
+                            }
+                        check(proofMatches) { "C_DELETION_UNVERIFIED" }
+                        PallaSyncCore.validateDeletionEvidenceBundle(receipt.toString(), bundle.toString(), authorityText)
+                        checkNotNull(PallaSyncCore.objectHash(receipt.toString())) to
+                            PallaSyncDeletionEvidenceRevision(
+                                transparencyIndex = index,
+                                completedAtMs = receipt["completed_at_ms"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+                                archiveJson = row.signedJson,
+                            )
+                    }
+                verifiedRevisions
+                    .groupBy { it.first }
+                    .values
+                    .map { sameReceipt ->
+                        val merged =
+                            PallaSyncDeletionEvidenceMerge.merge(
+                                sameReceipt.map { revision ->
+                                    PallaSyncDeletionEvidenceArchive.parseStrictObject(revision.second.archiveJson)
+                                },
+                            ) ?: error("C_DELETION_UNVERIFIED")
+                        val first = sameReceipt.first().second
+                        first.copy(archiveJson = merged.toString())
+                    }.sortedWith(compareBy({ it.transparencyIndex }, { it.completedAtMs ?: Long.MIN_VALUE }))
             }
         }
 
