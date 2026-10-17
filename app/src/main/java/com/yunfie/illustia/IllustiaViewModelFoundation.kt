@@ -841,9 +841,20 @@ abstract class IllustiaViewModelFoundation(
         }
     }
 
+    protected fun profileFailureMessage(
+        error: Throwable,
+        fallback: String = str(R.string.error_load_artist_failed),
+    ): String {
+        if (error.isNetworkFailure()) {
+            return fallback
+        }
+        return cleanErrorMessage(error, fallback)
+    }
+
     protected fun Throwable.isNetworkFailure(): Boolean {
         var current: Throwable? = this
         while (current != null) {
+            if (current is PixivApiException) return false
             if (current is IOException) return true
             current = current.cause
         }

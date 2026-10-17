@@ -486,7 +486,13 @@ abstract class IllustiaDetailProfileModule(
             try {
                 val profile = withContext(Dispatchers.IO) { repository.userDetail(userId, forceRefresh = forceRefresh) }
                 if (!isCurrentProfileRequest(session)) return@launch
-                _uiState.update { it.copy(selectedUser = profile, loadState = LoadState.Loaded) }
+                _uiState.update {
+                    it.copy(
+                        selectedUser = profile,
+                        selectedUserError = null,
+                        loadState = LoadState.Loaded,
+                    )
+                }
                 userPageSnapshot = null
                 userProfileCache.put(_uiState.value)
             } catch (expectedFailure: Exception) {
@@ -495,9 +501,14 @@ abstract class IllustiaDetailProfileModule(
                 if (!isCurrentProfileRequest(session)) return@launch
                 if (handleAuthExpired(error)) return@launch
                 userProfileRequests.close()
-                restoreUserPageSnapshot()
-                val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
-                _uiState.update { it.copy(message = message, loadState = LoadState.Error(message)) }
+                val message = profileFailureMessage(error, str(R.string.error_load_artist_failed))
+                _uiState.update {
+                    it.copy(
+                        selectedUserError = message,
+                        isSelectedUserIllustsPaginating = false,
+                        isSelectedUserBookmarksPaginating = false,
+                    )
+                }
             }
         }
         loadProfileWorks(session)
@@ -508,7 +519,12 @@ abstract class IllustiaDetailProfileModule(
         nextUrl: String? = null,
     ) {
         if (!isCurrentProfileRequest(session) || _uiState.value.isSelectedUserIllustsPaginating) return
-        _uiState.update { it.copy(isSelectedUserIllustsPaginating = true) }
+        _uiState.update {
+            it.copy(
+                isSelectedUserIllustsPaginating = true,
+                selectedUserIllustsError = null,
+            )
+        }
         session.scope.launch {
             try {
                 val page =
@@ -523,6 +539,7 @@ abstract class IllustiaDetailProfileModule(
                         selectedUserIllusts = if (nextUrl == null) items else state.selectedUserIllusts.appendIllusts(items),
                         selectedUserNextUrl = page.nextUrl,
                         selectedUserIllustsLoaded = true,
+                        selectedUserIllustsError = null,
                         isSelectedUserIllustsPaginating = false,
                     )
                 }
@@ -534,7 +551,14 @@ abstract class IllustiaDetailProfileModule(
                 _uiState.update { it.copy(isSelectedUserIllustsPaginating = false) }
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "user_illusts_load")
-                _uiState.update { it.copy(message = cleanErrorMessage(error)) }
+                val errorMsg = profileFailureMessage(error, str(R.string.error_load_artist_failed))
+                _uiState.update { state ->
+                    if (nextUrl == null && state.selectedUserIllusts.isEmpty()) {
+                        state.copy(selectedUserIllustsError = errorMsg)
+                    } else {
+                        state.copy(message = cleanErrorMessage(error))
+                    }
+                }
             }
         }
     }
@@ -550,10 +574,12 @@ abstract class IllustiaDetailProfileModule(
         val state = _uiState.value
         if (state.selectedUserId == userId && !state.userPageDismissed) {
             if (state.selectedUser == null) {
-                openUserPage(userId)
+                if (state.selectedUserError == null) {
+                    openUserPage(userId)
+                }
             } else {
                 val session = userProfileRequests.open(userId, state.settings.refreshToken)
-                if (!state.selectedUserIllustsLoaded) loadProfileWorks(session)
+                if (!state.selectedUserIllustsLoaded && state.selectedUserIllustsError == null) loadProfileWorks(session)
             }
         }
     }

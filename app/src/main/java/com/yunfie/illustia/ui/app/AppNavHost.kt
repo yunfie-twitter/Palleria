@@ -79,6 +79,7 @@ import com.yunfie.illustia.ui.screens.WallpaperPlaylistSettingsScreen
 import com.yunfie.illustia.ui.screens.WatchlistSeriesScreen
 import com.yunfie.illustia.ui.screens.profile.RelatedUsersScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileEditScreen
+import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -638,6 +639,8 @@ internal fun AppNavHost(
                         isBookmarkPaginating = appState.state.isSelectedUserBookmarksPaginating,
                         worksLoaded = appState.state.selectedUserIllustsLoaded,
                         bookmarksLoaded = appState.state.selectedUserBookmarksLoaded,
+                        worksError = appState.state.selectedUserIllustsError,
+                        bookmarksError = appState.state.selectedUserBookmarksError,
                         onBack = onPopRoute,
                         onOpenIllust = { illust ->
                             viewModel.openIllust(illust)
@@ -677,9 +680,21 @@ internal fun AppNavHost(
                             viewModel.openUserPage(route.userId)
                         }
                     }
-                    UserProfileSkeletonScreen(
-                        onBack = onPopRoute,
-                    )
+                    val errorMessage =
+                        appState.state.selectedUserError?.takeIf {
+                            appState.state.selectedUserId == route.userId
+                        }
+                    if (errorMessage != null) {
+                        UserProfileErrorScreen(
+                            message = errorMessage,
+                            onBack = onPopRoute,
+                            onRetry = { viewModel.refreshUserPage(route.userId) },
+                        )
+                    } else {
+                        UserProfileSkeletonScreen(
+                            onBack = onPopRoute,
+                        )
+                    }
                 }
             }
             entry<AppRoute.UserProfileEdit> { route ->
@@ -697,9 +712,21 @@ internal fun AppNavHost(
                             viewModel.openUserPage(route.userId)
                         }
                     }
-                    UserProfileSkeletonScreen(
-                        onBack = onPopRoute,
-                    )
+                    val errorMessage =
+                        appState.state.selectedUserError?.takeIf {
+                            appState.state.selectedUserId == route.userId
+                        }
+                    if (errorMessage != null) {
+                        UserProfileErrorScreen(
+                            message = errorMessage,
+                            onBack = onPopRoute,
+                            onRetry = { viewModel.refreshUserPage(route.userId) },
+                        )
+                    } else {
+                        UserProfileSkeletonScreen(
+                            onBack = onPopRoute,
+                        )
+                    }
                 }
             }
             entry<AppRoute.RelatedUsers> { route ->

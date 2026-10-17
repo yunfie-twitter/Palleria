@@ -10,16 +10,31 @@ object DummyAppIconSwitcher {
     private const val ALIAS_DUMMY = "com.yunfie.illustia.MainActivityDummy"
     private const val ALIAS_CAT = "com.yunfie.illustia.MainActivityCat"
 
+    @Volatile
+    private var cachedPrivacyLauncherEnabled: Boolean? = null
+
+    @Volatile
+    private var lastAppliedConfig: Pair<Boolean, String>? = null
+
     /** The launcher state is available without opening the legacy preferences file. */
-    fun isPrivacyLauncherEnabled(context: Context): Boolean =
-        context.packageManager.getComponentEnabledSetting(ComponentName(context, ALIAS_DUMMY)) ==
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+    fun isPrivacyLauncherEnabled(context: Context): Boolean {
+        cachedPrivacyLauncherEnabled?.let { return it }
+        val enabled =
+            context.packageManager.getComponentEnabledSetting(ComponentName(context, ALIAS_DUMMY)) ==
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        cachedPrivacyLauncherEnabled = enabled
+        return enabled
+    }
 
     fun apply(
         context: Context,
         privacyModeEnabled: Boolean,
         appIconVariant: String = "default",
     ) {
+        val targetConfig = privacyModeEnabled to appIconVariant
+        if (lastAppliedConfig == targetConfig && cachedPrivacyLauncherEnabled == privacyModeEnabled) {
+            return
+        }
         val packageManager = context.packageManager
         try {
             val dummyState =
@@ -67,6 +82,8 @@ object DummyAppIconSwitcher {
                 desiredState = PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 enabledByDefault = true,
             )
+            cachedPrivacyLauncherEnabled = privacyModeEnabled
+            lastAppliedConfig = targetConfig
         } catch (expectedFailure: RuntimeException) {
             Log.w("DummyAppIconSwitcher", "Failed to switch app icon alias", expectedFailure)
         }
