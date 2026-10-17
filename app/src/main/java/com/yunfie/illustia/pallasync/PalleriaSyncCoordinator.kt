@@ -3788,6 +3788,7 @@ internal class PalleriaSyncCoordinator(
         check(keystore.boundDeviceId(state.chainId) == oldId && PallaSyncCore.validateCurrentKeyRecipient(oldText, oldId)) {
             "C_BOOTSTRAP_TRUST_REQUIRED"
         }
+        localAuthor.finishPending(state.chainId, oldKeys)
         val oldHash = checkNotNull(PallaSyncCore.objectHash(oldText)) { "C_SCHEMA_VIOLATION" }
         val oldAnchor =
             buildJsonObject {
@@ -3816,6 +3817,7 @@ internal class PalleriaSyncCoordinator(
         check(
             keystore.promotePendingReplacementKeys(state.chainId, oldId, checkNotNull(newKeys.deviceId), oldHash),
         ) { "C_LOCAL_STORAGE_FULL" }
+        localAuthor.prepareFreshDeviceWriter(state.chainId, newKeys)
         return DeviceReplacement(oldId, oldKeys, oldAuthority, newKeys)
     }
 
@@ -3831,6 +3833,7 @@ internal class PalleriaSyncCoordinator(
         val archived = checkNotNull(db.protocolDao().authorityObject(state.chainId, "checkpoint", sourceHash)) { "C_MISSING_DEPENDENCY" }
         val oldAuthority = Json.parseToJsonElement(archived.signedJson).jsonObject
         check(PallaSyncCore.validateCurrentKeyRecipient(oldAuthority.toString(), oldId)) { "C_ROLLBACK_DETECTED" }
+        localAuthor.prepareFreshDeviceWriter(state.chainId, newKeys)
         return DeviceReplacement(oldId, oldKeys, oldAuthority, newKeys)
     }
 
@@ -3846,7 +3849,6 @@ internal class PalleriaSyncCoordinator(
         check(keystore.boundDeviceId(state.chainId) == newKeys.deviceId && keystore.getActiveChainKeys() == newKeys) {
             "C_BOOTSTRAP_TRUST_REQUIRED"
         }
-        outboxRebase.resumeReseed(state.chainId, newKeys, oldKeys, oldAuthority)
         val currentAuthority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
         val revoked =
             currentAuthority
@@ -3857,26 +3859,30 @@ internal class PalleriaSyncCoordinator(
                 .jsonObject
                 .getValue("revoked_seq")
                 .jsonPrimitive.content
-        if (revoked != "null") {
-            check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
-            return true
+        if (revoked == "null") {
+            val root =
+                PallaSyncRootSession.beginText(
+                    mnemonic,
+                    passphrase,
+                    PallaSyncRootSession.Operation.REVOKE,
+                    state.chainId,
+                    oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                    policy::requireCurrent,
+                    policy.retry::correctedTime,
+                )
+            val completed =
+                useRoot(root, cancellation) {
+                    epochLifecycle.rotate(it, base, "key_rotation", listOf(oldId), admin = true) ==
+                        PallaSyncEpochLifecycle.Outcome.UPDATED
+                }
+            if (!completed) return false
         }
-        val root =
-            PallaSyncRootSession.beginText(
-                mnemonic,
-                passphrase,
-                PallaSyncRootSession.Operation.REVOKE,
-                state.chainId,
-                oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
-                policy::requireCurrent,
-                policy.retry::correctedTime,
-            )
-        val completed =
-            useRoot(root, cancellation) {
-                epochLifecycle.rotate(it, base, "key_rotation", listOf(oldId), admin = true) == PallaSyncEpochLifecycle.Outcome.UPDATED
-            }
-        if (completed) check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
-        return completed
+        // The signed next epoch closes late acceptance of the old identity's uncertain submissions.
+        val currentKeys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        check(currentKeys.deviceId == newKeys.deviceId && currentKeys.epoch > oldKeys.epoch) { "C_MISSING_DEPENDENCY" }
+        outboxRebase.resumeReseed(state.chainId, currentKeys, oldKeys, oldAuthority)
+        check(keystore.finishReplacement(state.chainId)) { "C_LOCAL_STORAGE_FULL" }
+        return true
     }
 
     /**

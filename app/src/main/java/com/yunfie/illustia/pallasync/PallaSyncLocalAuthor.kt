@@ -129,6 +129,36 @@ internal class PallaSyncLocalAuthor(
         journal.requireTail(checkNotNull(store.dao.getChainState(chain)), device)
     }
 
+    /**
+     * Start a replacement identity at its own sequence zero without erasing a committed or
+     * recoverable tail if replacement was interrupted after the new writer began.
+     */
+    suspend fun prepareFreshDeviceWriter(
+        chain: String,
+        keys: PallaSyncKeySnapshot,
+    ) {
+        val state = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+        val device = checkNotNull(keys.deviceId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val pending = journal.pending(state, device)
+        if (pending != null) {
+            finishPending(chain, keys)
+            return
+        }
+        if (journal.hasTail(state, device)) {
+            journal.requireTail(state, device)
+            return
+        }
+        store.transaction {
+            val current = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+            check(current == state) { "C_RECORD_ID_CONFLICT" }
+            if (current.authorSeq != 0L || current.authorTailHash != null) {
+                store.dao.updateChainState(current.copy(authorSeq = 0, authorTailHash = null))
+            }
+        }
+        val reset = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+        journal.requireTail(reset, device)
+    }
+
     private suspend fun prepare(
         state: ChainStateEntity,
         device: String,

@@ -18,6 +18,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -108,6 +110,8 @@ class PallaSyncRelayInteropTest {
                 coordinator.stopBackgroundSync()
                 val state = checkNotNull(store.dao.getActiveChainState())
                 val active = checkNotNull(keys.getActiveChainKeys())
+                var activeDeviceId = active.deviceId
+                var replacedDeviceId: String? = null
                 assertEquals("active", state.writeState)
                 assertEquals(active.deviceId, keys.boundDeviceId(state.chainId))
                 assertEquals(null, keys.getPendingChainKeys())
@@ -124,6 +128,51 @@ class PallaSyncRelayInteropTest {
                     PallaSyncPeerRelayBoundary(context, store, keys, policy, client).exercise(selected.toHttpUrl(), transferId)
                 }
                 exercisePausedEdits(coordinator, client, context, scope, policy, store, settings, state.chainId, active.deviceId)
+                if (args.getString("replace_device") == "true") {
+                    val pendingQuery = "Replacement pending"
+                    assertTrue(
+                        coordinator.enqueueDataEvent(
+                            SEARCH_HISTORY_SCHEMA_V3,
+                            pendingQuery,
+                            "upsert",
+                            buildJsonObject { put("query", pendingQuery) },
+                        ),
+                    )
+                    replacedDeviceId = active.deviceId
+                    assertTrue(
+                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                        coordinator.replaceCurrentDevice(phrase),
+                    )
+                    val replacement = checkNotNull(keys.getActiveChainKeys())
+                    activeDeviceId = replacement.deviceId
+                    assertTrue(replacement.deviceId != replacedDeviceId)
+                    assertEquals(1, replacement.epoch)
+                    assertEquals(null, keys.pendingReplacementOldDevice(state.chainId))
+                    assertEquals(1L, store.dao.getChainState(state.chainId)?.authorSeq)
+                    val authority = checkNotNull(store.protocolDao().currentAuthority(state.chainId))
+                    val devices =
+                        Json
+                            .parseToJsonElement(authority)
+                            .jsonObject
+                            .getValue("devices")
+                            .jsonObject
+                    assertEquals(
+                        "null",
+                        devices
+                            .getValue(checkNotNull(replacement.deviceId))
+                            .jsonObject
+                            .getValue("revoked_seq")
+                            .jsonPrimitive.content,
+                    )
+                    assertTrue(
+                        devices
+                            .getValue(checkNotNull(replacedDeviceId))
+                            .jsonObject
+                            .getValue("revoked_seq")
+                            .jsonPrimitive.content != "null",
+                    )
+                    assertTrue(store.dao.pendingOutboxCount(state.chainId) > 0L)
+                }
                 assertTrue(
                     coordinator.enqueueDataEvent(
                         SEARCH_HISTORY_SCHEMA_V3,
@@ -135,7 +184,7 @@ class PallaSyncRelayInteropTest {
                     ),
                 )
                 assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
-                if (args.getString("rotate_epoch") == "true") {
+                if (args.getString("rotate_epoch") == "true" && args.getString("replace_device") != "true") {
                     exerciseEpochRotation(
                         coordinator,
                         keys,
@@ -158,7 +207,8 @@ class PallaSyncRelayInteropTest {
                 InstrumentationRegistry.getInstrumentation().sendStatus(
                     0,
                     Bundle().apply {
-                        putString("pallasync_device_id", active.deviceId)
+                        putString("pallasync_device_id", activeDeviceId)
+                        replacedDeviceId?.let { putString("pallasync_replaced_old_device", it) }
                         putString("pallasync_local_boundary", "verified")
                         putString("pallasync_bound_origin", "verified")
                         args.getString("peer_transfer_id")?.let { putString("pallasync_peer_approval", "verified") }

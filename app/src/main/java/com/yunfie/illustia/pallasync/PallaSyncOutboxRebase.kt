@@ -254,7 +254,10 @@ internal class PallaSyncOutboxRebase(
         check(source.receiptJson == null && store.protocolDao().recordAcceptance(source.chainId, hash) == null) { "C_ACCEPTANCE_UNPROVEN" }
         check(wire.epoch <= sourceKeys.epoch) { "C_EPOCH_FORK" }
         if (!forceReplacement && wire.epoch == keys.epoch) return
-        check(sourceAuthority.getValue("epochs").jsonObject.containsKey((wire.epoch + 1).toString())) { "C_ACCEPTANCE_UNPROVEN" }
+        check(
+            sourceAuthority.getValue("epochs").jsonObject.containsKey((wire.epoch + 1).toString()) ||
+                authority.getValue("epochs").jsonObject.containsKey((wire.epoch + 1).toString()),
+        ) { "C_ACCEPTANCE_UNPROVEN" }
         val retained = checkNotNull(epochKeys(sourceKeys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
         val inner =
             PallaSyncEpochSession.begin(retained, sourceAuthority.toString(), wire.epoch).use {

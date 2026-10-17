@@ -129,6 +129,11 @@ internal class PallaSyncAuthorJournal(
         device: String,
     ): Intent? = storage.read("${prefix(state, device)}.intent")?.let { Json.decodeFromString<Intent>(it) }
 
+    fun hasTail(
+        state: ChainStateEntity,
+        device: String,
+    ): Boolean = storage.read("${prefix(state, device)}.tail") != null
+
     fun requireTail(
         state: ChainStateEntity,
         device: String,

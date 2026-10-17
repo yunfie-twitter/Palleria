@@ -148,6 +148,49 @@ class PallaSyncLocalAuthorTest {
         }
 
     @Test
+    fun `fresh replacement writer resets old cursor once and preserves its durable tail on resume`() =
+        runBlocking<Unit> {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val db = Room.inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java).build()
+            try {
+                val store = PallaSyncLocalStore(context, db)
+                val storage = MemoryStorage()
+                val original =
+                    ChainStateEntity(
+                        chain,
+                        lamport = 99,
+                        keyEpoch = 1,
+                        chainVectorJson = "{}",
+                        logId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                        authorSeq = 4,
+                        authorTailHash = "old-device-tail",
+                        writeState = "active",
+                    )
+                store.dao.updateChainState(original)
+                val replacement = testKeys(1).copy(deviceId = "22222222-2222-4222-8222-222222222222")
+                val author = PallaSyncLocalAuthor(store, PallaSyncAuthorJournal(storage), epochTag = { _, _, _ -> null })
+
+                author.prepareFreshDeviceWriter(chain, replacement)
+                store.dao.getChainState(chain)?.let {
+                    it.authorSeq shouldBe 0
+                    it.authorTailHash shouldBe null
+                    it.lamport shouldBe 99
+                }
+                author.append(chain, replacement, listOf(event("replacement first")))
+                store.dao.getChainState(chain)?.authorSeq shouldBe 1
+
+                val resumed = PallaSyncLocalAuthor(store, PallaSyncAuthorJournal(storage), epochTag = { _, _, _ -> null })
+                resumed.prepareFreshDeviceWriter(chain, replacement)
+                store.dao.getChainState(chain)?.authorSeq shouldBe 1
+                resumed.append(chain, replacement, listOf(event("replacement second")))
+                store.dao.getChainState(chain)?.authorSeq shouldBe 2
+                store.dao.getChainState(chain)?.lamport shouldBe 101
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `replay mapping and signed destination commit together and survive every author boundary`() =
         runBlocking<Unit> {
             for (boundary in PallaSyncLocalAuthor.Boundary.entries) {
