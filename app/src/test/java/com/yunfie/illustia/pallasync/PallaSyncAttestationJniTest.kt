@@ -96,6 +96,23 @@ class PallaSyncAttestationJniTest :
                 PallaSyncCore.advanceExportTransparency(line, pin, 1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             }.message shouldBe "C_TRANSPARENCY_INVALID"
         }
+        "export accepted transparency entry is bound to its exact receipt" {
+            val receipt = vector("receipt")
+            val entry = vector("transparency")
+            val pin =
+                """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
+            PallaSyncCore.validateExportReceiptTransparency(receipt, entry, pin) shouldBe true
+            shouldThrow<IllegalStateException> {
+                PallaSyncCore.validateExportReceiptTransparency(
+                    receipt.replace(
+                        "\"object_hash\":\"SbcfMuMxz3xcVxxMP15gIw0QgQkkl_d4oYRiWn10Z7Y\"",
+                        "\"object_hash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+                    ),
+                    entry,
+                    pin,
+                )
+            }
+        }
         "snapshot readback verifier is exposed through JNI" {
             shouldThrow<IllegalStateException> {
                 PallaSyncSnapshotCore.validateSnapshotPartResponse(

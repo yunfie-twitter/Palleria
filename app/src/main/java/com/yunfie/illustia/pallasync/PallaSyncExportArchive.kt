@@ -95,13 +95,6 @@ internal class PallaSyncExportArchive private constructor(
         val previous = headerLine
         if (previous == null) {
             headerLine = line
-            expectedSource?.relayPinJson?.let { pin ->
-                transparencyHash =
-                    PallaSyncCore.initialExportTransparencyHash(
-                        header.getValue("transparency_id").jsonPrimitive.content,
-                        pin,
-                    )
-            }
             writeArchiveLine(line)
         } else {
             check(previous == line) { "C_ROLLBACK_DETECTED" }
@@ -169,9 +162,18 @@ internal class PallaSyncExportArchive private constructor(
                     head["head_seq"] == header["head_seq"] &&
                     head["head_hash"] == header["head_hash"],
             ) { "C_TRANSPARENCY_INVALID" }
+            val expectedTransparencyHash =
+                if (transparencyIndex == 0L) {
+                    PallaSyncCore.initialExportTransparencyHash(
+                        header.getValue("transparency_id").jsonPrimitive.content,
+                        checkNotNull(expectedSource?.relayPinJson),
+                    )
+                } else {
+                    transparencyHash
+                }
             check(
                 transparencyIndex == header.getValue("transparency_head_index").jsonPrimitive.long &&
-                    transparencyHash == header.getValue("transparency_head_hash").jsonPrimitive.content,
+                    expectedTransparencyHash == header.getValue("transparency_head_hash").jsonPrimitive.content,
             ) { "C_TRANSPARENCY_INVALID" }
             transparencyHeadVerified = true
         }

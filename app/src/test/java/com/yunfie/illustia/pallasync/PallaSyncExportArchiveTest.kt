@@ -2,12 +2,23 @@ package com.yunfie.illustia.pallasync
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 import java.util.Base64
 
+@RunWith(PallaSyncJniRobolectricRunner::class)
+@Config(sdk = [28], application = android.app.Application::class)
 class PallaSyncExportArchiveTest {
     private val header =
         """{"chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","generation":0,"head_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","head_seq":0,"include_recovery":false,"kind":"header","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","protocol":"pallasync/3","relay_key_id":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","relay_public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","transparency_head_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","transparency_head_index":0,"transparency_id":"dddddddd-dddd-4ddd-8ddd-dddddddddddd"}"""
@@ -243,6 +254,120 @@ class PallaSyncExportArchiveTest {
         shouldThrow<IllegalStateException> {
             PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archive), expected)
         }.message shouldBe "C_MISSING_DEPENDENCY"
+    }
+
+    @Test
+    fun pinnedArchiveReadbackMatchesEveryReceiptToItsAcceptedTransparencyEntry() {
+        val (archive, expected) = acceptedEvidenceArchive()
+        PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archive), expected).complete shouldBe false
+
+        val (archiveMissingReceipt, expectedMissingReceipt) = acceptedEvidenceArchive(dropLastReceipt = true)
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archiveMissingReceipt), expectedMissingReceipt)
+        }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
+    }
+
+    private fun acceptedEvidenceArchive(dropLastReceipt: Boolean = false): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
+        val fixture =
+            Json
+                .parseToJsonElement(
+                    PallaSyncExportArchiveTest::class.java
+                        .getResourceAsStream("/pallasync/python-genesis-acceptance.json")!!
+                        .bufferedReader()
+                        .use { it.readText() },
+                ).jsonObject
+        val created = fixture.getValue("created").jsonObject
+        val upload = fixture.getValue("record_upload").jsonObject
+        val chain =
+            fixture
+                .getValue("identity")
+                .jsonObject
+                .getValue("chain_id")
+                .jsonPrimitive
+                .content
+        val generation = 0L
+        val logId = created.getValue("log_id").jsonPrimitive.content
+        val relayKey = fixture.getValue("relay_public_key").jsonPrimitive.content
+        val relayKeyId = "oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck"
+        val transparencyHead = fixture.getValue("transparency_head").jsonObject
+        val entries =
+            fixture.getValue("transparency_pages").jsonArray.flatMap { page ->
+                page.jsonObject.getValue("items").jsonArray
+            }
+        val receipts =
+            (created.getValue("upload_receipts").jsonArray + upload.getValue("upload_receipts").jsonArray)
+                .let { if (dropLastReceipt) it.dropLast(1) else it }
+        val pin =
+            buildJsonObject {
+                put("origin", fixture.getValue("origin").jsonPrimitive.content)
+                put("chain_id", chain)
+                put("public_key", relayKey)
+                put("log_id", logId)
+            }
+        val expected =
+            PallaSyncExportArchive.ExpectedSource(
+                chainId = chain,
+                generation = generation,
+                logId = logId,
+                relayPublicKey = relayKey,
+                relayKeyId = relayKeyId,
+                includeRecovery = false,
+                relayPinJson = checkNotNull(PallaSyncCore.canonicalJson(pin.toString())),
+            )
+        val header =
+            PallaSyncCore.canonicalJson(
+                buildJsonObject {
+                    put("kind", "header")
+                    put("protocol", "pallasync/3")
+                    put("chain_id", chain)
+                    put("generation", generation)
+                    put("log_id", logId)
+                    put("head_seq", upload.getValue("head_seq").jsonPrimitive.long)
+                    put("head_hash", upload.getValue("head_hash").jsonPrimitive.content)
+                    put("include_recovery", false)
+                    put("relay_public_key", relayKey)
+                    put("relay_key_id", relayKeyId)
+                    put("transparency_id", transparencyHead.getValue("transparency_id").jsonPrimitive.content)
+                    put("transparency_head_index", transparencyHead.getValue("entry_index").jsonPrimitive.long)
+                    put("transparency_head_hash", transparencyHead.getValue("transparency_hash").jsonPrimitive.content)
+                }.toString(),
+            )!!
+        val output = ByteArrayOutputStream()
+        PallaSyncExportArchive.create(output, expected).use { archive ->
+            val receiptLines =
+                receipts.map { receipt ->
+                    checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
+                }
+            archive.acceptChunk(
+                (listOf(header) + receiptLines + """{"has_more":true,"kind":"continuation","next_cursor":"transparency"}""")
+                    .joinToString("\n", postfix = "\n")
+                    .toByteArray(),
+                null,
+            )
+            val evidenceLines =
+                buildList {
+                    addAll(
+                        entries.map { entry ->
+                            checkNotNull(
+                                PallaSyncCore.canonicalJson("""{"kind":"transparency_entry","entry":$entry}"""),
+                            )
+                        },
+                    )
+                    add(
+                        checkNotNull(
+                            PallaSyncCore.canonicalJson("""{"kind":"transparency_head","head":$transparencyHead}"""),
+                        ),
+                    )
+                }
+            archive.acceptChunk(
+                (listOf(header) + evidenceLines + """{"has_more":false,"kind":"continuation","next_cursor":null}""")
+                    .joinToString("\n", postfix = "\n")
+                    .toByteArray(),
+                "transparency",
+            )
+            archive.finish()
+        }
+        return output.toByteArray() to expected
     }
 
     @Test
