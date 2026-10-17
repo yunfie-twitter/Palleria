@@ -44,7 +44,7 @@ internal class PallaSyncSnapshotTrustReader(
                 .jsonObject
                 .getValue("log_id")
                 .jsonPrimitive.content
-        val generation = authority.getValue("generation").jsonPrimitive.long
+        val generation = pallaSyncAuthorityGeneration(authority)
         val headSeq = authority.getValue("sequence").jsonPrimitive.long
         val currentEpoch =
             authority

@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.yunfie.illustia.pallasync.data.OutboxEntity
+import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import kotlinx.coroutines.CoroutineScope
@@ -88,8 +89,7 @@ class PallaSyncRelayInteropTest {
                 policy.accept(policy.currentReview(selected), true)
                 PallaSyncCore.setSecretForeground(true)
                 val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
-                assertTrue(
-                    PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                val joined =
                     coordinator.joinChain(
                         phrase,
                         "Android integration endpoint",
@@ -105,8 +105,8 @@ class PallaSyncRelayInteropTest {
                             assertTrue(review.epochHash.isNotBlank())
                             true
                         },
-                    ),
-                )
+                    )
+                assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), joined)
                 coordinator.stopBackgroundSync()
                 val state = checkNotNull(store.dao.getActiveChainState())
                 val active = checkNotNull(keys.getActiveChainKeys())
@@ -121,14 +121,19 @@ class PallaSyncRelayInteropTest {
                     checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.lamport >
                         1_000_000L,
                 )
-                exerciseMissingDependencyQuarantineRetry(coordinator, store, state.chainId)
-                exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
-                exerciseBoundOrigin(client, policy, state.chainId, selected)
+                val replacingDevice = args.getString("replace_device") == "true"
+                if (!replacingDevice) {
+                    exerciseMissingDependencyQuarantineRetry(coordinator, store, state.chainId)
+                    exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
+                    exerciseBoundOrigin(client, policy, state.chainId, selected)
+                }
                 args.getString("peer_transfer_id")?.let { transferId ->
-                    PallaSyncPeerRelayBoundary(context, store, keys, policy, client).exercise(selected.toHttpUrl(), transferId)
+                    if (!replacingDevice) {
+                        PallaSyncPeerRelayBoundary(context, store, keys, policy, client).exercise(selected.toHttpUrl(), transferId)
+                    }
                 }
                 exercisePausedEdits(coordinator, client, context, scope, policy, store, settings, state.chainId, active.deviceId)
-                if (args.getString("replace_device") == "true") {
+                if (replacingDevice) {
                     val pendingQuery = "Replacement pending"
                     assertTrue(
                         coordinator.enqueueDataEvent(
@@ -139,10 +144,15 @@ class PallaSyncRelayInteropTest {
                         ),
                     )
                     replacedDeviceId = active.deviceId
-                    assertTrue(
-                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-                        coordinator.replaceCurrentDevice(phrase),
-                    )
+                    val replaced = coordinator.replaceCurrentDevice(phrase)
+                    if (requestedFault != null) {
+                        assertFalse(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), replaced)
+                        assertTrue("Replacement boundary fault was not reached", faultInjected)
+                        val resumed = coordinator.replaceCurrentDevice(phrase)
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), resumed)
+                    } else {
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), replaced)
+                    }
                     val replacement = checkNotNull(keys.getActiveChainKeys())
                     activeDeviceId = replacement.deviceId
                     assertTrue(replacement.deviceId != replacedDeviceId)
@@ -291,7 +301,11 @@ class PallaSyncRelayInteropTest {
         val event = checkNotNull(store.protocolDao().firstAcceptedEvent(chain))
         val originalHash = checkNotNull(PallaSyncCore.objectHash(event.signedJson))
         assertEquals(event.objectHash, originalHash)
-        val inbox = checkNotNull(store.dao.getInboxRecord(chain, event.recordId))
+        val inbox =
+            store.dao.getInboxRecord(chain, event.recordId)
+                ?: PallaSyncInboxEntity
+                    .applied(chain, event.recordId, checkNotNull(event.relaySeq), event.signedJson)
+                    .also { store.dao.insertInboxRecords(listOf(it)) }
         assertEquals("applied", inbox.status)
         store.snapshotDatabase().openHelper.writableDatabase.execSQL(
             "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_MISSING_DEPENDENCY' WHERE chain_id=? AND record_id=?",

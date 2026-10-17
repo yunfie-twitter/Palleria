@@ -7,6 +7,13 @@ import kotlinx.serialization.json.long
 
 private const val MAX_SAFE_JSON_INTEGER = 9_007_199_254_740_991L
 
+internal fun pallaSyncAuthorityGeneration(authority: JsonObject): Long =
+    authority
+        .getValue("parameters")
+        .jsonObject
+        .getValue("generation")
+        .jsonPrimitive.long
+
 /** §13.5/§18.1: old keys are shared only while the signed retention policy keeps them eligible. */
 internal object PallaSyncPeerEpochEligibility {
     fun eligibleEpochs(
@@ -15,7 +22,7 @@ internal object PallaSyncPeerEpochEligibility {
         handoffVerified: Boolean = false,
     ): List<Long> {
         check(nowMs >= 0) { "C_SCHEMA_VIOLATION" }
-        val generation = authority.getValue("generation").jsonPrimitive.long
+        val generation = pallaSyncAuthorityGeneration(authority)
         val records =
             authority
                 .getValue("epochs")

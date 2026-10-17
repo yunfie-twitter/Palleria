@@ -87,7 +87,7 @@ internal class PallaSyncRetentionHandoff(
         coveredThroughSeq: Long,
     ): JsonObject? {
         val state = store.dao.getChainState(chain) ?: return null
-        val generation = authority.getValue("generation").jsonPrimitive.long
+        val generation = pallaSyncAuthorityGeneration(authority)
         val epochs = currentGenerationEpochs(authority)
         val currentEpoch = epochs.lastOrNull() ?: return null
         val epochRecord =
@@ -132,7 +132,7 @@ internal class PallaSyncRetentionHandoff(
     ): JsonObject? {
         if (entry["operation"]?.jsonPrimitive?.content != "prune") return null
         val state = store.dao.getChainState(chain) ?: return null
-        val generation = authority.getValue("generation").jsonPrimitive.long
+        val generation = pallaSyncAuthorityGeneration(authority)
         val logId =
             authority
                 .getValue("pin")
@@ -233,7 +233,7 @@ internal class PallaSyncRetentionHandoff(
     }
 
     private fun currentGenerationEpochs(authority: JsonObject): List<Long> {
-        val generation = authority.getValue("generation").jsonPrimitive.long
+        val generation = pallaSyncAuthorityGeneration(authority)
         val values = authority.getValue("epochs").jsonObject
         val numbers = values.keys.map { it.toLongOrNull() ?: error("C_SCHEMA_VIOLATION") }.sorted()
         val currentGeneration =

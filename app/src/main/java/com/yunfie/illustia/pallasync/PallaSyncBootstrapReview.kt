@@ -31,9 +31,9 @@ internal data class PallaSyncBootstrapReview(
             check(
                 pin.getValue("origin").jsonPrimitive.content == relayOrigin &&
                     pin.getValue("log_id").jsonPrimitive.content == checkpoint.logId &&
-                    authority.getValue("chain_id").jsonPrimitive.content == identity.chainId &&
+                    pin.getValue("chain_id").jsonPrimitive.content == identity.chainId &&
                     authority.getValue("admin_public_key").jsonPrimitive.content == identity.adminPublicKey &&
-                    authority.getValue("generation").jsonPrimitive.long == checkpoint.generation &&
+                    pallaSyncAuthorityGeneration(authority) == checkpoint.generation &&
                     authority.getValue("sequence").jsonPrimitive.long == checkpoint.headSeq &&
                     authority.getValue("head_hash").jsonPrimitive.content == checkpoint.headHash,
             ) { "C_BOOTSTRAP_TRUST_REQUIRED" }

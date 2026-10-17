@@ -398,12 +398,7 @@ internal class PallaSyncOutboxRebase(
         store.dao.updateChainState(state.copy(writeState = "active"))
     }
 
-    private fun generation(authority: JsonObject) =
-        authority
-            .getValue("parameters")
-            .jsonObject
-            .getValue("generation")
-            .jsonPrimitive.long
+    private fun generation(authority: JsonObject) = pallaSyncAuthorityGeneration(authority)
 
     private companion object {
         const val MAX_OPERATIONS = 1024

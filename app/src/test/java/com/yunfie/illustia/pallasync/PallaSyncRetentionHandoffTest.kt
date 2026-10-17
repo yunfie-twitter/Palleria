@@ -87,7 +87,7 @@ class PallaSyncRetentionHandoffTest {
     private fun authority(retention: String) =
         Json
             .parseToJsonElement(
-                """{"generation":0,"pin":{"log_id":"$LOG"},"parameters":{"policy":{"epoch_retention":"$retention","epoch_window_ms":20}},"epochs":{"0":{"record":{"epoch":0,"generation":0},"committed_at_ms":0},"1":{"record":{"epoch":1,"generation":0},"committed_at_ms":100}}}""",
+                """{"pin":{"log_id":"$LOG"},"parameters":{"generation":0,"policy":{"epoch_retention":"$retention","epoch_window_ms":20}},"epochs":{"0":{"record":{"epoch":0,"generation":0},"committed_at_ms":0},"1":{"record":{"epoch":1,"generation":0},"committed_at_ms":100}}}""",
             ).jsonObject
 
     private fun publication(

@@ -46,7 +46,7 @@ private fun authority(
     Json
         .parseToJsonElement(
             buildString {
-                append("{\"generation\":0,\"parameters\":{\"policy\":{\"epoch_retention\":\"")
+                append("{\"parameters\":{\"generation\":0,\"policy\":{\"epoch_retention\":\"")
                 append(retention)
                 append("\",\"epoch_window_ms\":")
                 append(windowMs)

@@ -3735,8 +3735,10 @@ internal class PalleriaSyncCoordinator(
                 try {
                     val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                     val replacementOldId = keystore.pendingReplacementOldDevice(state.chainId)
+                    val resumableWriteState =
+                        replacementOldId != null && state.writeState in setOf("active", "epoch_rebase_required")
                     check(
-                        state.writeState == "active" &&
+                        (state.writeState == "active" || resumableWriteState) &&
                             (replacementOldId == null || keystore.getActiveChainKeys()?.chainId == state.chainId),
                     ) {
                         "C_WRITE_PAUSED_BY_POLICY"
@@ -3759,7 +3761,10 @@ internal class PalleriaSyncCoordinator(
                     log("Device replacement paused: $code")
                     false
                 } catch (failure: IllegalStateException) {
-                    log("Device replacement paused: ${failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"}")
+                    log(
+                        "Device replacement paused [${epochLifecycle.stage}]: " +
+                            (failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"),
+                    )
                     false
                 }
             }
@@ -3864,7 +3869,7 @@ internal class PalleriaSyncCoordinator(
                 PallaSyncRootSession.beginText(
                     mnemonic,
                     passphrase,
-                    PallaSyncRootSession.Operation.REVOKE,
+                    PallaSyncRootSession.Operation.ROTATE,
                     state.chainId,
                     oldAuthority.getValue("admin_public_key").jsonPrimitive.content,
                     policy::requireCurrent,
@@ -3872,10 +3877,13 @@ internal class PalleriaSyncCoordinator(
                 )
             val completed =
                 useRoot(root, cancellation) {
-                    epochLifecycle.rotate(it, base, "key_rotation", listOf(oldId), admin = true) ==
+                    epochLifecycle.rotate(it, base, "key_rotation", listOf(oldId), admin = false) ==
                         PallaSyncEpochLifecycle.Outcome.UPDATED
                 }
-            if (!completed) return false
+            if (!completed) {
+                log("Device replacement rotation awaits signed head reconciliation: ${epochLifecycle.stage}")
+                return false
+            }
         }
         // The signed next epoch closes late acceptance of the old identity's uncertain submissions.
         val currentKeys = checkNotNull(keystore.getActiveChainKeys()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -4296,7 +4304,13 @@ internal class PalleriaSyncCoordinator(
                 val error = expectedFailure
                 if (error is CancellationException) throw error
                 val code = error.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"
-                log("Initial PallaSync cycle paused: $code")
+                val debugFrames =
+                    if (appContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+                        error.stackTrace.take(4).joinToString(" <- ") { "${it.className}.${it.methodName}:${it.lineNumber}" }
+                    } else {
+                        ""
+                    }
+                log("Initial PallaSync cycle paused: $code $debugFrames")
                 activatedChainId != null
             }
         if (joined) {
