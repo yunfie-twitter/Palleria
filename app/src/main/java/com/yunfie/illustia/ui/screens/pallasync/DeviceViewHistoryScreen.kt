@@ -27,7 +27,9 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import com.yunfie.illustia.pallasync.data.HistoryCursor
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
@@ -41,6 +43,8 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -66,14 +70,32 @@ fun DeviceViewHistoryScreen(
 
     var viewHistory by remember { mutableStateOf<List<Illust>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var cursor by remember(deviceId) { mutableStateOf<HistoryCursor?>(null) }
+    var nextCursor by remember(deviceId) { mutableStateOf<HistoryCursor?>(null) }
+    var partial by remember(deviceId) { mutableStateOf(true) }
+    var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
+    var failure by remember(deviceId) { mutableStateOf<String?>(null) }
     val gridState = rememberLazyGridState()
     val feedHighQuality = state.settings.useHighQualityFeedImages
     val showAiBadge = state.settings.showAiBadge
 
-    LaunchedEffect(deviceId) {
+    LaunchedEffect(deviceId, cursor) {
         isLoading = true
-        viewHistory = syncManager.getDeviceViewHistory(deviceId)
-        isLoading = false
+        try {
+            val page = syncManager.getDeviceHistoryPage(deviceId, cursor)
+            // Replace the display window; never accumulate the entire logical archive in RAM.
+            viewHistory = page.items
+            nextCursor = page.next
+            partial = page.partial
+            clientStatus = syncManager.getClientStatus()
+            failure = null
+            gridState.scrollToItem(0)
+        } catch (error: IllegalStateException) {
+            failure = error.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY"
+            if (cursor != null) cursor = null // §16.5: a concurrent reorder restarts keyset paging.
+        } finally {
+            isLoading = false
+        }
     }
 
     val bookmarkedIds =
@@ -139,6 +161,63 @@ fun DeviceViewHistoryScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                PallaSyncDeviceRevocationControl(syncManager, deviceId)
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(stringResource(R.string.pallasync_v3_history_window))
+            }
+            if (partial || clientStatus?.partial == true) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(stringResource(R.string.pallasync_v3_history_partial))
+                }
+            }
+            clientStatus?.let { status ->
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_sync_positions,
+                            status.downloadedSeq,
+                            status.verifiedSeq,
+                            status.materializedSeq,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_transparency,
+                            status.verifiedTransparencyIndex,
+                            status.observedTransparencyTargetIndex,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_pending,
+                            status.pendingOutbox,
+                            status.authorGaps,
+                            status.unresolvedQuarantine,
+                            status.writeState,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_v3_history_capacity,
+                            status.searchCount,
+                            status.searchCeiling,
+                            status.viewedCount,
+                            status.viewedCeiling,
+                            status.seenCount,
+                            status.seenCeiling,
+                        ),
+                    )
+                }
+            }
+            failure?.let { message -> item(span = { GridItemSpan(maxLineSpan) }) { Text(message) } }
             if (isLoading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     CircularProgressIndicator(modifier = Modifier.padding(32.dp).fillMaxWidth())
@@ -159,6 +238,20 @@ fun DeviceViewHistoryScreen(
                         showAiBadge = showAiBadge,
                     )
                 }
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                TextButton(
+                    text = stringResource(R.string.pallasync_v3_history_first),
+                    enabled = !isLoading && cursor != null,
+                    onClick = { cursor = null },
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                TextButton(
+                    text = stringResource(R.string.pallasync_v3_history_older),
+                    enabled = !isLoading && nextCursor != null,
+                    onClick = { cursor = nextCursor },
+                )
             }
         }
     }

@@ -19,6 +19,8 @@ class PallaSyncUrlsTest :
 
             PallaSyncUrls.recordsEndpoint(base, "a/b").toString() shouldBe
                 "https://example.com/pallasync/v3/chains/a%2Fb/records"
+            PallaSyncUrls.deletion(base, "a/b").toString() shouldBe
+                "https://example.com/pallasync/v3/chains/a%2Fb/deletion"
         }
 
         "query fragment credentials and unsupported schemes are rejected" {
@@ -39,6 +41,22 @@ class PallaSyncUrlsTest :
             val url = PallaSyncUrls.devices(normalizedUrl("https://example.com"), "chain", "a_b", 8)
             url.encodedPath shouldBe "/pallasync/v3/chains/chain/devices"
             url.encodedQuery shouldBe "limit=8&cursor=a_b"
+        }
+
+        "device export always excludes recovery envelopes and signs its cursor query" {
+            val base = normalizedUrl("https://example.com")
+
+            PallaSyncUrls.export(base, "chain", null).encodedQuery shouldBe "limit=200&include_recovery=false"
+            PallaSyncUrls.export(base, "chain", "a_b", 1_000).encodedQuery shouldBe
+                "limit=1000&include_recovery=false&cursor=a_b"
+            PallaSyncUrls.export(base, "chain", null, includeRecovery = true).encodedQuery shouldBe
+                "limit=200&include_recovery=true"
+        }
+
+        "relay shutdown notice route is chain scoped and has no query" {
+            val url = PallaSyncUrls.relayNotice(normalizedUrl("https://example.com"), "chain")
+            url.encodedPath shouldBe "/pallasync/v3/chains/chain/relay-notice"
+            url.encodedQuery shouldBe null
         }
     })
 

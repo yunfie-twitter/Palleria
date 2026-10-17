@@ -33,6 +33,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
@@ -87,6 +88,7 @@ private data class SettingsPersistenceRequest(
     val baseSettings: AppSettings? = null,
     val notifyLiveWallpaper: Boolean,
     val fromSync: Boolean = false,
+    val historyEdits: List<PallaSyncHistoryEdit> = emptyList(),
 )
 
 private fun AppSettings.hasLiveWallpaperChangesComparedTo(other: AppSettings): Boolean =
@@ -485,10 +487,16 @@ abstract class IllustiaViewModelFoundation(
         }
     }
 
-    protected fun List<Illust>.preferUnseenFeedItems(settings: AppSettings): List<Illust> {
-        if (settings.seenFeedIllusts.isEmpty()) return this
+    protected suspend fun List<Illust>.preferUnseenFeedItems(settings: AppSettings): List<Illust> {
+        if (settings.pallaSyncEnabled) {
+            val membership =
+                com.yunfie.illustia.pallasync
+                    .PalleriaSyncManager(context = getApplication())
+                    .readFeedMembership(this)
+            if (membership != null) return filterNot { it.id in membership.muted }.sortedBy { membership.priority(it.id) }
+        }
         val seen = settings.seenFeedIllusts.toHashSet()
-        return sortedBy { it.id in seen }
+        return if (seen.isEmpty()) this else sortedBy { it.id in seen }
     }
 
     protected fun queueSettingsPersistence(
@@ -645,7 +653,10 @@ abstract class IllustiaViewModelFoundation(
             }
     }
 
-    protected fun updateSettings(block: (AppSettings) -> AppSettings) {
+    protected fun updateSettings(
+        historyEdits: List<PallaSyncHistoryEdit> = emptyList(),
+        block: (AppSettings) -> AppSettings,
+    ) {
         synchronized(settingsUpdateLock) {
             lateinit var previous: AppSettings
             lateinit var next: AppSettings
@@ -654,12 +665,13 @@ abstract class IllustiaViewModelFoundation(
                 next = block(previous)
                 if (next == previous) state else state.withSettings(next)
             }
-            if (next != previous) {
+            if (next != previous || historyEdits.isNotEmpty()) {
                 check(
                     settingsPersistenceRequests
                         .trySend(
                             SettingsPersistenceRequest(
                                 settings = next,
+                                historyEdits = historyEdits,
                                 baseSettings = previous,
                                 notifyLiveWallpaper = previous.hasLiveWallpaperChangesComparedTo(next),
                             ),
@@ -709,8 +721,12 @@ abstract class IllustiaViewModelFoundation(
             var baseSettings = request.baseSettings
             var notifyLiveWallpaper = request.notifyLiveWallpaper
             var fromSync = request.fromSync
+            val historyEdits = request.historyEdits.toMutableList()
 
-            while (true) {
+            // Keep destructive history intent as a persistence boundary. A following
+            // access may restore the same item, even when the final display list equals
+            // the pre-delete list (§8.2/§8.4). Coalescing across that boundary loses it.
+            while (request.historyEdits.isEmpty()) {
                 val next =
                     kotlinx.coroutines.withTimeoutOrNull<SettingsPersistenceRequest>(debounceMs) {
                         settingsPersistenceRequests.receive()
@@ -718,14 +734,15 @@ abstract class IllustiaViewModelFoundation(
                 if (next == null) break
                 notifyLiveWallpaper = notifyLiveWallpaper || next.notifyLiveWallpaper
                 fromSync = fromSync || next.fromSync
+                historyEdits.addAll(next.historyEdits)
                 request = next
             }
 
             try {
-                if (fromSync) {
+                if (fromSync && historyEdits.isEmpty()) {
                     repository.saveSettingsFromSync(request.settings)
                 } else {
-                    repository.saveSettings(request.settings, baseSettings)
+                    repository.saveSettings(request.settings, baseSettings, historyEdits)
                 }
                 PalleriaAccount.reconcile(getApplication(), request.settings.accounts)
                 if (notifyLiveWallpaper) {
@@ -824,9 +841,20 @@ abstract class IllustiaViewModelFoundation(
         }
     }
 
+    protected fun profileFailureMessage(
+        error: Throwable,
+        fallback: String = str(R.string.error_load_artist_failed),
+    ): String {
+        if (error.isNetworkFailure()) {
+            return fallback
+        }
+        return cleanErrorMessage(error, fallback)
+    }
+
     protected fun Throwable.isNetworkFailure(): Boolean {
         var current: Throwable? = this
         while (current != null) {
+            if (current is PixivApiException) return false
             if (current is IOException) return true
             current = current.cause
         }

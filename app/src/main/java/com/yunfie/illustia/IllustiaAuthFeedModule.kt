@@ -15,6 +15,7 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
@@ -944,11 +945,19 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun clearSearchHistory() {
-        updateSettings { it.copy(searchHistory = emptyList()) }
+        updateSettings(listOf(PallaSyncHistoryEdit.ClearSearch)) { it.copy(searchHistory = emptyList()) }
     }
 
     fun removeSearchHistoryItem(query: String) {
-        updateSettings { it.copy(searchHistory = it.searchHistory.filterNot { item -> item == query }) }
+        updateSettings(listOf(PallaSyncHistoryEdit.RemoveQuery(query))) {
+            it.copy(
+                searchHistory =
+                    it.searchHistory.filterNot { item ->
+                        item ==
+                            query
+                    },
+            )
+        }
     }
 
     fun clearFavoriteTags() {
@@ -1260,13 +1269,13 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun clearViewHistory() {
-        updateSettings { it.copy(viewHistory = emptyList()) }
+        updateSettings(listOf(PallaSyncHistoryEdit.ClearViewed)) { it.copy(viewHistory = emptyList()) }
     }
 
     fun removeViewHistory(ids: Collection<Long>) {
         val targetIds = ids.toSet()
         if (targetIds.isEmpty()) return
-        updateSettings { settings ->
+        updateSettings(listOf(PallaSyncHistoryEdit.RemoveViewed(targetIds.toList()))) { settings ->
             settings.copy(
                 viewHistory = settings.viewHistory.filterNot { illust -> illust.id in targetIds },
             )

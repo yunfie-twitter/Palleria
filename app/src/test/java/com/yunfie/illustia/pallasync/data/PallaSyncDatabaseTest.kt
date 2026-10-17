@@ -17,6 +17,27 @@ import java.lang.reflect.Proxy
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncDatabaseTest {
     @Test
+    fun `new root source selection lists active and archived chains without recovery metadata`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val database =
+                Room
+                    .inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java)
+                    .build()
+            try {
+                val dao = database.pallaSyncDao()
+                dao.updateChainState(chainState("archived-chain").copy(writeState = "archived"))
+                dao.updateChainState(chainState("active-chain").copy(writeState = "active"))
+                dao.updateChainState(chainState("paused-chain").copy(writeState = "integrity_paused"))
+
+                dao.getNewRootMigrationSourceIds() shouldBe listOf("active-chain", "archived-chain")
+            } finally {
+                database.close()
+            }
+        }
+    }
+
+    @Test
     fun `cursor inbox and lamport commit atomically while a failed page rolls back`() {
         runBlocking {
             val context = ApplicationProvider.getApplicationContext<Context>()

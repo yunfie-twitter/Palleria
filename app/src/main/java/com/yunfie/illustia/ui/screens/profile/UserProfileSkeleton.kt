@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -216,6 +217,140 @@ fun UserProfileSkeletonScreen(
                 onClick = onBack,
                 backgroundColor = Color.White.copy(alpha = 0.92f),
                 contentColor = Color.Black,
+            )
+        }
+    }
+}
+
+@Composable
+fun UserProfileErrorScreen(
+    message: String,
+    onBack: () -> Unit,
+    onRetry: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = MiuixTheme.colorScheme.surface,
+) {
+    PredictiveBackGestureHandler(onBack = onBack)
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(backgroundColor),
+    ) {
+        UserProfileStatusPlaceholder(
+            message = message,
+            isError = true,
+            onClick = onRetry,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp),
+        )
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .align(Alignment.TopStart),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            HeaderOverlayIcon(
+                icon = MiuixIcons.Back,
+                onClick = onBack,
+                backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+                contentColor = MiuixTheme.colorScheme.onBackground,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun UserProfileStatusPlaceholder(
+    message: String,
+    isError: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    val iconTint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.48f)
+    val textColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.8f)
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .then(
+                        if (onClick != null) {
+                            Modifier.clickable(onClick = onClick)
+                        } else {
+                            Modifier
+                        },
+                    ).padding(horizontal = 24.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier.size(52.dp),
+            ) {
+                val strokeWidth = 2.6.dp.toPx()
+                val stroke =
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeWidth,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                        join = androidx.compose.ui.graphics.StrokeJoin.Round,
+                    )
+                val inset = strokeWidth * 1.4f
+                val boxSize = size.width - inset * 2f
+                val corner = 9.dp.toPx()
+                drawRoundRect(
+                    color = iconTint,
+                    topLeft = Offset(inset, inset),
+                    size = androidx.compose.ui.geometry.Size(boxSize, boxSize),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+                    style = stroke,
+                )
+                if (isError) {
+                    val centerX = size.width / 2f
+                    drawLine(
+                        color = iconTint,
+                        start = Offset(centerX, size.height * 0.31f),
+                        end = Offset(centerX, size.height * 0.54f),
+                        strokeWidth = strokeWidth,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    )
+                    drawCircle(
+                        color = iconTint,
+                        radius = strokeWidth * 0.62f,
+                        center = Offset(centerX, size.height * 0.69f),
+                    )
+                } else {
+                    drawLine(
+                        color = iconTint,
+                        start = Offset(size.width * 0.32f, size.height * 0.43f),
+                        end = Offset(size.width * 0.68f, size.height * 0.43f),
+                        strokeWidth = strokeWidth,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconTint,
+                        start = Offset(size.width * 0.32f, size.height * 0.59f),
+                        end = Offset(size.width * 0.56f, size.height * 0.59f),
+                        strokeWidth = strokeWidth,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    )
+                }
+            }
+            top.yukonga.miuix.kmp.basic.Text(
+                text = message,
+                color = textColor,
+                style = MiuixTheme.textStyles.body2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
     }

@@ -9,7 +9,7 @@ import androidx.room.Update
 
 @Dao
 interface PallaSyncDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertOutboxEvent(event: OutboxEntity): Long
 
     @Query("SELECT * FROM pallasync_outbox WHERE status = 'queued' ORDER BY device_seq ASC")
@@ -18,7 +18,42 @@ interface PallaSyncDao {
     @Query("SELECT * FROM pallasync_outbox WHERE chain_id = :chainId AND status = 'queued' ORDER BY device_seq ASC")
     suspend fun getQueuedEvents(chainId: String): List<OutboxEntity>
 
-    @Query("UPDATE pallasync_outbox SET status = 'queued' WHERE chain_id = :chainId AND device_seq = 0 AND status != 'accepted'")
+    @Query("SELECT * FROM pallasync_outbox WHERE chain_id=:chainId AND status='queued' ORDER BY device_seq ASC,id ASC LIMIT :limit")
+    suspend fun queuedBatch(
+        chainId: String,
+        limit: Int,
+    ): List<OutboxEntity>
+
+    @Query("SELECT * FROM pallasync_outbox WHERE chain_id=:chain AND record_id=:record LIMIT 1")
+    suspend fun outboxRecord(
+        chain: String,
+        record: String,
+    ): OutboxEntity?
+
+    @Query(
+        "UPDATE pallasync_chain_state SET author_seq=:sequence,author_tail_hash=:hash,lamport=MAX(lamport,:lamport) WHERE chainId=:chain AND author_seq=:previousSequence",
+    )
+    suspend fun commitAuthorTail(
+        chain: String,
+        previousSequence: Long,
+        sequence: Long,
+        hash: String,
+        lamport: Long,
+    ): Int
+
+    @Query(
+        "UPDATE pallasync_inbox SET status='applied',quarantine_reason=NULL,relay_seq=:sequence WHERE chain_id=:chain AND record_id=:record AND raw_record_json=:raw",
+    )
+    suspend fun resolveInboxRecord(
+        chain: String,
+        record: String,
+        raw: String,
+        sequence: Long,
+    ): Int
+
+    @Query(
+        "UPDATE pallasync_outbox SET status = 'queued' WHERE chain_id = :chainId AND device_seq = 0 AND status NOT IN ('accepted','reseed_rebased')",
+    )
     suspend fun requeueControlEvents(chainId: String)
 
     @Query(
@@ -53,6 +88,42 @@ interface PallaSyncDao {
     @Query("DELETE FROM pallasync_outbox WHERE id = :id")
     suspend fun deleteOutboxEvent(id: Long)
 
+    @Query("SELECT * FROM pallasync_outbox WHERE id=:id")
+    suspend fun outboxEvent(id: Long): OutboxEntity?
+
+    @Query("SELECT COUNT(*) FROM pallasync_outbox WHERE chain_id=:chain AND status NOT IN ('accepted','reseed_rebased')")
+    suspend fun pendingOutboxCount(chain: String): Long
+
+    @Query(
+        "SELECT * FROM pallasync_outbox WHERE chain_id=:chain AND id>:after AND status NOT IN ('accepted','reseed_rebased') ORDER BY id LIMIT :limit",
+    )
+    suspend fun pendingOutboxPage(
+        chain: String,
+        after: Long,
+        limit: Int,
+    ): List<OutboxEntity>
+
+    @Query("SELECT MAX(id) FROM pallasync_outbox WHERE chain_id=:chain AND status NOT IN ('accepted','reseed_rebased')")
+    suspend fun lastPendingOutboxId(chain: String): Long?
+
+    @Query("DELETE FROM pallasync_outbox WHERE id=:id AND chain_id=:chainId AND record_id=:recordId AND object_hash=:objectHash")
+    suspend fun removeReceiptConfirmedOutbox(
+        id: Long,
+        chainId: String,
+        recordId: String,
+        objectHash: String,
+    ): Int
+
+    @Query(
+        "UPDATE pallasync_outbox SET status='reseed_rebased' WHERE id=:id AND chain_id=:chainId AND record_id=:recordId AND object_hash=:objectHash AND status NOT IN ('accepted','reseed_rebased')",
+    )
+    suspend fun markReseedRebased(
+        id: Long,
+        chainId: String,
+        recordId: String,
+        objectHash: String,
+    ): Int
+
     @Update
     suspend fun updateOutboxEvent(event: OutboxEntity)
 
@@ -62,11 +133,20 @@ interface PallaSyncDao {
     @Query("SELECT * FROM pallasync_chain_state")
     suspend fun getAllChainStates(): List<ChainStateEntity>
 
-    @Query("SELECT * FROM pallasync_chain_state LIMIT 1")
+    @Query("SELECT chainId FROM pallasync_chain_state WHERE write_state IN ('active','archived') ORDER BY chainId")
+    suspend fun getNewRootMigrationSourceIds(): List<String>
+
+    @Query("SELECT * FROM pallasync_chain_state WHERE write_state NOT IN ('archived','activation_preparing')")
+    suspend fun getActiveChainStates(): List<ChainStateEntity>
+
+    @Query("SELECT * FROM pallasync_chain_state WHERE write_state NOT IN ('archived','activation_preparing') LIMIT 1")
     suspend fun getActiveChainState(): ChainStateEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateChainState(state: ChainStateEntity)
+
+    @Query("UPDATE pallasync_chain_state SET write_state='integrity_paused' WHERE chainId=:chainId AND write_state!='archived'")
+    suspend fun pauseIntegrityWrites(chainId: String): Int
 
     @Query(
         """
@@ -78,7 +158,7 @@ interface PallaSyncDao {
         WHERE chainId = :chainId
         """,
     )
-    suspend fun advanceLastRelaySeq(
+    suspend fun advanceRecordsCursor(
         chainId: String,
         lastRelaySeq: Long,
     ): Int
@@ -165,27 +245,32 @@ interface PallaSyncDao {
     @Query("DELETE FROM pallasync_inbox WHERE chain_id = :chainId")
     suspend fun clearInboxRecords(chainId: String)
 
-    @Query("DELETE FROM pallasync_outbox WHERE chain_id != :chainId")
-    suspend fun deleteOutboxForOtherChains(chainId: String)
+    @Query("DELETE FROM pallasync_outbox WHERE chain_id=:chainId")
+    suspend fun clearOutboxForChain(chainId: String)
 
-    @Query("DELETE FROM pallasync_chain_state WHERE chainId != :chainId")
-    suspend fun deleteOtherChainStates(chainId: String)
+    @Query("DELETE FROM pallasync_chain_state WHERE chainId=:chainId")
+    suspend fun clearChainState(chainId: String)
 
-    @Query("DELETE FROM pallasync_devices WHERE chainId != :chainId")
-    suspend fun deleteDevicesForOtherChains(chainId: String)
+    @Query("DELETE FROM pallasync_devices WHERE chainId=:chainId")
+    suspend fun clearDevicesForChain(chainId: String)
 
-    @Query("DELETE FROM pallasync_inbox WHERE chain_id != :chainId")
-    suspend fun deleteInboxForOtherChains(chainId: String)
+    @Transaction
+    suspend fun clearVerifiedDeletedChain(chainId: String) {
+        clearOutboxForChain(chainId)
+        clearChainState(chainId)
+        clearDevicesForChain(chainId)
+        clearInboxRecords(chainId)
+    }
+
+    @Query("UPDATE pallasync_chain_state SET write_state='archived' WHERE chainId!=:chainId")
+    suspend fun archiveOtherChainStates(chainId: String)
 
     @Transaction
     suspend fun retainOnlyChain(chainId: String) {
-        deleteOutboxForOtherChains(chainId)
-        deleteOtherChainStates(chainId)
-        deleteDevicesForOtherChains(chainId)
-        deleteInboxForOtherChains(chainId)
+        archiveOtherChainStates(chainId)
     }
 
-    /** Atomically persists page receipts and advances the durable relay cursor. */
+    /** §11.2: persist record-only downloads and their separate cursor; global D/V/M require full log bytes. */
     @Transaction
     suspend fun commitInboxPage(
         chainId: String,
@@ -199,7 +284,7 @@ interface PallaSyncDao {
             "Inbox page does not match its chain or cursor"
         }
         insertInboxRecords(records)
-        check(advanceLastRelaySeq(chainId, lastRelaySeq) == 1) {
+        check(advanceRecordsCursor(chainId, lastRelaySeq) == 1) {
             "Cannot advance cursor for inactive chain $chainId"
         }
         check(advanceLamport(chainId, maxLamport) == 1) {
@@ -231,7 +316,7 @@ interface PallaSyncDao {
     }
 
     /**
-     * Switches the single active chain without exposing a partially-cleared local state.
+     * Archives previous chains and preserves their outbox, evidence and logical state (§9/§17).
      * Key material is committed separately by PallaSyncKeystore after the remote join
      * succeeds; the coordinator serializes those two commits.
      */
@@ -243,15 +328,13 @@ interface PallaSyncDao {
         require(initialEvents.all { it.chainId == state.chainId }) {
             "Initial outbox contains a different chain"
         }
-        clearOutboxEvents()
-        clearChainStates()
-        clearDevices()
-        clearInboxRecords()
+        check(getChainState(state.chainId) == null) { "C_MISSING_DEPENDENCY" }
+        archiveOtherChainStates(state.chainId)
         updateChainState(state)
         initialEvents.forEach { insertOutboxEvent(it) }
     }
 
-    /** Clears all chain-scoped data after the relay explicitly returns HTTP 410. */
+    /** Explicit local-erasure entry point. A relay status never authorizes invoking it. */
     @Transaction
     suspend fun clearActiveChainData() {
         clearOutboxEvents()

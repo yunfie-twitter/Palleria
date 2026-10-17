@@ -23,6 +23,7 @@ android {
         targetSdk = 36
         versionCode = 166
         versionName = "7.0.0-beta.3"
+        testInstrumentationRunner = "com.yunfie.illustia.pallasync.PallaSyncTestRunner"
     }
 
     signingConfigs {
@@ -344,7 +345,7 @@ androidComponents {
         variant.outputs.forEach { output ->
             def abi = output.filters.find { it.filterType.name() == "ABI" }?.identifier
             def outputKind = abi ?: "universal"
-            def name = "Palleria-v${android.defaultConfig.versionName}-${variant.name}-${outputKind}.apk"
+            def name = "Palleria-v${project.extensions.getByName('android').defaultConfig.versionName}-${variant.name}-${outputKind}.apk"
             output.outputFileName.set(name)
         }
     }
@@ -422,6 +423,13 @@ dependencies {
     testImplementation libs.androidx.test.core
     testImplementation libs.robolectric
     testRuntimeOnly libs.junit.vintage
+    androidTestImplementation libs.androidx.test.core
+    androidTestImplementation libs.androidx.test.junit
+    androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.espresso.core
+    androidTestImplementation libs.uiautomator
+    androidTestImplementation platform(libs.compose.bom)
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4"
 }
 
 
