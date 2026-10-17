@@ -397,6 +397,25 @@ class PallaSyncRelayInteropTest {
         assertEquals(event.signedJson, resolved.evidenceJson)
         assertEquals("resolved", resolved.resolutionState)
 
+        // A separate authority proof gap has a distinct recovery reason. Re-stage the same
+        // immutable accepted object as unproven and require the retry to fetch and validate its
+        // exact signed receipt/transparency evidence before materializing it again.
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE ps_quarantine SET reason='C_ACCEPTANCE_UNPROVEN',resolution_state='unresolved' WHERE chain_id=? AND object_hash=?",
+            arrayOf(chain, event.objectHash),
+        )
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        val retryAcceptanceProof = coordinator.retryQuarantinedRecordEvidence(event.objectHash)
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), retryAcceptanceProof)
+        assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        val acceptanceResolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
+        assertEquals("C_ACCEPTANCE_UNPROVEN", acceptanceResolved.reason)
+        assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
+        assertEquals("resolved", acceptanceResolved.resolutionState)
+
     }
 
     private fun exerciseBoundOrigin(
