@@ -26,6 +26,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -214,6 +215,28 @@ class PallaSyncRelayInteropTest {
                     keys.authorityHash(state.chainId),
                     PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId))),
                 )
+                if (args.getString("delete_chain") == "true") {
+                    val deletion = coordinator.requestChainDeletion(phrase)
+                    assertEquals(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT, deletion)
+                    val proof = checkNotNull(coordinator.pendingDeletionProof())
+                    val proofFile = java.io.File.createTempFile("pallasync-delete-proof-", ".json", context.cacheDir)
+                    val bundleFile = java.io.File.createTempFile("pallasync-delete-bundle-", ".json", context.cacheDir)
+                    try {
+                        proofFile.writeText(proof, Charsets.UTF_8)
+                        val proofReadback = proofFile.readText(Charsets.UTF_8)
+                        assertEquals(proof, proofReadback)
+                        val archive = checkNotNull(coordinator.pendingDeletionEvidenceArchive())
+                        bundleFile.writeText(archive, Charsets.UTF_8)
+                        val archiveReadback = PallaSyncDeletionEvidenceArchive.parseStrictObject(bundleFile.readText(Charsets.UTF_8))
+                        assertEquals(setOf("delete_receipt", "evidence_bundle"), archiveReadback.keys)
+                        assertTrue(coordinator.completeDeletionAfterExport(proofReadback, explicitlyConfirmedOfflineCopy = true))
+                        assertEquals(null, store.dao.getChainState(state.chainId))
+                        assertNotNull(store.deletionEvidenceDao().latestReceiptRevision(state.chainId, checkNotNull(state.logId)))
+                    } finally {
+                        proofFile.delete()
+                        bundleFile.delete()
+                    }
+                }
                 InstrumentationRegistry.getInstrumentation().sendStatus(
                     0,
                     Bundle().apply {

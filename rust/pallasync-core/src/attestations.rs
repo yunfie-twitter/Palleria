@@ -511,7 +511,8 @@ pub fn validate_deletion_proof(
             && (!ledger["completed_at_ms"].is_null() || entry["object_hash"] == object_hash(ledger))
             && receipt["transparency_id"] == entry["transparency_id"]
             && receipt["transparency_index"] == entry["entry_index"]
-            && receipt["transparency_hash"] == object_hash(entry),
+            && receipt["transparency_hash"]
+                == transparency_link(s(entry, "previous_transparency_hash"), entry, pin)?,
         "C_DELETION_UNVERIFIED",
     )?;
     Ok(proof.clone())

@@ -4926,6 +4926,7 @@ internal class PalleriaSyncCoordinator(
             requireSnapshotResult(consistencyProbe.run(context.base, context.state.chainId))
         }
         val body = prepareDeletionRequest(root, context)
+        log("Signed deletion request prepared")
         val chainUrl = PallaSyncUrls.chain(context.base, context.state.chainId)
         val deletionUrl = chainUrl.newBuilder().addPathSegment("deletion").build()
         val deleteToken =
@@ -4941,6 +4942,7 @@ internal class PalleriaSyncCoordinator(
                 .delete(body.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
         val deleteResult = remote.executeUnit(deleteRequest)
+        log("Deletion request response received; fetching signed proof")
         if (deleteResult !is PallaSyncHttpResult.Success) log("Deletion response did not confirm erasure; checking signed proof")
         val getToken = checkNotNull(root.token(context.origin, "GET", deletionUrl.encodedPath)) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
         val getRequest =
@@ -4959,7 +4961,9 @@ internal class PalleriaSyncCoordinator(
                     log("C_DELETION_UNVERIFIED: signed deletion proof is not available; local data retained")
                 }
             }
+        log("Signed deletion proof fetched; validating pinned authority and receipt")
         val evidence = validateDeletionProof(context, body, proofBytes)
+        log("Signed deletion proof validated")
         db.protocolDao().retainDeletionProof(evidence)
         if (activeChainStateLocked()?.chainId == context.state.chainId) {
             SettingsStore(appContext).setPallaSyncEnabledFromCoordinator(false)
@@ -5704,7 +5708,9 @@ internal class PalleriaSyncCoordinator(
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     private fun deletionFailure(failure: Exception): PallaSyncDeletionRequestResult {
-        val code = (failure as? IllegalStateException)?.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_DELETION_UNVERIFIED"
+        val code =
+            failure.message?.let { Regex("C_[A-Z_]+").find(it)?.value }
+                ?: "C_DELETION_UNVERIFIED"
         log("$code: deletion could not be verified or erased; recoverable local data retained")
         return PallaSyncDeletionRequestResult.FAILED
     }
