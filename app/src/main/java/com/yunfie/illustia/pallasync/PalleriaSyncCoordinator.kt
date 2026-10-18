@@ -2148,9 +2148,13 @@ internal class PalleriaSyncCoordinator(
                 val baselineText = checkNotNull(journal.sourceConflictReportJson) { "C_MISSING_DEPENDENCY" }
                 val baseline = Json.parseToJsonElement(baselineText).jsonObject
                 val sourceEntity =
-                    checkNotNull(db.protocolDao().archivedAuthority(state.chainId, journal.sourceGeneration)) {
-                        "C_MISSING_DEPENDENCY"
-                    }
+                    checkNotNull(
+                        db.protocolDao().authorityObject(
+                            state.chainId,
+                            "checkpoint",
+                            baseline.getValue("source_authority_hash").jsonPrimitive.content,
+                        ),
+                    ) { "C_MISSING_DEPENDENCY" }
                 val sourceAuthority = Json.parseToJsonElement(sourceEntity.signedJson).jsonObject
                 val sourceAuthorityHash = checkNotNull(PallaSyncCore.objectHash(sourceEntity.signedJson))
                 val sourcePin = sourceAuthority.getValue("pin").jsonObject
@@ -2161,7 +2165,8 @@ internal class PalleriaSyncCoordinator(
                         sourcePin.getValue("log_id").jsonPrimitive.content == journal.sourceLogId &&
                         baseline.getValue("source_origin").jsonPrimitive.content == sourceOrigin &&
                         baseline.getValue("source_log_id").jsonPrimitive.content == journal.sourceLogId &&
-                        baseline.getValue("source_generation").jsonPrimitive.long == journal.sourceGeneration,
+                        baseline.getValue("source_generation").jsonPrimitive.long == journal.sourceGeneration &&
+                        sourceEntity.validationState == "archived_checkpoint",
                 ) { "C_ROLLBACK_DETECTED" }
                 val source =
                     when (val normalized = PallaSyncUrls.normalize(sourceOrigin)) {
@@ -2297,6 +2302,16 @@ internal class PalleriaSyncCoordinator(
             ) { "C_ROLLBACK_DETECTED" }
             return
         }
+        val targetAuthorityHash = currentText?.let(PallaSyncCore::objectHash)
+        val sourceAuthorityHashFromJournal =
+            journal.sourceConflictReportJson
+                ?.let { Json.parseToJsonElement(it).jsonObject }
+                ?.get("source_authority_hash")
+                ?.jsonPrimitive
+                ?.content
+        val sourceAuthorityHashPinned =
+            keystore.authorityHash(chain)
+                ?.takeIf { it != targetAuthorityHash }
         val sourceEntity =
             if (current
                     ?.get("parameters")
@@ -2309,7 +2324,13 @@ internal class PalleriaSyncCoordinator(
                 check(keystore.authorityHash(chain) == hash) { "C_ROLLBACK_DETECTED" }
                 checkNotNull(protocolDao.authorityObject(chain, "checkpoint", hash)) { "C_MISSING_DEPENDENCY" }
             } else {
-                checkNotNull(protocolDao.archivedAuthority(chain, journal.sourceGeneration)) { "C_MISSING_DEPENDENCY" }
+                val sourceAuthorityHash =
+                    sourceAuthorityHashFromJournal ?: sourceAuthorityHashPinned ?: error("C_MISSING_DEPENDENCY")
+                checkNotNull(protocolDao.authorityObject(chain, "checkpoint", sourceAuthorityHash)) {
+                    "C_MISSING_DEPENDENCY"
+                }.also { entity ->
+                    check(entity.validationState == "archived_checkpoint") { "C_ROLLBACK_DETECTED" }
+                }
             }
         val sourceAuthority = Json.parseToJsonElement(sourceEntity.signedJson).jsonObject
         val sourceHash = checkNotNull(PallaSyncCore.objectHash(sourceEntity.signedJson))

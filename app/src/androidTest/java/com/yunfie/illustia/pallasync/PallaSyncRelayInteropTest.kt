@@ -211,10 +211,36 @@ class PallaSyncRelayInteropTest {
                         val firstCommit = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
                         assertTrue("Reseed cutover fault was not injected: $requestedFault", faultInjected)
                         assertTrue("Reseed cutover fault did not interrupt commit", firstCommit.isFailure)
-                        assertTrue(
-                            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-                            coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") is PallaSyncHttpResult.Success,
+                    val sourceAuthority =
+                        Json.parseToJsonElement(
+                            checkNotNull(store.protocolDao().archivedAuthority(state.chainId, 0)).signedJson,
+                        ).jsonObject
+                    val sourceHash = PallaSyncCore.objectHash(sourceAuthority.toString())
+                    val targetHash = PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId)))
+                    val interruptedState = checkNotNull(store.dao.getChainState(state.chainId))
+                    val interruptedJournal = checkNotNull(store.snapshotDatabase().reseedJournalDao().get(state.chainId))
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("reseed_fault_injected", faultInjected.toString())
+                            putString("reseed_fault_phase", interruptedJournal.phase.toString())
+                            putString("reseed_fault_generation", interruptedState.generation.toString())
+                            putString("reseed_fault_pinned_source", (keys.authorityHash(state.chainId) == sourceHash).toString())
+                            putString("reseed_fault_pinned_target", (keys.authorityHash(state.chainId) == targetHash).toString())
+                            putString("reseed_fault_active_is_archived", (keys.getActiveChainKeys()?.deviceId == keys.getArchivedChainKeys(state.chainId)?.deviceId).toString())
+                        },
+                    )
+                    val resumed = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                    if (resumed.isFailure) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("reseed_resume_error", resumed.exceptionOrNull()?.message) },
                         )
+                    }
+                    assertTrue(
+                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                        resumed.getOrThrow() is PallaSyncHttpResult.Success,
+                    )
                     } else {
                         val committed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
                         assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), committed is PallaSyncHttpResult.Success)

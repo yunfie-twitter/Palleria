@@ -100,6 +100,8 @@ interface ReseedJournalDao {
                 previous.getValue("source_origin") == candidate.getValue("source_origin") &&
                     previous.getValue("source_log_id") == candidate.getValue("source_log_id") &&
                     previous.getValue("source_generation") == candidate.getValue("source_generation") &&
+                    (previous["source_authority_hash"] == null ||
+                        previous.getValue("source_authority_hash") == candidate.getValue("source_authority_hash")) &&
                     previous.getValue("source_cut_seq") == candidate.getValue("source_cut_seq") &&
                     previous.getValue("source_cut_hash") == candidate.getValue("source_cut_hash") &&
                     previous.getValue("source_cut_parameters_hash") == candidate.getValue("source_cut_parameters_hash") &&

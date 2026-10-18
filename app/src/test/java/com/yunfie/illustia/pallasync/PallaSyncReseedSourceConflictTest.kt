@@ -13,6 +13,7 @@ class PallaSyncReseedSourceConflictTest {
         val report = PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 14, headHash = "head-14"), ORIGIN, 3)
 
         report?.getValue("source_cut_seq")?.jsonPrimitive?.long shouldBe 11
+        report?.getValue("source_authority_hash")?.jsonPrimitive?.content shouldBe PallaSyncCore.objectHash("{}")
         report?.getValue("observed_head_seq")?.jsonPrimitive?.long shouldBe 14
         report?.getValue("unimported_entry_count")?.jsonPrimitive?.long shouldBe 3
         report?.getValue("unimported_first_seq")?.jsonPrimitive?.long shouldBe 12

@@ -55,6 +55,7 @@ internal object PallaSyncReseedSourceConflict {
             put("source_origin", sourceOrigin)
             put("source_log_id", checkNotNull(cut.logId))
             put("source_generation", cut.generation)
+            put("source_authority_hash", checkNotNull(PallaSyncCore.objectHash(checkpoint.authority.toString())))
             put("source_cut_seq", cutSequence)
             put("source_cut_hash", checkNotNull(cut.verifiedHash))
             put("source_cut_parameters_hash", checkNotNull(cut.parametersHash))

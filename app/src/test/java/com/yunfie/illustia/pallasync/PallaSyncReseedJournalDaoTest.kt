@@ -149,7 +149,7 @@ class PallaSyncReseedJournalDaoTest {
         headHash: String,
         count: Long,
     ): String =
-        """{"source_origin":"https://relay.example","source_log_id":"$SOURCE_LOG","source_generation":4,"source_cut_seq":7,"source_cut_hash":"cut","source_cut_parameters_hash":"params","source_cut_epoch_hash":"epoch","observed_head_seq":$head,"observed_head_hash":"$headHash","observed_parameters_hash":"parameters-$head","observed_epoch_hash":"epoch-$head","unimported_entry_count":$count,"unimported_first_seq":8,"unimported_last_seq":$head}"""
+        """{"source_origin":"https://relay.example","source_log_id":"$SOURCE_LOG","source_generation":4,"source_authority_hash":"authority","source_cut_seq":7,"source_cut_hash":"cut","source_cut_parameters_hash":"params","source_cut_epoch_hash":"epoch","observed_head_seq":$head,"observed_head_hash":"$headHash","observed_parameters_hash":"parameters-$head","observed_epoch_hash":"epoch-$head","unimported_entry_count":$count,"unimported_first_seq":8,"unimported_last_seq":$head}"""
 
     private companion object {
         const val CHAIN = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
