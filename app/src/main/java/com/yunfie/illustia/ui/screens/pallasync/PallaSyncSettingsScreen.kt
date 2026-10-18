@@ -1099,6 +1099,9 @@ fun PallaSyncSettingsScreen(
         val preview = checkNotNull(witnessInputPreview)
         val info =
             "${preview.chainId}\n${preview.deletionId}\n" +
+                stringResource(R.string.pallasync_witness_receipt_hash, preview.receiptHash) + "\n" +
+                stringResource(R.string.pallasync_witness_assurance, preview.assurance) + "\n" +
+                stringResource(R.string.pallasync_witness_requested_at, preview.requestedAtMs) + "\n" +
                 stringResource(R.string.pallasync_witness_existing_count, preview.existingWitnessCount)
         MiuixConfirmDialog(
             show = true,

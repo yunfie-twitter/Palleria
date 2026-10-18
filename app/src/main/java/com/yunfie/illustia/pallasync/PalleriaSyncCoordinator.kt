@@ -137,6 +137,9 @@ internal enum class PallaSyncDeletionRequestResult {
 internal data class PallaSyncDeletionWitnessPreview(
     val chainId: String,
     val deletionId: String,
+    val receiptHash: String,
+    val assurance: String,
+    val requestedAtMs: String,
     val existingWitnessCount: Int,
 )
 
@@ -6026,6 +6029,9 @@ internal class PalleriaSyncCoordinator(
                 PallaSyncDeletionWitnessPreview(
                     chainId = chain,
                     deletionId = receipt.getValue("deletion_id").jsonPrimitive.content,
+                    receiptHash = checkNotNull(PallaSyncCore.objectHash(receipt.toString())) { "C_SCHEMA_VIOLATION" },
+                    assurance = receipt.getValue("assurance").jsonPrimitive.content,
+                    requestedAtMs = receipt.getValue("requested_at_ms").jsonPrimitive.content,
                     existingWitnessCount = bundle.getValue("witnesses").jsonArray.size,
                 )
             }

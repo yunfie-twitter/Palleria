@@ -99,6 +99,9 @@
     <string name="pallasync_witness_import_summary">DeleteReceipt archiveを読み込み、chainと削除IDを確認して、この端末から任意のwitnessに署名します。</string>
     <string name="pallasync_witness_confirm_title">削除意図のwitnessに署名しますか？</string>
     <string name="pallasync_witness_confirm_summary">この端末は以下の削除receiptを確認したことに署名します。削除を認可せず、物理消去の証明にもなりません。\n%1$s</string>
+    <string name="pallasync_witness_receipt_hash">署名済みreceipt全体のハッシュ: %1$s</string>
+    <string name="pallasync_witness_assurance">削除保証方式: %1$s</string>
+    <string name="pallasync_witness_requested_at">要求時刻 (Unix ms): %1$s</string>
     <string name="pallasync_witness_existing_count">有効な既存witness数: %1$d</string>
     <string name="pallasync_witness_confirm_action">署名して書き出す</string>
     <string name="pallasync_witness_exported">witness bundleを書き出し、読み戻しを確認しました。削除を管理する端末へ転送してください。</string>

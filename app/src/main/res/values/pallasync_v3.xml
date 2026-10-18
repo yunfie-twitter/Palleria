@@ -117,6 +117,9 @@
     <string name="pallasync_witness_import_summary">Import a DeleteReceipt archive, review its chain and deletion ID, and optionally sign an intent witness on this active device.</string>
     <string name="pallasync_witness_confirm_title">Sign deletion intent witness?</string>
     <string name="pallasync_witness_confirm_summary">This device will sign a statement confirming the exact deletion receipt below. It does not authorize deletion or prove physical erasure.\n%1$s</string>
+    <string name="pallasync_witness_receipt_hash">Complete signed receipt hash: %1$s</string>
+    <string name="pallasync_witness_assurance">Deletion assurance: %1$s</string>
+    <string name="pallasync_witness_requested_at">Requested at (Unix ms): %1$s</string>
     <string name="pallasync_witness_existing_count">Existing valid witnesses: %1$d</string>
     <string name="pallasync_witness_confirm_action">Sign and export witness</string>
     <string name="pallasync_witness_exported">Witness bundle saved and read back. Transfer it to the device managing deletion.</string>
