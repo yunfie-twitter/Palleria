@@ -351,6 +351,8 @@ class PalleriaSyncManager(
 
     internal suspend fun getClientStatus(): PallaSyncClientStatus? = coordinator.getClientStatus()
 
+    internal suspend fun confirmRelayCapacityRecovered(): Boolean = coordinator.confirmRelayCapacityRecovered()
+
     internal suspend fun getUnresolvedQuarantinePage(
         afterHash: String = "",
         limit: Int = 50,

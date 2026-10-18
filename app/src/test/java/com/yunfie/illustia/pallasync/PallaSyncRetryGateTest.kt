@@ -122,6 +122,24 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `507 capacity hints are diagnostic only and explicit resolution retries the retained request`() {
+        val gate = gate()
+        val hint = PallaSyncProblemHint(507, "QUOTA_EXCEEDED", true, usedBytes = 900, maxBytes = 1000)
+        val failure = checkNotNull(classifyPallaSyncHttpStatus(507, hint))
+        failure shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED", 507)
+        gate.observe(request(), failure, hint)
+
+        gate.capacityIssue(origin, chain) shouldBe PallaSyncRetryGate.CapacityIssue("QUOTA_EXCEEDED", 900, 1000, wall)
+        gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED")
+        gate.resolveCapacity(origin, "another-chain") shouldBe false
+        gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED")
+
+        gate.resolveCapacity(origin, chain) shouldBe true
+        gate.capacityIssue(origin, chain) shouldBe null
+        gate.before(request()) shouldBe null
+    }
+
+    @Test
     fun `relay shutdown suspends writes and persists destination only as an explicit suggestion`() {
         val gate = gate { 0 }
         val hint =

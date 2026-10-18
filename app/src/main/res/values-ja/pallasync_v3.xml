@@ -126,6 +126,14 @@
     <string name="pallasync_snapshot_bootstrap_running">選択したsnapshotのpartを検証してinstallしています…</string>
     <string name="pallasync_snapshot_bootstrap_installed">snapshotをinstallしました。署名済みsuffixの再生を開始します。</string>
     <string name="pallasync_progress_title">同期進捗とローカル履歴容量</string>
+    <string name="pallasync_retry_wait">自動再試行まで: %1$d 秒</string>
+    <string name="pallasync_relay_capacity_hint">リレーは直近で %1$s を返しました。応答が示した容量: 使用 %2$s bytes / 上限 %3$s bytes。このエラー情報は署名されておらず、リレー容量の証明ではありません。</string>
+    <string name="pallasync_relay_capacity_unknown">使用量は応答に含まれていません。</string>
+    <string name="pallasync_relay_capacity_resume">リレーの容量が回復したことを確認しました</string>
+    <string name="pallasync_relay_capacity_confirm_title">容量回復後に再試行しますか？</string>
+    <string name="pallasync_relay_capacity_confirm_summary">この端末の507ブロックだけを解除し、保持中の元の処理を通常の同期経路で再試行します。キュー済みデータは破棄しません。リレーの保存領域または割当量が対処済みの場合にのみ確認してください。</string>
+    <string name="pallasync_relay_capacity_resumed">保持中の処理を再試行しています</string>
+    <string name="pallasync_relay_capacity_not_resolved">解除できる容量ブロックがありません</string>
     <string name="pallasync_progress_state">書込み状態: %1$s</string>
     <string name="pallasync_progress_positions">ダウンロード済み %1$d · 検証済み %2$d · 適用済み %3$d</string>
     <string name="pallasync_progress_transparency">透明性entry_index: 検証済みanchor %1$d · 最後に署名確認したtarget %2$d（別カウンタ）</string>

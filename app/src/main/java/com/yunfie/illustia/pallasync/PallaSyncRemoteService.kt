@@ -212,6 +212,8 @@ internal data class PallaSyncProblemHint(
     val retryable: Boolean,
     @SerialName("server_time_ms") val serverTimeMs: Long? = null,
     @SerialName("retry_after_ms") val retryAfterMs: Long? = null,
+    @SerialName("used_bytes") val usedBytes: Long? = null,
+    @SerialName("max_bytes") val maxBytes: Long? = null,
     @SerialName("shutdown_at_ms") val shutdownAtMs: Long? = null,
     @SerialName("migration_origin") val migrationOrigin: String? = null,
 )

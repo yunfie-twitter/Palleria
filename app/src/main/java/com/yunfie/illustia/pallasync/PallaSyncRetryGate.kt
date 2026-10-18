@@ -36,10 +36,20 @@ internal class PallaSyncRetryGate(
         val clockFailures: Int = 0,
         val uncertainScopes: Set<String> = emptySet(),
         val blockedRequests: Map<String, String> = emptyMap(),
+        val blockedRequestChains: Map<String, String> = emptyMap(),
+        val capacityIssues: Map<String, CapacityIssue> = emptyMap(),
         val relayShuttingDown: Boolean = false,
         val shutdownAtMs: Long? = null,
         val migrationOrigin: String? = null,
         val noticeId: String? = null,
+    )
+
+    @Serializable
+    data class CapacityIssue(
+        val code: String,
+        val usedBytes: Long? = null,
+        val maxBytes: Long? = null,
+        val observedAtMs: Long,
     )
 
     data class RelayShutdownNotice(
@@ -73,6 +83,14 @@ internal class PallaSyncRetryGate(
         }
 
     fun hasDeferredRetry(origin: String): Boolean = synchronized(lock) { load(origin).attempt > 0 }
+
+    fun capacityIssue(
+        origin: String,
+        chain: String,
+    ): CapacityIssue? =
+        synchronized(lock) {
+            load(origin).capacityIssues[chain]
+        }
 
     fun before(request: Request): PallaSyncHttpResult<Nothing>? {
         val origin = PallaSyncUrls.extractOrigin(request.url)
@@ -153,8 +171,31 @@ internal class PallaSyncRetryGate(
 
                 is PallaSyncHttpResult.ProtocolError -> {
                     if (result.statusCode in LIFECYCLE_STATUSES) {
+                        val key = fingerprint(request)
+                        val chain = chainId(request)
+                        val capacityIssue =
+                            if (result.statusCode == 507 &&
+                                problem?.code in CAPACITY_CODES &&
+                                chain != null
+                            ) {
+                                CapacityIssue(
+                                    code = checkNotNull(problem).code,
+                                    usedBytes = problem.usedBytes,
+                                    maxBytes = problem.maxBytes,
+                                    observedAtMs = wall(),
+                                )
+                            } else {
+                                null
+                            }
                         state.copy(
-                            blockedRequests = state.blockedRequests + (fingerprint(request) to (problem?.code ?: "C_MISSING_DEPENDENCY")),
+                            blockedRequests = state.blockedRequests + (key to (problem?.code ?: "C_MISSING_DEPENDENCY")),
+                            blockedRequestChains = chain?.let { state.blockedRequestChains + (key to it) } ?: state.blockedRequestChains,
+                            capacityIssues =
+                                if (chain != null && capacityIssue != null) {
+                                    state.capacityIssues + (chain to capacityIssue)
+                                } else {
+                                    state.capacityIssues
+                                },
                         )
                     } else {
                         state
@@ -246,6 +287,31 @@ internal class PallaSyncRetryGate(
         save(origin, state.copy(blockedRequests = state.blockedRequests.filterValues { it != code }))
     }
 
+    /** §17.8: a capacity error is unblocked only after the user confirms the prerequisite changed. */
+    fun resolveCapacity(
+        origin: String,
+        chain: String,
+    ): Boolean =
+        synchronized(lock) {
+            val state = load(origin)
+            val issue = state.capacityIssues[chain] ?: return@synchronized false
+            if (issue.code !in CAPACITY_CODES) return@synchronized false
+            val resolved =
+                state.blockedRequests
+                    .filter { (key, code) -> code == issue.code && state.blockedRequestChains[key] == chain }
+                    .keys
+            if (resolved.isEmpty()) return@synchronized false
+            save(
+                origin,
+                state.copy(
+                    blockedRequests = state.blockedRequests - resolved,
+                    blockedRequestChains = state.blockedRequestChains - resolved,
+                    capacityIssues = state.capacityIssues - chain,
+                ),
+            )
+            true
+        }
+
     private fun deadline(
         state: State,
         wait: Long,
@@ -278,6 +344,8 @@ internal class PallaSyncRetryGate(
             .split('/')
             .take(CHAIN_SCOPE_SEGMENTS)
             .joinToString("/")
+
+    private fun chainId(request: Request): String? = PallaSyncRemoteService.chainIdForAuthorization(request.url.pathSegments)
 
     private fun fingerprint(request: Request): String {
         val digest = HashingSink.sha256(blackholeSink())
@@ -316,6 +384,7 @@ internal class PallaSyncRetryGate(
         private const val INVALID_HEADER_WAIT_MS = 3_600_000L
         private const val RATE_MAX_SECONDS = 3600L
         private val LIFECYCLE_STATUSES = setOf(403, 409, 507)
+        private val CAPACITY_CODES = setOf("QUOTA_EXCEEDED", "STORAGE_UNAVAILABLE")
 
         internal fun retryAfter(
             value: String?,

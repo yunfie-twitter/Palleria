@@ -161,6 +161,8 @@ fun PallaSyncSettingsScreen(
     var quarantineCursor by remember { mutableStateOf<String?>(null) }
     var loadingQuarantinePage by remember { mutableStateOf(false) }
     var retryingQuarantineHash by remember { mutableStateOf<String?>(null) }
+    var showCapacityRecoveryConfirm by remember { mutableStateOf(false) }
+    var resolvingCapacityRecovery by remember { mutableStateOf(false) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var pendingLegacyReport by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
@@ -650,6 +652,44 @@ fun PallaSyncSettingsScreen(
                 }
             }
         }
+    }
+
+    if (showCapacityRecoveryConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_relay_capacity_confirm_title),
+            summary = stringResource(R.string.pallasync_relay_capacity_confirm_summary),
+            confirmText = stringResource(R.string.action_confirm),
+            destructive = false,
+            onConfirm = {
+                showCapacityRecoveryConfirm = false
+                resolvingCapacityRecovery = true
+                scope.launch {
+                    val resolved =
+                        try {
+                            syncManager.confirmRelayCapacityRecovered()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            false
+                        } finally {
+                            resolvingCapacityRecovery = false
+                        }
+                    clientStatus = syncManager.getClientStatus()
+                    Toast
+                        .makeText(
+                            context,
+                            if (resolved) {
+                                R.string.pallasync_relay_capacity_resumed
+                            } else {
+                                R.string.pallasync_relay_capacity_not_resolved
+                            },
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
+            },
+            onDismiss = { showCapacityRecoveryConfirm = false },
+        )
     }
 
     if (showDeleteConfirm) {
@@ -1754,6 +1794,30 @@ fun PallaSyncSettingsScreen(
                                     status.unresolvedQuarantine,
                                 ),
                             )
+                            if (status.retryAfterMs > 0) {
+                                Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
+                            }
+                            status.capacityIssue?.let { issue ->
+                                DividerLine()
+                                val used = issue.usedBytes
+                                val maximum = issue.maxBytes
+                                if (used == null || maximum == null) {
+                                    Text(stringResource(R.string.pallasync_relay_capacity_unknown))
+                                }
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_relay_capacity_hint,
+                                        issue.code,
+                                        used?.toString() ?: "—",
+                                        maximum?.toString() ?: "—",
+                                    ),
+                                )
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_relay_capacity_resume),
+                                    enabled = !resolvingCapacityRecovery,
+                                    onClick = { showCapacityRecoveryConfirm = true },
+                                )
+                            }
                             DividerLine()
                             Text(stringResource(R.string.pallasync_capacity_search, status.searchCount, status.searchCeiling))
                             Text(stringResource(R.string.pallasync_capacity_viewed, status.viewedCount, status.viewedCeiling))

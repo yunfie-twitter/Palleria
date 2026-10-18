@@ -120,6 +120,8 @@ class PallaSyncPolicyGate internal constructor(
         check(previous == null || previous == normalizeOrigin(origin)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
     }
 
+    internal fun boundChainOrigin(chain: String): String? = prefs.getString("chain-origin:$chain", null)
+
     /** A migration target is usable only after its key, source choice, and current privacy consent are explicit. */
     internal fun requireMigrationDestination(origin: String) {
         requireCurrent(origin, "authenticated_export")

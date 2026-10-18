@@ -7147,7 +7147,25 @@ internal class PalleriaSyncCoordinator(
                 viewedCeiling = PALLASYNC_VIEWED_SAFETY_LIMIT,
                 seenCount = protocol.liveScopeCount(state.chainId, "palleria.view_history/3", "seen"),
                 seenCeiling = PALLASYNC_SEEN_SAFETY_LIMIT,
+                retryAfterMs = policy.retry.remaining(policy.boundChainOrigin(state.chainId).orEmpty()),
+                capacityIssue =
+                    policy
+                        .boundChainOrigin(state.chainId)
+                        ?.let { origin -> policy.retry.capacityIssue(origin, state.chainId) }
+                        ?.let {
+                            PallaSyncCapacityIssue(it.code, it.usedBytes, it.maxBytes, it.observedAtMs)
+                        },
             )
+        }
+
+    /** Clears only this chain's saved 507 request blockers after explicit user confirmation. */
+    suspend fun confirmRelayCapacityRecovered(): Boolean =
+        withContext(Dispatchers.IO) {
+            val state = db.dao.getActiveChainState() ?: return@withContext false
+            val origin = policy.boundChainOrigin(state.chainId) ?: return@withContext false
+            policy.retry.resolveCapacity(origin, state.chainId)
+        }.also { resolved ->
+            if (resolved) syncNow()
         }
 
     suspend fun getUnresolvedQuarantinePage(

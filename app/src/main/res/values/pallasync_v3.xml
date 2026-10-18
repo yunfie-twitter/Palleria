@@ -144,6 +144,14 @@
     <string name="pallasync_snapshot_bootstrap_running">Verifying parts and installing the selected snapshot…</string>
     <string name="pallasync_snapshot_bootstrap_installed">Snapshot installed; signed suffix replay has started.</string>
     <string name="pallasync_progress_title">Sync progress and local history capacity</string>
+    <string name="pallasync_retry_wait">Automatic retry wait: %1$d seconds</string>
+    <string name="pallasync_relay_capacity_hint">The relay last reported %1$s. Reported storage: %2$s bytes used, %3$s bytes maximum. This error hint is unsigned and is not proof of relay capacity.</string>
+    <string name="pallasync_relay_capacity_unknown">No usage figures were included.</string>
+    <string name="pallasync_relay_capacity_resume">I have confirmed relay capacity was recovered</string>
+    <string name="pallasync_relay_capacity_confirm_title">Retry after capacity recovery?</string>
+    <string name="pallasync_relay_capacity_confirm_summary">This clears only this device’s saved 507 blocker and retries the original pending work through normal sync. No queued data is discarded. Confirm only after the relay storage or quota issue has been addressed.</string>
+    <string name="pallasync_relay_capacity_resumed">Retrying the retained pending work</string>
+    <string name="pallasync_relay_capacity_not_resolved">No saved capacity blocker could be cleared</string>
     <string name="pallasync_progress_state">Write state: %1$s</string>
     <string name="pallasync_progress_positions">Downloaded %1$d · verified %2$d · materialized %3$d</string>
     <string name="pallasync_progress_transparency">Transparency entry_index: verified anchor %1$d · last signed target %2$d (separate counter)</string>

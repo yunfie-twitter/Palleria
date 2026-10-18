@@ -16,6 +16,14 @@ data class PallaSyncQuarantinePage(
     val nextHash: String?,
 )
 
+/** Unsigned relay error context shown only as a diagnostic hint; it never authorizes a retry. */
+data class PallaSyncCapacityIssue(
+    val code: String,
+    val usedBytes: Long?,
+    val maxBytes: Long?,
+    val observedAtMs: Long,
+)
+
 /** Local bounded status summary; sequence positions are independent verified pipeline marks. */
 data class PallaSyncClientStatus(
     val downloadedSeq: Long,
@@ -35,6 +43,8 @@ data class PallaSyncClientStatus(
     val viewedCeiling: Long,
     val seenCount: Long,
     val seenCeiling: Long,
+    val retryAfterMs: Long = 0,
+    val capacityIssue: PallaSyncCapacityIssue? = null,
 ) {
     val partial: Boolean
         get() =

@@ -187,7 +187,7 @@ fn rfc9457_extensions_are_discarded_and_catalogue_values_cannot_be_replaced() {
     let valid = json!({"type":"about:blank","title":"Conflict","status":409,"code":"EPOCH_STALE","retryable":true,"server_time_ms":1791684000000u64,"detail":"Fetch signed evidence.","vendor_text":"do not execute","context":{"epoch":4}});
     assert_eq!(
         problem(&valid, 409).unwrap(),
-        json!({"status":409,"code":"EPOCH_STALE","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"shutdown_at_ms":null,"migration_origin":null})
+        json!({"status":409,"code":"EPOCH_STALE","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"used_bytes":null,"max_bytes":null,"shutdown_at_ms":null,"migration_origin":null})
     );
     let mut bad = valid.clone();
     bad["retryable"] = json!(false);
@@ -203,7 +203,13 @@ fn rfc9457_extensions_are_discarded_and_catalogue_values_cannot_be_replaced() {
     let shutdown = json!({"type":"about:blank","title":"Service Unavailable","status":503,"code":"RELAY_SHUTTING_DOWN","retryable":true,"server_time_ms":1791684000000u64,"context":{"shutdown_at_ms":1791685000000u64,"migration_origin":"https://target.example"}});
     assert_eq!(
         problem(&shutdown, 503).unwrap(),
-        json!({"status":503,"code":"RELAY_SHUTTING_DOWN","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"shutdown_at_ms":1791685000000u64,"migration_origin":"https://target.example"})
+        json!({"status":503,"code":"RELAY_SHUTTING_DOWN","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"used_bytes":null,"max_bytes":null,"shutdown_at_ms":1791685000000u64,"migration_origin":"https://target.example"})
+    );
+
+    let quota = json!({"type":"about:blank","title":"Insufficient Storage","status":507,"code":"QUOTA_EXCEEDED","retryable":true,"server_time_ms":1791684000000u64,"context":{"used_bytes":900,"max_bytes":1000}});
+    assert_eq!(
+        problem(&quota, 507).unwrap(),
+        json!({"status":507,"code":"QUOTA_EXCEEDED","retryable":true,"server_time_ms":1791684000000u64,"retry_after_ms":null,"used_bytes":900,"max_bytes":1000,"shutdown_at_ms":null,"migration_origin":null})
     );
 }
 
