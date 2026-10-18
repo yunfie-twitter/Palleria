@@ -316,10 +316,32 @@ class PallaSyncExportArchiveTest {
         verified.complete shouldBe true
     }
 
+    @Test
+    fun completeRecoveryArchiveRejectsAnyOmittedRecoveryObject() {
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, includeOmitted = true)
+        val falselyComplete =
+            archive
+                .toString(Charsets.UTF_8)
+                .replace("\"complete\":false,\"kind\":\"footer\"", "\"complete\":true,\"kind\":\"footer\"")
+                .toByteArray()
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(falselyComplete),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+        }.message shouldBe "C_SCHEMA_VIOLATION"
+    }
+
     private fun acceptedEvidenceArchive(
         dropLastReceipt: Boolean = false,
         addUnreferencedSnapshotPart: Boolean = false,
         includeRecovery: Boolean = false,
+        includeOmitted: Boolean = false,
     ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
@@ -412,6 +434,13 @@ class PallaSyncExportArchiveTest {
                 }
             val firstChunkLines =
                 listOf(header) + logLines + snapshotLines + receiptLines +
+                    if (includeOmitted) {
+                        listOf(
+                            """{"kind":"omitted","object_hash":"${"A".repeat(43)}","reason":"recovery_authority","relay_seq":1}""",
+                        )
+                    } else {
+                        emptyList()
+                    } +
                     """{"has_more":true,"kind":"continuation","next_cursor":"transparency"}"""
             archive.acceptChunk(firstChunkLines.joinToString("\n", postfix = "\n").toByteArray(), null)
             val evidenceLines =
