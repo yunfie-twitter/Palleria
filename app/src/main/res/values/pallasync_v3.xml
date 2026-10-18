@@ -48,6 +48,11 @@
     <string name="pallasync_export_saved">Relay archive saved and its hash verified. Signed objects still need validation before restore.</string>
     <string name="pallasync_export_cancelled">Export cancelled.</string>
     <string name="pallasync_export_failed">Relay export failed. Local keys and data were retained.</string>
+    <string name="pallasync_archive_verify_title">Verify recovery archive</string>
+    <string name="pallasync_archive_verify_summary">Select an unpruned generation-0 recovery archive to check it against this chain’s protected relay pin and locally available epoch keys. Later generations and restore/install are not supported by this verification flow yet.</string>
+    <string name="pallasync_archive_verify_complete">Recovery archive signatures, transparency evidence, encrypted records, and snapshot parts verified for this pinned chain. No data was installed.</string>
+    <string name="pallasync_archive_verify_cancelled">Archive verification cancelled.</string>
+    <string name="pallasync_archive_verify_failed">The archive could not be completely verified against this chain. No data was installed.</string>
     <string name="pallasync_v3_mnemonic_explanation">Write down these 24 words in a safe offline place. The app does not retain them. The display closes when you leave this screen or after ten minutes.</string>
     <string name="pallasync_v3_mnemonic_saved">I saved these words</string>
     <string name="pallasync_v3_source">Choose the synchronization source</string>

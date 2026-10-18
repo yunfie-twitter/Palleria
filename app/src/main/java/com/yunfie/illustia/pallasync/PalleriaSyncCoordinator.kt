@@ -875,7 +875,40 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
-    /** Verify a root-authorized archive readback through every signed log entry and record AEAD. */
+    /** Verify an archive readback against the protected source through signed log entries and record AEAD. */
+    suspend fun recoveryArchiveExpectedSource(): PallaSyncExportArchive.ExpectedSource =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.generation == 0L) { "C_SNAPSHOT_INVALID" }
+                requireProtectedAuthority(state.chainId)
+                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val origin = pin.getValue("origin").jsonPrimitive.content
+                val selectedOrigin =
+                    when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                        is PallaSyncHttpResult.Success -> PallaSyncUrls.extractOrigin(normalized.value)
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                check(selectedOrigin == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                policy.requireCurrent(origin)
+                PallaSyncExportArchive.ExpectedSource(
+                    chainId = state.chainId,
+                    generation = state.generation,
+                    logId = pin.getValue("log_id").jsonPrimitive.content,
+                    relayPublicKey = policy.trustedRelayKey(origin),
+                    relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                    includeRecovery = true,
+                    relayPinJson = pin.toString(),
+                    identityJson =
+                        buildJsonObject {
+                            put("chain_id", state.chainId)
+                            put("admin_public_key", authority.getValue("admin_public_key").jsonPrimitive.content)
+                        }.toString(),
+                )
+            }
+        }
+
     suspend fun verifyRelayArchive(
         input: java.io.InputStream,
         expectedSource: PallaSyncExportArchive.ExpectedSource,

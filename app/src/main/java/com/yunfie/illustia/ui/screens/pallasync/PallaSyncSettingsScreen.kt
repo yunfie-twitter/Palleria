@@ -258,6 +258,34 @@ fun PallaSyncSettingsScreen(
             }
         }
 
+    val recoveryArchiveVerifier =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) {
+                Toast.makeText(context, R.string.pallasync_archive_verify_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val expectedSource = syncManager.recoveryArchiveExpectedSource()
+                            val verified =
+                                checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }
+                                    .use { input -> syncManager.verifyRelayArchive(input, expectedSource) }
+                            check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
+                        }
+                        Toast.makeText(context, R.string.pallasync_archive_verify_complete, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: RuntimeException) {
+                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
     val checkpointExporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
             if (uri == null) {
@@ -1419,6 +1447,16 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_export_recovery_title),
                                 summary = stringResource(R.string.pallasync_export_recovery_summary),
                                 onClick = { recoveryRelayExportLauncher.launch("pallasync-admin-export.jsonl") },
+                            )
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_archive_verify_title),
+                                summary = stringResource(R.string.pallasync_archive_verify_summary),
+                                onClick = {
+                                    recoveryArchiveVerifier.launch(
+                                        arrayOf(PALLASYNC_EXPORT_MEDIA_TYPE, "application/jsonl", "application/json"),
+                                    )
+                                },
                             )
                         }
                         if (state.settings.pallaSyncEnabled) {
