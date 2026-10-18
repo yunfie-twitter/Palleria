@@ -131,7 +131,7 @@
     <string name="pallasync_relay_capacity_unknown">使用量は応答に含まれていません。</string>
     <string name="pallasync_relay_capacity_resume">リレーの容量が回復したことを確認しました</string>
     <string name="pallasync_relay_capacity_confirm_title">容量回復後に再試行しますか？</string>
-    <string name="pallasync_relay_capacity_confirm_summary">この端末の507ブロックだけを解除し、保持中の元の処理を通常の同期経路で再試行します。キュー済みデータは破棄しません。リレーの保存領域または割当量が対処済みの場合にのみ確認してください。</string>
+    <string name="pallasync_relay_capacity_confirm_summary">この端末の507ブロックだけを解除し、通常の同期を再開します。キュー済みレコードは保持されます。単発の管理操作は容量問題の解消後、同じ操作画面から再実行してください。リレーの保存領域または割当量が対処済みの場合にのみ確認してください。</string>
     <string name="pallasync_relay_capacity_resumed">保持中の処理を再試行しています</string>
     <string name="pallasync_relay_capacity_not_resolved">解除できる容量ブロックがありません</string>
     <string name="pallasync_progress_state">書込み状態: %1$s</string>

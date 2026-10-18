@@ -149,7 +149,7 @@
     <string name="pallasync_relay_capacity_unknown">No usage figures were included.</string>
     <string name="pallasync_relay_capacity_resume">I have confirmed relay capacity was recovered</string>
     <string name="pallasync_relay_capacity_confirm_title">Retry after capacity recovery?</string>
-    <string name="pallasync_relay_capacity_confirm_summary">This clears only this device’s saved 507 blocker and retries the original pending work through normal sync. No queued data is discarded. Confirm only after the relay storage or quota issue has been addressed.</string>
+    <string name="pallasync_relay_capacity_confirm_summary">This clears only this device’s saved 507 blocker and resumes normal sync. Queued records remain intact. For a one-off control operation, reopen that action after the capacity issue is addressed. Confirm only after the relay storage or quota issue has been addressed.</string>
     <string name="pallasync_relay_capacity_resumed">Retrying the retained pending work</string>
     <string name="pallasync_relay_capacity_not_resolved">No saved capacity blocker could be cleared</string>
     <string name="pallasync_progress_state">Write state: %1$s</string>
