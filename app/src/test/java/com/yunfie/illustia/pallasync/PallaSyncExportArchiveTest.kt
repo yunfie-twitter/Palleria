@@ -357,6 +357,18 @@ class PallaSyncExportArchiveTest {
         }.message shouldBe "C_SCHEMA_VIOLATION"
         retained shouldBe emptyList()
 
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                recordVerifier,
+                snapshotVerifier,
+                sink,
+                beforeRetain = { error("C_ROLLBACK_DETECTED") },
+            )
+        }.message shouldBe "C_ROLLBACK_DETECTED"
+        retained shouldBe emptyList()
+
         val (incompleteArchive, incompleteExpected) = acceptedEvidenceArchive(includeRecovery = false)
         PallaSyncExportArchiveVerifier.verify(
             ByteArrayInputStream(incompleteArchive),

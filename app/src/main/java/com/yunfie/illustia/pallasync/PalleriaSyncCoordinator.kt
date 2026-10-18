@@ -914,42 +914,80 @@ internal class PalleriaSyncCoordinator(
         expectedSource: PallaSyncExportArchive.ExpectedSource,
     ): PallaSyncExportArchiveVerifier.Header =
         withContext(Dispatchers.IO) {
-            operationMutex.withLock {
-                check(expectedSource.includeRecovery && expectedSource.identityJson != null) { "C_RECOVERY_AUTH_REQUIRED" }
-                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                requireProtectedAuthority(state.chainId)
-                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
-                val pin = authority.getValue("pin").jsonObject
-                val identity =
-                    buildJsonObject {
-                        put("chain_id", state.chainId)
-                        put("admin_public_key", authority.getValue("admin_public_key").jsonPrimitive.content)
-                    }.toString()
-                check(
-                    Json.parseToJsonElement(checkNotNull(expectedSource.identityJson)).jsonObject ==
-                        Json.parseToJsonElement(identity).jsonObject &&
-                        Json.parseToJsonElement(checkNotNull(expectedSource.relayPinJson)).jsonObject == pin &&
-                        expectedSource.chainId == state.chainId && expectedSource.generation == state.generation &&
-                        expectedSource.logId == pin.getValue("log_id").jsonPrimitive.content,
-                ) { "C_ROLLBACK_DETECTED" }
-                val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                val snapshot =
-                    PallaSyncExportArchiveVerifier.verifySuspending(
-                        input,
-                        expectedSource,
-                        PallaSyncArchiveRecordVerifier { recordAuthority, recordJson, _ ->
-                            val record = Json.parseToJsonElement(recordJson).jsonObject
-                            val epoch = record.getValue("epoch").jsonPrimitive.long
-                            val epochKeys = checkNotNull(keystore.keysForEpoch(device, epoch)) { "C_MISSING_DEPENDENCY" }
-                            val plaintext =
-                                PallaSyncEpochSession.begin(epochKeys, recordAuthority, epoch).use { session ->
-                                    session.decryptRecord(recordJson)
-                                }
-                            check(PallaSyncCore.canonicalJson(plaintext) == plaintext) { "C_SCHEMA_VIOLATION" }
-                            kotlinx.serialization.json.Json
-                                .decodeFromString<PallaSyncInnerRecord>(plaintext)
-                        },
-                        PallaSyncArchiveSnapshotVerifier(::verifyExportSnapshotParts),
+            operationMutex.withLock { verifyRelayArchiveLocked(input, expectedSource) }
+        }
+
+    suspend fun restoreRelayArchive(
+        input: java.io.InputStream,
+        expectedSource: PallaSyncExportArchive.ExpectedSource,
+    ) = withContext(Dispatchers.IO) {
+        operationMutex.withLock {
+            val snapshot = verifyRelayArchiveLocked(input, expectedSource, retainEvidence = true)
+            val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val cut = Json.parseToJsonElement(checkNotNull(snapshot.historyCutJson)).jsonObject
+            val head = cut.getValue("head").jsonObject
+            val checkpoint =
+                PallaSyncGenesisCheckpoint(
+                    logId = snapshot.logId,
+                    headSeq = snapshot.headSeq,
+                    headHash = snapshot.headHash,
+                    parametersHash = head.getValue("parameters_hash").jsonPrimitive.content,
+                    epochHash = head.getValue("epoch_hash").jsonPrimitive.content,
+                    transparencyId = head.getValue("transparency_id").jsonPrimitive.content,
+                    transparencyIndex = head.getValue("entry_index").jsonPrimitive.long,
+                    transparencyHash = head.getValue("transparency_hash").jsonPrimitive.content,
+                    authority = Json.parseToJsonElement(checkNotNull(snapshot.authorityJson)).jsonObject,
+                    generation = snapshot.generation,
+                    dataZero = cut.getValue("data_zero").jsonPrimitive.content,
+                )
+            PallaSyncPrefixMaterializer(db, keystore).apply(state.chainId, device, checkpoint)
+            projection.publish(state.chainId, db)
+        }
+    }
+
+    private suspend fun verifyRelayArchiveLocked(
+        input: java.io.InputStream,
+        expectedSource: PallaSyncExportArchive.ExpectedSource,
+        retainEvidence: Boolean = false,
+    ): PallaSyncExportArchiveVerifier.Header {
+        check(expectedSource.includeRecovery && expectedSource.identityJson != null) { "C_RECOVERY_AUTH_REQUIRED" }
+        val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        requireProtectedAuthority(state.chainId)
+        val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+        val pin = authority.getValue("pin").jsonObject
+        val identity =
+            buildJsonObject {
+                put("chain_id", state.chainId)
+                put("admin_public_key", authority.getValue("admin_public_key").jsonPrimitive.content)
+            }.toString()
+        check(
+            Json.parseToJsonElement(checkNotNull(expectedSource.identityJson)).jsonObject ==
+                Json.parseToJsonElement(identity).jsonObject &&
+                Json.parseToJsonElement(checkNotNull(expectedSource.relayPinJson)).jsonObject == pin &&
+                expectedSource.chainId == state.chainId && expectedSource.generation == state.generation &&
+                expectedSource.logId == pin.getValue("log_id").jsonPrimitive.content,
+        ) { "C_ROLLBACK_DETECTED" }
+        val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val snapshot =
+            PallaSyncExportArchiveVerifier.verifySuspending(
+                input,
+                expectedSource,
+                PallaSyncArchiveRecordVerifier { recordAuthority, recordJson, _ ->
+                    val record = Json.parseToJsonElement(recordJson).jsonObject
+                    val epoch = record.getValue("epoch").jsonPrimitive.long
+                    val epochKeys = checkNotNull(keystore.keysForEpoch(device, epoch)) { "C_MISSING_DEPENDENCY" }
+                    val plaintext =
+                        PallaSyncEpochSession.begin(epochKeys, recordAuthority, epoch).use { session ->
+                            session.decryptRecord(recordJson)
+                        }
+                    check(PallaSyncCore.canonicalJson(plaintext) == plaintext) { "C_SCHEMA_VIOLATION" }
+                    kotlinx.serialization.json.Json
+                        .decodeFromString<PallaSyncInnerRecord>(plaintext)
+                },
+                PallaSyncArchiveSnapshotVerifier(::verifyExportSnapshotParts),
+                logEntrySink =
+                    if (retainEvidence) {
                         PallaSyncArchiveLogEntrySink { _, entryJson, receiptJson, sequence ->
                             val entry = Json.parseToJsonElement(entryJson).jsonObject
                             val receipt = Json.parseToJsonElement(receiptJson).jsonObject
@@ -992,12 +1030,38 @@ internal class PalleriaSyncCoordinator(
                                     ),
                                 )
                             }
-                        },
-                    )
-                check(snapshot.includeRecovery && snapshot.complete) { "C_SCHEMA_VIOLATION" }
-                snapshot
-            }
-        }
+                        }
+                    } else {
+                        null
+                    },
+                beforeRetain =
+                    if (retainEvidence) {
+                        { verified ->
+                            val current = checkNotNull(db.dao.getChainState(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                            val verifiedAuthority = Json.parseToJsonElement(checkNotNull(verified.authorityJson)).jsonObject
+                            val verifiedHead = Json.parseToJsonElement(checkNotNull(verified.transparencyHeadJson)).jsonObject
+                            check(
+                                verified.complete && verified.includeRecovery && verified.generation == 0L &&
+                                    verified.chainId == state.chainId && verified.logId == state.logId &&
+                                    PallaSyncCore.objectHash(verifiedAuthority.toString()) ==
+                                    PallaSyncCore.objectHash(checkNotNull(db.protocolDao().currentAuthority(state.chainId))) &&
+                                    current == state && current.writeState == "active" &&
+                                    current.materializedSeq <= current.verifiedSeq && current.verifiedSeq <= verified.headSeq &&
+                                    (current.verifiedSeq != verified.headSeq || current.verifiedHash == verified.headHash) &&
+                                    current.transparencyId == verifiedHead.getValue("transparency_id").jsonPrimitive.content &&
+                                    current.transparencyIndex == verifiedHead.getValue("entry_index").jsonPrimitive.long &&
+                                    current.transparencyHash == verifiedHead.getValue("transparency_hash").jsonPrimitive.content &&
+                                    db.dao.pendingOutboxCount(state.chainId) == 0L &&
+                                    db.protocolDao().unresolvedQuarantineCount(state.chainId) == 0L,
+                            ) { "C_ROLLBACK_DETECTED" }
+                        }
+                    } else {
+                        null
+                    },
+            )
+        check(snapshot.includeRecovery && snapshot.complete) { "C_SCHEMA_VIOLATION" }
+        return snapshot
+    }
 
     private suspend fun verifyExportSnapshotParts(
         authorityJson: String,

@@ -47,9 +47,10 @@ internal object PallaSyncExportArchiveVerifier {
         recordVerifier: PallaSyncArchiveRecordVerifier? = null,
         snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
         logEntrySink: PallaSyncArchiveLogEntrySink? = null,
+        beforeRetain: (suspend (Header) -> Unit)? = null,
     ): Header =
         runBlocking {
-            verifySuspending(input, expectedSource, recordVerifier, snapshotVerifier, logEntrySink)
+            verifySuspending(input, expectedSource, recordVerifier, snapshotVerifier, logEntrySink, beforeRetain)
         }
 
     suspend fun verifySuspending(
@@ -58,6 +59,7 @@ internal object PallaSyncExportArchiveVerifier {
         recordVerifier: PallaSyncArchiveRecordVerifier? = null,
         snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
         logEntrySink: PallaSyncArchiveLogEntrySink? = null,
+        beforeRetain: (suspend (Header) -> Unit)? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -145,26 +147,29 @@ internal object PallaSyncExportArchiveVerifier {
                                 val body = buildJsonObject { put("head", headObject) }.toString().toByteArray(Charsets.UTF_8)
                                 PallaSyncCore.validateInitialHistoryCut(authority, body)
                             }
-                        if (complete && logEntrySink != null) {
-                            checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
-                                expectedSource?.identityJson ?: error("C_MISSING_DEPENDENCY"),
-                                checkNotNull(canonicalPin),
-                                logEntrySink,
-                            )
-                        }
                     }
-                    return Header(
-                        chainId = header.getValue("chain_id").jsonPrimitive.content,
-                        generation = header.getValue("generation").jsonPrimitive.long,
-                        logId = header.getValue("log_id").jsonPrimitive.content,
-                        includeRecovery = includeRecovery,
-                        complete = complete,
-                        headSeq = header.getValue("head_seq").jsonPrimitive.long,
-                        headHash = header.getValue("head_hash").jsonPrimitive.content,
-                        transparencyHeadJson = transparencyHeadJson,
-                        historyCutJson = historyCutJson,
-                        authorityJson = verifiedAuthorityJson,
-                    )
+                    val verifiedHeader =
+                        Header(
+                            chainId = header.getValue("chain_id").jsonPrimitive.content,
+                            generation = header.getValue("generation").jsonPrimitive.long,
+                            logId = header.getValue("log_id").jsonPrimitive.content,
+                            includeRecovery = includeRecovery,
+                            complete = complete,
+                            headSeq = header.getValue("head_seq").jsonPrimitive.long,
+                            headHash = header.getValue("head_hash").jsonPrimitive.content,
+                            transparencyHeadJson = transparencyHeadJson,
+                            historyCutJson = historyCutJson,
+                            authorityJson = verifiedAuthorityJson,
+                        )
+                    if (complete) beforeRetain?.invoke(verifiedHeader)
+                    if (complete && logEntrySink != null) {
+                        checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
+                            expectedSource?.identityJson ?: error("C_MISSING_DEPENDENCY"),
+                            checkNotNull(canonicalPin),
+                            logEntrySink,
+                        )
+                    }
+                    return verifiedHeader
                 }
                 check(kind in PallaSyncExportArchive.EXPORT_LINE_KINDS) { "C_SCHEMA_VIOLATION" }
                 PallaSyncExportArchive.validateExportLine(value)

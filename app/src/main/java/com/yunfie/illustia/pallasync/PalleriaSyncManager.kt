@@ -65,6 +65,11 @@ class PalleriaSyncManager(
         expectedSource: PallaSyncExportArchive.ExpectedSource,
     ) = coordinator.verifyRelayArchive(input, expectedSource)
 
+    internal suspend fun restoreRelayArchive(
+        input: java.io.InputStream,
+        expectedSource: PallaSyncExportArchive.ExpectedSource,
+    ) = coordinator.restoreRelayArchive(input, expectedSource)
+
     internal suspend fun recoveryArchiveExpectedSource() = coordinator.recoveryArchiveExpectedSource()
 
     internal suspend fun exportRelayArchiveWithRecovery(

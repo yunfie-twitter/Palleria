@@ -114,6 +114,7 @@ fun PallaSyncSettingsScreen(
     var showRecoveryExportRootInput by remember { mutableStateOf(false) }
     var exportingRecoveryArchive by remember { mutableStateOf(false) }
     var recoveryExportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var pendingRecoveryArchiveUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var showReseedImportTarget by remember { mutableStateOf(false) }
     var showReseedImportRootInput by remember { mutableStateOf(false) }
     var showReseedCommitConfirm by remember { mutableStateOf(false) }
@@ -272,15 +273,16 @@ fun PallaSyncSettingsScreen(
                                     .use { input -> syncManager.verifyRelayArchive(input, expectedSource) }
                             check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
                         }
+                        pendingRecoveryArchiveUri = uri
                         Toast.makeText(context, R.string.pallasync_archive_verify_complete, Toast.LENGTH_LONG).show()
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: IOException) {
-                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.pallasync_archive_restore_failed, Toast.LENGTH_LONG).show()
                     } catch (_: SecurityException) {
-                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.pallasync_archive_restore_failed, Toast.LENGTH_LONG).show()
                     } catch (_: RuntimeException) {
-                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.pallasync_archive_restore_failed, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -719,6 +721,39 @@ fun PallaSyncSettingsScreen(
                 }
             },
             onDismiss = { showCapacityRecoveryConfirm = false },
+        )
+    }
+
+    if (pendingRecoveryArchiveUri != null) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_archive_restore_title),
+            summary = stringResource(R.string.pallasync_archive_restore_summary),
+            confirmText = stringResource(R.string.pallasync_archive_restore_action),
+            destructive = true,
+            onConfirm = {
+                val uri = checkNotNull(pendingRecoveryArchiveUri)
+                pendingRecoveryArchiveUri = null
+                scope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val expectedSource = syncManager.recoveryArchiveExpectedSource()
+                            checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }
+                                .use { input -> syncManager.restoreRelayArchive(input, expectedSource) }
+                        }
+                        Toast.makeText(context, R.string.pallasync_archive_restore_complete, Toast.LENGTH_LONG).show()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: IOException) {
+                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: SecurityException) {
+                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                    } catch (_: RuntimeException) {
+                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+            onDismiss = { pendingRecoveryArchiveUri = null },
         )
     }
 

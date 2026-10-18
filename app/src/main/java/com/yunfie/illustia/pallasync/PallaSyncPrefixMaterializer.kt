@@ -34,7 +34,9 @@ internal class PallaSyncPrefixMaterializer(
         // Verify the complete retained range against the protected authenticated cut
         // before any application state can be installed from a restored DB.
         val startHash =
-            if (state.materializedSeq == state.verifiedSeq) {
+            if (state.materializedSeq == 0L && state.verifiedSeq == 0L) {
+                checkNotNull(checkpoint.dataZero) { "C_MISSING_DEPENDENCY" }
+            } else if (state.materializedSeq == state.verifiedSeq) {
                 checkNotNull(state.verifiedHash) { "C_MISSING_DEPENDENCY" }
             } else if (state.materializedSeq == 0L) {
                 checkNotNull(checkpoint.dataZero) { "C_MISSING_DEPENDENCY" }
