@@ -2,6 +2,7 @@ package com.yunfie.illustia.pallasync
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -314,6 +315,57 @@ class PallaSyncExportArchiveTest {
 
         verified.includeRecovery shouldBe true
         verified.complete shouldBe true
+    }
+
+    @Test
+    fun verifiedHistoryIsRetainedOnlyAfterCompleteArchiveAndEndOfInput() {
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true)
+        val retained = mutableListOf<Long>()
+        val recordVerifier =
+            PallaSyncArchiveRecordVerifier { authority, record, sequence ->
+                PallaSyncCore.validateRecordAuthority(authority, record, sequence) shouldBe true
+            }
+        val snapshotVerifier = PallaSyncArchiveSnapshotVerifier { _, _, _ -> }
+        val sink =
+            object : PallaSyncArchiveLogEntrySink {
+                override suspend fun retain(
+                    authorityJson: String,
+                    entryJson: String,
+                    receiptJson: String,
+                    relaySequence: Long,
+                ) {
+                    authorityJson shouldNotBe ""
+                    entryJson shouldNotBe ""
+                    receiptJson shouldNotBe ""
+                    retained += relaySequence
+                }
+            }
+
+        PallaSyncExportArchiveVerifier
+            .verify(ByteArrayInputStream(archive), expected, recordVerifier, snapshotVerifier, sink)
+        retained shouldBe listOf(1L, 2L, 3L, 4L, 5L, 6L)
+
+        retained.clear()
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive + byteArrayOf(0x20)),
+                expected,
+                recordVerifier,
+                snapshotVerifier,
+                sink,
+            )
+        }.message shouldBe "C_SCHEMA_VIOLATION"
+        retained shouldBe emptyList()
+
+        val (incompleteArchive, incompleteExpected) = acceptedEvidenceArchive(includeRecovery = false)
+        PallaSyncExportArchiveVerifier.verify(
+            ByteArrayInputStream(incompleteArchive),
+            incompleteExpected,
+            recordVerifier,
+            snapshotVerifier,
+            sink,
+        )
+        retained shouldBe emptyList()
     }
 
     @Test

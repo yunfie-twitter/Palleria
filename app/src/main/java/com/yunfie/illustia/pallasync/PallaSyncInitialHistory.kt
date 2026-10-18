@@ -171,7 +171,7 @@ internal class PallaSyncInitialHistory(
                 staging.partCount,
             )
         }
-        val stateStager = PallaSyncSnapshotStateStager(store.snapshotInstallDao(), chain, staging, compaction)
+        val stateStager = PallaSyncSnapshotStateStager(store.snapshotInstallDao(), chain, compaction)
         stateStager.begin()
         PallaSyncEpochSession.begin(input.epochKeys, authority.toString(), input.epochNumber).use { epochSession ->
             val first = stagedPart(0, staging, pinJson)

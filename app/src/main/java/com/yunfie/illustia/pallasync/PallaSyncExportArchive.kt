@@ -22,12 +22,21 @@ internal fun interface PallaSyncArchiveRecordVerifier {
     )
 }
 
+internal fun interface PallaSyncArchiveLogEntrySink {
+    suspend fun retain(
+        authorityJson: String,
+        entryJson: String,
+        receiptJson: String,
+        relaySequence: Long,
+    )
+}
+
 internal fun interface PallaSyncArchiveSnapshotPartSource {
-    fun forEachPart(consumer: (partIndex: Int, recordJson: String) -> Unit)
+    suspend fun forEachPart(consumer: suspend (partIndex: Int, recordJson: String) -> Unit)
 }
 
 internal fun interface PallaSyncArchiveSnapshotVerifier {
-    fun verify(
+    suspend fun verify(
         authorityJson: String,
         compactionJson: String,
         parts: PallaSyncArchiveSnapshotPartSource,

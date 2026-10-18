@@ -2,13 +2,16 @@ package com.yunfie.illustia.pallasync
 
 import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.put
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.Closeable
@@ -27,6 +30,11 @@ internal object PallaSyncExportArchiveVerifier {
         val logId: String,
         val includeRecovery: Boolean,
         val complete: Boolean,
+        val headSeq: Long,
+        val headHash: String,
+        val transparencyHeadJson: String?,
+        val historyCutJson: String?,
+        val authorityJson: String?,
     )
 
     private const val MAX_ARCHIVE_LINE_BYTES = 8_388_608
@@ -38,6 +46,18 @@ internal object PallaSyncExportArchiveVerifier {
         expectedSource: PallaSyncExportArchive.ExpectedSource? = null,
         recordVerifier: PallaSyncArchiveRecordVerifier? = null,
         snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
+        logEntrySink: PallaSyncArchiveLogEntrySink? = null,
+    ): Header =
+        runBlocking {
+            verifySuspending(input, expectedSource, recordVerifier, snapshotVerifier, logEntrySink)
+        }
+
+    suspend fun verifySuspending(
+        input: InputStream,
+        expectedSource: PallaSyncExportArchive.ExpectedSource? = null,
+        recordVerifier: PallaSyncArchiveRecordVerifier? = null,
+        snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
+        logEntrySink: PallaSyncArchiveLogEntrySink? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -49,6 +69,9 @@ internal object PallaSyncExportArchiveVerifier {
         var transparencyIndex = 0L
         var transparencyHash: String? = null
         var transparencyHeadVerified = false
+        var transparencyHeadJson: String? = null
+        var verifiedAuthorityJson: String? = null
+        var historyCutJson: String? = null
         var transparencyId: String? = null
         var recoveryObjectsOmitted = false
         var restoreEvidenceUnsupported = false
@@ -82,6 +105,7 @@ internal object PallaSyncExportArchiveVerifier {
                         "C_SCHEMA_VIOLATION"
                     }
                     check(value["line_count"]?.jsonPrimitive?.longOrNull == lineCount) { "C_SCHEMA_VIOLATION" }
+                    check(source.read() == -1) { "C_SCHEMA_VIOLATION" }
                     if (complete) {
                         check(
                             includeRecovery && !recoveryObjectsOmitted && pin != null &&
@@ -105,23 +129,41 @@ internal object PallaSyncExportArchiveVerifier {
                                 expectedTransparencyHash == header.getValue("transparency_head_hash").jsonPrimitive.content,
                         ) { "C_TRANSPARENCY_INVALID" }
                         checkNotNull(receiptLinks).requireAllMatched()
-                        expectedSource?.identityJson?.let { identity ->
-                            checkNotNull(receiptLinks).verifyAuthorityHistory(
-                                header,
-                                identity,
+                        verifiedAuthorityJson =
+                            expectedSource?.identityJson?.let { identity ->
+                                checkNotNull(receiptLinks).verifyAuthorityHistory(
+                                    header,
+                                    identity,
+                                    checkNotNull(canonicalPin),
+                                    recordVerifier,
+                                    snapshotVerifier,
+                                )
+                            }
+                        historyCutJson =
+                            verifiedAuthorityJson?.let { authority ->
+                                val headObject = Json.parseToJsonElement(checkNotNull(transparencyHeadJson)).jsonObject
+                                val body = buildJsonObject { put("head", headObject) }.toString().toByteArray(Charsets.UTF_8)
+                                PallaSyncCore.validateInitialHistoryCut(authority, body)
+                            }
+                        if (complete && logEntrySink != null) {
+                            checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
+                                expectedSource?.identityJson ?: error("C_MISSING_DEPENDENCY"),
                                 checkNotNull(canonicalPin),
-                                recordVerifier,
-                                snapshotVerifier,
+                                logEntrySink,
                             )
                         }
                     }
-                    check(source.read() == -1) { "C_SCHEMA_VIOLATION" }
                     return Header(
                         chainId = header.getValue("chain_id").jsonPrimitive.content,
                         generation = header.getValue("generation").jsonPrimitive.long,
                         logId = header.getValue("log_id").jsonPrimitive.content,
                         includeRecovery = includeRecovery,
                         complete = complete,
+                        headSeq = header.getValue("head_seq").jsonPrimitive.long,
+                        headHash = header.getValue("head_hash").jsonPrimitive.content,
+                        transparencyHeadJson = transparencyHeadJson,
+                        historyCutJson = historyCutJson,
+                        authorityJson = verifiedAuthorityJson,
                     )
                 }
                 check(kind in PallaSyncExportArchive.EXPORT_LINE_KINDS) { "C_SCHEMA_VIOLATION" }
@@ -171,6 +213,7 @@ internal object PallaSyncExportArchiveVerifier {
 
                         "transparency_head" -> {
                             val head = value.getValue("head").jsonObject
+                            transparencyHeadJson = head.toString()
                             val archiveHeader = checkNotNull(header)
                             val expectedTransparencyHash =
                                 if (transparencyIndex == 0L) {
@@ -306,13 +349,13 @@ internal object PallaSyncExportArchiveVerifier {
             }
         }
 
-        fun verifyAuthorityHistory(
+        suspend fun verifyAuthorityHistory(
             header: kotlinx.serialization.json.JsonObject,
             identityJson: String,
             pinJson: String,
             recordVerifier: PallaSyncArchiveRecordVerifier?,
             snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
-        ) {
+        ): String {
             check(header.getValue("generation").jsonPrimitive.long == 0L) { "C_SNAPSHOT_INVALID" }
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
             var expectedSequence = 1L
@@ -383,6 +426,32 @@ internal object PallaSyncExportArchiveVerifier {
             database.rawQuery("SELECT COUNT(*) FROM export_snapshot_parts WHERE receipt_verified=0", null).use { cursor ->
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
             }
+            return authority
+        }
+
+        suspend fun retainVerifiedAuthorityHistory(
+            identityJson: String,
+            pinJson: String,
+            sink: PallaSyncArchiveLogEntrySink,
+        ) {
+            var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
+            database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
+                while (entries.moveToNext()) {
+                    val sequence = entries.getLong(0)
+                    val entryJson = entries.getString(1)
+                    val receipt =
+                        database
+                            .rawQuery(
+                                "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
+                                arrayOf(sequence.toString()),
+                            ).use { receipts ->
+                                check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
+                                receipts.getString(0)
+                            }
+                    authority = PallaSyncCore.advanceAuthorityHistory(authority, entryJson, receipt)
+                    sink.retain(authority, entryJson, receipt, sequence)
+                }
+            }
         }
 
         fun addSnapshotPart(record: kotlinx.serialization.json.JsonObject) {
@@ -419,7 +488,7 @@ internal object PallaSyncExportArchiveVerifier {
             ) { "C_ACCEPTANCE_UNPROVEN" }
         }
 
-        private fun verifyCompactionSnapshotParts(
+        private suspend fun verifyCompactionSnapshotParts(
             authorityJson: String,
             compaction: kotlinx.serialization.json.JsonObject,
             snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,

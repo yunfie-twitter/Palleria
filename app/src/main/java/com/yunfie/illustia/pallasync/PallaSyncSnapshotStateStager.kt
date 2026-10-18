@@ -16,7 +16,6 @@ import kotlinx.serialization.json.long
 internal class PallaSyncSnapshotStateStager(
     private val dao: SnapshotInstallDao,
     private val chainId: String,
-    private val staging: PallaSyncSnapshotStaging,
     compaction: JsonObject,
 ) {
     private val compaction = Json.parseToJsonElement(checkNotNull(PallaSyncCore.canonicalJson(compaction.toString()))).jsonObject
@@ -24,6 +23,14 @@ internal class PallaSyncSnapshotStateStager(
         this.compaction
             .getValue("compaction_id")
             .jsonPrimitive.content
+    private val partReferences =
+        this.compaction
+            .getValue("snapshot_parts")
+            .jsonArray
+            .map { value ->
+                val part = value.jsonObject
+                part.getValue("record_id").jsonPrimitive.content to part.getValue("record_hash").jsonPrimitive.content
+            }
 
     suspend fun begin() {
         dao.begin(
@@ -31,7 +38,7 @@ internal class PallaSyncSnapshotStateStager(
                 chainId,
                 compactionId,
                 this.compaction.toString(),
-                staging.partCount,
+                partReferences.size,
                 this.compaction
                     .getValue("state_sha256")
                     .jsonPrimitive.content,
@@ -61,6 +68,7 @@ internal class PallaSyncSnapshotStateStager(
                 .jsonObject
                 .getValue("record_id")
                 .jsonPrimitive.content
+        val (expectedRecordId, expectedRecordHash) = partReferences.getOrNull(partIndex) ?: error("C_SNAPSHOT_INVALID")
         check(
             frame
                 .getValue("part_index")
@@ -69,8 +77,10 @@ internal class PallaSyncSnapshotStateStager(
                 frame
                     .getValue("part_count")
                     .jsonPrimitive.content
-                    .toIntOrNull() == staging.partCount &&
-                recordId == staging.expectedRecordId(partIndex),
+                    .toIntOrNull() == partReferences.size &&
+                recordId == expectedRecordId &&
+                part.partHash == expectedRecordHash &&
+                PallaSyncCore.objectHash(part.signedJson) == expectedRecordHash,
         ) { "C_SNAPSHOT_INVALID" }
         val rows =
             entries.mapIndexed { entryIndex, entry ->

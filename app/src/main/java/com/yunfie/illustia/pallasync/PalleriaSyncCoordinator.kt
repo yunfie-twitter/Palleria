@@ -934,7 +934,7 @@ internal class PalleriaSyncCoordinator(
                 ) { "C_ROLLBACK_DETECTED" }
                 val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 val snapshot =
-                    PallaSyncExportArchiveVerifier.verify(
+                    PallaSyncExportArchiveVerifier.verifySuspending(
                         input,
                         expectedSource,
                         PallaSyncArchiveRecordVerifier { recordAuthority, recordJson, _ ->
@@ -950,13 +950,56 @@ internal class PalleriaSyncCoordinator(
                                 .decodeFromString<PallaSyncInnerRecord>(plaintext)
                         },
                         PallaSyncArchiveSnapshotVerifier(::verifyExportSnapshotParts),
+                        PallaSyncArchiveLogEntrySink { _, entryJson, receiptJson, sequence ->
+                            val entry = Json.parseToJsonElement(entryJson).jsonObject
+                            val receipt = Json.parseToJsonElement(receiptJson).jsonObject
+                            val logId = pin.getValue("log_id").jsonPrimitive.content
+                            val entryHash = checkNotNull(PallaSyncCore.objectHash(entryJson)) { "C_SCHEMA_VIOLATION" }
+                            val receiptHash = checkNotNull(PallaSyncCore.objectHash(receiptJson)) { "C_SCHEMA_VIOLATION" }
+                            db.transaction {
+                                db.protocolDao().retainEvidence(
+                                    ProtectedEvidenceEntity(
+                                        pin.getValue("origin").jsonPrimitive.content,
+                                        receipt.getValue("relay_key_id").jsonPrimitive.content,
+                                        state.chainId,
+                                        logId,
+                                        "upload_receipt",
+                                        sequence,
+                                        receiptHash,
+                                        receiptJson,
+                                    ),
+                                )
+                                PallaSyncEnvelopeEvidence.retain(db, state.chainId, entry)
+                                db.protocolDao().retainLogEntry(
+                                    LogEntryEntity(
+                                        state.chainId,
+                                        logId,
+                                        sequence,
+                                        entryHash,
+                                        entryJson,
+                                        receiptJson,
+                                        "authority_verified",
+                                    ),
+                                )
+                                db.protocolDao().retainAuthority(
+                                    com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity(
+                                        state.chainId,
+                                        "selected_history_entry",
+                                        entryHash,
+                                        state.generation,
+                                        entryJson,
+                                        "authority_verified",
+                                    ),
+                                )
+                            }
+                        },
                     )
                 check(snapshot.includeRecovery && snapshot.complete) { "C_SCHEMA_VIOLATION" }
                 snapshot
             }
         }
 
-    private fun verifyExportSnapshotParts(
+    private suspend fun verifyExportSnapshotParts(
         authorityJson: String,
         compactionJson: String,
         parts: PallaSyncArchiveSnapshotPartSource,
