@@ -50,6 +50,7 @@ internal object PallaSyncExportArchiveVerifier {
         var transparencyHash: String? = null
         var transparencyHeadVerified = false
         var transparencyId: String? = null
+        var recoveryObjectsOmitted = false
         val receiptLinks = if (pin != null) ExportReceiptLinkIndex() else null
         try {
             while (true) {
@@ -80,7 +81,12 @@ internal object PallaSyncExportArchiveVerifier {
                         "C_SCHEMA_VIOLATION"
                     }
                     check(value["line_count"]?.jsonPrimitive?.longOrNull == lineCount) { "C_SCHEMA_VIOLATION" }
-                    check(!complete) { "C_SCHEMA_VIOLATION" }
+                    if (complete) {
+                        check(
+                            includeRecovery && !recoveryObjectsOmitted && pin != null &&
+                                expectedSource?.identityJson != null && recordVerifier != null && snapshotVerifier != null,
+                        ) { "C_SCHEMA_VIOLATION" }
+                    }
                     if (pin != null) {
                         check(transparencyHeadVerified) { "C_MISSING_DEPENDENCY" }
                         val expectedTransparencyHash =
@@ -180,6 +186,10 @@ internal object PallaSyncExportArchiveVerifier {
                                     archiveHeader.getValue("transparency_head_hash").jsonPrimitive.content,
                             ) { "C_TRANSPARENCY_INVALID" }
                             transparencyHeadVerified = true
+                        }
+
+                        "omitted" -> {
+                            recoveryObjectsOmitted = true
                         }
                     }
                 }

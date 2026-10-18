@@ -66,6 +66,7 @@ internal class PallaSyncExportArchive private constructor(
     private var transparencyIndex = 0L
     private var transparencyHash: String? = null
     private var transparencyHeadVerified = false
+    private var recoveryObjectsOmitted = false
 
     @Suppress("TooGenericExceptionCaught") // Every failure after a partial write must poison the archive.
     fun acceptChunk(
@@ -148,6 +149,7 @@ internal class PallaSyncExportArchive private constructor(
             check(expectedSource?.relayPinJson == null || !transparencyHeadVerified) { "C_TRANSPARENCY_INVALID" }
             validateExportLine(value)
             validateRelayAttestation(value, line)
+            if (value["kind"]?.jsonPrimitive?.content == "omitted") recoveryObjectsOmitted = true
             writeArchiveLine(line)
         }
     }
@@ -207,10 +209,15 @@ internal class PallaSyncExportArchive private constructor(
             check(transparencyHeadVerified) { "C_MISSING_DEPENDENCY" }
         }
         try {
+            val complete =
+                expectedSource?.includeRecovery == true &&
+                    expectedSource.identityJson != null &&
+                    expectedSource.relayPinJson != null &&
+                    !recoveryObjectsOmitted
             val footer =
                 """{"archive_sha256":"${Base64.getUrlEncoder().withoutPadding().encodeToString(
                     digest.digest(),
-                )}","complete":false,"kind":"footer","line_count":$lineCount}"""
+                )}","complete":$complete,"kind":"footer","line_count":$lineCount}"""
             val canonicalFooter = checkNotNull(PallaSyncCore.canonicalJson(footer))
             val bytes = canonicalFooter.toByteArray(Charsets.UTF_8) + '\n'.code.toByte()
             output.write(bytes)

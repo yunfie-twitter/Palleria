@@ -926,7 +926,7 @@ fun PallaSyncSettingsScreen(
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }.use(
                                     { input -> syncManager.verifyRelayArchive(input, expectedSource) },
                                 )
-                            check(verified.includeRecovery && !verified.complete) { "C_SCHEMA_VIOLATION" }
+                            check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
                         }
                         Toast.makeText(context, R.string.pallasync_export_saved, Toast.LENGTH_LONG).show()
                     } catch (cancelled: CancellationException) {

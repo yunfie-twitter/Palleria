@@ -299,9 +299,27 @@ class PallaSyncExportArchiveTest {
         }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
     }
 
+    @Test
+    fun completeRecoveryArchiveRequiresPinnedHistoryAndRecordVerification() {
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true)
+        val verified =
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+
+        verified.includeRecovery shouldBe true
+        verified.complete shouldBe true
+    }
+
     private fun acceptedEvidenceArchive(
         dropLastReceipt: Boolean = false,
         addUnreferencedSnapshotPart: Boolean = false,
+        includeRecovery: Boolean = false,
     ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
@@ -346,7 +364,7 @@ class PallaSyncExportArchiveTest {
                 logId = logId,
                 relayPublicKey = relayKey,
                 relayKeyId = relayKeyId,
-                includeRecovery = false,
+                includeRecovery = includeRecovery,
                 relayPinJson = checkNotNull(PallaSyncCore.canonicalJson(pin.toString())),
                 identityJson = fixture.getValue("identity").jsonObject.toString(),
             )
@@ -360,7 +378,7 @@ class PallaSyncExportArchiveTest {
                     put("log_id", logId)
                     put("head_seq", upload.getValue("head_seq").jsonPrimitive.long)
                     put("head_hash", upload.getValue("head_hash").jsonPrimitive.content)
-                    put("include_recovery", false)
+                    put("include_recovery", includeRecovery)
                     put("relay_public_key", relayKey)
                     put("relay_key_id", relayKeyId)
                     put("transparency_id", transparencyHead.getValue("transparency_id").jsonPrimitive.content)

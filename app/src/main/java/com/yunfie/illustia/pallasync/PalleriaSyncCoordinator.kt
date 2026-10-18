@@ -918,7 +918,7 @@ internal class PalleriaSyncCoordinator(
                         },
                         PallaSyncArchiveSnapshotVerifier(::verifyExportSnapshotParts),
                     )
-                check(snapshot.includeRecovery && !snapshot.complete) { "C_SCHEMA_VIOLATION" }
+                check(snapshot.includeRecovery && snapshot.complete) { "C_SCHEMA_VIOLATION" }
                 snapshot
             }
         }
