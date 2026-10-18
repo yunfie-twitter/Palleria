@@ -259,8 +259,37 @@ class PallaSyncRelayInteropTest {
                     policy.chooseSource(reseedTargetOrigin, "authenticated_export", explicitlyConfirmed = true)
                     policy.confirmKey(policy.inspectRelay(reseedTargetOrigin), explicitlyConfirmed = true)
                     policy.accept(policy.currentReview(reseedTargetOrigin), explicitlyConfirmed = true)
+                    val sourceAuthorityHash = checkNotNull(keys.authorityHash(state.chainId))
                     val staged = coordinator.stageReseedHistory(reseedTargetOrigin, phrase, "")
                     assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), staged is PallaSyncHttpResult.Success)
+                    if (args.getString("reseed_expect_split_view") == "true") {
+                        val cutover = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        assertTrue("Signed split view unexpectedly allowed reseed cutover", cutover.isFailure)
+                        val preserved = checkNotNull(store.dao.getActiveChainState())
+                        assertEquals(0L, preserved.generation)
+                        assertTrue("Source writes were not suspended: ${preserved.writeState}", preserved.writeState in setOf("integrity_paused", "epoch_rebase_required"))
+                        assertEquals(state.logId, preserved.logId)
+                        assertNotNull(keys.getActiveChainKeys())
+                        val evidenceRows = store.protocolDao().unresolvedQuarantinePage(state.chainId, "", 50)
+                        val splitEvidence = evidenceRows.firstOrNull { it.reason in setOf("C_ROLLBACK_DETECTED", "C_TRANSPARENCY_INVALID", "C_LOG_HASH_MISMATCH") }
+                        assertNotNull("Signed contradictory transparency head was not quarantined", splitEvidence)
+                        val retained = checkNotNull(store.protocolDao().quarantineEvidence(state.chainId, checkNotNull(splitEvidence).objectHash))
+                        assertTrue(retained.evidenceJson.contains("PALLASYNC-TRANSPARENCY-HEAD-v3"))
+                        assertEquals(sourceAuthorityHash, keys.authorityHash(state.chainId))
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_reseed_split_view_rejected", "true")
+                                putString("pallasync_reseed_split_view_evidence", "retained")
+                                putString("pallasync_reseed_split_view_writes", preserved.writeState)
+                                putString("pallasync_reseed_split_view_error", cutover.exceptionOrNull()?.message ?: "missing")
+                            },
+                        )
+                        println("pallasync_reseed_split_view_rejected=true")
+                        println("pallasync_reseed_split_view_evidence=retained")
+                        println("pallasync_reseed_split_view_writes=${preserved.writeState}")
+                        return@runBlocking
+                    }
                     val requestedFault = args.getString("rebase_fault")?.takeIf { it.isNotEmpty() }
                     if (requestedFault != null) {
                         val firstCommit = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }

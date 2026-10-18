@@ -186,7 +186,9 @@ internal class PallaSyncConsistencyProbe(
     ) {
         if (!sameView(context, log, head)) {
             // Concurrent acceptance can advance the first view while the signed view is being read.
-            check(sameView(context, readLogHead(context).requireValue(), head)) { "C_MISSING_DEPENDENCY" }
+            // Repeating the read rules out that race. A still-conflicting relay-signed view is
+            // positive fork evidence, not an unavailable dependency.
+            check(sameView(context, readLogHead(context).requireValue(), head)) { "C_TRANSPARENCY_INVALID" }
         }
     }
 

@@ -54,9 +54,16 @@ pub fn history_cut(authority: &Authority, response: &Value) -> Result<Value> {
     fields(response, &[("head", "object")], &[])?;
     let head = &response["head"];
     attestations::validate_head(head, &authority.pin)?;
+    if n(head, "head_seq") < authority.sequence {
+        return Err(ClientError("C_ROLLBACK_DETECTED"));
+    }
     require(
-        n(head, "head_seq") == authority.sequence && s(head, "head_hash") == authority.head_hash,
+        n(head, "head_seq") == authority.sequence,
         "C_MISSING_DEPENDENCY",
+    )?;
+    require(
+        s(head, "head_hash") == authority.head_hash,
+        "C_LOG_HASH_MISMATCH",
     )?;
     let parameters = authority
         .parameters
@@ -66,7 +73,7 @@ pub fn history_cut(authority: &Authority, response: &Value) -> Result<Value> {
     require(
         s(head, "parameters_hash") == object_hash(parameters)
             && s(head, "epoch_hash") == object_hash(&epoch.record),
-        "C_MISSING_DEPENDENCY",
+        "C_LOG_HASH_MISMATCH",
     )?;
     let zero = attestations::transparency_zero(
         &authority.pin.chain_id,

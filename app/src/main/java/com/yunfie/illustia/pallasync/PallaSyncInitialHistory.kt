@@ -63,11 +63,41 @@ internal class PallaSyncInitialHistory(
         val authority = replay(initial)
         val pin = authority.getValue("pin").jsonObject
         progress("history_cut")
-        val cut =
+        val transparencyHeadBytes = get(url("transparency/head"))
+        val observedTransparencyHead =
             json
                 .parseToJsonElement(
-                    PallaSyncCore.validateInitialHistoryCut(authority.toString(), get(url("transparency/head"))),
+                    PallaSyncCore.observeTransparencyHead(transparencyHeadBytes, pin.toString()),
                 ).jsonObject
+        retain(
+            pin,
+            observedTransparencyHead,
+            "transparency_head",
+            observedTransparencyHead.getValue("entry_index").jsonPrimitive.long,
+        )
+        val cut =
+            try {
+                json
+                    .parseToJsonElement(
+                        PallaSyncCore.validateInitialHistoryCut(authority.toString(), transparencyHeadBytes),
+                    ).jsonObject
+            } catch (failure: IllegalStateException) {
+                val code = failure.message?.takeIf { it.startsWith("C_") }
+                if (code in setOf("C_ROLLBACK_DETECTED", "C_TRANSPARENCY_INVALID", "C_LOG_HASH_MISMATCH")) {
+                    val hash = hash(observedTransparencyHead)
+                    store.protocolDao().quarantine(
+                        com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity(
+                            chain,
+                            hash,
+                            checkNotNull(code),
+                            observedTransparencyHead.toString(),
+                            "unresolved",
+                        ),
+                    )
+                    store.dao.pauseIntegrityWrites(chain)
+                }
+                throw failure
+            }
         val head = cut.getValue("head").jsonObject
         verifySnapshotCatalogue(
             pin,

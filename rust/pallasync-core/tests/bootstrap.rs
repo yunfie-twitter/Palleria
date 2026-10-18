@@ -146,6 +146,25 @@ fn complete_authority_can_reconcile_a_signed_pruned_head_for_snapshot_bootstrap(
     assert_eq!(cut["head"]["min_available_seq"], 2);
     assert_eq!(cut["head"]["head_seq"], authority.sequence);
 
+    let mut fork = head.clone();
+    fork["head_hash"] = json!(URL_SAFE_NO_PAD.encode([0x9a; 32]));
+    let mut fork_unsigned = fork.clone();
+    fork_unsigned
+        .as_object_mut()
+        .unwrap()
+        .remove("relay_signature");
+    fork["relay_signature"] = json!(pallasync_core::crypto::sign_with_context(
+        &relay,
+        b"PALLASYNC-TRANSPARENCY-HEAD-v3\0",
+        &jcs::canonicalize_json(&fork_unsigned).unwrap(),
+    ));
+    assert_eq!(
+        history_cut(&authority, &json!({"head":fork}))
+            .unwrap_err()
+            .0,
+        "C_LOG_HASH_MISMATCH"
+    );
+
     let mut stale = authority.clone();
     stale.sequence -= 1;
     assert_eq!(
