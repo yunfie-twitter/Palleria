@@ -214,7 +214,7 @@ internal object PallaSyncExportArchiveVerifier {
     }
 
     /** Disk-backed because a valid export can contain more receipts than fit in memory. */
-    private class ExportReceiptLinkIndex : Closeable {
+    internal class ExportReceiptLinkIndex : Closeable {
         private val file = File.createTempFile("pallasync-export-receipts-", ".sqlite")
         private val database = SQLiteDatabase.openOrCreateDatabase(file, null)
 
@@ -225,7 +225,7 @@ internal object PallaSyncExportArchiveVerifier {
             database.execSQL("CREATE TABLE export_log_entries (relay_seq INTEGER PRIMARY KEY, entry_json TEXT NOT NULL)")
             database.execSQL("CREATE TABLE export_log_receipts (relay_seq INTEGER PRIMARY KEY, receipt_json TEXT NOT NULL)")
             database.execSQL(
-                "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL)",
+                "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL, receipt_verified INTEGER NOT NULL DEFAULT 0)",
             )
             database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
         }
@@ -263,6 +263,11 @@ internal object PallaSyncExportArchiveVerifier {
             check(
                 PallaSyncCore.validateExportReceiptTransparency(receipt, entry.toString(), pin),
             ) { "C_TRANSPARENCY_INVALID" }
+            val receiptObject = Json.parseToJsonElement(receipt).jsonObject
+            if (receiptObject["relay_seq"]?.toString() == "null") {
+                val objectHash = receiptObject["object_hash"]?.jsonPrimitive?.content ?: error("C_SCHEMA_VIOLATION")
+                linkNullSequenceSnapshotReceipt(objectHash)
+            }
             check(
                 database.delete("export_receipts", "transparency_index=?", arrayOf(index.toString())) == 1,
             ) { "C_TRANSPARENCY_INVALID" }
@@ -375,6 +380,9 @@ internal object PallaSyncExportArchiveVerifier {
             database.rawQuery("SELECT COUNT(*) FROM export_compactions", null).use { cursor ->
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_MISSING_DEPENDENCY" }
             }
+            database.rawQuery("SELECT COUNT(*) FROM export_snapshot_parts WHERE receipt_verified=0", null).use { cursor ->
+                check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
+            }
         }
 
         fun addSnapshotPart(record: kotlinx.serialization.json.JsonObject) {
@@ -388,6 +396,27 @@ internal object PallaSyncExportArchiveVerifier {
             } catch (_: SQLiteConstraintException) {
                 error("C_SCHEMA_VIOLATION")
             }
+        }
+
+        fun linkNullSequenceSnapshotReceipt(objectHash: String) {
+            val unmatchedParts =
+                database
+                    .rawQuery(
+                        "SELECT COUNT(*) FROM export_snapshot_parts WHERE record_hash=? AND receipt_verified=0",
+                        arrayOf(objectHash),
+                    ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else -1L }
+            check(unmatchedParts == 1L) { "C_ACCEPTANCE_UNPROVEN" }
+            database.execSQL(
+                "UPDATE export_snapshot_parts SET receipt_verified=1 WHERE record_hash=? AND receipt_verified=0",
+                arrayOf(objectHash),
+            )
+            check(
+                database
+                    .rawQuery(
+                        "SELECT COUNT(*) FROM export_snapshot_parts WHERE record_hash=? AND receipt_verified=1",
+                        arrayOf(objectHash),
+                    ).use { cursor -> cursor.moveToFirst() && cursor.getLong(0) == 1L },
+            ) { "C_ACCEPTANCE_UNPROVEN" }
         }
 
         private fun verifyCompactionSnapshotParts(
@@ -406,11 +435,12 @@ internal object PallaSyncExportArchiveVerifier {
                     val recordJson =
                         database
                             .rawQuery(
-                                "SELECT record_hash,record_json FROM export_snapshot_parts WHERE record_id=?",
+                                "SELECT record_hash,record_json,receipt_verified FROM export_snapshot_parts WHERE record_id=?",
                                 arrayOf(recordId),
                             ).use { parts ->
                                 check(parts.moveToFirst()) { "C_MISSING_DEPENDENCY" }
                                 check(parts.getString(0) == expectedHash) { "C_SNAPSHOT_INVALID" }
+                                check(parts.getInt(2) == 1) { "C_ACCEPTANCE_UNPROVEN" }
                                 parts.getString(1)
                             }
                     check(database.delete("export_snapshot_parts", "record_id=?", arrayOf(recordId)) == 1) {
@@ -423,6 +453,9 @@ internal object PallaSyncExportArchiveVerifier {
 
         fun requireAllMatched() {
             database.rawQuery("SELECT COUNT(*) FROM export_receipts", null).use { cursor ->
+                check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
+            }
+            database.rawQuery("SELECT COUNT(*) FROM export_snapshot_parts WHERE receipt_verified=0", null).use { cursor ->
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
             }
         }

@@ -291,7 +291,7 @@ class PallaSyncExportArchiveTest {
                 snapshotExpected,
                 PallaSyncArchiveRecordVerifier { _, _, _ -> },
             )
-        }.message shouldBe "C_MISSING_DEPENDENCY"
+        }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
 
         val (archiveMissingReceipt, expectedMissingReceipt) = acceptedEvidenceArchive(dropLastReceipt = true)
         shouldThrow<IllegalStateException> {
@@ -351,6 +351,28 @@ class PallaSyncExportArchiveTest {
                 PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
             )
         }.message shouldBe "C_MISSING_DEPENDENCY"
+    }
+
+    @Test
+    fun nullSequenceReceiptMustMatchExactlyOneSnapshotPartHash() {
+        val record = Json.parseToJsonElement("""{"record_id":"22222222-2222-4222-8222-222222222222"}""").jsonObject
+        val objectHash = checkNotNull(PallaSyncCore.objectHash(record.toString()))
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addSnapshotPart(record)
+            index.linkNullSequenceSnapshotReceipt(objectHash)
+            index.requireAllMatched()
+
+            shouldThrow<IllegalStateException> {
+                index.linkNullSequenceSnapshotReceipt(objectHash)
+            }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
+        }
+
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addSnapshotPart(record)
+            shouldThrow<IllegalStateException> {
+                index.linkNullSequenceSnapshotReceipt("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
+        }
     }
 
     private fun acceptedEvidenceArchive(
