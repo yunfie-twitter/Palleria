@@ -1881,6 +1881,9 @@ internal class PalleriaSyncCoordinator(
                                 is PallaSyncHttpResult.Success -> error("C_SCHEMA_VIOLATION")
                             }
                         }
+                        // §10.8: only a validated acknowledgement for this chain completes the
+                        // prerequisite behind exact DEVICE_PENDING_KEYS retries.
+                        policy.retry.resolved(origin, state.chainId, "DEVICE_PENDING_KEYS")
                         // Capture after target key acknowledgement, immediately before local cutover.
                         // This includes the longest network step after the earlier post-commit capture.
                         val sourceConflict = captureReseedSourceConflict(root, source, sourceOrigin, stable, authority)

@@ -109,9 +109,9 @@ class PallaSyncRetryGateTest {
         failure shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED", 507)
         gate.observe(request(), failure, hint)
         gate().before(request()) shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED")
-        gate.resolved(origin, "EPOCH_STALE")
+        gate.resolved(origin, chain, "EPOCH_STALE") shouldBe false
         gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED")
-        gate.resolved(origin, "QUOTA_EXCEEDED")
+        gate.resolved(origin, chain, "QUOTA_EXCEEDED") shouldBe true
         gate.before(request()) shouldBe null
         PallaSyncRetryGate.retryAfter("12") shouldBe 12_000
         PallaSyncRetryGate.retryAfter("invalid") shouldBe 3_600_000
@@ -137,6 +137,29 @@ class PallaSyncRetryGateTest {
         gate.resolveCapacity(origin, chain) shouldBe true
         gate.capacityIssue(origin, chain) shouldBe null
         gate.before(request()) shouldBe null
+    }
+
+    @Test
+    fun `lifecycle resolution clears only matching error requests for the selected chain`() {
+        val gate = gate()
+        val anotherChain = "AbCdEf0123456789012345678901234567890123456"
+        val first = request()
+        val second =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/$anotherChain/records")
+                .post("{}".toRequestBody())
+                .build()
+        val pendingKeys = PallaSyncHttpResult.ProtocolError("DEVICE_PENDING_KEYS", 403)
+        gate.observe(first, pendingKeys, PallaSyncProblemHint(403, "DEVICE_PENDING_KEYS", true))
+        gate.observe(second, pendingKeys, PallaSyncProblemHint(403, "DEVICE_PENDING_KEYS", true))
+
+        gate.resolved(origin, chain, "DEVICE_PENDING_KEYS") shouldBe true
+        gate.before(first) shouldBe null
+        gate.before(second) shouldBe PallaSyncHttpResult.ProtocolError("DEVICE_PENDING_KEYS")
+        gate.resolved(origin, anotherChain, "EPOCH_STALE") shouldBe false
+        gate.resolved(origin, anotherChain, "DEVICE_PENDING_KEYS") shouldBe true
+        gate.before(second) shouldBe null
     }
 
     @Test

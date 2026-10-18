@@ -281,11 +281,25 @@ internal class PallaSyncRetryGate(
     /** Explicit lifecycle/capacity handlers invoke this after satisfying the named prerequisite. */
     fun resolved(
         origin: String,
+        chain: String,
         code: String,
-    ) = synchronized(lock) {
-        val state = load(origin)
-        save(origin, state.copy(blockedRequests = state.blockedRequests.filterValues { it != code }))
-    }
+    ): Boolean =
+        synchronized(lock) {
+            val state = load(origin)
+            val resolved =
+                state.blockedRequests
+                    .filter { (key, blockedCode) -> blockedCode == code && state.blockedRequestChains[key] == chain }
+                    .keys
+            if (resolved.isEmpty()) return@synchronized false
+            save(
+                origin,
+                state.copy(
+                    blockedRequests = state.blockedRequests - resolved,
+                    blockedRequestChains = state.blockedRequestChains - resolved,
+                ),
+            )
+            true
+        }
 
     /** §17.8: a capacity error is unblocked only after the user confirms the prerequisite changed. */
     fun resolveCapacity(
