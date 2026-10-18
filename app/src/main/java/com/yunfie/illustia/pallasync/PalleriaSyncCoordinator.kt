@@ -2304,6 +2304,7 @@ internal class PalleriaSyncCoordinator(
                 )
             }
         }
+        rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_ROOM_COMMITTED)
         val targetDevice =
             checkNotNull(keystore.pendingReseed()?.keys?.deviceId ?: keystore.getActiveChainKeys()?.deviceId) {
                 "C_MISSING_DEPENDENCY"
@@ -2328,6 +2329,7 @@ internal class PalleriaSyncCoordinator(
                 "C_ROLLBACK_DETECTED"
             }
         }
+        rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_KEYSTORE_PROMOTED)
         val sourceKeys = checkNotNull(keystore.getArchivedChainKeys(chain)) { "C_MISSING_DEPENDENCY" }
         check(sourceKeys.deviceId == sourceDevice) { "C_ROLLBACK_DETECTED" }
         val targetKeys = checkNotNull(keystore.getActiveChainKeys()) { "C_MISSING_DEPENDENCY" }
@@ -2336,7 +2338,9 @@ internal class PalleriaSyncCoordinator(
                 targetKeys.epoch == targetEpoch,
         ) { "C_ROLLBACK_DETECTED" }
         outboxRebase.resumeReseed(chain, targetKeys, sourceKeys, sourceAuthority)
+        rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_OUTBOX_REBASED)
         SettingsStore(appContext).setPallaSyncServerUrlFromCoordinator(journal.targetOrigin)
+        rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_ORIGIN_SELECTED)
         db.transaction {
             val currentState = checkNotNull(chainDao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
             var after = 0L
@@ -2367,6 +2371,7 @@ internal class PalleriaSyncCoordinator(
                 ),
             )
         }
+        rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_COMPLETE_COMMITTED)
     }
 
     /** Reconstructs the cutover checkpoint after verifying the target's exact receipts. */

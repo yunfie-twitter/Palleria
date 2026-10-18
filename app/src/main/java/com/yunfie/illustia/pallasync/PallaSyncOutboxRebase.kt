@@ -41,7 +41,16 @@ internal class PallaSyncOutboxRebase(
         fault,
     )
 
-    enum class Boundary { SOURCE_STAGED, DESTINATION_COMMITTED, SOURCE_RETIRED }
+    enum class Boundary {
+        SOURCE_STAGED,
+        DESTINATION_COMMITTED,
+        SOURCE_RETIRED,
+        RESEED_ROOM_COMMITTED,
+        RESEED_KEYSTORE_PROMOTED,
+        RESEED_OUTBOX_REBASED,
+        RESEED_ORIGIN_SELECTED,
+        RESEED_COMPLETE_COMMITTED,
+    }
 
     suspend fun resume(
         chain: String,

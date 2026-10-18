@@ -213,7 +213,7 @@ class PallaSyncRelayInteropTest {
                         assertTrue("Reseed cutover fault did not interrupt commit", firstCommit.isFailure)
                         assertTrue(
                             PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-                            coordinator.resumeStagedReseedCutover(),
+                            coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") is PallaSyncHttpResult.Success,
                         )
                     } else {
                         val committed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
