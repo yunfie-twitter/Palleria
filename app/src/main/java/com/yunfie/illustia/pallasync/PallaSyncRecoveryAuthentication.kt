@@ -72,8 +72,9 @@ internal suspend fun <T> authenticateDeletionWitness(
     val prepared = protector.prepare()
     val binding = receiptHash.toByteArray(Charsets.US_ASCII)
     try {
-        val cipher = protector.encrypt(prepared.alias).apply { updateAAD(binding) }
+        val cipher = protector.encrypt(prepared.alias)
         val authenticated = authenticateRecoveryCipher(activity, cipher, title, subtitle)
+        authenticated.updateAAD(binding)
         val proof = authenticated.doFinal(binding)
         proof.fill(0)
         return operation()
