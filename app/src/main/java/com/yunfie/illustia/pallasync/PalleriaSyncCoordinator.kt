@@ -913,11 +913,111 @@ internal class PalleriaSyncCoordinator(
                             kotlinx.serialization.json.Json
                                 .decodeFromString<PallaSyncInnerRecord>(plaintext)
                         },
+                        PallaSyncArchiveSnapshotVerifier(::verifyExportSnapshotParts),
                     )
                 check(snapshot.includeRecovery && !snapshot.complete) { "C_SCHEMA_VIOLATION" }
                 snapshot
             }
         }
+
+    private fun verifyExportSnapshotParts(
+        authorityJson: String,
+        compactionJson: String,
+        parts: PallaSyncArchiveSnapshotPartSource,
+    ) {
+        val authority = Json.parseToJsonElement(authorityJson).jsonObject
+        val compaction = Json.parseToJsonElement(compactionJson).jsonObject
+        val chain = compaction.getValue("chain_id").jsonPrimitive.content
+        val generation = compaction.getValue("generation").jsonPrimitive.long
+        val logId = compaction.getValue("log_id").jsonPrimitive.content
+        check(
+            chain ==
+                authority
+                    .getValue("parameters")
+                    .jsonObject
+                    .getValue("chain_id")
+                    .jsonPrimitive.content &&
+                generation ==
+                authority
+                    .getValue("parameters")
+                    .jsonObject
+                    .getValue("generation")
+                    .jsonPrimitive.long &&
+                logId ==
+                authority
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("log_id")
+                    .jsonPrimitive.content,
+        ) { "C_SNAPSHOT_INVALID" }
+        val epochHash = compaction.getValue("epoch_hash").jsonPrimitive.content
+        val epoch =
+            authority
+                .getValue("epochs")
+                .jsonObject
+                .entries
+                .singleOrNull { (_, value) ->
+                    PallaSyncCore.objectHash(value.jsonObject.getValue("record").toString()) == epochHash
+                }?.key
+                ?.toLongOrNull() ?: error("C_MISSING_DEPENDENCY")
+        val device = checkNotNull(keysForChainLocked(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val epochKeys = checkNotNull(keystore.keysForEpoch(device, epoch)) { "C_MISSING_DEPENDENCY" }
+        val authorId = compaction.getValue("device_id").jsonPrimitive.content
+        val author =
+            authority
+                .getValue("devices")
+                .jsonObject[authorId]
+                ?.jsonObject
+                ?.getValue("record")
+                ?.jsonObject ?: error("C_MISSING_DEPENDENCY")
+        check(author.getValue("generation").jsonPrimitive.long == generation) { "C_ACCEPTANCE_UNPROVEN" }
+        val authorKey = author.getValue("device_public_key").jsonPrimitive.content
+        val references = compaction.getValue("snapshot_parts").jsonArray
+        val snapshotVerifier =
+            PallaSyncEpochSession.begin(epochKeys, authorityJson, epoch).use { session ->
+                var verifier: PallaSyncSnapshotVerifier? = null
+                var expectedIndex = 0
+                parts.forEachPart { partIndex, recordJson ->
+                    check(partIndex == expectedIndex && partIndex < references.size) { "C_SNAPSHOT_INVALID" }
+                    val record = Json.parseToJsonElement(recordJson).jsonObject
+                    check(record.getValue("device_id").jsonPrimitive.content == authorId) { "C_ACCEPTANCE_UNPROVEN" }
+                    val plaintext = session.decryptSnapshotPart(recordJson, authorKey)
+                    val frame = Json.parseToJsonElement(plaintext).jsonObject
+                    if (partIndex == 0) {
+                        val header =
+                            frame
+                                .getValue("entries")
+                                .jsonArray
+                                .firstOrNull()
+                                ?.jsonObject ?: error("C_SNAPSHOT_INVALID")
+                        check(
+                            header.getValue("chain_id").jsonPrimitive.content == chain &&
+                                header.getValue("generation").jsonPrimitive.long == generation &&
+                                header.getValue("log_id").jsonPrimitive.content == logId &&
+                                header.getValue("covered_through_seq").jsonPrimitive.long ==
+                                compaction.getValue("covered_through_seq").jsonPrimitive.long &&
+                                header.getValue("covered_log_hash").jsonPrimitive.content ==
+                                compaction.getValue("covered_log_hash").jsonPrimitive.content &&
+                                header.getValue("epoch_hash").jsonPrimitive.content == epochHash,
+                        ) { "C_SNAPSHOT_INVALID" }
+                        verifier =
+                            PallaSyncSnapshotVerifier.beginFromEpochSession(
+                                session,
+                                header.toString(),
+                                compaction.getValue("compaction_id").jsonPrimitive.content,
+                                references.size,
+                            )
+                    }
+                    checkNotNull(verifier).acceptDecryptedAuthenticatedPart(plaintext)
+                    expectedIndex++
+                }
+                check(expectedIndex == references.size) { "C_MISSING_DEPENDENCY" }
+                checkNotNull(verifier).also {
+                    it.finish(compaction.getValue("state_sha256").jsonPrimitive.content)
+                }
+            }
+        snapshotVerifier.close()
+    }
 
     /** §7.12.4/§17.10: sign a protected public checkpoint at the local verified data prefix. */
     internal suspend fun createDeviceCheckpoint(): String =

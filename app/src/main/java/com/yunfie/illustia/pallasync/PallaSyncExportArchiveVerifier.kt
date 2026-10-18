@@ -4,6 +4,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -36,6 +37,7 @@ internal object PallaSyncExportArchiveVerifier {
         input: InputStream,
         expectedSource: PallaSyncExportArchive.ExpectedSource? = null,
         recordVerifier: PallaSyncArchiveRecordVerifier? = null,
+        snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -101,6 +103,7 @@ internal object PallaSyncExportArchiveVerifier {
                                 identity,
                                 checkNotNull(canonicalPin),
                                 recordVerifier,
+                                snapshotVerifier,
                             )
                         }
                     }
@@ -132,6 +135,10 @@ internal object PallaSyncExportArchiveVerifier {
 
                         "log" -> {
                             checkNotNull(receiptLinks).addLogEntry(value.getValue("entry").jsonObject)
+                        }
+
+                        "snapshot_part" -> {
+                            checkNotNull(receiptLinks).addSnapshotPart(value.getValue("record").jsonObject)
                         }
 
                         "transparency_entry" -> {
@@ -197,6 +204,9 @@ internal object PallaSyncExportArchiveVerifier {
             )
             database.execSQL("CREATE TABLE export_log_entries (relay_seq INTEGER PRIMARY KEY, entry_json TEXT NOT NULL)")
             database.execSQL("CREATE TABLE export_log_receipts (relay_seq INTEGER PRIMARY KEY, receipt_json TEXT NOT NULL)")
+            database.execSQL(
+                "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL)",
+            )
         }
 
         fun add(
@@ -266,6 +276,7 @@ internal object PallaSyncExportArchiveVerifier {
             identityJson: String,
             pinJson: String,
             recordVerifier: PallaSyncArchiveRecordVerifier?,
+            snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
         ) {
             check(header.getValue("generation").jsonPrimitive.long == 0L) { "C_SNAPSHOT_INVALID" }
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
@@ -301,6 +312,13 @@ internal object PallaSyncExportArchiveVerifier {
                             sequence,
                         )
                     }
+                    if (entry.getValue("kind").jsonPrimitive.content == "compaction") {
+                        verifyCompactionSnapshotParts(
+                            authority,
+                            entry.getValue("object").jsonObject,
+                            snapshotVerifier,
+                        )
+                    }
                     expectedSequence = Math.addExact(expectedSequence, 1L)
                 }
             }
@@ -318,6 +336,53 @@ internal object PallaSyncExportArchiveVerifier {
                         .jsonPrimitive.content ==
                     header.getValue("log_id").jsonPrimitive.content,
             ) { "C_LOG_HASH_MISMATCH" }
+            database.rawQuery("SELECT COUNT(*) FROM export_snapshot_parts", null).use { cursor ->
+                check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_MISSING_DEPENDENCY" }
+            }
+        }
+
+        fun addSnapshotPart(record: kotlinx.serialization.json.JsonObject) {
+            val recordId = record["record_id"]?.jsonPrimitive?.content ?: error("C_SCHEMA_VIOLATION")
+            val recordHash = checkNotNull(PallaSyncCore.objectHash(record.toString())) { "C_SCHEMA_VIOLATION" }
+            try {
+                database.execSQL(
+                    "INSERT INTO export_snapshot_parts(record_id,record_hash,record_json) VALUES (?,?,?)",
+                    arrayOf<Any>(recordId, recordHash, record.toString()),
+                )
+            } catch (_: SQLiteConstraintException) {
+                error("C_SCHEMA_VIOLATION")
+            }
+        }
+
+        private fun verifyCompactionSnapshotParts(
+            authorityJson: String,
+            compaction: kotlinx.serialization.json.JsonObject,
+            snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
+        ) {
+            val references = compaction.getValue("snapshot_parts").jsonArray
+            check(references.isNotEmpty()) { "C_SNAPSHOT_INVALID" }
+            val verifier = checkNotNull(snapshotVerifier) { "C_MISSING_DEPENDENCY" }
+            verifier.verify(authorityJson, compaction.toString()) { consume ->
+                references.forEachIndexed { index, reference ->
+                    val expected = reference.jsonObject
+                    val recordId = expected.getValue("record_id").jsonPrimitive.content
+                    val expectedHash = expected.getValue("record_hash").jsonPrimitive.content
+                    val recordJson =
+                        database
+                            .rawQuery(
+                                "SELECT record_hash,record_json FROM export_snapshot_parts WHERE record_id=?",
+                                arrayOf(recordId),
+                            ).use { parts ->
+                                check(parts.moveToFirst()) { "C_MISSING_DEPENDENCY" }
+                                check(parts.getString(0) == expectedHash) { "C_SNAPSHOT_INVALID" }
+                                parts.getString(1)
+                            }
+                    check(database.delete("export_snapshot_parts", "record_id=?", arrayOf(recordId)) == 1) {
+                        "C_SNAPSHOT_INVALID"
+                    }
+                    consume(index, recordJson)
+                }
+            }
         }
 
         fun requireAllMatched() {

@@ -22,6 +22,18 @@ internal fun interface PallaSyncArchiveRecordVerifier {
     )
 }
 
+internal fun interface PallaSyncArchiveSnapshotPartSource {
+    fun forEachPart(consumer: (partIndex: Int, recordJson: String) -> Unit)
+}
+
+internal fun interface PallaSyncArchiveSnapshotVerifier {
+    fun verify(
+        authorityJson: String,
+        compactionJson: String,
+        parts: PallaSyncArchiveSnapshotPartSource,
+    )
+}
+
 internal class PallaSyncExportArchive private constructor(
     private val output: OutputStream,
     private val expectedSource: ExpectedSource?,

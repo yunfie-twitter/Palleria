@@ -284,13 +284,25 @@ class PallaSyncExportArchiveTest {
             )
         }.message shouldBe "C_AEAD_FAILURE"
 
+        val (archiveWithUnreferencedSnapshot, snapshotExpected) = acceptedEvidenceArchive(addUnreferencedSnapshotPart = true)
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archiveWithUnreferencedSnapshot),
+                snapshotExpected,
+                PallaSyncArchiveRecordVerifier { _, _, _ -> },
+            )
+        }.message shouldBe "C_MISSING_DEPENDENCY"
+
         val (archiveMissingReceipt, expectedMissingReceipt) = acceptedEvidenceArchive(dropLastReceipt = true)
         shouldThrow<IllegalStateException> {
             PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archiveMissingReceipt), expectedMissingReceipt)
         }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
     }
 
-    private fun acceptedEvidenceArchive(dropLastReceipt: Boolean = false): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
+    private fun acceptedEvidenceArchive(
+        dropLastReceipt: Boolean = false,
+        addUnreferencedSnapshotPart: Boolean = false,
+    ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
                 .parseToJsonElement(
@@ -368,12 +380,22 @@ class PallaSyncExportArchiveTest {
                 receipts.map { receipt ->
                     checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
                 }
-            archive.acceptChunk(
-                (listOf(header) + logLines + receiptLines + """{"has_more":true,"kind":"continuation","next_cursor":"transparency"}""")
-                    .joinToString("\n", postfix = "\n")
-                    .toByteArray(),
-                null,
-            )
+            val snapshotLines =
+                if (addUnreferencedSnapshotPart) {
+                    listOf(
+                        checkNotNull(
+                            PallaSyncCore.canonicalJson(
+                                """{"kind":"snapshot_part","record":{"record_id":"22222222-2222-4222-8222-222222222222"}}""",
+                            ),
+                        ),
+                    )
+                } else {
+                    emptyList()
+                }
+            val firstChunkLines =
+                listOf(header) + logLines + snapshotLines + receiptLines +
+                    """{"has_more":true,"kind":"continuation","next_cursor":"transparency"}"""
+            archive.acceptChunk(firstChunkLines.joinToString("\n", postfix = "\n").toByteArray(), null)
             val evidenceLines =
                 buildList {
                     addAll(
