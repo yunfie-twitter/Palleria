@@ -122,6 +122,8 @@
     <string name="pallasync_witness_requested_at">Requested at (Unix ms): %1$s</string>
     <string name="pallasync_witness_existing_count">Existing valid witnesses: %1$d</string>
     <string name="pallasync_witness_confirm_action">Sign and export witness</string>
+    <string name="pallasync_witness_auth_title">Authenticate to sign witness</string>
+    <string name="pallasync_witness_auth_summary">Confirm with device authentication for this exact signed receipt.</string>
     <string name="pallasync_witness_exported">Witness bundle saved and read back. Transfer it to the device managing deletion.</string>
     <string name="pallasync_witness_export_cancelled">Witness export cancelled. No signature was removed from this device.</string>
     <string name="pallasync_witness_import_cancelled">Witness import cancelled.</string>

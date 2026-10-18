@@ -30,6 +30,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
@@ -49,6 +50,7 @@ import com.yunfie.illustia.pallasync.PallaSyncReseedSourceConflict
 import com.yunfie.illustia.pallasync.PallaSyncRetryGate
 import com.yunfie.illustia.pallasync.PallaSyncRootSession
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import com.yunfie.illustia.pallasync.authenticateDeletionWitness
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
 import com.yunfie.illustia.ui.components.DividerLine
@@ -1113,7 +1115,17 @@ fun PallaSyncSettingsScreen(
                 witnessInputPreview = null
                 scope.launch {
                     try {
-                        witnessOutputArchive = syncManager.addDeletionIntentWitness(archive, explicitlyConfirmed = true)
+                        val activity = context as? FragmentActivity ?: error("C_RECOVERY_AUTH_REQUIRED")
+                        witnessOutputArchive =
+                            authenticateDeletionWitness(
+                                activity = activity,
+                                context = context,
+                                receiptHash = preview.receiptHash,
+                                title = context.getString(R.string.pallasync_witness_auth_title),
+                                subtitle = context.getString(R.string.pallasync_witness_auth_summary),
+                            ) {
+                                syncManager.addDeletionIntentWitness(archive, explicitlyConfirmed = true)
+                            }
                         if (witnessOutputArchive == null) {
                             Toast.makeText(context, R.string.pallasync_witness_create_failed, Toast.LENGTH_LONG).show()
                         } else {

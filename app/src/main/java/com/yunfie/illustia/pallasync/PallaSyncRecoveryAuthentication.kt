@@ -16,6 +16,8 @@ import kotlin.coroutines.resumeWithException
 internal suspend fun authenticateRecoveryCipher(
     activity: FragmentActivity,
     cipher: Cipher,
+    title: String = activity.getString(R.string.pallasync_unlock_recovery_share),
+    subtitle: String = activity.getString(R.string.pallasync_recovery_auth_purpose),
 ): Cipher =
     withContext(Dispatchers.Main.immediate) {
         check(activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) { "C_RECOVERY_AUTH_REQUIRED" }
@@ -45,8 +47,8 @@ internal suspend fun authenticateRecoveryCipher(
             val info =
                 BiometricPrompt.PromptInfo
                     .Builder()
-                    .setTitle(activity.getString(R.string.pallasync_unlock_recovery_share))
-                    .setSubtitle(activity.getString(R.string.pallasync_recovery_auth_purpose))
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
                     .setConfirmationRequired(true)
                     .setAllowedAuthenticators(authenticators)
             if (authenticators and androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL == 0) {
@@ -56,3 +58,27 @@ internal suspend fun authenticateRecoveryCipher(
             prompt.authenticate(info.build(), BiometricPrompt.CryptoObject(cipher))
         }
     }
+
+/** Require fresh OS authentication bound to the exact receipt before creating a local intent witness. */
+internal suspend fun <T> authenticateDeletionWitness(
+    activity: FragmentActivity,
+    context: android.content.Context,
+    receiptHash: String,
+    title: String,
+    subtitle: String,
+    operation: suspend () -> T,
+): T {
+    val protector = PallaSyncRecoveryKeyProtector(context)
+    val prepared = protector.prepare()
+    val binding = receiptHash.toByteArray(Charsets.US_ASCII)
+    try {
+        val cipher = protector.encrypt(prepared.alias).apply { updateAAD(binding) }
+        val authenticated = authenticateRecoveryCipher(activity, cipher, title, subtitle)
+        val proof = authenticated.doFinal(binding)
+        proof.fill(0)
+        return operation()
+    } finally {
+        binding.fill(0)
+        protector.delete(prepared.alias)
+    }
+}

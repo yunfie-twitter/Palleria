@@ -104,6 +104,8 @@
     <string name="pallasync_witness_requested_at">要求時刻 (Unix ms): %1$s</string>
     <string name="pallasync_witness_existing_count">有効な既存witness数: %1$d</string>
     <string name="pallasync_witness_confirm_action">署名して書き出す</string>
+    <string name="pallasync_witness_auth_title">witness署名を認証</string>
+    <string name="pallasync_witness_auth_summary">この署名済みreceiptに対する端末認証を行ってください。</string>
     <string name="pallasync_witness_exported">witness bundleを書き出し、読み戻しを確認しました。削除を管理する端末へ転送してください。</string>
     <string name="pallasync_witness_export_cancelled">witnessの書出しをキャンセルしました。端末内の署名は保持されています。</string>
     <string name="pallasync_witness_import_cancelled">witnessの読込みをキャンセルしました。</string>
