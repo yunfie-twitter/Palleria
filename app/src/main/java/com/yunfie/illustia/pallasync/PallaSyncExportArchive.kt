@@ -14,6 +14,14 @@ import java.security.MessageDigest
 import java.util.Base64
 
 /** §17.4/§17.10 bounded JSONL chunk merger. It preserves signed source lines verbatim. */
+internal fun interface PallaSyncArchiveRecordVerifier {
+    fun verify(
+        authorityJson: String,
+        recordJson: String,
+        relaySequence: Long,
+    )
+}
+
 internal class PallaSyncExportArchive private constructor(
     private val output: OutputStream,
     private val expectedSource: ExpectedSource?,
@@ -26,6 +34,8 @@ internal class PallaSyncExportArchive private constructor(
         val relayKeyId: String,
         val includeRecovery: Boolean = false,
         val relayPinJson: String? = null,
+        /** Public locally derived identity used only to replay signed archive history. */
+        val identityJson: String? = null,
     )
 
     data class Page(

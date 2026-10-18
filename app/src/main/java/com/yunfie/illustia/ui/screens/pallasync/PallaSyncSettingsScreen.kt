@@ -882,7 +882,7 @@ fun PallaSyncSettingsScreen(
                                     .use { output -> syncManager.exportRelayArchiveWithRecovery(output, mnemonic, passphrase) }
                             val verified =
                                 checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }.use(
-                                    { input -> PallaSyncExportArchiveVerifier.verify(input, expectedSource) },
+                                    { input -> syncManager.verifyRelayArchive(input, expectedSource) },
                                 )
                             check(verified.includeRecovery && !verified.complete) { "C_SCHEMA_VIOLATION" }
                         }

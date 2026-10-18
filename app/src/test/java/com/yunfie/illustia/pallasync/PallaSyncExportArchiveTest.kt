@@ -259,7 +259,30 @@ class PallaSyncExportArchiveTest {
     @Test
     fun pinnedArchiveReadbackMatchesEveryReceiptToItsAcceptedTransparencyEntry() {
         val (archive, expected) = acceptedEvidenceArchive()
-        PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archive), expected).complete shouldBe false
+        val verifiedRecordSequences = mutableListOf<Long>()
+        val verified =
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                    verifiedRecordSequences += relaySequence
+                },
+            )
+        verified.complete shouldBe false
+        verifiedRecordSequences shouldBe listOf(6L)
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(ByteArrayInputStream(archive), expected)
+        }.message shouldBe "C_MISSING_DEPENDENCY"
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { _, _, _ -> error("C_AEAD_FAILURE") },
+            )
+        }.message shouldBe "C_AEAD_FAILURE"
 
         val (archiveMissingReceipt, expectedMissingReceipt) = acceptedEvidenceArchive(dropLastReceipt = true)
         shouldThrow<IllegalStateException> {
@@ -313,6 +336,7 @@ class PallaSyncExportArchiveTest {
                 relayKeyId = relayKeyId,
                 includeRecovery = false,
                 relayPinJson = checkNotNull(PallaSyncCore.canonicalJson(pin.toString())),
+                identityJson = fixture.getValue("identity").jsonObject.toString(),
             )
         val header =
             PallaSyncCore.canonicalJson(
@@ -334,12 +358,18 @@ class PallaSyncExportArchiveTest {
             )!!
         val output = ByteArrayOutputStream()
         PallaSyncExportArchive.create(output, expected).use { archive ->
+            val logLines =
+                fixture.getValue("log_pages").jsonArray.flatMap { page ->
+                    page.jsonObject.getValue("items").jsonArray.map { entry ->
+                        checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"log","entry":$entry}"""))
+                    }
+                }
             val receiptLines =
                 receipts.map { receipt ->
                     checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
                 }
             archive.acceptChunk(
-                (listOf(header) + receiptLines + """{"has_more":true,"kind":"continuation","next_cursor":"transparency"}""")
+                (listOf(header) + logLines + receiptLines + """{"has_more":true,"kind":"continuation","next_cursor":"transparency"}""")
                     .joinToString("\n", postfix = "\n")
                     .toByteArray(),
                 null,

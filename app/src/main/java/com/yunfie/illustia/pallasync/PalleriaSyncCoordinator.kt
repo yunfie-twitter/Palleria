@@ -823,6 +823,11 @@ internal class PalleriaSyncCoordinator(
                             relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
                             includeRecovery = true,
                             relayPinJson = pin.toString(),
+                            identityJson =
+                                buildJsonObject {
+                                    put("chain_id", state.chainId)
+                                    put("admin_public_key", authority.getValue("admin_public_key").jsonPrimitive.content)
+                                }.toString(),
                         )
                     PallaSyncExportArchive.create(output, expectedSource).use { archive ->
                         var cursor: String? = null
@@ -864,6 +869,53 @@ internal class PalleriaSyncCoordinator(
                     }
                     expectedSource
                 }
+            }
+        }
+
+    /** Verify a root-authorized archive readback through every signed log entry and record AEAD. */
+    suspend fun verifyRelayArchive(
+        input: java.io.InputStream,
+        expectedSource: PallaSyncExportArchive.ExpectedSource,
+    ): PallaSyncExportArchiveVerifier.Header =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                check(expectedSource.includeRecovery && expectedSource.identityJson != null) { "C_RECOVERY_AUTH_REQUIRED" }
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                requireProtectedAuthority(state.chainId)
+                val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+                val pin = authority.getValue("pin").jsonObject
+                val identity =
+                    buildJsonObject {
+                        put("chain_id", state.chainId)
+                        put("admin_public_key", authority.getValue("admin_public_key").jsonPrimitive.content)
+                    }.toString()
+                check(
+                    Json.parseToJsonElement(checkNotNull(expectedSource.identityJson)).jsonObject ==
+                        Json.parseToJsonElement(identity).jsonObject &&
+                        Json.parseToJsonElement(checkNotNull(expectedSource.relayPinJson)).jsonObject == pin &&
+                        expectedSource.chainId == state.chainId && expectedSource.generation == state.generation &&
+                        expectedSource.logId == pin.getValue("log_id").jsonPrimitive.content,
+                ) { "C_ROLLBACK_DETECTED" }
+                val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val snapshot =
+                    PallaSyncExportArchiveVerifier.verify(
+                        input,
+                        expectedSource,
+                        PallaSyncArchiveRecordVerifier { recordAuthority, recordJson, _ ->
+                            val record = Json.parseToJsonElement(recordJson).jsonObject
+                            val epoch = record.getValue("epoch").jsonPrimitive.long
+                            val epochKeys = checkNotNull(keystore.keysForEpoch(device, epoch)) { "C_MISSING_DEPENDENCY" }
+                            val plaintext =
+                                PallaSyncEpochSession.begin(epochKeys, recordAuthority, epoch).use { session ->
+                                    session.decryptRecord(recordJson)
+                                }
+                            check(PallaSyncCore.canonicalJson(plaintext) == plaintext) { "C_SCHEMA_VIOLATION" }
+                            kotlinx.serialization.json.Json
+                                .decodeFromString<PallaSyncInnerRecord>(plaintext)
+                        },
+                    )
+                check(snapshot.includeRecovery && !snapshot.complete) { "C_SCHEMA_VIOLATION" }
+                snapshot
             }
         }
 

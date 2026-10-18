@@ -734,6 +734,40 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginAut
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_beginExportAuthorityHistory<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    identity: JString<'local>,
+    pin: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let identity = public_value(&mut env, &identity)?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(public_value(&mut env, &pin)?)
+                .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let chain_id = identity
+            .get("chain_id")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        let admin_public_key = identity
+            .get("admin_public_key")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        if pin.chain_id != chain_id {
+            return Err(ClientError("C_BOOTSTRAP_TRUST_REQUIRED"));
+        }
+        serde_json::to_value(crate::authority::Authority::new(
+            pin,
+            admin_public_key.to_owned(),
+        )?)
+        .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
+    })();
+    public_result(&mut env, result)
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_advanceAuthorityHistory<
     'local,
 >(

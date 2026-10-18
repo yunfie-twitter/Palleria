@@ -2,6 +2,7 @@ package com.yunfie.illustia.pallasync
 
 import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -34,6 +35,7 @@ internal object PallaSyncExportArchiveVerifier {
     fun verify(
         input: InputStream,
         expectedSource: PallaSyncExportArchive.ExpectedSource? = null,
+        recordVerifier: PallaSyncArchiveRecordVerifier? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -93,6 +95,14 @@ internal object PallaSyncExportArchiveVerifier {
                                 expectedTransparencyHash == header.getValue("transparency_head_hash").jsonPrimitive.content,
                         ) { "C_TRANSPARENCY_INVALID" }
                         checkNotNull(receiptLinks).requireAllMatched()
+                        expectedSource?.identityJson?.let { identity ->
+                            checkNotNull(receiptLinks).verifyAuthorityHistory(
+                                header,
+                                identity,
+                                checkNotNull(canonicalPin),
+                                recordVerifier,
+                            )
+                        }
                     }
                     check(source.read() == -1) { "C_SCHEMA_VIOLATION" }
                     return Header(
@@ -117,6 +127,11 @@ internal object PallaSyncExportArchiveVerifier {
                                 receipt.getValue("transparency_index").jsonPrimitive.long,
                                 receipt.toString(),
                             )
+                            receiptLinks.addLogReceipt(receipt)
+                        }
+
+                        "log" -> {
+                            checkNotNull(receiptLinks).addLogEntry(value.getValue("entry").jsonObject)
                         }
 
                         "transparency_entry" -> {
@@ -180,6 +195,8 @@ internal object PallaSyncExportArchiveVerifier {
             database.execSQL(
                 "CREATE TABLE export_receipts (transparency_index INTEGER PRIMARY KEY, receipt_json TEXT NOT NULL)",
             )
+            database.execSQL("CREATE TABLE export_log_entries (relay_seq INTEGER PRIMARY KEY, entry_json TEXT NOT NULL)")
+            database.execSQL("CREATE TABLE export_log_receipts (relay_seq INTEGER PRIMARY KEY, receipt_json TEXT NOT NULL)")
         }
 
         fun add(
@@ -218,6 +235,89 @@ internal object PallaSyncExportArchiveVerifier {
             check(
                 database.delete("export_receipts", "transparency_index=?", arrayOf(index.toString())) == 1,
             ) { "C_TRANSPARENCY_INVALID" }
+        }
+
+        fun addLogEntry(entry: kotlinx.serialization.json.JsonObject) {
+            val sequence = entry.getValue("relay_seq").jsonPrimitive.long
+            try {
+                database.execSQL(
+                    "INSERT INTO export_log_entries(relay_seq,entry_json) VALUES (?,?)",
+                    arrayOf<Any>(sequence, entry.toString()),
+                )
+            } catch (_: SQLiteConstraintException) {
+                error("C_SCHEMA_VIOLATION")
+            }
+        }
+
+        fun addLogReceipt(receipt: kotlinx.serialization.json.JsonObject) {
+            val sequence = receipt["relay_seq"]?.takeUnless { it.toString() == "null" }?.jsonPrimitive?.long ?: return
+            try {
+                database.execSQL(
+                    "INSERT INTO export_log_receipts(relay_seq,receipt_json) VALUES (?,?)",
+                    arrayOf<Any>(sequence, receipt.toString()),
+                )
+            } catch (_: SQLiteConstraintException) {
+                error("C_TRANSPARENCY_INVALID")
+            }
+        }
+
+        fun verifyAuthorityHistory(
+            header: kotlinx.serialization.json.JsonObject,
+            identityJson: String,
+            pinJson: String,
+            recordVerifier: PallaSyncArchiveRecordVerifier?,
+        ) {
+            check(header.getValue("generation").jsonPrimitive.long == 0L) { "C_SNAPSHOT_INVALID" }
+            var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
+            var expectedSequence = 1L
+            database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
+                while (entries.moveToNext()) {
+                    val sequence = entries.getLong(0)
+                    check(sequence == expectedSequence) { "C_MISSING_DEPENDENCY" }
+                    val receipt =
+                        database
+                            .rawQuery(
+                                "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
+                                arrayOf(sequence.toString()),
+                            ).use { receipts ->
+                                check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
+                                receipts.getString(0)
+                            }
+                    authority =
+                        PallaSyncCore.advanceAuthorityHistory(
+                            authority,
+                            entries.getString(1),
+                            receipt,
+                        )
+                    val entry = Json.parseToJsonElement(entries.getString(1)).jsonObject
+                    if (entry.getValue("kind").jsonPrimitive.content == "record") {
+                        val record = entry.getValue("object").jsonObject
+                        check(PallaSyncCore.validateRecordAuthority(authority, record.toString(), sequence)) {
+                            "C_ACCEPTANCE_UNPROVEN"
+                        }
+                        checkNotNull(recordVerifier) { "C_MISSING_DEPENDENCY" }.verify(
+                            authority,
+                            record.toString(),
+                            sequence,
+                        )
+                    }
+                    expectedSequence = Math.addExact(expectedSequence, 1L)
+                }
+            }
+            val finalAuthority = Json.parseToJsonElement(authority).jsonObject
+            val lastSequence = expectedSequence - 1L
+            check(
+                lastSequence == header.getValue("head_seq").jsonPrimitive.long &&
+                    finalAuthority.getValue("sequence").jsonPrimitive.long == lastSequence &&
+                    finalAuthority.getValue("head_hash").jsonPrimitive.content ==
+                    header.getValue("head_hash").jsonPrimitive.content &&
+                    finalAuthority
+                        .getValue("pin")
+                        .jsonObject
+                        .getValue("log_id")
+                        .jsonPrimitive.content ==
+                    header.getValue("log_id").jsonPrimitive.content,
+            ) { "C_LOG_HASH_MISMATCH" }
         }
 
         fun requireAllMatched() {

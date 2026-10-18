@@ -456,6 +456,12 @@ object PallaSyncCore {
         relayKey: String,
     ): String
 
+    /** Starts replay from authenticated local identity and selected source pin for §17.4 archives. */
+    external fun beginExportAuthorityHistory(
+        identityJson: String,
+        pinJson: String,
+    ): String
+
     external fun advanceAuthorityHistory(
         authorityJson: String,
         entryJson: String,
