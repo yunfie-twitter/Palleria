@@ -50,7 +50,18 @@ class PallaSyncRelayInteropTest {
             assumeTrue("Disposable relay arguments are required", origin?.startsWith("https://127.0.0.1:") == true)
             val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
             val context = ApplicationProvider.getApplicationContext<Context>()
-            val database = Room.inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java).build()
+            val processDeathMode = args.getString("reseed_process_death") == "true"
+            val resumeAfterDeath = args.getString("reseed_resume_after_death") == "true"
+            val processDeathDatabase = "pallasync-reseed-process-death-test.db"
+            if (processDeathMode && !resumeAfterDeath) {
+                context.deleteDatabase(processDeathDatabase)
+            }
+            val database =
+                if (processDeathMode) {
+                    Room.databaseBuilder(context, PallaSyncDatabase::class.java, processDeathDatabase).build()
+                } else {
+                    Room.inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java).build()
+                }
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val keys = PallaSyncKeystore(context)
             val reseedTargetOrigin = args.getString("reseed_target_origin")
@@ -58,25 +69,29 @@ class PallaSyncRelayInteropTest {
                 0,
                 Bundle().apply { putString("pallasync_reseed_target_argument", reseedTargetOrigin ?: "missing") },
             )
-            keys.clearAllKeys()
-            context
-                .getSharedPreferences("pallasync_policy", Context.MODE_PRIVATE)
-                .edit()
-                .clear()
-                .commit()
-            context
-                .getSharedPreferences("pallasync_epoch_journal", Context.MODE_PRIVATE)
-                .edit()
-                .clear()
-                .commit()
+            if (!resumeAfterDeath) {
+                keys.clearAllKeys()
+                context
+                    .getSharedPreferences("pallasync_policy", Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .commit()
+                context
+                    .getSharedPreferences("pallasync_epoch_journal", Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .commit()
+            }
             val settings =
                 com.yunfie.illustia.settings
                     .SettingsStore(context)
-            settings.setPallaSyncEnabledFromCoordinator(false)
-            settings.writeSyncedCollections(
-                com.yunfie.illustia.settings
-                    .SyncedCollectionsSnapshot(searchHistory = listOf("Python interop")),
-            )
+            if (!resumeAfterDeath) {
+                settings.setPallaSyncEnabledFromCoordinator(false)
+                settings.writeSyncedCollections(
+                    com.yunfie.illustia.settings
+                        .SyncedCollectionsSnapshot(searchHistory = listOf("Python interop")),
+                )
+            }
             val policy = PallaSyncPolicyGate(context, client)
             val store = PallaSyncLocalStore(context, database)
             val requestedFault = args.getString("rebase_fault")?.takeIf { it.isNotEmpty() }
@@ -89,6 +104,37 @@ class PallaSyncRelayInteropTest {
                     }
                 }
             try {
+                if (resumeAfterDeath) {
+                    check(processDeathMode && reseedTargetOrigin != null) { "C_MISSING_DEPENDENCY" }
+                    val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
+                    val before = checkNotNull(store.dao.getActiveChainState())
+                    check(before.generation == 1L || before.writeState == "epoch_rebase_required") { "C_ROLLBACK_DETECTED" }
+                    PallaSyncCore.setSecretForeground(true)
+                    val resumed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), resumed is PallaSyncHttpResult.Success)
+                    val migrated = checkNotNull(store.dao.getActiveChainState())
+                    val migratedKeys = checkNotNull(keys.getActiveChainKeys())
+                    val authority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(migrated.chainId))).jsonObject
+                    assertEquals(1L, migrated.generation)
+                    assertEquals(reseedTargetOrigin, authority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content)
+                    assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
+                    assertTrue(coordinator.canAuditReseedSource())
+                    assertEquals(null, coordinator.auditReseedSource())
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                            putString("pallasync_reseed_generation", migrated.generation.toString())
+                            putString("pallasync_reseed_source_audit", "clean")
+                            putString("reseed_resumed_after_process_death", "true")
+                        },
+                    )
+                    println("reseed_resumed_after_process_death=true")
+                    println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
+                    println("pallasync_reseed_generation=${migrated.generation}")
+                    println("pallasync_reseed_source_audit=clean")
+                    return@runBlocking
+                }
                 val selected = checkNotNull(origin)
                 policy.chooseSource(selected, "relay_full_replay", true)
                 policy.confirmKey(policy.inspectRelay(selected), true)
@@ -230,6 +276,16 @@ class PallaSyncRelayInteropTest {
                             putString("reseed_fault_active_is_archived", (keys.getActiveChainKeys()?.deviceId == keys.getArchivedChainKeys(state.chainId)?.deviceId).toString())
                         },
                     )
+                    if (processDeathMode) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("reseed_process_death_phase_one", "ready") },
+                        )
+                        System.err.flush()
+                        Thread.sleep(500)
+                        android.os.Process.killProcess(android.os.Process.myPid())
+                        error("Process termination did not occur")
+                    }
                     val resumed = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
                     if (resumed.isFailure) {
                         InstrumentationRegistry.getInstrumentation().sendStatus(
