@@ -60,12 +60,6 @@ class PallaSyncHistoryDiskStressTest {
                 }
             val digitValues = (0..9).joinToString(",") { "($it)" }
             val digitCrossJoin = aliases.joinToString(" CROSS JOIN ") { "digits $it" }
-            val historyInsert =
-                sql.compileStatement(
-                    "INSERT INTO ps_history(chain_id,collection,scope,last_access_seq,entity_id,lamport,op_rank,device_id,record_id,op_index) " +
-                        "VALUES(?,?,?,?,?,?,?,?,?,?)",
-                )
-
             val buildStart = System.nanoTime()
             sql.execSQL(
                 "WITH digits(d) AS (VALUES $digitValues) " +
@@ -74,41 +68,14 @@ class PallaSyncHistoryDiskStressTest {
                     "FROM $digitCrossJoin WHERE ($number)<$seenCount",
                 arrayOf(chain, collection, device, record),
             )
-            var next = 0
-            while (next < seenCount) {
-                val end = minOf(next + INSERT_BATCH, seenCount)
-                sql.beginTransaction()
-                try {
-                    while (next < end) {
-                        val id = "seen:$next"
-                        val key = ByteArray(Long.SIZE_BYTES)
-                        val sequence = next.toLong()
-                        for (byteIndex in key.indices) {
-                            key[key.lastIndex - byteIndex] = (sequence ushr (byteIndex * 8)).toByte()
-                        }
-
-                        historyInsert.bindString(1, chain)
-                        historyInsert.bindString(2, collection)
-                        historyInsert.bindString(3, scope)
-                        historyInsert.bindBlob(4, key)
-                        historyInsert.bindString(5, id)
-                        historyInsert.bindLong(6, next.toLong() + 1)
-                        historyInsert.bindLong(7, 1)
-                        historyInsert.bindBlob(8, device)
-                        historyInsert.bindBlob(9, record)
-                        historyInsert.bindLong(10, 0)
-                        historyInsert.executeInsert()
-                        historyInsert.clearBindings()
-                        next++
-                    }
-                    sql.setTransactionSuccessful()
-                } finally {
-                    sql.endTransaction()
-                }
-                if (next % LOG_INTERVAL == 0 || next == seenCount) {
-                    Log.i(TAG, "inserted=$next/$seenCount dbBytes=${context.getDatabasePath(databaseName).length()}")
-                }
-            }
+            sql.execSQL(
+                "WITH digits(d) AS (VALUES $digitValues) " +
+                    "INSERT INTO ps_history(chain_id,collection,scope,last_access_seq,entity_id,lamport,op_rank,device_id,record_id,op_index) " +
+                    "SELECT ?,?,?,CAST(printf('%016d',n) AS BLOB),('seen:'||n),n+1,1,?,?,0 " +
+                    "FROM (SELECT ($number) AS n FROM $digitCrossJoin WHERE ($number)<$seenCount)",
+                arrayOf(chain, collection, scope, device, record),
+            )
+            Log.i(TAG, "inserted=$seenCount/$seenCount dbBytes=${context.getDatabasePath(databaseName).length()}")
             val buildMillis = (System.nanoTime() - buildStart) / 1_000_000
             val databaseBytes = context.getDatabasePath(databaseName).length()
 
@@ -150,8 +117,6 @@ class PallaSyncHistoryDiskStressTest {
 
     private companion object {
         const val TAG = "PallaSyncHistoryStress"
-        const val INSERT_BATCH = 10_000
-        const val LOG_INTERVAL = 500_000
         const val PAGE_SIZE = 200
         const val MAX_PAGE_PSS_GROWTH_KB = 128 * 1024
     }
