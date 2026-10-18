@@ -1067,8 +1067,8 @@ fun PallaSyncSettingsScreen(
         MiuixConfirmDialog(
             show = true,
             title = stringResource(R.string.pallasync_reseed_commit_title),
-            summary = stringResource(R.string.pallasync_reseed_commit_confirm, stagedReseedTargetUrl.orEmpty()),
-            confirmText = stringResource(R.string.action_confirm),
+            summary = stringResource(R.string.pallasync_reseed_cutover_freeze_required, stagedReseedTargetUrl.orEmpty()),
+            confirmText = stringResource(R.string.pallasync_reseed_sources_paused),
             destructive = true,
             onConfirm = {
                 showReseedCommitConfirm = false
@@ -1084,7 +1084,7 @@ fun PallaSyncSettingsScreen(
     if (showReseedCommitRootInput) {
         PallaSyncRootInputDialog(
             title = stringResource(R.string.pallasync_reseed_commit_title),
-            explanation = stringResource(R.string.pallasync_reseed_commit_confirm, stagedReseedTargetUrl.orEmpty()),
+            explanation = stringResource(R.string.pallasync_reseed_cutover_freeze_required, stagedReseedTargetUrl.orEmpty()),
             busy = committingReseedImport,
             onDismiss = {
                 showReseedCommitRootInput = false

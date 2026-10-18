@@ -40,6 +40,8 @@
     <string name="pallasync_reseed_import_failed">History could not be staged. No chain switch was committed.</string>
     <string name="pallasync_reseed_commit_title">Commit relay reseed</string>
     <string name="pallasync_reseed_commit_confirm">This commits a fresh generation on %1$s, retires the old device identity, replays unresolved local outbox operations, and switches this device to that relay. Verify the target before continuing. Enter the administrator mnemonic again to authorize the commit.</string>
+    <string name="pallasync_reseed_cutover_freeze_required">Before cutover, pause every other client that can write to the source relay. The relay has no freeze operation. After you confirm, this client verifies a final source suffix immediately before switching. Any write that arrives after that verified suffix stays only on the source and requires explicit reconciliation; it is never copied automatically. Destination: %1$s</string>
+    <string name="pallasync_reseed_sources_paused">I paused all other source clients</string>
     <string name="pallasync_reseed_commit_completed">Relay reseed committed. This device now uses the selected relay.</string>
     <string name="pallasync_reseed_resume_title">Resume relay reseed</string>
     <string name="pallasync_reseed_resume_summary">Finish the verified handoff to %1$s. The saved commit and protected keys are reused.</string>

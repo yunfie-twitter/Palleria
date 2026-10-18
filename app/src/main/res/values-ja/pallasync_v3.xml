@@ -24,6 +24,8 @@
     <string name="pallasync_reseed_import_failed">履歴をstageできませんでした。chainの切替commitは行っていません。</string>
     <string name="pallasync_reseed_commit_title">リレー再seedをcommit</string>
     <string name="pallasync_reseed_commit_confirm">%1$s に新しいgenerationをcommitし、旧端末identityを退役させ、未解決のローカルoutbox操作を再作成して、この端末の接続先を切り替えます。送信先を確認してください。commitを認可するため、管理者mnemonicをもう一度入力します。</string>
+    <string name="pallasync_reseed_cutover_freeze_required">切替前に、sourceリレーへ書き込める他のすべてのクライアントを一時停止してください。リレーにfreeze操作はありません。確認後、この端末は切替直前にsourceの最終suffixを検証します。その検証後に届いた書込みはsource側に残り、自動コピーせず、明示的な照合が必要です。送信先: %1$s</string>
+    <string name="pallasync_reseed_sources_paused">他のsourceクライアントを停止しました</string>
     <string name="pallasync_reseed_commit_completed">リレー再seedをcommitしました。この端末は選択したリレーを使用しています。</string>
     <string name="pallasync_reseed_resume_title">リレー再seedを再開</string>
     <string name="pallasync_reseed_resume_summary">保存済みcommitと保護鍵を再利用して、%1$s への検証済み切替を完了します。</string>
