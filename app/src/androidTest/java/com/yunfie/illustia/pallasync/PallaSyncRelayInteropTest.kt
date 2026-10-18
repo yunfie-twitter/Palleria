@@ -350,19 +350,28 @@ class PallaSyncRelayInteropTest {
                     assertEquals(1, migratedKeys.epoch)
                     assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
                     assertTrue(coordinator.canAuditReseedSource())
-                    assertEquals(null, coordinator.auditReseedSource())
+                    val sourceAudit = coordinator.auditReseedSource()
+                    if (args.getString("reseed_expect_pre_capture_source_write") == "true") {
+                        assertNotNull(sourceAudit)
+                        assertEquals(1L, checkNotNull(sourceAudit).entryCount)
+                        assertEquals(checkNotNull(sourceAudit).firstSequence, checkNotNull(sourceAudit).lastSequence)
+                    } else {
+                        assertEquals(null, sourceAudit)
+                    }
                     InstrumentationRegistry.getInstrumentation().sendStatus(
                         0,
                         Bundle().apply {
                             putString("pallasync_reseed_device_id", migratedKeys.deviceId)
                             putString("pallasync_reseed_generation", migrated.generation.toString())
-                            putString("pallasync_reseed_source_audit", "clean")
+                            putString("pallasync_reseed_source_audit", if (sourceAudit == null) "clean" else "unimported")
+                            sourceAudit?.let { putString("pallasync_reseed_unimported_count", it.entryCount.toString()) }
                         },
                     )
                     println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
                     println("pallasync_reseed_generation=${migrated.generation}")
                     println("pallasync_reseed_log_id=${migrated.logId}")
-                    println("pallasync_reseed_source_audit=clean")
+                    println("pallasync_reseed_source_audit=${if (sourceAudit == null) "clean" else "unimported"}")
+                    sourceAudit?.let { println("pallasync_reseed_unimported_count=${it.entryCount}") }
                 }
                 if (args.getString("rotate_epoch") == "true" && args.getString("replace_device") != "true") {
                     exerciseEpochRotation(
