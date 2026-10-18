@@ -337,11 +337,28 @@ class PallaSyncExportArchiveTest {
         }.message shouldBe "C_SCHEMA_VIOLATION"
     }
 
+    @Test
+    fun completeRecoveryArchiveRejectsUnverifiedSupplementaryEvidence() {
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, includeUnverifiedControl = true)
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+        }.message shouldBe "C_MISSING_DEPENDENCY"
+    }
+
     private fun acceptedEvidenceArchive(
         dropLastReceipt: Boolean = false,
         addUnreferencedSnapshotPart: Boolean = false,
         includeRecovery: Boolean = false,
         includeOmitted: Boolean = false,
+        includeUnverifiedControl: Boolean = false,
     ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
@@ -434,6 +451,11 @@ class PallaSyncExportArchiveTest {
                 }
             val firstChunkLines =
                 listOf(header) + logLines + snapshotLines + receiptLines +
+                    if (includeUnverifiedControl) {
+                        listOf("""{"kind":"control","object":{},"object_type":"parameters"}""")
+                    } else {
+                        emptyList()
+                    } +
                     if (includeOmitted) {
                         listOf(
                             """{"kind":"omitted","object_hash":"${"A".repeat(43)}","reason":"recovery_authority","relay_seq":1}""",

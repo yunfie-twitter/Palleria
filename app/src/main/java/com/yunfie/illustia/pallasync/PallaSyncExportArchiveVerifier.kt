@@ -51,6 +51,7 @@ internal object PallaSyncExportArchiveVerifier {
         var transparencyHeadVerified = false
         var transparencyId: String? = null
         var recoveryObjectsOmitted = false
+        var restoreEvidenceUnsupported = false
         val receiptLinks = if (pin != null) ExportReceiptLinkIndex() else null
         try {
             while (true) {
@@ -86,6 +87,7 @@ internal object PallaSyncExportArchiveVerifier {
                             includeRecovery && !recoveryObjectsOmitted && pin != null &&
                                 expectedSource?.identityJson != null && recordVerifier != null && snapshotVerifier != null,
                         ) { "C_SCHEMA_VIOLATION" }
+                        check(!restoreEvidenceUnsupported) { "C_MISSING_DEPENDENCY" }
                     }
                     if (pin != null) {
                         check(transparencyHeadVerified) { "C_MISSING_DEPENDENCY" }
@@ -147,6 +149,10 @@ internal object PallaSyncExportArchiveVerifier {
                             checkNotNull(receiptLinks).addSnapshotPart(value.getValue("record").jsonObject)
                         }
 
+                        "compaction" -> {
+                            checkNotNull(receiptLinks).addCompaction(value.getValue("compaction").jsonObject)
+                        }
+
                         "transparency_entry" -> {
                             val entry = value.getValue("entry").jsonObject
                             check(entry["transparency_id"]?.jsonPrimitive?.content == transparencyId) {
@@ -191,6 +197,10 @@ internal object PallaSyncExportArchiveVerifier {
                         "omitted" -> {
                             recoveryObjectsOmitted = true
                         }
+
+                        "control", "boundary", "removed_id", "source_receipt" -> {
+                            restoreEvidenceUnsupported = true
+                        }
                     }
                 }
                 val bytes = (checkNotNull(previousLine) + "\n").toByteArray(Charsets.UTF_8)
@@ -217,6 +227,7 @@ internal object PallaSyncExportArchiveVerifier {
             database.execSQL(
                 "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL)",
             )
+            database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
         }
 
         fun add(
@@ -281,6 +292,15 @@ internal object PallaSyncExportArchiveVerifier {
             }
         }
 
+        fun addCompaction(compaction: kotlinx.serialization.json.JsonObject) {
+            val hash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
+            try {
+                database.execSQL("INSERT INTO export_compactions(compaction_hash) VALUES (?)", arrayOf<Any>(hash))
+            } catch (_: SQLiteConstraintException) {
+                error("C_SCHEMA_VIOLATION")
+            }
+        }
+
         fun verifyAuthorityHistory(
             header: kotlinx.serialization.json.JsonObject,
             identityJson: String,
@@ -323,9 +343,12 @@ internal object PallaSyncExportArchiveVerifier {
                         )
                     }
                     if (entry.getValue("kind").jsonPrimitive.content == "compaction") {
+                        val compaction = entry.getValue("object").jsonObject
+                        val compactionHash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
+                        database.delete("export_compactions", "compaction_hash=?", arrayOf(compactionHash))
                         verifyCompactionSnapshotParts(
                             authority,
-                            entry.getValue("object").jsonObject,
+                            compaction,
                             snapshotVerifier,
                         )
                     }
@@ -347,6 +370,9 @@ internal object PallaSyncExportArchiveVerifier {
                     header.getValue("log_id").jsonPrimitive.content,
             ) { "C_LOG_HASH_MISMATCH" }
             database.rawQuery("SELECT COUNT(*) FROM export_snapshot_parts", null).use { cursor ->
+                check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_MISSING_DEPENDENCY" }
+            }
+            database.rawQuery("SELECT COUNT(*) FROM export_compactions", null).use { cursor ->
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_MISSING_DEPENDENCY" }
             }
         }
