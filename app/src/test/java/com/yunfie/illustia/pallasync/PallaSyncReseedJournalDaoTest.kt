@@ -115,10 +115,12 @@ class PallaSyncReseedJournalDaoTest {
                 dao.saveMonotone(initial)
                 val committed = initial.copy(phase = 4, updatedAtMs = 2)
                 dao.saveMonotone(committed)
+                val cutBaseline = sourceConflictReport(head = 7, headHash = "cut", count = 0)
+                dao.saveMonotone(committed.copy(sourceConflictReportJson = cutBaseline, updatedAtMs = 3))
                 val first = sourceConflictReport(head = 9, headHash = "head-9", count = 2)
-                dao.saveMonotone(committed.copy(sourceConflictReportJson = first, updatedAtMs = 3))
+                dao.saveMonotone(committed.copy(sourceConflictReportJson = first, updatedAtMs = 4))
                 val extended = sourceConflictReport(head = 10, headHash = "head-10", count = 3)
-                dao.saveMonotone(committed.copy(sourceConflictReportJson = extended, updatedAtMs = 4))
+                dao.saveMonotone(committed.copy(sourceConflictReportJson = extended, updatedAtMs = 5))
                 dao.get(CHAIN)?.sourceConflictReportJson shouldBe extended
                 runCatching {
                     dao.saveMonotone(committed.copy(sourceConflictReportJson = first, updatedAtMs = 5))

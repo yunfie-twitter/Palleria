@@ -105,6 +105,10 @@ class PalleriaSyncManager(
 
     internal suspend fun pendingReseedSourceConflict(): PallaSyncReseedSourceConflict.Summary? = coordinator.pendingReseedSourceConflict()
 
+    internal suspend fun canAuditReseedSource(): Boolean = coordinator.canAuditReseedSource()
+
+    internal suspend fun auditReseedSource(): PallaSyncReseedSourceConflict.Summary? = coordinator.auditReseedSource()
+
     internal suspend fun resumeStagedReseedCutover(): Boolean = coordinator.resumeStagedReseedCutover()
 
     internal suspend fun readFeedMembership(items: List<Illust>): PallaSyncFeedMembership? = coordinator.readFeedMembership(items)

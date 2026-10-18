@@ -229,16 +229,20 @@ class PallaSyncRelayInteropTest {
                     )
                     assertEquals(1, migratedKeys.epoch)
                     assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
+                    assertTrue(coordinator.canAuditReseedSource())
+                    assertEquals(null, coordinator.auditReseedSource())
                     InstrumentationRegistry.getInstrumentation().sendStatus(
                         0,
                         Bundle().apply {
                             putString("pallasync_reseed_device_id", migratedKeys.deviceId)
                             putString("pallasync_reseed_generation", migrated.generation.toString())
+                            putString("pallasync_reseed_source_audit", "clean")
                         },
                     )
                     println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
                     println("pallasync_reseed_generation=${migrated.generation}")
                     println("pallasync_reseed_log_id=${migrated.logId}")
+                    println("pallasync_reseed_source_audit=clean")
                 }
                 if (args.getString("rotate_epoch") == "true" && args.getString("replace_device") != "true") {
                     exerciseEpochRotation(

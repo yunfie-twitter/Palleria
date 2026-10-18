@@ -2026,16 +2026,20 @@ internal class PalleriaSyncCoordinator(
                         policy.retry.resolved(origin, state.chainId, "DEVICE_PENDING_KEYS")
                         // Capture after target key acknowledgement, immediately before local cutover.
                         // This includes the longest network step after the earlier post-commit capture.
-                        val sourceConflict = captureReseedSourceConflict(root, source, sourceOrigin, stable, authority)
-                        if (sourceConflict != null) {
-                            val currentJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
-                            journalDao.saveMonotone(
-                                currentJournal.copy(
-                                    sourceConflictReportJson = sourceConflict.toString(),
-                                    updatedAtMs = policy.retry.correctedTime(sourceOrigin),
-                                ),
+                        val sourceConflict =
+                            captureReseedSourceConflict(
+                                PallaSyncInitialHistory(db, remote, policy, root, source),
+                                sourceOrigin,
+                                stable,
+                                authority,
                             )
-                        }
+                        val currentJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                        journalDao.saveMonotone(
+                            currentJournal.copy(
+                                sourceConflictReportJson = sourceConflict.toString(),
+                                updatedAtMs = policy.retry.correctedTime(sourceOrigin),
+                            ),
+                        )
                         val finalJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
                         db.transaction {
                             val targetLogId = targetPin.getValue("log_id").jsonPrimitive.content
@@ -2119,6 +2123,110 @@ internal class PalleriaSyncCoordinator(
                     ?.let { Json.parseToJsonElement(it).jsonObject }
                     ?: return@withContext null
             PallaSyncReseedSourceConflict.summary(report.toString())
+        }
+
+    internal suspend fun canAuditReseedSource(): Boolean =
+        withContext(Dispatchers.IO) {
+            val state = db.pallaSyncDao().getActiveChainState() ?: return@withContext false
+            db
+                .snapshotDatabase()
+                .reseedJournalDao()
+                .get(state.chainId)
+                ?.phase == RESEED_COMPLETE_JOURNAL_PHASE && state.writeState == "active"
+        }
+
+    /** §17.6: explicitly replay the retired source to report any late old-generation suffix. */
+    internal suspend fun auditReseedSource(): PallaSyncReseedSourceConflict.Summary? =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+                val journalDao = db.snapshotDatabase().reseedJournalDao()
+                val journal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                check(journal.phase == RESEED_COMPLETE_JOURNAL_PHASE && state.writeState == "active") {
+                    "C_MISSING_DEPENDENCY"
+                }
+                val baselineText = checkNotNull(journal.sourceConflictReportJson) { "C_MISSING_DEPENDENCY" }
+                val baseline = Json.parseToJsonElement(baselineText).jsonObject
+                val sourceEntity =
+                    checkNotNull(db.protocolDao().archivedAuthority(state.chainId, journal.sourceGeneration)) {
+                        "C_MISSING_DEPENDENCY"
+                    }
+                val sourceAuthority = Json.parseToJsonElement(sourceEntity.signedJson).jsonObject
+                val sourceAuthorityHash = checkNotNull(PallaSyncCore.objectHash(sourceEntity.signedJson))
+                val sourcePin = sourceAuthority.getValue("pin").jsonObject
+                val sourceOrigin = sourcePin.getValue("origin").jsonPrimitive.content
+                check(
+                    sourceEntity.generation == journal.sourceGeneration &&
+                        sourcePin.getValue("chain_id").jsonPrimitive.content == state.chainId &&
+                        sourcePin.getValue("log_id").jsonPrimitive.content == journal.sourceLogId &&
+                        baseline.getValue("source_origin").jsonPrimitive.content == sourceOrigin &&
+                        baseline.getValue("source_log_id").jsonPrimitive.content == journal.sourceLogId &&
+                        baseline.getValue("source_generation").jsonPrimitive.long == journal.sourceGeneration,
+                ) { "C_ROLLBACK_DETECTED" }
+                val source =
+                    when (val normalized = PallaSyncUrls.normalize(sourceOrigin)) {
+                        is PallaSyncHttpResult.Success -> normalized.value
+                        else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                    }
+                check(PallaSyncUrls.extractOrigin(source) == sourceOrigin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                policy.requireCurrent(sourceOrigin)
+                requireSnapshotResult(refreshRelayHealth(source))
+                check(policy.trustedRelayKey(sourceOrigin) == sourcePin.getValue("public_key").jsonPrimitive.content) {
+                    "C_RELAY_KEY_MISMATCH"
+                }
+                val archivedKeys = checkNotNull(keystore.getArchivedChainKeys(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                check(
+                    archivedKeys.deviceId != null && archivedKeys.chainId == state.chainId &&
+                        PallaSyncCore.validateCurrentKeyRecipient(sourceAuthority.toString(), checkNotNull(archivedKeys.deviceId)),
+                ) { "C_MISSING_DEPENDENCY" }
+                val sourceAnchor =
+                    checkNotNull(keystore.reseedSourceTransparencyPin(state.chainId, sourceAuthorityHash)) {
+                        "C_MISSING_DEPENDENCY"
+                    }
+                val sourceCut =
+                    state.copy(
+                        generation = journal.sourceGeneration,
+                        logId = journal.sourceLogId,
+                        materializedSeq = baseline.getValue("source_cut_seq").jsonPrimitive.long,
+                        verifiedHash = baseline.getValue("source_cut_hash").jsonPrimitive.content,
+                        parametersHash = baseline.getValue("source_cut_parameters_hash").jsonPrimitive.content,
+                        epochHash = baseline.getValue("source_cut_epoch_hash").jsonPrimitive.content,
+                    )
+                val history =
+                    PallaSyncInitialHistory(
+                        store = db,
+                        remote = remote,
+                        policy = policy,
+                        root = null,
+                        base = source,
+                        peerChainId = state.chainId,
+                        peerAdminPublicKey = sourceAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                        importedAuthority = sourceAuthority,
+                        peerToken = { url, path, query ->
+                            crypto.createCapabilityToken(
+                                chainId = state.chainId,
+                                deviceId = checkNotNull(archivedKeys.deviceId),
+                                method = "GET",
+                                path = path,
+                                query = query,
+                                signingKeyBase64 = archivedKeys.signingKeyBase64Url,
+                                ttlMs = 120_000L,
+                                aud = PallaSyncUrls.extractOrigin(url),
+                                signerKind = "device",
+                            )
+                        },
+                        source = null,
+                    )
+                val report = captureReseedSourceConflict(history, sourceOrigin, sourceCut, sourceAuthority, sourceAnchor)
+                val latest = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                journalDao.saveMonotone(
+                    latest.copy(
+                        sourceConflictReportJson = report.toString(),
+                        updatedAtMs = policy.retry.correctedTime(sourceOrigin),
+                    ),
+                )
+                PallaSyncReseedSourceConflict.summary(report.toString())
+            }
         }
 
     internal suspend fun resumeStagedReseedCutover(): Boolean =
@@ -2664,14 +2772,13 @@ internal class PalleriaSyncCoordinator(
 
     /** §17.6: retain a fully verified source-only suffix so post-commit races are reported, not replayed. */
     private suspend fun captureReseedSourceConflict(
-        root: PallaSyncRootSession,
-        source: HttpUrl,
+        history: PallaSyncInitialHistory,
         sourceOrigin: String,
         cut: ChainStateEntity,
         sourceAuthority: JsonObject,
-    ): JsonObject? {
-        val anchor = checkNotNull(keystore.transparencyPin(cut.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-        val checkpoint = PallaSyncInitialHistory(db, remote, policy, root, source).load(sourceAuthority, anchor)
+        knownAnchor: JsonObject? = keystore.transparencyPin(cut.chainId),
+    ): JsonObject {
+        val checkpoint = history.load(sourceAuthority, knownAnchor)
         val cutSequence = cut.materializedSeq
         check(checkpoint.logId == cut.logId && checkpoint.generation == cut.generation && checkpoint.headSeq >= cutSequence) {
             "C_ROLLBACK_DETECTED"

@@ -23,8 +23,11 @@ class PallaSyncReseedSourceConflictTest {
     }
 
     @Test
-    fun `matching signed source cut needs no conflict report`() {
-        PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 11, headHash = "cut-hash"), ORIGIN, 0) shouldBe null
+    fun `matching signed source cut persists zero baseline without surfacing a conflict`() {
+        val report = PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 11, headHash = "cut-hash"), ORIGIN, 0)
+
+        report.getValue("unimported_entry_count").jsonPrimitive.long shouldBe 0
+        PallaSyncReseedSourceConflict.summary(report.toString()) shouldBe null
     }
 
     @Test

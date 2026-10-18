@@ -231,4 +231,8 @@
     <string name="pallasync_v3_relay_replay_source">既存chainの取得元としてこのリレーを選び、取得可能な署名済み履歴を検証します。この取得元だけでは、未観測の履歴が省かれていないことを独立に証明できません。元の24単語と、設定時の正確なパスフレーズが必要です。</string>
     <string name="pallasync_reseed_source_conflict_title">旧relayに未importの変更があります</string>
     <string name="pallasync_reseed_source_conflict_summary">source %1$s に未importの署名済み履歴エントリが%2$d件あります（sequence %3$d〜%4$d）。targetへは複製されていません。sourceを保持し、内容を確認して必要な変更を手動で再適用してください。</string>
+    <string name="pallasync_reseed_source_audit_title">旧リレーの後着編集を確認</string>
+    <string name="pallasync_reseed_source_audit_summary">保存済みの旧device identityでsource logを再検証し、切替後に残った署名済みsuffixを報告します。</string>
+    <string name="pallasync_reseed_source_audit_clean">旧リレーに移行cut以降の検証済みentryはありません。</string>
+    <string name="pallasync_reseed_source_audit_failed">旧リレーを検証できませんでした。ローカル状態と移行証拠は保持しています。</string>
 </resources>

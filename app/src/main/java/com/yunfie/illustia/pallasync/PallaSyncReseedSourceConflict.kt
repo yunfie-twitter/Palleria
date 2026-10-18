@@ -17,11 +17,12 @@ internal object PallaSyncReseedSourceConflict {
         val entryCount: Long,
     )
 
-    fun summary(report: String): Summary {
+    fun summary(report: String): Summary? {
         val value =
             kotlinx.serialization.json.Json
                 .parseToJsonElement(report)
                 .jsonObject
+        if (value.getValue("unimported_entry_count").jsonPrimitive.long == 0L) return null
         return Summary(
             sourceOrigin = value.getValue("source_origin").jsonPrimitive.content,
             firstSequence = value.getValue("unimported_first_seq").jsonPrimitive.long,
@@ -35,7 +36,7 @@ internal object PallaSyncReseedSourceConflict {
         checkpoint: PallaSyncGenesisCheckpoint,
         sourceOrigin: String,
         verifiedEntryCount: Long,
-    ): JsonObject? {
+    ): JsonObject {
         check(checkpoint.logId == cut.logId && checkpoint.generation == cut.generation) { "C_ROLLBACK_DETECTED" }
         val cutSequence = cut.materializedSeq
         check(checkpoint.headSeq >= cutSequence) { "C_ROLLBACK_DETECTED" }
@@ -45,10 +46,11 @@ internal object PallaSyncReseedSourceConflict {
                     checkpoint.epochHash == cut.epochHash,
             ) { "C_EPOCH_FORK" }
             check(verifiedEntryCount == 0L) { "C_TRANSPARENCY_INVALID" }
-            return null
+        } else {
+            val suffixCount = checkpoint.headSeq - cutSequence
+            check(verifiedEntryCount == suffixCount) { "C_TRANSPARENCY_INVALID" }
         }
         val suffixCount = checkpoint.headSeq - cutSequence
-        check(verifiedEntryCount == suffixCount) { "C_TRANSPARENCY_INVALID" }
         return buildJsonObject {
             put("source_origin", sourceOrigin)
             put("source_log_id", checkNotNull(cut.logId))

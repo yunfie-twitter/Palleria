@@ -120,7 +120,7 @@ interface ReseedJournalDao {
                         previous.getValue("observed_epoch_hash") == candidate.getValue("observed_epoch_hash")
                 }
             val coherentRange =
-                nextHead > cutSequence &&
+                nextHead >= cutSequence &&
                     candidate.getValue("unimported_entry_count").jsonPrimitive.long == nextHead - cutSequence &&
                     candidate.getValue("unimported_first_seq").jsonPrimitive.long == cutSequence + 1 &&
                     candidate.getValue("unimported_last_seq").jsonPrimitive.long == nextHead

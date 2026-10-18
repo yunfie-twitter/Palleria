@@ -128,6 +128,8 @@ fun PallaSyncSettingsScreen(
     var pendingReseedCommitTarget by remember { mutableStateOf<String?>(null) }
     var reseedSourceConflict by remember { mutableStateOf<PallaSyncReseedSourceConflict.Summary?>(null) }
     var showReseedSourceConflict by remember { mutableStateOf(false) }
+    var canAuditReseedSource by remember { mutableStateOf(false) }
+    var auditingReseedSource by remember { mutableStateOf(false) }
     var pendingDeletionProof by remember { mutableStateOf<String?>(null) }
     var pendingDeletionArchive by remember { mutableStateOf<String?>(null) }
     var deletedChainTargets by remember { mutableStateOf<List<ProtectedEvidenceEntity>>(emptyList()) }
@@ -377,6 +379,7 @@ fun PallaSyncSettingsScreen(
             try {
                 pendingReseedCutoverTarget = syncManager.pendingReseedCutoverTarget()
                 pendingReseedCommitTarget = syncManager.pendingReseedCommitTarget()
+                canAuditReseedSource = syncManager.canAuditReseedSource()
                 reseedSourceConflict = syncManager.pendingReseedSourceConflict()
                 relayShutdownNotice =
                     withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -1550,6 +1553,45 @@ fun PallaSyncSettingsScreen(
                                 onClick = {
                                     stagedReseedTargetUrl = target
                                     showReseedCommitConfirm = true
+                                },
+                            )
+                        }
+                        if (canAuditReseedSource) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_reseed_source_audit_title),
+                                summary = stringResource(R.string.pallasync_reseed_source_audit_summary),
+                                onClick = {
+                                    if (!auditingReseedSource) {
+                                        auditingReseedSource = true
+                                        scope.launch {
+                                            try {
+                                                val conflict = syncManager.auditReseedSource()
+                                                reseedSourceConflict = conflict
+                                                if (conflict == null) {
+                                                    Toast
+                                                        .makeText(
+                                                            context,
+                                                            R.string.pallasync_reseed_source_audit_clean,
+                                                            Toast.LENGTH_LONG,
+                                                        ).show()
+                                                } else {
+                                                    showReseedSourceConflict = true
+                                                }
+                                            } catch (cancelled: CancellationException) {
+                                                throw cancelled
+                                            } catch (_: Exception) {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        R.string.pallasync_reseed_source_audit_failed,
+                                                        Toast.LENGTH_LONG,
+                                                    ).show()
+                                            } finally {
+                                                auditingReseedSource = false
+                                            }
+                                        }
+                                    }
                                 },
                             )
                         }

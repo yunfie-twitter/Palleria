@@ -259,4 +259,8 @@
     <string name="pallasync_v3_relay_replay_source">Select this relay as the source of the existing chain and verify its available signed history. This source does not independently prove that no unseen history was omitted. The original 24 words and exact optional passphrase are required.</string>
     <string name="pallasync_reseed_source_conflict_title">Unimported changes remain on the source relay</string>
     <string name="pallasync_reseed_source_conflict_summary">Source %1$s has %2$d verified signed entries that were not imported (sequence %3$d–%4$d). They were not copied to the target. Keep the source relay and review its history before manually reapplying any needed changes.</string>
+    <string name="pallasync_reseed_source_audit_title">Check old relay for late edits</string>
+    <string name="pallasync_reseed_source_audit_summary">Replay the retired source log with its archived device identity and report any signed suffix that remained on that relay.</string>
+    <string name="pallasync_reseed_source_audit_clean">The old relay has no verified entries after the migration cut.</string>
+    <string name="pallasync_reseed_source_audit_failed">Could not verify the old relay. Local state and migration evidence were retained.</string>
 </resources>
