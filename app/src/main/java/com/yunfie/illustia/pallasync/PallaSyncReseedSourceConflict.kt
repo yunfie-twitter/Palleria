@@ -36,6 +36,7 @@ internal object PallaSyncReseedSourceConflict {
         checkpoint: PallaSyncGenesisCheckpoint,
         sourceOrigin: String,
         verifiedEntryCount: Long,
+        sourceAuthorityHash: String,
     ): JsonObject {
         check(checkpoint.logId == cut.logId && checkpoint.generation == cut.generation) { "C_ROLLBACK_DETECTED" }
         val cutSequence = cut.materializedSeq
@@ -55,7 +56,7 @@ internal object PallaSyncReseedSourceConflict {
             put("source_origin", sourceOrigin)
             put("source_log_id", checkNotNull(cut.logId))
             put("source_generation", cut.generation)
-            put("source_authority_hash", checkNotNull(PallaSyncCore.objectHash(checkpoint.authority.toString())))
+            put("source_authority_hash", sourceAuthorityHash)
             put("source_cut_seq", cutSequence)
             put("source_cut_hash", checkNotNull(cut.verifiedHash))
             put("source_cut_parameters_hash", checkNotNull(cut.parametersHash))

@@ -10,7 +10,14 @@ import org.junit.Test
 class PallaSyncReseedSourceConflictTest {
     @Test
     fun `verified raced suffix becomes a local report with exact sequence range`() {
-        val report = PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 14, headHash = "head-14"), ORIGIN, 3)
+        val report =
+            PallaSyncReseedSourceConflict.report(
+                cut(),
+                checkpoint(headSeq = 14, headHash = "head-14"),
+                ORIGIN,
+                3,
+                checkNotNull(PallaSyncCore.objectHash("{}")),
+            )
 
         report?.getValue("source_cut_seq")?.jsonPrimitive?.long shouldBe 11
         report?.getValue("source_authority_hash")?.jsonPrimitive?.content shouldBe PallaSyncCore.objectHash("{}")
@@ -25,7 +32,14 @@ class PallaSyncReseedSourceConflictTest {
 
     @Test
     fun `matching signed source cut persists zero baseline without surfacing a conflict`() {
-        val report = PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 11, headHash = "cut-hash"), ORIGIN, 0)
+        val report =
+            PallaSyncReseedSourceConflict.report(
+                cut(),
+                checkpoint(headSeq = 11, headHash = "cut-hash"),
+                ORIGIN,
+                0,
+                checkNotNull(PallaSyncCore.objectHash("{}")),
+            )
 
         report.getValue("unimported_entry_count").jsonPrimitive.long shouldBe 0
         PallaSyncReseedSourceConflict.summary(report.toString()) shouldBe null
@@ -34,10 +48,22 @@ class PallaSyncReseedSourceConflictTest {
     @Test
     fun `report rejects incomplete suffix and rollback`() {
         runCatching {
-            PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 14, headHash = "head-14"), ORIGIN, 2)
+            PallaSyncReseedSourceConflict.report(
+                cut(),
+                checkpoint(headSeq = 14, headHash = "head-14"),
+                ORIGIN,
+                2,
+                checkNotNull(PallaSyncCore.objectHash("{}")),
+            )
         }.exceptionOrNull()?.message shouldBe "C_TRANSPARENCY_INVALID"
         runCatching {
-            PallaSyncReseedSourceConflict.report(cut(), checkpoint(headSeq = 10, headHash = "older"), ORIGIN, 0)
+            PallaSyncReseedSourceConflict.report(
+                cut(),
+                checkpoint(headSeq = 10, headHash = "older"),
+                ORIGIN,
+                0,
+                checkNotNull(PallaSyncCore.objectHash("{}")),
+            )
         }.exceptionOrNull()?.message shouldBe "C_ROLLBACK_DETECTED"
     }
 

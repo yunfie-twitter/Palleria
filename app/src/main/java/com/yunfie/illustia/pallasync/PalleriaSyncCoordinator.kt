@@ -1787,6 +1787,12 @@ internal class PalleriaSyncCoordinator(
                         "C_MISSING_DEPENDENCY"
                     }
                 check(savedJournal.targetOrigin == origin) { "C_IMPORT_CONFLICT" }
+                if (savedJournal.phase == 4 && savedJournal.commitResultJson != null && savedJournal.sourceConflictReportJson != null) {
+                    resumeReseedAfterSourceCapture(state.chainId, savedJournal)
+                    return@withLock PallaSyncHttpResult.Success(
+                        Json.parseToJsonElement(checkNotNull(reseedDao.get(state.chainId)?.commitResultJson)).jsonObject,
+                    )
+                }
                 if (savedJournal.phase >= 5 && savedJournal.commitResultJson != null) {
                     finishReseedCutover(state.chainId, savedJournal)
                     return@withLock PallaSyncHttpResult.Success(Json.parseToJsonElement(savedJournal.commitResultJson).jsonObject)
@@ -2040,6 +2046,7 @@ internal class PalleriaSyncCoordinator(
                                 updatedAtMs = policy.retry.correctedTime(sourceOrigin),
                             ),
                         )
+                        rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_SOURCE_CAPTURED)
                         val finalJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
                         db.transaction {
                             val targetLogId = targetPin.getValue("log_id").jsonPrimitive.content
@@ -2088,6 +2095,94 @@ internal class PalleriaSyncCoordinator(
                 }
             }
         }
+
+    /** Finish a relay-committed cutover from its durable final-source report without rereading a later source head. */
+    private suspend fun resumeReseedAfterSourceCapture(
+        chain: String,
+        journal: ReseedJournalEntity,
+    ) {
+        check(journal.phase == 4 && journal.commitResultJson != null && journal.sourceConflictReportJson != null) {
+            "C_MISSING_DEPENDENCY"
+        }
+        val sourceText = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+        val sourceHash = checkNotNull(PallaSyncCore.objectHash(sourceText)) { "C_SCHEMA_VIOLATION" }
+        requireProtectedAuthority(chain)
+        check(sourceHash == keystore.authorityHash(chain)) { "C_ROLLBACK_DETECTED" }
+        val sourceAuthority = Json.parseToJsonElement(sourceText).jsonObject
+        val sourceReport = Json.parseToJsonElement(journal.sourceConflictReportJson).jsonObject
+        val sourcePin = sourceAuthority.getValue("pin").jsonObject
+        val sourceParametersHash = checkNotNull(PallaSyncCore.objectHash(sourceAuthority.getValue("parameters").toString()))
+        val sourceEpochHash =
+            checkNotNull(
+                PallaSyncCore.objectHash(
+                    sourceAuthority
+                        .getValue("epochs")
+                        .jsonObject
+                        .values
+                        .maxBy { it.jsonObject.getValue("record").jsonObject.getValue("epoch").jsonPrimitive.long }
+                        .jsonObject
+                        .getValue("record")
+                        .toString(),
+                ),
+            )
+        check(
+            sourceReport.getValue("source_authority_hash").jsonPrimitive.content == sourceHash &&
+                sourceReport.getValue("source_log_id").jsonPrimitive.content == journal.sourceLogId &&
+                sourceReport.getValue("source_generation").jsonPrimitive.long == journal.sourceGeneration &&
+                sourceReport.getValue("observed_head_seq").jsonPrimitive.long == sourceAuthority.getValue("sequence").jsonPrimitive.long &&
+                sourceReport.getValue("observed_head_hash").jsonPrimitive.content == sourceAuthority.getValue("head_hash").jsonPrimitive.content &&
+                sourceReport.getValue("observed_parameters_hash").jsonPrimitive.content == sourceParametersHash &&
+                sourceReport.getValue("observed_epoch_hash").jsonPrimitive.content == sourceEpochHash &&
+                sourcePin.getValue("log_id").jsonPrimitive.content == journal.sourceLogId &&
+                sourceReport.getValue("source_origin").jsonPrimitive.content == sourcePin.getValue("origin").jsonPrimitive.content,
+        ) { "C_ROLLBACK_DETECTED" }
+        val targetPin = Json.parseToJsonElement(journal.targetPinJson).jsonObject
+        check(
+            targetPin.getValue("chain_id").jsonPrimitive.content == chain &&
+                targetPin.getValue("origin").jsonPrimitive.content == journal.targetOrigin &&
+                targetPin.getValue("public_key").jsonPrimitive.content == policy.trustedRelayKey(journal.targetOrigin),
+        ) { "C_RELAY_KEY_MISMATCH" }
+        val expectedEntries = Json.parseToJsonElement(checkNotNull(journal.expectedEntriesJson)).jsonArray
+        val commitResult = Json.parseToJsonElement(journal.commitResultJson).jsonObject
+        val targetAuthority = verifyReseedAuthorityFromSavedEvidence(sourceAuthority, targetPin, expectedEntries, commitResult)
+        val targetHash = checkNotNull(PallaSyncCore.objectHash(targetAuthority.toString())) { "C_SCHEMA_VIOLATION" }
+        db.transaction {
+            commitResult.getValue("receipts").jsonArray.forEach { receiptElement ->
+                val receipt = receiptElement.jsonObject
+                val sequence = receipt.getValue("relay_seq").jsonPrimitive.long
+                db.protocolDao().retainEvidence(
+                    ProtectedEvidenceEntity(
+                        journal.targetOrigin,
+                        receipt.getValue("relay_key_id").jsonPrimitive.content,
+                        chain,
+                        targetPin.getValue("log_id").jsonPrimitive.content,
+                        "upload_receipt",
+                        sequence,
+                        checkNotNull(PallaSyncCore.objectHash(receipt.toString())),
+                        receipt.toString(),
+                    ),
+                )
+            }
+            db.protocolDao().retainAuthority(
+                com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity(
+                    chain,
+                    "checkpoint",
+                    targetHash,
+                    targetAuthority.getValue("parameters").jsonObject.getValue("generation").jsonPrimitive.long,
+                    targetAuthority.toString(),
+                    "reseed_candidate",
+                ),
+            )
+            val currentJournal = checkNotNull(db.snapshotDatabase().reseedJournalDao().get(chain)) { "C_MISSING_DEPENDENCY" }
+            db.snapshotDatabase().reseedJournalDao().saveMonotone(
+                currentJournal.copy(
+                    phase = 5,
+                    updatedAtMs = policy.retry.correctedTime(journal.targetOrigin),
+                ),
+            )
+        }
+        finishReseedCutover(chain, checkNotNull(db.snapshotDatabase().reseedJournalDao().get(chain)))
+    }
 
     internal suspend fun pendingReseedCutoverTarget(): String? =
         withContext(Dispatchers.IO) {
@@ -2817,7 +2912,13 @@ internal class PalleriaSyncCoordinator(
             }
         }
         check(after == checkpoint.headSeq) { "C_TRANSPARENCY_INVALID" }
-        return PallaSyncReseedSourceConflict.report(cut, checkpoint, sourceOrigin, count)
+        return PallaSyncReseedSourceConflict.report(
+            cut,
+            checkpoint,
+            sourceOrigin,
+            count,
+            checkNotNull(PallaSyncCore.objectHash(sourceAuthority.toString())),
+        )
     }
 
     private suspend fun performRetainedHistoryRepair(

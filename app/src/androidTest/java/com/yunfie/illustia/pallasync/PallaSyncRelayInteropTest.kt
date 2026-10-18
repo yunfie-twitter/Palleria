@@ -119,20 +119,29 @@ class PallaSyncRelayInteropTest {
                     assertEquals(reseedTargetOrigin, authority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content)
                     assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
                     assertTrue(coordinator.canAuditReseedSource())
-                    assertEquals(null, coordinator.auditReseedSource())
+                    val sourceAudit = coordinator.auditReseedSource()
+                    if (args.getString("reseed_expect_late_source_write") == "true") {
+                        assertNotNull(sourceAudit)
+                        assertEquals(1L, checkNotNull(sourceAudit).entryCount)
+                        assertEquals(checkNotNull(sourceAudit).firstSequence, checkNotNull(sourceAudit).lastSequence)
+                    } else {
+                        assertEquals(null, sourceAudit)
+                    }
                     InstrumentationRegistry.getInstrumentation().sendStatus(
                         0,
                         Bundle().apply {
                             putString("pallasync_reseed_device_id", migratedKeys.deviceId)
                             putString("pallasync_reseed_generation", migrated.generation.toString())
-                            putString("pallasync_reseed_source_audit", "clean")
+                            putString("pallasync_reseed_source_audit", if (sourceAudit == null) "clean" else "unimported")
+                            sourceAudit?.let { putString("pallasync_reseed_unimported_count", it.entryCount.toString()) }
                             putString("reseed_resumed_after_process_death", "true")
                         },
                     )
                     println("reseed_resumed_after_process_death=true")
                     println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
                     println("pallasync_reseed_generation=${migrated.generation}")
-                    println("pallasync_reseed_source_audit=clean")
+                    println("pallasync_reseed_source_audit=${if (sourceAudit == null) "clean" else "unimported"}")
+                    sourceAudit?.let { println("pallasync_reseed_unimported_count=${it.entryCount}") }
                     return@runBlocking
                 }
                 val selected = checkNotNull(origin)
