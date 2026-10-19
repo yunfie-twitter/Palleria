@@ -311,8 +311,12 @@ internal fun UserProfileStatusPlaceholder(
                 drawRoundRect(
                     color = iconTint,
                     topLeft = Offset(inset, inset),
-                    size = androidx.compose.ui.geometry.Size(boxSize, boxSize),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+                    size =
+                        androidx.compose.ui.geometry
+                            .Size(boxSize, boxSize),
+                    cornerRadius =
+                        androidx.compose.ui.geometry
+                            .CornerRadius(corner, corner),
                     style = stroke,
                 )
                 if (isError) {

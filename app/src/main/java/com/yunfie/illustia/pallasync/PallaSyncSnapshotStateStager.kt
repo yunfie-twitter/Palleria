@@ -19,7 +19,7 @@ internal class PallaSyncSnapshotStateStager(
     compaction: JsonObject,
 ) {
     private val compaction = Json.parseToJsonElement(checkNotNull(PallaSyncCore.canonicalJson(compaction.toString()))).jsonObject
-    private val compactionId =
+    val compactionId =
         this.compaction
             .getValue("compaction_id")
             .jsonPrimitive.content
@@ -122,4 +122,6 @@ internal class PallaSyncSnapshotStateStager(
     }
 
     suspend fun complete() = dao.markVerified(chainId, compactionId)
+
+    suspend fun discardUnverified() = dao.discardUnverifiedStaging(chainId, compactionId)
 }

@@ -215,6 +215,37 @@ interface SnapshotInstallDao {
         check(install(chain, compaction)?.status == "verified") { "C_LOCAL_STORAGE_FULL" }
     }
 
+    /** Remove plaintext archive staging only while it has not passed the complete archive gate. */
+    @Transaction
+    suspend fun discardUnverifiedStaging(
+        chain: String,
+        compaction: String,
+    ) {
+        val manifest = install(chain, compaction) ?: return
+        if (manifest.status != "staging") return
+        deleteStagedEntries(chain, compaction)
+        deleteStagedParts(chain, compaction)
+        deleteStagedInstall(chain, compaction)
+    }
+
+    @Query("DELETE FROM ps_snapshot_install_entries WHERE chain_id=:chain AND compaction_id=:compaction")
+    suspend fun deleteStagedEntries(
+        chain: String,
+        compaction: String,
+    )
+
+    @Query("DELETE FROM ps_snapshot_install_parts WHERE chain_id=:chain AND compaction_id=:compaction")
+    suspend fun deleteStagedParts(
+        chain: String,
+        compaction: String,
+    )
+
+    @Query("DELETE FROM ps_snapshot_installs WHERE chain_id=:chain AND compaction_id=:compaction AND status='staging'")
+    suspend fun deleteStagedInstall(
+        chain: String,
+        compaction: String,
+    )
+
     // Atomically replace only the materialized prefix after authenticated source selection (§16.6).
     // Keep orchestration under one Room transaction so cancellation or any failed insert rolls back all tables.
     @Suppress("CyclomaticComplexMethod", "LongMethod")

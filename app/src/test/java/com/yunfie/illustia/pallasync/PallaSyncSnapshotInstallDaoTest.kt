@@ -70,6 +70,42 @@ class PallaSyncSnapshotInstallDaoTest {
         }
 
     @Test
+    fun `unverified archive staging is discarded when whole archive verification fails`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val signedPart = "{\"record_id\":\"$RECORD\"}"
+                val partHash = checkNotNull(PallaSyncCore.objectHash(signedPart))
+                val compaction =
+                    Json
+                        .parseToJsonElement(
+                            """{"compaction_id":"$COMPACTION","covered_log_hash":"$COVERED_HASH","covered_through_seq":1,"generation":0,"snapshot_parts":[{"record_hash":"$partHash","record_id":"$RECORD"}],"state_sha256":"state-hash"}""",
+                        ).jsonObject
+                val dao = db.snapshotInstallDao()
+                val stager = PallaSyncSnapshotStateStager(dao, CHAIN, compaction)
+                stager.begin()
+                stager.retainVerifiedArchivePart(
+                    0,
+                    signedPart,
+                    Json.parseToJsonElement("""{"entries":[{"kind":"header"}],"part_count":1,"part_index":0}""").jsonObject,
+                )
+
+                stager.discardUnverified()
+
+                dao.install(CHAIN, COMPACTION) shouldBe null
+                dao.parts(CHAIN, COMPACTION) shouldBe emptyList()
+                dao.entryPage(CHAIN, COMPACTION, -1, -1, 5) shouldBe emptyList()
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `snapshot trust catalogue query filters unverified and different epoch entries`() =
         runBlocking<Unit> {
             val db =
