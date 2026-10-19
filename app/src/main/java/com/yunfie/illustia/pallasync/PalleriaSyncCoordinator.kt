@@ -73,6 +73,16 @@ private const val MAX_DELETION_WITNESSES = 128
 private const val MAX_SNAPSHOT_UPLOAD_RECORDS = 64
 private val LEGACY_QUARANTINE_CODES = setOf("C_AEAD_FAILURE", "C_SIGNATURE_INVALID", "C_SCHEMA_VIOLATION", "C_UNSUPPORTED_SCHEMA")
 
+private fun relayKeyIdFromPin(pin: JsonObject): String =
+    Base64
+        .getUrlEncoder()
+        .withoutPadding()
+        .encodeToString(
+            MessageDigest
+                .getInstance("SHA-256")
+                .digest(Base64.getUrlDecoder().decode(pin.getValue("public_key").jsonPrimitive.content)),
+        )
+
 internal data class PallaSyncRecordRepairSummary(
     val submitted: Int,
     val accepted: Int,
@@ -369,10 +379,7 @@ internal class PalleriaSyncCoordinator(
             check(coveredThrough <= stable.verifiedSeq) { "C_MISSING_DEPENDENCY" }
             val compactionId = compaction.getValue("compaction_id").jsonPrimitive.content
             val logId = checkNotNull(stable.logId)
-            val relayKeyId =
-                Base64.getUrlEncoder().withoutPadding().encodeToString(
-                    MessageDigest.getInstance("SHA-256").digest(Base64.getUrlDecoder().decode(policy.trustedRelayKey(origin))),
-                )
+            val relayKeyId = relayKeyIdFromPin(authority.getValue("pin").jsonObject)
             val target =
                 buildJsonObject {
                     put("compaction_id", compactionId)
@@ -764,7 +771,7 @@ internal class PalleriaSyncCoordinator(
                         generation = state.generation,
                         logId = pin.getValue("log_id").jsonPrimitive.content,
                         relayPublicKey = policy.trustedRelayKey(origin),
-                        relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                        relayKeyId = relayKeyIdFromPin(pin),
                         relayPinJson = pin.toString(),
                     )
                 PallaSyncExportArchive.create(output, expectedSource).use { archive ->
@@ -824,7 +831,7 @@ internal class PalleriaSyncCoordinator(
                             generation = state.generation,
                             logId = pin.getValue("log_id").jsonPrimitive.content,
                             relayPublicKey = policy.trustedRelayKey(origin),
-                            relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                            relayKeyId = relayKeyIdFromPin(pin),
                             includeRecovery = true,
                             relayPinJson = pin.toString(),
                             identityJson =
@@ -897,7 +904,7 @@ internal class PalleriaSyncCoordinator(
                     generation = state.generation,
                     logId = pin.getValue("log_id").jsonPrimitive.content,
                     relayPublicKey = policy.trustedRelayKey(origin),
-                    relayKeyId = pin.getValue("relay_key_id").jsonPrimitive.content,
+                    relayKeyId = relayKeyIdFromPin(pin),
                     includeRecovery = true,
                     relayPinJson = pin.toString(),
                     identityJson =
@@ -1031,7 +1038,7 @@ internal class PalleriaSyncCoordinator(
                     )
                 val proof = Json.parseToJsonElement(verifiedText).jsonObject
                 val receipt = proof.getValue("delete_receipt").jsonObject
-                check(receipt.getValue("relay_key_id").jsonPrimitive.content == pin.getValue("relay_key_id").jsonPrimitive.content) {
+                check(receipt.getValue("relay_key_id").jsonPrimitive.content == relayKeyIdFromPin(pin)) {
                     "C_RELAY_KEY_MISMATCH"
                 }
                 requireDeletionEntryExtendsKnownAnchor(state, proof, receipt, origin, pin)
@@ -1040,7 +1047,7 @@ internal class PalleriaSyncCoordinator(
                 db.protocolDao().retainDeletionProof(
                     ProtectedEvidenceEntity(
                         origin,
-                        pin.getValue("relay_key_id").jsonPrimitive.content,
+                        relayKeyIdFromPin(pin),
                         state.chainId,
                         checkNotNull(state.logId),
                         "delete_receipt",
@@ -1080,7 +1087,7 @@ internal class PalleriaSyncCoordinator(
                     .protocolDao()
                     .evidenceAt(
                         origin,
-                        pin.getValue("relay_key_id").jsonPrimitive.content,
+                        relayKeyIdFromPin(pin),
                         state.chainId,
                         checkNotNull(state.logId),
                         "transparency",
@@ -1419,7 +1426,7 @@ internal class PalleriaSyncCoordinator(
                         put("generation", state.generation)
                         put("device_id", deviceId)
                         put("relay_origin", pin.getValue("origin").jsonPrimitive.content)
-                        put("relay_key_id", pin.getValue("relay_key_id").jsonPrimitive.content)
+                        put("relay_key_id", relayKeyIdFromPin(pin))
                         put("log_id", checkNotNull(state.logId))
                         put("seq", state.verifiedSeq)
                         put("head_hash", checkNotNull(state.verifiedHash))
@@ -1459,7 +1466,7 @@ internal class PalleriaSyncCoordinator(
                 check(
                     chain == state.chainId && chain == pin.getValue("chain_id").jsonPrimitive.content &&
                         origin == pin.getValue("origin").jsonPrimitive.content &&
-                        relayKeyId == pin.getValue("relay_key_id").jsonPrimitive.content &&
+                        relayKeyId == relayKeyIdFromPin(pin) &&
                         logId == pin.getValue("log_id").jsonPrimitive.content,
                 ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                 val deviceId = value.getValue("device_id").jsonPrimitive.content

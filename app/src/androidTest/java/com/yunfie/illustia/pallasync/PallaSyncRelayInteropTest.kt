@@ -31,6 +31,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import javax.net.ssl.SSLContext
@@ -191,6 +193,7 @@ class PallaSyncRelayInteropTest {
                 )
                 val replacingDevice = args.getString("replace_device") == "true"
                 if (!replacingDevice) {
+                    exerciseCompleteArchiveRoundTrip(coordinator, store, phrase, state.chainId)
                     exerciseMissingDependencyQuarantineRetry(coordinator, store, state.chainId)
                     exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
                     exerciseBoundOrigin(client, policy, state.chainId, selected)
@@ -603,6 +606,28 @@ class PallaSyncRelayInteropTest {
             assertEquals(outbox, store.dao.queuedBatch(chain, 200))
             assertEquals(journal, store.protocolDao().lastMigrationIndex(PallaSyncLocalIntents.journalId(chain)))
         }
+    }
+
+    private suspend fun exerciseCompleteArchiveRoundTrip(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        mnemonic: String,
+        chain: String,
+    ) {
+        val archive = ByteArrayOutputStream()
+        val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
+        val bytes = archive.toByteArray()
+        val verified = coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
+        assertTrue("Archive was not marked complete", verified.complete)
+        assertTrue("Archive omitted recovery", verified.includeRecovery)
+        assertEquals(chain, verified.chainId)
+
+        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val state = checkNotNull(store.dao.getChainState(chain))
+        assertTrue(state.initialPullCompleted)
+        assertEquals(state.verifiedSeq, state.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        println("pallasync_complete_archive_round_trip=verified")
     }
 
     private suspend fun exerciseMissingDependencyQuarantineRetry(
