@@ -941,8 +941,44 @@ internal class PalleriaSyncCoordinator(
                     generation = snapshot.generation,
                     dataZero = cut.getValue("data_zero").jsonPrimitive.content,
                 )
+            installExactArchiveSnapshot(state.chainId, checkpoint)
             PallaSyncPrefixMaterializer(db, keystore).apply(state.chainId, device, checkpoint)
             projection.publish(state.chainId, db)
+        }
+    }
+
+    /** Install only an archive snapshot that exactly matches the independently replayed local prefix. */
+    private suspend fun installExactArchiveSnapshot(
+        chain: String,
+        checkpoint: PallaSyncGenesisCheckpoint,
+    ) {
+        val current = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+        if (!current.initialPullCompleted || current.logId != checkpoint.logId || current.verifiedSeq != current.materializedSeq) return
+        val coveredHash = current.verifiedHash ?: checkpoint.dataZero ?: return
+        val expectedEpochHash = checkpoint.epochHash
+        val candidates =
+            db.snapshotInstallDao().matchingVerifiedInstalls(
+                chain,
+                checkpoint.generation,
+                current.verifiedSeq,
+                coveredHash,
+            )
+        for (candidate in candidates) {
+            val compaction = Json.parseToJsonElement(candidate.compactionJson).jsonObject
+            if (compaction["epoch_hash"]?.jsonPrimitive?.content != expectedEpochHash) continue
+            val exactRevision =
+                PallaSyncSnapshotSemanticComparator.compareWithExactLocalReplay(
+                    db,
+                    chain,
+                    candidate.compactionId,
+                    checkpoint.logId,
+                    checkpoint.generation,
+                    expectedEpochHash,
+                    current.verifiedSeq,
+                    coveredHash,
+                ) ?: continue
+            db.snapshotInstallDao().installVerifiedState(chain, candidate.compactionId, exactRevision)
+            return
         }
     }
 
@@ -985,7 +1021,9 @@ internal class PalleriaSyncCoordinator(
                     kotlinx.serialization.json.Json
                         .decodeFromString<PallaSyncInnerRecord>(plaintext)
                 },
-                PallaSyncArchiveSnapshotVerifier(::verifyExportSnapshotParts),
+                PallaSyncArchiveSnapshotVerifier { archiveAuthority, compaction, parts ->
+                    verifyExportSnapshotParts(archiveAuthority, compaction, parts, retainForRestore = retainEvidence)
+                },
                 logEntrySink =
                     if (retainEvidence) {
                         PallaSyncArchiveLogEntrySink { _, entryJson, receiptJson, sequence ->
@@ -1067,6 +1105,7 @@ internal class PalleriaSyncCoordinator(
         authorityJson: String,
         compactionJson: String,
         parts: PallaSyncArchiveSnapshotPartSource,
+        retainForRestore: Boolean = false,
     ) {
         val authority = Json.parseToJsonElement(authorityJson).jsonObject
         val compaction = Json.parseToJsonElement(compactionJson).jsonObject
@@ -1116,6 +1155,14 @@ internal class PalleriaSyncCoordinator(
         check(author.getValue("generation").jsonPrimitive.long == generation) { "C_ACCEPTANCE_UNPROVEN" }
         val authorKey = author.getValue("device_public_key").jsonPrimitive.content
         val references = compaction.getValue("snapshot_parts").jsonArray
+        val snapshotDao = db.snapshotInstallDao()
+        val alreadyInstalled = snapshotDao.install(chain, compaction.getValue("compaction_id").jsonPrimitive.content)?.status == "installed"
+        val stateStager =
+            if (retainForRestore && !alreadyInstalled) {
+                PallaSyncSnapshotStateStager(snapshotDao, chain, compaction).also { it.begin() }
+            } else {
+                null
+            }
         val snapshotVerifier =
             PallaSyncEpochSession.begin(epochKeys, authorityJson, epoch).use { session ->
                 var verifier: PallaSyncSnapshotVerifier? = null
@@ -1152,6 +1199,7 @@ internal class PalleriaSyncCoordinator(
                             )
                     }
                     checkNotNull(verifier).acceptDecryptedAuthenticatedPart(plaintext)
+                    stateStager?.retainVerifiedArchivePart(partIndex, recordJson, frame)
                     expectedIndex++
                 }
                 check(expectedIndex == references.size) { "C_MISSING_DEPENDENCY" }
@@ -1160,6 +1208,7 @@ internal class PalleriaSyncCoordinator(
                 }
             }
         snapshotVerifier.close()
+        stateStager?.complete()
     }
 
     /** §7.12.4/§17.10: sign a protected public checkpoint at the local verified data prefix. */

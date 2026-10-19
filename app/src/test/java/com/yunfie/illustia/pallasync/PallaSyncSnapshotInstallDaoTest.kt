@@ -12,6 +12,8 @@ import com.yunfie.illustia.pallasync.data.SnapshotInstallPartEntity
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,6 +24,51 @@ import org.robolectric.annotation.SQLiteMode
 @Config(sdk = [28], application = android.app.Application::class)
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncSnapshotInstallDaoTest {
+    @Test
+    fun `archive verified parts enter isolated resumable snapshot staging without a relay receipt`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val signedPart = "{\"record_id\":\"$RECORD\"}"
+                val partHash = checkNotNull(PallaSyncCore.objectHash(signedPart))
+                val compaction =
+                    Json
+                        .parseToJsonElement(
+                            """{"compaction_id":"$COMPACTION","covered_log_hash":"$COVERED_HASH","covered_through_seq":1,"generation":0,"snapshot_parts":[{"record_hash":"$partHash","record_id":"$RECORD"}],"state_sha256":"state-hash"}""",
+                        ).jsonObject
+                val stager = PallaSyncSnapshotStateStager(db.snapshotInstallDao(), CHAIN, compaction)
+                stager.begin()
+                stager.retainVerifiedArchivePart(
+                    0,
+                    signedPart,
+                    Json.parseToJsonElement("""{"entries":[{"kind":"header"}],"part_count":1,"part_index":0}""").jsonObject,
+                )
+                stager.complete()
+
+                db
+                    .snapshotInstallDao()
+                    .install(CHAIN, COMPACTION)
+                    ?.status shouldBe "verified"
+                db
+                    .snapshotInstallDao()
+                    .parts(CHAIN, COMPACTION)
+                    .single()
+                    .recordHash shouldBe partHash
+                db
+                    .snapshotInstallDao()
+                    .entryPage(CHAIN, COMPACTION, -1, -1, 5)
+                    .map { it.entryJson } shouldBe
+                    listOf("{\"kind\":\"header\"}")
+            } finally {
+                db.close()
+            }
+        }
+
     @Test
     fun `snapshot trust catalogue query filters unverified and different epoch entries`() =
         runBlocking<Unit> {

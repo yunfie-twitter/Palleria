@@ -98,5 +98,28 @@ internal class PallaSyncSnapshotStateStager(
         )
     }
 
+    /** Retain a signed part from a fully verified recovery archive without inventing a relay receipt. */
+    suspend fun retainVerifiedArchivePart(
+        partIndex: Int,
+        signedRecordJson: String,
+        frame: JsonObject,
+    ) {
+        val record = Json.parseToJsonElement(signedRecordJson).jsonObject
+        val canonical = checkNotNull(PallaSyncCore.canonicalJson(record.toString())) { "C_SNAPSHOT_INVALID" }
+        val part =
+            SnapshotPartEntity(
+                chainId = chainId,
+                compactionId = compactionId,
+                partIndex = partIndex,
+                partHash = checkNotNull(PallaSyncCore.objectHash(canonical)) { "C_SNAPSHOT_INVALID" },
+                signedJson = canonical,
+                uploadReceiptJson = "null",
+                coveredSeq = compaction.getValue("covered_through_seq").jsonPrimitive.long,
+                coverageJson = compaction.toString(),
+                stagingState = "downloaded",
+            )
+        retainVerifiedPart(partIndex, part, frame)
+    }
+
     suspend fun complete() = dao.markVerified(chainId, compactionId)
 }
