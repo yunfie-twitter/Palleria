@@ -45,6 +45,7 @@ data class PallaSyncClientStatus(
     val seenCeiling: Long,
     val retryAfterMs: Long = 0,
     val capacityIssue: PallaSyncCapacityIssue? = null,
+    val blockedRequestCode: String? = null,
 ) {
     val partial: Boolean
         get() =

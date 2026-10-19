@@ -7622,6 +7622,10 @@ internal class PalleriaSyncCoordinator(
                 seenCount = protocol.liveScopeCount(state.chainId, "palleria.view_history/3", "seen"),
                 seenCeiling = PALLASYNC_SEEN_SAFETY_LIMIT,
                 retryAfterMs = policy.retry.remaining(policy.boundChainOrigin(state.chainId).orEmpty()),
+                blockedRequestCode =
+                    policy
+                        .boundChainOrigin(state.chainId)
+                        ?.let { origin -> policy.retry.blockedCode(origin, state.chainId) },
                 capacityIssue =
                     policy
                         .boundChainOrigin(state.chainId)

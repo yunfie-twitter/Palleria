@@ -440,7 +440,8 @@ internal fun classifyPallaSyncHttpStatus(
         }
 
         statusCode in PALLASYNC_AUTOMATIC_RETRY_STATUSES ||
-            (statusCode == HTTP_UNAUTHORIZED && problem?.code in setOf("TOKEN_EXPIRED", "TOKEN_NOT_YET_VALID", "TOKEN_REPLAYED")) -> {
+            (statusCode == HTTP_UNAUTHORIZED &&
+                problem?.code in setOf("TOKEN_REQUIRED", "TOKEN_EXPIRED", "TOKEN_NOT_YET_VALID", "TOKEN_REPLAYED")) -> {
             PallaSyncHttpResult.Retryable(
                 problem?.code ?: "PallaSync server returned HTTP $statusCode",
                 retryAfterMs = problem?.retryAfterMs ?: 0,

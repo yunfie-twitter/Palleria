@@ -41,6 +41,16 @@ class PallaSyncHttpClassificationTest :
             (classifyPallaSyncHttpStatus(500) as PallaSyncHttpResult.Retryable).reconciliationRequired shouldBe true
         }
 
+        "TOKEN_REQUIRED renews the authorized token while invalid token signatures stay terminal" {
+            val required = PallaSyncProblemHint(401, "TOKEN_REQUIRED", true)
+            val retry = classifyPallaSyncHttpStatus(401, required)
+            (retry is PallaSyncHttpResult.Retryable) shouldBe true
+            (retry as PallaSyncHttpResult.Retryable).statusCode shouldBe 401
+
+            classifyPallaSyncHttpStatus(401, PallaSyncProblemHint(401, "TOKEN_SIGNATURE_INVALID", false)) shouldBe
+                PallaSyncHttpResult.ProtocolError("TOKEN_SIGNATURE_INVALID", 401)
+        }
+
         "an empty records page still carries control scan and complete pinned metadata" {
             val result = parseRecordsResponseBody(json, emptyBody, afterSeq = 0L)
             result shouldBe

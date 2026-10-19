@@ -92,6 +92,19 @@ internal class PallaSyncRetryGate(
             load(origin).capacityIssues[chain]
         }
 
+    /** The first stable catalogue code blocking this chain's exact saved requests. */
+    fun blockedCode(
+        origin: String,
+        chain: String,
+    ): String? =
+        synchronized(lock) {
+            val state = load(origin)
+            state.blockedRequests
+                .toSortedMap()
+                .entries
+                .firstNotNullOfOrNull { (key, code) -> code.takeIf { state.blockedRequestChains[key] == chain } }
+        }
+
     fun before(request: Request): PallaSyncHttpResult<Nothing>? {
         val origin = PallaSyncUrls.extractOrigin(request.url)
         synchronized(lock) {
@@ -170,7 +183,11 @@ internal class PallaSyncRetryGate(
                 }
 
                 is PallaSyncHttpResult.ProtocolError -> {
-                    if (result.statusCode in LIFECYCLE_STATUSES) {
+                    // A catalogue 4xx is a precondition/schema outcome, not a transport
+                    // retry. Keep the exact request body and stop its periodic replay until
+                    // the matching recovery flow resolves it or the caller builds a new
+                    // request. A bare 410 is classified as Gone and never reaches here.
+                    if (result.statusCode in CLIENT_ACTION_STATUSES) {
                         val key = fingerprint(request)
                         val chain = chainId(request)
                         val capacityIssue =
@@ -397,7 +414,7 @@ internal class PallaSyncRetryGate(
         private const val MILLIS_PER_SECOND = 1000L
         private const val INVALID_HEADER_WAIT_MS = 3_600_000L
         private const val RATE_MAX_SECONDS = 3600L
-        private val LIFECYCLE_STATUSES = setOf(403, 409, 507)
+        private val CLIENT_ACTION_STATUSES = (400..499).toSet() + 507
         private val CAPACITY_CODES = setOf("QUOTA_EXCEEDED", "STORAGE_UNAVAILABLE")
 
         internal fun retryAfter(

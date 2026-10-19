@@ -122,6 +122,38 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `catalogue 404 and 413 errors pause only the exact request until recovery`() {
+        val gate = gate()
+        val source = request("{\"epoch\":7}")
+        val missingEpoch = PallaSyncProblemHint(404, "EPOCH_NOT_FOUND", true)
+        val failure = checkNotNull(classifyPallaSyncHttpStatus(404, missingEpoch))
+        failure shouldBe PallaSyncHttpResult.ProtocolError("EPOCH_NOT_FOUND", 404)
+        gate.observe(source, failure, missingEpoch)
+
+        gate.blockedCode(origin, chain) shouldBe "EPOCH_NOT_FOUND"
+        gate.before(source) shouldBe PallaSyncHttpResult.ProtocolError("EPOCH_NOT_FOUND")
+        gate.resolved(origin, chain, "SNAPSHOT_NOT_FOUND") shouldBe false
+        gate.before(source) shouldBe PallaSyncHttpResult.ProtocolError("EPOCH_NOT_FOUND")
+        gate.resolved(origin, chain, "EPOCH_NOT_FOUND") shouldBe true
+        gate.before(source) shouldBe null
+
+        val oversized = request("{\"records\":[1,2,3]}")
+        val tooLarge = PallaSyncProblemHint(413, "PAYLOAD_TOO_LARGE", true)
+        gate.observe(oversized, checkNotNull(classifyPallaSyncHttpStatus(413, tooLarge)), tooLarge)
+        gate.before(oversized) shouldBe PallaSyncHttpResult.ProtocolError("PAYLOAD_TOO_LARGE")
+        // Rebuilding a compliant smaller batch has a different exact request fingerprint.
+        gate.before(request("{\"records\":[1]}")) shouldBe null
+    }
+
+    @Test
+    fun `local parse failures do not become server request blockers`() {
+        val gate = gate()
+        gate.observe(request(), PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION"))
+        gate.blockedCode(origin, chain) shouldBe null
+        gate.before(request()) shouldBe null
+    }
+
+    @Test
     fun `507 capacity hints are diagnostic only and explicit resolution retries the retained request`() {
         val gate = gate()
         val hint = PallaSyncProblemHint(507, "QUOTA_EXCEEDED", true, usedBytes = 900, maxBytes = 1000)

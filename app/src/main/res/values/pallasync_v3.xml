@@ -162,6 +162,7 @@
     <string name="pallasync_snapshot_bootstrap_installed">Snapshot installed; signed suffix replay has started.</string>
     <string name="pallasync_progress_title">Sync progress and local history capacity</string>
     <string name="pallasync_retry_wait">Automatic retry wait: %1$d seconds</string>
+    <string name="pallasync_request_blocked">This request is paused after a response requiring action (%1$s). Queued data is retained.</string>
     <string name="pallasync_relay_capacity_hint">The relay last reported %1$s. Reported storage: %2$s bytes used, %3$s bytes maximum. This error hint is unsigned and is not proof of relay capacity.</string>
     <string name="pallasync_relay_capacity_unknown">No usage figures were included.</string>
     <string name="pallasync_relay_capacity_resume">I have confirmed relay capacity was recovered</string>

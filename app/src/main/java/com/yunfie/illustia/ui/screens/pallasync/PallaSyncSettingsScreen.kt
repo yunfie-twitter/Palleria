@@ -1927,6 +1927,9 @@ fun PallaSyncSettingsScreen(
                             if (status.retryAfterMs > 0) {
                                 Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
                             }
+                            status.blockedRequestCode?.let { code ->
+                                Text(stringResource(R.string.pallasync_request_blocked, code))
+                            }
                             status.capacityIssue?.let { issue ->
                                 DividerLine()
                                 val used = issue.usedBytes
