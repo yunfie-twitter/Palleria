@@ -921,6 +921,8 @@ internal class PalleriaSyncCoordinator(
     suspend fun restoreRelayArchive(
         input: java.io.InputStream,
         expectedSource: PallaSyncExportArchive.ExpectedSource,
+        mnemonic: String,
+        passphrase: String,
     ) = withContext(Dispatchers.IO) {
         operationMutex.withLock {
             val beforeProbe = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -935,9 +937,25 @@ internal class PalleriaSyncCoordinator(
             val origin = PallaSyncUrls.extractOrigin(base)
             check(beforePin.getValue("origin").jsonPrimitive.content == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             policy.requireCurrent(origin)
+            val root =
+                PallaSyncRootSession.beginText(
+                    mnemonic,
+                    passphrase,
+                    PallaSyncRootSession.Operation.DELETE,
+                    expectedChain = beforeProbe.chainId,
+                    expectedAdmin = beforeAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                    requestGuard = policy::requireCurrent,
+                    clock = policy.retry::correctedTime,
+                )
+            root.use { session ->
+                check(
+                    session.identity.chainId == beforeProbe.chainId &&
+                        session.identity.adminPublicKey == beforeAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                ) { "C_RECOVERY_ROOT_MISMATCH" }
+                checkNoVerifiedDeletionLedger(session, base, origin, beforeProbe, beforeAuthority, beforePin)
+            }
             requireSnapshotResult(refreshRelayHealth(base))
-            // A local archive must not reactivate a chain after the selected relay has accepted deletion.
-            // The probe retains signed contradictions and a bare 410 fails closed as C_DELETION_UNVERIFIED.
+            // Recheck the active chain and signed data/transparency cut immediately before local restore.
             requireSnapshotResult(consistencyProbe.run(base, beforeProbe.chainId))
             val snapshot = verifyRelayArchiveLocked(input, expectedSource, retainEvidence = true)
             val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -962,6 +980,121 @@ internal class PalleriaSyncCoordinator(
             PallaSyncPrefixMaterializer(db, keystore).apply(state.chainId, device, checkpoint)
             projection.publish(state.chainId, db)
         }
+    }
+
+    /** A recovered root can read the only post-deletion route; a verified ledger always blocks restore. */
+    private suspend fun checkNoVerifiedDeletionLedger(
+        root: PallaSyncRootSession,
+        base: HttpUrl,
+        origin: String,
+        state: ChainStateEntity,
+        authority: JsonObject,
+        pin: JsonObject,
+    ) {
+        val url = PallaSyncUrls.deletion(base, state.chainId)
+        val token = checkNotNull(root.token(origin, "GET", url.encodedPath)) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .header("Authorization", "PallaSync $token")
+                .get()
+                .build()
+        when (
+            val response = remote.execute(request) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }
+        ) {
+            is PallaSyncHttpResult.Success -> {
+                val proofObject = Json.parseToJsonElement(response.value.toString(Charsets.UTF_8)).jsonObject
+                val ledger = proofObject.getValue("ledger").jsonObject
+                val adminOperation = proofObject["admin_operation"]?.takeUnless { it is JsonNull }
+                checkNotNull(adminOperation) { "C_DELETION_UNVERIFIED" }
+                val deleteRequest =
+                    buildJsonObject {
+                        put("deletion_id", ledger.getValue("deletion_id"))
+                        put("expected_parameters_hash", ledger.getValue("authorized_parameters_hash"))
+                        put("expected_epoch_hash", ledger.getValue("authorized_epoch_hash"))
+                        put("admin_operation", adminOperation)
+                    }.toString()
+                val pinJson =
+                    buildJsonObject {
+                        put("origin", origin)
+                        put("chain_id", state.chainId)
+                        put("public_key", pin.getValue("public_key"))
+                        put("log_id", pin.getValue("log_id"))
+                    }.toString()
+                val verifiedText =
+                    PallaSyncCore.validateDeletionProof(
+                        response.value,
+                        pinJson,
+                        authority.toString(),
+                        deleteRequest,
+                    )
+                val proof = Json.parseToJsonElement(verifiedText).jsonObject
+                val receipt = proof.getValue("delete_receipt").jsonObject
+                check(receipt.getValue("relay_key_id").jsonPrimitive.content == pin.getValue("relay_key_id").jsonPrimitive.content) {
+                    "C_RELAY_KEY_MISMATCH"
+                }
+                requireDeletionEntryExtendsKnownAnchor(state, proof, receipt, origin, pin)
+                val sequence = receipt.getValue("transparency_index").jsonPrimitive.long
+                val proofHash = checkNotNull(PallaSyncCore.objectHash(verifiedText)) { "C_DELETION_UNVERIFIED" }
+                db.protocolDao().retainDeletionProof(
+                    ProtectedEvidenceEntity(
+                        origin,
+                        pin.getValue("relay_key_id").jsonPrimitive.content,
+                        state.chainId,
+                        checkNotNull(state.logId),
+                        "delete_receipt",
+                        sequence,
+                        proofHash,
+                        verifiedText,
+                    ),
+                )
+                stopBackgroundSync()
+                error("C_DELETION_UNVERIFIED")
+            }
+
+            is PallaSyncHttpResult.ProtocolError -> {
+                check(response.statusCode == 404 && response.message == "CHAIN_NOT_FOUND") { "C_DELETION_UNVERIFIED" }
+            }
+
+            else -> {
+                error("C_DELETION_UNVERIFIED")
+            }
+        }
+    }
+
+    private suspend fun requireDeletionEntryExtendsKnownAnchor(
+        state: ChainStateEntity,
+        proof: JsonObject,
+        receipt: JsonObject,
+        origin: String,
+        pin: JsonObject,
+    ) {
+        val entry = proof.getValue("deletion_transparency_entry").jsonObject
+        val entryIndex = entry.getValue("entry_index").jsonPrimitive.long
+        val receiptIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        check(entryIndex == receiptIndex) { "C_DELETION_UNVERIFIED" }
+        if (entryIndex <= state.transparencyIndex) {
+            val retained =
+                db
+                    .protocolDao()
+                    .evidenceAt(
+                        origin,
+                        pin.getValue("relay_key_id").jsonPrimitive.content,
+                        state.chainId,
+                        checkNotNull(state.logId),
+                        "transparency",
+                        entryIndex,
+                    )
+            check(retained.any { Json.parseToJsonElement(it).jsonObject == entry }) { "C_MISSING_DEPENDENCY" }
+            return
+        }
+        check(entryIndex == state.transparencyIndex + 1L) { "C_MISSING_DEPENDENCY" }
+        check(
+            entry.getValue("transparency_id").jsonPrimitive.content == state.transparencyId &&
+                entry.getValue("previous_transparency_hash").jsonPrimitive.content == state.transparencyHash,
+        ) { "C_TRANSPARENCY_INVALID" }
     }
 
     /** Install only an archive snapshot that exactly matches the independently replayed local prefix. */

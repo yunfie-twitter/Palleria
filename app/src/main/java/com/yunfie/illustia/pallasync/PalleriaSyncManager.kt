@@ -68,7 +68,9 @@ class PalleriaSyncManager(
     internal suspend fun restoreRelayArchive(
         input: java.io.InputStream,
         expectedSource: PallaSyncExportArchive.ExpectedSource,
-    ) = coordinator.restoreRelayArchive(input, expectedSource)
+        mnemonic: String,
+        passphrase: String,
+    ) = coordinator.restoreRelayArchive(input, expectedSource, mnemonic, passphrase)
 
     internal suspend fun recoveryArchiveExpectedSource() = coordinator.recoveryArchiveExpectedSource()
 

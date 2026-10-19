@@ -56,6 +56,8 @@
     <string name="pallasync_archive_restore_title">Restore verified archive</string>
     <string name="pallasync_archive_restore_action">Restore</string>
     <string name="pallasync_archive_restore_summary">Replay this complete archive into this chain’s local state. The protected authority and transparency head must still match exactly, and there must be no pending uploads or unresolved conflicts. This does not restore onto another device or replace chain authority.</string>
+    <string name="pallasync_archive_restore_root_title">Verify deletion status</string>
+    <string name="pallasync_archive_restore_root_summary">Enter this chain’s recovery mnemonic and BIP39 passphrase. The current signed deletion ledger is checked before the archive can be replayed.</string>
     <string name="pallasync_archive_restore_complete">Verified archive replay completed. Check sync status for any remaining missing dependencies.</string>
     <string name="pallasync_archive_restore_failed">Archive replay did not complete. Verified evidence is retained; review sync status before retrying.</string>
     <string name="pallasync_archive_verify_cancelled">Archive verification cancelled.</string>

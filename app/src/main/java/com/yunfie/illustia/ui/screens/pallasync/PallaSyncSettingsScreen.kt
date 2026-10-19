@@ -115,6 +115,9 @@ fun PallaSyncSettingsScreen(
     var exportingRecoveryArchive by remember { mutableStateOf(false) }
     var recoveryExportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var pendingRecoveryArchiveUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var recoveryArchiveRestoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var showRecoveryArchiveRestoreRootInput by remember { mutableStateOf(false) }
+    var restoringRecoveryArchive by remember { mutableStateOf(false) }
     var showReseedImportTarget by remember { mutableStateOf(false) }
     var showReseedImportRootInput by remember { mutableStateOf(false) }
     var showReseedCommitConfirm by remember { mutableStateOf(false) }
@@ -737,26 +740,49 @@ fun PallaSyncSettingsScreen(
             onConfirm = {
                 val uri = checkNotNull(pendingRecoveryArchiveUri)
                 pendingRecoveryArchiveUri = null
+                recoveryArchiveRestoreUri = uri
+                showRecoveryArchiveRestoreRootInput = true
+            },
+            onDismiss = { pendingRecoveryArchiveUri = null },
+        )
+    }
+
+    if (showRecoveryArchiveRestoreRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_archive_restore_root_title),
+            explanation = stringResource(R.string.pallasync_archive_restore_root_summary),
+            busy = restoringRecoveryArchive,
+            onDismiss = {
+                showRecoveryArchiveRestoreRootInput = false
+                recoveryArchiveRestoreUri = null
+            },
+            onConfirm = { mnemonic, passphrase ->
+                val uri = recoveryArchiveRestoreUri
+                restoringRecoveryArchive = true
                 scope.launch {
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO) {
                             val expectedSource = syncManager.recoveryArchiveExpectedSource()
+                            checkNotNull(uri) { "C_SCHEMA_VIOLATION" }
                             checkNotNull(context.contentResolver.openInputStream(uri)) { "C_SCHEMA_VIOLATION" }
-                                .use { input -> syncManager.restoreRelayArchive(input, expectedSource) }
+                                .use { input -> syncManager.restoreRelayArchive(input, expectedSource, mnemonic, passphrase) }
                         }
                         Toast.makeText(context, R.string.pallasync_archive_restore_complete, Toast.LENGTH_LONG).show()
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: IOException) {
-                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.pallasync_archive_restore_failed, Toast.LENGTH_LONG).show()
                     } catch (_: SecurityException) {
-                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.pallasync_archive_restore_failed, Toast.LENGTH_LONG).show()
                     } catch (_: RuntimeException) {
-                        Toast.makeText(context, R.string.pallasync_archive_verify_failed, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.pallasync_archive_restore_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        restoringRecoveryArchive = false
+                        showRecoveryArchiveRestoreRootInput = false
+                        recoveryArchiveRestoreUri = null
                     }
                 }
             },
-            onDismiss = { pendingRecoveryArchiveUri = null },
         )
     }
 

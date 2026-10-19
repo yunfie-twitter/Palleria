@@ -235,4 +235,6 @@
     <string name="pallasync_reseed_source_audit_summary">保存済みの旧device identityでsource logを再検証し、切替後に残った署名済みsuffixを報告します。</string>
     <string name="pallasync_reseed_source_audit_clean">旧リレーに移行cut以降の検証済みentryはありません。</string>
     <string name="pallasync_reseed_source_audit_failed">旧リレーを検証できませんでした。ローカル状態と移行証拠は保持しています。</string>
+    <string name="pallasync_archive_restore_root_title">削除状態を検証</string>
+    <string name="pallasync_archive_restore_root_summary">このchainの復旧ニーモニックとBIP39パスフレーズを入力してください。archiveを反映する前に、現在の署名済み削除台帳を確認します。</string>
 </resources>
