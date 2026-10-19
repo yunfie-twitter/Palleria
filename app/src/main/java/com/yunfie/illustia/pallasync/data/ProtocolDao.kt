@@ -504,6 +504,15 @@ interface ProtocolDao {
     ): AuthorityHistoryEntity?
 
     @Query(
+        "SELECT * FROM ps_authority WHERE chain_id=:chain AND kind='checkpoint' AND generation=:generation " +
+            "AND validation_state='archived_checkpoint' ORDER BY object_hash",
+    )
+    suspend fun archivedAuthorities(
+        chain: String,
+        generation: Long,
+    ): List<AuthorityHistoryEntity>
+
+    @Query(
         "SELECT * FROM ps_authority WHERE chain_id=:chain AND kind='checkpoint' AND generation=:generation AND validation_state='reseed_candidate' ORDER BY object_hash LIMIT 1",
     )
     suspend fun reseedCandidateAuthority(

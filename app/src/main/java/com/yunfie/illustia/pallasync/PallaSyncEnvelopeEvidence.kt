@@ -23,11 +23,25 @@ internal object PallaSyncEnvelopeEvidence {
         if (envelope.getValue("recipient_kind").jsonPrimitive.content != "device") return
         val device = envelope.getValue("recipient_device_id").jsonPrimitive.content
         val epoch = envelope.getValue("epoch").jsonPrimitive.long
+        val kind = kind(device, epoch)
+        val hash = checkNotNull(PallaSyncCore.objectHash(envelope.toString()))
+        val existing = store.protocolDao().authorityObject(chain, kind, hash)
+        if (existing != null) {
+            val oldEntry =
+                kotlinx.serialization.json.Json
+                    .parseToJsonElement(existing.signedJson)
+                    .jsonObject
+            check(
+                oldEntry.getValue("kind").jsonPrimitive.content == "envelope" &&
+                    oldEntry.getValue("object") == envelope,
+            ) { "C_LOG_HASH_MISMATCH" }
+            return
+        }
         store.protocolDao().retainAuthority(
             AuthorityHistoryEntity(
                 chain,
-                kind(device, epoch),
-                checkNotNull(PallaSyncCore.objectHash(envelope.toString())),
+                kind,
+                hash,
                 envelope.getValue("generation").jsonPrimitive.long,
                 entry.toString(),
                 "authority_verified",

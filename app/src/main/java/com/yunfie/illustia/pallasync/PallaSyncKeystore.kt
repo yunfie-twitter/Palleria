@@ -230,6 +230,12 @@ class PallaSyncKeystore internal constructor(
             .getString("reseed.source.transparency.$chain.$sourceAuthorityHash", null)
             ?.let { Json.decodeFromString<JsonObject>(it) }
 
+    /** A source checkpoint is trusted only when its hash was preserved during authenticated reseed promotion. */
+    internal fun hasTrustedReseedSourceCheckpoint(
+        chain: String,
+        sourceAuthorityHash: String,
+    ): Boolean = reseedSourceTransparencyPin(chain, sourceAuthorityHash) != null
+
     /** Retain an old verified cut while device identity replacement replays unresolved intents. */
     internal fun retainSourceTransparencyPin(
         chain: String,

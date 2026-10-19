@@ -1270,6 +1270,18 @@ internal class PalleriaSyncCoordinator(
                                 checkpoint,
                             ).toString()
                         },
+                        sourceAuthorityProvider = { sourceGeneration ->
+                            db
+                                .protocolDao()
+                                .archivedAuthorities(state.chainId, sourceGeneration)
+                                .firstNotNullOfOrNull { source ->
+                                    val sourceHash = PallaSyncCore.objectHash(source.signedJson)
+                                    source.signedJson.takeIf {
+                                        sourceHash != null &&
+                                            keystore.hasTrustedReseedSourceCheckpoint(state.chainId, sourceHash)
+                                    }
+                                } ?: error("C_MISSING_DEPENDENCY")
+                        },
                     ).also { verified ->
                         check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
                     }

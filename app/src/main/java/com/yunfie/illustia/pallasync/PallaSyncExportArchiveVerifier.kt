@@ -26,6 +26,8 @@ import java.util.Base64
 internal typealias PallaSyncArchiveReseedAuthorityVerifier =
     suspend (String, JsonArray, kotlinx.serialization.json.JsonObject) -> String
 
+internal typealias PallaSyncArchiveSourceAuthorityProvider = suspend (Long) -> String?
+
 /** Streaming §17.4 footer and line-integrity check; signatures and AEAD remain separate gates. */
 internal object PallaSyncExportArchiveVerifier {
     data class Header(
@@ -53,6 +55,7 @@ internal object PallaSyncExportArchiveVerifier {
         logEntrySink: PallaSyncArchiveLogEntrySink? = null,
         beforeRetain: (suspend (Header) -> Unit)? = null,
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
+        sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
     ): Header =
         runBlocking {
             verifySuspending(
@@ -63,6 +66,7 @@ internal object PallaSyncExportArchiveVerifier {
                 logEntrySink,
                 beforeRetain,
                 reseedAuthorityVerifier,
+                sourceAuthorityProvider,
             )
         }
 
@@ -74,6 +78,7 @@ internal object PallaSyncExportArchiveVerifier {
         logEntrySink: PallaSyncArchiveLogEntrySink? = null,
         beforeRetain: (suspend (Header) -> Unit)? = null,
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
+        sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -154,6 +159,7 @@ internal object PallaSyncExportArchiveVerifier {
                                     recordVerifier,
                                     snapshotVerifier,
                                     reseedAuthorityVerifier,
+                                    sourceAuthorityProvider,
                                 )
                             }
                         historyCutJson =
@@ -375,10 +381,38 @@ internal object PallaSyncExportArchiveVerifier {
             recordVerifier: PallaSyncArchiveRecordVerifier?,
             snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
             reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier?,
+            sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider?,
         ): String {
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
             var expectedSequence = 1L
             var skipThroughSequence = 0L
+            val reseedTransition = firstReseedTransition()
+            if (reseedTransition != null) {
+                val (sequence, entry) = reseedTransition
+                val sourceGeneration =
+                    entry
+                        .getValue("object")
+                        .jsonObject
+                        .getValue("generation")
+                        .jsonPrimitive
+                        .long - 1L
+                val trustedSource =
+                    checkNotNull(sourceAuthorityProvider?.invoke(sourceGeneration)) {
+                        "C_MISSING_DEPENDENCY"
+                    }
+                val (verifiedAuthority, cutSequence) =
+                    verifyReseedTransition(
+                        trustedSource,
+                        sequence,
+                        entry,
+                        header,
+                        reseedAuthorityVerifier,
+                        snapshotVerifier,
+                    )
+                authority = verifiedAuthority
+                skipThroughSequence = cutSequence
+                expectedSequence = Math.addExact(cutSequence, 1L)
+            }
             database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
                 while (entries.moveToNext()) {
                     val sequence = entries.getLong(0)
@@ -486,6 +520,30 @@ internal object PallaSyncExportArchiveVerifier {
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
             }
             return authority
+        }
+
+        private fun firstReseedTransition(): Pair<Long, kotlinx.serialization.json.JsonObject>? {
+            var previousGeneration: Long? = null
+            database
+                .rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null)
+                .use { rows ->
+                    while (rows.moveToNext()) {
+                        val entry = Json.parseToJsonElement(rows.getString(1)).jsonObject
+                        if (entry.getValue("kind").jsonPrimitive.content != "parameters") continue
+                        val generation =
+                            entry
+                                .getValue("object")
+                                .jsonObject
+                                .getValue("generation")
+                                .jsonPrimitive
+                                .long
+                        if (previousGeneration != null && generation == previousGeneration + 1L) {
+                            return rows.getLong(0) to entry
+                        }
+                        previousGeneration = generation
+                    }
+                }
+            return null
         }
 
         private suspend fun verifyReseedTransition(
