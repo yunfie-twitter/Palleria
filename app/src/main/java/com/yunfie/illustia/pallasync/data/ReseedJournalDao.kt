@@ -34,23 +34,85 @@ interface ReseedJournalDao {
             ) { "C_MISSING_DEPENDENCY" }
             insert(value)
         } else {
-            require(
+            val restartingUncommittedSnapshot =
+                previous.sourceConflictReportJson != null && previous.phase == 3 &&
+                    previous.commitBodyJson != null && previous.expectedEntriesJson != null &&
+                    previous.commitResultJson == null && previous.transparencyHeadJson == null &&
+                    previous.transparencyAnchorJson == null && previous.verifiedReceiptIndicesJson == "[]" &&
+                    value.phase == 2 && value.compactionId != previous.compactionId &&
+                    value.commitBodyJson == null && value.expectedEntriesJson == null &&
+                    value.commitResultJson == null && value.transparencyHeadJson == null &&
+                    value.transparencyAnchorJson == null && value.sourceConflictReportJson == null &&
+                    value.verifiedReceiptIndicesJson == "[]"
+            val monotone =
                 previous.chainId == value.chainId && previous.sourceLogId == value.sourceLogId &&
                     previous.sourceGeneration == value.sourceGeneration && previous.targetOrigin == value.targetOrigin &&
-                    previous.targetPinJson == value.targetPinJson && value.phase >= previous.phase &&
+                    previous.targetPinJson == value.targetPinJson &&
+                    (value.phase >= previous.phase || restartingUncommittedSnapshot) &&
                     immutableOnce(previous.stagedLogId, value.stagedLogId) &&
-                    immutableOnce(previous.compactionId, value.compactionId) &&
+                    (immutableOnce(previous.compactionId, value.compactionId) || restartingUncommittedSnapshot) &&
                     immutableOnce(previous.preparedBundleJson, value.preparedBundleJson) &&
-                    immutableOnce(previous.commitBodyJson, value.commitBodyJson) &&
-                    immutableOnce(previous.expectedEntriesJson, value.expectedEntriesJson) &&
+                    (immutableOnce(previous.commitBodyJson, value.commitBodyJson) || restartingUncommittedSnapshot) &&
+                    (immutableOnce(previous.expectedEntriesJson, value.expectedEntriesJson) || restartingUncommittedSnapshot) &&
                     immutableOnce(previous.commitResultJson, value.commitResultJson) &&
-                    immutableOnce(previous.transparencyHeadJson, value.transparencyHeadJson) &&
-                    monotoneSourceConflict(previous, value) &&
-                    monotoneAnchor(previous, value) && monotoneReceipts(previous, value),
-            ) { "C_ROLLBACK_DETECTED" }
+                    (immutableOnce(previous.transparencyHeadJson, value.transparencyHeadJson) || restartingUncommittedSnapshot) &&
+                    (monotoneSourceConflict(previous, value) || restartingUncommittedSnapshot) &&
+                    (monotoneAnchor(previous, value) || restartingUncommittedSnapshot) &&
+                    (monotoneReceipts(previous, value) || restartingUncommittedSnapshot)
+            require(monotone) {
+                "C_ROLLBACK_DETECTED phase=${previous.phase}->${value.phase} restart=$restartingUncommittedSnapshot " +
+                    "commit=${previous.commitResultJson != null} sourceConflict=${previous.sourceConflictReportJson != null} " +
+                    "compaction=${previous.compactionId == value.compactionId} body=${immutableOnce(
+                        previous.commitBodyJson,
+                        value.commitBodyJson,
+                    )} " +
+                    "expected=${immutableOnce(
+                        previous.expectedEntriesJson,
+                        value.expectedEntriesJson,
+                    )} cut=${monotoneSourceConflict(previous, value)} " +
+                    "anchor=${monotoneAnchor(previous, value)} receipts=${monotoneReceipts(previous, value)}"
+            }
             update(value)
         }
         check(get(value.chainId) == value) { "C_LOCAL_STORAGE_FULL" }
+    }
+
+    /**
+     * Abandon only an uncommitted snapshot capture whose persisted encrypted parts no longer
+     * match the authoritative local state. Old publication rows remain as public evidence; the
+     * replacement gets a fresh compaction ID so neither relay objects nor local parts are reused.
+     */
+    @Transaction
+    suspend fun restartUncommittedSnapshot(
+        expected: ReseedJournalEntity,
+        replacement: ReseedJournalEntity,
+    ) {
+        val current = get(expected.chainId)
+        val safeBeforeCommitBody =
+            expected.phase <= 2 && expected.commitBodyJson == null && expected.expectedEntriesJson == null
+        val safeAfterKnownSourceConflict =
+            expected.phase == 3 && expected.commitBodyJson != null && expected.expectedEntriesJson != null &&
+                expected.sourceConflictReportJson != null
+        require(current == expected) { "C_ROLLBACK_DETECTED journal" }
+        require(safeBeforeCommitBody || safeAfterKnownSourceConflict) {
+            "C_ROLLBACK_DETECTED phase=${expected.phase} result=${expected.commitResultJson != null} conflict=${expected.sourceConflictReportJson != null}"
+        }
+        require(
+            expected.commitResultJson == null && expected.transparencyHeadJson == null &&
+                expected.transparencyAnchorJson == null && expected.verifiedReceiptIndicesJson == "[]" &&
+                replacement.chainId == expected.chainId && replacement.sourceLogId == expected.sourceLogId &&
+                replacement.sourceGeneration == expected.sourceGeneration && replacement.targetOrigin == expected.targetOrigin &&
+                replacement.stagedLogId == expected.stagedLogId && replacement.compactionId != expected.compactionId &&
+                replacement.targetPinJson == expected.targetPinJson &&
+                replacement.preparedBundleJson == expected.preparedBundleJson && replacement.commitBodyJson == null &&
+                replacement.expectedEntriesJson == null && replacement.commitResultJson == null &&
+                replacement.transparencyHeadJson == null && replacement.transparencyAnchorJson == null &&
+                replacement.sourceConflictReportJson == null && expected.sourceConflictReportJson != null &&
+                replacement.verifiedReceiptIndicesJson == "[]" && replacement.phase == 2 &&
+                replacement.updatedAtMs >= expected.updatedAtMs,
+        ) { "C_ROLLBACK_DETECTED" }
+        update(replacement)
+        check(get(replacement.chainId) == replacement) { "C_LOCAL_STORAGE_FULL" }
     }
 
     private fun immutableOnce(
@@ -96,12 +158,14 @@ interface ReseedJournalDao {
                 kotlinx.serialization.json.Json
                     .parseToJsonElement(nextReport)
                     .jsonObject
+            val sameAuthority =
+                previous["source_authority_hash"] == null ||
+                    previous.getValue("source_authority_hash") == candidate.getValue("source_authority_hash")
             val sameCut =
                 previous.getValue("source_origin") == candidate.getValue("source_origin") &&
                     previous.getValue("source_log_id") == candidate.getValue("source_log_id") &&
                     previous.getValue("source_generation") == candidate.getValue("source_generation") &&
-                    (previous["source_authority_hash"] == null ||
-                        previous.getValue("source_authority_hash") == candidate.getValue("source_authority_hash")) &&
+                    sameAuthority &&
                     previous.getValue("source_cut_seq") == candidate.getValue("source_cut_seq") &&
                     previous.getValue("source_cut_hash") == candidate.getValue("source_cut_hash") &&
                     previous.getValue("source_cut_parameters_hash") == candidate.getValue("source_cut_parameters_hash") &&

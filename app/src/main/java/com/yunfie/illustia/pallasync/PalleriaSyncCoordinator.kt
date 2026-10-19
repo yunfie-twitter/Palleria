@@ -1590,14 +1590,39 @@ internal class PalleriaSyncCoordinator(
                                 updatedAtMs = policy.retry.correctedTime(origin),
                             )
                         reseedDao.saveMonotone(journal)
-                        prepareReseedSnapshot(
-                            root = root,
-                            target = target,
-                            authority = authority,
-                            source = stableSource,
-                            history = history,
-                            journal = journal,
-                        )
+                        try {
+                            prepareReseedSnapshot(
+                                root = root,
+                                target = target,
+                                authority = authority,
+                                source = stableSource,
+                                history = history,
+                                journal = journal,
+                            )
+                        } catch (stale: PallaSyncReseedSnapshotStaleException) {
+                            val currentJournal = checkNotNull(reseedDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                            val replacement =
+                                currentJournal.copy(
+                                    compactionId = UUID.randomUUID().toString(),
+                                    commitBodyJson = null,
+                                    expectedEntriesJson = null,
+                                    transparencyHeadJson = null,
+                                    transparencyAnchorJson = null,
+                                    sourceConflictReportJson = null,
+                                    verifiedReceiptIndicesJson = "[]",
+                                    phase = 2,
+                                    updatedAtMs = maxOf(currentJournal.updatedAtMs, policy.retry.correctedTime(origin)),
+                                )
+                            reseedDao.restartUncommittedSnapshot(currentJournal, replacement)
+                            prepareReseedSnapshot(
+                                root = root,
+                                target = target,
+                                authority = authority,
+                                source = stableSource,
+                                history = history,
+                                journal = replacement,
+                            )
+                        }
                     }
                     staged
                 } finally {
@@ -1840,7 +1865,36 @@ internal class PalleriaSyncCoordinator(
                         policy.retry::correctedTime,
                     )
                 try {
-                    requireReseedSourceHead(root, source, sourceOrigin, stable)
+                    try {
+                        requireReseedSourceHead(root, source, sourceOrigin, stable)
+                    } catch (failure: Throwable) {
+                        if (failure is kotlinx.coroutines.CancellationException) throw failure
+                        val observedConflict =
+                            runCatching {
+                                captureReseedSourceConflict(
+                                    PallaSyncInitialHistory(db, remote, policy, root, source),
+                                    sourceOrigin,
+                                    stable,
+                                    authority,
+                                    keystore.transparencyPin(state.chainId),
+                                )
+                            }.getOrNull()
+                        if (observedConflict
+                                ?.get("unimported_entry_count")
+                                ?.jsonPrimitive
+                                ?.long
+                                ?.let { it > 0L } == true
+                        ) {
+                            val currentJournal = checkNotNull(reseedDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                            reseedDao.saveMonotone(
+                                currentJournal.copy(
+                                    sourceConflictReportJson = observedConflict.toString(),
+                                    updatedAtMs = policy.retry.correctedTime(sourceOrigin),
+                                ),
+                            )
+                        }
+                        throw failure
+                    }
                     val history = PallaSyncImportHistoryBuilder(db.protocolDao()).build(state.chainId)
                     val journalDao = reseedDao
                     val journal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
@@ -1883,6 +1937,36 @@ internal class PalleriaSyncCoordinator(
                             null
                         }
                     val workflow = PallaSyncReseedCommitRelay(remote)
+                    try {
+                        requireReseedSourceHead(root, source, sourceOrigin, stable)
+                    } catch (failure: Throwable) {
+                        if (failure is kotlinx.coroutines.CancellationException) throw failure
+                        val observedConflict =
+                            runCatching {
+                                captureReseedSourceConflict(
+                                    PallaSyncInitialHistory(db, remote, policy, root, source),
+                                    sourceOrigin,
+                                    stable,
+                                    authority,
+                                    keystore.transparencyPin(state.chainId),
+                                )
+                            }.getOrNull()
+                        if (observedConflict
+                                ?.get("unimported_entry_count")
+                                ?.jsonPrimitive
+                                ?.long
+                                ?.let { it > 0L } == true
+                        ) {
+                            val currentJournal = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                            journalDao.saveMonotone(
+                                currentJournal.copy(
+                                    sourceConflictReportJson = observedConflict.toString(),
+                                    updatedAtMs = policy.retry.correctedTime(sourceOrigin),
+                                ),
+                            )
+                        }
+                        throw failure
+                    }
                     db.transaction {
                         val current = checkNotNull(db.pallaSyncDao().getChainState(state.chainId)) { "C_MISSING_DEPENDENCY" }
                         check(
@@ -2112,29 +2196,34 @@ internal class PalleriaSyncCoordinator(
         val sourceReport = Json.parseToJsonElement(journal.sourceConflictReportJson).jsonObject
         val sourcePin = sourceAuthority.getValue("pin").jsonObject
         val sourceParametersHash = checkNotNull(PallaSyncCore.objectHash(sourceAuthority.getValue("parameters").toString()))
-        val sourceEpochHash =
-            checkNotNull(
-                PallaSyncCore.objectHash(
-                    sourceAuthority
-                        .getValue("epochs")
-                        .jsonObject
-                        .values
-                        .maxBy { it.jsonObject.getValue("record").jsonObject.getValue("epoch").jsonPrimitive.long }
-                        .jsonObject
+        val sourceEpochRecord =
+            sourceAuthority
+                .getValue("epochs")
+                .jsonObject
+                .values
+                .maxBy { epoch ->
+                    epoch.jsonObject
                         .getValue("record")
-                        .toString(),
-                ),
-            )
+                        .jsonObject
+                        .getValue("epoch")
+                        .jsonPrimitive.long
+                }.jsonObject
+                .getValue("record")
+                .toString()
+        val sourceEpochHash = checkNotNull(PallaSyncCore.objectHash(sourceEpochRecord))
         check(
             sourceReport.getValue("source_authority_hash").jsonPrimitive.content == sourceHash &&
                 sourceReport.getValue("source_log_id").jsonPrimitive.content == journal.sourceLogId &&
                 sourceReport.getValue("source_generation").jsonPrimitive.long == journal.sourceGeneration &&
-                sourceReport.getValue("observed_head_seq").jsonPrimitive.long == sourceAuthority.getValue("sequence").jsonPrimitive.long &&
-                sourceReport.getValue("observed_head_hash").jsonPrimitive.content == sourceAuthority.getValue("head_hash").jsonPrimitive.content &&
+                sourceReport.getValue("observed_head_seq").jsonPrimitive.long ==
+                sourceAuthority.getValue("sequence").jsonPrimitive.long &&
+                sourceReport.getValue("observed_head_hash").jsonPrimitive.content ==
+                sourceAuthority.getValue("head_hash").jsonPrimitive.content &&
                 sourceReport.getValue("observed_parameters_hash").jsonPrimitive.content == sourceParametersHash &&
                 sourceReport.getValue("observed_epoch_hash").jsonPrimitive.content == sourceEpochHash &&
                 sourcePin.getValue("log_id").jsonPrimitive.content == journal.sourceLogId &&
-                sourceReport.getValue("source_origin").jsonPrimitive.content == sourcePin.getValue("origin").jsonPrimitive.content,
+                sourceReport.getValue("source_origin").jsonPrimitive.content ==
+                sourcePin.getValue("origin").jsonPrimitive.content,
         ) { "C_ROLLBACK_DETECTED" }
         val targetPin = Json.parseToJsonElement(journal.targetPinJson).jsonObject
         check(
@@ -2168,7 +2257,11 @@ internal class PalleriaSyncCoordinator(
                     chain,
                     "checkpoint",
                     targetHash,
-                    targetAuthority.getValue("parameters").jsonObject.getValue("generation").jsonPrimitive.long,
+                    targetAuthority
+                        .getValue("parameters")
+                        .jsonObject
+                        .getValue("generation")
+                        .jsonPrimitive.long,
                     targetAuthority.toString(),
                     "reseed_candidate",
                 ),
@@ -2404,9 +2497,7 @@ internal class PalleriaSyncCoordinator(
                 ?.get("source_authority_hash")
                 ?.jsonPrimitive
                 ?.content
-        val sourceAuthorityHashPinned =
-            keystore.authorityHash(chain)
-                ?.takeIf { it != targetAuthorityHash }
+        val sourceAuthorityHashPinned = keystore.authorityHash(chain)?.takeIf { it != targetAuthorityHash }
         val sourceEntity =
             if (current
                     ?.get("parameters")

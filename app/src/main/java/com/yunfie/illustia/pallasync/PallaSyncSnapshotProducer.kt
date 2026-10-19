@@ -199,7 +199,9 @@ internal class PallaSyncSnapshotProducer(
                     recordJson,
                     checkNotNull(devicePublicKeyBase64Url) { "C_BOOTSTRAP_TRUST_REQUIRED" },
                 )
-            check(PallaSyncCore.canonicalJson(verifiedFrame) == partJson) { "C_SNAPSHOT_INVALID" }
+            if (PallaSyncCore.canonicalJson(verifiedFrame) != partJson) {
+                throw PallaSyncReseedSnapshotStaleException()
+            }
         } else {
             recordId = UUID.randomUUID().toString()
             recordJson =
@@ -305,3 +307,6 @@ internal class PallaSyncSnapshotProducer(
         const val UUID_VARIANT = 2
     }
 }
+
+/** A durable, uncommitted reseed part no longer matches the currently captured source state. */
+internal class PallaSyncReseedSnapshotStaleException : IllegalStateException("C_SNAPSHOT_INVALID")

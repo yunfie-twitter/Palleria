@@ -8,8 +8,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.yunfie.illustia.pallasync.data.OutboxEntity
-import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -116,7 +116,14 @@ class PallaSyncRelayInteropTest {
                     val migratedKeys = checkNotNull(keys.getActiveChainKeys())
                     val authority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(migrated.chainId))).jsonObject
                     assertEquals(1L, migrated.generation)
-                    assertEquals(reseedTargetOrigin, authority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content)
+                    assertEquals(
+                        reseedTargetOrigin,
+                        authority
+                            .getValue("pin")
+                            .jsonObject
+                            .getValue("origin")
+                            .jsonPrimitive.content,
+                    )
                     assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
                     assertTrue(coordinator.canAuditReseedSource())
                     val sourceAudit = coordinator.auditReseedSource()
@@ -260,20 +267,98 @@ class PallaSyncRelayInteropTest {
                     policy.confirmKey(policy.inspectRelay(reseedTargetOrigin), explicitlyConfirmed = true)
                     policy.accept(policy.currentReview(reseedTargetOrigin), explicitlyConfirmed = true)
                     val sourceAuthorityHash = checkNotNull(keys.authorityHash(state.chainId))
+                    val sourceWinnerId =
+                        checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.recordId
                     val staged = coordinator.stageReseedHistory(reseedTargetOrigin, phrase, "")
                     assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), staged is PallaSyncHttpResult.Success)
+                    if (args.getString("reseed_expect_staging_source_write") == "true") {
+                        val cutover = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        assertTrue("Source write during snapshot staging unexpectedly cut over", cutover.isFailure)
+                        val preserved = checkNotNull(store.dao.getActiveChainState())
+                        assertEquals(0L, preserved.generation)
+                        assertEquals(state.logId, preserved.logId)
+                        assertTrue(
+                            "Source was not retained in a writable or explicitly pending state: ${preserved.writeState}",
+                            preserved.writeState in setOf("active", "epoch_rebase_required"),
+                        )
+                        assertNotNull(keys.getActiveChainKeys())
+                        assertEquals(sourceAuthorityHash, keys.authorityHash(state.chainId))
+                        assertTrue(
+                            sourceWinnerId.contentEquals(
+                                checkNotNull(
+                                    store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop"),
+                                ).winner.recordId,
+                            ),
+                        )
+                        assertTrue("Could not download the racing source record after the rejected cutover", coordinator.syncNow())
+                        val caughtUp = checkNotNull(store.dao.getChainState(state.chainId))
+                        assertEquals(caughtUp.downloadedSeq, caughtUp.materializedSeq)
+                        assertTrue(caughtUp.materializedSeq > state.materializedSeq)
+                        assertNotNull(
+                            store.protocolDao().entity(
+                                state.chainId,
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                "Python source race before capture",
+                            ),
+                        )
+                        val retryStage = coordinator.stageReseedHistory(reseedTargetOrigin, phrase, "")
+                        assertTrue(
+                            "Could not restage after incorporating source write: ${PalleriaSyncCoordinator.syncLogs.value.joinToString(
+                                "\n",
+                            )}",
+                            retryStage is PallaSyncHttpResult.Success,
+                        )
+                        val retryCommit = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
+                        assertTrue(
+                            "Could not finish reseed after rebuilding the snapshot: ${PalleriaSyncCoordinator.syncLogs.value.joinToString(
+                                "\n",
+                            )}",
+                            retryCommit is PallaSyncHttpResult.Success,
+                        )
+                        val migrated = checkNotNull(store.dao.getActiveChainState())
+                        assertEquals(1L, migrated.generation)
+                        val migratedKeys = checkNotNull(keys.getActiveChainKeys())
+                        assertEquals(migratedKeys.deviceId, keys.boundDeviceId(state.chainId))
+                        assertTrue(coordinator.canAuditReseedSource())
+                        assertEquals(null, coordinator.auditReseedSource())
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_reseed_staging_race_rejected", "true")
+                                putString("pallasync_reseed_staging_race_recovered", "true")
+                                putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                                putString("pallasync_reseed_generation", migrated.generation.toString())
+                                putString("pallasync_reseed_source_audit", "clean")
+                                putString("pallasync_reseed_staging_race_error", cutover.exceptionOrNull()?.message ?: "missing")
+                            },
+                        )
+                        println("pallasync_reseed_staging_race_rejected=true")
+                        println("pallasync_reseed_staging_race_recovered=true")
+                        println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
+                        println("pallasync_reseed_generation=${migrated.generation}")
+                        println("pallasync_reseed_source_audit=clean")
+                        return@runBlocking
+                    }
                     if (args.getString("reseed_expect_split_view") == "true") {
                         val cutover = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
                         assertTrue("Signed split view unexpectedly allowed reseed cutover", cutover.isFailure)
                         val preserved = checkNotNull(store.dao.getActiveChainState())
                         assertEquals(0L, preserved.generation)
-                        assertTrue("Source writes were not suspended: ${preserved.writeState}", preserved.writeState in setOf("integrity_paused", "epoch_rebase_required"))
+                        assertTrue(
+                            "Source writes were not suspended: ${preserved.writeState}",
+                            preserved.writeState in setOf("integrity_paused", "epoch_rebase_required"),
+                        )
                         assertEquals(state.logId, preserved.logId)
                         assertNotNull(keys.getActiveChainKeys())
                         val evidenceRows = store.protocolDao().unresolvedQuarantinePage(state.chainId, "", 50)
-                        val splitEvidence = evidenceRows.firstOrNull { it.reason in setOf("C_ROLLBACK_DETECTED", "C_TRANSPARENCY_INVALID", "C_LOG_HASH_MISMATCH") }
+                        val splitEvidence =
+                            evidenceRows.firstOrNull {
+                                it.reason in
+                                    setOf("C_ROLLBACK_DETECTED", "C_TRANSPARENCY_INVALID", "C_LOG_HASH_MISMATCH")
+                            }
                         assertNotNull("Signed contradictory transparency head was not quarantined", splitEvidence)
-                        val retained = checkNotNull(store.protocolDao().quarantineEvidence(state.chainId, checkNotNull(splitEvidence).objectHash))
+                        val retained =
+                            checkNotNull(store.protocolDao().quarantineEvidence(state.chainId, checkNotNull(splitEvidence).objectHash))
                         assertTrue(retained.evidenceJson.contains("PALLASYNC-TRANSPARENCY-HEAD-v3"))
                         assertEquals(sourceAuthorityHash, keys.authorityHash(state.chainId))
                         InstrumentationRegistry.getInstrumentation().sendStatus(
@@ -295,57 +380,72 @@ class PallaSyncRelayInteropTest {
                         val firstCommit = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
                         assertTrue("Reseed cutover fault was not injected: $requestedFault", faultInjected)
                         assertTrue("Reseed cutover fault did not interrupt commit", firstCommit.isFailure)
-                    val sourceAuthority =
-                        Json.parseToJsonElement(
-                            checkNotNull(store.protocolDao().archivedAuthority(state.chainId, 0)).signedJson,
-                        ).jsonObject
-                    val sourceHash = PallaSyncCore.objectHash(sourceAuthority.toString())
-                    val targetHash = PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId)))
-                    val interruptedState = checkNotNull(store.dao.getChainState(state.chainId))
-                    val interruptedJournal = checkNotNull(store.snapshotDatabase().reseedJournalDao().get(state.chainId))
-                    InstrumentationRegistry.getInstrumentation().sendStatus(
-                        0,
-                        Bundle().apply {
-                            putString("reseed_fault_injected", faultInjected.toString())
-                            putString("reseed_fault_phase", interruptedJournal.phase.toString())
-                            putString("reseed_fault_generation", interruptedState.generation.toString())
-                            putString("reseed_fault_pinned_source", (keys.authorityHash(state.chainId) == sourceHash).toString())
-                            putString("reseed_fault_pinned_target", (keys.authorityHash(state.chainId) == targetHash).toString())
-                            putString("reseed_fault_active_is_archived", (keys.getActiveChainKeys()?.deviceId == keys.getArchivedChainKeys(state.chainId)?.deviceId).toString())
-                        },
-                    )
-                    if (processDeathMode) {
+                        val sourceAuthority =
+                            Json
+                                .parseToJsonElement(
+                                    checkNotNull(store.protocolDao().archivedAuthority(state.chainId, 0)).signedJson,
+                                ).jsonObject
+                        val sourceHash = PallaSyncCore.objectHash(sourceAuthority.toString())
+                        val targetHash = PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId)))
+                        val interruptedState = checkNotNull(store.dao.getChainState(state.chainId))
+                        val interruptedJournal = checkNotNull(store.snapshotDatabase().reseedJournalDao().get(state.chainId))
                         InstrumentationRegistry.getInstrumentation().sendStatus(
                             0,
-                            Bundle().apply { putString("reseed_process_death_phase_one", "ready") },
+                            Bundle().apply {
+                                putString("reseed_fault_injected", faultInjected.toString())
+                                putString("reseed_fault_phase", interruptedJournal.phase.toString())
+                                putString("reseed_fault_generation", interruptedState.generation.toString())
+                                putString("reseed_fault_pinned_source", (keys.authorityHash(state.chainId) == sourceHash).toString())
+                                putString("reseed_fault_pinned_target", (keys.authorityHash(state.chainId) == targetHash).toString())
+                                putString(
+                                    "reseed_fault_active_is_archived",
+                                    (
+                                        keys.getActiveChainKeys()?.deviceId ==
+                                            keys.getArchivedChainKeys(state.chainId)?.deviceId
+                                    ).toString(),
+                                )
+                            },
                         )
-                        System.err.flush()
-                        Thread.sleep(500)
-                        android.os.Process.killProcess(android.os.Process.myPid())
-                        error("Process termination did not occur")
-                    }
-                    val resumed = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
-                    if (resumed.isFailure) {
-                        InstrumentationRegistry.getInstrumentation().sendStatus(
-                            0,
-                            Bundle().apply { putString("reseed_resume_error", resumed.exceptionOrNull()?.message) },
+                        if (processDeathMode) {
+                            InstrumentationRegistry.getInstrumentation().sendStatus(
+                                0,
+                                Bundle().apply { putString("reseed_process_death_phase_one", "ready") },
+                            )
+                            System.err.flush()
+                            Thread.sleep(500)
+                            android.os.Process.killProcess(android.os.Process.myPid())
+                            error("Process termination did not occur")
+                        }
+                        val resumed = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        if (resumed.isFailure) {
+                            InstrumentationRegistry.getInstrumentation().sendStatus(
+                                0,
+                                Bundle().apply { putString("reseed_resume_error", resumed.exceptionOrNull()?.message) },
+                            )
+                        }
+                        assertTrue(
+                            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                            resumed.getOrThrow() is PallaSyncHttpResult.Success,
                         )
-                    }
-                    assertTrue(
-                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
-                        resumed.getOrThrow() is PallaSyncHttpResult.Success,
-                    )
                     } else {
                         val committed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
                         assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), committed is PallaSyncHttpResult.Success)
                     }
                     val migrated = checkNotNull(store.dao.getActiveChainState())
                     val migratedKeys = checkNotNull(keys.getActiveChainKeys())
-                    val migratedAuthority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(migrated.chainId))).jsonObject
+                    val migratedAuthority =
+                        Json
+                            .parseToJsonElement(
+                                checkNotNull(store.protocolDao().currentAuthority(migrated.chainId)),
+                            ).jsonObject
                     assertEquals(1, migrated.generation)
                     assertEquals(
                         reseedTargetOrigin,
-                        migratedAuthority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content,
+                        migratedAuthority
+                            .getValue("pin")
+                            .jsonObject
+                            .getValue("origin")
+                            .jsonPrimitive.content,
                     )
                     assertEquals(1, migratedKeys.epoch)
                     assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
@@ -402,7 +502,11 @@ class PallaSyncRelayInteropTest {
                         kotlinx.coroutines.delay(1_500)
                     }
                     val deletion = if (lostResponse) coordinator.requestChainDeletion(phrase) else firstDeletion
-                    assertEquals(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT, deletion)
+                    assertEquals(
+                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                        PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT,
+                        deletion,
+                    )
                     val proof = checkNotNull(coordinator.pendingDeletionProof())
                     val proofFile = java.io.File.createTempFile("pallasync-delete-proof-", ".json", context.cacheDir)
                     val bundleFile = java.io.File.createTempFile("pallasync-delete-bundle-", ".json", context.cacheDir)
@@ -548,7 +652,6 @@ class PallaSyncRelayInteropTest {
         assertEquals("C_ACCEPTANCE_UNPROVEN", acceptanceResolved.reason)
         assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
         assertEquals("resolved", acceptanceResolved.resolutionState)
-
     }
 
     private fun exerciseBoundOrigin(
