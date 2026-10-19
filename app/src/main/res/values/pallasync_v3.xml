@@ -252,6 +252,8 @@
     <string name="pallasync_quarantine_repair">Repair verified relay history</string>
     <string name="pallasync_quarantine_snapshot_guidance">Recompute state from an independently verified snapshot before installing it.</string>
     <string name="pallasync_quarantine_snapshot">Review verified snapshots</string>
+    <string name="pallasync_quarantine_record_identity_guidance">A second value for this record ID is never accepted. Both pieces of evidence are retained; verify the authenticated source identity independently.</string>
+    <string name="pallasync_quarantine_independent_evidence_guidance">Signed receipt/transparency contradictions are retained. Keep writes and destructive actions suspended until they are reconciled against an independently trusted checkpoint or peer/export evidence.</string>
     <string name="pallasync_v3_epoch_schedule_disabled">Scheduled key updates are disabled for this chain.</string>
     <string name="pallasync_v3_epoch_due">A scheduled key update is due. The mnemonic holder must start it.</string>
     <string name="pallasync_v3_epoch_waiting">The next scheduled key update is not due yet.</string>

@@ -221,6 +221,8 @@
     <string name="pallasync_quarantine_repair">検証済み履歴を修復</string>
     <string name="pallasync_quarantine_snapshot_guidance">独立検証済みsnapshotから状態を再計算してからインストールしてください。</string>
     <string name="pallasync_quarantine_snapshot">検証済みsnapshotを確認</string>
+    <string name="pallasync_quarantine_record_identity_guidance">同じrecord IDの別内容は受理しません。両方の証拠を保持しています。独立して認証された送信元の確認が必要です。</string>
+    <string name="pallasync_quarantine_independent_evidence_guidance">署名済みreceipt／transparency証拠の矛盾を保持しています。独立したcheckpointまたはpeer/export証拠と照合するまで、このchainの書込み・破壊操作を再開しないでください。</string>
     <string name="pallasync_v3_epoch_schedule_disabled">このチェーンの予定鍵更新は無効です。</string>
     <string name="pallasync_v3_epoch_due">予定鍵更新の時期です。ニーモニックの所有者が操作を開始してください。</string>
     <string name="pallasync_v3_epoch_waiting">次の予定鍵更新の時期にはまだ達していません。</string>

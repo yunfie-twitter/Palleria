@@ -267,6 +267,10 @@ class PallaSyncProtocolStoreTest {
                 PallaSyncQuarantineDisposition.canExplicitlyExclude("C_MISSING_DEPENDENCY") shouldBe false
                 PallaSyncQuarantineDisposition.canExplicitlyExclude("C_EPOCH_FORK") shouldBe false
                 PallaSyncQuarantineDisposition.canExplicitlyExclude("C_COMMITMENT_MISMATCH") shouldBe false
+                PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_EPOCH_FORK") shouldBe true
+                PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_ROLLBACK_DETECTED") shouldBe true
+                PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_DEVICE_EQUIVOCATION") shouldBe true
+                PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_RECORD_ID_CONFLICT") shouldBe false
                 protocol.recordExplicitQuarantineExclusion(chain, hash, "C_SIGNATURE_INVALID") shouldBe 1
 
                 val retained = protocol.quarantineEvidence(chain, hash)

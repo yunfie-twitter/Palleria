@@ -18,6 +18,13 @@ data class PallaSyncQuarantinePage(
 
 /** §19.4 permits explicit exclusion only for terminally invalid originals, never as proof of resolution. */
 internal object PallaSyncQuarantineDisposition {
+    val trustedBranchReviewReasons =
+        setOf(
+            "C_EPOCH_FORK",
+            "C_ROLLBACK_DETECTED",
+            "C_DEVICE_EQUIVOCATION",
+        )
+
     private val explicitlyExcludableReasons =
         setOf(
             "C_SCHEMA_VIOLATION",
@@ -28,6 +35,8 @@ internal object PallaSyncQuarantineDisposition {
         )
 
     fun canExplicitlyExclude(reason: String): Boolean = reason in explicitlyExcludableReasons
+
+    fun requiresTrustedBranchReview(reason: String): Boolean = reason in trustedBranchReviewReasons
 }
 
 /** Unsigned relay error context shown only as a diagnostic hint; it never authorizes a retry. */

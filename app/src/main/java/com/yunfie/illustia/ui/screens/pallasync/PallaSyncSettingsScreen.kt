@@ -2187,7 +2187,7 @@ fun PallaSyncSettingsScreen(
                                         )
                                     }
 
-                                    "C_EPOCH_FORK", "C_ROLLBACK_DETECTED" -> {
+                                    in PallaSyncQuarantineDisposition.trustedBranchReviewReasons -> {
                                         Text(stringResource(R.string.pallasync_quarantine_reseed_guidance))
                                         TextButton(
                                             text = stringResource(R.string.pallasync_quarantine_reseed),
@@ -2215,6 +2215,14 @@ fun PallaSyncSettingsScreen(
                                                 showTrustedSnapshotDialog = true
                                             },
                                         )
+                                    }
+
+                                    "C_RECORD_ID_CONFLICT" -> {
+                                        Text(stringResource(R.string.pallasync_quarantine_record_identity_guidance))
+                                    }
+
+                                    "C_RECEIPT_INVALID", "C_TRANSPARENCY_INVALID" -> {
+                                        Text(stringResource(R.string.pallasync_quarantine_independent_evidence_guidance))
                                     }
                                 }
                                 if (entry.resolutionState != "excluded" &&
