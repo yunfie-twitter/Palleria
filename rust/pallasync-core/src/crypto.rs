@@ -1095,6 +1095,121 @@ pub fn unwrap_recovery_epoch_envelope(
     Ok(*secret_bytes)
 }
 
+/// §19.3/§19.4: create a replacement device envelope from an authenticated
+/// recovery envelope while root material remains inside the named native
+/// session. The recovery envelope must already have been verified against the
+/// pinned authority by the caller; this function independently checks its
+/// chain binding and commitment before signing a fresh recipient envelope.
+pub(crate) fn create_replacement_device_envelope_from_roots(
+    root_keys: &RootKeys,
+    recovery_envelope_json: &str,
+    recipient_device_id: &str,
+    recipient_kex_public_key_b64u: &str,
+) -> Result<EpochKeyEnvelope, String> {
+    let recovery: EpochKeyEnvelope =
+        models::parse(recovery_envelope_json).map_err(|_| "C_SCHEMA_VIOLATION".to_string())?;
+    if recovery.chain_id != root_keys.chain_id
+        || recovery.recipient_kind != "recovery"
+        || recovery.recipient_device_id.is_some()
+        || recovery.recipient_key_hash.is_some()
+    {
+        return Err("C_RECOVERY_ROOT_MISMATCH".into());
+    }
+    if !crate::public_wire::uuid(recipient_device_id)
+        || !crate::strict::verify::valid_x_key(recipient_kex_public_key_b64u)
+    {
+        return Err("C_SCHEMA_VIOLATION".into());
+    }
+    let secret = Zeroizing::new(
+        unwrap_recovery_epoch_envelope(
+            &recovery,
+            &root_keys.recovery_kek,
+            &root_keys.chain_id_digest,
+        )
+        .map_err(|_| "C_COMMITMENT_MISMATCH".to_string())?,
+    );
+    let derived = derive_epoch_keys(&root_keys.chain_id_digest, recovery.epoch, &secret)
+        .map_err(|_| "C_COMMITMENT_MISMATCH".to_string())?;
+    if derived.epoch_commitment_b64u != recovery.epoch_commitment {
+        return Err("C_COMMITMENT_MISMATCH".into());
+    }
+    wrap_device_epoch_envelope(
+        &uuid::Uuid::new_v4().to_string(),
+        &recovery.chain_id,
+        recovery.generation,
+        recovery.epoch,
+        recovery.previous_epoch_hash.as_deref(),
+        &recovery.epoch_commitment,
+        recipient_device_id,
+        recipient_kex_public_key_b64u,
+        "admin",
+        None,
+        &root_keys.admin_key,
+        &secret,
+    )
+}
+
+#[cfg(test)]
+mod replacement_envelope_tests {
+    use super::*;
+    use x25519_dalek::{PublicKey as X25519PublicKey, StaticSecret};
+
+    #[test]
+    fn replacement_envelope_round_trips_and_rejects_wrong_commitment() {
+        let phrase = format!("{} art", vec!["abandon"; 23].join(" "));
+        let roots = derive_root_keys(&phrase, "").unwrap();
+        let epoch_secret = [0x5a; 32];
+        let epoch = derive_epoch_keys(&roots.chain_id_digest, 0, &epoch_secret).unwrap();
+        let recovery = wrap_recovery_epoch_envelope(
+            &uuid::Uuid::new_v4().to_string(),
+            &roots.chain_id,
+            0,
+            0,
+            None,
+            &epoch.epoch_commitment_b64u,
+            "admin",
+            None,
+            &roots.admin_key,
+            &roots.recovery_kek,
+            &epoch_secret,
+            None,
+        )
+        .unwrap();
+        let kex_private = [0x37; 32];
+        let kex_public = X25519PublicKey::from(&StaticSecret::from(kex_private));
+        let recipient_key = URL_SAFE_NO_PAD.encode(kex_public.as_bytes());
+        let recipient = "11111111-1111-4111-8111-111111111111";
+        let replacement = create_replacement_device_envelope_from_roots(
+            &roots,
+            &serde_json::to_string(&recovery).unwrap(),
+            recipient,
+            &recipient_key,
+        )
+        .unwrap();
+        assert_eq!(replacement.recipient_device_id.as_deref(), Some(recipient));
+        assert_eq!(replacement.signer_kind, "admin");
+        assert_eq!(replacement.signer_device_id, None);
+        assert_eq!(
+            unwrap_device_epoch_envelope(&replacement, &kex_private, &roots.chain_id_digest)
+                .unwrap(),
+            epoch_secret
+        );
+
+        let mut invalid = recovery;
+        invalid.epoch_commitment = URL_SAFE_NO_PAD.encode([0x99; 32]);
+        assert_eq!(
+            create_replacement_device_envelope_from_roots(
+                &roots,
+                &serde_json::to_string(&invalid).unwrap(),
+                recipient,
+                &recipient_key,
+            )
+            .unwrap_err(),
+            "C_COMMITMENT_MISMATCH"
+        );
+    }
+}
+
 // ---------------------------------------------------------------------
 // Capability Tokens (§6.1, §6.2)
 // ---------------------------------------------------------------------

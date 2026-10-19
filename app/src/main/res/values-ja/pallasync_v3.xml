@@ -211,6 +211,10 @@
     <string name="pallasync_quarantine_retry_running">証拠を更新して再検証しています…</string>
     <string name="pallasync_quarantine_retry_succeeded">元のオブジェクトを再検証して適用しました。証拠は保持されています。</string>
     <string name="pallasync_quarantine_retry_failed">元のオブジェクトを再検証できませんでした。証拠は保持されています。</string>
+    <string name="pallasync_quarantine_commitment_repair_guidance">管理者のroot入力で復旧envelopeを検証し、この端末向けの新しい署名済みenvelopeをrelayへ登録してから、元の記録を再検証します。検証に失敗した場合は元の証拠を保持します。</string>
+    <string name="pallasync_quarantine_commitment_repair_action">rootを使って端末envelopeを修復</string>
+    <string name="pallasync_quarantine_commitment_repair_title">端末envelopeを再発行しますか？</string>
+    <string name="pallasync_quarantine_commitment_repair_summary">root入力を使って固定済みrelayのrecovery envelopeを検証し、この端末の鍵へ暗号化した署名済みenvelopeを追加します。epochや記録内容は変更しません。完了後に元の不正記録を再検証します。</string>
     <string name="pallasync_quarantine_reseed_guidance">両方の分岐を証拠として保持してください。認証済みの移行先を選び、検証済みローカル状態から明示的に再投入します。</string>
     <string name="pallasync_quarantine_reseed">移行先を確認して再投入</string>
     <string name="pallasync_quarantine_repair_guidance">保持した原本を固定済みrelayと照合し、検証済みの欠落履歴だけを送信します。</string>

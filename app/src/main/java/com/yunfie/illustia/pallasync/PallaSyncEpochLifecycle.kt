@@ -149,6 +149,140 @@ internal class PallaSyncEpochLifecycle(
         return checkpoint
     }
 
+    /**
+     * §19.3/§19.4: replace one device envelope only after explicit root authorization,
+     * signed recovery-envelope validation, relay acceptance and signed-log replay.
+     */
+    suspend fun repairDeviceEnvelope(
+        root: PallaSyncRootSession,
+        base: HttpUrl,
+        epoch: Long,
+    ) {
+        val chain = root.identity.chainId
+        val device = checkNotNull(keys.boundDeviceId(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val oldAuthority = protectedAuthority(chain)
+        val before =
+            PallaSyncInitialHistory(store, remote, policy, root, base)
+                .load(oldAuthority, checkNotNull(keys.transparencyPin(chain)))
+        val beforeAuthority = checkNotNull(before.authority) { "C_MISSING_DEPENDENCY" }
+        check(PallaSyncCore.validateCurrentKeyRecipient(beforeAuthority.toString(), device)) {
+            "C_RECOVERY_AUTH_REQUIRED"
+        }
+        val oldDeviceKeys = activeKeys(chain)
+        val origin = PallaSyncUrls.extractOrigin(base)
+        val history = PallaSyncInitialHistory(store, remote, policy, root, base)
+        val recoveryEnvelope =
+            PallaSyncCore.validateRecoveryEnvelopeResponse(
+                history.get(history.url("epochs/$epoch/recovery-envelope")),
+                beforeAuthority.toString(),
+                epoch,
+            )
+        val replacement =
+            root.createReplacementDeviceEnvelope(
+                recoveryEnvelope,
+                device,
+                oldDeviceKeys.kexPublicKeyBase64Url,
+            )
+        val replacementObject = Json.parseToJsonElement(replacement).jsonObject
+        check(
+            replacementObject.getValue("chain_id").jsonPrimitive.content == chain &&
+                replacementObject.getValue("recipient_device_id").jsonPrimitive.content == device &&
+                replacementObject.getValue("epoch").jsonPrimitive.long == epoch &&
+                replacementObject.getValue("signer_kind").jsonPrimitive.content == "admin",
+        ) { "C_SCHEMA_VIOLATION" }
+        val body = buildJsonObject { put("envelopes", kotlinx.serialization.json.JsonArray(listOf(replacementObject))) }.toString()
+        val url =
+            base
+                .newBuilder()
+                .encodedPath("/pallasync/v3/chains/$chain/epochs/$epoch/envelopes")
+                .build()
+        val token =
+            checkNotNull(root.token(origin, "POST", url.encodedPath, body = body.toByteArray())) {
+                "C_RECOVERY_AUTH_REQUIRED"
+            }
+        val response =
+            requireSuccess(
+                remote.execute(request(url, token, body)) { result ->
+                    val value = Json.parseToJsonElement(result.pallaSyncBytes().toString(Charsets.UTF_8)).jsonObject
+                    check(value.keys == setOf("accepted", "rejected")) { "C_SCHEMA_VIOLATION" }
+                    val accepted = value.getValue("accepted").jsonArray.map { it.jsonPrimitive.content }
+                    val rejected = value.getValue("rejected").jsonArray
+                    if (rejected.isNotEmpty()) {
+                        val item = rejected.single().jsonObject
+                        check(item.keys == setOf("envelope_id", "status", "code", "retryable")) { "C_SCHEMA_VIOLATION" }
+                        error(item.getValue("code").jsonPrimitive.content)
+                    }
+                    PallaSyncHttpResult.Success(accepted)
+                },
+            )
+        check(response == listOf(replacementObject.getValue("envelope_id").jsonPrimitive.content)) {
+            "C_ACCEPTANCE_UNPROVEN"
+        }
+
+        val after =
+            PallaSyncInitialHistory(store, remote, policy, root, base)
+                .load(beforeAuthority, checkNotNull(keys.transparencyPin(chain)))
+        installCut(chain, oldAuthority, after)
+        val authority = checkNotNull(after.authority) { "C_MISSING_DEPENDENCY" }
+        val replacementHash = checkNotNull(PallaSyncCore.objectHash(replacement)) { "C_SCHEMA_VIOLATION" }
+        val evidence =
+            checkNotNull(
+                store.protocolDao().authorityObject(
+                    chain,
+                    PallaSyncEnvelopeEvidence.kind(device, epoch),
+                    replacementHash,
+                ),
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+        check(evidence.validationState == "authority_verified") { "C_ACCEPTANCE_UNPROVEN" }
+        val logEntry = Json.parseToJsonElement(evidence.signedJson).jsonObject
+        val sequence = logEntry.getValue("relay_seq").jsonPrimitive.long
+        val row = checkNotNull(store.protocolDao().logEntry(chain, after.logId, sequence)) { "C_ACCEPTANCE_UNPROVEN" }
+        check(
+            row.signedJson == evidence.signedJson && row.validationState in setOf("authority_verified", "materialized") &&
+                logEntry.getValue("object") == replacementObject,
+        ) { "C_LOG_HASH_MISMATCH" }
+
+        val ownEnvelopeUrl =
+            endpoint(base, chain, "devices/$device/envelopes")
+                .newBuilder()
+                .addQueryParameter("epoch", epoch.toString())
+                .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+                .build()
+        val ownEnvelopeToken =
+            checkNotNull(root.token(origin, "GET", ownEnvelopeUrl.encodedPath, ownEnvelopeUrl.encodedQuery.orEmpty())) {
+                "C_RECOVERY_AUTH_REQUIRED"
+            }
+        requireSuccess(
+            remote.execute(request(ownEnvelopeUrl, ownEnvelopeToken)) {
+                PallaSyncHttpResult.Success(
+                    PallaSyncCore.validateOwnEnvelopePage(it.pallaSyncBytes(), replacement, authority.toString()),
+                )
+            },
+        )
+        val privateKey = decode(oldDeviceKeys.kexPrivateKeyBase64Url)
+        val recoveredSecret =
+            try {
+                PallaSyncCore.openOwnEpochEnvelope(
+                    authority.toString(),
+                    row.signedJson,
+                    row.receiptJson,
+                    device,
+                    privateKey,
+                )
+            } finally {
+                privateKey.fill(0)
+            }
+        val currentKeys = checkNotNull(keys.keysForEpoch(oldDeviceKeys, epoch)) { "C_MISSING_DEPENDENCY" }
+        val encodedSecret = Base64.getUrlEncoder().withoutPadding().encodeToString(recoveredSecret)
+        try {
+            val verifiedMaterial =
+                PallaSyncEpochSession.materialize(currentKeys.copy(epochSecretBase64Url = encodedSecret), authority.toString())
+            keys.replaceEpochMaterial(chain, epoch, verifiedMaterial, recoveredSecret)
+        } finally {
+            recoveredSecret.fill(0)
+        }
+    }
+
     private suspend fun installCut(
         chain: String,
         old: JsonObject,

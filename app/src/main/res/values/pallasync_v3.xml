@@ -242,6 +242,10 @@
     <string name="pallasync_quarantine_retry_running">Refreshing evidence and revalidating…</string>
     <string name="pallasync_quarantine_retry_succeeded">Original object revalidated and applied; evidence remains retained.</string>
     <string name="pallasync_quarantine_retry_failed">Could not revalidate the original object; evidence remains retained.</string>
+    <string name="pallasync_quarantine_commitment_repair_guidance">With explicit admin root input, validate the recovery envelope, add a newly signed envelope for this device to the relay, then revalidate the original record. Original evidence remains if any check fails.</string>
+    <string name="pallasync_quarantine_commitment_repair_action">Repair device envelope with root</string>
+    <string name="pallasync_quarantine_commitment_repair_title">Reissue this device envelope?</string>
+    <string name="pallasync_quarantine_commitment_repair_summary">Use root input to validate the pinned relay recovery envelope and add a signed envelope encrypted to this device. The epoch and records are not changed. The original quarantined record is retried after verification.</string>
     <string name="pallasync_quarantine_reseed_guidance">Keep both branches as evidence. Choose an authenticated destination and explicitly reseed from verified local state.</string>
     <string name="pallasync_quarantine_reseed">Review destination and reseed</string>
     <string name="pallasync_quarantine_repair_guidance">Compare retained source records with the pinned relay and submit only verified missing history.</string>

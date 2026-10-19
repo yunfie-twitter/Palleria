@@ -863,6 +863,14 @@ object PallaSyncCore {
         aud: String,
     ): PallaSyncPreparedKeys
 
+    /** §19.4: mint an admin-authorized replacement device envelope without returning its secret. */
+    external fun createReplacementDeviceEnvelope(
+        rootSession: Long,
+        recoveryEnvelopeJson: String,
+        recipientDeviceId: String,
+        recipientKexPublicKeyBase64Url: String,
+    ): String
+
     /** Forces class initialization so feature-specific JNI facades can share this library. */
     internal fun ensureNativeLibraryLoaded() = Unit
 }

@@ -7877,6 +7877,57 @@ internal class PalleriaSyncCoordinator(
             PallaSyncQuarantinePage(page, page.lastOrNull()?.objectHash.takeIf { rows.size > limit })
         }
 
+    /** §19.3/§19.4: an explicit root ceremony replaces a bad device envelope, then replays its original record. */
+    internal suspend fun repairQuarantinedCommitment(
+        objectHash: String,
+        mnemonic: String,
+        passphrase: String,
+    ): Boolean {
+        val repaired =
+            withContext(Dispatchers.IO) {
+                operationMutex.withLock {
+                    require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }
+                    val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    val evidence = checkNotNull(db.protocolDao().quarantineEvidence(state.chainId, objectHash)) { "C_MISSING_DEPENDENCY" }
+                    check(
+                        evidence.reason == "C_COMMITMENT_MISMATCH" &&
+                            evidence.resolutionState in setOf("unresolved", "pending_resolution") &&
+                            crypto.objectHash(evidence.evidenceJson) == objectHash,
+                    ) { "C_SCHEMA_VIOLATION" }
+                    val record = json.decodeFromString<PallaSyncWireRecord>(evidence.evidenceJson)
+                    check(record.chainId == state.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    val authorityText = checkNotNull(db.protocolDao().currentAuthority(state.chainId)) { "C_MISSING_DEPENDENCY" }
+                    check(keystore.authorityHash(state.chainId) == crypto.objectHash(authorityText)) { "C_ROLLBACK_DETECTED" }
+                    val authority = Json.parseToJsonElement(authorityText).jsonObject
+                    val pin = authority.getValue("pin").jsonObject
+                    val origin = pin.getValue("origin").jsonPrimitive.content
+                    val base =
+                        when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                            is PallaSyncHttpResult.Success -> normalized.value
+                            else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                        }
+                    check(PallaSyncUrls.extractOrigin(base) == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                    val root =
+                        PallaSyncRootSession.beginText(
+                            mnemonic,
+                            passphrase,
+                            PallaSyncRootSession.Operation.ENVELOPE_REPAIR,
+                            state.chainId,
+                            authority.getValue("admin_public_key").jsonPrimitive.content,
+                            { policy.requireCurrent(it) },
+                            policy.retry::correctedTime,
+                        )
+                    try {
+                        epochLifecycle.repairDeviceEnvelope(root, base, record.epoch)
+                        true
+                    } finally {
+                        root.close()
+                    }
+                }
+            }
+        return repaired && retryQuarantinedRecordEvidence(objectHash, allowVerifiedEnvelopeReplacement = true)
+    }
+
     /** §19.4: acknowledge a terminal corrupt object as an unresolved gap without deleting its evidence. */
     suspend fun explicitlyExcludeQuarantinedRecord(objectHash: String): Boolean =
         withContext(Dispatchers.IO) {
@@ -7899,7 +7950,13 @@ internal class PalleriaSyncCoordinator(
         }
 
     /** §19.3/§19.4: fetch missing authority/acceptance evidence, then replay only the immutable original. */
-    suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean {
+    suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean =
+        retryQuarantinedRecordEvidence(objectHash, allowVerifiedEnvelopeReplacement = false)
+
+    private suspend fun retryQuarantinedRecordEvidence(
+        objectHash: String,
+        allowVerifiedEnvelopeReplacement: Boolean,
+    ): Boolean {
         require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }
         // A quarantined chain can make ordinary sync report partial completion even though it
         // successfully refreshed the proof needed for this exact item. Never use that summary
@@ -7912,7 +7969,10 @@ internal class PalleriaSyncCoordinator(
                     val protocol = db.protocolDao()
                     val evidence = checkNotNull(protocol.quarantineEvidence(state.chainId, objectHash)) { "C_MISSING_DEPENDENCY" }
                     check(
-                        evidence.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN") &&
+                        (
+                            evidence.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN") ||
+                                (allowVerifiedEnvelopeReplacement && evidence.reason == "C_COMMITMENT_MISMATCH")
+                        ) &&
                             evidence.resolutionState in setOf("unresolved", "pending_resolution") &&
                             crypto.objectHash(evidence.evidenceJson) == objectHash,
                     ) { "C_SCHEMA_VIOLATION" }

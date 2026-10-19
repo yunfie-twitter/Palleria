@@ -29,6 +29,7 @@ pub enum Operation {
     Enrollment,
     Rotate,
     Revoke,
+    EnvelopeRepair,
     Reseed,
     Export,
     Delete,
@@ -45,6 +46,7 @@ impl Operation {
             "enrollment" => Self::Enrollment,
             "rotate" => Self::Rotate,
             "revoke" => Self::Revoke,
+            "envelope_repair" => Self::EnvelopeRepair,
             "reseed" => Self::Reseed,
             "export" => Self::Export,
             "delete" => Self::Delete,
@@ -577,6 +579,17 @@ pub fn capability_at(
                             t.strip_prefix("/devices/")
                                 .and_then(|t| t.strip_suffix("/revoke"))
                                 .is_some_and(crate::public_wire::uuid)
+                        })
+                }
+                Operation::EnvelopeRepair => {
+                    method == "POST"
+                        && tail.is_some_and(|t| {
+                            t.strip_prefix("/epochs/")
+                                .and_then(|t| t.strip_suffix("/envelopes"))
+                                .is_some_and(|epoch| {
+                                    !epoch.is_empty()
+                                        && epoch.bytes().all(|byte| byte.is_ascii_digit())
+                                })
                         })
                 }
                 Operation::Reseed => {

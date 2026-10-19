@@ -2870,6 +2870,56 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createMn
     )
 }
 
+/// Creates only a public, signed replacement ciphertext; epoch plaintext never leaves Rust.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createReplacementDeviceEnvelope<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'_>,
+    handle: jlong,
+    recovery_envelope: JString<'local>,
+    recipient_device_id: JString<'local>,
+    recipient_kex_public_key: JString<'local>,
+) -> jstring {
+    let result = (|| {
+        let recovery =
+            read_string(&mut env, &recovery_envelope).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let device =
+            read_string(&mut env, &recipient_device_id).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let kex = read_string(&mut env, &recipient_kex_public_key)
+            .ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let envelope = root_session::with(handle as u64, Operation::EnvelopeRepair, |session| {
+            crypto::create_replacement_device_envelope_from_roots(
+                &session.roots,
+                &recovery,
+                &device,
+                &kex,
+            )
+            .map_err(|error| {
+                if error.starts_with("C_SCHEMA_VIOLATION") {
+                    ClientError("C_SCHEMA_VIOLATION")
+                } else if error.starts_with("C_RECOVERY_ROOT_MISMATCH") {
+                    ClientError("C_RECOVERY_ROOT_MISMATCH")
+                } else {
+                    ClientError("C_COMMITMENT_MISMATCH")
+                }
+            })
+        })?;
+        serde_json::to_string(&envelope).map_err(|_| ClientError("C_LOCAL_LIMIT"))
+    })();
+    match result {
+        Ok(value) => env
+            .new_string(value)
+            .map(|value| value.into_raw())
+            .unwrap_or(std::ptr::null_mut()),
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// This JSON contains only public identifiers, signed ciphertext and acknowledgement bindings.
 /// On a failed JNI allocation, wipe even Java arrays that were already allocated.
 fn prepared_keys(env: &mut JNIEnv<'_>, public: serde_json::Value, secrets: [&str; 6]) -> jobject {

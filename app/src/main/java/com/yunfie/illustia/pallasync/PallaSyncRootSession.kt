@@ -16,6 +16,7 @@ internal class PallaSyncRootSession private constructor(
     ) {
         GENESIS("genesis"),
         ENROLLMENT("enrollment"),
+        ENVELOPE_REPAIR("envelope_repair"),
         ROTATE("rotate"),
         REVOKE("revoke"),
         RESEED("reseed"),
@@ -72,6 +73,21 @@ internal class PallaSyncRootSession private constructor(
             compactionJson,
             deviceRecordsJson,
             createdAtMs,
+        )
+    }
+
+    /** The native session decrypts a verified recovery envelope and returns only a signed ciphertext. */
+    fun createReplacementDeviceEnvelope(
+        recoveryEnvelopeJson: String,
+        recipientDeviceId: String,
+        recipientKexPublicKeyBase64Url: String,
+    ): String {
+        check(operation == Operation.ENVELOPE_REPAIR) { "C_RECOVERY_AUTH_REQUIRED" }
+        return PallaSyncCore.createReplacementDeviceEnvelope(
+            handle,
+            recoveryEnvelopeJson,
+            recipientDeviceId,
+            recipientKexPublicKeyBase64Url,
         )
     }
 

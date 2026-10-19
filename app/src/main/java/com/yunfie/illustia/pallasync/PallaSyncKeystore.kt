@@ -322,6 +322,46 @@ class PallaSyncKeystore internal constructor(
             secret.fill(0)
         }
 
+    /** §19.4: replace an existing epoch secret only after a root-authorized envelope was verified. */
+    internal fun replaceEpochMaterial(
+        chain: String,
+        epoch: Long,
+        material: PallaSyncKeySnapshot,
+        secret: ByteArray,
+    ): Boolean =
+        try {
+            check(secret.size == KEY_BYTES && epoch in 0..MAX_EPOCH) { "C_SCHEMA_VIOLATION" }
+            check(material.chainId == chain && material.epoch == epoch) { "C_COMMITMENT_MISMATCH" }
+            val secretKey = "epoch.$chain.$epoch.secret"
+            check(!sharedPrefs.getBoolean("epoch.$chain.$epoch.expired", false)) { "C_MISSING_DEPENDENCY" }
+            val isActive =
+                sharedPrefs.getString("active_chain_id", null) == chain &&
+                    sharedPrefs.getLong("key_epoch_number", -1L) == epoch
+            val previous =
+                sharedPrefs.getString(secretKey, null)
+                    ?: sharedPrefs.getString("epoch_secret", null).takeIf { isActive }
+                    ?: error("C_MISSING_DEPENDENCY")
+            val encoded =
+                java.util.Base64
+                    .getUrlEncoder()
+                    .withoutPadding()
+                    .encodeToString(secret)
+            val editor = sharedPrefs.edit().putString(secretKey, encoded)
+            if (isActive) {
+                editor
+                    .putString("epoch_secret", encoded)
+                    .putString("epoch_key", material.encryptionKeyBase64Url)
+                    .putString("collection_tag_key", material.collectionTagKeyBase64Url)
+                    .putString("device_meta_key", material.deviceMetaKeyBase64Url)
+            }
+            val committed = editor.commit()
+            committed && sharedPrefs.getString(secretKey, null) == encoded &&
+                (!isActive || sharedPrefs.getString("epoch_secret", null) == encoded) &&
+                (previous == encoded || sharedPrefs.getString(secretKey, null) != previous)
+        } finally {
+            secret.fill(0)
+        }
+
     /** Delete only retained historical secrets after §13.5's complete-state handoff. */
     internal fun expireRetainedEpochSecrets(
         chain: String,
@@ -362,10 +402,11 @@ class PallaSyncKeystore internal constructor(
     ): PallaSyncKeySnapshot? {
         val chain = checkNotNull(keys.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         if (sharedPrefs.getBoolean("epoch.$chain.$epoch.expired", false)) return null
-        return if (keys.epoch == epoch && keys.epochSecretBase64Url.isNotEmpty()) {
-            keys
-        } else {
-            sharedPrefs.getString("epoch.$chain.$epoch.secret", null)?.let { keys.copy(epoch = epoch, epochSecretBase64Url = it) }
+        val retained = sharedPrefs.getString("epoch.$chain.$epoch.secret", null)
+        return when {
+            retained != null -> keys.copy(epoch = epoch, epochSecretBase64Url = retained)
+            keys.epoch == epoch && keys.epochSecretBase64Url.isNotEmpty() -> keys
+            else -> null
         }
     }
 

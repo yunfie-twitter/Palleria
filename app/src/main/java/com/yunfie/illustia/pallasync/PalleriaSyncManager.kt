@@ -374,6 +374,12 @@ class PalleriaSyncManager(
     internal suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean =
         coordinator.retryQuarantinedRecordEvidence(objectHash)
 
+    internal suspend fun repairQuarantinedCommitment(
+        objectHash: String,
+        mnemonic: String,
+        passphrase: String,
+    ): Boolean = coordinator.repairQuarantinedCommitment(objectHash, mnemonic, passphrase)
+
     internal suspend fun explicitlyExcludeQuarantinedRecord(objectHash: String): Boolean =
         coordinator.explicitlyExcludeQuarantinedRecord(objectHash)
 

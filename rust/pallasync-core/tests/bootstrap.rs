@@ -432,3 +432,57 @@ fn export_root_capability_is_limited_to_the_chain_export_route() {
     }
     root_session::end(handle);
 }
+
+#[test]
+fn envelope_repair_root_capability_is_limited_to_epoch_envelope_uploads() {
+    use pallasync_core::root_session::{self, Operation};
+    let phrase = format!("{} art", vec!["abandon"; 23].join(" "));
+    let handle = root_session::begin(
+        phrase.as_bytes(),
+        b"",
+        Operation::EnvelopeRepair,
+        None,
+        None,
+    )
+    .unwrap();
+    let chain = root_session::identity(handle).unwrap()["chain_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let prefix = format!("/pallasync/v3/chains/{chain}");
+    assert!(
+        root_session::capability_at(
+            handle,
+            Operation::EnvelopeRepair,
+            "https://relay.example.com",
+            "POST",
+            &format!("{prefix}/epochs/7/envelopes"),
+            "",
+            b"{}",
+            1791684000000,
+        )
+        .is_ok()
+    );
+    for path in [
+        format!("{prefix}/epochs"),
+        format!("{prefix}/epochs/7/recovery-envelope"),
+        format!("{prefix}/devices/enroll"),
+    ] {
+        assert_eq!(
+            root_session::capability_at(
+                handle,
+                Operation::EnvelopeRepair,
+                "https://relay.example.com",
+                "POST",
+                &path,
+                "",
+                b"{}",
+                1791684000000,
+            )
+            .unwrap_err()
+            .0,
+            "C_RECOVERY_AUTH_REQUIRED"
+        );
+    }
+    root_session::end(handle);
+}

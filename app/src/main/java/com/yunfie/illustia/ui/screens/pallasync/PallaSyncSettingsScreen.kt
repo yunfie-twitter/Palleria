@@ -112,6 +112,9 @@ fun PallaSyncSettingsScreen(
     var pruningLog by remember { mutableStateOf(false) }
     var showRepairRootInput by remember { mutableStateOf(false) }
     var repairingRelayHistory by remember { mutableStateOf(false) }
+    var showCommitmentRepairRootInput by remember { mutableStateOf(false) }
+    var repairingCommitmentEnvelope by remember { mutableStateOf(false) }
+    var pendingCommitmentRepairHash by remember { mutableStateOf<String?>(null) }
     var showRecoveryExportRootInput by remember { mutableStateOf(false) }
     var exportingRecoveryArchive by remember { mutableStateOf(false) }
     var recoveryExportUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -1032,6 +1035,51 @@ fun PallaSyncSettingsScreen(
                     } finally {
                         repairingRelayHistory = false
                         showRepairRootInput = false
+                    }
+                }
+            },
+        )
+    }
+
+    if (showCommitmentRepairRootInput) {
+        PallaSyncRootInputDialog(
+            title = stringResource(R.string.pallasync_quarantine_commitment_repair_title),
+            explanation = stringResource(R.string.pallasync_quarantine_commitment_repair_summary),
+            busy = repairingCommitmentEnvelope,
+            onDismiss = {
+                showCommitmentRepairRootInput = false
+                pendingCommitmentRepairHash = null
+            },
+            onConfirm = { mnemonic, passphrase ->
+                val objectHash = pendingCommitmentRepairHash
+                repairingCommitmentEnvelope = true
+                scope.launch {
+                    try {
+                        val resolved =
+                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                syncManager.repairQuarantinedCommitment(checkNotNull(objectHash), mnemonic, passphrase)
+                            }
+                        Toast
+                            .makeText(
+                                context,
+                                if (resolved) {
+                                    R.string.pallasync_quarantine_retry_succeeded
+                                } else {
+                                    R.string.pallasync_quarantine_retry_failed
+                                },
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        if (resolved && objectHash != null) {
+                            unresolvedQuarantine = unresolvedQuarantine.filterNot { it.objectHash == objectHash }
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        Toast.makeText(context, R.string.pallasync_quarantine_retry_failed, Toast.LENGTH_LONG).show()
+                    } finally {
+                        repairingCommitmentEnvelope = false
+                        showCommitmentRepairRootInput = false
+                        pendingCommitmentRepairHash = null
                     }
                 }
             },
@@ -2127,6 +2175,18 @@ fun PallaSyncSettingsScreen(
                                     )
                                 }
                                 when (entry.reason) {
+                                    "C_COMMITMENT_MISMATCH" -> {
+                                        Text(stringResource(R.string.pallasync_quarantine_commitment_repair_guidance))
+                                        TextButton(
+                                            text = stringResource(R.string.pallasync_quarantine_commitment_repair_action),
+                                            enabled = !repairingCommitmentEnvelope,
+                                            onClick = {
+                                                pendingCommitmentRepairHash = entry.objectHash
+                                                showCommitmentRepairRootInput = true
+                                            },
+                                        )
+                                    }
+
                                     "C_EPOCH_FORK", "C_ROLLBACK_DETECTED" -> {
                                         Text(stringResource(R.string.pallasync_quarantine_reseed_guidance))
                                         TextButton(
