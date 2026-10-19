@@ -16,6 +16,20 @@ data class PallaSyncQuarantinePage(
     val nextHash: String?,
 )
 
+/** §19.4 permits explicit exclusion only for terminally invalid originals, never as proof of resolution. */
+internal object PallaSyncQuarantineDisposition {
+    private val explicitlyExcludableReasons =
+        setOf(
+            "C_SCHEMA_VIOLATION",
+            "C_SIGNATURE_INVALID",
+            "C_AAD_MISMATCH",
+            "C_AEAD_FAILURE",
+            "C_COLLECTION_TAG_MISMATCH",
+        )
+
+    fun canExplicitlyExclude(reason: String): Boolean = reason in explicitlyExcludableReasons
+}
+
 /** Unsigned relay error context shown only as a diagnostic hint; it never authorizes a retry. */
 data class PallaSyncCapacityIssue(
     val code: String,

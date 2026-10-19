@@ -198,7 +198,15 @@
     <string name="pallasync_legacy_source_not_staged">source exportにレコードがありません。proofと空の変換journalを確認してください。</string>
     <string name="pallasync_quarantine_title">未解決のプロトコル証拠</string>
     <string name="pallasync_quarantine_explanation">対象オブジェクトと証拠は保持されています。理由とhashを確認してください。解決にはプロトコルで認可された証拠が必要です。</string>
-    <string name="pallasync_quarantine_item">%1$s · %2$s</string>
+    <string name="pallasync_quarantine_item">%1$s · %2$s · %3$s</string>
+    <string name="pallasync_quarantine_state_unresolved">未解決</string>
+    <string name="pallasync_quarantine_state_pending">証拠待ち</string>
+    <string name="pallasync_quarantine_state_excluded">除外済み・検証ギャップは未解決</string>
+    <string name="pallasync_quarantine_exclude_title">この不正オブジェクトを端末内で除外しますか？</string>
+    <string name="pallasync_quarantine_exclude_summary">%1$s（%2$s）の明示的な除外記録を作成します。署名済みデータと証拠は保持し、検証ギャップは未解決のまま残り、compactionも停止したままです。</string>
+    <string name="pallasync_quarantine_exclude_action">除外を記録</string>
+    <string name="pallasync_quarantine_exclude_recorded">除外を記録しました。証拠と未解決ギャップは保持されています。</string>
+    <string name="pallasync_quarantine_exclude_failed">除外を記録できませんでした。証拠は保持されています。</string>
     <string name="pallasync_quarantine_retry">不足している証拠を取得して再検証</string>
     <string name="pallasync_quarantine_retry_running">証拠を更新して再検証しています…</string>
     <string name="pallasync_quarantine_retry_succeeded">元のオブジェクトを再検証して適用しました。証拠は保持されています。</string>

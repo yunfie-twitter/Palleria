@@ -374,6 +374,9 @@ class PalleriaSyncManager(
     internal suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean =
         coordinator.retryQuarantinedRecordEvidence(objectHash)
 
+    internal suspend fun explicitlyExcludeQuarantinedRecord(objectHash: String): Boolean =
+        coordinator.explicitlyExcludeQuarantinedRecord(objectHash)
+
     internal suspend fun trustedSnapshotCandidates(): List<PallaSyncTrustedSnapshotCandidate> = coordinator.trustedSnapshotCandidates()
 
     internal suspend fun trustAndInstallSnapshot(

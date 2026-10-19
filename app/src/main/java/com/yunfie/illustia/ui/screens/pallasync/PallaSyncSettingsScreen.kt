@@ -46,6 +46,7 @@ import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PallaSyncHttpResult
 import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
+import com.yunfie.illustia.pallasync.PallaSyncQuarantineDisposition
 import com.yunfie.illustia.pallasync.PallaSyncReseedSourceConflict
 import com.yunfie.illustia.pallasync.PallaSyncRetryGate
 import com.yunfie.illustia.pallasync.PallaSyncRootSession
@@ -169,6 +170,7 @@ fun PallaSyncSettingsScreen(
     var quarantineCursor by remember { mutableStateOf<String?>(null) }
     var loadingQuarantinePage by remember { mutableStateOf(false) }
     var retryingQuarantineHash by remember { mutableStateOf<String?>(null) }
+    var pendingQuarantineExclusion by remember { mutableStateOf<QuarantineSummaryRow?>(null) }
     var showCapacityRecoveryConfirm by remember { mutableStateOf(false) }
     var resolvingCapacityRecovery by remember { mutableStateOf(false) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
@@ -744,6 +746,47 @@ fun PallaSyncSettingsScreen(
                 showRecoveryArchiveRestoreRootInput = true
             },
             onDismiss = { pendingRecoveryArchiveUri = null },
+        )
+    }
+
+    pendingQuarantineExclusion?.let { entry ->
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_quarantine_exclude_title),
+            summary = stringResource(R.string.pallasync_quarantine_exclude_summary, entry.reason, entry.objectHash),
+            confirmText = stringResource(R.string.pallasync_quarantine_exclude_action),
+            destructive = true,
+            onConfirm = {
+                pendingQuarantineExclusion = null
+                scope.launch {
+                    val recorded =
+                        try {
+                            syncManager.explicitlyExcludeQuarantinedRecord(entry.objectHash)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            false
+                        }
+                    if (recorded) {
+                        unresolvedQuarantine =
+                            unresolvedQuarantine.map { item ->
+                                if (item.objectHash == entry.objectHash) item.copy(resolutionState = "excluded") else item
+                            }
+                        clientStatus = syncManager.getClientStatus()
+                    }
+                    Toast
+                        .makeText(
+                            context,
+                            if (recorded) {
+                                R.string.pallasync_quarantine_exclude_recorded
+                            } else {
+                                R.string.pallasync_quarantine_exclude_failed
+                            },
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
+            },
+            onDismiss = { pendingQuarantineExclusion = null },
         )
     }
 
@@ -2031,7 +2074,13 @@ fun PallaSyncSettingsScreen(
                             Text(stringResource(R.string.pallasync_quarantine_explanation))
                             unresolvedQuarantine.forEach { entry ->
                                 DividerLine()
-                                Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash))
+                                val resolutionLabel =
+                                    when (entry.resolutionState) {
+                                        "excluded" -> stringResource(R.string.pallasync_quarantine_state_excluded)
+                                        "pending_resolution" -> stringResource(R.string.pallasync_quarantine_state_pending)
+                                        else -> stringResource(R.string.pallasync_quarantine_state_unresolved)
+                                    }
+                                Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash, resolutionLabel))
                                 if (entry.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN")) {
                                     TextButton(
                                         text =
@@ -2107,6 +2156,15 @@ fun PallaSyncSettingsScreen(
                                             },
                                         )
                                     }
+                                }
+                                if (entry.resolutionState != "excluded" &&
+                                    PallaSyncQuarantineDisposition.canExplicitlyExclude(entry.reason)
+                                ) {
+                                    TextButton(
+                                        text = stringResource(R.string.pallasync_quarantine_exclude_action),
+                                        enabled = pendingQuarantineExclusion == null,
+                                        onClick = { pendingQuarantineExclusion = entry },
+                                    )
                                 }
                             }
                             quarantineCursor?.let { cursor ->

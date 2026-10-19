@@ -229,7 +229,15 @@
     <string name="pallasync_legacy_source_not_staged">The source export contains no records. Its proof and empty conversion journal were verified.</string>
     <string name="pallasync_quarantine_title">Unresolved protocol evidence</string>
     <string name="pallasync_quarantine_explanation">These objects and their evidence are retained. Review the reason and hash; resolution requires protocol-authorized evidence.</string>
-    <string name="pallasync_quarantine_item">%1$s · %2$s</string>
+    <string name="pallasync_quarantine_item">%1$s · %2$s · %3$s</string>
+    <string name="pallasync_quarantine_state_unresolved">unresolved</string>
+    <string name="pallasync_quarantine_state_pending">pending evidence</string>
+    <string name="pallasync_quarantine_state_excluded">excluded; verification gap remains</string>
+    <string name="pallasync_quarantine_exclude_title">Exclude this corrupt object locally?</string>
+    <string name="pallasync_quarantine_exclude_summary">Record an explicit exclusion for %1$s (%2$s). Its signed bytes and evidence stay stored, the verification gap remains unresolved, and compaction stays blocked.</string>
+    <string name="pallasync_quarantine_exclude_action">Record exclusion</string>
+    <string name="pallasync_quarantine_exclude_recorded">Exclusion recorded. Evidence and the unresolved gap remain.</string>
+    <string name="pallasync_quarantine_exclude_failed">Could not record the exclusion. Evidence remains retained.</string>
     <string name="pallasync_quarantine_retry">Fetch missing evidence and retry verification</string>
     <string name="pallasync_quarantine_retry_running">Refreshing evidence and revalidating…</string>
     <string name="pallasync_quarantine_retry_succeeded">Original object revalidated and applied; evidence remains retained.</string>

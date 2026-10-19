@@ -7877,6 +7877,27 @@ internal class PalleriaSyncCoordinator(
             PallaSyncQuarantinePage(page, page.lastOrNull()?.objectHash.takeIf { rows.size > limit })
         }
 
+    /** §19.4: acknowledge a terminal corrupt object as an unresolved gap without deleting its evidence. */
+    suspend fun explicitlyExcludeQuarantinedRecord(objectHash: String): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }
+                val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+                val protocol = db.protocolDao()
+                val evidence = checkNotNull(protocol.quarantineEvidence(state.chainId, objectHash)) { "C_MISSING_DEPENDENCY" }
+                check(PallaSyncQuarantineDisposition.canExplicitlyExclude(evidence.reason)) { "C_SCHEMA_VIOLATION" }
+                check(crypto.objectHash(evidence.evidenceJson) == objectHash) { "C_ROLLBACK_DETECTED" }
+                check(evidence.resolutionState in setOf("unresolved", "pending_resolution")) { "C_ROLLBACK_DETECTED" }
+                check(
+                    protocol.recordExplicitQuarantineExclusion(state.chainId, objectHash, evidence.reason) == 1,
+                ) { "C_ROLLBACK_DETECTED" }
+                check(
+                    protocol.quarantineEvidence(state.chainId, objectHash) == evidence.copy(resolutionState = "excluded"),
+                ) { "C_ROLLBACK_DETECTED" }
+                true
+            }
+        }
+
     /** §19.3/§19.4: fetch missing authority/acceptance evidence, then replay only the immutable original. */
     suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean {
         require(objectHash.matches(Regex("[A-Za-z0-9_-]{43}"))) { "C_SCHEMA_VIOLATION" }

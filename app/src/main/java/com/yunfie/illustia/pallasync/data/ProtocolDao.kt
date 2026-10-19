@@ -899,16 +899,25 @@ interface ProtocolDao {
     ): Int
 
     @Query(
+        "UPDATE ps_quarantine SET resolution_state='excluded' WHERE chain_id=:chainId AND object_hash=:objectHash AND reason=:reason AND resolution_state IN ('unresolved','pending_resolution')",
+    )
+    suspend fun recordExplicitQuarantineExclusion(
+        chainId: String,
+        objectHash: String,
+        reason: String,
+    ): Int
+
+    @Query(
         "SELECT (SELECT COUNT(*) FROM ps_authors WHERE chain_id=:chainId AND gap_before=1) + " +
             "(SELECT COUNT(*) FROM ps_snapshot_author_gaps WHERE chain_id=:chainId)",
     )
     suspend fun unresolvedAuthorGapCount(chainId: String): Long
 
-    @Query("SELECT COUNT(*) FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state IN ('unresolved','pending_resolution')")
+    @Query("SELECT COUNT(*) FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state!='resolved'")
     suspend fun unresolvedQuarantineCount(chainId: String): Long
 
     @Query(
-        "SELECT object_hash,reason FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state IN ('unresolved','pending_resolution') AND object_hash>:afterHash ORDER BY object_hash LIMIT :limit",
+        "SELECT object_hash,reason,resolution_state FROM ps_quarantine WHERE chain_id=:chainId AND resolution_state!='resolved' AND object_hash>:afterHash ORDER BY object_hash LIMIT :limit",
     )
     suspend fun unresolvedQuarantinePage(
         chainId: String,

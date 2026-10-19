@@ -142,6 +142,7 @@ data class QuarantineEvidenceEntity(
 data class QuarantineSummaryRow(
     @ColumnInfo(name = "object_hash") val objectHash: String,
     val reason: String,
+    @ColumnInfo(name = "resolution_state") val resolutionState: String,
 )
 
 /** Derived projection metadata, separate from deletion/policy winners (§15.6). */

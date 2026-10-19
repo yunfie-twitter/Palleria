@@ -249,6 +249,40 @@ class PallaSyncProtocolStoreTest {
         }
 
     @Test
+    fun `explicit corrupt-object exclusion preserves bytes and remains a compaction blocker`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val protocol = db.protocolDao()
+                val original = "{\"signed\":\"invalid-object\"}"
+                val hash = checkNotNull(PallaSyncCore.objectHash(original))
+                protocol.quarantine(QuarantineEvidenceEntity(chain, hash, "C_SIGNATURE_INVALID", original, "unresolved"))
+
+                PallaSyncQuarantineDisposition.canExplicitlyExclude("C_SIGNATURE_INVALID") shouldBe true
+                PallaSyncQuarantineDisposition.canExplicitlyExclude("C_MISSING_DEPENDENCY") shouldBe false
+                PallaSyncQuarantineDisposition.canExplicitlyExclude("C_EPOCH_FORK") shouldBe false
+                PallaSyncQuarantineDisposition.canExplicitlyExclude("C_COMMITMENT_MISMATCH") shouldBe false
+                protocol.recordExplicitQuarantineExclusion(chain, hash, "C_SIGNATURE_INVALID") shouldBe 1
+
+                val retained = protocol.quarantineEvidence(chain, hash)
+                retained?.evidenceJson shouldBe original
+                retained?.resolutionState shouldBe "excluded"
+                protocol.unresolvedQuarantineCount(chain) shouldBe 1
+                protocol.unresolvedQuarantinePage(chain, "", 10).single().resolutionState shouldBe "excluded"
+                db.snapshotInstallDao().unresolvedQuarantineCount(chain) shouldBe 1
+                protocol.recordExplicitQuarantineExclusion(chain, hash, "C_SIGNATURE_INVALID") shouldBe 0
+                protocol.resolveQuarantineEvidence(chain, hash, "C_SIGNATURE_INVALID") shouldBe 0
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun `verified deletion retains signed proof and minimum authority while erasing chain rows`() =
         runBlocking<Unit> {
             val db =
