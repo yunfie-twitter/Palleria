@@ -923,6 +923,22 @@ internal class PalleriaSyncCoordinator(
         expectedSource: PallaSyncExportArchive.ExpectedSource,
     ) = withContext(Dispatchers.IO) {
         operationMutex.withLock {
+            val beforeProbe = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val beforeAuthority =
+                Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(beforeProbe.chainId))).jsonObject
+            val beforePin = beforeAuthority.getValue("pin").jsonObject
+            val base =
+                when (val normalized = PallaSyncUrls.normalize(getServerUrl())) {
+                    is PallaSyncHttpResult.Success -> normalized.value
+                    else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+                }
+            val origin = PallaSyncUrls.extractOrigin(base)
+            check(beforePin.getValue("origin").jsonPrimitive.content == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            policy.requireCurrent(origin)
+            requireSnapshotResult(refreshRelayHealth(base))
+            // A local archive must not reactivate a chain after the selected relay has accepted deletion.
+            // The probe retains signed contradictions and a bare 410 fails closed as C_DELETION_UNVERIFIED.
+            requireSnapshotResult(consistencyProbe.run(base, beforeProbe.chainId))
             val snapshot = verifyRelayArchiveLocked(input, expectedSource, retainEvidence = true)
             val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
