@@ -271,6 +271,9 @@ class PallaSyncProtocolStoreTest {
                 PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_ROLLBACK_DETECTED") shouldBe true
                 PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_DEVICE_EQUIVOCATION") shouldBe true
                 PallaSyncQuarantineDisposition.requiresTrustedBranchReview("C_RECORD_ID_CONFLICT") shouldBe false
+                PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview("C_RECEIPT_INVALID") shouldBe true
+                PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview("C_TRANSPARENCY_INVALID") shouldBe true
+                PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview("C_MISSING_DEPENDENCY") shouldBe false
                 protocol.recordExplicitQuarantineExclusion(chain, hash, "C_SIGNATURE_INVALID") shouldBe 1
 
                 val retained = protocol.quarantineEvidence(chain, hash)

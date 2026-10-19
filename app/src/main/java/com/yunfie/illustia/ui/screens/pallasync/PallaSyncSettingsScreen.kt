@@ -2268,8 +2268,15 @@ fun PallaSyncSettingsScreen(
                                         Text(stringResource(R.string.pallasync_quarantine_record_identity_guidance))
                                     }
 
-                                    "C_RECEIPT_INVALID", "C_TRANSPARENCY_INVALID" -> {
+                                    in setOf("C_RECEIPT_INVALID", "C_TRANSPARENCY_INVALID") -> {
                                         Text(stringResource(R.string.pallasync_quarantine_independent_evidence_guidance))
+                                        if (PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview(entry.reason)) {
+                                            Text(stringResource(R.string.pallasync_checkpoint_import_summary))
+                                            TextButton(
+                                                text = stringResource(R.string.pallasync_checkpoint_import_title),
+                                                onClick = { checkpointImporter.launch(arrayOf("application/json")) },
+                                            )
+                                        }
                                     }
                                 }
                                 if (entry.resolutionState != "excluded" &&
