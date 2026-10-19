@@ -111,6 +111,23 @@ class PallaSyncPolicyGate internal constructor(
         }
     }
 
+    /** §17.5–§17.6: replace a chain's origin only after authenticated reseed and target consent. */
+    internal fun commitAuthenticatedMigrationOrigin(
+        chain: String,
+        sourceOrigin: String,
+        targetOrigin: String,
+    ) {
+        val source = normalizeOrigin(sourceOrigin)
+        val target = normalizeOrigin(targetOrigin)
+        requireCurrent(target)
+        trustedRelayKey(target)
+        synchronized(consentLock) {
+            val previous = prefs.getString("chain-origin:$chain", null)
+            check(previous == source || previous == target) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            check(prefs.edit().putString("chain-origin:$chain", target).commit()) { "C_LOCAL_STORAGE_FULL" }
+        }
+    }
+
     /** §§11.7/17.6: editing a URL is not authenticated relay migration. */
     internal fun requireChainOrigin(
         chain: String,

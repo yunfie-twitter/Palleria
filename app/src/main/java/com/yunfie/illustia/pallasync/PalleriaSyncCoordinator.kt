@@ -1262,6 +1262,14 @@ internal class PalleriaSyncCoordinator(
                             } else {
                                 null
                             },
+                        reseedAuthorityVerifier = { sourceAuthorityJson, expectedEntries, checkpoint ->
+                            verifyReseedAuthorityFromSavedEvidence(
+                                Json.parseToJsonElement(sourceAuthorityJson).jsonObject,
+                                pin,
+                                expectedEntries,
+                                checkpoint,
+                            ).toString()
+                        },
                     ).also { verified ->
                         check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
                     }
@@ -2694,6 +2702,15 @@ internal class PalleriaSyncCoordinator(
                         checkNotNull(protocolDao.archivedAuthority(chain, journal.sourceGeneration)).signedJson,
                     ).jsonObject
             val targetAuthority = Json.parseToJsonElement(checkNotNull(currentText)).jsonObject
+            policy.commitAuthenticatedMigrationOrigin(
+                chain,
+                sourceAuthority
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("origin")
+                    .jsonPrimitive.content,
+                journal.targetOrigin,
+            )
             val replayed =
                 verifyReseedAuthorityFromSavedEvidence(
                     sourceAuthority,
@@ -2879,6 +2896,15 @@ internal class PalleriaSyncCoordinator(
         ) { "C_ROLLBACK_DETECTED" }
         outboxRebase.resumeReseed(chain, targetKeys, sourceKeys, sourceAuthority)
         rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_OUTBOX_REBASED)
+        policy.commitAuthenticatedMigrationOrigin(
+            chain,
+            sourceAuthority
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content,
+            journal.targetOrigin,
+        )
         SettingsStore(appContext).setPallaSyncServerUrlFromCoordinator(journal.targetOrigin)
         rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_ORIGIN_SELECTED)
         db.transaction {

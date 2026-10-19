@@ -4,6 +4,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -21,6 +22,9 @@ import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import java.security.MessageDigest
 import java.util.Base64
+
+internal typealias PallaSyncArchiveReseedAuthorityVerifier =
+    suspend (String, JsonArray, kotlinx.serialization.json.JsonObject) -> String
 
 /** Streaming §17.4 footer and line-integrity check; signatures and AEAD remain separate gates. */
 internal object PallaSyncExportArchiveVerifier {
@@ -48,9 +52,18 @@ internal object PallaSyncExportArchiveVerifier {
         snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
         logEntrySink: PallaSyncArchiveLogEntrySink? = null,
         beforeRetain: (suspend (Header) -> Unit)? = null,
+        reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
     ): Header =
         runBlocking {
-            verifySuspending(input, expectedSource, recordVerifier, snapshotVerifier, logEntrySink, beforeRetain)
+            verifySuspending(
+                input,
+                expectedSource,
+                recordVerifier,
+                snapshotVerifier,
+                logEntrySink,
+                beforeRetain,
+                reseedAuthorityVerifier,
+            )
         }
 
     suspend fun verifySuspending(
@@ -60,6 +73,7 @@ internal object PallaSyncExportArchiveVerifier {
         snapshotVerifier: PallaSyncArchiveSnapshotVerifier? = null,
         logEntrySink: PallaSyncArchiveLogEntrySink? = null,
         beforeRetain: (suspend (Header) -> Unit)? = null,
+        reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -139,6 +153,7 @@ internal object PallaSyncExportArchiveVerifier {
                                     checkNotNull(canonicalPin),
                                     recordVerifier,
                                     snapshotVerifier,
+                                    reseedAuthorityVerifier,
                                 )
                             }
                         historyCutJson =
@@ -164,8 +179,7 @@ internal object PallaSyncExportArchiveVerifier {
                     if (complete) beforeRetain?.invoke(verifiedHeader)
                     if (complete && logEntrySink != null) {
                         checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
-                            expectedSource?.identityJson ?: error("C_MISSING_DEPENDENCY"),
-                            checkNotNull(canonicalPin),
+                            verifiedAuthorityJson ?: error("C_MISSING_DEPENDENCY"),
                             logEntrySink,
                         )
                     }
@@ -360,12 +374,15 @@ internal object PallaSyncExportArchiveVerifier {
             pinJson: String,
             recordVerifier: PallaSyncArchiveRecordVerifier?,
             snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
+            reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier?,
         ): String {
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
             var expectedSequence = 1L
+            var skipThroughSequence = 0L
             database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
                 while (entries.moveToNext()) {
                     val sequence = entries.getLong(0)
+                    if (sequence <= skipThroughSequence) continue
                     check(sequence == expectedSequence) { "C_MISSING_DEPENDENCY" }
                     val receipt =
                         database
@@ -376,13 +393,44 @@ internal object PallaSyncExportArchiveVerifier {
                                 check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
                                 receipts.getString(0)
                             }
+                    val entryJson = entries.getString(1)
+                    val entry = Json.parseToJsonElement(entryJson).jsonObject
+                    val kind = entry.getValue("kind").jsonPrimitive.content
+                    val authorityState = Json.parseToJsonElement(authority).jsonObject
+                    val currentGeneration =
+                        authorityState["parameters"]
+                            ?.takeUnless { it.toString() == "null" }
+                            ?.jsonObject
+                            ?.get("generation")
+                            ?.jsonPrimitive
+                            ?.long
+                    val entryGeneration =
+                        entry
+                            .getValue("object")
+                            .jsonObject["generation"]
+                            ?.jsonPrimitive
+                            ?.long
+                    if (kind == "parameters" && currentGeneration != null && entryGeneration == currentGeneration + 1L) {
+                        val (verifiedAuthority, cutSequence) =
+                            verifyReseedTransition(
+                                authority,
+                                sequence,
+                                entry,
+                                header,
+                                reseedAuthorityVerifier,
+                                snapshotVerifier,
+                            )
+                        authority = verifiedAuthority
+                        skipThroughSequence = cutSequence
+                        expectedSequence = Math.addExact(cutSequence, 1L)
+                        continue
+                    }
                     authority =
                         PallaSyncCore.advanceAuthorityHistory(
                             authority,
-                            entries.getString(1),
+                            entryJson,
                             receipt,
                         )
-                    val entry = Json.parseToJsonElement(entries.getString(1)).jsonObject
                     if (entry.getValue("kind").jsonPrimitive.content == "record") {
                         val record = entry.getValue("object").jsonObject
                         check(PallaSyncCore.validateRecordAuthority(authority, record.toString(), sequence)) {
@@ -440,12 +488,145 @@ internal object PallaSyncExportArchiveVerifier {
             return authority
         }
 
+        private suspend fun verifyReseedTransition(
+            sourceAuthorityJson: String,
+            transitionSequence: Long,
+            transitionEntry: kotlinx.serialization.json.JsonObject,
+            archiveHeader: kotlinx.serialization.json.JsonObject,
+            reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier?,
+            snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
+        ): Pair<String, Long> {
+            val sourceGeneration =
+                Json
+                    .parseToJsonElement(sourceAuthorityJson)
+                    .jsonObject
+                    .getValue("parameters")
+                    .jsonObject
+                    .getValue("generation")
+                    .jsonPrimitive.long
+            val targetGeneration =
+                transitionEntry
+                    .getValue("object")
+                    .jsonObject
+                    .getValue("generation")
+                    .jsonPrimitive.long
+            check(targetGeneration == sourceGeneration + 1L) { "C_EPOCH_FORK" }
+            val targetLogId = archiveHeader.getValue("log_id").jsonPrimitive.content
+            var expectedSequence = transitionSequence
+            var cutSequence: Long? = null
+            var cutCompaction: kotlinx.serialization.json.JsonObject? = null
+            database
+                .rawQuery(
+                    "SELECT relay_seq,entry_json FROM export_log_entries WHERE relay_seq>=? ORDER BY relay_seq",
+                    arrayOf(transitionSequence.toString()),
+                ).use { rows ->
+                    while (rows.moveToNext() && cutSequence == null) {
+                        val sequence = rows.getLong(0)
+                        check(sequence == expectedSequence) { "C_MISSING_DEPENDENCY" }
+                        val entry = Json.parseToJsonElement(rows.getString(1)).jsonObject
+                        val kind = entry.getValue("kind").jsonPrimitive.content
+                        check(kind in setOf("parameters", "device", "envelope", "admin", "epoch", "compaction")) {
+                            "C_SNAPSHOT_INVALID"
+                        }
+                        if (kind == "compaction") {
+                            val compaction = entry.getValue("object").jsonObject
+                            if (
+                                compaction.getValue("generation").jsonPrimitive.long == targetGeneration &&
+                                compaction.getValue("log_id").jsonPrimitive.content == targetLogId
+                            ) {
+                                cutSequence = sequence
+                                cutCompaction = compaction
+                            }
+                        }
+                        expectedSequence = Math.addExact(expectedSequence, 1L)
+                    }
+                }
+            val through = checkNotNull(cutSequence) { "C_MISSING_DEPENDENCY" }
+            val compaction = checkNotNull(cutCompaction) { "C_MISSING_DEPENDENCY" }
+            val expectedEntries = mutableListOf<kotlinx.serialization.json.JsonObject>()
+            val uploadReceipts = mutableListOf<kotlinx.serialization.json.JsonObject>()
+            database
+                .rawQuery(
+                    "SELECT relay_seq,entry_json FROM export_log_entries WHERE relay_seq<=? ORDER BY relay_seq",
+                    arrayOf(through.toString()),
+                ).use { rows ->
+                    var sequence = 1L
+                    while (rows.moveToNext()) {
+                        check(rows.getLong(0) == sequence) { "C_MISSING_DEPENDENCY" }
+                        val entry = Json.parseToJsonElement(rows.getString(1)).jsonObject
+                        expectedEntries +=
+                            buildJsonObject {
+                                put("kind", entry.getValue("kind"))
+                                put("object", entry.getValue("object"))
+                            }
+                        val receiptJson =
+                            database
+                                .rawQuery(
+                                    "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
+                                    arrayOf(sequence.toString()),
+                                ).use { receipts ->
+                                    check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
+                                    receipts.getString(0)
+                                }
+                        uploadReceipts += Json.parseToJsonElement(receiptJson).jsonObject
+                        sequence = Math.addExact(sequence, 1L)
+                    }
+                    check(sequence == through + 1L) { "C_MISSING_DEPENDENCY" }
+                }
+            val targetParameters =
+                expectedEntries
+                    .single {
+                        it.getValue("kind").jsonPrimitive.content == "parameters" &&
+                            it
+                                .getValue("object")
+                                .jsonObject
+                                .getValue("generation")
+                                .jsonPrimitive.long == targetGeneration
+                    }.getValue("object")
+                    .jsonObject
+            val targetEpoch =
+                expectedEntries
+                    .single {
+                        it.getValue("kind").jsonPrimitive.content == "epoch" &&
+                            it
+                                .getValue("object")
+                                .jsonObject["generation"]
+                                ?.jsonPrimitive
+                                ?.long == targetGeneration &&
+                            it
+                                .getValue("object")
+                                .jsonObject["reason"]
+                                ?.jsonPrimitive
+                                ?.content == "reseed"
+                    }.getValue("object")
+                    .jsonObject
+            val lastReceipt = uploadReceipts.last()
+            val checkpoint =
+                buildJsonObject {
+                    put("log_id", targetLogId)
+                    put("head_seq", through)
+                    put("head_hash", lastReceipt.getValue("resulting_head_hash"))
+                    put("parameters_hash", checkNotNull(PallaSyncCore.objectHash(targetParameters.toString())))
+                    put("epoch_hash", checkNotNull(PallaSyncCore.objectHash(targetEpoch.toString())))
+                    put("receipts", JsonArray(uploadReceipts))
+                }
+            val verifiedAuthority =
+                checkNotNull(reseedAuthorityVerifier) { "C_MISSING_DEPENDENCY" }
+                    .invoke(sourceAuthorityJson, JsonArray(expectedEntries), checkpoint)
+            verifyCompactionSnapshotParts(verifiedAuthority, compaction, snapshotVerifier)
+            val compactionHash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
+            check(database.delete("export_compactions", "compaction_hash=?", arrayOf(compactionHash)) == 1) {
+                "C_MISSING_DEPENDENCY"
+            }
+            return verifiedAuthority to through
+        }
+
         suspend fun retainVerifiedAuthorityHistory(
-            identityJson: String,
-            pinJson: String,
+            verifiedAuthorityJson: String,
             sink: PallaSyncArchiveLogEntrySink,
         ) {
-            var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
+            // The complete archive was already authority-replayed before retention. Replaying
+            // again would bypass the verified snapshot transition at a generation cutover.
             database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
                 while (entries.moveToNext()) {
                     val sequence = entries.getLong(0)
@@ -459,8 +640,7 @@ internal object PallaSyncExportArchiveVerifier {
                                 check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
                                 receipts.getString(0)
                             }
-                    authority = PallaSyncCore.advanceAuthorityHistory(authority, entryJson, receipt)
-                    sink.retain(authority, entryJson, receipt, sequence)
+                    sink.retain(verifiedAuthorityJson, entryJson, receipt, sequence)
                 }
             }
         }
