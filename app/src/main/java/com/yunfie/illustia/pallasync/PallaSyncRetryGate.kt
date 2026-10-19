@@ -96,13 +96,20 @@ internal class PallaSyncRetryGate(
     fun blockedCode(
         origin: String,
         chain: String,
-    ): String? =
+    ): String? = blockedCodes(origin, chain).firstOrNull()
+
+    fun blockedCodes(
+        origin: String,
+        chain: String,
+    ): List<String> =
         synchronized(lock) {
             val state = load(origin)
             state.blockedRequests
                 .toSortedMap()
                 .entries
-                .firstNotNullOfOrNull { (key, code) -> code.takeIf { state.blockedRequestChains[key] == chain } }
+                .mapNotNull { (key, code) -> code.takeIf { state.blockedRequestChains[key] == chain } }
+                .distinct()
+                .sorted()
         }
 
     fun before(request: Request): PallaSyncHttpResult<Nothing>? {

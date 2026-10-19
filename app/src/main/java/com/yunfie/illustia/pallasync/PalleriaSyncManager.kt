@@ -366,6 +366,8 @@ class PalleriaSyncManager(
 
     internal suspend fun confirmRelayCapacityRecovered(): Boolean = coordinator.confirmRelayCapacityRecovered()
 
+    internal suspend fun retryBlockedRequestsAfterResolution(code: String): Boolean = coordinator.retryBlockedRequestsAfterResolution(code)
+
     internal suspend fun getUnresolvedQuarantinePage(
         afterHash: String = "",
         limit: Int = 50,

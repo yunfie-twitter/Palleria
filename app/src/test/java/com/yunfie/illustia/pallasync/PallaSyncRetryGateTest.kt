@@ -195,6 +195,38 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `blocked request diagnostics list distinct codes for only the selected chain`() {
+        val gate = gate()
+        val anotherChain = "AbCdEf0123456789012345678901234567890123456"
+        val first = request("{\"epoch\":1}")
+        val second = request("{\"epoch\":2}")
+        val other =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/$anotherChain/records")
+                .post("{}".toRequestBody())
+                .build()
+
+        fun block(
+            request: Request,
+            code: String,
+        ) {
+            val hint = PallaSyncProblemHint(409, code, true)
+            gate.observe(request, checkNotNull(classifyPallaSyncHttpStatus(409, hint)), hint)
+        }
+
+        block(first, "EPOCH_STALE")
+        block(second, "EPOCH_NOT_FOUND")
+        block(other, "DEVICE_PENDING_KEYS")
+
+        gate.blockedCodes(origin, chain) shouldBe listOf("EPOCH_NOT_FOUND", "EPOCH_STALE")
+        gate.blockedCodes(origin, anotherChain) shouldBe listOf("DEVICE_PENDING_KEYS")
+        gate.resolved(origin, chain, "EPOCH_STALE") shouldBe true
+        gate.blockedCodes(origin, chain) shouldBe listOf("EPOCH_NOT_FOUND")
+        gate.blockedCodes(origin, anotherChain) shouldBe listOf("DEVICE_PENDING_KEYS")
+    }
+
+    @Test
     fun `relay shutdown suspends writes and persists destination only as an explicit suggestion`() {
         val gate = gate { 0 }
         val hint =

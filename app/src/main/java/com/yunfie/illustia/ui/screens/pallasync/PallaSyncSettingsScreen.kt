@@ -176,6 +176,8 @@ fun PallaSyncSettingsScreen(
     var pendingQuarantineExclusion by remember { mutableStateOf<QuarantineSummaryRow?>(null) }
     var showCapacityRecoveryConfirm by remember { mutableStateOf(false) }
     var resolvingCapacityRecovery by remember { mutableStateOf(false) }
+    var pendingBlockedRetryCode by remember { mutableStateOf<String?>(null) }
+    var retryingBlockedRequestCode by remember { mutableStateOf<String?>(null) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var pendingLegacyReport by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
     var legacyDecisions by remember { mutableStateOf<List<PallaSyncLocalIntents.LegacySourceDecision>>(emptyList()) }
@@ -732,6 +734,40 @@ fun PallaSyncSettingsScreen(
                 }
             },
             onDismiss = { showCapacityRecoveryConfirm = false },
+        )
+    }
+
+    pendingBlockedRetryCode?.let { code ->
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_blocked_retry_title),
+            summary = stringResource(R.string.pallasync_blocked_retry_summary, code),
+            confirmText = stringResource(R.string.pallasync_blocked_retry_action),
+            destructive = false,
+            onConfirm = {
+                pendingBlockedRetryCode = null
+                retryingBlockedRequestCode = code
+                scope.launch {
+                    val resumed =
+                        try {
+                            syncManager.retryBlockedRequestsAfterResolution(code)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            false
+                        } finally {
+                            retryingBlockedRequestCode = null
+                        }
+                    clientStatus = syncManager.getClientStatus()
+                    Toast
+                        .makeText(
+                            context,
+                            if (resumed) R.string.pallasync_blocked_retry_resumed else R.string.pallasync_blocked_retry_none,
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
+            },
+            onDismiss = { pendingBlockedRetryCode = null },
         )
     }
 
@@ -2044,8 +2080,19 @@ fun PallaSyncSettingsScreen(
                             if (status.retryAfterMs > 0) {
                                 Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
                             }
-                            status.blockedRequestCode?.let { code ->
+                            val blockedCodes =
+                                status.blockedRequestCodes.ifEmpty {
+                                    listOfNotNull(status.blockedRequestCode)
+                                }
+                            blockedCodes.forEach { code ->
                                 Text(stringResource(R.string.pallasync_request_blocked, code))
+                                if (status.capacityIssue?.code != code) {
+                                    TextButton(
+                                        text = stringResource(R.string.pallasync_blocked_retry_action),
+                                        enabled = retryingBlockedRequestCode == null,
+                                        onClick = { pendingBlockedRetryCode = code },
+                                    )
+                                }
                             }
                             status.capacityIssue?.let { issue ->
                                 DividerLine()

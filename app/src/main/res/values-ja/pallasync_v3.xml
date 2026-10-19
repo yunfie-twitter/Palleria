@@ -134,6 +134,12 @@
     <string name="pallasync_snapshot_bootstrap_installed">snapshotをinstallしました。署名済みsuffixの再生を開始します。</string>
     <string name="pallasync_progress_title">同期進捗とローカル履歴容量</string>
     <string name="pallasync_retry_wait">自動再試行まで: %1$d 秒</string>
+    <string name="pallasync_request_blocked">操作が必要な応答（%1$s）のため、この要求を一時停止しています。キュー済みデータは保持されています。</string>
+    <string name="pallasync_blocked_retry_action">前提条件の解消後に再試行</string>
+    <string name="pallasync_blocked_retry_title">停止中の要求を再試行しますか？</string>
+    <string name="pallasync_blocked_retry_summary">%1$sで停止中の保存済み要求だけを解除して同期を再開します。サーバーのエラー情報は署名されておらず、権限の根拠ではありません。原因となった前提条件を解消した場合のみ確認してください。キュー済みデータは保持されます。単発操作は元の画面から再実行してください。</string>
+    <string name="pallasync_blocked_retry_resumed">保持中の要求を再試行しています</string>
+    <string name="pallasync_blocked_retry_none">再開できる保存済み要求がありません</string>
     <string name="pallasync_relay_capacity_hint">リレーは直近で %1$s を返しました。応答が示した容量: 使用 %2$s bytes / 上限 %3$s bytes。このエラー情報は署名されておらず、リレー容量の証明ではありません。</string>
     <string name="pallasync_relay_capacity_unknown">使用量は応答に含まれていません。</string>
     <string name="pallasync_relay_capacity_resume">リレーの容量が回復したことを確認しました</string>

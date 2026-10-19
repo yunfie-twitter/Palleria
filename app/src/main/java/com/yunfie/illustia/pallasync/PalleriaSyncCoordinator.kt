@@ -7889,6 +7889,11 @@ internal class PalleriaSyncCoordinator(
                     policy
                         .boundChainOrigin(state.chainId)
                         ?.let { origin -> policy.retry.blockedCode(origin, state.chainId) },
+                blockedRequestCodes =
+                    policy
+                        .boundChainOrigin(state.chainId)
+                        ?.let { origin -> policy.retry.blockedCodes(origin, state.chainId) }
+                        .orEmpty(),
                 capacityIssue =
                     policy
                         .boundChainOrigin(state.chainId)
@@ -7905,6 +7910,16 @@ internal class PalleriaSyncCoordinator(
             val state = db.dao.getActiveChainState() ?: return@withContext false
             val origin = policy.boundChainOrigin(state.chainId) ?: return@withContext false
             policy.retry.resolveCapacity(origin, state.chainId)
+        }.also { resolved ->
+            if (resolved) syncNow()
+        }
+
+    /** Resume only the saved requests with this diagnostic code after explicit user confirmation. */
+    suspend fun retryBlockedRequestsAfterResolution(code: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val state = db.dao.getActiveChainState() ?: return@withContext false
+            val origin = policy.boundChainOrigin(state.chainId) ?: return@withContext false
+            policy.retry.resolved(origin, state.chainId, code)
         }.also { resolved ->
             if (resolved) syncNow()
         }
