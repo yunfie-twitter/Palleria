@@ -318,6 +318,28 @@ class PallaSyncExportArchiveTest {
     }
 
     @Test
+    fun archiveHeaderGenerationMustMatchTheFinalSignedParameters() {
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true)
+        val lines = archive.toString(Charsets.UTF_8).trimEnd('\n').split('\n')
+        val header = lines.first().replace("\"generation\":0", "\"generation\":1")
+        val preceding = (listOf(header) + lines.drop(1).dropLast(1)).joinToString("\n", postfix = "\n").toByteArray()
+        val hash = Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(preceding))
+        val footer = """{"archive_sha256":"$hash","complete":true,"kind":"footer","line_count":${lines.size - 1}}"""
+        val tampered = preceding + footer.toByteArray(Charsets.UTF_8) + '\n'.code.toByte()
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(tampered),
+                expected.copy(generation = 1),
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+        }.message shouldBe "C_LOG_HASH_MISMATCH"
+    }
+
+    @Test
     fun verifiedHistoryIsRetainedOnlyAfterCompleteArchiveAndEndOfInput() {
         val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true)
         val retained = mutableListOf<Long>()

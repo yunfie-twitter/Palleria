@@ -361,7 +361,6 @@ internal object PallaSyncExportArchiveVerifier {
             recordVerifier: PallaSyncArchiveRecordVerifier?,
             snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
         ): String {
-            check(header.getValue("generation").jsonPrimitive.long == 0L) { "C_SNAPSHOT_INVALID" }
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
             var expectedSequence = 1L
             database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
@@ -409,9 +408,16 @@ internal object PallaSyncExportArchiveVerifier {
                 }
             }
             val finalAuthority = Json.parseToJsonElement(authority).jsonObject
+            val finalGeneration =
+                finalAuthority
+                    .getValue("parameters")
+                    .jsonObject
+                    .getValue("generation")
+                    .jsonPrimitive.long
             val lastSequence = expectedSequence - 1L
             check(
                 lastSequence == header.getValue("head_seq").jsonPrimitive.long &&
+                    finalGeneration == header.getValue("generation").jsonPrimitive.long &&
                     finalAuthority.getValue("sequence").jsonPrimitive.long == lastSequence &&
                     finalAuthority.getValue("head_hash").jsonPrimitive.content ==
                     header.getValue("head_hash").jsonPrimitive.content &&

@@ -1238,7 +1238,7 @@ internal class PalleriaSyncCoordinator(
                                     val verifiedAuthority = Json.parseToJsonElement(checkNotNull(verified.authorityJson)).jsonObject
                                     val verifiedHead = Json.parseToJsonElement(checkNotNull(verified.transparencyHeadJson)).jsonObject
                                     check(
-                                        verified.complete && verified.includeRecovery && verified.generation == 0L &&
+                                        verified.complete && verified.includeRecovery && verified.generation == state.generation &&
                                             verified.chainId == state.chainId && verified.logId == state.logId &&
                                             PallaSyncCore.objectHash(verifiedAuthority.toString()) ==
                                             PallaSyncCore.objectHash(checkNotNull(db.protocolDao().currentAuthority(state.chainId))) &&
