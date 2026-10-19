@@ -2086,7 +2086,7 @@ fun PallaSyncSettingsScreen(
                                 }
                             blockedCodes.forEach { code ->
                                 Text(stringResource(R.string.pallasync_request_blocked, code))
-                                if (status.capacityIssue?.code != code) {
+                                if (status.capacityIssue?.code != code && PallaSyncRetryGate.canRetryAfterResolution(code)) {
                                     TextButton(
                                         text = stringResource(R.string.pallasync_blocked_retry_action),
                                         enabled = retryingBlockedRequestCode == null,

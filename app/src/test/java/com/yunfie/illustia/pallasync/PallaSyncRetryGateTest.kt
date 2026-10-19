@@ -227,6 +227,20 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `non-retryable catalogue blocks remain visible but cannot be manually released`() {
+        val gate = gate()
+        val revoked = PallaSyncProblemHint(403, "DEVICE_REVOKED", false)
+        val failure = checkNotNull(classifyPallaSyncHttpStatus(403, revoked))
+        gate.observe(request(), failure, revoked)
+
+        gate.blockedCodes(origin, chain) shouldBe listOf("DEVICE_REVOKED")
+        PallaSyncRetryGate.canRetryAfterResolution("DEVICE_REVOKED") shouldBe false
+        PallaSyncRetryGate.canRetryAfterResolution("DEVICE_PENDING_KEYS") shouldBe true
+        gate.resolved(origin, chain, "DEVICE_REVOKED") shouldBe false
+        gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("DEVICE_REVOKED")
+    }
+
+    @Test
     fun `relay shutdown suspends writes and persists destination only as an explicit suggestion`() {
         val gate = gate { 0 }
         val hint =

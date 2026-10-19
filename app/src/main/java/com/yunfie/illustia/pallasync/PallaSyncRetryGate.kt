@@ -309,6 +309,7 @@ internal class PallaSyncRetryGate(
         code: String,
     ): Boolean =
         synchronized(lock) {
+            if (!canRetryAfterResolution(code)) return@synchronized false
             val state = load(origin)
             val resolved =
                 state.blockedRequests
@@ -423,6 +424,53 @@ internal class PallaSyncRetryGate(
         private const val RATE_MAX_SECONDS = 3600L
         private val CLIENT_ACTION_STATUSES = (400..499).toSet() + 507
         private val CAPACITY_CODES = setOf("QUOTA_EXCEEDED", "STORAGE_UNAVAILABLE")
+        private val RESOLUTION_RETRYABLE_CODES =
+            setOf(
+                "TOKEN_REQUIRED",
+                "TOKEN_NOT_YET_VALID",
+                "TOKEN_EXPIRED",
+                "TOKEN_REPLAYED",
+                "ADMIN_REQUIRED",
+                "DEVICE_PENDING_KEYS",
+                "DEVICE_UNKNOWN",
+                "ENROLLMENT_NOT_ALLOWED",
+                "ROTATION_NOT_ALLOWED",
+                "CHAIN_NOT_FOUND",
+                "DEVICE_NOT_FOUND",
+                "EPOCH_NOT_FOUND",
+                "OFFER_NOT_FOUND",
+                "ENVELOPE_NOT_FOUND",
+                "SNAPSHOT_PART_NOT_FOUND",
+                "SNAPSHOT_NOT_FOUND",
+                "REQUEST_TIMEOUT",
+                "EPOCH_STALE",
+                "CAS_MISMATCH",
+                "GENERATION_MISMATCH",
+                "MEMBER_SET_MISMATCH",
+                "RECOVERY_ENVELOPE_REQUIRED",
+                "HISTORY_KEY_EXPIRED",
+                "CURSOR_EXPIRED",
+                "LOG_ID_MISMATCH",
+                "LOG_PRUNED",
+                "SNAPSHOT_INCOMPLETE",
+                "COMPACTION_UNSAFE",
+                "REPAIR_PROOF_REQUIRED",
+                "PAYLOAD_TOO_LARGE",
+                "DEVICE_LIMIT_REACHED",
+                "RATE_LIMITED",
+                "INTERNAL_ERROR",
+                "BAD_GATEWAY",
+                "RELAY_UNAVAILABLE",
+                "RELAY_SHUTTING_DOWN",
+                "GATEWAY_TIMEOUT",
+                "QUOTA_EXCEEDED",
+                "STORAGE_UNAVAILABLE",
+                "RECEIPT_NOT_FOUND",
+                "TRANSPARENCY_ID_MISMATCH",
+                "TRANSPARENCY_RANGE_UNAVAILABLE",
+            )
+
+        internal fun canRetryAfterResolution(code: String): Boolean = code in RESOLUTION_RETRYABLE_CODES
 
         internal fun retryAfter(
             value: String?,
