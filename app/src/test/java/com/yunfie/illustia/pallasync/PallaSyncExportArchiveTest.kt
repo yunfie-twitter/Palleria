@@ -64,6 +64,29 @@ class PallaSyncExportArchiveTest {
     }
 
     @Test
+    fun acceptsGenerationOneArchiveHeaderWhenItMatchesTheExpectedSource() {
+        val expected =
+            PallaSyncExportArchive.ExpectedSource(
+                chainId = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+                generation = 1,
+                logId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                relayPublicKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                relayKeyId = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            )
+        val output = ByteArrayOutputStream()
+        val generationOneHeader = header.replace("\"generation\":0", "\"generation\":1")
+        PallaSyncExportArchive.create(output, expected).use { archive ->
+            archive.acceptChunk(
+                "$generationOneHeader\n{\"has_more\":false,\"kind\":\"continuation\",\"next_cursor\":null}\n".toByteArray(),
+                null,
+            )
+            archive.finish()
+        }
+
+        output.toString(Charsets.UTF_8).contains("\"generation\":1") shouldBe true
+    }
+
+    @Test
     fun mergesBoundedChunksAndWritesExactArchiveFooterHash() {
         val output = ByteArrayOutputStream()
         val archive = PallaSyncExportArchive.create(output)

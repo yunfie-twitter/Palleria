@@ -881,7 +881,6 @@ internal class PalleriaSyncCoordinator(
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
                 val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                check(state.generation == 0L) { "C_SNAPSHOT_INVALID" }
                 requireProtectedAuthority(state.chainId)
                 val authority = Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
                 val pin = authority.getValue("pin").jsonObject
