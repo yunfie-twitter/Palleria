@@ -60,17 +60,7 @@ interface ReseedJournalDao {
                     (monotoneAnchor(previous, value) || restartingUncommittedSnapshot) &&
                     (monotoneReceipts(previous, value) || restartingUncommittedSnapshot)
             require(monotone) {
-                "C_ROLLBACK_DETECTED phase=${previous.phase}->${value.phase} restart=$restartingUncommittedSnapshot " +
-                    "commit=${previous.commitResultJson != null} sourceConflict=${previous.sourceConflictReportJson != null} " +
-                    "compaction=${previous.compactionId == value.compactionId} body=${immutableOnce(
-                        previous.commitBodyJson,
-                        value.commitBodyJson,
-                    )} " +
-                    "expected=${immutableOnce(
-                        previous.expectedEntriesJson,
-                        value.expectedEntriesJson,
-                    )} cut=${monotoneSourceConflict(previous, value)} " +
-                    "anchor=${monotoneAnchor(previous, value)} receipts=${monotoneReceipts(previous, value)}"
+                "C_ROLLBACK_DETECTED"
             }
             update(value)
         }
@@ -95,7 +85,7 @@ interface ReseedJournalDao {
                 expected.sourceConflictReportJson != null
         require(current == expected) { "C_ROLLBACK_DETECTED journal" }
         require(safeBeforeCommitBody || safeAfterKnownSourceConflict) {
-            "C_ROLLBACK_DETECTED phase=${expected.phase} result=${expected.commitResultJson != null} conflict=${expected.sourceConflictReportJson != null}"
+            "C_ROLLBACK_DETECTED"
         }
         require(
             expected.commitResultJson == null && expected.transparencyHeadJson == null &&

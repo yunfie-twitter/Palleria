@@ -59,7 +59,7 @@ class PallaSyncBootstrapReviewTest {
             authority =
                 Json
                     .parseToJsonElement(
-                        """{"pin":{"origin":"$origin","log_id":"log-1"},"chain_id":"chain-1","admin_public_key":"admin-key","generation":2,"sequence":17,"head_hash":"history-hash"}""",
+                        """{"pin":{"origin":"$origin","chain_id":"chain-1","log_id":"log-1"},"chain_id":"chain-1","admin_public_key":"admin-key","parameters":{"generation":2},"sequence":17,"head_hash":"history-hash"}""",
                     ).jsonObject,
             generation = 2,
             dataZero = "data-zero",
