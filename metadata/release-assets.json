@@ -322,5 +322,17 @@
     ],
     "version_name": "7.0.0-beta.3",
     "version_code": 166
+  },
+  "419601682": {
+    "tag": "v6.7.1",
+    "prerelease": false,
+    "files": [
+      "Palleria-v6.7.1-release-arm64-v8a.apk",
+      "Palleria-v6.7.1-release-armeabi-v7a.apk",
+      "Palleria-v6.7.1-release-universal.apk",
+      "Palleria-v6.7.1-release-x86_64.apk"
+    ],
+    "version_name": "6.7.1",
+    "version_code": 167
   }
 }
