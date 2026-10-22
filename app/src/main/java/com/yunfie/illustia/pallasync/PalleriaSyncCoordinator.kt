@@ -1130,7 +1130,7 @@ internal class PalleriaSyncCoordinator(
         checkpoint: PallaSyncGenesisCheckpoint,
     ) {
         val current = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
-        if (current.logId != checkpoint.logId) return
+        check(current.logId == checkpoint.logId) { "C_MISSING_DEPENDENCY" }
         if (!current.initialPullCompleted) {
             // A completely verified recovery archive may bootstrap an interrupted first pull.
             // Do not overwrite an already advanced/partially materialized local prefix here;
@@ -1158,10 +1158,10 @@ internal class PalleriaSyncCoordinator(
                 )
                 return
             }
-            return
+            error("C_MISSING_DEPENDENCY")
         }
-        if (current.verifiedSeq != current.materializedSeq) return
-        val coveredHash = current.verifiedHash ?: checkpoint.dataZero ?: return
+        check(current.verifiedSeq == current.materializedSeq) { "C_MISSING_DEPENDENCY" }
+        val coveredHash = current.verifiedHash ?: checkpoint.dataZero ?: error("C_MISSING_DEPENDENCY")
         val expectedEpochHash = checkpoint.epochHash
         val candidates =
             db.snapshotInstallDao().matchingVerifiedInstalls(
@@ -1187,6 +1187,7 @@ internal class PalleriaSyncCoordinator(
             db.snapshotInstallDao().installVerifiedState(chain, candidate.compactionId, exactRevision)
             return
         }
+        error("C_MISSING_DEPENDENCY")
     }
 
     private suspend fun verifyRelayArchiveLocked(

@@ -580,3 +580,6 @@ These AVD checks do not prove physical media transfer, multi-device interoperabi
 
 
 2026-10-23 A-18 DEVICE_LIMIT_REACHED recovery: The authenticated device-revocation control now releases saved requests blocked by DEVICE_LIMIT_REACHED only after the administrator's emergency epoch/revocation transaction is accepted. The gate keeps this code out of generic Settings retries, scopes release to the active chain and exact matching requests, and leaves blockers intact when revocation fails. PallaSyncRetryGateTest passed 18/18; :app:ktlintCheck and debug Kotlin compilation passed. No relay-backed enrollment-capacity fault-injection or physical-device run was performed; A-18 remains pending. Basis: §§10.10, 13.4, 19.2, 19.4.
+
+
+2026-10-23 A-13 restore false-success guard: Changed restore to reject a missing same-log verified snapshot install instead of returning success after doing no install. The isolated Android pruned-archive probe now reaches installExactArchiveSnapshot and fails closed with C_MISSING_DEPENDENCY; the prior probe's post-restore cursor assertions were insufficient to prove a snapshot was installed. This confirms the client lacks a working local snapshot-install candidate for this archive path. Restore/install remains incomplete; do not count the earlier probe as successful restoration. Basis: §§16.6, 17.4–17.5.
