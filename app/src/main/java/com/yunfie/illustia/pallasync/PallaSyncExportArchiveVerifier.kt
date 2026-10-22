@@ -132,7 +132,6 @@ internal object PallaSyncExportArchiveVerifier {
                             includeRecovery && !recoveryObjectsOmitted && pin != null &&
                                 expectedSource?.identityJson != null && recordVerifier != null && snapshotVerifier != null,
                         ) { "C_SCHEMA_VIOLATION" }
-                        check(!restoreEvidenceUnsupported) { "C_MISSING_DEPENDENCY" }
                     }
                     if (pin != null) {
                         check(transparencyHeadVerified) { "C_MISSING_DEPENDENCY" }
@@ -162,6 +161,16 @@ internal object PallaSyncExportArchiveVerifier {
                                     sourceAuthorityProvider,
                                 )
                             }
+                        if (
+                            !checkNotNull(receiptLinks).verifySourceReceipts(
+                                checkNotNull(canonicalPin),
+                                verifiedAuthorityJson,
+                                recordVerifier,
+                                sourceAuthorityProvider,
+                            )
+                        ) {
+                            restoreEvidenceUnsupported = true
+                        }
                         historyCutJson =
                             verifiedAuthorityJson?.let { authority ->
                                 val headObject = Json.parseToJsonElement(checkNotNull(transparencyHeadJson)).jsonObject
@@ -169,6 +178,7 @@ internal object PallaSyncExportArchiveVerifier {
                                 PallaSyncCore.validateInitialHistoryCut(authority, body)
                             }
                     }
+                    if (complete) check(!restoreEvidenceUnsupported) { "C_MISSING_DEPENDENCY" }
                     val verifiedHeader =
                         Header(
                             chainId = header.getValue("chain_id").jsonPrimitive.content,
@@ -195,7 +205,7 @@ internal object PallaSyncExportArchiveVerifier {
                 PallaSyncExportArchive.validateExportLine(value)
                 if (pin != null) {
                     check(!transparencyHeadVerified) { "C_TRANSPARENCY_INVALID" }
-                    if (kind in setOf("upload_receipt", "transparency_entry", "transparency_head")) {
+                    if (kind in setOf("source_receipt", "upload_receipt", "transparency_entry", "transparency_head")) {
                         check(PallaSyncCore.validateExportAttestation(line, checkNotNull(canonicalPin))) { "C_SIGNATURE_INVALID" }
                     }
                     when (kind) {
@@ -274,7 +284,11 @@ internal object PallaSyncExportArchiveVerifier {
                             restoreEvidenceUnsupported = true
                         }
 
-                        "control", "boundary", "source_receipt" -> {
+                        "source_receipt" -> {
+                            checkNotNull(receiptLinks).addSourceReceipt(value.getValue("receipt").jsonObject)
+                        }
+
+                        "control", "boundary" -> {
                             restoreEvidenceUnsupported = true
                         }
                     }
@@ -308,6 +322,9 @@ internal object PallaSyncExportArchiveVerifier {
             database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
             database.execSQL("CREATE TABLE export_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
             database.execSQL("CREATE TABLE export_removed_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
+            database.execSQL(
+                "CREATE TABLE export_source_entries (entry_hash TEXT PRIMARY KEY, relay_seq INTEGER NOT NULL, entry_json TEXT NOT NULL)",
+            )
         }
 
         fun add(
@@ -436,6 +453,82 @@ internal object PallaSyncExportArchiveVerifier {
                     check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
                     receipts.getString(0)
                 }
+
+        fun addSourceReceipt(entry: kotlinx.serialization.json.JsonObject) {
+            val entryHash = checkNotNull(PallaSyncCore.objectHash(entry.toString())) { "C_SCHEMA_VIOLATION" }
+            val sequence = entry.getValue("relay_seq").jsonPrimitive.long
+            try {
+                database.execSQL(
+                    "INSERT INTO export_source_entries(entry_hash,relay_seq,entry_json) VALUES (?,?,?)",
+                    arrayOf<Any>(entryHash, sequence, entry.toString()),
+                )
+            } catch (_: SQLiteConstraintException) {
+                error("C_SCHEMA_VIOLATION")
+            }
+        }
+
+        suspend fun verifySourceReceipts(
+            pinJson: String,
+            finalAuthorityJson: String?,
+            recordVerifier: PallaSyncArchiveRecordVerifier?,
+            sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider?,
+        ): Boolean {
+            database.rawQuery("SELECT entry_hash,relay_seq,entry_json FROM export_source_entries", null).use { entries ->
+                while (entries.moveToNext()) {
+                    val entryHash = entries.getString(0)
+                    val sequence = entries.getLong(1)
+                    val entryJson = entries.getString(2)
+                    val entry = Json.parseToJsonElement(entryJson).jsonObject
+                    val objectHash =
+                        checkNotNull(PallaSyncCore.objectHash(entry.getValue("object").toString())) {
+                            "C_SCHEMA_VIOLATION"
+                        }
+                    val candidates =
+                        database
+                            .rawQuery(
+                                "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
+                                arrayOf(sequence.toString()),
+                            ).use { receipts ->
+                                buildList {
+                                    while (receipts.moveToNext()) add(receipts.getString(0))
+                                }
+                            }
+                    val linked =
+                        candidates.filter { receiptJson ->
+                            val receipt = Json.parseToJsonElement(receiptJson).jsonObject
+                            receipt["entry_hash"]?.jsonPrimitive?.content == entryHash &&
+                                receipt["object_hash"]?.jsonPrimitive?.content == objectHash &&
+                                receipt["received_at_ms"] == entry["received_at_ms"]
+                        }
+                    check(linked.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
+                    PallaSyncCore.validateExportSourceReceipt(linked.single(), entryJson, pinJson)
+
+                    if (entry.getValue("kind").jsonPrimitive.content != "record") return false
+                    val record = entry.getValue("object").jsonObject
+                    val generation = record.getValue("generation").jsonPrimitive.long
+                    val finalGeneration =
+                        finalAuthorityJson
+                            ?.let { Json.parseToJsonElement(it).jsonObject }
+                            ?.get("parameters")
+                            ?.jsonObject
+                            ?.get("generation")
+                            ?.jsonPrimitive
+                            ?.long
+                    val authorityJson =
+                        if (finalGeneration == generation) {
+                            checkNotNull(finalAuthorityJson)
+                        } else {
+                            sourceAuthorityProvider?.invoke(generation) ?: return false
+                        }
+                    if (recordVerifier == null) return false
+                    check(PallaSyncCore.validateRecordAuthority(authorityJson, record.toString(), sequence)) {
+                        "C_ACCEPTANCE_UNPROVEN"
+                    }
+                    recordVerifier.verify(authorityJson, record.toString(), sequence)
+                }
+            }
+            return true
+        }
 
         fun addCompaction(compaction: kotlinx.serialization.json.JsonObject) {
             val hash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }

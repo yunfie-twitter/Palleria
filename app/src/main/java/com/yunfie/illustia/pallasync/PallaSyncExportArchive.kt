@@ -292,7 +292,8 @@ internal class PallaSyncExportArchive private constructor(
         private const val UUID_VARIANT_RFC = 2
         private val B64U_32 = Regex("^[A-Za-z0-9_-]{43}$")
         private val CONTROL_OBJECT_TYPES = setOf("parameters", "device", "epoch", "envelope", "admin")
-        private val RELAY_SIGNED_EXPORT_KINDS = setOf("upload_receipt", "transparency_entry", "transparency_head")
+        private val RELAY_SIGNED_EXPORT_KINDS =
+            setOf("source_receipt", "upload_receipt", "transparency_entry", "transparency_head")
         private val EXPORT_LINE_VALIDATORS: Map<String, (kotlinx.serialization.json.JsonObject) -> Boolean> =
             mapOf(
                 "log" to { line -> objectPayload(line, "entry") },

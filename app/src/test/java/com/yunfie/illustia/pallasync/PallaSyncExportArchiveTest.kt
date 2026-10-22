@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -556,6 +557,85 @@ class PallaSyncExportArchiveTest {
                 "C_ACCEPTANCE_UNPROVEN"
             shouldThrow<IllegalStateException> { index.addLogReceipt(first) }.message shouldBe "C_TRANSPARENCY_INVALID"
         }
+    }
+
+    @Test
+    fun sourceReceiptMustMatchTheSignedHistoricalUploadReceipt() {
+        val (archive, expected) = acceptedEvidenceArchive()
+        val lines =
+            archive
+                .toString(Charsets.UTF_8)
+                .trimEnd('\n')
+                .split('\n')
+                .map { Json.parseToJsonElement(it) }
+        val logEntry =
+            lines
+                .first { value ->
+                    val line = value.jsonObject
+                    line["kind"]?.jsonPrimitive?.content == "log" &&
+                        line["entry"]
+                            ?.jsonObject
+                            ?.get("kind")
+                            ?.jsonPrimitive
+                            ?.content == "record"
+                }.jsonObject
+                .getValue("entry")
+                .jsonObject
+        val sequence = logEntry.getValue("relay_seq").jsonPrimitive.long
+        val uploadReceipt =
+            lines
+                .first { value ->
+                    val line = value.jsonObject
+                    line["kind"]?.jsonPrimitive?.content == "upload_receipt" &&
+                        line["receipt"]
+                            ?.jsonObject
+                            ?.get("relay_seq")
+                            ?.jsonPrimitive
+                            ?.long == sequence
+                }.jsonObject
+                .getValue("receipt")
+                .jsonObject
+
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addLogReceipt(uploadReceipt)
+            index.addSourceReceipt(logEntry)
+            runBlocking { index.verifySourceReceipts(checkNotNull(expected.relayPinJson), null, null, null) } shouldBe false
+        }
+
+        val alteredEntry =
+            buildJsonObject {
+                logEntry.forEach { (key, value) -> put(key, value) }
+                put("received_at_ms", logEntry.getValue("received_at_ms").jsonPrimitive.long + 1L)
+            }
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addLogReceipt(uploadReceipt)
+            index.addSourceReceipt(alteredEntry)
+            shouldThrow<IllegalStateException> {
+                runBlocking { index.verifySourceReceipts(checkNotNull(expected.relayPinJson), null, null, null) }
+            }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
+        }
+
+        val signature = uploadReceipt.getValue("relay_signature").jsonPrimitive.content
+        val alteredReceipt =
+            buildJsonObject {
+                uploadReceipt.forEach { (key, value) -> put(key, value) }
+                put("relay_signature", (if (signature.first() == 'A') "B" else "A") + signature.drop(1))
+            }
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addLogReceipt(alteredReceipt)
+            index.addSourceReceipt(logEntry)
+            shouldThrow<IllegalStateException> {
+                runBlocking { index.verifySourceReceipts(checkNotNull(expected.relayPinJson), null, null, null) }
+            }.message shouldBe "C_SIGNATURE_INVALID"
+        }
+
+        PallaSyncCore.validateExportAttestation(
+            buildJsonObject {
+                put("kind", "source_receipt")
+                put("receipt", logEntry)
+            }.toString(),
+            checkNotNull(expected.relayPinJson),
+        ) shouldBe true
     }
 
     private fun acceptedEvidenceArchive(

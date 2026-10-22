@@ -1042,6 +1042,14 @@ pub fn validate_head(head: &Value, pin: &RelayPin) -> Result {
 pub fn validate_export_attestation(line: &Value, pin: &RelayPin) -> Result {
     let kind = s(line, "kind");
     match kind {
+        "source_receipt" => {
+            let entry = &line["receipt"];
+            validate_log_entry(entry)?;
+            require(
+                s(&entry["object"], "chain_id") == pin.chain_id,
+                "C_LOG_HASH_MISMATCH",
+            )
+        }
         "upload_receipt" => {
             let receipt = &line["receipt"];
             let receipt_pin = RelayPin {
@@ -1054,6 +1062,16 @@ pub fn validate_export_attestation(line: &Value, pin: &RelayPin) -> Result {
         "transparency_head" => validate_head(&line["head"], pin),
         _ => Ok(()),
     }
+}
+
+/// Verify that a relay-signed receipt authenticates one exported source LogEntry.
+/// The receipt carries the historical log_id; the pinned key still binds relay identity.
+pub fn validate_export_source_receipt(receipt: &Value, entry: &Value, pin: &RelayPin) -> Result {
+    let receipt_pin = RelayPin {
+        log_id: s(receipt, "log_id").to_owned(),
+        ..pin.clone()
+    };
+    verify_receipt(receipt, &entry["object"], Some(entry), &receipt_pin)
 }
 
 /// Verify one sequential export transparency entry from the pinned relay's T0 anchor.

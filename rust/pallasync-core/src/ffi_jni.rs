@@ -1253,6 +1253,33 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validate
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_validateExportSourceReceipt<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    receipt: JString<'local>,
+    entry: JString<'local>,
+    pin: JString<'local>,
+) -> jboolean {
+    let result = (|| {
+        let receipt = public_value(&mut env, &receipt)?;
+        let entry = public_value(&mut env, &entry)?;
+        let pin: crate::attestations::RelayPin =
+            serde_json::from_value(public_value(&mut env, &pin)?)
+                .map_err(|_| ClientError("C_BOOTSTRAP_TRUST_REQUIRED"))?;
+        crate::attestations::validate_export_source_receipt(&receipt, &entry, &pin)
+    })();
+    match result {
+        Ok(()) => 1,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error.0);
+            0
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_initialExportTransparencyHash<
     'local,
 >(

@@ -605,6 +605,13 @@ object PallaSyncCore {
         pinJson: String,
     ): Boolean
 
+    /** Verify the historical signed receipt against its exact exported source LogEntry. */
+    external fun validateExportSourceReceipt(
+        receiptJson: String,
+        entryJson: String,
+        pinJson: String,
+    ): Boolean
+
     /** Initialize and advance the streaming §17.10 transparency export proof from T0. */
     external fun initialExportTransparencyHash(
         transparencyId: String,
