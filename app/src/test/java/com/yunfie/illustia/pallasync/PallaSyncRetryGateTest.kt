@@ -272,6 +272,34 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `cursor expiry releases only the exact blocked cursor after restart success`() {
+        val gate = gate()
+        val expired =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/$chain/log?cursor=opaque-next&limit=200")
+                .get()
+                .build()
+        val problem = PallaSyncProblemHint(409, "CURSOR_EXPIRED", true)
+        gate.observe(expired, PallaSyncHttpResult.ProtocolError("CURSOR_EXPIRED", 409), problem)
+        gate.before(expired) shouldBe PallaSyncHttpResult.ProtocolError("CURSOR_EXPIRED")
+
+        gate.cursorRestarted(origin, "other-chain", expired) shouldBe false
+        gate.before(expired) shouldBe PallaSyncHttpResult.ProtocolError("CURSOR_EXPIRED")
+        val restarted =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/$chain/log?after_seq=200&limit=200")
+                .get()
+                .build()
+        gate.before(restarted) shouldBe null
+
+        gate.cursorRestarted(origin, chain, expired) shouldBe true
+        gate.before(expired) shouldBe null
+        gate.cursorRestarted(origin, chain, expired) shouldBe false
+    }
+
+    @Test
     fun `oversized outbox batches shrink durably and clear only replaced request blockers`() {
         val gate = gate()
         val oversized = request("{\"records\":[1,2,3,4]}")

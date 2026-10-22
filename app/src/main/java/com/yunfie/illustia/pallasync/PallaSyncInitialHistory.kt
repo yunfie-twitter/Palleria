@@ -555,7 +555,9 @@ internal class PallaSyncInitialHistory(
                 ?: 0L
         var cursor: String? = null
         val seen = mutableSetOf<String>()
-        do {
+        var expiredCursorRequest: okhttp3.Request? = null
+        var lastExpiredSequence: Long? = null
+        while (true) {
             currentCoroutineContext().ensureActive()
             val after = authority.getValue("sequence").jsonPrimitive.long
             val requestUrl =
@@ -565,11 +567,37 @@ internal class PallaSyncInitialHistory(
                     .apply {
                         if (cursor == null) addQueryParameter("after_seq", after.toString()) else addQueryParameter("cursor", cursor)
                     }.build()
+            val pageBytes =
+                try {
+                    get(requestUrl)
+                } catch (failure: Failure) {
+                    val error = failure.result as? PallaSyncHttpResult.ProtocolError
+                    if (cursor == null || error?.message != "CURSOR_EXPIRED") throw failure
+                    if (lastExpiredSequence == after) throw failure
+                    lastExpiredSequence = after
+                    expiredCursorRequest =
+                        okhttp3.Request
+                            .Builder()
+                            .url(requestUrl)
+                            .get()
+                            .build()
+                    cursor = null
+                    seen.clear()
+                    continue
+                }
             val page =
                 json
                     .parseToJsonElement(
-                        PallaSyncCore.validateLogPage(get(requestUrl), pin.toString(), generation, after, PALLASYNC_PAGE_SIZE),
+                        PallaSyncCore.validateLogPage(
+                            pageBytes,
+                            pin.toString(),
+                            generation,
+                            after,
+                            PALLASYNC_PAGE_SIZE,
+                        ),
                     ).jsonObject
+            expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
+            expiredCursorRequest = null
             for (value in page.getValue("items").jsonArray) {
                 val entry = value.jsonObject
                 val receipt = receipt(pin, entry)
@@ -588,7 +616,8 @@ internal class PallaSyncInitialHistory(
                     .takeIf { it.isString }
                     ?.content
             check(cursor == null || seen.add(checkNotNull(cursor))) { "C_SCHEMA_VIOLATION" }
-        } while (cursor != null)
+            if (cursor == null) break
+        }
         return authority
     }
 
@@ -647,19 +676,51 @@ internal class PallaSyncInitialHistory(
         check(anchor.getValue("transparency_id") == head.getValue("transparency_id") && start <= through) { "C_ROLLBACK_DETECTED" }
         var cursor: String? = null
         val seen = mutableSetOf<String>()
-        do {
+        var expiredCursorRequest: okhttp3.Request? = null
+        var lastExpiredIndex: Long? = null
+        while (true) {
             currentCoroutineContext().ensureActive()
+            val afterIndex = anchor.getValue("index").jsonPrimitive.long
+            val requestUrl =
+                PallaSyncUrls.transparencyEntries(
+                    base,
+                    chain,
+                    id,
+                    afterIndex,
+                    through,
+                    cursor,
+                )
+            val responseBytes =
+                try {
+                    get(requestUrl)
+                } catch (failure: Failure) {
+                    val error = failure.result as? PallaSyncHttpResult.ProtocolError
+                    if (cursor == null || error?.message != "CURSOR_EXPIRED") throw failure
+                    if (lastExpiredIndex == afterIndex) throw failure
+                    lastExpiredIndex = afterIndex
+                    expiredCursorRequest =
+                        okhttp3.Request
+                            .Builder()
+                            .url(requestUrl)
+                            .get()
+                            .build()
+                    cursor = null
+                    seen.clear()
+                    continue
+                }
             val checked =
                 json
                     .parseToJsonElement(
                         PallaSyncCore.validateTransparencyPage(
-                            get(PallaSyncUrls.transparencyEntries(base, chain, id, start, through, cursor)),
+                            responseBytes,
                             pin.toString(),
                             anchor.toString(),
                             head.toString(),
                             PALLASYNC_PAGE_SIZE,
                         ),
                     ).jsonObject
+            expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
+            expiredCursorRequest = null
             val page = checked.getValue("response").jsonObject
             val next = checked.getValue("next_anchor").jsonObject
             store.transaction {
@@ -677,7 +738,8 @@ internal class PallaSyncInitialHistory(
                     .takeIf { it.isString }
                     ?.content
             check(cursor == null || seen.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
-        } while (cursor != null)
+            if (cursor == null) break
+        }
         retain(pin, head, "transparency_head", through)
         return anchor
     }

@@ -95,6 +95,12 @@ internal class PallaSyncRemoteService(
         chain: String,
     ) = policy.retry.reconciled(PallaSyncUrls.extractOrigin(base), chain)
 
+    fun cursorRestarted(
+        base: okhttp3.HttpUrl,
+        chain: String,
+        expiredRequest: Request,
+    ) = policy.retry.cursorRestarted(PallaSyncUrls.extractOrigin(base), chain, expiredRequest)
+
     fun defer(
         request: Request,
         result: PallaSyncHttpResult.Retryable,

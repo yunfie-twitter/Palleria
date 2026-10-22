@@ -422,6 +422,29 @@ internal class PallaSyncRetryGate(
             true
         }
 
+    /** Release only the exact expired cursor request after its progress-bound restart succeeds. */
+    fun cursorRestarted(
+        origin: String,
+        chain: String,
+        expiredRequest: Request,
+    ): Boolean =
+        synchronized(lock) {
+            if (expiredRequest.url.queryParameter("cursor") == null) return@synchronized false
+            val state = load(origin)
+            val key = fingerprint(expiredRequest)
+            if (state.blockedRequests[key] != "CURSOR_EXPIRED" || state.blockedRequestChains[key] != chain) {
+                return@synchronized false
+            }
+            save(
+                origin,
+                state.copy(
+                    blockedRequests = state.blockedRequests - key,
+                    blockedRequestChains = state.blockedRequestChains - key,
+                ),
+            )
+            true
+        }
+
     private fun deadline(
         state: State,
         wait: Long,

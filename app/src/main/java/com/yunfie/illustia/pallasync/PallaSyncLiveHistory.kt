@@ -109,7 +109,9 @@ internal class PallaSyncLiveHistory(
                 .jsonPrimitive.long
         var cursor: String? = null
         val seen = mutableSetOf<String>()
-        do {
+        var expiredCursorRequest: Request? = null
+        var lastExpiredSequence: Long? = null
+        while (true) {
             currentCoroutineContext().ensureActive()
             val after = authority.getValue("sequence").jsonPrimitive.long
             val url =
@@ -125,11 +127,37 @@ internal class PallaSyncLiveHistory(
                             addQueryParameter("cursor", cursor)
                         }
                     }.build()
+            val pageBytes =
+                try {
+                    get(url, chain)
+                } catch (failure: ReadFailure) {
+                    val error = failure.result as? PallaSyncHttpResult.ProtocolError
+                    if (cursor == null || error?.message != "CURSOR_EXPIRED") throw failure
+                    if (lastExpiredSequence == after) throw failure
+                    lastExpiredSequence = after
+                    expiredCursorRequest =
+                        Request
+                            .Builder()
+                            .url(url)
+                            .get()
+                            .build()
+                    cursor = null
+                    seen.clear()
+                    continue
+                }
             val page =
                 Json
                     .parseToJsonElement(
-                        PallaSyncCore.validateLogPage(get(url, chain), pin.toString(), generation, after, PALLASYNC_PAGE_SIZE),
+                        PallaSyncCore.validateLogPage(
+                            pageBytes,
+                            pin.toString(),
+                            generation,
+                            after,
+                            PALLASYNC_PAGE_SIZE,
+                        ),
                     ).jsonObject
+            expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
+            expiredCursorRequest = null
             for (value in page.getValue("items").jsonArray) {
                 val entry = value.jsonObject
                 val receipt = receipt(base, chain, pin, entry)
@@ -147,7 +175,8 @@ internal class PallaSyncLiveHistory(
                     .takeIf { it.isString }
                     ?.content
             check(cursor == null || seen.add(checkNotNull(cursor))) { "C_SCHEMA_VIOLATION" }
-        } while (cursor != null)
+            if (cursor == null) break
+        }
         return authority
     }
 
