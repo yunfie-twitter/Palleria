@@ -454,7 +454,7 @@ class PallaSyncRelayInteropTest {
                     assertEquals(1, migratedKeys.epoch)
                     assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
                     if (args.getString("reseed_archive_probe") == "true") {
-                        probeGenerationOneArchive(coordinator, phrase, state.chainId)
+                        probeGenerationOneArchive(coordinator, store, phrase, state.chainId)
                         InstrumentationRegistry.getInstrumentation().sendStatus(
                             0,
                             Bundle().apply {
@@ -648,6 +648,7 @@ class PallaSyncRelayInteropTest {
 
     private suspend fun probeGenerationOneArchive(
         coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
         mnemonic: String,
         chain: String,
     ) {
@@ -675,52 +676,6 @@ class PallaSyncRelayInteropTest {
                 }.groupingBy { it }
                 .eachCount()
                 .toSortedMap()
-        val entries = lines.drop(1).map { Json.parseToJsonElement(it).jsonObject }
-        val receiptsBySequence =
-            entries
-                .filter { it["kind"]?.jsonPrimitive?.content == "upload_receipt" }
-                .mapNotNull { it.getValue("receipt").jsonObject }
-                .filter { it["relay_seq"]?.toString() != "null" }
-                .associateBy { it.getValue("relay_seq").jsonPrimitive.long }
-        val authoritySteps =
-            entries.filter { it["kind"]?.jsonPrimitive?.content == "log" }.map { line ->
-                val entry = line.getValue("entry").jsonObject
-                val sequence = entry.getValue("relay_seq").jsonPrimitive.long
-                "$sequence:${entry.getValue(
-                    "kind",
-                ).jsonPrimitive.content}:${entry.getValue("object").jsonObject["generation"]?.jsonPrimitive?.content.orEmpty()}"
-            }
-        val replayDiagnostic =
-            runCatching {
-                var authority =
-                    PallaSyncCore.beginExportAuthorityHistory(
-                        checkNotNull(expectedSource.identityJson),
-                        checkNotNull(expectedSource.relayPinJson),
-                    )
-                entries.filter { it["kind"]?.jsonPrimitive?.content == "log" }.forEach { line ->
-                    val entry = line.getValue("entry").jsonObject
-                    val sequence = entry.getValue("relay_seq").jsonPrimitive.long
-                    val receipt = checkNotNull(receiptsBySequence[sequence])
-                    val currentGeneration =
-                        Json.parseToJsonElement(authority).jsonObject["parameters"]
-                            ?.takeUnless { it.toString() == "null" }
-                            ?.jsonObject
-                            ?.get("generation")
-                            ?.jsonPrimitive
-                            ?.content ?: "none"
-                    val entryGeneration =
-                        entry.getValue("object").jsonObject["generation"]?.jsonPrimitive?.content ?: "none"
-                    authority = try {
-                        PallaSyncCore.advanceAuthorityHistory(authority, entry.toString(), receipt.toString())
-                    } catch (failure: Throwable) {
-                        error(
-                            "seq=$sequence kind=${entry.getValue("kind").jsonPrimitive.content} " +
-                                "current=$currentGeneration entry=$entryGeneration ${failure.message}",
-                        )
-                    }
-                }
-                "PASS"
-            }.getOrElse { "${it::class.java.simpleName}:${it.message ?: "unknown"}" }
         val verification =
             runCatching {
                 coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
@@ -729,21 +684,37 @@ class PallaSyncRelayInteropTest {
         println("pallasync_gen1_archive_kinds=$kinds")
         val verificationResult = if (verification.isSuccess) "PASS" else verification.exceptionOrNull()?.message ?: "unknown"
         println("pallasync_gen1_archive_verify=$verificationResult")
+        val verified = verification.getOrThrow()
+        val verifiedAuthority = Json.parseToJsonElement(checkNotNull(verified.authorityJson)).jsonObject
+        val verifiedParameters = verifiedAuthority.getValue("parameters").jsonObject
+        val verifiedPin = verifiedAuthority.getValue("pin").jsonObject
+        val verifiedHistoryCut = Json.parseToJsonElement(checkNotNull(verified.historyCutJson)).jsonObject
+        val verifiedHead = verifiedHistoryCut.getValue("head").jsonObject
+        assertEquals(1L, verifiedParameters.getValue("generation").jsonPrimitive.long)
+        assertEquals(verified.headSeq, verifiedAuthority.getValue("sequence").jsonPrimitive.long)
+        assertEquals(verified.headHash, verifiedAuthority.getValue("head_hash").jsonPrimitive.content)
+        assertEquals(verified.logId, verifiedPin.getValue("log_id").jsonPrimitive.content)
+        assertEquals(verified.headSeq, verifiedHead.getValue("head_seq").jsonPrimitive.long)
+        assertEquals(verified.headHash, verifiedHead.getValue("head_hash").jsonPrimitive.content)
         InstrumentationRegistry.getInstrumentation().sendStatus(
             0,
             Bundle().apply {
                 putString("pallasync_gen1_archive_bytes", bytes.size.toString())
                 putString("pallasync_gen1_archive_kinds", kinds.toString())
-                putString("pallasync_gen1_archive_log", authoritySteps.joinToString(","))
-                putString("pallasync_gen1_archive_replay", replayDiagnostic)
+                putString("pallasync_gen1_archive_authority_replay", "verified_generation_transition")
                 putString("pallasync_gen1_archive_verify", verificationResult)
             },
         )
-        val verified = verification.getOrThrow()
         assertTrue("Generation 1 archive was not complete", verified.complete)
         assertEquals(1L, verified.generation)
         assertTrue(verified.includeRecovery)
         coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val restored = checkNotNull(store.dao.getChainState(chain))
+        assertEquals(1L, restored.generation)
+        assertEquals(verified.logId, restored.logId)
+        assertEquals(verified.headSeq, restored.verifiedSeq)
+        assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         println("pallasync_gen1_archive_restore=verified")
     }
 
