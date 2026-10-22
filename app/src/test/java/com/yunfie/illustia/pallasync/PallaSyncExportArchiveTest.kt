@@ -725,6 +725,93 @@ class PallaSyncExportArchiveTest {
     }
 
     @Test
+    fun detachedSourceControlEntryRequiresAndAdvancesExactPriorAuthority() {
+        val (archive, expected) =
+            acceptedEvidenceArchive(
+                includeRecovery = true,
+                sourceReceiptSequence = 1L,
+                sourceReceiptFromOtherIncarnation = true,
+            )
+        val sourceLogId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+        val sourcePin =
+            buildJsonObject {
+                put(
+                    "origin",
+                    Json.parseToJsonElement(checkNotNull(expected.relayPinJson)).jsonObject.getValue("origin"),
+                )
+                put("chain_id", expected.chainId)
+                put("public_key", alternateRelayPublicKey())
+                put("log_id", sourceLogId)
+            }
+        val priorAuthority =
+            PallaSyncCore.beginExportAuthorityHistory(
+                checkNotNull(expected.identityJson),
+                checkNotNull(PallaSyncCore.canonicalJson(sourcePin.toString())),
+            )
+        val retainedSequences = mutableListOf<Long>()
+
+        val verified =
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                sourceLogAuthorityProvider = { _, candidateLogId ->
+                    priorAuthority.takeIf { candidateLogId == sourceLogId }
+                },
+                sourceEntrySink = { candidateLogId, _, _, sequence ->
+                    candidateLogId shouldBe sourceLogId
+                    retainedSequences += sequence
+                },
+            )
+
+        verified.complete shouldBe true
+        retainedSequences shouldBe listOf(1L)
+
+        val archiveLines =
+            archive
+                .toString(Charsets.UTF_8)
+                .trimEnd('\n')
+                .split('\n')
+                .map(Json::parseToJsonElement)
+        val sourceEntry =
+            archiveLines
+                .single { it.jsonObject["kind"]?.jsonPrimitive?.content == "source_receipt" }
+                .jsonObject
+                .getValue("receipt")
+                .jsonObject
+        val historicalReceipt =
+            archiveLines
+                .map { it.jsonObject }
+                .single {
+                    it["kind"]?.jsonPrimitive?.content == "upload_receipt" &&
+                        it["receipt"]
+                            ?.jsonObject
+                            ?.get("log_id")
+                            ?.jsonPrimitive
+                            ?.content == sourceLogId
+                }.getValue("receipt")
+                .jsonObject
+        val lateAuthority =
+            PallaSyncCore.advanceAuthorityHistory(priorAuthority, sourceEntry.toString(), historicalReceipt.toString())
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                sourceLogAuthorityProvider = { _, candidateLogId ->
+                    lateAuthority.takeIf { candidateLogId == sourceLogId }
+                },
+            )
+        }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
+    }
+
+    @Test
     fun completeArchiveRetainsExactRemovedIdEvidenceOnlyAfterFooterVerification() {
         val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, includeRemovedId = true)
         val retained = mutableListOf<List<String>>()
@@ -896,7 +983,24 @@ class PallaSyncExportArchiveTest {
                                     .map { it.jsonObject }
                                     .single { it.getValue("relay_seq").jsonPrimitive.long == sequence }
                             listOf(
-                                signHistoricalReceipt(currentReceipt, sourceEntry),
+                                signHistoricalReceipt(
+                                    currentReceipt,
+                                    sourceEntry,
+                                    logId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                                    previousHeadHash =
+                                        if (sequence == 1L) {
+                                            testDataZero(
+                                                fixture
+                                                    .getValue("identity")
+                                                    .jsonObject
+                                                    .getValue("chain_id")
+                                                    .jsonPrimitive.content,
+                                                "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                                            )
+                                        } else {
+                                            null
+                                        },
+                                ),
                             ) +
                                 if (duplicateSourceIncarnation) {
                                     listOf(
@@ -1107,6 +1211,7 @@ class PallaSyncExportArchiveTest {
         template: kotlinx.serialization.json.JsonObject,
         entry: kotlinx.serialization.json.JsonObject,
         logId: String = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        previousHeadHash: String? = null,
         receiptId: String = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
         transparencyId: String = "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         useAlternateRelayKey: Boolean = false,
@@ -1126,6 +1231,7 @@ class PallaSyncExportArchiveTest {
         val unsigned =
             buildJsonObject {
                 template.filterKeys { it != "relay_signature" && it != "relay_key_id" }.forEach { (key, value) -> put(key, value) }
+                previousHeadHash?.let { put("previous_head_hash", it) }
                 put(
                     "relay_key_id",
                     if (useAlternateRelayKey) alternateRelayKeyId() else "oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck",
@@ -1175,6 +1281,24 @@ class PallaSyncExportArchiveTest {
             unsigned.forEach { (key, value) -> put(key, value) }
             put("relay_signature", signature)
         }
+    }
+
+    private fun testDataZero(
+        chainId: String,
+        logId: String,
+    ): String {
+        val chainBytes = Base64.getUrlDecoder().decode(chainId)
+        val uuid = java.util.UUID.fromString(logId)
+        val logBytes =
+            ByteBuffer
+                .allocate(16)
+                .putLong(uuid.mostSignificantBits)
+                .putLong(uuid.leastSignificantBits)
+                .array()
+        val prefix = "PALLASYNC-LOG-v3\u0000".toByteArray(Charsets.US_ASCII)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(
+            MessageDigest.getInstance("SHA-256").digest(prefix + chainBytes + logBytes),
+        )
     }
 
     private fun alternateRelayPublicKey(): String =
