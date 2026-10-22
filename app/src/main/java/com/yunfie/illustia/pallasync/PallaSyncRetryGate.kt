@@ -38,6 +38,8 @@ internal class PallaSyncRetryGate(
         val blockedRequests: Map<String, String> = emptyMap(),
         val blockedRequestChains: Map<String, String> = emptyMap(),
         val capacityIssues: Map<String, CapacityIssue> = emptyMap(),
+        val recordBatchLimits: Map<String, Int> = emptyMap(),
+        val oversizedRecordBatchRequests: Map<String, Set<String>> = emptyMap(),
         val relayShuttingDown: Boolean = false,
         val shutdownAtMs: Long? = null,
         val migrationOrigin: String? = null,
@@ -348,6 +350,73 @@ internal class PallaSyncRetryGate(
                     blockedRequests = state.blockedRequests - resolved,
                     blockedRequestChains = state.blockedRequestChains - resolved,
                     capacityIssues = state.capacityIssues - chain,
+                ),
+            )
+            true
+        }
+
+    /** §19.2 PAYLOAD_TOO_LARGE recovery: persist a smaller record batch ceiling. */
+    fun reduceRecordBatchLimit(
+        origin: String,
+        chain: String,
+        attemptedCount: Int,
+        request: Request,
+    ): Int? =
+        synchronized(lock) {
+            if (attemptedCount <= 1 || request.method != "POST" || !request.url.encodedPath.endsWith("/records")) {
+                return@synchronized null
+            }
+            val next = (attemptedCount / 2).coerceAtLeast(1)
+            val state = load(origin)
+            val reduced = minOf(state.recordBatchLimits[chain] ?: Int.MAX_VALUE, next)
+            val oversizedKey = fingerprint(request)
+            save(
+                origin,
+                state.copy(
+                    recordBatchLimits = state.recordBatchLimits + (chain to reduced),
+                    oversizedRecordBatchRequests =
+                        state.oversizedRecordBatchRequests +
+                            (chain to (state.oversizedRecordBatchRequests[chain].orEmpty() + oversizedKey)),
+                ),
+            )
+            reduced
+        }
+
+    fun recordBatchLimit(
+        origin: String,
+        chain: String,
+        configuredCount: Int,
+    ): Int =
+        synchronized(lock) {
+            if (configuredCount <= 0) {
+                configuredCount
+            } else {
+                minOf(configuredCount, load(origin).recordBatchLimits[chain] ?: configuredCount).coerceAtLeast(1)
+            }
+        }
+
+    /** Clear only record-upload 413 blockers after every smaller replacement batch is proven. */
+    fun recordBatchesRecovered(
+        origin: String,
+        chain: String,
+    ): Boolean =
+        synchronized(lock) {
+            val state = load(origin)
+            val resolved =
+                state
+                    .oversizedRecordBatchRequests[chain]
+                    .orEmpty()
+                    .filter {
+                        state.blockedRequests[it] == "PAYLOAD_TOO_LARGE" &&
+                            state.blockedRequestChains[it] == chain
+                    }.toSet()
+            if (resolved.isEmpty()) return@synchronized false
+            save(
+                origin,
+                state.copy(
+                    blockedRequests = state.blockedRequests - resolved,
+                    blockedRequestChains = state.blockedRequestChains - resolved,
+                    oversizedRecordBatchRequests = state.oversizedRecordBatchRequests - chain,
                 ),
             )
             true

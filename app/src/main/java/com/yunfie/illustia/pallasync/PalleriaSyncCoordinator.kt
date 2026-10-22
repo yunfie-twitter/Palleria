@@ -7375,14 +7375,19 @@ internal class PalleriaSyncCoordinator(
         }
         // §11.1: one bounded pass. A later cycle resumes remaining immutable objects.
         val events = db.dao.queuedBatch(chainId, PALLASYNC_PAGE_SIZE)
+        val origin = PallaSyncUrls.extractOrigin(baseUrl)
         var offset = 0
         while (offset < events.size) {
-            val count = recordUploadBatchSize(events.drop(offset).map { it.eventJson }, relayLimits)
+            val configuredCount = recordUploadBatchSize(events.drop(offset).map { it.eventJson }, relayLimits)
+            val count = policy.retry.recordBatchLimit(origin, chainId, configuredCount)
             if (count == 0) return PallaSyncHttpResult.ProtocolError("C_LOCAL_LIMIT")
             val result = uploadOutboxBatch(baseUrl, chainId, events.drop(offset).take(count))
             if (result !is PallaSyncHttpResult.Success) return result
             offset += count
         }
+        // If the process stopped after the final proven batch but before retry-state cleanup,
+        // an empty resumed outbox is also sufficient to retire these exact 413 blockers.
+        policy.retry.recordBatchesRecovered(origin, chainId)
         return PallaSyncHttpResult.Success(Unit)
     }
 
@@ -7405,31 +7410,53 @@ internal class PalleriaSyncCoordinator(
                 .header("Authorization", "PallaSync $token")
                 .post(body.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
-        return when (val result = executeRecordUpload(request, submitted)) {
-            is PallaSyncHttpResult.Success -> {
-                val proof = proveUploadOutcome(base, chain, result.value)
-                if (proof is PallaSyncHttpResult.Success) {
-                    val byId = events.zip(objects).associate { (event, obj) -> obj.getValue("record_id").jsonPrimitive.content to event }
-                    val reconciled = reconcileUploadOutcome(result.value, byId, PallaSyncUrls.extractOrigin(base))
-                    if (reconciled is PallaSyncHttpResult.Retryable) remote.defer(request, reconciled)
-                    reconciled
-                } else {
-                    proof
+        val result =
+            when (val response = executeRecordUpload(request, submitted)) {
+                is PallaSyncHttpResult.Success -> {
+                    val proof = proveUploadOutcome(base, chain, response.value)
+                    if (proof is PallaSyncHttpResult.Success) {
+                        val byId =
+                            events.zip(objects).associate { (event, obj) ->
+                                obj.getValue("record_id").jsonPrimitive.content to event
+                            }
+                        val reconciled = reconcileUploadOutcome(response.value, byId, PallaSyncUrls.extractOrigin(base))
+                        if (reconciled is PallaSyncHttpResult.Retryable) remote.defer(request, reconciled)
+                        reconciled
+                    } else {
+                        proof
+                    }
+                }
+
+                PallaSyncHttpResult.Gone -> {
+                    PallaSyncHttpResult.Gone
+                }
+
+                is PallaSyncHttpResult.Retryable -> {
+                    response.also { nextProbeAt = 0L }
+                }
+
+                is PallaSyncHttpResult.ProtocolError -> {
+                    response
                 }
             }
-
-            PallaSyncHttpResult.Gone -> {
-                PallaSyncHttpResult.Gone
+        if (result is PallaSyncHttpResult.ProtocolError && result.message == "PAYLOAD_TOO_LARGE" && events.size > 1) {
+            val reducedCount =
+                policy.retry.reduceRecordBatchLimit(
+                    PallaSyncUrls.extractOrigin(base),
+                    chain,
+                    events.size,
+                    request,
+                ) ?: return result
+            var offset = 0
+            while (offset < events.size) {
+                val size = minOf(reducedCount, events.size - offset)
+                val retry = uploadOutboxBatch(base, chain, events.subList(offset, offset + size))
+                if (retry !is PallaSyncHttpResult.Success) return retry
+                offset += size
             }
-
-            is PallaSyncHttpResult.Retryable -> {
-                result.also { nextProbeAt = 0L }
-            }
-
-            is PallaSyncHttpResult.ProtocolError -> {
-                result
-            }
+            return PallaSyncHttpResult.Success(Unit)
         }
+        return result
     }
 
     private suspend fun proveUploadOutcome(

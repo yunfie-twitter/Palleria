@@ -272,6 +272,25 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `oversized outbox batches shrink durably and clear only replaced request blockers`() {
+        val gate = gate()
+        val oversized = request("{\"records\":[1,2,3,4]}")
+        val unrelated = request("{\"records\":[5,6,7,8]}")
+        val problem = PallaSyncProblemHint(413, "PAYLOAD_TOO_LARGE", true)
+        val failure = PallaSyncHttpResult.ProtocolError("PAYLOAD_TOO_LARGE", 413)
+        gate.observe(oversized, failure, problem)
+        gate.observe(unrelated, failure, problem)
+
+        gate.reduceRecordBatchLimit(origin, chain, 4, oversized) shouldBe 2
+        gate.recordBatchLimit(origin, chain, 10) shouldBe 2
+        gate().recordBatchLimit(origin, chain, 10) shouldBe 2
+        gate.before(oversized) shouldBe PallaSyncHttpResult.ProtocolError("PAYLOAD_TOO_LARGE")
+        gate.recordBatchesRecovered(origin, chain) shouldBe true
+        gate.before(oversized) shouldBe null
+        gate.before(unrelated) shouldBe PallaSyncHttpResult.ProtocolError("PAYLOAD_TOO_LARGE")
+    }
+
+    @Test
     fun `relay shutdown suspends writes and persists destination only as an explicit suggestion`() {
         val gate = gate { 0 }
         val hint =
