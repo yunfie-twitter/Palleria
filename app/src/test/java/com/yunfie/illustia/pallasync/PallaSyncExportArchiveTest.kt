@@ -572,6 +572,7 @@ class PallaSyncExportArchiveTest {
                 sourceReceiptFromOtherIncarnation = true,
             )
         val verifiedRecordSequences = mutableListOf<Long>()
+        val retainedSourceReceipts = mutableListOf<Triple<String, Long, String>>()
         val verified =
             PallaSyncExportArchiveVerifier.verify(
                 ByteArrayInputStream(archive),
@@ -581,9 +582,20 @@ class PallaSyncExportArchiveTest {
                     verifiedRecordSequences += relaySequence
                 },
                 PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                sourceEntrySink = { logId, _, receipt, sequence ->
+                    val receiptLogId =
+                        Json
+                            .parseToJsonElement(receipt)
+                            .jsonObject
+                            .getValue("log_id")
+                            .jsonPrimitive.content
+                    retainedSourceReceipts += Triple(logId, sequence, receiptLogId)
+                },
             )
         verified.complete shouldBe true
         verifiedRecordSequences shouldBe listOf(6L, 6L)
+        retainedSourceReceipts shouldBe
+            listOf(Triple("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", 6L, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"))
 
         val (partialArchive, partialExpected) = acceptedEvidenceArchive(sourceReceiptSequence = 6L)
         val lines =

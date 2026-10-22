@@ -1282,6 +1282,65 @@ internal class PalleriaSyncCoordinator(
                                     }
                                 } ?: error("C_MISSING_DEPENDENCY")
                         },
+                        sourceEntrySink =
+                            if (retainEvidence) {
+                                { sourceLogId, entryJson, receiptJson, sequence ->
+                                    val entry = Json.parseToJsonElement(entryJson).jsonObject
+                                    val receipt = Json.parseToJsonElement(receiptJson).jsonObject
+                                    val receiptLogId = receipt.getValue("log_id").jsonPrimitive.content
+                                    val receiptSequence = receipt.getValue("relay_seq").jsonPrimitive.long
+                                    check(receiptLogId == sourceLogId && receiptSequence == sequence) { "C_ACCEPTANCE_UNPROVEN" }
+                                    val entryHash = checkNotNull(PallaSyncCore.objectHash(entryJson)) { "C_SCHEMA_VIOLATION" }
+                                    val receiptHash = checkNotNull(PallaSyncCore.objectHash(receiptJson)) { "C_SCHEMA_VIOLATION" }
+                                    val record = entry.getValue("object").jsonObject
+                                    val generation = record.getValue("generation").jsonPrimitive.long
+                                    db.transaction {
+                                        db.protocolDao().retainEvidence(
+                                            ProtectedEvidenceEntity(
+                                                pin.getValue("origin").jsonPrimitive.content,
+                                                receipt.getValue("relay_key_id").jsonPrimitive.content,
+                                                state.chainId,
+                                                sourceLogId,
+                                                "upload_receipt",
+                                                sequence,
+                                                receiptHash,
+                                                receiptJson,
+                                            ),
+                                        )
+                                        db.protocolDao().retainLogEntry(
+                                            LogEntryEntity(
+                                                state.chainId,
+                                                sourceLogId,
+                                                sequence,
+                                                entryHash,
+                                                entryJson,
+                                                receiptJson,
+                                                "authority_verified",
+                                            ),
+                                        )
+                                        val existing =
+                                            db.protocolDao().authorityObject(state.chainId, "source_history_entry", entryHash)
+                                        if (existing == null) {
+                                            db.protocolDao().putAuthority(
+                                                com.yunfie.illustia.pallasync.data.AuthorityHistoryEntity(
+                                                    state.chainId,
+                                                    "source_history_entry",
+                                                    entryHash,
+                                                    generation,
+                                                    entryJson,
+                                                    "authority_verified",
+                                                ),
+                                            )
+                                        } else {
+                                            check(existing.signedJson == entryJson && existing.generation == generation) {
+                                                "C_LOG_HASH_MISMATCH"
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                null
+                            },
                     ).also { verified ->
                         check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
                     }

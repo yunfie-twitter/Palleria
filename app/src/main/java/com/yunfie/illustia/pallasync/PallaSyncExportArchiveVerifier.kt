@@ -27,6 +27,7 @@ internal typealias PallaSyncArchiveReseedAuthorityVerifier =
     suspend (String, JsonArray, kotlinx.serialization.json.JsonObject) -> String
 
 internal typealias PallaSyncArchiveSourceAuthorityProvider = suspend (Long) -> String?
+internal typealias PallaSyncArchiveSourceEntrySink = suspend (String, String, String, Long) -> Unit
 
 /** Streaming §17.4 footer and line-integrity check; signatures and AEAD remain separate gates. */
 internal object PallaSyncExportArchiveVerifier {
@@ -56,6 +57,7 @@ internal object PallaSyncExportArchiveVerifier {
         beforeRetain: (suspend (Header) -> Unit)? = null,
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
+        sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
     ): Header =
         runBlocking {
             verifySuspending(
@@ -67,6 +69,7 @@ internal object PallaSyncExportArchiveVerifier {
                 beforeRetain,
                 reseedAuthorityVerifier,
                 sourceAuthorityProvider,
+                sourceEntrySink,
             )
         }
 
@@ -79,6 +82,7 @@ internal object PallaSyncExportArchiveVerifier {
         beforeRetain: (suspend (Header) -> Unit)? = null,
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
+        sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -167,6 +171,7 @@ internal object PallaSyncExportArchiveVerifier {
                                 verifiedAuthorityJson,
                                 recordVerifier,
                                 sourceAuthorityProvider,
+                                sourceEntrySink,
                             )
                         ) {
                             restoreEvidenceUnsupported = true
@@ -517,6 +522,7 @@ internal object PallaSyncExportArchiveVerifier {
             finalAuthorityJson: String?,
             recordVerifier: PallaSyncArchiveRecordVerifier?,
             sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider?,
+            sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
         ): Boolean {
             database.rawQuery("SELECT entry_hash,relay_seq,entry_json FROM export_source_entries", null).use { entries ->
                 while (entries.moveToNext()) {
@@ -570,6 +576,9 @@ internal object PallaSyncExportArchiveVerifier {
                         "C_ACCEPTANCE_UNPROVEN"
                     }
                     recordVerifier.verify(authorityJson, record.toString(), sequence)
+                    val sourceReceipt = Json.parseToJsonElement(linked.single()).jsonObject
+                    val sourceLogId = sourceReceipt.getValue("log_id").jsonPrimitive.content
+                    sourceEntrySink?.invoke(sourceLogId, entryJson, linked.single(), sequence)
                 }
             }
             return true
