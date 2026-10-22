@@ -111,7 +111,7 @@ class PallaSyncRetryGateTest {
         gate().before(request()) shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED")
         gate.resolved(origin, chain, "EPOCH_STALE") shouldBe false
         gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED")
-        gate.resolved(origin, chain, "QUOTA_EXCEEDED") shouldBe true
+        gate.resolveCapacity(origin, chain) shouldBe true
         gate.before(request()) shouldBe null
         PallaSyncRetryGate.retryAfter("12") shouldBe 12_000
         PallaSyncRetryGate.retryAfter("invalid") shouldBe 3_600_000
@@ -221,8 +221,8 @@ class PallaSyncRetryGateTest {
 
         gate.blockedCodes(origin, chain) shouldBe listOf("EPOCH_NOT_FOUND", "EPOCH_STALE")
         gate.blockedCodes(origin, anotherChain) shouldBe listOf("DEVICE_PENDING_KEYS")
-        gate.resolved(origin, chain, "EPOCH_STALE") shouldBe true
-        gate.blockedCodes(origin, chain) shouldBe listOf("EPOCH_NOT_FOUND")
+        gate.resolved(origin, chain, "EPOCH_STALE") shouldBe false
+        gate.blockedCodes(origin, chain) shouldBe listOf("EPOCH_NOT_FOUND", "EPOCH_STALE")
         gate.blockedCodes(origin, anotherChain) shouldBe listOf("DEVICE_PENDING_KEYS")
     }
 
@@ -235,9 +235,40 @@ class PallaSyncRetryGateTest {
 
         gate.blockedCodes(origin, chain) shouldBe listOf("DEVICE_REVOKED")
         PallaSyncRetryGate.canRetryAfterResolution("DEVICE_REVOKED") shouldBe false
-        PallaSyncRetryGate.canRetryAfterResolution("DEVICE_PENDING_KEYS") shouldBe true
+        PallaSyncRetryGate.canRetryAfterResolution("DEVICE_PENDING_KEYS") shouldBe false
         gate.resolved(origin, chain, "DEVICE_REVOKED") shouldBe false
         gate.before(request()) shouldBe PallaSyncHttpResult.ProtocolError("DEVICE_REVOKED")
+    }
+
+    @Test
+    fun `stale signed proposals stay blocked until their dedicated rebuild workflow`() {
+        val gate = gate()
+        val staleCodes =
+            listOf(
+                "EPOCH_STALE",
+                "CAS_MISMATCH",
+                "GENERATION_MISMATCH",
+                "MEMBER_SET_MISMATCH",
+                "CURSOR_EXPIRED",
+                "LOG_ID_MISMATCH",
+                "LOG_PRUNED",
+                "SNAPSHOT_INCOMPLETE",
+                "COMPACTION_UNSAFE",
+                "REPAIR_PROOF_REQUIRED",
+                "PAYLOAD_TOO_LARGE",
+                "TRANSPARENCY_ID_MISMATCH",
+                "TRANSPARENCY_RANGE_UNAVAILABLE",
+            )
+
+        staleCodes.forEach { code ->
+            val source = request("{\"proposal\":\"immutable\"}")
+            val hint = PallaSyncProblemHint(409, code, true)
+            gate.observe(source, PallaSyncHttpResult.ProtocolError(code, 409), hint)
+
+            PallaSyncRetryGate.canRetryAfterResolution(code) shouldBe false
+            gate.resolved(origin, chain, code) shouldBe false
+            gate.before(source) shouldBe PallaSyncHttpResult.ProtocolError(code)
+        }
     }
 
     @Test
