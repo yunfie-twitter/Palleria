@@ -1,6 +1,8 @@
 package com.yunfie.illustia.pallasync
 
 import io.kotest.matchers.shouldBe
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Test
 
 class PallaSyncRemoteServicePathTest {
@@ -23,6 +25,40 @@ class PallaSyncRemoteServicePathTest {
     fun `unrelated and malformed shallow paths do not acquire a chain binding`() {
         PallaSyncRemoteService.chainIdForAuthorization(listOf("pallasync", "v3", "health")) shouldBe null
         PallaSyncRemoteService.chainIdForAuthorization(listOf("pallasync", "v3", "chains")) shouldBe null
+    }
+
+    @Test
+    fun `historical source scope allows only reads of the exact chain at the exact origin`() {
+        val scope = PallaSyncRemoteService.HistoricalSourceRead(CHAIN_ID, "https://source.example")
+        val allowed =
+            Request
+                .Builder()
+                .url("https://source.example/pallasync/v3/chains/$CHAIN_ID/log")
+                .get()
+                .build()
+        val wrongChain =
+            Request
+                .Builder()
+                .url("https://source.example/pallasync/v3/chains/another-chain/log")
+                .get()
+                .build()
+        val wrongOrigin =
+            Request
+                .Builder()
+                .url("https://target.example/pallasync/v3/chains/$CHAIN_ID/log")
+                .get()
+                .build()
+        val mutation =
+            Request
+                .Builder()
+                .url("https://source.example/pallasync/v3/chains/$CHAIN_ID/records")
+                .post("{}".toRequestBody())
+                .build()
+
+        PallaSyncRemoteService.allowsHistoricalSourceRead(allowed, scope) shouldBe true
+        PallaSyncRemoteService.allowsHistoricalSourceRead(wrongChain, scope) shouldBe false
+        PallaSyncRemoteService.allowsHistoricalSourceRead(wrongOrigin, scope) shouldBe false
+        PallaSyncRemoteService.allowsHistoricalSourceRead(mutation, scope) shouldBe false
     }
 
     private companion object {

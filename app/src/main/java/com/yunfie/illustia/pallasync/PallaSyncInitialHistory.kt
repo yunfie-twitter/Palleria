@@ -33,6 +33,7 @@ internal class PallaSyncInitialHistory(
     private val importedAuthority: JsonObject? = null,
     private val peerToken: ((HttpUrl, String, String) -> String?)? = null,
     private val source: String? = "relay_full_replay",
+    private val historicalSourceRead: PallaSyncRemoteService.HistoricalSourceRead? = null,
     private val progress: (String) -> Unit = {},
 ) {
     private val origin = PallaSyncUrls.extractOrigin(base)
@@ -40,6 +41,13 @@ internal class PallaSyncInitialHistory(
     private val adminPublicKey = root?.identity?.adminPublicKey ?: checkNotNull(peerAdminPublicKey) { "C_BOOTSTRAP_TRUST_REQUIRED" }
     private val prefix = "/pallasync/v3/chains/$chain"
     private val json = Json
+
+    init {
+        check(
+            historicalSourceRead == null ||
+                (peerToken != null && historicalSourceRead.chainId == chain && historicalSourceRead.origin == origin),
+        ) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+    }
 
     suspend fun load(
         previous: JsonObject? = null,
@@ -737,7 +745,12 @@ internal class PallaSyncInitialHistory(
                 .header("Authorization", "PallaSync $token")
                 .get()
                 .build()
-        return when (val response = remote.execute(request) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }) {
+        return when (
+            val response =
+                remote.execute(request, historicalSourceRead = historicalSourceRead) {
+                    PallaSyncHttpResult.Success(it.pallaSyncBytes())
+                }
+        ) {
             is PallaSyncHttpResult.Success -> response.value
             else -> throw Failure(response)
         }
@@ -747,5 +760,5 @@ internal class PallaSyncInitialHistory(
 
     class Failure(
         val result: PallaSyncHttpResult<*>,
-    ) : RuntimeException()
+    ) : RuntimeException(result.toString())
 }

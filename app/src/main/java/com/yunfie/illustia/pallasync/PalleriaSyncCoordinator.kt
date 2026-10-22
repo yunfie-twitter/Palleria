@@ -2654,6 +2654,11 @@ internal class PalleriaSyncCoordinator(
                             )
                         },
                         source = null,
+                        historicalSourceRead =
+                            PallaSyncRemoteService.HistoricalSourceRead(
+                                chainId = state.chainId,
+                                origin = sourceOrigin,
+                            ),
                     )
                 val report = captureReseedSourceConflict(history, sourceOrigin, sourceCut, sourceAuthority, sourceAnchor)
                 val latest = checkNotNull(journalDao.get(state.chainId)) { "C_MISSING_DEPENDENCY" }

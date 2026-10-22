@@ -21,6 +21,11 @@ internal class PallaSyncRemoteService(
     suppliedClient: OkHttpClient,
     private val policy: PallaSyncPolicyGate,
 ) {
+    internal data class HistoricalSourceRead(
+        val chainId: String,
+        val origin: String,
+    )
+
     private val client =
         suppliedClient
             .newBuilder()
@@ -57,6 +62,14 @@ internal class PallaSyncRemoteService(
             return pathSegments[CHAIN_ROUTE_SEGMENTS]
         }
 
+        internal fun allowsHistoricalSourceRead(
+            request: Request,
+            scope: HistoricalSourceRead,
+        ): Boolean =
+            request.method == "GET" &&
+                PallaSyncUrls.extractOrigin(request.url) == scope.origin &&
+                chainIdForAuthorization(request.url.pathSegments) == scope.chainId
+
         fun cancelOrigin(origin: String) {
             calls.filter { PallaSyncUrls.extractOrigin(it.request().url) == origin }.forEach { it.cancel() }
             clients.forEach { reference ->
@@ -92,6 +105,7 @@ internal class PallaSyncRemoteService(
     fun <T> execute(
         request: Request,
         migrationDestination: Boolean = false,
+        historicalSourceRead: HistoricalSourceRead? = null,
         onSuccess: (Response) -> PallaSyncHttpResult<T>,
     ): PallaSyncHttpResult<T> {
         val chainRequest = request.url.encodedPath == "/pallasync/v3/chains" || request.url.encodedPath.startsWith("/pallasync/v3/chains/")
@@ -109,7 +123,7 @@ internal class PallaSyncRemoteService(
         var attempted = false
         val result =
             try {
-                authorize(request, migrationDestination)
+                authorize(request, migrationDestination, historicalSourceRead)
                 attempted = true
                 call.execute().use { response ->
                     hint = problem(response)
@@ -168,31 +182,38 @@ internal class PallaSyncRemoteService(
     private fun authorize(
         request: Request,
         migrationDestination: Boolean,
+        historicalSourceRead: HistoricalSourceRead?,
     ) {
         if (request.method == "GET" && request.url.encodedPath == "/pallasync/v3/health") {
             check(request.header("Authorization") == null && request.header("Cookie") == null && request.url.query == null) {
                 "C_RELAY_DISCLOSURE_INVALID"
             }
         } else {
-            chainIdForAuthorization(request.url.pathSegments)?.let { chainId ->
-                if (migrationDestination) {
-                    val prefix = "/pallasync/v3/chains/$chainId"
-                    val suffix = request.url.encodedPath.removePrefix(prefix)
-                    val allowed =
-                        when {
-                            request.method == "POST" && suffix == "/snapshots/parts" -> true
-                            request.method == "PUT" && suffix == "/parameters" -> true
-                            request.method == "GET" && suffix in setOf("/transparency/head", "/transparency/entries") -> true
-                            request.method == "POST" && Regex("/devices/[0-9a-f-]{36}/keys/ack").matches(suffix) -> true
-                            else -> false
-                        }
-                    check(allowed) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-                    policy.requireMigrationDestination(PallaSyncUrls.extractOrigin(request.url))
-                } else {
-                    policy.requireChainOrigin(chainId, PallaSyncUrls.extractOrigin(request.url))
+            val requestOrigin = PallaSyncUrls.extractOrigin(request.url)
+            if (historicalSourceRead != null) {
+                check(allowsHistoricalSourceRead(request, historicalSourceRead)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                policy.requireCurrent(historicalSourceRead.origin)
+            } else {
+                chainIdForAuthorization(request.url.pathSegments)?.let { chainId ->
+                    if (migrationDestination) {
+                        val prefix = "/pallasync/v3/chains/$chainId"
+                        val suffix = request.url.encodedPath.removePrefix(prefix)
+                        val allowed =
+                            when {
+                                request.method == "POST" && suffix == "/snapshots/parts" -> true
+                                request.method == "PUT" && suffix == "/parameters" -> true
+                                request.method == "GET" && suffix in setOf("/transparency/head", "/transparency/entries") -> true
+                                request.method == "POST" && Regex("/devices/[0-9a-f-]{36}/keys/ack").matches(suffix) -> true
+                                else -> false
+                            }
+                        check(allowed) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                        policy.requireMigrationDestination(requestOrigin)
+                    } else {
+                        policy.requireChainOrigin(chainId, requestOrigin)
+                    }
                 }
+                policy.requireCurrent(requestOrigin)
             }
-            policy.requireCurrent(PallaSyncUrls.extractOrigin(request.url))
         }
     }
 
