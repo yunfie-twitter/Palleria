@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,12 +23,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import com.yunfie.illustia.pallasync.data.HistoryCursor
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -51,6 +55,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -87,9 +92,47 @@ fun ViewHistoryScreen(
     onBack: () -> Unit,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
+    val context = LocalContext.current
+    val syncManager = remember(context) { PalleriaSyncManager(context = context) }
     PredictiveBackGestureHandler(onBack = onBack)
-    LaunchedEffect(Unit) {
-        viewModel.loadFullViewHistory()
+    var pallaSyncPaging by remember { mutableStateOf(false) }
+    var pagedHistory by remember { mutableStateOf<List<Illust>>(emptyList()) }
+    var historyCursor by remember { mutableStateOf<HistoryCursor?>(null) }
+    var historyPartial by remember { mutableStateOf(false) }
+    var historyPageLoading by remember { mutableStateOf(false) }
+    var historyPageError by remember { mutableStateOf<String?>(null) }
+    var historyReloadKey by remember { mutableIntStateOf(0) }
+    LaunchedEffect(state.settings.pallaSyncEnabled, historyReloadKey) {
+        if (!state.settings.pallaSyncEnabled) {
+            pallaSyncPaging = false
+            pagedHistory = emptyList()
+            historyCursor = null
+            viewModel.loadFullViewHistory()
+        } else {
+            historyPageLoading = true
+            historyPageError = null
+            try {
+                val page = syncManager.getViewHistoryPage()
+                if (page == null) {
+                    pallaSyncPaging = false
+                    pagedHistory = emptyList()
+                    historyCursor = null
+                    viewModel.loadFullViewHistory()
+                } else {
+                    pallaSyncPaging = true
+                    pagedHistory = page.items
+                    historyCursor = page.next
+                    historyPartial = page.partial
+                }
+            } catch (failure: Exception) {
+                pallaSyncPaging = true
+                pagedHistory = emptyList()
+                historyCursor = null
+                historyPageError = failure.message ?: "C_MISSING_DEPENDENCY"
+            } finally {
+                historyPageLoading = false
+            }
+        }
     }
     var deleteTarget by remember { mutableStateOf<ViewHistoryDeleteTarget?>(null) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
@@ -116,7 +159,7 @@ fun ViewHistoryScreen(
 
     val visibleHistory =
         remember(
-            state.settings.viewHistory,
+            if (pallaSyncPaging) pagedHistory else state.settings.viewHistory,
             state.settings.mutedTags,
             state.settings.mutedUsers,
             state.settings.mutedIllusts,
@@ -128,8 +171,9 @@ fun ViewHistoryScreen(
             filterType,
             bookmarkedIds,
         ) {
+            val sourceHistory = if (pallaSyncPaging) pagedHistory else state.settings.viewHistory
             val history =
-                state.settings.viewHistory.visibleWithSettings(state.settings).map { illust ->
+                sourceHistory.visibleWithSettings(state.settings).map { illust ->
                     if (illust.id in bookmarkedIds && !illust.isBookmarked) {
                         illust.copy(isBookmarked = true)
                     } else {
@@ -186,6 +230,7 @@ fun ViewHistoryScreen(
                     ViewHistoryDeleteTarget.All -> viewModel.clearViewHistory()
                     ViewHistoryDeleteTarget.Selected -> viewModel.removeViewHistory(selectedIds)
                 }
+                if (pallaSyncPaging) historyReloadKey++
                 selectedIds = emptySet()
                 deleteTarget = null
             },
@@ -397,7 +442,11 @@ fun ViewHistoryScreen(
                                 text = reloadLabel,
                                 onClick = {
                                     performHaptic(AppHapticEffect.Click)
-                                    viewModel.loadFullViewHistory()
+                                    if (pallaSyncPaging) {
+                                        historyReloadKey++
+                                    } else {
+                                        viewModel.loadFullViewHistory()
+                                    }
                                 },
                             ),
                             DropdownItem(
@@ -501,6 +550,21 @@ fun ViewHistoryScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            if (pallaSyncPaging) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_notice") {
+                    Text(stringResource(R.string.pallasync_history_page_notice, pagedHistory.size))
+                }
+                if (historyPartial) {
+                    item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_partial") {
+                        Text(stringResource(R.string.pallasync_history_page_partial))
+                    }
+                }
+            }
+            historyPageError?.let { errorCode ->
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_error") {
+                    Text(stringResource(R.string.pallasync_history_page_error, errorCode))
+                }
+            }
             if (showSearch) {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_search") {
                     SearchBar(
@@ -562,6 +626,31 @@ fun ViewHistoryScreen(
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
                 )
+            }
+            if (pallaSyncPaging && historyCursor != null) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_more") {
+                    TextButton(
+                        text = stringResource(R.string.action_load_more),
+                        enabled = !historyPageLoading,
+                        onClick = {
+                            val cursor = historyCursor ?: return@TextButton
+                            historyPageLoading = true
+                            historyPageError = null
+                            coroutineScope.launch {
+                                try {
+                                    val page = checkNotNull(syncManager.getViewHistoryPage(cursor)) { "C_MISSING_DEPENDENCY" }
+                                    pagedHistory = pagedHistory + page.items
+                                    historyCursor = page.next
+                                    historyPartial = page.partial
+                                } catch (failure: Exception) {
+                                    historyPageError = failure.message ?: "C_MISSING_DEPENDENCY"
+                                } finally {
+                                    historyPageLoading = false
+                                }
+                            }
+                        },
+                    )
+                }
             }
         }
     }

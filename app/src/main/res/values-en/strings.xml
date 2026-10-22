@@ -36,6 +36,9 @@
     <string name="action_share">Share</string>
     <string name="action_download">Download</string>
     <string name="action_load_more">Load More</string>
+    <string name="pallasync_history_page_notice">Showing %1$d synchronized view-history items. Search and sorting apply to items already loaded.</string>
+    <string name="pallasync_history_page_partial">Sync is still in progress; this page shows only history currently verified by this device.</string>
+    <string name="pallasync_history_page_error">Could not load synchronized history (%1$s). Reload to try again.</string>
     <string name="action_reload">Reload</string>
     <string name="action_view_all">View All</string>
     <string name="action_show">Show</string>

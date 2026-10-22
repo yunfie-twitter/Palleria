@@ -721,7 +721,7 @@ abstract class IllustiaLibraryNavigationModule(
     }
 
     fun openViewHistory() {
-        loadFullViewHistory()
+        if (!_uiState.value.settings.pallaSyncEnabled) loadFullViewHistory()
         _navigationRequests.tryEmit(IllustiaNavigationRequest.ViewHistory)
     }
 

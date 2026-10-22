@@ -8024,6 +8024,27 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    suspend fun getViewHistoryPage(cursor: com.yunfie.illustia.pallasync.data.HistoryCursor?): PallaSyncHistoryPage? =
+        withContext(Dispatchers.IO) {
+            db.transaction {
+                val state = db.dao.getActiveChainState() ?: return@transaction null
+                val page =
+                    db.protocolDao().historySlice(
+                        state.chainId,
+                        VIEW_HISTORY_SCHEMA_V3,
+                        "viewed",
+                        cursor,
+                        PALLASYNC_PAGE_SIZE,
+                    )
+                val items =
+                    page.rows.map { row ->
+                        val entity = checkNotNull(db.protocolDao().entity(state.chainId, VIEW_HISTORY_SCHEMA_V3, row.entityId))
+                        json.decodeFromString<ViewedIllustBody>(entity.bodyJson).toIllust()
+                    }
+                PallaSyncHistoryPage(items, page.next, !state.initialPullCompleted || state.materializedSeq < state.downloadedSeq)
+            }
+        }
+
     suspend fun getClientStatus(): PallaSyncClientStatus? =
         withContext(Dispatchers.IO) {
             val state = db.dao.getActiveChainState() ?: return@withContext null

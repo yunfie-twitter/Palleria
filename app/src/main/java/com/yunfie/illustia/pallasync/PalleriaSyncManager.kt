@@ -362,6 +362,9 @@ class PalleriaSyncManager(
         cursor: com.yunfie.illustia.pallasync.data.HistoryCursor? = null,
     ): PallaSyncHistoryPage = coordinator.getDeviceHistoryPage(deviceId, cursor)
 
+    suspend fun getViewHistoryPage(cursor: com.yunfie.illustia.pallasync.data.HistoryCursor? = null): PallaSyncHistoryPage? =
+        coordinator.getViewHistoryPage(cursor)
+
     internal suspend fun getClientStatus(): PallaSyncClientStatus? = coordinator.getClientStatus()
 
     internal suspend fun confirmRelayCapacityRecovered(): Boolean = coordinator.confirmRelayCapacityRecovered()

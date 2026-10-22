@@ -912,6 +912,35 @@ class PallaSyncProtocolStoreTest {
             }
         }
 
+    @Test
+    fun `view history keyset pages are bounded and reject stale cursors`() =
+        runBlocking<Unit> {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val db = Room.inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java).build()
+            try {
+                val dao = db.protocolDao()
+                db.pallaSyncDao().updateChainState(ChainStateEntity(chain, 0, 0, "{}"))
+                val signed = event(record(1), 1)
+                for (id in 1..201) {
+                    val op = PallaSyncOperation("viewed:$id", "upsert", id.toLong(), 1, body = buildJsonObject { put("id", id) })
+                    dao.applyOperation(signed, VIEW_HISTORY_SCHEMA_V3, deviceA, id, op)
+                }
+
+                val first = dao.historySlice(chain, VIEW_HISTORY_SCHEMA_V3, "viewed", pageSize = 200)
+                first.rows.size shouldBe 200
+                (first.next != null) shouldBe true
+                val cursor = checkNotNull(first.next)
+                val second = dao.historySlice(chain, VIEW_HISTORY_SCHEMA_V3, "viewed", cursor, 200)
+                second.rows.size shouldBe 1
+                (first.rows.map { it.entityId } + second.rows.map { it.entityId }).toSet().size shouldBe 201
+
+                db.pallaSyncDao().updateChainState(ChainStateEntity(chain, 0, 0, "{}", indexRevision = first.revision + 1))
+                runCatching { dao.historySlice(chain, VIEW_HISTORY_SCHEMA_V3, "viewed", cursor, 200) }.isFailure shouldBe true
+            } finally {
+                db.close()
+            }
+        }
+
     private fun record(number: Int) = "019b0000-0000-4000-8000-${number.toString().padStart(12, '0')}"
 
     private fun event(
