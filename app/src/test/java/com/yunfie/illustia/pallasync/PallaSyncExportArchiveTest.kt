@@ -623,6 +623,14 @@ class PallaSyncExportArchiveTest {
                 Triple("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", 6L, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
                 Triple("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", 6L, "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"),
             )
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(removeSourceReceiptLines(archive)),
+                expected,
+                PallaSyncArchiveRecordVerifier { _, _, _ -> },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+        }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
 
         val (partialArchive, partialExpected) = acceptedEvidenceArchive(sourceReceiptSequence = 6L)
         val lines =
@@ -973,6 +981,34 @@ class PallaSyncExportArchiveTest {
                 }
             }
         val signedPrefix = (updatedLines.joinToString("\n", postfix = "\n")).toByteArray(Charsets.UTF_8)
+        val oldFooter = Json.parseToJsonElement(lines.last()).jsonObject
+        val footer =
+            buildJsonObject {
+                put(
+                    "archive_sha256",
+                    Base64.getUrlEncoder().withoutPadding().encodeToString(
+                        MessageDigest.getInstance("SHA-256").digest(signedPrefix),
+                    ),
+                )
+                put("complete", oldFooter.getValue("complete").jsonPrimitive.booleanOrNull ?: false)
+                put("kind", "footer")
+                put("line_count", updatedLines.size)
+            }
+        return (signedPrefix.toString(Charsets.UTF_8) + checkNotNull(PallaSyncCore.canonicalJson(footer.toString())) + "\n")
+            .toByteArray(Charsets.UTF_8)
+    }
+
+    private fun removeSourceReceiptLines(archive: ByteArray): ByteArray {
+        val lines = archive.toString(Charsets.UTF_8).trimEnd('\n').split('\n')
+        val updatedLines =
+            lines.dropLast(1).filterNot { line ->
+                Json
+                    .parseToJsonElement(line)
+                    .jsonObject["kind"]
+                    ?.jsonPrimitive
+                    ?.content == "source_receipt"
+            }
+        val signedPrefix = updatedLines.joinToString("\n", postfix = "\n").toByteArray(Charsets.UTF_8)
         val oldFooter = Json.parseToJsonElement(lines.last()).jsonObject
         val footer =
             buildJsonObject {
