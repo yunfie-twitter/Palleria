@@ -670,6 +670,9 @@ class PallaSyncRelayInteropTest {
                         bundleFile.delete()
                     }
                 }
+                if (args.getString("records_413_single") == "true") {
+                    verifySingleRecord413Retention(coordinator, store, policy, client, selected, state.chainId)
+                }
                 InstrumentationRegistry.getInstrumentation().sendStatus(
                     0,
                     Bundle().apply {
@@ -1080,6 +1083,46 @@ class PallaSyncRelayInteropTest {
             ),
         )
         assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+    }
+
+    private suspend fun verifySingleRecord413Retention(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        policy: PallaSyncPolicyGate,
+        client: OkHttpClient,
+        selected: String,
+        chainId: String,
+    ) {
+        val query = "Android 413 single"
+        val armRequest =
+            Request
+                .Builder()
+                .url("$selected/__test__/arm-records-413")
+                .post(ByteArray(0).toRequestBody(null))
+                .build()
+        client.newCall(armRequest).execute().use { response -> assertEquals(200, response.code) }
+        assertTrue(
+            coordinator.enqueueDataEvent(
+                SEARCH_HISTORY_SCHEMA_V3,
+                query,
+                "upsert",
+                buildJsonObject { put("query", query) },
+            ),
+        )
+        val beforeRejectedUpload = store.dao.queuedBatch(chainId, PALLASYNC_PAGE_SIZE)
+        assertEquals(1, beforeRejectedUpload.size)
+        assertFalse(coordinator.syncNow())
+        val afterRejectedUpload = store.dao.queuedBatch(chainId, PALLASYNC_PAGE_SIZE)
+        assertEquals(beforeRejectedUpload, afterRejectedUpload)
+        assertEquals(1L, store.dao.pendingOutboxCount(chainId))
+        val blockedCodes = policy.retry.blockedCodes(PallaSyncUrls.extractOrigin(selected.toHttpUrl()), chainId)
+        assertTrue("PAYLOAD_TOO_LARGE blocker missing from $blockedCodes", "PAYLOAD_TOO_LARGE" in blockedCodes)
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n").contains("PAYLOAD_TOO_LARGE"))
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_records_413_single_retained", "true") },
+        )
+        println("pallasync_records_413_single_retained=true")
     }
 
     private fun testTransport(encoded: String): OkHttpClient {
