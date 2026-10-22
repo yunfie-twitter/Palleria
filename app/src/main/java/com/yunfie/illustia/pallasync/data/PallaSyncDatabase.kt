@@ -37,8 +37,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         LegacyMigrationChoiceEntity::class,
         ProjectionStateEntity::class,
         LogEntryEntity::class,
+        RemovedRecordIdEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
@@ -164,6 +165,15 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_16_17 =
+            object : Migration(16, 17) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_removed_ids (chain_id TEXT NOT NULL,record_id TEXT NOT NULL,record_hash TEXT NOT NULL,source_log_id TEXT NOT NULL,archive_hash TEXT NOT NULL,evidence_json TEXT NOT NULL,PRIMARY KEY(chain_id,record_id))",
+                    )
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -191,6 +201,7 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             MIGRATION_13_14,
                             MIGRATION_14_15,
                             MIGRATION_15_16,
+                            MIGRATION_16_17,
                         ).build()
                 INSTANCE = instance
                 instance

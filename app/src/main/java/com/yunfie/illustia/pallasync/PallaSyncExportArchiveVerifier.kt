@@ -29,6 +29,7 @@ internal typealias PallaSyncArchiveReseedAuthorityVerifier =
 internal typealias PallaSyncArchiveSourceAuthorityProvider = suspend (Long) -> String?
 internal typealias PallaSyncArchiveSourceLogAuthorityProvider = suspend (Long, String) -> String?
 internal typealias PallaSyncArchiveSourceEntrySink = suspend (String, String, String, Long) -> Unit
+internal typealias PallaSyncArchiveRemovedIdSink = suspend (String, String, String, String, String) -> Unit
 
 /** Streaming §17.4 footer and line-integrity check; signatures and AEAD remain separate gates. */
 internal object PallaSyncExportArchiveVerifier {
@@ -43,6 +44,7 @@ internal object PallaSyncExportArchiveVerifier {
         val transparencyHeadJson: String?,
         val historyCutJson: String?,
         val authorityJson: String?,
+        val archiveHash: String,
     )
 
     private const val MAX_ARCHIVE_LINE_BYTES = 8_388_608
@@ -60,6 +62,7 @@ internal object PallaSyncExportArchiveVerifier {
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
         sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
+        removedIdSink: PallaSyncArchiveRemovedIdSink? = null,
     ): Header =
         runBlocking {
             verifySuspending(
@@ -73,6 +76,7 @@ internal object PallaSyncExportArchiveVerifier {
                 sourceAuthorityProvider,
                 sourceLogAuthorityProvider,
                 sourceEntrySink,
+                removedIdSink,
             )
         }
 
@@ -87,6 +91,7 @@ internal object PallaSyncExportArchiveVerifier {
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
         sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
+        removedIdSink: PallaSyncArchiveRemovedIdSink? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -201,8 +206,12 @@ internal object PallaSyncExportArchiveVerifier {
                             transparencyHeadJson = transparencyHeadJson,
                             historyCutJson = historyCutJson,
                             authorityJson = verifiedAuthorityJson,
+                            archiveHash = hash,
                         )
                     if (complete) beforeRetain?.invoke(verifiedHeader)
+                    if (complete && removedIdSink != null) {
+                        checkNotNull(receiptLinks).retainRemovedIds(verifiedHeader.logId, hash, removedIdSink)
+                    }
                     if (complete && logEntrySink != null) {
                         checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
                             verifiedAuthorityJson ?: error("C_MISSING_DEPENDENCY"),
@@ -313,8 +322,8 @@ internal object PallaSyncExportArchiveVerifier {
                             checkNotNull(receiptLinks).addRemovedId(
                                 value.getValue("record_id").jsonPrimitive.content,
                                 value.getValue("record_hash").jsonPrimitive.content,
+                                line,
                             )
-                            restoreEvidenceUnsupported = true
                         }
 
                         "source_receipt" -> {
@@ -354,7 +363,9 @@ internal object PallaSyncExportArchiveVerifier {
             )
             database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
             database.execSQL("CREATE TABLE export_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
-            database.execSQL("CREATE TABLE export_removed_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
+            database.execSQL(
+                "CREATE TABLE export_removed_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, evidence_json TEXT NOT NULL)",
+            )
             database.execSQL("CREATE TABLE export_source_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
             database.execSQL(
                 "CREATE TABLE export_source_entries (entry_hash TEXT PRIMARY KEY, relay_seq INTEGER NOT NULL, entry_json TEXT NOT NULL)",
@@ -446,6 +457,12 @@ internal object PallaSyncExportArchiveVerifier {
         fun addRemovedId(
             recordId: String,
             recordHash: String,
+            evidenceJson: String =
+                buildJsonObject {
+                    put("kind", "removed_id")
+                    put("record_id", recordId)
+                    put("record_hash", recordHash)
+                }.toString(),
         ) {
             val retainedHash =
                 database
@@ -460,8 +477,8 @@ internal object PallaSyncExportArchiveVerifier {
             }
             try {
                 database.execSQL(
-                    "INSERT INTO export_removed_ids(record_id,record_hash) VALUES (?,?)",
-                    arrayOf<Any>(recordId, recordHash),
+                    "INSERT INTO export_removed_ids(record_id,record_hash,evidence_json) VALUES (?,?,?)",
+                    arrayOf<Any>(recordId, recordHash, evidenceJson),
                 )
             } catch (_: SQLiteConstraintException) {
                 val existingHash =
@@ -471,6 +488,20 @@ internal object PallaSyncExportArchiveVerifier {
                 check(existingHash == recordHash) { "C_RECORD_ID_CONFLICT" }
                 error("C_SCHEMA_VIOLATION")
             }
+        }
+
+        suspend fun retainRemovedIds(
+            logId: String,
+            archiveHash: String,
+            sink: PallaSyncArchiveRemovedIdSink,
+        ) {
+            database
+                .rawQuery("SELECT record_id,record_hash,evidence_json FROM export_removed_ids ORDER BY record_id", null)
+                .use { rows ->
+                    while (rows.moveToNext()) {
+                        sink(logId, archiveHash, rows.getString(0), rows.getString(1), rows.getString(2))
+                    }
+                }
         }
 
         fun addLogReceipt(receipt: kotlinx.serialization.json.JsonObject) {

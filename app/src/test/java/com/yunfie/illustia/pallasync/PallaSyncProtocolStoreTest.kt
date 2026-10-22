@@ -12,6 +12,7 @@ import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
+import com.yunfie.illustia.pallasync.data.RemovedRecordIdEntity
 import com.yunfie.illustia.pallasync.data.SignedEventEntity
 import com.yunfie.illustia.pallasync.data.SnapshotAuthorGapEntity
 import com.yunfie.illustia.pallasync.data.SnapshotAuthorHeadEntity
@@ -521,6 +522,32 @@ class PallaSyncProtocolStoreTest {
 
                 deletionEvidence.hasDeletionReceipt(chain) shouldBe true
                 deletionEvidence.hasDeletionReceipt("different-deterministic-chain") shouldBe false
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun `removed record ids remain reserved and conflict with later record ingestion`() =
+        runBlocking<Unit> {
+            val db =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        ApplicationProvider.getApplicationContext<Context>(),
+                        PallaSyncDatabase::class.java,
+                    ).build()
+            try {
+                val dao = db.protocolDao()
+                val recordId = record(99)
+                val removed = RemovedRecordIdEntity(chain, recordId, "hash-$recordId", log, "archive-hash", "{}")
+                dao.retainRemovedRecordId(removed)
+                dao.removedRecordId(chain, recordId) shouldBe removed
+                dao.retainRemovedRecordId(removed)
+                runCatching { dao.retainRemovedRecordId(removed.copy(recordHash = "different-hash")) }.exceptionOrNull()?.message shouldBe
+                    "C_RECORD_ID_CONFLICT"
+
+                val inner = PallaSyncInnerRecord(SEARCH_HISTORY_SCHEMA_V3, 1, null, listOf(operation("removed", "upsert", 1)))
+                dao.recordConflict(event(recordId, 1), 0, deviceA, inner) shouldBe "C_RECORD_ID_CONFLICT"
             } finally {
                 db.close()
             }

@@ -724,12 +724,74 @@ class PallaSyncExportArchiveTest {
         ) shouldBe true
     }
 
+    @Test
+    fun completeArchiveRetainsExactRemovedIdEvidenceOnlyAfterFooterVerification() {
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, includeRemovedId = true)
+        val retained = mutableListOf<List<String>>()
+        val verified =
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, sequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, sequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                removedIdSink = { logId, archiveHash, recordId, recordHash, evidenceJson ->
+                    retained += listOf(logId, archiveHash, recordId, recordHash, evidenceJson)
+                },
+            )
+
+        verified.complete shouldBe true
+        val footer =
+            Json
+                .parseToJsonElement(archive.toString(Charsets.UTF_8).trimEnd().substringAfterLast('\n'))
+                .jsonObject
+        verified.archiveHash shouldBe footer.getValue("archive_sha256").jsonPrimitive.content
+        retained.map { it[0] to it[2] } shouldBe
+            listOf("a187b5e7-efe5-4a10-8294-963db6bdc33c" to "99999999-9999-4999-8999-999999999999")
+        retained.single()[3] shouldBe "${"A".repeat(43)}"
+        Json
+            .parseToJsonElement(retained.single()[4])
+            .jsonObject
+            .getValue("kind")
+            .jsonPrimitive.content shouldBe "removed_id"
+
+        val corruptFooterArchive = archive.copyOf()
+        val archiveLines = corruptFooterArchive.toString(Charsets.UTF_8).trimEnd('\n').split('\n')
+        val footerJson = Json.parseToJsonElement(archiveLines.last()).jsonObject
+        val corruptFooter =
+            buildJsonObject {
+                footerJson.forEach { (key, value) ->
+                    put(key, if (key == "archive_sha256") JsonPrimitive("B" + value.jsonPrimitive.content.drop(1)) else value)
+                }
+            }
+        val corruptFooterBytes =
+            (
+                archiveLines.dropLast(1).joinToString("\n", postfix = "\n") +
+                    checkNotNull(PallaSyncCore.canonicalJson(corruptFooter.toString())) + "\n"
+            ).toByteArray(Charsets.UTF_8)
+        var calledBeforeFooterValidation = false
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(corruptFooterBytes),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, sequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, sequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                removedIdSink = { _, _, _, _, _ -> calledBeforeFooterValidation = true },
+            )
+        }.message shouldBe "C_SCHEMA_VIOLATION"
+        calledBeforeFooterValidation shouldBe false
+    }
+
     private fun acceptedEvidenceArchive(
         dropLastReceipt: Boolean = false,
         addUnreferencedSnapshotPart: Boolean = false,
         includeRecovery: Boolean = false,
         includeOmitted: Boolean = false,
         includeUnverifiedControl: Boolean = false,
+        includeRemovedId: Boolean = false,
         sourceReceiptSequence: Long? = null,
         sourceReceiptFromOtherIncarnation: Boolean = false,
         duplicateSourceIncarnation: Boolean = false,
@@ -897,6 +959,21 @@ class PallaSyncExportArchiveTest {
                     if (includeOmitted) {
                         listOf(
                             """{"kind":"omitted","object_hash":"${"A".repeat(43)}","reason":"recovery_authority","relay_seq":1}""",
+                        )
+                    } else {
+                        emptyList()
+                    } +
+                    if (includeRemovedId) {
+                        listOf(
+                            checkNotNull(
+                                PallaSyncCore.canonicalJson(
+                                    buildJsonObject {
+                                        put("kind", "removed_id")
+                                        put("record_id", "99999999-9999-4999-8999-999999999999")
+                                        put("record_hash", "A".repeat(43))
+                                    }.toString(),
+                                ),
+                            ),
                         )
                     } else {
                         emptyList()

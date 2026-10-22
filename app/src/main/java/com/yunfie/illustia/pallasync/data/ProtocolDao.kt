@@ -458,6 +458,7 @@ interface ProtocolDao {
     suspend fun retainRepairedEvent(repaired: SignedEventEntity) {
         val old = event(repaired.chainId, repaired.recordId)
         if (old == null) {
+            check(removedRecordId(repaired.chainId, repaired.recordId) == null) { "C_RECORD_ID_CONFLICT" }
             insertEvent(repaired)
         } else {
             check(old.objectHash == repaired.objectHash && old.signedJson == repaired.signedJson) { "C_RECORD_ID_CONFLICT" }
@@ -718,6 +719,30 @@ interface ProtocolDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun retainEvidence(evidence: ProtectedEvidenceEntity)
+
+    @Query("SELECT * FROM ps_removed_ids WHERE chain_id=:chainId AND record_id=:recordId")
+    suspend fun removedRecordId(
+        chainId: String,
+        recordId: String,
+    ): RemovedRecordIdEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertRemovedRecordId(value: RemovedRecordIdEntity)
+
+    @Transaction
+    suspend fun retainRemovedRecordId(value: RemovedRecordIdEntity) {
+        val current = removedRecordId(value.chainId, value.recordId)
+        if (current == null) {
+            val event = event(value.chainId, value.recordId)
+            check(event == null || event.objectHash == value.recordHash) { "C_RECORD_ID_CONFLICT" }
+            insertRemovedRecordId(value)
+        } else {
+            check(current.recordHash == value.recordHash) { "C_RECORD_ID_CONFLICT" }
+            check(current.evidenceJson == value.evidenceJson || current.sourceLogId == value.sourceLogId) {
+                "C_RECORD_ID_CONFLICT"
+            }
+        }
+    }
 
     @Query(
         "SELECT signed_json FROM ps_evidence WHERE origin=:origin AND relay_key_id=:keyId AND chain_id=:chainId AND log_id=:logId AND kind=:kind AND sequence=:sequence LIMIT 2",
@@ -1195,6 +1220,10 @@ interface ProtocolDao {
         val snapshotConflict = conflictsWithSnapshotAuthorEvidence(signed, generation, deviceId, inner, same, previous)
         val next = author(signed.chainId, generation, deviceId, inner.deviceSeq + 1)
         return when {
+            old == null && removedRecordId(signed.chainId, signed.recordId) != null -> {
+                "C_RECORD_ID_CONFLICT"
+            }
+
             old != null && old.objectHash != signed.objectHash -> {
                 "C_RECORD_ID_CONFLICT"
             }

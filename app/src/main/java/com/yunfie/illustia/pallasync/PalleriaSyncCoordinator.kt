@@ -1356,6 +1356,38 @@ internal class PalleriaSyncCoordinator(
                             } else {
                                 null
                             },
+                        removedIdSink =
+                            if (retainEvidence) {
+                                { sourceLogId, archiveHash, recordId, recordHash, evidenceJson ->
+                                    val evidenceHash = checkNotNull(PallaSyncCore.objectHash(evidenceJson)) { "C_SCHEMA_VIOLATION" }
+                                    db.transaction {
+                                        db.protocolDao().retainRemovedRecordId(
+                                            com.yunfie.illustia.pallasync.data.RemovedRecordIdEntity(
+                                                state.chainId,
+                                                recordId,
+                                                recordHash,
+                                                sourceLogId,
+                                                archiveHash,
+                                                evidenceJson,
+                                            ),
+                                        )
+                                        db.protocolDao().retainEvidence(
+                                            ProtectedEvidenceEntity(
+                                                pin.getValue("origin").jsonPrimitive.content,
+                                                expectedSource.relayKeyId,
+                                                state.chainId,
+                                                sourceLogId,
+                                                "removed_id",
+                                                0L,
+                                                evidenceHash,
+                                                evidenceJson,
+                                            ),
+                                        )
+                                    }
+                                }
+                            } else {
+                                null
+                            },
                     ).also { verified ->
                         check(verified.includeRecovery && verified.complete) { "C_SCHEMA_VIOLATION" }
                     }

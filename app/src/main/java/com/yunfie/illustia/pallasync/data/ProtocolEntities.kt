@@ -263,6 +263,17 @@ data class ProtectedEvidenceEntity(
     @ColumnInfo(name = "signed_json") val signedJson: String,
 )
 
+/** Permanent record-ID reservation from a completely verified §17.4 removed-ID archive line. */
+@Entity(tableName = "ps_removed_ids", primaryKeys = ["chain_id", "record_id"])
+data class RemovedRecordIdEntity(
+    @ColumnInfo(name = "chain_id") val chainId: String,
+    @ColumnInfo(name = "record_id") val recordId: String,
+    @ColumnInfo(name = "record_hash") val recordHash: String,
+    @ColumnInfo(name = "source_log_id") val sourceLogId: String,
+    @ColumnInfo(name = "archive_hash") val archiveHash: String,
+    @ColumnInfo(name = "evidence_json") val evidenceJson: String,
+)
+
 /** Bounded keyset row for reconstructing public signed transparency prefixes. */
 data class TransparencyEvidenceRow(
     val sequence: Long,
