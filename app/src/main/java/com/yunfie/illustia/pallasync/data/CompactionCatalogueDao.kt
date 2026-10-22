@@ -7,7 +7,11 @@ import androidx.room.Query
 @Dao
 interface CompactionCatalogueDao {
     @Query(
-        "SELECT * FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified' AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' AND signed_json LIKE '%\"epoch_hash\":\"' || :epochHash || '\"%' AND signed_json LIKE '%\"generation\":' || :generation || ',\"log_id\":%' ORDER BY relay_seq DESC",
+        "SELECT * FROM ps_log WHERE chain_id=:chainId AND log_id=:logId " +
+            "AND validation_state IN ('authority_verified','materialized') " +
+            "AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' " +
+            "AND signed_json LIKE '%\"epoch_hash\":\"' || :epochHash || '\"%' " +
+            "AND signed_json LIKE '%\"generation\":' || :generation || ',\"log_id\":%' ORDER BY relay_seq DESC",
     )
     suspend fun verifiedSnapshotsForEpoch(
         chainId: String,
@@ -17,7 +21,10 @@ interface CompactionCatalogueDao {
     ): List<LogEntryEntity>
 
     @Query(
-        "SELECT * FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified' AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' AND signed_json LIKE '%' || '\"compaction_id\":\"' || :compactionId || '\"%' LIMIT 2",
+        "SELECT * FROM ps_log WHERE chain_id=:chainId AND log_id=:logId " +
+            "AND validation_state IN ('authority_verified','materialized') " +
+            "AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' " +
+            "AND signed_json LIKE '%' || '\"compaction_id\":\"' || :compactionId || '\"%' LIMIT 2",
     )
     suspend fun verifiedEntries(
         chainId: String,
@@ -26,7 +33,10 @@ interface CompactionCatalogueDao {
     ): List<LogEntryEntity>
 
     @Query(
-        "SELECT COUNT(*) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId AND validation_state='authority_verified' AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' AND signed_json LIKE '%\"compaction_id\":\"%'",
+        "SELECT COUNT(*) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId " +
+            "AND validation_state IN ('authority_verified','materialized') " +
+            "AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%' " +
+            "AND signed_json LIKE '%\"compaction_id\":\"%'",
     )
     suspend fun verifiedCount(
         chainId: String,
@@ -35,7 +45,8 @@ interface CompactionCatalogueDao {
 
     @Query(
         "SELECT COUNT(*) FROM ps_log WHERE chain_id=:chainId AND log_id=:logId " +
-            "AND validation_state='authority_verified' AND relay_seq>=:minimumSequence AND relay_seq<=:maximumSequence " +
+            "AND validation_state IN ('authority_verified','materialized') " +
+            "AND relay_seq>=:minimumSequence AND relay_seq<=:maximumSequence " +
             "AND signed_json LIKE '%\"kind\":\"compaction\",\"object\":%'",
     )
     suspend fun verifiedCountInRetainedSuffix(

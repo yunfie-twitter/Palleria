@@ -911,9 +911,41 @@ class PallaSyncRelayInteropTest {
         val published = coordinator.publishSnapshot()
         val publicationLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
         assertTrue("$publisherSummary\n$publicationLogs", published)
+        val publishedState = checkNotNull(store.dao.getChainState(chain))
+        val publication =
+            store
+                .snapshotDatabase()
+                .snapshotPublicationDao()
+                .latestPublishedForEpoch(chain, publishedState.generation, publishedState.keyEpoch)
+        val publicationParts =
+            publication?.let {
+                store.snapshotDatabase().snapshotPublicationDao().parts(chain, it.compactionId)
+            }.orEmpty()
+        val catalogueEntries =
+            publication?.let {
+                store.compactionCatalogueDao().verifiedEntries(chain, checkNotNull(publishedState.logId), it.compactionId)
+            }.orEmpty()
+        val compactionRow =
+            publication?.let {
+                store.protocolDao().logEntry(chain, it.logId, it.coveredThroughSeq + 1L)
+            }
+        val latestVerified = PallaSyncRetentionHandoff(store).latestVerifiedPublishedCompaction(chain, authority)
+        val handoffSummary =
+            "state={write=${publishedState.writeState},generation=${publishedState.generation},epoch=${publishedState.keyEpoch}," +
+                "epochHash=${publishedState.epochHash},verified=${publishedState.verifiedSeq},materialized=${publishedState.materializedSeq}," +
+                "verifiedHash=${publishedState.verifiedHash},outbox=${store.dao.pendingOutboxCount(chain)}," +
+                "quarantine=${store.snapshotInstallDao().unresolvedQuarantineCount(chain)}," +
+                "authorGaps=${store.protocolDao().unresolvedAuthorGapCount(chain)}}; " +
+                "publication=${publication?.let { "status=${it.status},epoch=${it.epoch},coverage=${it.coveredThroughSeq}," +
+                    "parts=${it.partCount},log=${it.logId},compaction=${it.compactionJson != null}" } ?: "missing"}; " +
+                "partStatuses=${publicationParts.map { it.status }}; catalogue=${catalogueEntries.size}; " +
+                "nextLog=${compactionRow?.let { "seq=${it.relaySeq},state=${it.validationState},json=${it.signedJson}" } ?: "missing"}; " +
+                "latestVerified=${latestVerified != null}"
+        println("pallasync_pruned_archive_handoff=$handoffSummary")
+        assertNotNull(handoffSummary, latestVerified)
         val pruned = coordinator.prunePublishedLog(mnemonic, "")
         val pruneLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
-        assertTrue(pruneLogs, pruned)
+        assertTrue("$handoffSummary\n$pruneLogs", pruned)
         val archive = ByteArrayOutputStream()
         val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
         val bytes = archive.toByteArray()

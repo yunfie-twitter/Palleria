@@ -94,6 +94,7 @@ internal class PallaSyncRootSession private constructor(
     /** Signs only the complete sequence covered by the exact current compaction (§10.12/§16.7). */
     fun createPruneAdminOperation(
         currentParametersJson: String,
+        currentAuthorityJson: String,
         currentEpochJson: String,
         compactionJson: String,
         throughSeq: Long,
@@ -103,6 +104,7 @@ internal class PallaSyncRootSession private constructor(
         return PallaSyncCore.createPruneAdminOperation(
             handle,
             currentParametersJson,
+            currentAuthorityJson,
             currentEpochJson,
             compactionJson,
             throughSeq,

@@ -142,6 +142,15 @@ impl Authority {
             .map(|(_, e)| e)
             .ok_or(ClientError("C_MISSING_DEPENDENCY"))
     }
+    /// Recheck the exact current epoch against its authorized signer at its acceptance position.
+    /// This supports device-signed rotations without treating them as root-signed records.
+    pub fn verify_current_epoch(&self, expected: &Value) -> Result {
+        let accepted = self.current_epoch()?;
+        require(accepted.record == *expected, "C_EPOCH_FORK")?;
+        wire::validate(expected, "epoch").map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
+        let signer = self.signer_key(expected, accepted.relay_seq)?;
+        Self::signature(expected, signer, CTX_EPOCH)
+    }
     fn subject(&self, id: &str, generation: u32) -> Result<&Admission> {
         let d = self
             .devices

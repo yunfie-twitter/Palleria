@@ -308,6 +308,7 @@ pub fn delete_request(
 pub fn prune_admin_operation(
     handle: u64,
     current_parameters_json: &str,
+    current_authority_json: &str,
     current_epoch_json: &str,
     compaction_json: &str,
     through_seq: u64,
@@ -322,6 +323,9 @@ pub fn prune_admin_operation(
                 .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))
         };
         let parameters = parse(current_parameters_json)?;
+        let authority: crate::authority::Authority =
+            serde_json::from_str(current_authority_json)
+                .map_err(|_| ClientError("C_SCHEMA_VIOLATION"))?;
         let epoch = parse(current_epoch_json)?;
         let compaction = parse(compaction_json)?;
         crate::public_wire::validate(&parameters, "parameters")
@@ -341,21 +345,23 @@ pub fn prune_admin_operation(
         {
             return Err(ClientError("C_RECOVERY_ROOT_MISMATCH"));
         }
-        for (value, context) in [
-            (&parameters, crate::strict::verify::CTX_PARAMETERS),
-            (&epoch, crate::strict::verify::CTX_EPOCH),
-        ] {
-            if !crate::strict::verify::verify_signed_json(
-                admin_public_key,
-                value["signature"].as_str().unwrap_or_default(),
-                value,
-                context,
-            )
-            .unwrap_or(false)
-            {
-                return Err(ClientError("C_SIGNATURE_INVALID"));
-            }
+        if !crate::strict::verify::verify_signed_json(
+            admin_public_key,
+            parameters["signature"].as_str().unwrap_or_default(),
+            &parameters,
+            crate::strict::verify::CTX_PARAMETERS,
+        )
+        .unwrap_or(false)
+        {
+            return Err(ClientError("C_SIGNATURE_INVALID"));
         }
+        if authority.pin.chain_id != chain_id
+            || authority.admin_public_key != admin_public_key
+            || authority.parameters.as_ref() != Some(&parameters)
+        {
+            return Err(ClientError("C_RECOVERY_ROOT_MISMATCH"));
+        }
+        authority.verify_current_epoch(&epoch)?;
         let expected_epoch_hash = object_hash(&epoch);
         if compaction["chain_id"] != chain_id
             || compaction["generation"] != parameters["generation"]

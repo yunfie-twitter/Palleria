@@ -139,6 +139,28 @@ fn prune_admin_operation_is_root_signed_and_bound_to_complete_compaction_prefix(
     let signing = ed25519_dalek::SigningKey::from_bytes(seed.as_slice().try_into().unwrap());
     seed.zeroize();
     let log_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    let relay_signing = ed25519_dalek::SigningKey::from_bytes(&[0x71; 32]);
+    let relay_key = URL_SAFE_NO_PAD.encode(relay_signing.verifying_key().as_bytes());
+    let mut authority = pallasync_core::authority::Authority::new(
+        pallasync_core::attestations::RelayPin {
+            origin: "https://relay.example.com".into(),
+            chain_id: bundle.chain_id.clone(),
+            public_key: relay_key,
+            log_id: log_id.into(),
+        },
+        parameters["admin_public_key"].as_str().unwrap().into(),
+    )
+    .unwrap();
+    authority.parameters = Some(parameters.clone());
+    authority.epochs.insert(
+        0,
+        pallasync_core::authority::AcceptedEpoch {
+            record: epoch.clone(),
+            relay_seq: 5,
+            committed_at_ms: 1,
+        },
+    );
+    let authority = serde_json::to_string(&authority).unwrap();
     let mut compaction = json!({
         "compaction_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
         "chain_id":bundle.chain_id,
@@ -171,6 +193,7 @@ fn prune_admin_operation_is_root_signed_and_bound_to_complete_compaction_prefix(
         &root_session::prune_admin_operation(
             handle,
             &parameters.to_string(),
+            &authority,
             &epoch.to_string(),
             &compaction.to_string(),
             0,
@@ -187,6 +210,7 @@ fn prune_admin_operation_is_root_signed_and_bound_to_complete_compaction_prefix(
         root_session::prune_admin_operation(
             handle,
             &parameters.to_string(),
+            &authority,
             &epoch.to_string(),
             &compaction.to_string(),
             1,

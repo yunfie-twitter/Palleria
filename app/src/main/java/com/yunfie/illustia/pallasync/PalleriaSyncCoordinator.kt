@@ -408,6 +408,7 @@ internal class PalleriaSyncCoordinator(
                             .parseToJsonElement(
                                 root.createPruneAdminOperation(
                                     authority.getValue("parameters").toString(),
+                                    authorityText,
                                     authority
                                         .getValue("epochs")
                                         .jsonObject

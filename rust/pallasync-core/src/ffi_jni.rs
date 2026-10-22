@@ -2313,6 +2313,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createPr
     _class: JClass<'local>,
     handle: jlong,
     current_parameters: JString<'local>,
+    current_authority: JString<'local>,
     current_epoch: JString<'local>,
     compaction: JString<'local>,
     through_seq: jlong,
@@ -2321,6 +2322,8 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createPr
     let result = (|| {
         let current_parameters =
             read_string(&mut env, &current_parameters).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
+        let current_authority =
+            read_string(&mut env, &current_authority).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
         let current_epoch =
             read_string(&mut env, &current_epoch).ok_or(ClientError("C_SCHEMA_VIOLATION"))?;
         let compaction =
@@ -2331,6 +2334,7 @@ pub extern "system" fn Java_com_yunfie_illustia_pallasync_PallaSyncCore_createPr
         crate::root_session::prune_admin_operation(
             handle as u64,
             &current_parameters,
+            &current_authority,
             &current_epoch,
             &compaction,
             through_seq as u64,

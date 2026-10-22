@@ -660,6 +660,7 @@ object PallaSyncCore {
     external fun createPruneAdminOperation(
         handle: Long,
         currentParametersJson: String,
+        currentAuthorityJson: String,
         currentEpochJson: String,
         compactionJson: String,
         throughSeq: Long,

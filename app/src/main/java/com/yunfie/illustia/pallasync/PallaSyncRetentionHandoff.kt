@@ -296,7 +296,7 @@ internal class PallaSyncRetentionHandoff(
         if (accepted.relaySeq > verifiedSequence) return false
         val acceptedObject = Json.parseToJsonElement(accepted.signedJson).jsonObject
         if (
-            accepted.validationState != "authority_verified" ||
+            accepted.validationState !in setOf("authority_verified", "materialized") ||
             acceptedObject.getValue("kind").jsonPrimitive.content != "compaction" ||
             PallaSyncCore.canonicalJson(acceptedObject.getValue("object").toString()) !=
             PallaSyncCore.canonicalJson(compaction.toString())
