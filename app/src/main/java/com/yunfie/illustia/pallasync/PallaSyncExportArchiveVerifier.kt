@@ -211,11 +211,15 @@ internal object PallaSyncExportArchiveVerifier {
                     when (kind) {
                         "upload_receipt" -> {
                             val receipt = value.getValue("receipt").jsonObject
-                            checkNotNull(receiptLinks).add(
-                                receipt.getValue("transparency_index").jsonPrimitive.long,
-                                receipt.toString(),
-                            )
-                            receiptLinks.addLogReceipt(receipt)
+                            if (receipt.getValue("transparency_id").jsonPrimitive.content ==
+                                header.getValue("transparency_id").jsonPrimitive.content
+                            ) {
+                                checkNotNull(receiptLinks).add(
+                                    receipt.getValue("transparency_index").jsonPrimitive.long,
+                                    receipt.toString(),
+                                )
+                            }
+                            checkNotNull(receiptLinks).addLogReceipt(receipt)
                         }
 
                         "log" -> {

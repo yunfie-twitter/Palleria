@@ -16,7 +16,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.security.KeyFactory
 import java.security.MessageDigest
+import java.security.Signature
+import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Base64
 
 @RunWith(PallaSyncJniRobolectricRunner::class)
@@ -561,7 +565,12 @@ class PallaSyncExportArchiveTest {
 
     @Test
     fun sourceReceiptMustMatchTheSignedHistoricalUploadReceipt() {
-        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, sourceReceiptSequence = 6L)
+        val (archive, expected) =
+            acceptedEvidenceArchive(
+                includeRecovery = true,
+                sourceReceiptSequence = 6L,
+                sourceReceiptFromOtherIncarnation = true,
+            )
         val verifiedRecordSequences = mutableListOf<Long>()
         val verified =
             PallaSyncExportArchiveVerifier.verify(
@@ -675,6 +684,7 @@ class PallaSyncExportArchiveTest {
         includeOmitted: Boolean = false,
         includeUnverifiedControl: Boolean = false,
         sourceReceiptSequence: Long? = null,
+        sourceReceiptFromOtherIncarnation: Boolean = false,
     ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
@@ -749,11 +759,7 @@ class PallaSyncExportArchiveTest {
                         checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"log","entry":$entry}"""))
                     }
                 }
-            val receiptLines =
-                receipts.map { receipt ->
-                    checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
-                }
-            val sourceReceiptLines =
+            val sourceEvidence =
                 sourceReceiptSequence?.let { sequence ->
                     val entry =
                         logLines
@@ -764,6 +770,37 @@ class PallaSyncExportArchiveTest {
                                     .getValue("entry")
                                     .jsonObject
                             }.single { it.getValue("relay_seq").jsonPrimitive.long == sequence }
+                    val sourceEntry =
+                        if (sourceReceiptFromOtherIncarnation) {
+                            buildJsonObject {
+                                entry.forEach { (key, value) -> put(key, value) }
+                                put("received_at_ms", entry.getValue("received_at_ms").jsonPrimitive.long + 1L)
+                            }
+                        } else {
+                            entry
+                        }
+                    val sourceReceipt =
+                        if (sourceReceiptFromOtherIncarnation) {
+                            val currentReceipt =
+                                receipts
+                                    .map { it.jsonObject }
+                                    .single { it.getValue("relay_seq").jsonPrimitive.long == sequence }
+                            signHistoricalReceipt(currentReceipt, sourceEntry)
+                        } else {
+                            null
+                        }
+                    sourceEntry to sourceReceipt
+                }
+            val historicalReceiptLine =
+                sourceEvidence?.second?.let { receipt ->
+                    checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
+                }
+            val receiptLines =
+                receipts.map { receipt ->
+                    checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
+                } + listOfNotNull(historicalReceiptLine)
+            val sourceReceiptLines =
+                sourceEvidence?.first?.let { entry ->
                     listOf(
                         checkNotNull(
                             PallaSyncCore.canonicalJson(
@@ -827,6 +864,67 @@ class PallaSyncExportArchiveTest {
             archive.finish()
         }
         return output.toByteArray() to expected
+    }
+
+    private fun signHistoricalReceipt(
+        template: kotlinx.serialization.json.JsonObject,
+        entry: kotlinx.serialization.json.JsonObject,
+    ): kotlinx.serialization.json.JsonObject {
+        val sequence = entry.getValue("relay_seq").jsonPrimitive.long
+        val previousHash = Base64.getUrlDecoder().decode(template.getValue("previous_head_hash").jsonPrimitive.content)
+        val entryHash = checkNotNull(PallaSyncCore.objectHash(entry.toString()))
+        val entryDigest = Base64.getUrlDecoder().decode(entryHash)
+        val linkInput =
+            ByteBuffer
+                .allocate(previousHash.size + Long.SIZE_BYTES + entryDigest.size)
+                .put(previousHash)
+                .putLong(sequence)
+                .put(entryDigest)
+                .array()
+        val resultingHash = Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(linkInput))
+        val unsigned =
+            buildJsonObject {
+                template.filterKeys { it != "relay_signature" }.forEach { (key, value) -> put(key, value) }
+                put("log_id", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+                put("receipt_id", "cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+                put("transparency_id", "dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+                put("transparency_index", 1)
+                put("entry_hash", entryHash)
+                put("received_at_ms", entry.getValue("received_at_ms").jsonPrimitive.long)
+                put("resulting_head_hash", resultingHash)
+            }
+        val canonical = checkNotNull(PallaSyncCore.canonicalJson(unsigned.toString())).toByteArray(Charsets.UTF_8)
+        val privateKeyEncoding =
+            byteArrayOf(
+                0x30,
+                0x2e,
+                0x02,
+                0x01,
+                0x00,
+                0x30,
+                0x05,
+                0x06,
+                0x03,
+                0x2b,
+                0x65,
+                0x70,
+                0x04,
+                0x22,
+                0x04,
+                0x20,
+            ) + ByteArray(32) { (0xa0 + it).toByte() }
+        val privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(PKCS8EncodedKeySpec(privateKeyEncoding))
+        val signature =
+            Signature.getInstance("Ed25519").run {
+                initSign(privateKey)
+                update("PALLASYNC-UPLOAD-RECEIPT-v3\u0000".toByteArray(Charsets.US_ASCII))
+                update(canonical)
+                Base64.getUrlEncoder().withoutPadding().encodeToString(sign())
+            }
+        return buildJsonObject {
+            unsigned.forEach { (key, value) -> put(key, value) }
+            put("relay_signature", signature)
+        }
     }
 
     @Test
