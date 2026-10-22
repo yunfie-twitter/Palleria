@@ -266,7 +266,15 @@ internal object PallaSyncExportArchiveVerifier {
                             recoveryObjectsOmitted = true
                         }
 
-                        "control", "boundary", "removed_id", "source_receipt" -> {
+                        "removed_id" -> {
+                            checkNotNull(receiptLinks).addRemovedId(
+                                value.getValue("record_id").jsonPrimitive.content,
+                                value.getValue("record_hash").jsonPrimitive.content,
+                            )
+                            restoreEvidenceUnsupported = true
+                        }
+
+                        "control", "boundary", "source_receipt" -> {
                             restoreEvidenceUnsupported = true
                         }
                     }
@@ -296,6 +304,8 @@ internal object PallaSyncExportArchiveVerifier {
                 "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL, receipt_verified INTEGER NOT NULL DEFAULT 0)",
             )
             database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
+            database.execSQL("CREATE TABLE export_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
+            database.execSQL("CREATE TABLE export_removed_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
         }
 
         fun add(
@@ -349,6 +359,52 @@ internal object PallaSyncExportArchiveVerifier {
                     arrayOf<Any>(sequence, entry.toString()),
                 )
             } catch (_: SQLiteConstraintException) {
+                error("C_SCHEMA_VIOLATION")
+            }
+            if (entry["kind"]?.jsonPrimitive?.content == "record") {
+                val record = entry.getValue("object").jsonObject
+                val recordId = record.getValue("record_id").jsonPrimitive.content
+                val recordHash = checkNotNull(PallaSyncCore.objectHash(record.toString())) { "C_SCHEMA_VIOLATION" }
+                try {
+                    database.execSQL(
+                        "INSERT INTO export_record_ids(record_id,record_hash) VALUES (?,?)",
+                        arrayOf<Any>(recordId, recordHash),
+                    )
+                } catch (_: SQLiteConstraintException) {
+                    val existingHash =
+                        database
+                            .rawQuery("SELECT record_hash FROM export_record_ids WHERE record_id=?", arrayOf(recordId))
+                            .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                    check(existingHash == recordHash) { "C_RECORD_ID_CONFLICT" }
+                }
+                val removedHash =
+                    database
+                        .rawQuery("SELECT record_hash FROM export_removed_ids WHERE record_id=?", arrayOf(recordId))
+                        .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                check(removedHash == null || removedHash == recordHash) { "C_RECORD_ID_CONFLICT" }
+            }
+        }
+
+        fun addRemovedId(
+            recordId: String,
+            recordHash: String,
+        ) {
+            val retainedHash =
+                database
+                    .rawQuery("SELECT record_hash FROM export_record_ids WHERE record_id=?", arrayOf(recordId))
+                    .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+            check(retainedHash == null || retainedHash == recordHash) { "C_RECORD_ID_CONFLICT" }
+            try {
+                database.execSQL(
+                    "INSERT INTO export_removed_ids(record_id,record_hash) VALUES (?,?)",
+                    arrayOf<Any>(recordId, recordHash),
+                )
+            } catch (_: SQLiteConstraintException) {
+                val existingHash =
+                    database
+                        .rawQuery("SELECT record_hash FROM export_removed_ids WHERE record_id=?", arrayOf(recordId))
+                        .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                check(existingHash == recordHash) { "C_RECORD_ID_CONFLICT" }
                 error("C_SCHEMA_VIOLATION")
             }
         }

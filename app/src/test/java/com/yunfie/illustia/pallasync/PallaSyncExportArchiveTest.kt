@@ -484,6 +484,43 @@ class PallaSyncExportArchiveTest {
         }
     }
 
+    @Test
+    fun removedRecordIdentityEvidenceRejectsAConflictingRetainedRecord() {
+        val recordId = "22222222-2222-4222-8222-222222222222"
+        val retained = Json.parseToJsonElement("""{"record_id":"$recordId","value":"retained"}""").jsonObject
+        val retainedHash = checkNotNull(PallaSyncCore.objectHash(retained.toString()))
+        val removedHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addRemovedId(recordId, retainedHash)
+            index.addLogEntry(
+                buildJsonObject {
+                    put("kind", "record")
+                    put("object", retained)
+                    put("relay_seq", 1)
+                },
+            )
+        }
+
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addLogEntry(
+                buildJsonObject {
+                    put("kind", "record")
+                    put("object", retained)
+                    put("relay_seq", 1)
+                },
+            )
+            shouldThrow<IllegalStateException> { index.addRemovedId(recordId, removedHash) }.message shouldBe
+                "C_RECORD_ID_CONFLICT"
+        }
+
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addRemovedId(recordId, retainedHash)
+            shouldThrow<IllegalStateException> { index.addRemovedId(recordId, retainedHash) }.message shouldBe
+                "C_SCHEMA_VIOLATION"
+        }
+    }
+
     private fun acceptedEvidenceArchive(
         dropLastReceipt: Boolean = false,
         addUnreferencedSnapshotPart: Boolean = false,
