@@ -521,6 +521,43 @@ class PallaSyncExportArchiveTest {
         }
     }
 
+    @Test
+    fun archiveLogReceiptsAreScopedToTheirLogIncarnation() {
+        val firstLog = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        val secondLog = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            val first =
+                buildJsonObject {
+                    put("log_id", firstLog)
+                    put("relay_seq", 1)
+                    put("receipt_id", "first")
+                }
+            val second =
+                buildJsonObject {
+                    put("log_id", secondLog)
+                    put("relay_seq", 1)
+                    put("receipt_id", "second")
+                }
+
+            index.addLogReceipt(first)
+            index.addLogReceipt(second)
+
+            Json
+                .parseToJsonElement(index.logReceipt(firstLog, 1))
+                .jsonObject
+                .getValue("receipt_id")
+                .jsonPrimitive.content shouldBe "first"
+            Json
+                .parseToJsonElement(index.logReceipt(secondLog, 1))
+                .jsonObject
+                .getValue("receipt_id")
+                .jsonPrimitive.content shouldBe "second"
+            shouldThrow<IllegalStateException> { index.logReceipt("ffffffff-ffff-4fff-8fff-ffffffffffff", 1) }.message shouldBe
+                "C_ACCEPTANCE_UNPROVEN"
+            shouldThrow<IllegalStateException> { index.addLogReceipt(first) }.message shouldBe "C_TRANSPARENCY_INVALID"
+        }
+    }
+
     private fun acceptedEvidenceArchive(
         dropLastReceipt: Boolean = false,
         addUnreferencedSnapshotPart: Boolean = false,

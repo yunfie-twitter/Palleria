@@ -299,7 +299,9 @@ internal object PallaSyncExportArchiveVerifier {
                 "CREATE TABLE export_receipts (transparency_index INTEGER PRIMARY KEY, receipt_json TEXT NOT NULL)",
             )
             database.execSQL("CREATE TABLE export_log_entries (relay_seq INTEGER PRIMARY KEY, entry_json TEXT NOT NULL)")
-            database.execSQL("CREATE TABLE export_log_receipts (relay_seq INTEGER PRIMARY KEY, receipt_json TEXT NOT NULL)")
+            database.execSQL(
+                "CREATE TABLE export_log_receipts (log_id TEXT NOT NULL, relay_seq INTEGER NOT NULL, receipt_json TEXT NOT NULL, PRIMARY KEY(log_id,relay_seq))",
+            )
             database.execSQL(
                 "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL, receipt_verified INTEGER NOT NULL DEFAULT 0)",
             )
@@ -411,15 +413,29 @@ internal object PallaSyncExportArchiveVerifier {
 
         fun addLogReceipt(receipt: kotlinx.serialization.json.JsonObject) {
             val sequence = receipt["relay_seq"]?.takeUnless { it.toString() == "null" }?.jsonPrimitive?.long ?: return
+            val logId = receipt.getValue("log_id").jsonPrimitive.content
             try {
                 database.execSQL(
-                    "INSERT INTO export_log_receipts(relay_seq,receipt_json) VALUES (?,?)",
-                    arrayOf<Any>(sequence, receipt.toString()),
+                    "INSERT INTO export_log_receipts(log_id,relay_seq,receipt_json) VALUES (?,?,?)",
+                    arrayOf<Any>(logId, sequence, receipt.toString()),
                 )
             } catch (_: SQLiteConstraintException) {
                 error("C_TRANSPARENCY_INVALID")
             }
         }
+
+        fun logReceipt(
+            logId: String,
+            relaySequence: Long,
+        ): String =
+            database
+                .rawQuery(
+                    "SELECT receipt_json FROM export_log_receipts WHERE log_id=? AND relay_seq=?",
+                    arrayOf(logId, relaySequence.toString()),
+                ).use { receipts ->
+                    check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
+                    receipts.getString(0)
+                }
 
         fun addCompaction(compaction: kotlinx.serialization.json.JsonObject) {
             val hash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
@@ -474,15 +490,7 @@ internal object PallaSyncExportArchiveVerifier {
                     val sequence = entries.getLong(0)
                     if (sequence <= skipThroughSequence) continue
                     check(sequence == expectedSequence) { "C_MISSING_DEPENDENCY" }
-                    val receipt =
-                        database
-                            .rawQuery(
-                                "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
-                                arrayOf(sequence.toString()),
-                            ).use { receipts ->
-                                check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
-                                receipts.getString(0)
-                            }
+                    val receipt = logReceipt(header.getValue("log_id").jsonPrimitive.content, sequence)
                     val entryJson = entries.getString(1)
                     val entry = Json.parseToJsonElement(entryJson).jsonObject
                     val kind = entry.getValue("kind").jsonPrimitive.content
@@ -673,15 +681,7 @@ internal object PallaSyncExportArchiveVerifier {
                                 put("kind", entry.getValue("kind"))
                                 put("object", entry.getValue("object"))
                             }
-                        val receiptJson =
-                            database
-                                .rawQuery(
-                                    "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
-                                    arrayOf(sequence.toString()),
-                                ).use { receipts ->
-                                    check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
-                                    receipts.getString(0)
-                                }
+                        val receiptJson = logReceipt(targetLogId, sequence)
                         uploadReceipts += Json.parseToJsonElement(receiptJson).jsonObject
                         sequence = Math.addExact(sequence, 1L)
                     }
@@ -741,19 +741,18 @@ internal object PallaSyncExportArchiveVerifier {
         ) {
             // The complete archive was already authority-replayed before retention. Replaying
             // again would bypass the verified snapshot transition at a generation cutover.
+            val authorityState = Json.parseToJsonElement(verifiedAuthorityJson).jsonObject
+            val logId =
+                authorityState
+                    .getValue("pin")
+                    .jsonObject
+                    .getValue("log_id")
+                    .jsonPrimitive.content
             database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
                 while (entries.moveToNext()) {
                     val sequence = entries.getLong(0)
                     val entryJson = entries.getString(1)
-                    val receipt =
-                        database
-                            .rawQuery(
-                                "SELECT receipt_json FROM export_log_receipts WHERE relay_seq=?",
-                                arrayOf(sequence.toString()),
-                            ).use { receipts ->
-                                check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
-                                receipts.getString(0)
-                            }
+                    val receipt = logReceipt(logId, sequence)
                     sink.retain(verifiedAuthorityJson, entryJson, receipt, sequence)
                 }
             }
