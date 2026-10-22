@@ -812,6 +812,47 @@ class PallaSyncExportArchiveTest {
     }
 
     @Test
+    fun completeArchiveBoundaryRequiresLocallyVerifiedAuthorityCheckpoint() {
+        val (sourceArchive, expected) = acceptedEvidenceArchive(includeRecovery = true)
+        val lines = sourceArchive.toString(Charsets.UTF_8).trimEnd('\n').split('\n')
+        val archiveLines = lines.dropLast(1).toMutableList()
+        val transparencyIndex =
+            archiveLines.indexOfFirst { line ->
+                Json
+                    .parseToJsonElement(line)
+                    .jsonObject["kind"]
+                    ?.jsonPrimitive
+                    ?.content == "transparency_entry"
+            }
+        check(transparencyIndex >= 0)
+        archiveLines.add(transparencyIndex, """{"compaction":{},"kind":"boundary"}""")
+        val preceding = archiveLines.joinToString("\n", postfix = "\n").toByteArray(Charsets.UTF_8)
+        val digest = MessageDigest.getInstance("SHA-256").digest(preceding)
+        val footer =
+            buildJsonObject {
+                put("archive_sha256", Base64.getUrlEncoder().withoutPadding().encodeToString(digest))
+                put("complete", true)
+                put("kind", "footer")
+                put("line_count", archiveLines.size)
+            }
+        val archive =
+            preceding +
+                checkNotNull(PallaSyncCore.canonicalJson(footer.toString())).toByteArray(Charsets.UTF_8) +
+                '\n'.code.toByte()
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+        }.message shouldBe "C_MISSING_DEPENDENCY"
+    }
+
+    @Test
     fun completeArchiveRetainsExactRemovedIdEvidenceOnlyAfterFooterVerification() {
         val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, includeRemovedId = true)
         val retained = mutableListOf<List<String>>()

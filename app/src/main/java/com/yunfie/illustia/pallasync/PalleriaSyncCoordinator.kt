@@ -1328,6 +1328,89 @@ internal class PalleriaSyncCoordinator(
                                     }
                                 }
                         },
+                        boundaryAuthorityProvider = { compaction ->
+                            val covered = compaction.getValue("covered_through_seq").jsonPrimitive.long
+                            val boundaryLogId = compaction.getValue("log_id").jsonPrimitive.content
+                            val boundaryHash = compaction.getValue("covered_log_hash").jsonPrimitive.content
+                            var boundaryAuthority =
+                                PallaSyncCore.beginExportAuthorityHistory(
+                                    checkNotNull(expectedSource.identityJson),
+                                    checkNotNull(expectedSource.relayPinJson),
+                                )
+                            var replayedThrough = 0L
+                            while (replayedThrough < covered) {
+                                val page =
+                                    db
+                                        .protocolDao()
+                                        .logPage(state.chainId, boundaryLogId, replayedThrough, covered, 200)
+                                check(page.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
+                                page.forEach { stored ->
+                                    val expectedSequence = Math.addExact(replayedThrough, 1L)
+                                    check(
+                                        stored.relaySeq == expectedSequence &&
+                                            stored.validationState in setOf("authority_verified", "materialized"),
+                                    ) { "C_MISSING_DEPENDENCY" }
+                                    boundaryAuthority =
+                                        PallaSyncCore.advanceAuthorityHistory(
+                                            boundaryAuthority,
+                                            stored.signedJson,
+                                            stored.receiptJson,
+                                        )
+                                    replayedThrough = stored.relaySeq
+                                }
+                            }
+                            val checkpoint = Json.parseToJsonElement(boundaryAuthority).jsonObject
+                            check(
+                                checkpoint.getValue("sequence").jsonPrimitive.long == covered &&
+                                    checkpoint.getValue("head_hash").jsonPrimitive.content == boundaryHash,
+                            ) { "C_LOG_HASH_MISMATCH" }
+                            val boundaryCheckpoint = boundaryAuthority
+                            val localHighWater =
+                                checkNotNull(db.protocolDao().importSourceHighWater(state.chainId, boundaryLogId)) {
+                                    "C_MISSING_DEPENDENCY"
+                                }
+                            var acceptedCompaction = false
+                            var compactionEntryJson: String? = null
+                            var compactionReceiptJson: String? = null
+                            while (replayedThrough < localHighWater && !acceptedCompaction) {
+                                val page =
+                                    db
+                                        .protocolDao()
+                                        .logPage(state.chainId, boundaryLogId, replayedThrough, localHighWater, 200)
+                                check(page.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
+                                page.forEach { stored ->
+                                    if (acceptedCompaction) return@forEach
+                                    val expectedSequence = Math.addExact(replayedThrough, 1L)
+                                    check(
+                                        stored.relaySeq == expectedSequence &&
+                                            stored.validationState in setOf("authority_verified", "materialized"),
+                                    ) { "C_MISSING_DEPENDENCY" }
+                                    val entry = Json.parseToJsonElement(stored.signedJson).jsonObject
+                                    boundaryAuthority =
+                                        PallaSyncCore.advanceAuthorityHistory(
+                                            boundaryAuthority,
+                                            stored.signedJson,
+                                            stored.receiptJson,
+                                        )
+                                    replayedThrough = stored.relaySeq
+                                    if (
+                                        entry.getValue("kind").jsonPrimitive.content == "compaction" &&
+                                        PallaSyncCore.objectHash(entry.getValue("object").toString()) ==
+                                        PallaSyncCore.objectHash(compaction.toString())
+                                    ) {
+                                        acceptedCompaction = true
+                                        compactionEntryJson = stored.signedJson
+                                        compactionReceiptJson = stored.receiptJson
+                                    }
+                                }
+                            }
+                            check(acceptedCompaction) { "C_ACCEPTANCE_UNPROVEN" }
+                            PallaSyncArchiveBoundaryProof(
+                                authorityJson = boundaryCheckpoint,
+                                compactionEntryJson = checkNotNull(compactionEntryJson),
+                                receiptJson = checkNotNull(compactionReceiptJson),
+                            )
+                        },
                         sourceEntrySink =
                             if (retainEvidence) {
                                 { sourceLogId, entryJson, receiptJson, sequence ->

@@ -28,6 +28,15 @@ internal typealias PallaSyncArchiveReseedAuthorityVerifier =
 
 internal typealias PallaSyncArchiveSourceAuthorityProvider = suspend (Long) -> String?
 internal typealias PallaSyncArchiveSourceLogAuthorityProvider = suspend (Long, String) -> String?
+
+internal data class PallaSyncArchiveBoundaryProof(
+    val authorityJson: String,
+    val compactionEntryJson: String,
+    val receiptJson: String,
+)
+
+internal typealias PallaSyncArchiveBoundaryAuthorityProvider =
+    suspend (kotlinx.serialization.json.JsonObject) -> PallaSyncArchiveBoundaryProof?
 internal typealias PallaSyncArchiveSourceEntrySink = suspend (String, String, String, Long) -> Unit
 internal typealias PallaSyncArchiveRemovedIdSink = suspend (String, String, String, String, String) -> Unit
 
@@ -61,6 +70,7 @@ internal object PallaSyncExportArchiveVerifier {
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
         sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
+        boundaryAuthorityProvider: PallaSyncArchiveBoundaryAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
         removedIdSink: PallaSyncArchiveRemovedIdSink? = null,
     ): Header =
@@ -75,6 +85,7 @@ internal object PallaSyncExportArchiveVerifier {
                 reseedAuthorityVerifier,
                 sourceAuthorityProvider,
                 sourceLogAuthorityProvider,
+                boundaryAuthorityProvider,
                 sourceEntrySink,
                 removedIdSink,
             )
@@ -90,6 +101,7 @@ internal object PallaSyncExportArchiveVerifier {
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
         sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
+        boundaryAuthorityProvider: PallaSyncArchiveBoundaryAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
         removedIdSink: PallaSyncArchiveRemovedIdSink? = null,
     ): Header {
@@ -172,6 +184,7 @@ internal object PallaSyncExportArchiveVerifier {
                                     snapshotVerifier,
                                     reseedAuthorityVerifier,
                                     sourceAuthorityProvider,
+                                    boundaryAuthorityProvider,
                                 )
                             }
                         if (
@@ -330,8 +343,12 @@ internal object PallaSyncExportArchiveVerifier {
                             checkNotNull(receiptLinks).addSourceReceipt(value.getValue("receipt").jsonObject)
                         }
 
-                        "control", "boundary" -> {
+                        "control" -> {
                             restoreEvidenceUnsupported = true
+                        }
+
+                        "boundary" -> {
+                            checkNotNull(receiptLinks).addBoundary(value.getValue("compaction").jsonObject)
                         }
                     }
                 }
@@ -362,6 +379,9 @@ internal object PallaSyncExportArchiveVerifier {
                 "CREATE TABLE export_snapshot_parts (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, record_json TEXT NOT NULL, receipt_verified INTEGER NOT NULL DEFAULT 0)",
             )
             database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
+            database.execSQL(
+                "CREATE TABLE export_boundaries (compaction_hash TEXT PRIMARY KEY, compaction_json TEXT NOT NULL)",
+            )
             database.execSQL("CREATE TABLE export_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
             database.execSQL(
                 "CREATE TABLE export_removed_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL, evidence_json TEXT NOT NULL)",
@@ -529,6 +549,34 @@ internal object PallaSyncExportArchiveVerifier {
                     check(receipts.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
                     receipts.getString(0)
                 }
+
+        fun requireBoundaryReceipt(
+            receipt: kotlinx.serialization.json.JsonObject,
+            entry: kotlinx.serialization.json.JsonObject,
+            compactionHash: String,
+            coveredSequence: Long,
+        ) {
+            val logId = receipt.getValue("log_id").jsonPrimitive.content
+            val sequence = receipt.getValue("relay_seq").jsonPrimitive.long
+            check(
+                sequence > coveredSequence &&
+                    receipt.getValue("object_hash").jsonPrimitive.content == compactionHash &&
+                    entry.getValue("relay_seq").jsonPrimitive.long == sequence &&
+                    receipt.getValue("entry_hash").jsonPrimitive.content ==
+                    checkNotNull(PallaSyncCore.objectHash(entry.toString())) &&
+                    receipt.getValue("received_at_ms") == entry.getValue("received_at_ms"),
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+            val archivedReceipt =
+                database
+                    .rawQuery(
+                        "SELECT receipt_json FROM export_log_receipts WHERE log_id=? AND relay_seq=?",
+                        arrayOf(logId, sequence.toString()),
+                    ).use { rows ->
+                        check(rows.moveToFirst()) { "C_ACCEPTANCE_UNPROVEN" }
+                        rows.getString(0)
+                    }
+            check(archivedReceipt == receipt.toString()) { "C_ACCEPTANCE_UNPROVEN" }
+        }
 
         fun addSourceReceipt(entry: kotlinx.serialization.json.JsonObject) {
             val entryHash = checkNotNull(PallaSyncCore.objectHash(entry.toString())) { "C_SCHEMA_VIOLATION" }
@@ -771,6 +819,18 @@ internal object PallaSyncExportArchiveVerifier {
             }
         }
 
+        fun addBoundary(compaction: kotlinx.serialization.json.JsonObject) {
+            val hash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
+            try {
+                database.execSQL(
+                    "INSERT INTO export_boundaries(compaction_hash,compaction_json) VALUES (?,?)",
+                    arrayOf<Any>(hash, compaction.toString()),
+                )
+            } catch (_: SQLiteConstraintException) {
+                error("C_SCHEMA_VIOLATION")
+            }
+        }
+
         suspend fun verifyAuthorityHistory(
             header: kotlinx.serialization.json.JsonObject,
             identityJson: String,
@@ -779,11 +839,48 @@ internal object PallaSyncExportArchiveVerifier {
             snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
             reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier?,
             sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider?,
+            boundaryAuthorityProvider: PallaSyncArchiveBoundaryAuthorityProvider?,
         ): String {
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
             var expectedSequence = 1L
             var skipThroughSequence = 0L
-            val reseedTransition = firstReseedTransition()
+            val firstLogSequence =
+                database.rawQuery("SELECT MIN(relay_seq) FROM export_log_entries", null).use { rows ->
+                    check(rows.moveToFirst()) { "C_MISSING_DEPENDENCY" }
+                    rows.getLong(0)
+                }
+            val boundaryRows = boundaries()
+            val boundaryStart =
+                if (boundaryRows.isEmpty()) {
+                    null
+                } else {
+                    val provider = checkNotNull(boundaryAuthorityProvider) { "C_MISSING_DEPENDENCY" }
+                    val verifiedBoundaries = mutableMapOf<String, PallaSyncArchiveBoundaryProof>()
+                    boundaryRows.forEach { compaction ->
+                        val proof = checkNotNull(provider(compaction)) { "C_MISSING_DEPENDENCY" }
+                        validateBoundaryCheckpoint(proof, compaction, header, pinJson, snapshotVerifier)
+                        val compactionHash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
+                        verifiedBoundaries[compactionHash] = proof
+                        database.delete("export_boundaries", "compaction_hash=?", arrayOf(compactionHash))
+                        database.delete("export_compactions", "compaction_hash=?", arrayOf(compactionHash))
+                    }
+                    if (firstLogSequence > 1L) {
+                        val requiredCoveredSequence = firstLogSequence - 1L
+                        val matching =
+                            boundaryRows.singleOrNull { boundary ->
+                                boundary.getValue("covered_through_seq").jsonPrimitive.long == requiredCoveredSequence
+                            } ?: error("C_MISSING_DEPENDENCY")
+                        val matchingHash = checkNotNull(PallaSyncCore.objectHash(matching.toString()))
+                        val proof = checkNotNull(verifiedBoundaries[matchingHash]) { "C_MISSING_DEPENDENCY" }
+                        skipThroughSequence = requiredCoveredSequence
+                        expectedSequence = Math.addExact(requiredCoveredSequence, 1L)
+                        proof.authorityJson
+                    } else {
+                        null
+                    }
+                }
+            val boundaryCompactionHashes = boundaryRows.map { checkNotNull(PallaSyncCore.objectHash(it.toString())) }
+            val reseedTransition = if (boundaryStart == null) firstReseedTransition() else null
             if (reseedTransition != null) {
                 val (sequence, entry) = reseedTransition
                 val sourceGeneration =
@@ -809,6 +906,8 @@ internal object PallaSyncExportArchiveVerifier {
                 authority = verifiedAuthority
                 skipThroughSequence = cutSequence
                 expectedSequence = Math.addExact(cutSequence, 1L)
+            } else if (boundaryStart != null) {
+                authority = boundaryStart
             }
             database.rawQuery("SELECT relay_seq,entry_json FROM export_log_entries ORDER BY relay_seq", null).use { entries ->
                 while (entries.moveToNext()) {
@@ -869,11 +968,9 @@ internal object PallaSyncExportArchiveVerifier {
                         val compaction = entry.getValue("object").jsonObject
                         val compactionHash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
                         database.delete("export_compactions", "compaction_hash=?", arrayOf(compactionHash))
-                        verifyCompactionSnapshotParts(
-                            authority,
-                            compaction,
-                            snapshotVerifier,
-                        )
+                        if (compactionHash !in boundaryCompactionHashes) {
+                            verifyCompactionSnapshotParts(authority, compaction, snapshotVerifier)
+                        }
                     }
                     expectedSequence = Math.addExact(expectedSequence, 1L)
                 }
@@ -905,6 +1002,9 @@ internal object PallaSyncExportArchiveVerifier {
             database.rawQuery("SELECT COUNT(*) FROM export_compactions", null).use { cursor ->
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_MISSING_DEPENDENCY" }
             }
+            database.rawQuery("SELECT COUNT(*) FROM export_boundaries", null).use { cursor ->
+                check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_MISSING_DEPENDENCY" }
+            }
             database.rawQuery("SELECT COUNT(*) FROM export_snapshot_parts WHERE receipt_verified=0", null).use { cursor ->
                 check(cursor.moveToFirst() && cursor.getLong(0) == 0L) { "C_ACCEPTANCE_UNPROVEN" }
             }
@@ -933,6 +1033,48 @@ internal object PallaSyncExportArchiveVerifier {
                     }
                 }
             return null
+        }
+
+        private fun boundaries(): List<kotlinx.serialization.json.JsonObject> =
+            buildList {
+                database.rawQuery("SELECT compaction_json FROM export_boundaries", null).use { rows ->
+                    while (rows.moveToNext()) add(Json.parseToJsonElement(rows.getString(0)).jsonObject)
+                }
+            }.sortedBy { it.getValue("covered_through_seq").jsonPrimitive.long }
+
+        private suspend fun validateBoundaryCheckpoint(
+            proof: PallaSyncArchiveBoundaryProof,
+            compaction: kotlinx.serialization.json.JsonObject,
+            header: kotlinx.serialization.json.JsonObject,
+            pinJson: String,
+            snapshotVerifier: PallaSyncArchiveSnapshotVerifier?,
+        ) {
+            val authorityJson = proof.authorityJson
+            val authority = Json.parseToJsonElement(authorityJson).jsonObject
+            val parameters = authority.getValue("parameters").jsonObject
+            val pin = authority.getValue("pin").jsonObject
+            val covered = compaction.getValue("covered_through_seq").jsonPrimitive.long
+            check(
+                parameters.getValue("chain_id").jsonPrimitive.content == header.getValue("chain_id").jsonPrimitive.content &&
+                    parameters.getValue("generation").jsonPrimitive.long == header.getValue("generation").jsonPrimitive.long &&
+                    pin.getValue("log_id").jsonPrimitive.content == header.getValue("log_id").jsonPrimitive.content &&
+                    compaction.getValue("chain_id").jsonPrimitive.content == header.getValue("chain_id").jsonPrimitive.content &&
+                    compaction.getValue("generation").jsonPrimitive.long == header.getValue("generation").jsonPrimitive.long &&
+                    compaction.getValue("log_id").jsonPrimitive.content == header.getValue("log_id").jsonPrimitive.content &&
+                    authority.getValue("sequence").jsonPrimitive.long == covered &&
+                    authority.getValue("head_hash").jsonPrimitive.content ==
+                    compaction.getValue("covered_log_hash").jsonPrimitive.content,
+            ) { "C_LOG_HASH_MISMATCH" }
+            val entry = Json.parseToJsonElement(proof.compactionEntryJson).jsonObject
+            val receipt = Json.parseToJsonElement(proof.receiptJson).jsonObject
+            val compactionHash = checkNotNull(PallaSyncCore.objectHash(compaction.toString())) { "C_SCHEMA_VIOLATION" }
+            check(
+                entry.getValue("kind").jsonPrimitive.content == "compaction" &&
+                    PallaSyncCore.objectHash(entry.getValue("object").toString()) == compactionHash,
+            ) { "C_ACCEPTANCE_UNPROVEN" }
+            PallaSyncCore.validateExportSourceReceipt(proof.receiptJson, proof.compactionEntryJson, pinJson)
+            requireBoundaryReceipt(receipt, entry, compactionHash, covered)
+            verifyCompactionSnapshotParts(authorityJson, compaction, snapshotVerifier)
         }
 
         private suspend fun verifyReseedTransition(
