@@ -561,9 +561,24 @@ class PallaSyncExportArchiveTest {
 
     @Test
     fun sourceReceiptMustMatchTheSignedHistoricalUploadReceipt() {
-        val (archive, expected) = acceptedEvidenceArchive()
+        val (archive, expected) = acceptedEvidenceArchive(includeRecovery = true, sourceReceiptSequence = 6L)
+        val verifiedRecordSequences = mutableListOf<Long>()
+        val verified =
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                    verifiedRecordSequences += relaySequence
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+            )
+        verified.complete shouldBe true
+        verifiedRecordSequences shouldBe listOf(6L, 6L)
+
+        val (partialArchive, partialExpected) = acceptedEvidenceArchive(sourceReceiptSequence = 6L)
         val lines =
-            archive
+            partialArchive
                 .toString(Charsets.UTF_8)
                 .trimEnd('\n')
                 .split('\n')
@@ -599,7 +614,7 @@ class PallaSyncExportArchiveTest {
         PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
             index.addLogReceipt(uploadReceipt)
             index.addSourceReceipt(logEntry)
-            runBlocking { index.verifySourceReceipts(checkNotNull(expected.relayPinJson), null, null, null) } shouldBe false
+            runBlocking { index.verifySourceReceipts(checkNotNull(partialExpected.relayPinJson), null, null, null) } shouldBe false
         }
 
         val alteredEntry =
@@ -607,11 +622,26 @@ class PallaSyncExportArchiveTest {
                 logEntry.forEach { (key, value) -> put(key, value) }
                 put("received_at_ms", logEntry.getValue("received_at_ms").jsonPrimitive.long + 1L)
             }
+        val sourceRecord = logEntry.getValue("object").jsonObject
+        val conflictingRecord =
+            buildJsonObject {
+                sourceRecord.forEach { (key, value) -> put(key, value) }
+                put("generation", sourceRecord.getValue("generation").jsonPrimitive.long + 1L)
+            }
+        val conflictingSourceEntry =
+            buildJsonObject {
+                logEntry.forEach { (key, value) -> put(key, value) }
+                put("object", conflictingRecord)
+            }
+        PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
+            index.addSourceReceipt(conflictingSourceEntry)
+            shouldThrow<IllegalStateException> { index.addLogEntry(logEntry) }.message shouldBe "C_RECORD_ID_CONFLICT"
+        }
         PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex().use { index ->
             index.addLogReceipt(uploadReceipt)
             index.addSourceReceipt(alteredEntry)
             shouldThrow<IllegalStateException> {
-                runBlocking { index.verifySourceReceipts(checkNotNull(expected.relayPinJson), null, null, null) }
+                runBlocking { index.verifySourceReceipts(checkNotNull(partialExpected.relayPinJson), null, null, null) }
             }.message shouldBe "C_ACCEPTANCE_UNPROVEN"
         }
 
@@ -625,7 +655,7 @@ class PallaSyncExportArchiveTest {
             index.addLogReceipt(alteredReceipt)
             index.addSourceReceipt(logEntry)
             shouldThrow<IllegalStateException> {
-                runBlocking { index.verifySourceReceipts(checkNotNull(expected.relayPinJson), null, null, null) }
+                runBlocking { index.verifySourceReceipts(checkNotNull(partialExpected.relayPinJson), null, null, null) }
             }.message shouldBe "C_SIGNATURE_INVALID"
         }
 
@@ -634,7 +664,7 @@ class PallaSyncExportArchiveTest {
                 put("kind", "source_receipt")
                 put("receipt", logEntry)
             }.toString(),
-            checkNotNull(expected.relayPinJson),
+            checkNotNull(partialExpected.relayPinJson),
         ) shouldBe true
     }
 
@@ -644,6 +674,7 @@ class PallaSyncExportArchiveTest {
         includeRecovery: Boolean = false,
         includeOmitted: Boolean = false,
         includeUnverifiedControl: Boolean = false,
+        sourceReceiptSequence: Long? = null,
     ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
@@ -722,6 +753,28 @@ class PallaSyncExportArchiveTest {
                 receipts.map { receipt ->
                     checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
                 }
+            val sourceReceiptLines =
+                sourceReceiptSequence?.let { sequence ->
+                    val entry =
+                        logLines
+                            .map { line ->
+                                Json
+                                    .parseToJsonElement(line)
+                                    .jsonObject
+                                    .getValue("entry")
+                                    .jsonObject
+                            }.single { it.getValue("relay_seq").jsonPrimitive.long == sequence }
+                    listOf(
+                        checkNotNull(
+                            PallaSyncCore.canonicalJson(
+                                buildJsonObject {
+                                    put("kind", "source_receipt")
+                                    put("receipt", entry)
+                                }.toString(),
+                            ),
+                        ),
+                    )
+                } ?: emptyList()
             val snapshotLines =
                 if (addUnreferencedSnapshotPart) {
                     listOf(
@@ -735,7 +788,7 @@ class PallaSyncExportArchiveTest {
                     emptyList()
                 }
             val firstChunkLines =
-                listOf(header) + logLines + snapshotLines + receiptLines +
+                listOf(header) + logLines + sourceReceiptLines + snapshotLines + receiptLines +
                     if (includeUnverifiedControl) {
                         listOf("""{"kind":"control","object":{},"object_type":"parameters"}""")
                     } else {

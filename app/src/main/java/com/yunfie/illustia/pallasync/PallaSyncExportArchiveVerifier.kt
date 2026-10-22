@@ -322,6 +322,7 @@ internal object PallaSyncExportArchiveVerifier {
             database.execSQL("CREATE TABLE export_compactions (compaction_hash TEXT PRIMARY KEY)")
             database.execSQL("CREATE TABLE export_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
             database.execSQL("CREATE TABLE export_removed_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
+            database.execSQL("CREATE TABLE export_source_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
             database.execSQL(
                 "CREATE TABLE export_source_entries (entry_hash TEXT PRIMARY KEY, relay_seq INTEGER NOT NULL, entry_json TEXT NOT NULL)",
             )
@@ -401,6 +402,11 @@ internal object PallaSyncExportArchiveVerifier {
                         .rawQuery("SELECT record_hash FROM export_removed_ids WHERE record_id=?", arrayOf(recordId))
                         .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
                 check(removedHash == null || removedHash == recordHash) { "C_RECORD_ID_CONFLICT" }
+                val sourceHash =
+                    database
+                        .rawQuery("SELECT record_hash FROM export_source_record_ids WHERE record_id=?", arrayOf(recordId))
+                        .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                check(sourceHash == null || sourceHash == recordHash) { "C_RECORD_ID_CONFLICT" }
             }
         }
 
@@ -412,7 +418,13 @@ internal object PallaSyncExportArchiveVerifier {
                 database
                     .rawQuery("SELECT record_hash FROM export_record_ids WHERE record_id=?", arrayOf(recordId))
                     .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-            check(retainedHash == null || retainedHash == recordHash) { "C_RECORD_ID_CONFLICT" }
+            val sourceHash =
+                database
+                    .rawQuery("SELECT record_hash FROM export_source_record_ids WHERE record_id=?", arrayOf(recordId))
+                    .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+            check((retainedHash == null || retainedHash == recordHash) && (sourceHash == null || sourceHash == recordHash)) {
+                "C_RECORD_ID_CONFLICT"
+            }
             try {
                 database.execSQL(
                     "INSERT INTO export_removed_ids(record_id,record_hash) VALUES (?,?)",
@@ -457,6 +469,35 @@ internal object PallaSyncExportArchiveVerifier {
         fun addSourceReceipt(entry: kotlinx.serialization.json.JsonObject) {
             val entryHash = checkNotNull(PallaSyncCore.objectHash(entry.toString())) { "C_SCHEMA_VIOLATION" }
             val sequence = entry.getValue("relay_seq").jsonPrimitive.long
+            if (entry.getValue("kind").jsonPrimitive.content == "record") {
+                val record = entry.getValue("object").jsonObject
+                val recordId = record.getValue("record_id").jsonPrimitive.content
+                val recordHash = checkNotNull(PallaSyncCore.objectHash(record.toString())) { "C_SCHEMA_VIOLATION" }
+                val retainedHash =
+                    database
+                        .rawQuery("SELECT record_hash FROM export_record_ids WHERE record_id=?", arrayOf(recordId))
+                        .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                val removedHash =
+                    database
+                        .rawQuery("SELECT record_hash FROM export_removed_ids WHERE record_id=?", arrayOf(recordId))
+                        .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                check((retainedHash == null || retainedHash == recordHash) && (removedHash == null || removedHash == recordHash)) {
+                    "C_RECORD_ID_CONFLICT"
+                }
+                try {
+                    database.execSQL(
+                        "INSERT INTO export_source_record_ids(record_id,record_hash) VALUES (?,?)",
+                        arrayOf<Any>(recordId, recordHash),
+                    )
+                } catch (_: SQLiteConstraintException) {
+                    val existingHash =
+                        database
+                            .rawQuery("SELECT record_hash FROM export_source_record_ids WHERE record_id=?", arrayOf(recordId))
+                            .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                    check(existingHash == recordHash) { "C_RECORD_ID_CONFLICT" }
+                    error("C_SCHEMA_VIOLATION")
+                }
+            }
             try {
                 database.execSQL(
                     "INSERT INTO export_source_entries(entry_hash,relay_seq,entry_json) VALUES (?,?,?)",
