@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -591,7 +592,14 @@ class PallaSyncExportArchiveTest {
                     val sourcePin =
                         buildJsonObject {
                             authority.getValue("pin").jsonObject.forEach { (key, value) ->
-                                put(key, if (key == "log_id") JsonPrimitive(sourceLogId) else value)
+                                put(
+                                    key,
+                                    when (key) {
+                                        "log_id" -> JsonPrimitive(sourceLogId)
+                                        "public_key" -> JsonPrimitive(alternateRelayPublicKey())
+                                        else -> value
+                                    },
+                                )
                             }
                         }
                     buildJsonObject {
@@ -910,7 +918,76 @@ class PallaSyncExportArchiveTest {
             )
             archive.finish()
         }
-        return output.toByteArray() to expected
+        val archiveBytes =
+            if (sourceReceiptFromOtherIncarnation) {
+                reSignArchivedSourceReceiptsWithAlternateKey(
+                    output.toByteArray(),
+                    checkNotNull(sourceReceiptSequence),
+                )
+            } else {
+                output.toByteArray()
+            }
+        return archiveBytes to expected
+    }
+
+    private fun reSignArchivedSourceReceiptsWithAlternateKey(
+        archive: ByteArray,
+        sequence: Long,
+    ): ByteArray {
+        val lines = archive.toString(Charsets.UTF_8).trimEnd('\n').split('\n')
+        val sourceEntry =
+            lines
+                .map(Json::parseToJsonElement)
+                .map { it.jsonObject }
+                .first { it["kind"]?.jsonPrimitive?.content == "source_receipt" }
+                .getValue("receipt")
+                .jsonObject
+        val header = Json.parseToJsonElement(lines.first()).jsonObject
+        val updatedLines =
+            lines.dropLast(1).map { line ->
+                val value = Json.parseToJsonElement(line).jsonObject
+                val receipt = value["receipt"]?.jsonObject
+                if (
+                    value["kind"]?.jsonPrimitive?.content == "upload_receipt" &&
+                    receipt?.get("relay_seq")?.jsonPrimitive?.long == sequence &&
+                    receipt["log_id"]?.jsonPrimitive?.content != header.getValue("log_id").jsonPrimitive.content
+                ) {
+                    val alternate =
+                        signHistoricalReceipt(
+                            receipt,
+                            sourceEntry,
+                            logId = receipt.getValue("log_id").jsonPrimitive.content,
+                            receiptId = receipt.getValue("receipt_id").jsonPrimitive.content,
+                            transparencyId = receipt.getValue("transparency_id").jsonPrimitive.content,
+                            useAlternateRelayKey = true,
+                        )
+                    checkNotNull(
+                        PallaSyncCore.canonicalJson(
+                            buildJsonObject {
+                                value.forEach { (key, field) -> put(key, if (key == "receipt") alternate else field) }
+                            }.toString(),
+                        ),
+                    )
+                } else {
+                    line
+                }
+            }
+        val signedPrefix = (updatedLines.joinToString("\n", postfix = "\n")).toByteArray(Charsets.UTF_8)
+        val oldFooter = Json.parseToJsonElement(lines.last()).jsonObject
+        val footer =
+            buildJsonObject {
+                put(
+                    "archive_sha256",
+                    Base64.getUrlEncoder().withoutPadding().encodeToString(
+                        MessageDigest.getInstance("SHA-256").digest(signedPrefix),
+                    ),
+                )
+                put("complete", oldFooter.getValue("complete").jsonPrimitive.booleanOrNull ?: false)
+                put("kind", "footer")
+                put("line_count", updatedLines.size)
+            }
+        return (signedPrefix.toString(Charsets.UTF_8) + checkNotNull(PallaSyncCore.canonicalJson(footer.toString())) + "\n")
+            .toByteArray(Charsets.UTF_8)
     }
 
     private fun signHistoricalReceipt(
@@ -919,6 +996,7 @@ class PallaSyncExportArchiveTest {
         logId: String = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
         receiptId: String = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
         transparencyId: String = "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        useAlternateRelayKey: Boolean = false,
     ): kotlinx.serialization.json.JsonObject {
         val sequence = entry.getValue("relay_seq").jsonPrimitive.long
         val previousHash = Base64.getUrlDecoder().decode(template.getValue("previous_head_hash").jsonPrimitive.content)
@@ -934,7 +1012,11 @@ class PallaSyncExportArchiveTest {
         val resultingHash = Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(linkInput))
         val unsigned =
             buildJsonObject {
-                template.filterKeys { it != "relay_signature" }.forEach { (key, value) -> put(key, value) }
+                template.filterKeys { it != "relay_signature" && it != "relay_key_id" }.forEach { (key, value) -> put(key, value) }
+                put(
+                    "relay_key_id",
+                    if (useAlternateRelayKey) alternateRelayKeyId() else "oYESsLe0Il_zBSfg9896HjdC9jKwO2X0VCcDw6VlTck",
+                )
                 put("log_id", logId)
                 put("receipt_id", receiptId)
                 put("transparency_id", transparencyId)
@@ -962,7 +1044,12 @@ class PallaSyncExportArchiveTest {
                 0x22,
                 0x04,
                 0x20,
-            ) + ByteArray(32) { (0xa0 + it).toByte() }
+            ) +
+                if (useAlternateRelayKey) {
+                    decodeHex(ALTERNATE_RELAY_SEED_HEX)
+                } else {
+                    ByteArray(32) { (0xa0 + it).toByte() }
+                }
         val privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(PKCS8EncodedKeySpec(privateKeyEncoding))
         val signature =
             Signature.getInstance("Ed25519").run {
@@ -975,6 +1062,30 @@ class PallaSyncExportArchiveTest {
             unsigned.forEach { (key, value) -> put(key, value) }
             put("relay_signature", signature)
         }
+    }
+
+    private fun alternateRelayPublicKey(): String =
+        Base64.getUrlEncoder().withoutPadding().encodeToString(decodeHex(ALTERNATE_RELAY_PUBLIC_HEX))
+
+    private fun alternateRelayKeyId(): String =
+        Base64
+            .getUrlEncoder()
+            .withoutPadding()
+            .encodeToString(
+                MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(decodeHex(ALTERNATE_RELAY_PUBLIC_HEX)),
+            )
+
+    private fun decodeHex(value: String): ByteArray =
+        value
+            .chunked(2)
+            .map { it.toInt(16).toByte() }
+            .toByteArray()
+
+    private companion object {
+        const val ALTERNATE_RELAY_SEED_HEX = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"
+        const val ALTERNATE_RELAY_PUBLIC_HEX = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
     }
 
     @Test

@@ -215,7 +215,26 @@ internal object PallaSyncExportArchiveVerifier {
                 PallaSyncExportArchive.validateExportLine(value)
                 if (pin != null) {
                     check(!transparencyHeadVerified) { "C_TRANSPARENCY_INVALID" }
-                    if (kind in setOf("source_receipt", "upload_receipt", "transparency_entry", "transparency_head")) {
+                    val currentLogId = header.getValue("log_id").jsonPrimitive.content
+                    val currentRelayAttestation =
+                        when (kind) {
+                            "upload_receipt" -> {
+                                value
+                                    .getValue("receipt")
+                                    .jsonObject
+                                    .getValue("log_id")
+                                    .jsonPrimitive.content == currentLogId
+                            }
+
+                            "source_receipt", "transparency_entry", "transparency_head" -> {
+                                true
+                            }
+
+                            else -> {
+                                false
+                            }
+                        }
+                    if (currentRelayAttestation) {
                         check(PallaSyncCore.validateExportAttestation(line, checkNotNull(canonicalPin))) { "C_SIGNATURE_INVALID" }
                     }
                     when (kind) {
@@ -632,6 +651,43 @@ internal object PallaSyncExportArchiveVerifier {
                     receiptAuthorityPairs.forEach { (receiptJson, sourceLogId) ->
                         sourceEntrySink?.invoke(sourceLogId, entryJson, receiptJson, sequence)
                     }
+                }
+            }
+            val currentLogId =
+                Json
+                    .parseToJsonElement(pinJson)
+                    .jsonObject
+                    .getValue("log_id")
+                    .jsonPrimitive.content
+            val allReceipts =
+                database
+                    .rawQuery("SELECT receipt_json FROM export_log_receipts", null)
+                    .use { rows -> buildList { while (rows.moveToNext()) add(rows.getString(0)) } }
+            allReceipts.forEach { receiptJson ->
+                val receipt = Json.parseToJsonElement(receiptJson).jsonObject
+                if (receipt.getValue("log_id").jsonPrimitive.content != currentLogId) {
+                    val sequence = receipt.getValue("relay_seq").jsonPrimitive.long
+                    val sourceEntryMatches =
+                        database
+                            .rawQuery(
+                                "SELECT entry_json FROM export_source_entries WHERE relay_seq=?",
+                                arrayOf(sequence.toString()),
+                            ).use { entries ->
+                                buildList {
+                                    while (entries.moveToNext()) {
+                                        val entryJson = entries.getString(0)
+                                        val entry = Json.parseToJsonElement(entryJson).jsonObject
+                                        val objectHash =
+                                            entry["object"]?.let { PallaSyncCore.objectHash(it.toString()) }
+                                        add(
+                                            PallaSyncCore.objectHash(entryJson) == receipt["entry_hash"]?.jsonPrimitive?.content &&
+                                                objectHash == receipt["object_hash"]?.jsonPrimitive?.content &&
+                                                entry["received_at_ms"] == receipt["received_at_ms"],
+                                        )
+                                    }
+                                }
+                            }.any { it }
+                    check(sourceEntryMatches) { "C_ACCEPTANCE_UNPROVEN" }
                 }
             }
             return true
