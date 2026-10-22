@@ -504,17 +504,22 @@ internal object PallaSyncExportArchiveVerifier {
                             .rawQuery("SELECT record_hash FROM export_source_record_ids WHERE record_id=?", arrayOf(recordId))
                             .use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
                     check(existingHash == recordHash) { "C_RECORD_ID_CONFLICT" }
-                    error("C_SCHEMA_VIOLATION")
                 }
             }
-            try {
-                database.execSQL(
-                    "INSERT INTO export_source_entries(entry_hash,relay_seq,entry_json) VALUES (?,?,?)",
-                    arrayOf<Any>(entryHash, sequence, entry.toString()),
-                )
-            } catch (_: SQLiteConstraintException) {
-                error("C_SCHEMA_VIOLATION")
-            }
+            database.execSQL(
+                "INSERT OR IGNORE INTO export_source_entries(entry_hash,relay_seq,entry_json) VALUES (?,?,?)",
+                arrayOf<Any>(entryHash, sequence, entry.toString()),
+            )
+            val retained =
+                database
+                    .rawQuery(
+                        "SELECT relay_seq,entry_json FROM export_source_entries WHERE entry_hash=?",
+                        arrayOf(entryHash),
+                    ).use { rows ->
+                        check(rows.moveToFirst()) { "C_SCHEMA_VIOLATION" }
+                        rows.getLong(0) == sequence && rows.getString(1) == entry.toString()
+                    }
+            check(retained) { "C_SCHEMA_VIOLATION" }
         }
 
         suspend fun verifySourceReceipts(
@@ -551,8 +556,10 @@ internal object PallaSyncExportArchiveVerifier {
                                 receipt["object_hash"]?.jsonPrimitive?.content == objectHash &&
                                 receipt["received_at_ms"] == entry["received_at_ms"]
                         }
-                    check(linked.size == 1) { "C_ACCEPTANCE_UNPROVEN" }
-                    PallaSyncCore.validateExportSourceReceipt(linked.single(), entryJson, pinJson)
+                    check(linked.isNotEmpty()) { "C_ACCEPTANCE_UNPROVEN" }
+                    linked.forEach { receiptJson ->
+                        PallaSyncCore.validateExportSourceReceipt(receiptJson, entryJson, pinJson)
+                    }
 
                     if (entry.getValue("kind").jsonPrimitive.content != "record") return false
                     val record = entry.getValue("object").jsonObject
@@ -576,9 +583,11 @@ internal object PallaSyncExportArchiveVerifier {
                         "C_ACCEPTANCE_UNPROVEN"
                     }
                     recordVerifier.verify(authorityJson, record.toString(), sequence)
-                    val sourceReceipt = Json.parseToJsonElement(linked.single()).jsonObject
-                    val sourceLogId = sourceReceipt.getValue("log_id").jsonPrimitive.content
-                    sourceEntrySink?.invoke(sourceLogId, entryJson, linked.single(), sequence)
+                    linked.forEach { receiptJson ->
+                        val sourceReceipt = Json.parseToJsonElement(receiptJson).jsonObject
+                        val sourceLogId = sourceReceipt.getValue("log_id").jsonPrimitive.content
+                        sourceEntrySink?.invoke(sourceLogId, entryJson, receiptJson, sequence)
+                    }
                 }
             }
             return true

@@ -570,6 +570,7 @@ class PallaSyncExportArchiveTest {
                 includeRecovery = true,
                 sourceReceiptSequence = 6L,
                 sourceReceiptFromOtherIncarnation = true,
+                duplicateSourceIncarnation = true,
             )
         val verifiedRecordSequences = mutableListOf<Long>()
         val retainedSourceReceipts = mutableListOf<Triple<String, Long, String>>()
@@ -595,7 +596,10 @@ class PallaSyncExportArchiveTest {
         verified.complete shouldBe true
         verifiedRecordSequences shouldBe listOf(6L, 6L)
         retainedSourceReceipts shouldBe
-            listOf(Triple("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", 6L, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"))
+            listOf(
+                Triple("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", 6L, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
+                Triple("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", 6L, "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"),
+            )
 
         val (partialArchive, partialExpected) = acceptedEvidenceArchive(sourceReceiptSequence = 6L)
         val lines =
@@ -697,6 +701,7 @@ class PallaSyncExportArchiveTest {
         includeUnverifiedControl: Boolean = false,
         sourceReceiptSequence: Long? = null,
         sourceReceiptFromOtherIncarnation: Boolean = false,
+        duplicateSourceIncarnation: Boolean = false,
     ): Pair<ByteArray, PallaSyncExportArchive.ExpectedSource> {
         val fixture =
             Json
@@ -791,29 +796,44 @@ class PallaSyncExportArchiveTest {
                         } else {
                             entry
                         }
-                    val sourceReceipt =
+                    val sourceReceipts =
                         if (sourceReceiptFromOtherIncarnation) {
                             val currentReceipt =
                                 receipts
                                     .map { it.jsonObject }
                                     .single { it.getValue("relay_seq").jsonPrimitive.long == sequence }
-                            signHistoricalReceipt(currentReceipt, sourceEntry)
+                            listOf(
+                                signHistoricalReceipt(currentReceipt, sourceEntry),
+                            ) +
+                                if (duplicateSourceIncarnation) {
+                                    listOf(
+                                        signHistoricalReceipt(
+                                            currentReceipt,
+                                            sourceEntry,
+                                            logId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                                            receiptId = "ffffffff-ffff-4fff-8fff-ffffffffffff",
+                                            transparencyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                                        ),
+                                    )
+                                } else {
+                                    emptyList()
+                                }
                         } else {
-                            null
+                            emptyList()
                         }
-                    sourceEntry to sourceReceipt
+                    sourceEntry to sourceReceipts
                 }
-            val historicalReceiptLine =
-                sourceEvidence?.second?.let { receipt ->
+            val historicalReceiptLines =
+                sourceEvidence?.second?.map { receipt ->
                     checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
-                }
+                } ?: emptyList()
             val receiptLines =
                 receipts.map { receipt ->
                     checkNotNull(PallaSyncCore.canonicalJson("""{"kind":"upload_receipt","receipt":$receipt}"""))
-                } + listOfNotNull(historicalReceiptLine)
+                } + historicalReceiptLines
             val sourceReceiptLines =
-                sourceEvidence?.first?.let { entry ->
-                    listOf(
+                sourceEvidence?.let { (entry, sourceReceipts) ->
+                    List(sourceReceipts.size) {
                         checkNotNull(
                             PallaSyncCore.canonicalJson(
                                 buildJsonObject {
@@ -821,8 +841,8 @@ class PallaSyncExportArchiveTest {
                                     put("receipt", entry)
                                 }.toString(),
                             ),
-                        ),
-                    )
+                        )
+                    }
                 } ?: emptyList()
             val snapshotLines =
                 if (addUnreferencedSnapshotPart) {
@@ -881,6 +901,9 @@ class PallaSyncExportArchiveTest {
     private fun signHistoricalReceipt(
         template: kotlinx.serialization.json.JsonObject,
         entry: kotlinx.serialization.json.JsonObject,
+        logId: String = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        receiptId: String = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        transparencyId: String = "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     ): kotlinx.serialization.json.JsonObject {
         val sequence = entry.getValue("relay_seq").jsonPrimitive.long
         val previousHash = Base64.getUrlDecoder().decode(template.getValue("previous_head_hash").jsonPrimitive.content)
@@ -897,9 +920,9 @@ class PallaSyncExportArchiveTest {
         val unsigned =
             buildJsonObject {
                 template.filterKeys { it != "relay_signature" }.forEach { (key, value) -> put(key, value) }
-                put("log_id", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
-                put("receipt_id", "cccccccc-cccc-4ccc-8ccc-cccccccccccc")
-                put("transparency_id", "dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+                put("log_id", logId)
+                put("receipt_id", receiptId)
+                put("transparency_id", transparencyId)
                 put("transparency_index", 1)
                 put("entry_hash", entryHash)
                 put("received_at_ms", entry.getValue("received_at_ms").jsonPrimitive.long)
