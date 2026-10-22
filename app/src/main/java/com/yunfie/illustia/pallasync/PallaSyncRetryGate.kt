@@ -534,7 +534,10 @@ internal class PallaSyncRetryGate(
                 "EPOCH_NOT_FOUND",
             )
 
-        private val LIFECYCLE_RESOLUTION_CODES = setOf("DEVICE_PENDING_KEYS")
+        // DEVICE_LIMIT_REACHED can only be released by the explicit admin
+        // revocation flow after its new epoch transaction has been accepted.
+        // It is deliberately excluded from the generic Settings retry action.
+        private val LIFECYCLE_RESOLUTION_CODES = setOf("DEVICE_PENDING_KEYS", "DEVICE_LIMIT_REACHED")
 
         /** Whether Settings may release a blocker through its generic confirmation. */
         internal fun canRetryAfterResolution(code: String): Boolean = code in USER_RESOLUTION_RETRYABLE_CODES

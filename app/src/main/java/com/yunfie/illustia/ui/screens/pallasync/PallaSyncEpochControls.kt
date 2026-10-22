@@ -153,14 +153,17 @@ internal fun PallaSyncDeviceRevocationControl(
             stringResource(R.string.pallasync_v3_device_revoke_explanation, deviceId),
             onDismiss = { selected = false },
         ) { words, passphrase, cancellation ->
-            manager.rotateEpoch(
-                words,
-                "emergency",
-                revoked = listOf(deviceId),
-                admin = true,
-                passphrase = passphrase,
-                cancellation = cancellation,
-            )
+            val revoked =
+                manager.rotateEpoch(
+                    words,
+                    "emergency",
+                    revoked = listOf(deviceId),
+                    admin = true,
+                    passphrase = passphrase,
+                    cancellation = cancellation,
+                )
+            if (revoked) manager.retryBlockedRequestsAfterResolution("DEVICE_LIMIT_REACHED")
+            revoked
         }
     }
 }

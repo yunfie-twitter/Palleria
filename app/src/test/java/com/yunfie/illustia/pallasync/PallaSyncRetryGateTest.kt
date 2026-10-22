@@ -195,6 +195,29 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `device limit blocker is released only by explicit chain scoped lifecycle resolution`() {
+        val gate = gate()
+        val anotherChain = "AbCdEf0123456789012345678901234567890123456"
+        val first = request()
+        val second =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/$anotherChain/records")
+                .post("{}".toRequestBody())
+                .build()
+        val limit = PallaSyncProblemHint(413, "DEVICE_LIMIT_REACHED", true)
+        gate.observe(first, PallaSyncHttpResult.ProtocolError("DEVICE_LIMIT_REACHED", 413), limit)
+        gate.observe(second, PallaSyncHttpResult.ProtocolError("DEVICE_LIMIT_REACHED", 413), limit)
+
+        PallaSyncRetryGate.canRetryAfterResolution("DEVICE_LIMIT_REACHED") shouldBe false
+        gate.resolved(origin, chain, "DEVICE_LIMIT_REACHED") shouldBe true
+        gate.before(first) shouldBe null
+        gate.before(second) shouldBe PallaSyncHttpResult.ProtocolError("DEVICE_LIMIT_REACHED")
+        gate.resolved(origin, anotherChain, "DEVICE_LIMIT_REACHED") shouldBe true
+        gate.before(second) shouldBe null
+    }
+
+    @Test
     fun `blocked request diagnostics list distinct codes for only the selected chain`() {
         val gate = gate()
         val anotherChain = "AbCdEf0123456789012345678901234567890123456"
