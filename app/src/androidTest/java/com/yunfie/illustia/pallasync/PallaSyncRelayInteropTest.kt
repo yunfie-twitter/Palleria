@@ -51,6 +51,7 @@ class PallaSyncRelayInteropTest {
     fun mnemonicEnrollmentAndInitialSyncUseTheRealRelay() =
         runBlocking<Unit> {
             val args = InstrumentationRegistry.getArguments()
+            val recordsLimitPreflight = args.getString("records_limit_preflight") == "true"
             val origin = args.getString("relay_origin")
             assumeTrue("Disposable relay arguments are required", origin?.startsWith("https://127.0.0.1:") == true)
             val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
@@ -261,7 +262,9 @@ class PallaSyncRelayInteropTest {
                 if (args.getString("records_413_split") == "true" || records413ProcessDeath) {
                     val recoveryEvents =
                         (0 until 4).map { index ->
-                            val query = "Android 413 split $index"
+                            val query =
+                                "Android 413 split $index" +
+                                    if (recordsLimitPreflight) " " + "x".repeat(1400) else ""
                             PallaSyncPendingEvent(
                                 SEARCH_HISTORY_SCHEMA_V3,
                                 query,
@@ -277,7 +280,11 @@ class PallaSyncRelayInteropTest {
                                 if (records413ProcessDeath) {
                                     "$selected/__test__/arm-records-413-process-death"
                                 } else {
-                                    "$selected/__test__/arm-records-413"
+                                    if (recordsLimitPreflight) {
+                                        "$selected/__test__/track-limited-records"
+                                    } else {
+                                        "$selected/__test__/arm-records-413"
+                                    }
                                 },
                             )
                             .post(ByteArray(0).toRequestBody(null))
@@ -297,11 +304,17 @@ class PallaSyncRelayInteropTest {
                     } else {
                         assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
                         assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                        val marker =
+                            if (recordsLimitPreflight) {
+                                "pallasync_records_limit_preflight"
+                            } else {
+                                "pallasync_records_413_split"
+                            }
                         InstrumentationRegistry.getInstrumentation().sendStatus(
                             0,
-                            Bundle().apply { putString("pallasync_records_413_split", "passed") },
+                            Bundle().apply { putString(marker, "passed") },
                         )
-                        println("pallasync_records_413_split=passed")
+                        println("$marker=passed")
                     }
                 }
                 val replacingDevice = args.getString("replace_device") == "true"
