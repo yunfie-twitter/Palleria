@@ -1110,7 +1110,37 @@ internal class PalleriaSyncCoordinator(
         checkpoint: PallaSyncGenesisCheckpoint,
     ) {
         val current = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
-        if (!current.initialPullCompleted || current.logId != checkpoint.logId || current.verifiedSeq != current.materializedSeq) return
+        if (current.logId != checkpoint.logId) return
+        if (!current.initialPullCompleted) {
+            // A completely verified recovery archive may bootstrap an interrupted first pull.
+            // Do not overwrite an already advanced/partially materialized local prefix here;
+            // that state must use ordinary suffix reconciliation instead.
+            check(
+                current.lastRelaySeq == 0L && current.verifiedSeq == 0L && current.materializedSeq == 0L &&
+                    current.generation == checkpoint.generation && current.epochHash == checkpoint.epochHash,
+            ) { "C_MISSING_DEPENDENCY" }
+            val candidates = db.snapshotInstallDao().latestVerifiedInstalls(chain, checkpoint.generation)
+            for (candidate in candidates) {
+                val compaction = Json.parseToJsonElement(candidate.compactionJson).jsonObject
+                val covered = candidate.coveredThroughSeq
+                if (
+                    compaction["log_id"]?.jsonPrimitive?.content != checkpoint.logId ||
+                    compaction["epoch_hash"]?.jsonPrimitive?.content != checkpoint.epochHash ||
+                    covered > checkpoint.headSeq
+                ) {
+                    continue
+                }
+                db.snapshotInstallDao().installVerifiedState(
+                    chain,
+                    candidate.compactionId,
+                    current.indexRevision,
+                    explicitlyTrustedBootstrap = true,
+                )
+                return
+            }
+            return
+        }
+        if (current.verifiedSeq != current.materializedSeq) return
         val coveredHash = current.verifiedHash ?: checkpoint.dataZero ?: return
         val expectedEpochHash = checkpoint.epochHash
         val candidates =

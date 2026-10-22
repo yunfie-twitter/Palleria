@@ -750,6 +750,27 @@ class PallaSyncRelayInteropTest {
         assertTrue("Archive omitted recovery", verified.includeRecovery)
         assertEquals(chain, verified.chainId)
 
+        // Model the durable state left by a new device whose authenticated enrollment
+        // checkpoint exists but whose first data pull never committed. The complete
+        // archive must bootstrap from its verified snapshot and replay its retained suffix.
+        val beforeRestore = checkNotNull(store.dao.getChainState(chain))
+        val dataZero =
+            Json
+                .parseToJsonElement(checkNotNull(verified.historyCutJson))
+                .jsonObject
+                .getValue("data_zero")
+                .jsonPrimitive.content
+        store.dao.updateChainState(
+            beforeRestore.copy(
+                lastRelaySeq = 0,
+                downloadedSeq = 0,
+                verifiedSeq = 0,
+                materializedSeq = 0,
+                verifiedHash = dataZero,
+                initialPullCompleted = false,
+            ),
+        )
+
         coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
         val state = checkNotNull(store.dao.getChainState(chain))
         assertTrue(state.initialPullCompleted)

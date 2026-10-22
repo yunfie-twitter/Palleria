@@ -107,6 +107,14 @@ interface SnapshotInstallDao {
         coveredHash: String,
     ): List<SnapshotInstallEntity>
 
+    @Query(
+        "SELECT * FROM ps_snapshot_installs WHERE chain_id=:chain AND generation=:generation AND status='verified' ORDER BY covered_through_seq DESC,compaction_id LIMIT 20",
+    )
+    suspend fun latestVerifiedInstalls(
+        chain: String,
+        generation: Long,
+    ): List<SnapshotInstallEntity>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertInstall(install: SnapshotInstallEntity)
 
