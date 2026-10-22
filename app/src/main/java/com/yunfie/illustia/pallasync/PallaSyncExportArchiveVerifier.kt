@@ -27,6 +27,7 @@ internal typealias PallaSyncArchiveReseedAuthorityVerifier =
     suspend (String, JsonArray, kotlinx.serialization.json.JsonObject) -> String
 
 internal typealias PallaSyncArchiveSourceAuthorityProvider = suspend (Long) -> String?
+internal typealias PallaSyncArchiveSourceLogAuthorityProvider = suspend (Long, String) -> String?
 internal typealias PallaSyncArchiveSourceEntrySink = suspend (String, String, String, Long) -> Unit
 
 /** Streaming §17.4 footer and line-integrity check; signatures and AEAD remain separate gates. */
@@ -57,6 +58,7 @@ internal object PallaSyncExportArchiveVerifier {
         beforeRetain: (suspend (Header) -> Unit)? = null,
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
+        sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
     ): Header =
         runBlocking {
@@ -69,6 +71,7 @@ internal object PallaSyncExportArchiveVerifier {
                 beforeRetain,
                 reseedAuthorityVerifier,
                 sourceAuthorityProvider,
+                sourceLogAuthorityProvider,
                 sourceEntrySink,
             )
         }
@@ -82,6 +85,7 @@ internal object PallaSyncExportArchiveVerifier {
         beforeRetain: (suspend (Header) -> Unit)? = null,
         reseedAuthorityVerifier: PallaSyncArchiveReseedAuthorityVerifier? = null,
         sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider? = null,
+        sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
     ): Header {
         val source = BufferedInputStream(input)
@@ -171,6 +175,7 @@ internal object PallaSyncExportArchiveVerifier {
                                 verifiedAuthorityJson,
                                 recordVerifier,
                                 sourceAuthorityProvider,
+                                sourceLogAuthorityProvider,
                                 sourceEntrySink,
                             )
                         ) {
@@ -527,6 +532,7 @@ internal object PallaSyncExportArchiveVerifier {
             finalAuthorityJson: String?,
             recordVerifier: PallaSyncArchiveRecordVerifier?,
             sourceAuthorityProvider: PallaSyncArchiveSourceAuthorityProvider?,
+            sourceLogAuthorityProvider: PallaSyncArchiveSourceLogAuthorityProvider? = null,
             sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
         ): Boolean {
             database.rawQuery("SELECT entry_hash,relay_seq,entry_json FROM export_source_entries", null).use { entries ->
@@ -557,10 +563,6 @@ internal object PallaSyncExportArchiveVerifier {
                                 receipt["received_at_ms"] == entry["received_at_ms"]
                         }
                     check(linked.isNotEmpty()) { "C_ACCEPTANCE_UNPROVEN" }
-                    linked.forEach { receiptJson ->
-                        PallaSyncCore.validateExportSourceReceipt(receiptJson, entryJson, pinJson)
-                    }
-
                     if (entry.getValue("kind").jsonPrimitive.content != "record") return false
                     val record = entry.getValue("object").jsonObject
                     val generation = record.getValue("generation").jsonPrimitive.long
@@ -572,20 +574,62 @@ internal object PallaSyncExportArchiveVerifier {
                             ?.get("generation")
                             ?.jsonPrimitive
                             ?.long
-                    val authorityJson =
+                    val fallbackAuthorityJson =
                         if (finalGeneration == generation) {
-                            checkNotNull(finalAuthorityJson)
+                            finalAuthorityJson
                         } else {
-                            sourceAuthorityProvider?.invoke(generation) ?: return false
+                            sourceAuthorityProvider?.invoke(generation)
                         }
-                    if (recordVerifier == null) return false
-                    check(PallaSyncCore.validateRecordAuthority(authorityJson, record.toString(), sequence)) {
-                        "C_ACCEPTANCE_UNPROVEN"
-                    }
-                    recordVerifier.verify(authorityJson, record.toString(), sequence)
+                    val receiptAuthorityPairs = mutableListOf<Pair<String, String>>()
                     linked.forEach { receiptJson ->
                         val sourceReceipt = Json.parseToJsonElement(receiptJson).jsonObject
                         val sourceLogId = sourceReceipt.getValue("log_id").jsonPrimitive.content
+                        val sourceAuthorityJson = sourceLogAuthorityProvider?.invoke(generation, sourceLogId)
+                        val receiptPinJson =
+                            sourceAuthorityJson?.let { authority ->
+                                val authorityObject =
+                                    Json
+                                        .parseToJsonElement(authority)
+                                        .jsonObject
+                                val authorityPin = authorityObject.getValue("pin").jsonObject
+                                check(authorityPin.getValue("log_id").jsonPrimitive.content == sourceLogId) {
+                                    "C_ACCEPTANCE_UNPROVEN"
+                                }
+                                check(
+                                    authorityObject
+                                        .getValue("parameters")
+                                        .jsonObject
+                                        .getValue("generation")
+                                        .jsonPrimitive.long == generation,
+                                ) { "C_ACCEPTANCE_UNPROVEN" }
+                                authorityPin.toString()
+                            } ?: pinJson.takeIf {
+                                Json
+                                    .parseToJsonElement(it)
+                                    .jsonObject
+                                    .getValue("log_id")
+                                    .jsonPrimitive.content == sourceLogId
+                            } ?: fallbackAuthorityJson?.let { authority ->
+                                val authorityPin =
+                                    Json
+                                        .parseToJsonElement(authority)
+                                        .jsonObject
+                                        .getValue("pin")
+                                        .jsonObject
+                                authorityPin.toString().takeIf {
+                                    authorityPin.getValue("log_id").jsonPrimitive.content == sourceLogId
+                                }
+                            } ?: return false
+                        PallaSyncCore.validateExportSourceReceipt(receiptJson, entryJson, receiptPinJson)
+                        receiptAuthorityPairs += receiptJson to sourceLogId
+                    }
+                    if (recordVerifier == null) return false
+                    val recordAuthorityJson = fallbackAuthorityJson ?: return false
+                    check(PallaSyncCore.validateRecordAuthority(recordAuthorityJson, record.toString(), sequence)) {
+                        "C_ACCEPTANCE_UNPROVEN"
+                    }
+                    recordVerifier.verify(recordAuthorityJson, record.toString(), sequence)
+                    receiptAuthorityPairs.forEach { (receiptJson, sourceLogId) ->
                         sourceEntrySink?.invoke(sourceLogId, entryJson, receiptJson, sequence)
                     }
                 }

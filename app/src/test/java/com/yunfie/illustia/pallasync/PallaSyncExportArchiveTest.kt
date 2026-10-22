@@ -5,6 +5,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -574,15 +575,29 @@ class PallaSyncExportArchiveTest {
             )
         val verifiedRecordSequences = mutableListOf<Long>()
         val retainedSourceReceipts = mutableListOf<Triple<String, Long, String>>()
+        var verifiedAuthority: kotlinx.serialization.json.JsonObject? = null
         val verified =
             PallaSyncExportArchiveVerifier.verify(
                 ByteArrayInputStream(archive),
                 expected,
                 PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
                     PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                    verifiedAuthority = Json.parseToJsonElement(authority).jsonObject
                     verifiedRecordSequences += relaySequence
                 },
                 PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                sourceLogAuthorityProvider = { _, sourceLogId ->
+                    val authority = checkNotNull(verifiedAuthority)
+                    val sourcePin =
+                        buildJsonObject {
+                            authority.getValue("pin").jsonObject.forEach { (key, value) ->
+                                put(key, if (key == "log_id") JsonPrimitive(sourceLogId) else value)
+                            }
+                        }
+                    buildJsonObject {
+                        authority.forEach { (key, value) -> put(key, if (key == "pin") sourcePin else value) }
+                    }.toString()
+                },
                 sourceEntrySink = { logId, _, receipt, sequence ->
                     val receiptLogId =
                         Json

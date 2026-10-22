@@ -1282,6 +1282,21 @@ internal class PalleriaSyncCoordinator(
                                     }
                                 } ?: error("C_MISSING_DEPENDENCY")
                         },
+                        sourceLogAuthorityProvider = { sourceGeneration, sourceLogId ->
+                            db
+                                .protocolDao()
+                                .archivedAuthorities(state.chainId, sourceGeneration)
+                                .firstNotNullOfOrNull { source ->
+                                    val sourceObject = Json.parseToJsonElement(source.signedJson).jsonObject
+                                    val sourcePin = sourceObject["pin"]?.jsonObject
+                                    val sourceHash = PallaSyncCore.objectHash(source.signedJson)
+                                    source.signedJson.takeIf {
+                                        sourcePin?.get("log_id")?.jsonPrimitive?.content == sourceLogId &&
+                                            sourceHash != null &&
+                                            keystore.hasTrustedReseedSourceCheckpoint(state.chainId, sourceHash)
+                                    }
+                                }
+                        },
                         sourceEntrySink =
                             if (retainEvidence) {
                                 { sourceLogId, entryJson, receiptJson, sequence ->
