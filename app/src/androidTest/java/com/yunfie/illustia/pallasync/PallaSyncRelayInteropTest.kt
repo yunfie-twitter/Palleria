@@ -55,9 +55,17 @@ class PallaSyncRelayInteropTest {
             assumeTrue("Disposable relay arguments are required", origin?.startsWith("https://127.0.0.1:") == true)
             val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
             val context = ApplicationProvider.getApplicationContext<Context>()
-            val processDeathMode = args.getString("reseed_process_death") == "true"
-            val resumeAfterDeath = args.getString("reseed_resume_after_death") == "true"
-            val processDeathDatabase = "pallasync-reseed-process-death-test.db"
+            val reseedProcessDeath = args.getString("reseed_process_death") == "true"
+            val records413ProcessDeath = args.getString("records_413_process_death") == "true"
+            val records413ResumeAfterDeath = args.getString("records_413_resume_after_death") == "true"
+            val processDeathMode = reseedProcessDeath || records413ProcessDeath
+            val resumeAfterDeath = args.getString("reseed_resume_after_death") == "true" || records413ResumeAfterDeath
+            val processDeathDatabase =
+                if (records413ProcessDeath) {
+                    "pallasync-413-process-death-test.db"
+                } else {
+                    "pallasync-reseed-process-death-test.db"
+                }
             if (processDeathMode && !resumeAfterDeath) {
                 context.deleteDatabase(processDeathDatabase)
             }
@@ -109,6 +117,62 @@ class PallaSyncRelayInteropTest {
                     }
                 }
             try {
+                if (records413ResumeAfterDeath) {
+                    check(records413ProcessDeath) { "C_MISSING_DEPENDENCY" }
+                    val state = checkNotNull(store.dao.getActiveChainState())
+                    assertEquals("active", state.writeState)
+                    assertEquals(0L, state.generation)
+                    val selectedOrigin = PallaSyncUrls.extractOrigin(checkNotNull(origin).toHttpUrl())
+                    assertEquals(2, policy.retry.recordBatchLimit(selectedOrigin, state.chainId, 10))
+                    PallaSyncCore.setSecretForeground(true)
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.resumeBoundChain(startWorker = false))
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                    assertEquals(2, policy.retry.recordBatchLimit(selectedOrigin, state.chainId, 10))
+                    (0 until 4).forEach { index ->
+                        assertNotNull(
+                            store.protocolDao().entity(
+                                state.chainId,
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                "Android 413 split $index",
+                            ),
+                        )
+                    }
+                    exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
+                    exerciseBoundOrigin(client, policy, state.chainId, selectedOrigin)
+                    exercisePausedEdits(
+                        coordinator,
+                        client,
+                        context,
+                        scope,
+                        policy,
+                        store,
+                        settings,
+                        state.chainId,
+                        checkNotNull(keys.getActiveChainKeys()).deviceId,
+                    )
+                    assertTrue(
+                        coordinator.enqueueDataEvent(
+                            SEARCH_HISTORY_SCHEMA_V3,
+                            "Android interop",
+                            "upsert",
+                            buildJsonObject { put("query", "Android interop") },
+                        ),
+                    )
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_records_413_process_death", "resumed_and_drained")
+                            putString("pallasync_device_id", checkNotNull(keys.getActiveChainKeys()).deviceId.orEmpty())
+                            putString("pallasync_local_boundary", "verified")
+                            putString("pallasync_bound_origin", "verified")
+                        },
+                    )
+                    println("pallasync_records_413_process_death=resumed_and_drained")
+                    println("pallasync_device_id=${checkNotNull(keys.getActiveChainKeys()).deviceId}")
+                    return@runBlocking
+                }
                 if (resumeAfterDeath) {
                     check(processDeathMode && reseedTargetOrigin != null) { "C_MISSING_DEPENDENCY" }
                     val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
@@ -194,7 +258,7 @@ class PallaSyncRelayInteropTest {
                     checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.lamport >
                         1_000_000L,
                 )
-                if (args.getString("records_413_split") == "true") {
+                if (args.getString("records_413_split") == "true" || records413ProcessDeath) {
                     val recoveryEvents =
                         (0 until 4).map { index ->
                             val query = "Android 413 split $index"
@@ -209,20 +273,36 @@ class PallaSyncRelayInteropTest {
                     val armRequest =
                         Request
                             .Builder()
-                            .url("$selected/__test__/arm-records-413")
+                            .url(
+                                if (records413ProcessDeath) {
+                                    "$selected/__test__/arm-records-413-process-death"
+                                } else {
+                                    "$selected/__test__/arm-records-413"
+                                },
+                            )
                             .post(ByteArray(0).toRequestBody(null))
                             .build()
                     client.newCall(armRequest).execute().use { response ->
                         assertEquals(200, response.code)
                         assertEquals("{\"armed\":true}", response.body.string())
                     }
-                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
-                    assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
-                    InstrumentationRegistry.getInstrumentation().sendStatus(
-                        0,
-                        Bundle().apply { putString("pallasync_records_413_split", "passed") },
-                    )
-                    println("pallasync_records_413_split=passed")
+                    if (records413ProcessDeath) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("pallasync_records_413_process_death", "waiting_for_held_replacement") },
+                        )
+                        println("pallasync_records_413_process_death=first_replacement_held")
+                        coordinator.syncNow()
+                        error("The held record replacement unexpectedly returned")
+                    } else {
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                        assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("pallasync_records_413_split", "passed") },
+                        )
+                        println("pallasync_records_413_split=passed")
+                    }
                 }
                 val replacingDevice = args.getString("replace_device") == "true"
                 if (!replacingDevice) {
