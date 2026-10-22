@@ -1213,6 +1213,7 @@ internal class PalleriaSyncCoordinator(
         ) { "C_ROLLBACK_DETECTED" }
         val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val stagedSnapshotInstalls = mutableListOf<PallaSyncSnapshotStateStager>()
+        var localAuthorityCheckpointMatched = false
         val snapshot =
             try {
                 PallaSyncExportArchiveVerifier
@@ -1294,11 +1295,23 @@ internal class PalleriaSyncCoordinator(
                                     val current = checkNotNull(db.dao.getChainState(state.chainId)) { "C_MISSING_DEPENDENCY" }
                                     val verifiedAuthority = Json.parseToJsonElement(checkNotNull(verified.authorityJson)).jsonObject
                                     val verifiedHead = Json.parseToJsonElement(checkNotNull(verified.transparencyHeadJson)).jsonObject
+                                    val currentAuthority =
+                                        Json
+                                            .parseToJsonElement(
+                                                checkNotNull(db.protocolDao().currentAuthority(state.chainId)),
+                                            ).jsonObject
+                                    val verifiedSequence = verifiedAuthority.getValue("sequence").jsonPrimitive.long
+                                    val localSequence = currentAuthority.getValue("sequence").jsonPrimitive.long
+                                    val authorityConsistent =
+                                        if (verifiedSequence == localSequence) {
+                                            PallaSyncCore.objectHash(verifiedAuthority.toString()) ==
+                                                PallaSyncCore.objectHash(currentAuthority.toString())
+                                        } else {
+                                            verifiedSequence > localSequence && localAuthorityCheckpointMatched
+                                        }
                                     check(
                                         verified.complete && verified.includeRecovery && verified.generation == state.generation &&
-                                            verified.chainId == state.chainId && verified.logId == state.logId &&
-                                            PallaSyncCore.objectHash(verifiedAuthority.toString()) ==
-                                            PallaSyncCore.objectHash(checkNotNull(db.protocolDao().currentAuthority(state.chainId))) &&
+                                            verified.chainId == state.chainId && verified.logId == state.logId && authorityConsistent &&
                                             current == state && current.writeState == "active" &&
                                             current.materializedSeq <= current.verifiedSeq && current.verifiedSeq <= verified.headSeq &&
                                             (current.verifiedSeq != verified.headSeq || current.verifiedHash == verified.headHash) &&
@@ -1377,7 +1390,17 @@ internal class PalleriaSyncCoordinator(
                                             stored.receiptJson,
                                         )
                                     replayedThrough = stored.relaySeq
+                                    val localAuthoritySequence = authority.getValue("sequence").jsonPrimitive.long
+                                    if (replayedThrough == localAuthoritySequence) {
+                                        check(
+                                            PallaSyncCore.objectHash(boundaryAuthority) == PallaSyncCore.objectHash(authority.toString()),
+                                        ) { "C_ROLLBACK_DETECTED" }
+                                        localAuthorityCheckpointMatched = true
+                                    }
                                 }
+                            }
+                            if (authority.getValue("sequence").jsonPrimitive.long <= covered) {
+                                check(localAuthorityCheckpointMatched) { "C_ROLLBACK_DETECTED" }
                             }
                             val checkpoint = Json.parseToJsonElement(boundaryAuthority).jsonObject
                             check(
@@ -1392,20 +1415,36 @@ internal class PalleriaSyncCoordinator(
                             var acceptedCompaction = false
                             var compactionEntryJson: String? = null
                             var compactionReceiptJson: String? = null
-                            while (replayedThrough < localHighWater && !acceptedCompaction) {
+                            while (replayedThrough < localHighWater) {
                                 val page =
                                     db
                                         .protocolDao()
                                         .logPage(state.chainId, boundaryLogId, replayedThrough, localHighWater, 200)
                                 check(page.isNotEmpty()) { "C_MISSING_DEPENDENCY" }
                                 page.forEach { stored ->
-                                    if (acceptedCompaction) return@forEach
                                     val expectedSequence = Math.addExact(replayedThrough, 1L)
                                     check(
                                         stored.relaySeq == expectedSequence &&
                                             stored.validationState in setOf("authority_verified", "materialized"),
                                     ) { "C_MISSING_DEPENDENCY" }
                                     val entry = Json.parseToJsonElement(stored.signedJson).jsonObject
+                                    val entryKind = entry.getValue("kind").jsonPrimitive.content
+                                    val entryObject = entry.getValue("object").jsonObject
+                                    val action = entryObject["action"]?.jsonPrimitive?.content
+                                    if (entryKind == "admin" && action == "prune_log") {
+                                        val pruneOperation = entryObject
+                                        val prunePayload =
+                                            buildJsonObject {
+                                                put("compaction_id", compaction.getValue("compaction_id").jsonPrimitive.content)
+                                                put("through_seq", compaction.getValue("covered_through_seq").jsonPrimitive.long)
+                                            }
+                                        boundaryAuthority =
+                                            PallaSyncCore.bindAuthorityActionPayload(
+                                                boundaryAuthority,
+                                                pruneOperation.toString(),
+                                                prunePayload.toString(),
+                                            )
+                                    }
                                     boundaryAuthority =
                                         PallaSyncCore.advanceAuthorityHistory(
                                             boundaryAuthority,
@@ -1421,6 +1460,13 @@ internal class PalleriaSyncCoordinator(
                                         acceptedCompaction = true
                                         compactionEntryJson = stored.signedJson
                                         compactionReceiptJson = stored.receiptJson
+                                    }
+                                    val localAuthoritySequence = authority.getValue("sequence").jsonPrimitive.long
+                                    if (replayedThrough == localAuthoritySequence) {
+                                        check(
+                                            PallaSyncCore.objectHash(boundaryAuthority) == PallaSyncCore.objectHash(authority.toString()),
+                                        ) { "C_ROLLBACK_DETECTED" }
+                                        localAuthorityCheckpointMatched = true
                                     }
                                 }
                             }

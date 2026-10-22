@@ -844,12 +844,8 @@ internal object PallaSyncExportArchiveVerifier {
             var authority = PallaSyncCore.beginExportAuthorityHistory(identityJson, pinJson)
             var expectedSequence = 1L
             var skipThroughSequence = 0L
-            val firstLogSequence =
-                database.rawQuery("SELECT MIN(relay_seq) FROM export_log_entries", null).use { rows ->
-                    check(rows.moveToFirst()) { "C_MISSING_DEPENDENCY" }
-                    rows.getLong(0)
-                }
             val boundaryRows = boundaries()
+            var boundaryPrunePayload: kotlinx.serialization.json.JsonObject? = null
             val boundaryStart =
                 if (boundaryRows.isEmpty()) {
                     null
@@ -864,20 +860,25 @@ internal object PallaSyncExportArchiveVerifier {
                         database.delete("export_boundaries", "compaction_hash=?", arrayOf(compactionHash))
                         database.delete("export_compactions", "compaction_hash=?", arrayOf(compactionHash))
                     }
-                    if (firstLogSequence > 1L) {
-                        val requiredCoveredSequence = firstLogSequence - 1L
-                        val matching =
-                            boundaryRows.singleOrNull { boundary ->
-                                boundary.getValue("covered_through_seq").jsonPrimitive.long == requiredCoveredSequence
-                            } ?: error("C_MISSING_DEPENDENCY")
-                        val matchingHash = checkNotNull(PallaSyncCore.objectHash(matching.toString()))
-                        val proof = checkNotNull(verifiedBoundaries[matchingHash]) { "C_MISSING_DEPENDENCY" }
-                        skipThroughSequence = requiredCoveredSequence
-                        expectedSequence = Math.addExact(requiredCoveredSequence, 1L)
-                        proof.authorityJson
-                    } else {
-                        null
-                    }
+                    // A pruned export can still contain retained control entries from before the
+                    // boundary, while removed record entries leave sequence gaps. The boundary is
+                    // the authenticated checkpoint for the entire covered prefix; replay only its
+                    // suffix instead of treating those partial pre-boundary rows as a full log.
+                    val matching =
+                        boundaryRows.maxByOrNull { boundary ->
+                            boundary.getValue("covered_through_seq").jsonPrimitive.long
+                        } ?: error("C_MISSING_DEPENDENCY")
+                    val requiredCoveredSequence = matching.getValue("covered_through_seq").jsonPrimitive.long
+                    boundaryPrunePayload =
+                        buildJsonObject {
+                            put("compaction_id", matching.getValue("compaction_id").jsonPrimitive.content)
+                            put("through_seq", requiredCoveredSequence)
+                        }
+                    val matchingHash = checkNotNull(PallaSyncCore.objectHash(matching.toString()))
+                    val proof = checkNotNull(verifiedBoundaries[matchingHash]) { "C_MISSING_DEPENDENCY" }
+                    skipThroughSequence = requiredCoveredSequence
+                    expectedSequence = Math.addExact(requiredCoveredSequence, 1L)
+                    proof.authorityJson
                 }
             val boundaryCompactionHashes = boundaryRows.map { checkNotNull(PallaSyncCore.objectHash(it.toString())) }
             val reseedTransition = if (boundaryStart == null) firstReseedTransition() else null
@@ -946,6 +947,16 @@ internal object PallaSyncExportArchiveVerifier {
                         skipThroughSequence = cutSequence
                         expectedSequence = Math.addExact(cutSequence, 1L)
                         continue
+                    }
+                    val operation = entry.getValue("object").jsonObject
+                    if (kind == "admin" && operation["action"]?.jsonPrimitive?.content == "prune_log") {
+                        val payload = checkNotNull(boundaryPrunePayload) { "C_MISSING_DEPENDENCY" }
+                        authority =
+                            PallaSyncCore.bindAuthorityActionPayload(
+                                authority,
+                                operation.toString(),
+                                payload.toString(),
+                            )
                     }
                     authority =
                         PallaSyncCore.advanceAuthorityHistory(
