@@ -25,6 +25,8 @@ import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -192,6 +194,36 @@ class PallaSyncRelayInteropTest {
                     checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.lamport >
                         1_000_000L,
                 )
+                if (args.getString("records_413_split") == "true") {
+                    val recoveryEvents =
+                        (0 until 4).map { index ->
+                            val query = "Android 413 split $index"
+                            PallaSyncPendingEvent(
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                query,
+                                "upsert",
+                                buildJsonObject { put("query", query) },
+                            )
+                        }
+                    assertTrue(coordinator.enqueueDataEvents(recoveryEvents))
+                    val armRequest =
+                        Request
+                            .Builder()
+                            .url("$selected/__test__/arm-records-413")
+                            .post(ByteArray(0).toRequestBody(null))
+                            .build()
+                    client.newCall(armRequest).execute().use { response ->
+                        assertEquals(200, response.code)
+                        assertEquals("{\"armed\":true}", response.body.string())
+                    }
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_records_413_split", "passed") },
+                    )
+                    println("pallasync_records_413_split=passed")
+                }
                 val replacingDevice = args.getString("replace_device") == "true"
                 if (!replacingDevice) {
                     exerciseCompleteArchiveRoundTrip(coordinator, store, phrase, state.chainId)
