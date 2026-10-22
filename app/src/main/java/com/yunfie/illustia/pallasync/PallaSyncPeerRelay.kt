@@ -17,6 +17,20 @@ internal class PallaSyncPeerRelay(
     private val remote: PallaSyncRemoteService,
     private val crypto: PallaSyncCryptoService,
 ) {
+    fun cursorRestarted(
+        url: HttpUrl,
+        chain: String,
+    ): Boolean =
+        remote.cursorRestarted(
+            url,
+            chain,
+            Request
+                .Builder()
+                .url(url)
+                .get()
+                .build(),
+        )
+
     fun requestBytes(
         url: HttpUrl,
         device: PallaSyncKeySnapshot,

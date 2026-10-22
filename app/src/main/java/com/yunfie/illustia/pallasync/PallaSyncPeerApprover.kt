@@ -136,6 +136,9 @@ internal class PallaSyncPeerApprover(
             }
         var cursor: String? = null
         val seen = mutableSetOf<String>()
+        var pageCount = 0
+        var lastExpiredPageCount: Int? = null
+        var expiredCursorUrl: HttpUrl? = null
         do {
             currentCoroutineContext().ensureActive()
             val url =
@@ -145,12 +148,27 @@ internal class PallaSyncPeerApprover(
                     .apply { cursor?.let { addQueryParameter("cursor", it) } }
                     .build()
             val page =
-                Json
-                    .parseToJsonElement(
-                        relay.request(url, device, "GET") {
-                            PallaSyncCore.validatePeerResponse(it, binding.toString(), "requests", PALLASYNC_PAGE_SIZE.toLong())
-                        },
-                    ).jsonObject
+                try {
+                    Json
+                        .parseToJsonElement(
+                            relay.request(url, device, "GET") {
+                                PallaSyncCore.validatePeerResponse(it, binding.toString(), "requests", PALLASYNC_PAGE_SIZE.toLong())
+                            },
+                        ).jsonObject
+                } catch (failure: PallaSyncInitialHistory.Failure) {
+                    val error = failure.result as? PallaSyncHttpResult.ProtocolError
+                    if (cursor == null || error?.message != "CURSOR_EXPIRED") throw failure
+                    if (lastExpiredPageCount == pageCount) throw failure
+                    lastExpiredPageCount = pageCount
+                    expiredCursorUrl = url
+                    cursor = null
+                    seen.clear()
+                    pageCount = 0
+                    continue
+                }
+            expiredCursorUrl?.let { relay.cursorRestarted(it, chain) }
+            expiredCursorUrl = null
+            pageCount++
             val matching =
                 page.getValue("items").jsonArray.singleOrNull {
                     it.jsonObject

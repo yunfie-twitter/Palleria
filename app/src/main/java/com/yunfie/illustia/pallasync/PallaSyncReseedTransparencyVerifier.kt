@@ -108,9 +108,12 @@ internal class PallaSyncReseedTransparencyVerifier(
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
         var nextAnchor = startAnchor
+        var expiredCursorRequest: Request? = null
+        var lastExpiredIndex: Long? = null
         do {
             currentCoroutineContext().ensureActive()
-            val url = PallaSyncUrls.transparencyEntries(base, chainId, transparencyId, startIndex, through, cursor)
+            val afterIndex = nextAnchor.getValue("index").jsonPrimitive.long
+            val url = PallaSyncUrls.transparencyEntries(base, chainId, transparencyId, afterIndex, through, cursor)
             val token =
                 checkNotNull(root.token(origin, "GET", url.encodedPath, query = url.encodedQuery.orEmpty())) {
                     "C_RELAY_POLICY_CONSENT_REQUIRED"
@@ -143,9 +146,26 @@ internal class PallaSyncReseedTransparencyVerifier(
                             }
                         }
                 ) {
-                    is PallaSyncHttpResult.Success -> result.value
-                    else -> return result.failure()
+                    is PallaSyncHttpResult.Success -> {
+                        result.value
+                    }
+
+                    is PallaSyncHttpResult.ProtocolError -> {
+                        if (result.message != "CURSOR_EXPIRED" || cursor == null) return result.failure()
+                        if (lastExpiredIndex == afterIndex) return result.failure()
+                        lastExpiredIndex = afterIndex
+                        expiredCursorRequest = request
+                        cursor = null
+                        seenCursors.clear()
+                        continue
+                    }
+
+                    else -> {
+                        return result.failure()
+                    }
                 }
+            expiredCursorRequest?.let { remote.cursorRestarted(base, chainId, it) }
+            expiredCursorRequest = null
             val response = page.getValue("response").jsonObject
             val items = response.getValue("items").jsonArray.map { it.jsonObject }
             val pageAnchor = nextAnchor

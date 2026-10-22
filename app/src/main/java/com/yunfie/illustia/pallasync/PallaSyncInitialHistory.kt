@@ -466,6 +466,9 @@ internal class PallaSyncInitialHistory(
         var previousId = ""
         var matched = 0
         val seenCursors = mutableSetOf<String>()
+        var pageCount = 0
+        var lastExpiredPageCount: Int? = null
+        var expiredCursorRequest: okhttp3.Request? = null
         do {
             currentCoroutineContext().ensureActive()
             val requestUrl =
@@ -474,17 +477,41 @@ internal class PallaSyncInitialHistory(
                     .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
                     .apply { cursor?.let { addQueryParameter("cursor", it) } }
                     .build()
+            val pageBytes =
+                try {
+                    get(requestUrl)
+                } catch (failure: Failure) {
+                    val error = failure.result as? PallaSyncHttpResult.ProtocolError
+                    if (cursor == null || error?.message != "CURSOR_EXPIRED") throw failure
+                    if (lastExpiredPageCount == pageCount) throw failure
+                    lastExpiredPageCount = pageCount
+                    expiredCursorRequest =
+                        okhttp3.Request
+                            .Builder()
+                            .url(requestUrl)
+                            .get()
+                            .build()
+                    cursor = null
+                    previousId = ""
+                    matched = 0
+                    pageCount = 0
+                    seenCursors.clear()
+                    continue
+                }
             val page =
                 json
                     .parseToJsonElement(
                         PallaSyncSnapshotCore.validateCompactionPage(
-                            get(requestUrl),
+                            pageBytes,
                             pinJson,
                             generation,
                             headSeq,
                             PALLASYNC_PAGE_SIZE,
                         ),
                     ).jsonObject
+            expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
+            expiredCursorRequest = null
+            pageCount++
             for (value in page.getValue("items").jsonArray) {
                 currentCoroutineContext().ensureActive()
                 val compaction = value.jsonObject

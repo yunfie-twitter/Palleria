@@ -237,14 +237,16 @@ internal class PallaSyncConsistencyProbe(
         var observedMinimum = savedProgress?.get("observed_minimum")?.jsonPrimitive?.long ?: previousMinimum
         var matchingPruneEntries = 0
         val minimumAlreadyAdvanced = observedMinimum > previousMinimum
-        val start = anchor.getValue("index").jsonPrimitive.long
         val through = head.getValue("entry_index").jsonPrimitive.long
         val id = anchor.getValue("transparency_id").jsonPrimitive.content
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
+        var expiredCursorRequest: Request? = null
+        var lastExpiredIndex: Long? = null
         while (anchor.getValue("index").jsonPrimitive.long < through || cursor != null) {
             currentCoroutineContext().ensureActive()
-            val url = PallaSyncUrls.transparencyEntries(context.base, context.chain, id, start, through, cursor)
+            val afterIndex = anchor.getValue("index").jsonPrimitive.long
+            val url = PallaSyncUrls.transparencyEntries(context.base, context.chain, id, afterIndex, through, cursor)
             val checked =
                 remote.execute(request(url, context.chain)) { response ->
                     PallaSyncHttpResult.Success(
@@ -260,9 +262,19 @@ internal class PallaSyncConsistencyProbe(
                             ).jsonObject,
                     )
                 }
+            if (checked is PallaSyncHttpResult.ProtocolError && checked.message == "CURSOR_EXPIRED" && cursor != null) {
+                if (lastExpiredIndex == afterIndex) return checked.failure()
+                lastExpiredIndex = afterIndex
+                expiredCursorRequest = request(url, context.chain)
+                cursor = null
+                seenCursors.clear()
+                continue
+            }
             if (checked !is PallaSyncHttpResult.Success) return checked.failure()
             val next = checked.value.getValue("next_anchor").jsonObject
             val page = checked.value.getValue("response").jsonObject
+            expiredCursorRequest?.let { remote.cursorRestarted(context.base, context.chain, it) }
+            expiredCursorRequest = null
             page.getValue("items").jsonArray.forEach { item ->
                 val entry = item.jsonObject
                 val operation = entry.getValue("operation").jsonPrimitive.content

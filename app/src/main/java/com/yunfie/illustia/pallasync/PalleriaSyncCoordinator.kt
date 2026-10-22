@@ -7649,6 +7649,8 @@ internal class PalleriaSyncCoordinator(
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
         var expectedLogId: String? = null
+        var expiredCursorRequest: Request? = null
+        var lastExpiredItemCount: Int? = null
         do {
             val url = PallaSyncUrls.devices(baseUrl, chainId, cursor, minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit))
             val token =
@@ -7671,11 +7673,32 @@ internal class PalleriaSyncCoordinator(
                             parseDevicesResponseBody(json, body)
                         }
                 ) {
-                    is PallaSyncHttpResult.Success -> result.value
-                    PallaSyncHttpResult.Gone -> return PallaSyncHttpResult.Gone
-                    is PallaSyncHttpResult.Retryable -> return result
-                    is PallaSyncHttpResult.ProtocolError -> return result
+                    is PallaSyncHttpResult.Success -> {
+                        result.value
+                    }
+
+                    PallaSyncHttpResult.Gone -> {
+                        return PallaSyncHttpResult.Gone
+                    }
+
+                    is PallaSyncHttpResult.Retryable -> {
+                        return result
+                    }
+
+                    is PallaSyncHttpResult.ProtocolError -> {
+                        if (result.message != "CURSOR_EXPIRED" || cursor == null) return result
+                        if (lastExpiredItemCount == registry.size) return result
+                        lastExpiredItemCount = registry.size
+                        expiredCursorRequest = request
+                        registry.clear()
+                        expectedLogId = null
+                        cursor = null
+                        seenCursors.clear()
+                        continue
+                    }
                 }
+            expiredCursorRequest?.let { remote.cursorRestarted(baseUrl, chainId, it) }
+            expiredCursorRequest = null
             if (expectedLogId != null && page.logId != expectedLogId) {
                 return PallaSyncHttpResult.ProtocolError("Device registry changed log while paging")
             }
