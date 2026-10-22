@@ -3,6 +3,7 @@ package com.yunfie.illustia.pallasync
 import android.content.Context
 import android.database.sqlite.SQLiteException
 import android.os.Build
+import android.os.StatFs
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.GlitchTipTelemetry.span
 import com.yunfie.illustia.models.Illust
@@ -7977,6 +7978,27 @@ internal class PalleriaSyncCoordinator(
                     verifiedIndex = state.transparencyIndex,
                     savedHeadJson = state.logId?.let { protocol.latestEvidence(state.chainId, it, "transparency_head") },
                 )
+            val searchCount = protocol.liveScopeCount(state.chainId, "palleria.search_history/3", "all")
+            val viewedCount = protocol.liveScopeCount(state.chainId, VIEW_HISTORY_SCHEMA_V3, "viewed")
+            val seenCount = protocol.liveScopeCount(state.chainId, VIEW_HISTORY_SCHEMA_V3, "seen")
+            val searchProjectionCount =
+                try {
+                    minOf(searchCount, protocol.historyProjection(state.chainId, "palleria.search_history/3", "all").projectionLimit)
+                } catch (_: IllegalStateException) {
+                    minOf(searchCount, PALLASYNC_SEARCH_SAFETY_LIMIT)
+                }
+            val viewedProjectionCount =
+                try {
+                    minOf(viewedCount, protocol.historyProjection(state.chainId, VIEW_HISTORY_SCHEMA_V3, "viewed").projectionLimit)
+                } catch (_: IllegalStateException) {
+                    minOf(viewedCount, PALLASYNC_VIEWED_SAFETY_LIMIT)
+                }
+            val seenProjectionCount =
+                try {
+                    minOf(seenCount, protocol.historyProjection(state.chainId, VIEW_HISTORY_SCHEMA_V3, "seen").projectionLimit)
+                } catch (_: IllegalStateException) {
+                    minOf(seenCount, PALLASYNC_SEEN_SAFETY_LIMIT)
+                }
             PallaSyncClientStatus(
                 downloadedSeq = state.downloadedSeq,
                 verifiedSeq = state.verifiedSeq,
@@ -7989,12 +8011,20 @@ internal class PalleriaSyncCoordinator(
                 unresolvedQuarantine = protocol.unresolvedQuarantineCount(state.chainId),
                 writeState = state.writeState,
                 initialPullCompleted = state.initialPullCompleted,
-                searchCount = protocol.liveScopeCount(state.chainId, "palleria.search_history/3", "all"),
+                searchCount = searchCount,
                 searchCeiling = PALLASYNC_SEARCH_SAFETY_LIMIT,
-                viewedCount = protocol.liveScopeCount(state.chainId, "palleria.view_history/3", "viewed"),
+                viewedCount = viewedCount,
                 viewedCeiling = PALLASYNC_VIEWED_SAFETY_LIMIT,
-                seenCount = protocol.liveScopeCount(state.chainId, "palleria.view_history/3", "seen"),
+                seenCount = seenCount,
                 seenCeiling = PALLASYNC_SEEN_SAFETY_LIMIT,
+                searchProjectionCount = searchProjectionCount,
+                viewedProjectionCount = viewedProjectionCount,
+                seenProjectionCount = seenProjectionCount,
+                availableStorageBytes =
+                    runCatching {
+                        val stats = StatFs(appContext.filesDir.absolutePath)
+                        Math.multiplyExact(stats.availableBlocksLong, stats.blockSizeLong)
+                    }.getOrNull(),
                 retryAfterMs = policy.retry.remaining(policy.boundChainOrigin(state.chainId).orEmpty()),
                 blockedRequestCode =
                     policy

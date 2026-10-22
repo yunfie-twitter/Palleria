@@ -74,11 +74,21 @@ data class PallaSyncClientStatus(
     val viewedCeiling: Long,
     val seenCount: Long,
     val seenCeiling: Long,
+    val searchProjectionCount: Long = minOf(searchCount, searchCeiling),
+    val viewedProjectionCount: Long = minOf(viewedCount, viewedCeiling),
+    val seenProjectionCount: Long = minOf(seenCount, seenCeiling),
+    val availableStorageBytes: Long? = null,
     val retryAfterMs: Long = 0,
     val capacityIssue: PallaSyncCapacityIssue? = null,
     val blockedRequestCode: String? = null,
     val blockedRequestCodes: List<String> = emptyList(),
 ) {
+    val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
+    val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)
+    val seenColdCount: Long get() = (seenCount - seenProjectionCount).coerceAtLeast(0)
+    val safetyLimitReached: Boolean
+        get() = searchCount >= searchCeiling || viewedCount >= viewedCeiling || seenCount >= seenCeiling
+
     val partial: Boolean
         get() =
             !initialPullCompleted || verifiedSeq < downloadedSeq || materializedSeq < verifiedSeq ||

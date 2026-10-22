@@ -159,6 +159,12 @@
     <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>
+    <string name="pallasync_capacity_details">%1$s履歴: 全件 %2$d · 即時表示 %3$d · 低温アーカイブ %4$d · 安全上限 %5$d</string>
+    <string name="pallasync_capacity_search_scope">検索</string>
+    <string name="pallasync_capacity_viewed_scope">閲覧</string>
+    <string name="pallasync_capacity_seen_scope">既読</string>
+    <string name="pallasync_capacity_available_storage">端末の空き容量: %1$s</string>
+    <string name="pallasync_safety_limit_reached">履歴の安全上限に達しました。古い項目は低温アーカイブに保持され、通常の書き込みは続行されます。履歴は自動削除されません。</string>
     <string name="pallasync_legacy_migration_title">旧版移行レポート</string>
     <string name="pallasync_legacy_migration_item">%1$s → %2$s</string>
     <string name="pallasync_legacy_migration_summary">記録済み %1$d / %2$d · 候補 %3$d · 未処理 %4$d · 構築済み %5$d · 隔離 %6$d</string>

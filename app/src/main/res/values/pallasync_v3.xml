@@ -189,6 +189,12 @@
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>
+    <string name="pallasync_capacity_details">%1$s history: %2$d live · %3$d in eager projection · %4$d in cold archive · ceiling %5$d</string>
+    <string name="pallasync_capacity_search_scope">Search</string>
+    <string name="pallasync_capacity_viewed_scope">Viewed</string>
+    <string name="pallasync_capacity_seen_scope">Seen</string>
+    <string name="pallasync_capacity_available_storage">Available device storage: %1$s</string>
+    <string name="pallasync_safety_limit_reached">A history safety ceiling is reached. Older entries remain preserved in the cold archive; normal writes continue and no history is automatically deleted.</string>
     <string name="pallasync_legacy_migration_title">Legacy migration reports</string>
     <string name="pallasync_legacy_migration_item">%1$s → %2$s</string>
     <string name="pallasync_legacy_migration_summary">Staged %1$d / %2$d · candidates %3$d · pending %4$d · constructed %5$d · quarantined %6$d</string>

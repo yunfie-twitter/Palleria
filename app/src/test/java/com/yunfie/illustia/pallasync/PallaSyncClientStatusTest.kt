@@ -14,6 +14,28 @@ class PallaSyncClientStatusTest {
         status(downloaded = 10, verified = 10, materialized = 10, initialPullCompleted = false).partial shouldBe true
     }
 
+    @Test
+    fun `capacity status keeps cold history visible when the eager projection reaches its ceiling`() {
+        status(downloaded = 10, verified = 10, materialized = 10, searchCount = 999_999).safetyLimitReached shouldBe false
+        val exactCeiling =
+            status(downloaded = 10, verified = 10, materialized = 10).copy(
+                searchCount = 1_000_000,
+                searchProjectionCount = 1_000_000,
+            )
+        exactCeiling.searchColdCount shouldBe 0
+        exactCeiling.safetyLimitReached shouldBe true
+
+        val status =
+            status(downloaded = 10, verified = 10, materialized = 10).copy(
+                searchCount = 1_000_010,
+                searchCeiling = 1_000_000,
+                searchProjectionCount = 1_000_000,
+            )
+
+        status.searchColdCount shouldBe 10
+        status.safetyLimitReached shouldBe true
+    }
+
     private fun status(
         downloaded: Long,
         verified: Long,
@@ -21,6 +43,8 @@ class PallaSyncClientStatusTest {
         transparencyTarget: Long = 4,
         transparencyConflict: Boolean = false,
         initialPullCompleted: Boolean = true,
+        searchCount: Long = 0,
+        searchProjectionCount: Long = searchCount,
     ): PallaSyncClientStatus =
         PallaSyncClientStatus(
             downloadedSeq = downloaded,
@@ -34,11 +58,12 @@ class PallaSyncClientStatusTest {
             unresolvedQuarantine = 0,
             writeState = "active",
             initialPullCompleted = initialPullCompleted,
-            searchCount = 0,
+            searchCount = searchCount,
             searchCeiling = 1_000_000,
             viewedCount = 0,
             viewedCeiling = 1_000_000,
             seenCount = 0,
             seenCeiling = 10_000_000,
+            searchProjectionCount = searchProjectionCount,
         )
 }

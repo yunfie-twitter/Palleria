@@ -186,6 +186,35 @@ fun DeviceViewHistoryScreen(
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         stringResource(
+                            R.string.pallasync_capacity_details,
+                            stringResource(R.string.pallasync_capacity_seen_scope),
+                            status.seenCount,
+                            status.seenProjectionCount,
+                            status.seenColdCount,
+                            status.seenCeiling,
+                        ),
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
+                            R.string.pallasync_capacity_details,
+                            stringResource(R.string.pallasync_capacity_viewed_scope),
+                            status.viewedCount,
+                            status.viewedProjectionCount,
+                            status.viewedColdCount,
+                            status.viewedCeiling,
+                        ),
+                    )
+                }
+                if (status.safetyLimitReached) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text(stringResource(R.string.pallasync_safety_limit_reached))
+                    }
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(
                             R.string.pallasync_v3_history_transparency,
                             status.verifiedTransparencyIndex,
                             status.observedTransparencyTargetIndex,

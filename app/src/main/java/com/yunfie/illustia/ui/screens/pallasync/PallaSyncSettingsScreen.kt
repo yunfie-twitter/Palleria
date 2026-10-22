@@ -1,5 +1,6 @@
 package com.yunfie.illustia.ui.screens.pallasync
 
+import android.text.format.Formatter
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -2116,9 +2117,48 @@ fun PallaSyncSettingsScreen(
                                 )
                             }
                             DividerLine()
-                            Text(stringResource(R.string.pallasync_capacity_search, status.searchCount, status.searchCeiling))
-                            Text(stringResource(R.string.pallasync_capacity_viewed, status.viewedCount, status.viewedCeiling))
-                            Text(stringResource(R.string.pallasync_capacity_seen, status.seenCount, status.seenCeiling))
+                            Text(
+                                stringResource(
+                                    R.string.pallasync_capacity_details,
+                                    stringResource(R.string.pallasync_capacity_search_scope),
+                                    status.searchCount,
+                                    status.searchProjectionCount,
+                                    status.searchColdCount,
+                                    status.searchCeiling,
+                                ),
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.pallasync_capacity_details,
+                                    stringResource(R.string.pallasync_capacity_viewed_scope),
+                                    status.viewedCount,
+                                    status.viewedProjectionCount,
+                                    status.viewedColdCount,
+                                    status.viewedCeiling,
+                                ),
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.pallasync_capacity_details,
+                                    stringResource(R.string.pallasync_capacity_seen_scope),
+                                    status.seenCount,
+                                    status.seenProjectionCount,
+                                    status.seenColdCount,
+                                    status.seenCeiling,
+                                ),
+                            )
+                            status.availableStorageBytes?.let {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_capacity_available_storage,
+                                        Formatter.formatFileSize(context, it),
+                                    ),
+                                )
+                            }
+                            if (status.safetyLimitReached) {
+                                DividerLine()
+                                Text(stringResource(R.string.pallasync_safety_limit_reached))
+                            }
                             if (!status.initialPullCompleted && status.pendingOutbox == 0L && status.unresolvedQuarantine == 0L) {
                                 DividerLine()
                                 TextButton(
