@@ -465,7 +465,26 @@ internal class PalleriaSyncCoordinator(
                     }
                     requireSnapshotResult(consistencyProbe.run(base, state.chainId))
                 }
-            relay.prune(compactionId, coveredThrough, adminOperation) is PallaSyncHttpResult.Success
+            when (val result = relay.prune(compactionId, coveredThrough, adminOperation)) {
+                is PallaSyncHttpResult.Success -> {
+                    true
+                }
+
+                PallaSyncHttpResult.Gone -> {
+                    log("Log pruning paused: relay reported GONE")
+                    false
+                }
+
+                is PallaSyncHttpResult.ProtocolError -> {
+                    log("Log pruning paused: ${result.message}")
+                    false
+                }
+
+                is PallaSyncHttpResult.Retryable -> {
+                    log("Log pruning paused: retryable relay response")
+                    false
+                }
+            }
         }
 
     private suspend fun prepareSnapshotPublication(): SnapshotPublicationContext {
@@ -2168,6 +2187,7 @@ internal class PalleriaSyncCoordinator(
                     { base, _, method, path, query, body ->
                         root.token(PallaSyncUrls.extractOrigin(base), method, path, query, body.toByteArray())
                     },
+                    migrationDestination = true,
                 ) { records, response -> snapshotJournal.retainStagedUploadReceipts(records, response) }
 
             suspend fun flushStagedParts() {

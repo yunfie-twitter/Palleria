@@ -20,6 +20,7 @@ internal class PallaSyncSnapshotPartRelay(
     private val pin: JsonObject,
     private val limits: PallaSyncLimits,
     private val token: (HttpUrl, String, String, String, String, String) -> String?,
+    private val migrationDestination: Boolean = false,
     private val verifyAndRetainReceipts: suspend (records: List<JsonObject>, response: JsonObject) -> Unit,
 ) {
     suspend fun upload(records: List<JsonObject>): PallaSyncHttpResult<JsonObject> {
@@ -75,7 +76,7 @@ internal class PallaSyncSnapshotPartRelay(
             ?: error("C_SCHEMA_VIOLATION")
 
     private fun execute(prepared: Prepared): PallaSyncHttpResult<JsonObject> =
-        remote.execute(prepared.request, migrationDestination = true) { response ->
+        remote.execute(prepared.request, migrationDestination = migrationDestination) { response ->
             PallaSyncHttpResult.Success(
                 PallaSyncSnapshotVerifier.validateUploadedParts(
                     response.pallaSyncBytes(),

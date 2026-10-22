@@ -391,6 +391,14 @@ class PallaSyncRelayInteropTest {
                     ),
                 )
                 assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                if (args.getString("pruned_archive_probe") == "true") {
+                    probePrunedArchive(coordinator, store, keys, policy, phrase, state.chainId)
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_pruned_archive_probe", "boundary_verified_and_restored") },
+                    )
+                    return@runBlocking
+                }
                 if (reseedTargetOrigin != null) {
                     policy.chooseSource(reseedTargetOrigin, "authenticated_export", explicitlyConfirmed = true)
                     policy.confirmKey(policy.inspectRelay(reseedTargetOrigin), explicitlyConfirmed = true)
@@ -865,6 +873,68 @@ class PallaSyncRelayInteropTest {
         assertEquals(restored.verifiedSeq, restored.materializedSeq)
         assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         println("pallasync_gen1_archive_restore=verified")
+    }
+
+    private suspend fun probePrunedArchive(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        keys: PallaSyncKeystore,
+        policy: PallaSyncPolicyGate,
+        mnemonic: String,
+        chain: String,
+    ) {
+        val current = checkNotNull(store.dao.getChainState(chain))
+        val localKeys = checkNotNull(keys.getActiveChainKeys())
+        val authority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain))).jsonObject
+        val deviceId = checkNotNull(localKeys.deviceId)
+        val admission = authority.getValue("devices").jsonObject[deviceId]?.jsonObject
+        val record = admission?.get("record")?.jsonObject
+        val epochRecord =
+            authority.getValue("epochs").jsonObject.getValue(current.keyEpoch.toString()).jsonObject.getValue("record").jsonObject
+        val origin = authority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content
+        val trustCheck =
+            runCatching {
+                policy.requireCurrent(origin)
+                policy.trustedRelayKey(origin)
+                "trusted"
+            }.getOrElse { it.message ?: it.javaClass.simpleName }
+        val publisherSummary =
+            "generation=${current.generation}; epoch=${current.keyEpoch}; device=$deviceId; " +
+                "epochMembers=${epochRecord.getValue("members")}; admissionGeneration=${record?.get("generation")}; " +
+                "revokedSeq=${admission?.get("revoked_seq")}; " +
+                "publicKeyMatches=${record?.get("device_public_key")?.jsonPrimitive?.content == localKeys.publicKeyBase64Url}; " +
+                "serverUrl=${coordinator.getServerUrl()}; " +
+                "authorityOrigin=$origin; trust=$trustCheck"
+        println(
+            "pallasync_prune_probe_publisher=$publisherSummary",
+        )
+        val published = coordinator.publishSnapshot()
+        val publicationLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
+        assertTrue("$publisherSummary\n$publicationLogs", published)
+        val pruned = coordinator.prunePublishedLog(mnemonic, "")
+        val pruneLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
+        assertTrue(pruneLogs, pruned)
+        val archive = ByteArrayOutputStream()
+        val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
+        val bytes = archive.toByteArray()
+        val lines = bytes.toString(Charsets.UTF_8).lineSequence().filter(String::isNotBlank).toList()
+        val kinds =
+            lines
+                .drop(1)
+                .mapNotNull { Json.parseToJsonElement(it).jsonObject["kind"]?.jsonPrimitive?.content }
+                .groupingBy { it }
+                .eachCount()
+        assertTrue("Pruned archive has no compaction boundary: $kinds", (kinds["boundary"] ?: 0) > 0)
+        val verified = coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
+        assertTrue("Pruned archive was not complete", verified.complete)
+        assertEquals(0L, verified.generation)
+        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val restored = checkNotNull(store.dao.getChainState(chain))
+        assertEquals(verified.logId, restored.logId)
+        assertEquals(verified.headSeq, restored.verifiedSeq)
+        assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        println("pallasync_pruned_archive_kinds=$kinds")
+        println("pallasync_pruned_archive_boundary_restore=verified")
     }
 
     private suspend fun exerciseMissingDependencyQuarantineRetry(
