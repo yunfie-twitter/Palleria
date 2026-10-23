@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -60,37 +61,22 @@ class PallaSyncRelayInteropTest {
             val recordsLimitPreflight = args.getString("records_limit_preflight") == "true"
             val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
             val context = ApplicationProvider.getApplicationContext<Context>()
-            val healthOrigin = checkNotNull(origin)
-            val healthRequest =
-                Request
-                    .Builder()
-                    .url(PallaSyncUrls.health(healthOrigin.toHttpUrl()))
-                    .header("Accept", PALLASYNC_MEDIA_TYPE)
-                    .get()
-                    .build()
-            val healthBody =
-                client.newCall(healthRequest).execute().use { response ->
-                    assertEquals("Isolated relay health returned an unexpected status", 200, response.code)
-                    assertEquals(PALLASYNC_MEDIA_TYPE, response.header("Content-Type")?.substringBefore(';')?.trim())
-                    checkNotNull(response.body).bytes()
-                }
-            val healthJson = PallaSyncCore.validateHealth(healthBody, PallaSyncUrls.extractOrigin(healthOrigin.toHttpUrl()))
-            assertTrue(
-                "Isolated relay health did not parse as a selected v3 relay",
-                parseHealthResponseBody(healthJson, PallaSyncUrls.extractOrigin(healthOrigin.toHttpUrl())) is
-                    PallaSyncHttpResult.Success,
-            )
+            verifyIsolatedRelayHealth(client, checkNotNull(origin))
             val reseedProcessDeath = args.getString("reseed_process_death") == "true"
             val records413ProcessDeath = args.getString("records_413_process_death") == "true"
             val records413ResumeAfterDeath = args.getString("records_413_resume_after_death") == "true"
             val receiptNotFoundProcessDeath = args.getString("receipt_not_found_process_death") == "true"
             val receiptNotFoundResumeAfterDeath = args.getString("receipt_not_found_resume_after_death") == "true"
-            val processDeathMode = reseedProcessDeath || records413ProcessDeath || receiptNotFoundProcessDeath
+            val archiveRestoreProcessDeath = args.getString("archive_restore_process_death") == "true"
+            val archiveRestoreResumeAfterDeath = args.getString("archive_restore_resume_after_death") == "true"
+            val processDeathMode = reseedProcessDeath || records413ProcessDeath || receiptNotFoundProcessDeath || archiveRestoreProcessDeath
             val resumeAfterDeath =
                 args.getString("reseed_resume_after_death") == "true" ||
-                    records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath
+                    records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath || archiveRestoreResumeAfterDeath
             val processDeathDatabase =
-                if (records413ProcessDeath) {
+                if (archiveRestoreProcessDeath) {
+                    "pallasync-archive-restore-process-death-test.db"
+                } else if (records413ProcessDeath) {
                     "pallasync-413-process-death-test.db"
                 } else if (receiptNotFoundProcessDeath) {
                     "pallasync-receipt-not-found-process-death-test.db"
@@ -148,6 +134,11 @@ class PallaSyncRelayInteropTest {
                     }
                 }
             try {
+                if (archiveRestoreResumeAfterDeath) {
+                    check(archiveRestoreProcessDeath) { "C_MISSING_DEPENDENCY" }
+                    resumeArchiveRestoreAfterProcessDeath(coordinator, store, context)
+                    return@runBlocking
+                }
                 if (receiptNotFoundResumeAfterDeath) {
                     check(receiptNotFoundProcessDeath && args.getString("receipt_not_found") == "true") { "C_MISSING_DEPENDENCY" }
                     val state = checkNotNull(store.dao.getActiveChainState())
@@ -521,7 +512,17 @@ class PallaSyncRelayInteropTest {
                     println("pallasync_receipt_not_found_recovery=passed")
                 }
                 if (args.getString("pruned_archive_probe") == "true") {
-                    probePrunedArchive(coordinator, store, keys, policy, client, phrase, state.chainId)
+                    probePrunedArchive(
+                        coordinator,
+                        store,
+                        keys,
+                        policy,
+                        client,
+                        context,
+                        phrase,
+                        state.chainId,
+                        archiveRestoreProcessDeath,
+                    )
                     InstrumentationRegistry.getInstrumentation().sendStatus(
                         0,
                         Bundle().apply { putString("pallasync_pruned_archive_probe", "boundary_verified_and_restored") },
@@ -1024,8 +1025,10 @@ class PallaSyncRelayInteropTest {
         keys: PallaSyncKeystore,
         policy: PallaSyncPolicyGate,
         client: OkHttpClient,
+        context: Context,
         mnemonic: String,
         chain: String,
+        terminateAfterInstall: Boolean,
     ) {
         // Mnemonic enrollment admits the Android device but does not silently rewrite the current
         // EpochRecord's membership. Commit an explicit device-authorized rotation first so the snapshot
@@ -1194,9 +1197,27 @@ class PallaSyncRelayInteropTest {
         }
         assertEquals(null, store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         var archiveRestoreFaultInjected = false
+        if (terminateAfterInstall) {
+            context.filesDir.resolve("pallasync-archive-restore-process-death.ndjson").writeBytes(bytes)
+            context
+                .filesDir
+                .resolve("pallasync-archive-restore-process-death-source.json")
+                .writeText(encodeExpectedArchiveSource(expectedSource), Charsets.UTF_8)
+        }
         coordinator.setArchiveRestoreFaultForTest { boundary ->
             if (boundary == PallaSyncArchiveRestoreBoundary.SNAPSHOT_INSTALLED) {
                 archiveRestoreFaultInjected = true
+                if (terminateAfterInstall) {
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_archive_restore_process_death", "snapshot_installed") },
+                    )
+                    println("pallasync_archive_restore_process_death=snapshot_installed")
+                    System.err.flush()
+                    Thread.sleep(500)
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                    error("Process termination did not occur")
+                }
                 error("Injected archive restore interruption")
             }
         }
@@ -1577,6 +1598,91 @@ class PallaSyncRelayInteropTest {
             Bundle().apply { putString("pallasync_records_413_single_retained", "true") },
         )
         println("pallasync_records_413_single_retained=true")
+    }
+
+    private fun encodeExpectedArchiveSource(source: PallaSyncExportArchive.ExpectedSource): String =
+        buildJsonObject {
+            put("chain_id", source.chainId)
+            put("generation", source.generation)
+            put("log_id", source.logId)
+            put("relay_public_key", source.relayPublicKey)
+            put("relay_key_id", source.relayKeyId)
+            put("include_recovery", source.includeRecovery)
+            put("relay_pin_json", source.relayPinJson)
+            put("identity_json", source.identityJson)
+        }.toString()
+
+    private suspend fun resumeArchiveRestoreAfterProcessDeath(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        context: Context,
+    ) {
+        val archiveFile = context.filesDir.resolve("pallasync-archive-restore-process-death.ndjson")
+        val expectedFile = context.filesDir.resolve("pallasync-archive-restore-process-death-source.json")
+        val expectedSource = decodeExpectedArchiveSource(expectedFile.readText(Charsets.UTF_8))
+        PallaSyncCore.setSecretForeground(true)
+        coordinator.restoreRelayArchive(
+            ByteArrayInputStream(archiveFile.readBytes()),
+            expectedSource,
+            (List(23) { "abandon" } + "art").joinToString(" "),
+            "",
+        )
+        val restored = checkNotNull(store.dao.getActiveChainState())
+        assertTrue(restored.initialPullCompleted)
+        assertEquals(expectedSource.chainId, restored.chainId)
+        assertEquals(expectedSource.generation, restored.generation)
+        assertEquals(expectedSource.logId, restored.logId)
+        assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        assertNotNull(store.protocolDao().entity(restored.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        archiveFile.delete()
+        expectedFile.delete()
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_archive_restore_process_death", "resumed_and_materialized") },
+        )
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_pruned_archive_probe", "boundary_verified_and_restored") },
+        )
+        println("pallasync_archive_restore_process_death=resumed_and_materialized")
+        println("pallasync_pruned_archive_probe=boundary_verified_and_restored")
+    }
+
+    private suspend fun verifyIsolatedRelayHealth(client: OkHttpClient, origin: String) {
+        val url = PallaSyncUrls.health(origin.toHttpUrl())
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .get()
+                .build()
+        val body =
+            client.newCall(request).execute().use { response ->
+                assertEquals("Isolated relay health returned an unexpected status", 200, response.code)
+                assertEquals(PALLASYNC_MEDIA_TYPE, response.header("Content-Type")?.substringBefore(';')?.trim())
+                checkNotNull(response.body).bytes()
+            }
+        val expectedOrigin = PallaSyncUrls.extractOrigin(origin.toHttpUrl())
+        val validated = PallaSyncCore.validateHealth(body, expectedOrigin)
+        assertTrue(
+            "Isolated relay health did not parse as a selected v3 relay",
+            parseHealthResponseBody(validated, expectedOrigin) is PallaSyncHttpResult.Success,
+        )
+    }
+
+    private fun decodeExpectedArchiveSource(text: String): PallaSyncExportArchive.ExpectedSource {
+        val value = Json.parseToJsonElement(text).jsonObject
+        return PallaSyncExportArchive.ExpectedSource(
+            chainId = value.getValue("chain_id").jsonPrimitive.content,
+            generation = value.getValue("generation").jsonPrimitive.content.toLong(),
+            logId = value.getValue("log_id").jsonPrimitive.content,
+            relayPublicKey = value.getValue("relay_public_key").jsonPrimitive.content,
+            relayKeyId = value.getValue("relay_key_id").jsonPrimitive.content,
+            includeRecovery = value.getValue("include_recovery").jsonPrimitive.content.toBooleanStrict(),
+            relayPinJson = value["relay_pin_json"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
+            identityJson = value["identity_json"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
+        )
     }
 
     private fun testTransport(encoded: String): OkHttpClient {
