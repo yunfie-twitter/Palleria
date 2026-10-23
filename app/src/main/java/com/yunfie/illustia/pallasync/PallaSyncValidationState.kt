@@ -25,6 +25,12 @@ private val suspendedValidationCodes =
     setOf(
         "C_DELETION_UNVERIFIED",
         "C_RELAY_KEY_MISMATCH",
+        "C_EPOCH_FORK",
+        "C_ROLLBACK_DETECTED",
+        "C_DEVICE_EQUIVOCATION",
+        "C_LOG_HASH_MISMATCH",
+        "C_RECEIPT_INVALID",
+        "C_TRANSPARENCY_INVALID",
         "C_RECOVERY_SHARE_COMPROMISED",
         "C_RECOVERY_SET_RETIRED",
         "C_RECOVERY_ROOT_MISMATCH",

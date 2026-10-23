@@ -39,6 +39,12 @@ class PallaSyncValidationStateTest {
     @Test
     fun `suspension and recovery artifact failures keep their protocol-specific class`() {
         validationState("C_RELAY_KEY_MISMATCH") shouldBe "chain_suspended"
+        validationState("C_EPOCH_FORK") shouldBe "chain_suspended"
+        validationState("C_ROLLBACK_DETECTED") shouldBe "chain_suspended"
+        validationState("C_DEVICE_EQUIVOCATION") shouldBe "chain_suspended"
+        validationState("C_LOG_HASH_MISMATCH") shouldBe "chain_suspended"
+        validationState("C_RECEIPT_INVALID") shouldBe "chain_suspended"
+        validationState("C_TRANSPARENCY_INVALID") shouldBe "chain_suspended"
         validationState("C_RECOVERY_SHARE_COMPROMISED") shouldBe "chain_suspended"
         validationState("C_RECOVERY_SAS_MISMATCH") shouldBe "recovery_session_failed"
         validationState("C_RECOVERY_SHARE_INVALID") shouldBe "recovery_artifact_quarantined"
@@ -51,7 +57,10 @@ class PallaSyncValidationStateTest {
     fun `cryptographic integrity errors remain quarantined`() {
         validationState("C_SIGNATURE_INVALID") shouldBe "quarantined"
         validationState("C_AEAD_FAILURE") shouldBe "quarantined"
-        validationState("C_LOG_HASH_MISMATCH") shouldBe "quarantined"
+        validationState("C_SCHEMA_VIOLATION") shouldBe "quarantined"
+        PallaSyncQuarantineDisposition.requiresWriteSuspension("C_EPOCH_FORK") shouldBe true
+        PallaSyncQuarantineDisposition.requiresWriteSuspension("C_RECEIPT_INVALID") shouldBe true
+        PallaSyncQuarantineDisposition.requiresWriteSuspension("C_SIGNATURE_INVALID") shouldBe false
     }
 
     @Test

@@ -8364,7 +8364,9 @@ internal class PalleriaSyncCoordinator(
         try {
             db.transaction {
                 decryptedCandidates.forEach { candidate -> inboxRecords += materializeCandidate(chainId, page.logId, candidate) }
-                inboxRecords.filter { it.status == "quarantined" }.forEach { retainRecordQuarantine(it) }
+                inboxRecords
+                    .filter { it.status in setOf(PallaSyncInboxEntity.STATUS_QUARANTINED, PallaSyncInboxEntity.STATUS_CHAIN_SUSPENDED) }
+                    .forEach { retainRecordQuarantine(it) }
                 // applyVerifiedRecord observed only accepted operations' clocks in this transaction.
                 dao.commitInboxPage(chainId, page.nextSeq, 0L, inboxRecords)
             }
@@ -8421,7 +8423,9 @@ internal class PalleriaSyncCoordinator(
                 "unresolved",
             ),
         )
-        if (record.quarantineReason in setOf("C_DEVICE_EQUIVOCATION", "C_RECORD_ID_CONFLICT")) db.dao.pauseIntegrityWrites(record.chainId)
+        if (PallaSyncQuarantineDisposition.requiresWriteSuspension(record.quarantineReason.orEmpty())) {
+            db.dao.pauseIntegrityWrites(record.chainId)
+        }
     }
 
     suspend fun getDeviceViewHistory(deviceId: String): List<Illust> = getDeviceHistoryPage(deviceId, null).items
@@ -8695,7 +8699,7 @@ internal class PalleriaSyncCoordinator(
                                 payload,
                             ),
                         )
-                    if (disposition.status == PallaSyncInboxEntity.STATUS_QUARANTINED) {
+                    if (disposition.status in setOf(PallaSyncInboxEntity.STATUS_QUARANTINED, PallaSyncInboxEntity.STATUS_CHAIN_SUSPENDED)) {
                         retainRecordQuarantine(disposition)
                         check(
                             dao.updateInboxDisposition(
@@ -8735,7 +8739,9 @@ internal class PalleriaSyncCoordinator(
             db.transaction {
                 val current = db.dao.getInboxRecord(record.chainId, record.recordId) ?: return@transaction
                 if (current != record) return@transaction
-                if (status == PallaSyncInboxEntity.STATUS_QUARANTINED) retainRecordQuarantine(unresolved)
+                if (status in setOf(PallaSyncInboxEntity.STATUS_QUARANTINED, PallaSyncInboxEntity.STATUS_CHAIN_SUSPENDED)) {
+                    retainRecordQuarantine(unresolved)
+                }
                 check(
                     db.dao.updateInboxDisposition(record.chainId, record.recordId, record.rawRecordJson, status, code) == 1,
                 ) { "C_ROLLBACK_DETECTED" }

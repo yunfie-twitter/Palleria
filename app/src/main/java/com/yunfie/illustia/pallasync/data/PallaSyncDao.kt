@@ -237,7 +237,7 @@ interface PallaSyncDao {
     suspend fun getQuarantinedInboxRecords(chainId: String): List<PallaSyncInboxEntity>
 
     @Query(
-        "SELECT COUNT(*) FROM pallasync_inbox WHERE chain_id=:chainId AND status NOT IN ('applied','quarantined')",
+        "SELECT COUNT(*) FROM pallasync_inbox WHERE chain_id=:chainId AND status NOT IN ('applied','quarantined','chain_suspended')",
     )
     suspend fun pendingInboxDispositionCount(chainId: String): Long
 

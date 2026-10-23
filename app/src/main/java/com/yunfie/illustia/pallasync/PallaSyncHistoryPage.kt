@@ -31,6 +31,17 @@ internal object PallaSyncQuarantineDisposition {
             "C_DEVICE_EQUIVOCATION",
         )
 
+    private val writeSuspensionReasons =
+        trustedBranchReviewReasons +
+            setOf(
+                "C_LOG_HASH_MISMATCH",
+                "C_DELETION_UNVERIFIED",
+                "C_RELAY_KEY_MISMATCH",
+                "C_RECEIPT_INVALID",
+                "C_TRANSPARENCY_INVALID",
+                "C_RECORD_ID_CONFLICT",
+            )
+
     private val explicitlyExcludableReasons =
         setOf(
             "C_SCHEMA_VIOLATION",
@@ -41,6 +52,8 @@ internal object PallaSyncQuarantineDisposition {
         )
 
     fun canExplicitlyExclude(reason: String): Boolean = reason in explicitlyExcludableReasons
+
+    fun requiresWriteSuspension(reason: String): Boolean = reason in writeSuspensionReasons
 
     fun requiresTrustedBranchReview(reason: String): Boolean = reason in trustedBranchReviewReasons
 
