@@ -451,6 +451,12 @@ internal fun classifyPallaSyncHttpStatus(
             )
         }
 
+        // §0/§19 require RFC 9457 protocol errors for client-action statuses. Without a
+        // validated catalogue body, the status alone cannot authorize semantic recovery.
+        statusCode in 400..499 && problem == null -> {
+            PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION", statusCode)
+        }
+
         statusCode in PALLASYNC_AUTOMATIC_RETRY_STATUSES ||
             (
                 statusCode == HTTP_UNAUTHORIZED &&

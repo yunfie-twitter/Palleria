@@ -16,10 +16,7 @@ class PallaSyncHttpClassificationTest :
         "410 is an unverified deletion hint and 404 never implies erasure" {
             classifyPallaSyncHttpStatus(410) shouldBe PallaSyncHttpResult.Gone
             classifyPallaSyncHttpStatus(404) shouldBe
-                PallaSyncHttpResult.ProtocolError(
-                    "PallaSync server returned HTTP 404",
-                    404,
-                )
+                PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION", 404)
         }
 
         "receipt absence is pending evidence and remains retryable while other 404s remain errors" {
@@ -43,9 +40,21 @@ class PallaSyncHttpClassificationTest :
         }
 
         "rate limits and server failures are retryable while 2xx continues parsing" {
-            (classifyPallaSyncHttpStatus(429) is PallaSyncHttpResult.Retryable) shouldBe true
+            (
+                classifyPallaSyncHttpStatus(
+                    429,
+                    PallaSyncProblemHint(429, "RATE_LIMITED", true),
+                ) is PallaSyncHttpResult.Retryable
+            ) shouldBe true
             (classifyPallaSyncHttpStatus(500) is PallaSyncHttpResult.Retryable) shouldBe true
             classifyPallaSyncHttpStatus(200) shouldBe null
+        }
+
+        "client-action status without a validated problem never selects a semantic recovery code" {
+            for (status in listOf(400, 401, 403, 404, 408, 409, 413, 429)) {
+                classifyPallaSyncHttpStatus(status) shouldBe
+                    PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION", status)
+            }
         }
 
         "retryable semantic hints require lifecycle changes and 500 requires reconciliation" {

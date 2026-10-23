@@ -239,6 +239,20 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `unvalidated client error is retained as a local schema failure without a fabricated server code`() {
+        val gate = gate()
+        val request = request()
+        val invalidProblem = checkNotNull(classifyPallaSyncHttpStatus(403))
+
+        invalidProblem shouldBe PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION", 403)
+        gate.observe(request, invalidProblem)
+
+        gate.blockedCodes(origin, chain) shouldBe listOf("C_SCHEMA_VIOLATION")
+        gate.blockedCodes(origin, chain).contains("C_MISSING_DEPENDENCY") shouldBe false
+        gate.before(request) shouldBe PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION")
+    }
+
+    @Test
     fun `device limit blocker is released only by explicit chain scoped lifecycle resolution`() {
         val gate = gate()
         val anotherChain = "AbCdEf0123456789012345678901234567890123456"

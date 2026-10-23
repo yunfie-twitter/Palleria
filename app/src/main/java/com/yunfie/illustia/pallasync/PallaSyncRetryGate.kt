@@ -226,7 +226,7 @@ internal class PallaSyncRetryGate(
                                 null
                             }
                         state.copy(
-                            blockedRequests = state.blockedRequests + (key to (problem?.code ?: "C_MISSING_DEPENDENCY")),
+                            blockedRequests = state.blockedRequests + (key to result.message),
                             blockedRequestChains = chain?.let { state.blockedRequestChains + (key to it) } ?: state.blockedRequestChains,
                             capacityIssues =
                                 if (chain != null && capacityIssue != null) {
