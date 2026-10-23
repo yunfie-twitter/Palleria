@@ -963,6 +963,14 @@
     <string name="error_pallasync_create_chain_failed">同期チェーンを作成できませんでした</string>
     <string name="pallasync_sync_now">手動で同期する</string>
     <string name="pallasync_sync_now_desc">直ちにサーバーとデータの送受信を行います</string>
+    <string name="pallasync_probe_interval_title">リレー整合性probe</string>
+    <string name="pallasync_probe_interval_current">定期間隔: %1$d分（設定時刻に0〜20%%のjitterを加算）</string>
+    <string name="pallasync_probe_interval_desc">既定は15分です。通信・電力を抑えるため、15分以上の間隔を選べます。起動・再開時、送信結果が不明な場合、破壊的操作の前には別途probeします。</string>
+    <string name="pallasync_probe_interval_choice">%1$d分ごと</string>
+    <string name="pallasync_probe_deferred">自動同期が停止中のため周期probeは保留中です。同期の再開または手動同期時に確認します。</string>
+    <string name="pallasync_probe_next_in">次の定期probeまで約%1$d分</string>
+    <string name="pallasync_probe_never_succeeded">relay整合性比較の成功記録はありません</string>
+    <string name="pallasync_probe_last_success">relay整合性比較の最終成功: %1$s（peerによる独立確認とは別です）</string>
     <string name="msg_pallasync_sync_completed">同期が完了しました</string>
     <string name="error_pallasync_sync_failed">同期できませんでした。状態は保持されています</string>
     <string name="pallasync_sync_logs">同期ログ</string>

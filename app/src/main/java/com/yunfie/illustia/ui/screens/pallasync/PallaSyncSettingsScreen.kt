@@ -203,6 +203,7 @@ fun PallaSyncSettingsScreen(
     var publishingSnapshot by remember { mutableStateOf(false) }
     var showTrustDialog by remember { mutableStateOf(false) }
     var showPolicyDialog by remember { mutableStateOf(false) }
+    var showConsistencyProbeIntervalDialog by remember { mutableStateOf(false) }
     var generatedMnemonic by remember { mutableStateOf<String?>(null) }
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
@@ -2161,6 +2162,40 @@ fun PallaSyncSettingsScreen(
                             Text(stringResource(R.string.pallasync_progress_author_gaps, status.authorGaps))
                             Text(stringResource(R.string.pallasync_progress_source_completeness))
                             PallaSyncIndependentCheckpointComparisonSummary(status)
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_probe_interval_title),
+                                summary =
+                                    stringResource(
+                                        R.string.pallasync_probe_interval_current,
+                                        status.consistencyProbeIntervalMs / 60_000,
+                                    ),
+                                onClick = { showConsistencyProbeIntervalDialog = true },
+                            )
+                            if (status.consistencyProbeDeferred) {
+                                Text(stringResource(R.string.pallasync_probe_deferred))
+                            } else if (status.consistencyProbeDelayMs != null) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_probe_next_in,
+                                        (status.consistencyProbeDelayMs + 59_999) / 60_000,
+                                    ),
+                                )
+                            }
+                            val probeAt = status.lastConsistencyProbeAtMs
+                            val probeAtText =
+                                if (probeAt == null) {
+                                    stringResource(R.string.pallasync_probe_never_succeeded)
+                                } else {
+                                    val formattedProbeAt =
+                                        java.text.DateFormat
+                                            .getDateTimeInstance(
+                                                java.text.DateFormat.MEDIUM,
+                                                java.text.DateFormat.SHORT,
+                                            ).format(java.util.Date(probeAt))
+                                    stringResource(R.string.pallasync_probe_last_success, formattedProbeAt)
+                                }
+                            Text(probeAtText)
                             Text(
                                 stringResource(
                                     R.string.pallasync_progress_blockers,
@@ -2487,6 +2522,33 @@ fun PallaSyncSettingsScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    if (showConsistencyProbeIntervalDialog) {
+        val intervalChoices = listOf(15L, 30L, 60L, 240L, 720L, 1_440L)
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_probe_interval_title),
+            summary = stringResource(R.string.pallasync_probe_interval_desc),
+            backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+            onDismissRequest = { showConsistencyProbeIntervalDialog = false },
+        ) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                intervalChoices.forEach { minutes ->
+                    MiuixTextButton(
+                        text = stringResource(R.string.pallasync_probe_interval_choice, minutes),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        onClick = {
+                            scope.launch {
+                                val saved = syncManager.setActiveConsistencyProbeInterval(minutes * 60_000L)
+                                if (saved) clientStatus = syncManager.getClientStatus()
+                                showConsistencyProbeIntervalDialog = false
+                            }
+                        },
+                    )
                 }
             }
         }

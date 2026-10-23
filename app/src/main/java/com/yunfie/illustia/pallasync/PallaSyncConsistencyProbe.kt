@@ -23,6 +23,7 @@ internal class PallaSyncConsistencyProbe(
     private val keys: PallaSyncKeystore,
     private val token: (HttpUrl, String, String, String, String, String) -> String?,
     private val resolvePruneCompaction: suspend (chainId: String, entry: JsonObject) -> JsonObject?,
+    private val onSuccessfulComparison: (chainId: String) -> Unit = {},
 ) {
     private val json = Json
 
@@ -42,6 +43,7 @@ internal class PallaSyncConsistencyProbe(
         if (result is PallaSyncHttpResult.ProtocolError && result.message in CONTRADICTIONS) {
             store.dao.pauseIntegrityWrites(chainId)
         }
+        if (result is PallaSyncHttpResult.Success) onSuccessfulComparison(chainId)
         return result
     }
 

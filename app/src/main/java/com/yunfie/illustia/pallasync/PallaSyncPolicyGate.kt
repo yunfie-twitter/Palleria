@@ -40,6 +40,7 @@ class PallaSyncPolicyGate internal constructor(
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
+    private val probeSchedule = PallaSyncProbeSchedule(prefs)
     private val anonymous = protocolHttpClient(isolatedTransport)
     internal val retry =
         PallaSyncRetryGate(prefs, {
@@ -47,6 +48,27 @@ class PallaSyncPolicyGate internal constructor(
                 .getInt(context.contentResolver, android.provider.Settings.Global.BOOT_COUNT, -1)
                 .toLong()
         })
+
+    /** §11.5: the default remains 15 minutes; users may select a longer relay-probe interval. */
+    internal fun consistencyProbeIntervalMs(chainId: String): Long = probeSchedule.intervalMs(chainId)
+
+    internal fun setConsistencyProbeIntervalMs(
+        chainId: String,
+        intervalMs: Long,
+    ) {
+        probeSchedule.setIntervalMs(chainId, intervalMs)
+    }
+
+    internal fun lastConsistencyProbeAtMs(chainId: String): Long? =
+        probeSchedule
+            .lastSuccessAtMs(chainId)
+
+    internal fun recordConsistencyProbeSuccess(
+        chainId: String,
+        atMs: Long,
+    ) {
+        probeSchedule.recordSuccess(chainId, atMs)
+    }
 
     @Serializable
     data class Consent(
@@ -436,6 +458,8 @@ class PallaSyncPolicyGate internal constructor(
     }
 
     companion object {
+        internal const val DEFAULT_CONSISTENCY_PROBE_INTERVAL_MS = PallaSyncProbeSchedule.DEFAULT_INTERVAL_MS
+
         private fun unavailablePolicy(): Nothing = throw IllegalStateException("C_RELAY_POLICY_UNAVAILABLE")
 
         private const val MAX_BYTES = 1_048_576L

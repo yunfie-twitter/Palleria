@@ -179,7 +179,15 @@ internal class PalleriaSyncCoordinator(
     private val keystore by lazy { PallaSyncKeystore(appContext) }
     private val recoveryAudits by lazy { PallaSyncRecoverySetStore(appContext).auditQueue }
     private val consistencyProbe by lazy {
-        PallaSyncConsistencyProbe(db, remote, policy, keystore, ::makeCapabilityToken, ::resolvePruneCompaction)
+        PallaSyncConsistencyProbe(
+            db,
+            remote,
+            policy,
+            keystore,
+            ::makeCapabilityToken,
+            ::resolvePruneCompaction,
+            onSuccessfulComparison = { chain -> policy.recordConsistencyProbeSuccess(chain, System.currentTimeMillis()) },
+        )
     }
     private val projection = PallaSyncProjection(appContext)
 
@@ -216,7 +224,10 @@ internal class PalleriaSyncCoordinator(
             ignoreUnknownKeys = true
         }
     private var relayLimits = PALLASYNC_HARD_LIMITS
+
+    @Volatile
     private var nextProbeAt = 0L
+
     private var foregroundRevision = -1L
 
     @Volatile
@@ -254,8 +265,7 @@ internal class PalleriaSyncCoordinator(
         private const val DEFAULT_SERVER_URL = "https://api.yunfi.f5.si"
         private const val NORMAL_POLL_DELAY_MS = 5_000L
         private const val PROTOCOL_ERROR_DELAY_MS = 30_000L
-        private const val PROBE_INTERVAL_MS = 15 * 60_000L
-        private const val PROBE_JITTER_MS = PROBE_INTERVAL_MS / 5
+        private const val PROBE_JITTER_FRACTION = 0.20
         private const val RESEED_CUTOVER_JOURNAL_PHASE = 6
         private const val RESEED_COMPLETE_JOURNAL_PHASE = 7
         private val JSON_MEDIA_TYPE = PALLASYNC_MEDIA_TYPE.toMediaType()
@@ -2037,7 +2047,12 @@ internal class PalleriaSyncCoordinator(
                         expectedTransparencyId = state.transparencyId,
                         certifiedRelayKey = policy.trustedRelayKey(origin),
                     )
-                if (localTransparencyMatches && PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison(keystore.getDeviceId(), deviceId)) {
+                if (localTransparencyMatches &&
+                    PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison(
+                        keystore.getDeviceId(),
+                        deviceId,
+                    )
+                ) {
                     keystore.retainIndependentCheckpointComparison(
                         chain,
                         PallaSyncIndependentCheckpointComparison(
@@ -3384,11 +3399,16 @@ internal class PalleriaSyncCoordinator(
         check(
             verifiedTargetHead.getValue("type").jsonPrimitive.content == "PALLASYNC-TRANSPARENCY-HEAD-v3" &&
                 verifiedTargetHead.getValue("chain_id").jsonPrimitive.content == chain &&
-                verifiedTargetHead.getValue("log_id").jsonPrimitive.content == targetPin.getValue("log_id").jsonPrimitive.content &&
-                verifiedTargetHead.getValue("transparency_id").jsonPrimitive.content == anchor.getValue("transparency_id").jsonPrimitive.content &&
+                verifiedTargetHead.getValue("log_id").jsonPrimitive.content ==
+                targetPin.getValue("log_id").jsonPrimitive.content &&
+                verifiedTargetHead.getValue("transparency_id").jsonPrimitive.content ==
+                anchor.getValue("transparency_id").jsonPrimitive.content &&
                 verifiedTargetHead.getValue("entry_index").jsonPrimitive.long == anchorIndex &&
-                verifiedTargetHead.getValue("transparency_hash").jsonPrimitive.content == anchor.getValue("hash").jsonPrimitive.content,
-        ) { "C_TRANSPARENCY_INVALID" }
+                verifiedTargetHead.getValue("transparency_hash").jsonPrimitive.content ==
+                anchor.getValue("hash").jsonPrimitive.content,
+        ) {
+            "C_TRANSPARENCY_INVALID"
+        }
         check(keystore.retainVerifiedTransparencyHead(chain, verifiedTargetHead)) { "C_LOCAL_STORAGE_FULL" }
         requireSnapshotResult(consistencyProbe.run(targetBase, chain, migrationDestination = true))
         rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_OUTBOX_REBASED)
@@ -7466,6 +7486,11 @@ internal class PalleriaSyncCoordinator(
                         unverifiedUploadDeletion(chainId)
                     }
 
+                    is PallaSyncHttpResult.Retryable -> {
+                        nextProbeAt = 0L
+                        false
+                    }
+
                     else -> {
                         false
                     }
@@ -7522,11 +7547,9 @@ internal class PalleriaSyncCoordinator(
             ) {
                 when (val checked = consistencyProbe.run(baseUrl, chainState.chainId)) {
                     is PallaSyncHttpResult.Success -> {
-                        nextProbeAt =
-                            android.os.SystemClock.elapsedRealtime() + PROBE_INTERVAL_MS +
-                            kotlin.random.Random.nextLong(
-                                PROBE_JITTER_MS + 1,
-                            )
+                        val intervalMs = policy.consistencyProbeIntervalMs(chainState.chainId)
+                        val jitterMs = (intervalMs * PROBE_JITTER_FRACTION).toLong()
+                        nextProbeAt = android.os.SystemClock.elapsedRealtime() + intervalMs + kotlin.random.Random.nextLong(jitterMs + 1)
                         foregroundRevision = PallaSyncSecretLifecycle.foregroundRevision
                     }
 
@@ -8510,6 +8533,15 @@ internal class PalleriaSyncCoordinator(
                 muteCount = muteCount,
                 muteProjectionCount = minOf(muteCount, PALLASYNC_PAGE_SIZE.toLong()),
                 lastIndependentCheckpointComparison = keystore.independentCheckpointComparison(state.chainId),
+                lastConsistencyProbeAtMs = policy.lastConsistencyProbeAtMs(state.chainId),
+                consistencyProbeIntervalMs = policy.consistencyProbeIntervalMs(state.chainId),
+                consistencyProbeDeferred = backgroundSyncJob?.isActive != true,
+                consistencyProbeDelayMs =
+                    if (backgroundSyncJob?.isActive == true && nextProbeAt > 0) {
+                        (nextProbeAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0)
+                    } else {
+                        null
+                    },
                 availableStorageBytes =
                     runCatching {
                         val stats = StatFs(appContext.filesDir.absolutePath)
@@ -8539,6 +8571,22 @@ internal class PalleriaSyncCoordinator(
                             PallaSyncCapacityIssue(it.code, it.usedBytes, it.maxBytes, it.observedAtMs)
                         },
             )
+        }
+
+    suspend fun setActiveConsistencyProbeInterval(intervalMs: Long): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val chainId = db.dao.getActiveChainState()?.chainId ?: return@withLock false
+                runCatching { policy.setConsistencyProbeIntervalMs(chainId, intervalMs) }.isSuccess.also { saved ->
+                    if (saved &&
+                        policy.lastConsistencyProbeAtMs(chainId) != null
+                    ) {
+                        val jitterMs = (intervalMs * PROBE_JITTER_FRACTION).toLong()
+                        nextProbeAt = android.os.SystemClock.elapsedRealtime() + intervalMs +
+                            kotlin.random.Random.nextLong(jitterMs + 1)
+                    }
+                }
+            }
         }
 
     /** Clears only this chain's saved 507 request blockers after explicit user confirmation. */

@@ -105,6 +105,10 @@ data class PallaSyncClientStatus(
     val muteCount: Long = 0,
     val muteProjectionCount: Long = minOf(muteCount, PALLASYNC_PAGE_SIZE.toLong()),
     val lastIndependentCheckpointComparison: PallaSyncIndependentCheckpointComparison? = null,
+    val lastConsistencyProbeAtMs: Long? = null,
+    val consistencyProbeIntervalMs: Long = PallaSyncPolicyGate.DEFAULT_CONSISTENCY_PROBE_INTERVAL_MS,
+    val consistencyProbeDeferred: Boolean = false,
+    val consistencyProbeDelayMs: Long? = null,
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)

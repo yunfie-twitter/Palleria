@@ -367,6 +367,9 @@ class PalleriaSyncManager(
 
     internal suspend fun getClientStatus(): PallaSyncClientStatus? = coordinator.getClientStatus()
 
+    internal suspend fun setActiveConsistencyProbeInterval(intervalMs: Long): Boolean =
+        coordinator.setActiveConsistencyProbeInterval(intervalMs)
+
     internal suspend fun confirmRelayCapacityRecovered(): Boolean = coordinator.confirmRelayCapacityRecovered()
 
     internal suspend fun retryBlockedRequestsAfterResolution(code: String): Boolean = coordinator.retryBlockedRequestsAfterResolution(code)
