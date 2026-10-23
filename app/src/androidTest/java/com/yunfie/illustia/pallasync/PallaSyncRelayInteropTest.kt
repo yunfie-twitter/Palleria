@@ -1324,6 +1324,16 @@ class PallaSyncRelayInteropTest {
         assertEquals("C_ACCEPTANCE_UNPROVEN", acceptanceResolved.reason)
         assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
         assertEquals("resolved", acceptanceResolved.resolutionState)
+
+        // Exercise the ordinary inbox disposition path without manufacturing a quarantine row.
+        // The settings retry must fetch current proof, then revalidate and apply the same bytes.
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='pending_evidence',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        assertEquals(1, coordinator.retryPendingInboxEvidence(limit = 1))
+        assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        assertEquals(0L, store.dao.pendingInboxDispositionCount(chain))
     }
 
     private fun exerciseBoundOrigin(
