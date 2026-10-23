@@ -186,6 +186,7 @@ internal class PalleriaSyncCoordinator(
     internal fun setArchiveRestoreFaultForTest(fault: (PallaSyncArchiveRestoreBoundary) -> Unit) {
         archiveRestoreFault = fault
     }
+
     private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
     private val localIntents by lazy { PallaSyncLocalIntents(db, localAuthor, ::orderLocalEvents) }
     private val membership by lazy { PallaSyncMembershipReader(db) }
@@ -6090,7 +6091,9 @@ internal class PalleriaSyncCoordinator(
     )
 
     /** Preserve an authoritative relay outcome instead of collapsing it into a local missing-dependency error. */
-    private class GenesisAttemptFailure(result: PallaSyncHttpResult<*>) : IllegalStateException(result.genesisFailureSummary())
+    private class GenesisAttemptFailure(
+        result: PallaSyncHttpResult<*>,
+    ) : IllegalStateException(result.genesisFailureSummary())
 
     private suspend fun prepareGenesis(
         root: PallaSyncRootSession,
@@ -6447,7 +6450,12 @@ internal class PalleriaSyncCoordinator(
                 .get()
                 .build()
         val proofBytes =
-            when (val result = remote.execute(getRequest, explicitRootAuthorization = true) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }) {
+            when (
+                val result =
+                    remote.execute(getRequest, explicitRootAuthorization = true) {
+                        PallaSyncHttpResult.Success(it.pallaSyncBytes())
+                    }
+            ) {
                 is PallaSyncHttpResult.Success -> result.value
 
                 else -> return PallaSyncDeletionRequestResult.PENDING_EVIDENCE.also {

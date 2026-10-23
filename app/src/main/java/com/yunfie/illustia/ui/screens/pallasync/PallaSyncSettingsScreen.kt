@@ -77,7 +77,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -86,6 +85,7 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 import java.util.UUID
+import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 
 /** Keep the sync-settings actions aligned and equally tappable across long and short labels. */
 @Composable
@@ -811,11 +811,16 @@ fun PallaSyncSettingsScreen(
                             reindexingFavoriteOrder = false
                         }
                     clientStatus = syncManager.getClientStatus()
-                    Toast.makeText(
-                        context,
-                        if (resumed) R.string.pallasync_favorite_order_reindex_started else R.string.pallasync_favorite_order_reindex_failed,
-                        Toast.LENGTH_LONG,
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            if (resumed) {
+                                R.string.pallasync_favorite_order_reindex_started
+                            } else {
+                                R.string.pallasync_favorite_order_reindex_failed
+                            },
+                            Toast.LENGTH_LONG,
+                        ).show()
                 }
             },
             onDismiss = { showFavoriteOrderReindexConfirm = false },
