@@ -72,7 +72,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -2080,7 +2079,16 @@ fun PallaSyncSettingsScreen(
 
             if (hasLocalChain) {
                 item {
-                    Button(
+                    val relayNoticeButtonText =
+                        stringResource(
+                            if (fetchingRelayNotice) {
+                                R.string.pallasync_relay_notice_loading
+                            } else {
+                                R.string.pallasync_relay_notice_fetch
+                            },
+                        )
+                    PallaSyncActionButton(
+                        text = relayNoticeButtonText,
                         onClick = {
                             scope.launch {
                                 fetchingRelayNotice = true
@@ -2095,19 +2103,8 @@ fun PallaSyncSettingsScreen(
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
                         enabled = !fetchingRelayNotice,
-                    ) {
-                        Text(
-                            stringResource(
-                                if (fetchingRelayNotice) {
-                                    R.string.pallasync_relay_notice_loading
-                                } else {
-                                    R.string.pallasync_relay_notice_fetch
-                                },
-                            ),
-                        )
-                    }
+                    )
                 }
             }
 
@@ -2128,17 +2125,15 @@ fun PallaSyncSettingsScreen(
                             notice.migrationOrigin?.let { suggestedOrigin ->
                                 Text(stringResource(R.string.pallasync_relay_shutdown_suggestion, suggestedOrigin))
                                 Text(stringResource(R.string.pallasync_relay_shutdown_suggestion_limit))
-                                Button(
+                                PallaSyncActionButton(
+                                    text = stringResource(R.string.pallasync_relay_shutdown_review_migration),
                                     onClick = {
                                         // This fills a user-reviewed target field; it does not contact the candidate.
                                         reseedImportTargetUrl = suggestedOrigin
                                         showReseedImportTarget = true
                                     },
-                                    modifier = Modifier.fillMaxWidth(),
                                     enabled = !stagingReseedImport && !committingReseedImport,
-                                ) {
-                                    Text(stringResource(R.string.pallasync_relay_shutdown_review_migration))
-                                }
+                                )
                             }
                         }
                     }
