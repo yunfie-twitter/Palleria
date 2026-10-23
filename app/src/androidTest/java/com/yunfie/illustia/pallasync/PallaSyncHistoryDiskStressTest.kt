@@ -21,6 +21,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PallaSyncHistoryDiskStressTest {
     @Test(timeout = 1_800_000)
+    @PallaSyncHarnessOnly
     fun tenMillionSeenRowsRemainDiskBackedAndKeysetPaged() {
         assumeTrue(
             "Set pallasyncLargeHistoryStress=true for the destructive-sized disposable DB run",

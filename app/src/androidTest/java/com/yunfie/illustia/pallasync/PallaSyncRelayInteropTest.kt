@@ -51,6 +51,7 @@ import javax.net.ssl.X509TrustManager
 @RunWith(AndroidJUnit4::class)
 class PallaSyncRelayInteropTest {
     @Test
+    @PallaSyncHarnessOnly
     fun mnemonicEnrollmentAndInitialSyncUseTheRealRelay() {
         val args = InstrumentationRegistry.getArguments()
         val origin = args.getString("relay_origin")
