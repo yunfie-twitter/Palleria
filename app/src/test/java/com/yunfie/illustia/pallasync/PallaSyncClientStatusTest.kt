@@ -36,6 +36,20 @@ class PallaSyncClientStatusTest {
         status.safetyLimitReached shouldBe true
     }
 
+    @Test
+    fun `logical settings counts distinguish full totals from their eager projections`() {
+        val status =
+            status(downloaded = 10, verified = 10, materialized = 10).copy(
+                favoriteCount = 250,
+                favoriteProjectionCount = 200,
+                muteCount = 203,
+                muteProjectionCount = 200,
+            )
+
+        status.favoriteColdCount shouldBe 50
+        status.muteColdCount shouldBe 3
+    }
+
     private fun status(
         downloaded: Long,
         verified: Long,

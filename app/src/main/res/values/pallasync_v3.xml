@@ -208,6 +208,9 @@
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_details">%1$s history: %2$d live · %3$d in eager projection · %4$d in cold archive · ceiling %5$d</string>
+    <string name="pallasync_logical_projection_details">%1$s: %2$d logical · %3$d projected · %4$d in cold archive</string>
+    <string name="pallasync_count_unavailable">The full synced count is unavailable; cached entries are not shown as the total.</string>
+    <string name="pallasync_count_partial">Sync is incomplete; counts show only the verified local materialization so far.</string>
     <string name="pallasync_capacity_search_scope">Search</string>
     <string name="pallasync_capacity_viewed_scope">Viewed</string>
     <string name="pallasync_capacity_seen_scope">Seen</string>

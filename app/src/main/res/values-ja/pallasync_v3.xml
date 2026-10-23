@@ -178,6 +178,9 @@
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_details">%1$s履歴: 全件 %2$d · 即時表示 %3$d · 低温アーカイブ %4$d · 安全上限 %5$d</string>
+    <string name="pallasync_logical_projection_details">%1$s: 論理件数 %2$d · 表示対象 %3$d · cold archive %4$d</string>
+    <string name="pallasync_count_unavailable">同期済み総数を取得できません。表示キャッシュ件数を総数としては表示しません。</string>
+    <string name="pallasync_count_partial">同期は未完了です。件数は現時点で検証・反映済みのローカル状態です。</string>
     <string name="pallasync_capacity_search_scope">検索</string>
     <string name="pallasync_capacity_viewed_scope">閲覧</string>
     <string name="pallasync_capacity_seen_scope">既読</string>

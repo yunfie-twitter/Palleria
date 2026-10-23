@@ -84,10 +84,16 @@ data class PallaSyncClientStatus(
     val blockedRequestCodes: List<String> = emptyList(),
     val originBlockedRequestCodes: List<String> = emptyList(),
     val favoriteOrderReindexRequired: Boolean = false,
+    val favoriteCount: Long = 0,
+    val favoriteProjectionCount: Long = minOf(favoriteCount, PALLASYNC_PAGE_SIZE.toLong()),
+    val muteCount: Long = 0,
+    val muteProjectionCount: Long = minOf(muteCount, PALLASYNC_PAGE_SIZE.toLong()),
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)
     val seenColdCount: Long get() = (seenCount - seenProjectionCount).coerceAtLeast(0)
+    val favoriteColdCount: Long get() = (favoriteCount - favoriteProjectionCount).coerceAtLeast(0)
+    val muteColdCount: Long get() = (muteCount - muteProjectionCount).coerceAtLeast(0)
     val safetyLimitReached: Boolean
         get() = searchCount >= searchCeiling || viewedCount >= viewedCeiling || seenCount >= seenCeiling
 

@@ -8411,6 +8411,8 @@ internal class PalleriaSyncCoordinator(
                     savedHeadJson = state.logId?.let { protocol.latestEvidence(state.chainId, it, "transparency_head") },
                 )
             val searchCount = protocol.liveScopeCount(state.chainId, "palleria.search_history/3", "all")
+            val favoriteCount = protocol.liveScopeCount(state.chainId, FAVORITE_TAG_SCHEMA_V3, "all")
+            val muteCount = protocol.liveScopeCount(state.chainId, MUTE_SETTINGS_SCHEMA_V3, "all")
             val viewedCount = protocol.liveScopeCount(state.chainId, VIEW_HISTORY_SCHEMA_V3, "viewed")
             val seenCount = protocol.liveScopeCount(state.chainId, VIEW_HISTORY_SCHEMA_V3, "seen")
             val searchProjectionCount =
@@ -8452,6 +8454,10 @@ internal class PalleriaSyncCoordinator(
                 searchProjectionCount = searchProjectionCount,
                 viewedProjectionCount = viewedProjectionCount,
                 seenProjectionCount = seenProjectionCount,
+                favoriteCount = favoriteCount,
+                favoriteProjectionCount = minOf(favoriteCount, PALLASYNC_PAGE_SIZE.toLong()),
+                muteCount = muteCount,
+                muteProjectionCount = minOf(muteCount, PALLASYNC_PAGE_SIZE.toLong()),
                 availableStorageBytes =
                     runCatching {
                         val stats = StatFs(appContext.filesDir.absolutePath)
