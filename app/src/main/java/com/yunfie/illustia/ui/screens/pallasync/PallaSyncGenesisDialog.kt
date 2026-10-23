@@ -21,6 +21,7 @@ internal fun PallaSyncGenesisDialog(
     manager: PalleriaSyncManager,
     phrase: String,
     origin: String,
+    onFailure: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -34,40 +35,44 @@ internal fun PallaSyncGenesisDialog(
             cancellation.cancel()
         }
     }
-    PallaSyncMnemonicDialog(phrase, onDismiss = {
-        operation?.cancel()
-        cancellation.cancel()
-        onDismiss()
-    }, busy = busy, onSaved = { passphrase ->
-        busy = true
-        val previousLog = PalleriaSyncManager.syncLogs.value.firstOrNull()
-        operation =
-            scope.launch {
-                try {
-                    val completed = manager.createGenesis(phrase, origin, passphrase, cancellation)
-                    val failureDetail =
-                        if (completed) {
-                            null
-                        } else {
-                            PalleriaSyncManager.syncLogs.value
-                                .firstOrNull()
-                                ?.takeIf { it != previousLog }
-                                ?.substringAfter("] ")
-                        }
-                    Toast
-                        .makeText(
-                            context,
+    PallaSyncMnemonicDialog(
+        phrase = phrase,
+        onDismiss = {
+            operation?.cancel()
+            cancellation.cancel()
+            onDismiss()
+        },
+        busy = busy,
+        onSaved = { passphrase ->
+            busy = true
+            val previousLog = PalleriaSyncManager.syncLogs.value.firstOrNull()
+            operation =
+                scope.launch {
+                    try {
+                        val completed = manager.createGenesis(phrase, origin, passphrase, cancellation)
+                        val failureDetail =
                             if (completed) {
-                                context.getString(R.string.pallasync_v3_root_completed)
+                                null
                             } else {
-                                failureDetail ?: context.getString(R.string.error_pallasync_create_chain_failed)
-                            },
-                            Toast.LENGTH_LONG,
-                        ).show()
-                    onDismiss()
-                } finally {
-                    busy = false
+                                PalleriaSyncManager.syncLogs.value
+                                    .firstOrNull()
+                                    ?.takeIf { it != previousLog }
+                                    ?.substringAfter("] ")
+                                    ?: context.getString(R.string.error_pallasync_create_chain_failed)
+                            }
+                        if (completed) {
+                            Toast
+                                .makeText(context, R.string.pallasync_v3_root_completed, Toast.LENGTH_LONG)
+                                .show()
+                            onDismiss()
+                        } else {
+                            onFailure(checkNotNull(failureDetail))
+                            onDismiss()
+                        }
+                    } finally {
+                        busy = false
+                    }
                 }
-            }
-    })
+        },
+    )
 }

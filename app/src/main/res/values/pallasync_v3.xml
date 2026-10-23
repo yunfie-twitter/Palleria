@@ -100,6 +100,8 @@
     <string name="pallasync_v3_root_input_words">Recovery mnemonic (24 words)</string>
     <string name="pallasync_v3_root_input_passphrase">BIP39 passphrase (empty if none)</string>
     <string name="pallasync_v3_root_working">Verifying history and completing the operation…</string>
+    <string name="pallasync_v3_genesis_retry_title">Retry chain creation</string>
+    <string name="pallasync_v3_genesis_retry_explanation">Re-enter the same 24-word recovery mnemonic and BIP39 passphrase. The previously prepared signed request will be retried unchanged.</string>
     <string name="pallasync_v3_root_completed">Operation completed.</string>
     <string name="pallasync_v3_root_paused">The operation paused. Stored keys, data and pending work are retained.</string>
     <string name="pallasync_v3_epoch_title">Synchronization keys</string>

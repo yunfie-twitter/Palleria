@@ -15,6 +15,23 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28], application = android.app.Application::class)
 class PallaSyncKeystoreTransparencyHeadTest {
     @Test
+    fun `failed genesis retry reopens the exact staged request and refuses replacement`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val keystore = PallaSyncKeystore(preferences)
+        val candidate = snapshot(OLD_DEVICE, "pending")
+        val request = """{"parameters":{"chain_id":"$CHAIN"},"device_record":{},"epoch":{},"envelopes":[]}"""
+
+        keystore.savePendingChainKeys(candidate, request, ORIGIN) shouldBe true
+        PallaSyncKeystore(preferences).pendingGenesisRequest(CHAIN, ORIGIN) shouldBe request
+        shouldThrow<IllegalStateException> {
+            keystore.savePendingChainKeys(candidate, request + " ", ORIGIN)
+        }.message shouldBe "C_RECORD_ID_CONFLICT"
+        PallaSyncKeystore(preferences).pendingGenesisRequest(CHAIN, ORIGIN) shouldBe request
+    }
+
+    @Test
     fun `verified signed head persists monotone minimum across keystore reopen`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
@@ -174,6 +191,7 @@ class PallaSyncKeystoreTransparencyHeadTest {
 
     private companion object {
         const val CHAIN = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        const val ORIGIN = "https://relay.example.com"
         const val LOG = "11111111-1111-4111-8111-111111111111"
         const val TRANSPARENCY = "22222222-2222-4222-8222-222222222222"
         const val OLD_DEVICE = "33333333-3333-4333-8333-333333333333"

@@ -62,6 +62,7 @@ internal fun PallaSyncRecoveryControls(
     var serverOrigin by remember { mutableStateOf("") }
     var createNewRootFor by remember { mutableStateOf<String?>(null) }
     var genesisPhrase by remember { mutableStateOf<String?>(null) }
+    var genesisRetryFailure by remember { mutableStateOf<String?>(null) }
     var showCreateNewRootConfirm by remember { mutableStateOf(false) }
     var showNewRootTrustDialog by remember { mutableStateOf(false) }
     LaunchedEffect(management, revision) {
@@ -310,11 +311,25 @@ internal fun PallaSyncRecoveryControls(
         )
     }
     genesisPhrase?.let { phrase ->
-        PallaSyncGenesisDialog(manager, phrase, serverOrigin) {
-            genesisPhrase = null
-            createNewRootFor = null
-            revision++
-        }
+        PallaSyncGenesisDialog(
+            manager = manager,
+            phrase = phrase,
+            origin = serverOrigin,
+            onFailure = { genesisRetryFailure = it },
+            onDismiss = {
+                genesisPhrase = null
+                createNewRootFor = null
+                revision++
+            },
+        )
+    }
+    genesisRetryFailure?.let { failure ->
+        PallaSyncGenesisRetryDialog(
+            manager = manager,
+            origin = serverOrigin,
+            initialFailure = failure,
+            onDismiss = { genesisRetryFailure = null },
+        )
     }
     collecting?.let { (entry, operation) ->
         PallaSyncRecoveryCollectDialog(

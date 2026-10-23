@@ -70,6 +70,8 @@
     <string name="pallasync_v3_root_input_words">復旧ニーモニック（24語）</string>
     <string name="pallasync_v3_root_input_passphrase">BIP39パスフレーズ（未設定なら空欄）</string>
     <string name="pallasync_v3_root_working">履歴を検証し、処理を進めています…</string>
+    <string name="pallasync_v3_genesis_retry_title">チェーン作成の再試行</string>
+    <string name="pallasync_v3_genesis_retry_explanation">先ほどと同じ24語の復旧用mnemonicとBIP39パスフレーズを再入力してください。保存済みの署名済み要求を変更せずに再送します。</string>
     <string name="pallasync_v3_root_completed">処理が完了しました。</string>
     <string name="pallasync_v3_root_paused">処理を保留しました。保存済みの鍵・データ・未完了の処理は保持されています。</string>
     <string name="pallasync_v3_epoch_title">同期鍵</string>

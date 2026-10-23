@@ -205,6 +205,7 @@ fun PallaSyncSettingsScreen(
     var showPolicyDialog by remember { mutableStateOf(false) }
     var showConsistencyProbeIntervalDialog by remember { mutableStateOf(false) }
     var generatedMnemonic by remember { mutableStateOf<String?>(null) }
+    var genesisRetryFailure by remember { mutableStateOf<String?>(null) }
     var hasLocalChain by remember { mutableStateOf(false) }
     var devices by remember { mutableStateOf<List<com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity>>(emptyList()) }
     var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
@@ -1528,7 +1529,21 @@ fun PallaSyncSettingsScreen(
         )
     }
     generatedMnemonic?.let { phrase ->
-        PallaSyncGenesisDialog(syncManager, phrase, state.settings.pallaSyncServerUrl, onDismiss = { generatedMnemonic = null })
+        PallaSyncGenesisDialog(
+            syncManager,
+            phrase,
+            state.settings.pallaSyncServerUrl,
+            onFailure = { genesisRetryFailure = it },
+            onDismiss = { generatedMnemonic = null },
+        )
+    }
+    genesisRetryFailure?.let { failure ->
+        PallaSyncGenesisRetryDialog(
+            syncManager,
+            state.settings.pallaSyncServerUrl,
+            failure,
+            onDismiss = { genesisRetryFailure = null },
+        )
     }
 
     if (showTrustedSnapshotDialog) {

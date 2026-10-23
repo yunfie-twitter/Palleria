@@ -120,6 +120,10 @@ class PallaSyncRootInputUiTest {
 
     @Test
     fun failedRootActionShowsSafeMessageAndRequiresSecretReentry() {
+        var failure by mutableStateOf<String?>(null)
+        var submitted: Pair<String, String>? = null
+        val words = (List(23) { "abandon" } + "art").joinToString(" ")
+        val passphrase = "temporary root passphrase"
         compose.setContent {
             RootInputHost {
                 PallaSyncRootInputDialog(
@@ -127,11 +131,18 @@ class PallaSyncRootInputUiTest {
                     explanation = "Public fixture only",
                     busy = false,
                     onDismiss = {},
-                    failureCode = "",
-                ) { _, _ -> error("No root operation was requested") }
+                    failureCode = failure,
+                ) { mnemonic, inputPassphrase ->
+                    submitted = mnemonic to inputPassphrase
+                    failure = "C_MISSING_DEPENDENCY"
+                }
             }
         }
-        compose.onNodeWithText(compose.activity.getString(R.string.pallasync_v3_root_action_failed)).assertIsDisplayed()
+        compose.onNodeWithTag("pallasync-root-mnemonic").performTextInput(words)
+        compose.onNodeWithTag("pallasync-root-passphrase").performTextInput(passphrase)
+        compose.onNodeWithText(compose.activity.getString(R.string.action_confirm)).performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(words to passphrase, submitted) }
+        compose.onNodeWithText("C_MISSING_DEPENDENCY").assertIsDisplayed()
         assertEmptyInput("pallasync-root-mnemonic")
         assertEmptyInput("pallasync-root-passphrase")
     }
