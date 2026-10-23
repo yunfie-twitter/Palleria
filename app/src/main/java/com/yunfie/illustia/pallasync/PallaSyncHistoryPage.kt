@@ -63,6 +63,13 @@ data class PallaSyncIndependentCheckpointComparison(
     val transparencyIndex: Long,
 )
 
+internal object PallaSyncIndependentCheckpointPolicy {
+    fun isEnrolledPeerComparison(
+        localDeviceId: String?,
+        checkpointDeviceId: String,
+    ): Boolean = !localDeviceId.isNullOrBlank() && checkpointDeviceId.isNotBlank() && checkpointDeviceId != localDeviceId
+}
+
 /** Local bounded status summary; sequence positions are independent verified pipeline marks. */
 data class PallaSyncClientStatus(
     val downloadedSeq: Long,

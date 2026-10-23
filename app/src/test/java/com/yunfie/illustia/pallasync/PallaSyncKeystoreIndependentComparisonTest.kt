@@ -12,6 +12,14 @@ import org.robolectric.annotation.Config
 @Config(application = android.app.Application::class, sdk = [28])
 class PallaSyncKeystoreIndependentComparisonTest {
     @Test
+    fun `only a distinct known device can advance independent comparison time`() {
+        PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison("local", "peer") shouldBe true
+        PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison("local", "local") shouldBe false
+        PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison(null, "peer") shouldBe false
+        PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison("local", "") shouldBe false
+    }
+
+    @Test
     fun `independent checkpoint comparison persists per chain and is removed with verified deletion`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)

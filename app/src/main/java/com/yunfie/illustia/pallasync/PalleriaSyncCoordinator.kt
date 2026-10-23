@@ -2037,7 +2037,7 @@ internal class PalleriaSyncCoordinator(
                         expectedTransparencyId = state.transparencyId,
                         certifiedRelayKey = policy.trustedRelayKey(origin),
                     )
-                if (localTransparencyMatches) {
+                if (localTransparencyMatches && PallaSyncIndependentCheckpointPolicy.isEnrolledPeerComparison(keystore.getDeviceId(), deviceId)) {
                     keystore.retainIndependentCheckpointComparison(
                         chain,
                         PallaSyncIndependentCheckpointComparison(
