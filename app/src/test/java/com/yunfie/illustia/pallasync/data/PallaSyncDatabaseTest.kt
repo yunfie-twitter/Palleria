@@ -93,6 +93,63 @@ class PallaSyncDatabaseTest {
     }
 
     @Test
+    fun `unresolved protocol dispositions persist without counting as corrupt quarantine`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val database =
+                Room
+                    .inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java)
+                    .build()
+            try {
+                val dao = database.pallaSyncDao()
+                dao.updateChainState(chainState("chain-dispositions"))
+                dao.commitInboxPage(
+                    chainId = "chain-dispositions",
+                    lastRelaySeq = 4L,
+                    maxLamport = 0L,
+                    records =
+                        listOf(
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "dependency",
+                                relaySeq = 1L,
+                                status = PallaSyncInboxEntity.STATUS_PENDING_DEPENDENCY,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_MISSING_DEPENDENCY",
+                            ),
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "blocked",
+                                relaySeq = 2L,
+                                status = PallaSyncInboxEntity.STATUS_OPERATIONALLY_BLOCKED,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_LOCAL_STORAGE_FULL",
+                            ),
+                            PallaSyncInboxEntity.quarantined(
+                                chainId = "chain-dispositions",
+                                recordId = "invalid",
+                                relaySeq = 3L,
+                                rawRecordJson = "{}",
+                                reason = "C_SIGNATURE_INVALID",
+                            ),
+                            PallaSyncInboxEntity.applied(
+                                chainId = "chain-dispositions",
+                                recordId = "applied",
+                                relaySeq = 4L,
+                                rawRecordJson = "{}",
+                            ),
+                        ),
+                )
+
+                dao.pendingInboxDispositionCount("chain-dispositions") shouldBe 2L
+                dao.getQuarantinedInboxRecords("chain-dispositions").map { it.recordId } shouldBe listOf("invalid")
+            } finally {
+                database.close()
+            }
+        }
+    }
+
+    @Test
     fun `version 3 migration is additive and creates the durable cursor inbox schema`() {
         val statements = mutableListOf<String>()
         val recordingDatabase =

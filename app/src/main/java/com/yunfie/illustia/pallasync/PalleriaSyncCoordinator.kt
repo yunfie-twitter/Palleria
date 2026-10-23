@@ -8517,6 +8517,7 @@ internal class PalleriaSyncCoordinator(
                 pendingOutbox = db.dao.pendingOutboxCount(state.chainId),
                 authorGaps = protocol.unresolvedAuthorGapCount(state.chainId),
                 unresolvedQuarantine = protocol.unresolvedQuarantineCount(state.chainId),
+                pendingRecordDispositions = db.dao.pendingInboxDispositionCount(state.chainId),
                 writeState = state.writeState,
                 initialPullCompleted = state.initialPullCompleted,
                 searchCount = searchCount,

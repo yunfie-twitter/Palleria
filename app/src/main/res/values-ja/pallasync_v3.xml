@@ -184,6 +184,7 @@
     <string name="pallasync_progress_no_independent_comparison">独立認証された端末checkpointはまだ照合されていません。</string>
     <string name="pallasync_progress_independent_comparison_offer">同期設定から、ローカルで交換した端末checkpointを照合してください。30日以上照合がない場合は再確認してください。</string>
     <string name="pallasync_progress_blockers">送信待ち %1$d · 未解決隔離 %2$d</string>
+    <string name="pallasync_progress_record_dispositions">依存証拠の取得または運用上の解決を待つレコード: %1$d。同期範囲は未完了です。</string>
     <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>

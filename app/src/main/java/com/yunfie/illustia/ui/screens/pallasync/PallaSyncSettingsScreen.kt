@@ -2213,6 +2213,14 @@ fun PallaSyncSettingsScreen(
                                     status.unresolvedQuarantine,
                                 ),
                             )
+                            if (status.pendingRecordDispositions > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_record_dispositions,
+                                        status.pendingRecordDispositions,
+                                    ),
+                                )
+                            }
                             if (status.retryAfterMs > 0) {
                                 Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
                             }

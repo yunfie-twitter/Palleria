@@ -236,6 +236,11 @@ interface PallaSyncDao {
     )
     suspend fun getQuarantinedInboxRecords(chainId: String): List<PallaSyncInboxEntity>
 
+    @Query(
+        "SELECT COUNT(*) FROM pallasync_inbox WHERE chain_id=:chainId AND status NOT IN ('applied','quarantined')",
+    )
+    suspend fun pendingInboxDispositionCount(chainId: String): Long
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertInboxRecords(records: List<PallaSyncInboxEntity>): List<Long>
 

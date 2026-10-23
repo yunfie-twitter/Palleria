@@ -109,6 +109,7 @@ data class PallaSyncClientStatus(
     val consistencyProbeIntervalMs: Long = PallaSyncPolicyGate.DEFAULT_CONSISTENCY_PROBE_INTERVAL_MS,
     val consistencyProbeDeferred: Boolean = false,
     val consistencyProbeDelayMs: Long? = null,
+    val pendingRecordDispositions: Long = 0,
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)
