@@ -19,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -392,7 +393,7 @@ class PallaSyncRelayInteropTest {
                 )
                 assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
                 if (args.getString("pruned_archive_probe") == "true") {
-                    probePrunedArchive(coordinator, store, keys, policy, phrase, state.chainId)
+                    probePrunedArchive(coordinator, store, keys, policy, client, phrase, state.chainId)
                     InstrumentationRegistry.getInstrumentation().sendStatus(
                         0,
                         Bundle().apply { putString("pallasync_pruned_archive_probe", "boundary_verified_and_restored") },
@@ -890,9 +891,16 @@ class PallaSyncRelayInteropTest {
         store: PallaSyncLocalStore,
         keys: PallaSyncKeystore,
         policy: PallaSyncPolicyGate,
+        client: OkHttpClient,
         mnemonic: String,
         chain: String,
     ) {
+        // Mnemonic enrollment admits the Android device but does not silently rewrite the current
+        // EpochRecord's membership. Commit an explicit device-authorized rotation first so the snapshot
+        // publisher is an authorized member under §§10.4 and 13.2.
+        PallaSyncCore.setSecretForeground(true)
+        val rotated = coordinator.rotateEpoch(mnemonic, reason = "manual")
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), rotated)
         val current = checkNotNull(store.dao.getChainState(chain))
         val localKeys = checkNotNull(keys.getActiveChainKeys())
         val authority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain))).jsonObject
@@ -901,6 +909,10 @@ class PallaSyncRelayInteropTest {
         val record = admission?.get("record")?.jsonObject
         val epochRecord =
             authority.getValue("epochs").jsonObject.getValue(current.keyEpoch.toString()).jsonObject.getValue("record").jsonObject
+        assertTrue(
+            "Admin epoch rotation did not include the enrolled Android device",
+            epochRecord.getValue("members").jsonArray.any { it.jsonPrimitive.content == deviceId },
+        )
         val origin = authority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content
         val trustCheck =
             runCatching {
@@ -956,6 +968,36 @@ class PallaSyncRelayInteropTest {
         val pruned = coordinator.prunePublishedLog(mnemonic, "")
         val pruneLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
         assertTrue("$handoffSummary\n$pruneLogs", pruned)
+        val deletionUrl = "${coordinator.getServerUrl().trimEnd('/')}/pallasync/v3/chains/$chain/deletion"
+        val deletionProbe =
+            PallaSyncRootSession
+                .beginText(
+                    mnemonic,
+                    "",
+                    PallaSyncRootSession.Operation.DELETE,
+                    chain,
+                    authority.getValue("admin_public_key").jsonPrimitive.content,
+                    policy::requireCurrent,
+                    policy.retry::correctedTime,
+                ).use { root ->
+                    val url = deletionUrl.toHttpUrl()
+                    val token = checkNotNull(root.token(origin, "GET", url.encodedPath))
+                    client
+                        .newCall(
+                            Request
+                                .Builder()
+                                .url(url)
+                                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                                .header("Authorization", "PallaSync $token")
+                                .get()
+                                .build(),
+                        ).execute()
+                        .use { response -> "${response.code} ${response.body.string()}" }
+                }
+        assertTrue(
+            "Unexpected undeleted-chain GET /deletion response after prune: $deletionProbe",
+            deletionProbe.startsWith("404 ") && deletionProbe.contains("CHAIN_NOT_FOUND"),
+        )
         val archive = ByteArrayOutputStream()
         val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
         val bytes = archive.toByteArray()
@@ -970,11 +1012,20 @@ class PallaSyncRelayInteropTest {
         val verified = coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
         assertTrue("Pruned archive was not complete", verified.complete)
         assertEquals(0L, verified.generation)
-        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val restoreFailure =
+            runCatching { coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "") }
+                .exceptionOrNull()
+        assertTrue(
+            "Pruned archive restore failed: $restoreFailure\n" +
+                "${restoreFailure?.stackTrace?.take(12)?.joinToString("\n")}\n" +
+                PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+            restoreFailure == null,
+        )
         val restored = checkNotNull(store.dao.getChainState(chain))
         assertEquals(verified.logId, restored.logId)
         assertEquals(verified.headSeq, restored.verifiedSeq)
         assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         println("pallasync_pruned_archive_kinds=$kinds")
         println("pallasync_pruned_archive_boundary_restore=verified")
     }

@@ -269,6 +269,7 @@ interface SnapshotInstallDao {
         expectedIndexRevision: Long,
         explicitlyTrustedBootstrap: Boolean = false,
         allowInstalledArchiveReinstall: Boolean = false,
+        allowVerifiedControlSuffixReinstall: Boolean = false,
     ) {
         val manifest = checkNotNull(install(chain, compaction)) { "C_SNAPSHOT_INVALID" }
         if (manifest.status == "installed" && !allowInstalledArchiveReinstall) return
@@ -288,11 +289,15 @@ interface SnapshotInstallDao {
         val validBootstrap =
             explicitlyTrustedBootstrap && !state.initialPullCompleted &&
                 state.lastRelaySeq <= manifest.coveredThroughSeq
+        val validControlSuffixReinstall =
+            allowVerifiedControlSuffixReinstall && state.initialPullCompleted &&
+                manifest.coveredThroughSeq < state.verifiedSeq && state.verifiedSeq == state.materializedSeq
         check(
             state.indexRevision == expectedIndexRevision && (state.initialPullCompleted || validBootstrap) &&
+                (!allowVerifiedControlSuffixReinstall || validControlSuffixReinstall) &&
                 state.logId != null && state.logId == headerField(chain, compaction, "log_id") &&
                 state.generation == manifest.generation && state.epochHash == headerField(chain, compaction, "epoch_hash") &&
-                manifest.coveredThroughSeq >= state.verifiedSeq &&
+                (validControlSuffixReinstall || manifest.coveredThroughSeq >= state.verifiedSeq) &&
                 (manifest.coveredThroughSeq != state.verifiedSeq || manifest.coveredLogHash == state.verifiedHash),
         ) { "C_MISSING_DEPENDENCY" }
         val entries = entryPage(chain, compaction, -1, -1, INSTALL_PAGE_SIZE)

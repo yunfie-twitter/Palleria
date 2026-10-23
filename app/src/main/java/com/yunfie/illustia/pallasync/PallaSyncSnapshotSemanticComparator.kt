@@ -3,6 +3,10 @@ package com.yunfie.illustia.pallasync
 import com.yunfie.illustia.pallasync.data.EntityRegisterEntity
 import com.yunfie.illustia.pallasync.data.ScopeRegisterEntity
 import com.yunfie.illustia.pallasync.data.SnapshotInstallDao
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /** Compares the complete verified snapshot stream with an independently verified local replay (§16.6). */
 internal object PallaSyncSnapshotSemanticComparator {
@@ -17,6 +21,7 @@ internal object PallaSyncSnapshotSemanticComparator {
         epochHash: String,
         coveredSeq: Long,
         coveredHash: String,
+        onMismatch: (String) -> Unit = {},
     ): Long? {
         val local = store.dao.getChainState(chainId)
         val matches =
@@ -25,16 +30,59 @@ internal object PallaSyncSnapshotSemanticComparator {
                     local.logId == logId,
                     local.generation == generation,
                     local.epochHash == epochHash,
-                    local.verifiedSeq == coveredSeq,
-                    local.materializedSeq == coveredSeq,
-                    local.verifiedHash == coveredHash,
+                    local.verifiedSeq >= coveredSeq,
+                    local.materializedSeq == local.verifiedSeq,
                 ).all { it }
         if (!matches) return null
-        val reader = PallaSyncSnapshotStateReader(store.snapshotDatabase())
-        compare(store.snapshotInstallDao(), chainId, compactionId) { emit ->
-            reader.stream(chainId) { entry -> emit(entry.toString()) }
+        if (!verifyControlOnlySuffix(store, chainId, logId, coveredSeq, coveredHash, local.verifiedSeq, local.verifiedHash ?: return null)) {
+            return null
         }
+        val reader = PallaSyncSnapshotStateReader(store.snapshotDatabase())
+        compare(
+            store.snapshotInstallDao(),
+            chainId,
+            compactionId,
+            onMismatch = onMismatch,
+            allowVerifiedControlSuffixHeaderDifference = coveredSeq < local.verifiedSeq,
+        ) { emit -> reader.stream(chainId) { entry -> emit(entry.toString()) } }
         return local.indexRevision
+    }
+
+    /** A later verified state is an exact replay of this prefix only when the suffix changes no data. */
+    private suspend fun verifyControlOnlySuffix(
+        store: PallaSyncLocalStore,
+        chainId: String,
+        logId: String,
+        coveredSeq: Long,
+        coveredHash: String,
+        throughSeq: Long,
+        expectedHeadHash: String,
+    ): Boolean {
+        if (coveredSeq > throughSeq) return false
+        if (coveredSeq == throughSeq) return coveredHash == expectedHeadHash
+        val authorityText = store.protocolDao().currentAuthority(chainId) ?: return false
+        val pin = Json.parseToJsonElement(authorityText).jsonObject.getValue("pin").toString()
+        var sequence = coveredSeq
+        var previousHash = coveredHash
+        while (sequence < throughSeq) {
+            val page = store.protocolDao().logPage(chainId, logId, sequence, throughSeq, PAGE_SIZE)
+            if (page.isEmpty()) return false
+            for (row in page) {
+                if (row.relaySeq != sequence + 1L || row.validationState !in setOf("authority_verified", "materialized")) {
+                    return false
+                }
+                val entry = Json.parseToJsonElement(row.signedJson).jsonObject
+                if (entry.getValue("kind").jsonPrimitive.content == "record") return false
+                previousHash =
+                    runCatching {
+                        Json.parseToJsonElement(
+                            PallaSyncCore.validateRetainedLogLink(row.signedJson, row.receiptJson, pin, sequence, previousHash),
+                        ).jsonPrimitive.content
+                    }.getOrNull() ?: return false
+                sequence = row.relaySeq
+            }
+        }
+        return sequence == throughSeq && previousHash == expectedHeadHash
     }
 
     /** Compare a fully receipt-confirmed new-root target to its verified source logical state (§13.8). */
@@ -179,6 +227,8 @@ internal object PallaSyncSnapshotSemanticComparator {
         dao: SnapshotInstallDao,
         chainId: String,
         compactionId: String,
+        onMismatch: (String) -> Unit = {},
+        allowVerifiedControlSuffixHeaderDifference: Boolean = false,
         emitLocalState: suspend (suspend (String) -> Unit) -> Unit,
     ) {
         check(dao.install(chainId, compactionId)?.status in setOf("verified", "installed")) { "C_SNAPSHOT_INVALID" }
@@ -200,8 +250,39 @@ internal object PallaSyncSnapshotSemanticComparator {
 
         emitLocalState { localEntry ->
             val canonical = checkNotNull(PallaSyncCore.canonicalJson(localEntry)) { "C_SNAPSHOT_INVALID" }
-            check(nextSnapshotEntry() == canonical) { "C_SNAPSHOT_INVALID" }
+            val archived = nextSnapshotEntry()
+            val equivalentHeader =
+                allowVerifiedControlSuffixHeaderDifference && part == 0 && entry == 0 && archived != null &&
+                    sameSnapshotHeaderExceptCoverage(archived, canonical)
+            if (archived != canonical && !equivalentHeader) {
+                onMismatch("Snapshot/local semantic entry differs at part=$part entry=$entry")
+                error("C_SNAPSHOT_INVALID")
+            }
         }
         check(nextSnapshotEntry() == null) { "C_SNAPSHOT_INVALID" }
     }
+
+    private fun sameSnapshotHeaderExceptCoverage(
+        archived: String,
+        local: String,
+    ): Boolean =
+        runCatching {
+            val archivedHeader = Json.parseToJsonElement(archived).jsonObject
+            val localHeader = Json.parseToJsonElement(local).jsonObject
+            if (archivedHeader["kind"]?.jsonPrimitive?.content != "header" ||
+                localHeader["kind"]?.jsonPrimitive?.content != "header"
+            ) {
+                false
+            } else {
+                val archivedLogical = archivedHeader.toMutableMap().apply {
+                    remove("covered_through_seq")
+                    remove("covered_log_hash")
+                }
+                val localLogical = localHeader.toMutableMap().apply {
+                    remove("covered_through_seq")
+                    remove("covered_log_hash")
+                }
+                JsonObject(archivedLogical) == JsonObject(localLogical)
+            }
+        }.getOrDefault(false)
 }

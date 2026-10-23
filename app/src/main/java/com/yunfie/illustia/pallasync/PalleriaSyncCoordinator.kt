@@ -1036,7 +1036,10 @@ internal class PalleriaSyncCoordinator(
                 .get()
                 .build()
         when (
-            val response = remote.execute(request) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }
+            // This read is the authoritative negative deletion-ledger check. Reissue it even
+            // after an earlier 404 was cached as a blocked request; a prior absence is not
+            // evidence that a deletion ledger cannot have appeared since.
+            val response = remote.execute(request, enforceRetryGate = false) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }
         ) {
             is PallaSyncHttpResult.Success -> {
                 val proofObject = Json.parseToJsonElement(response.value.toString(Charsets.UTF_8)).jsonObject
@@ -1089,6 +1092,9 @@ internal class PalleriaSyncCoordinator(
             }
 
             is PallaSyncHttpResult.ProtocolError -> {
+                if (response.statusCode != 404 || response.message != "CHAIN_NOT_FOUND") {
+                    log("Deletion absence check returned ${response.statusCode ?: "unknown"} ${response.message}")
+                }
                 check(response.statusCode == 404 && response.message == "CHAIN_NOT_FOUND") { "C_DELETION_UNVERIFIED" }
             }
 
@@ -1139,6 +1145,16 @@ internal class PalleriaSyncCoordinator(
     ) {
         val current = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
         check(current.logId == checkpoint.logId) { "C_MISSING_DEPENDENCY" }
+        if (
+            current.initialPullCompleted && current.generation == checkpoint.generation &&
+            current.verifiedSeq == checkpoint.headSeq && current.materializedSeq == checkpoint.headSeq &&
+            current.verifiedHash == checkpoint.headHash && current.epochHash == checkpoint.epochHash
+        ) {
+            // An exact, already materialized archive head needs no snapshot reinstall. This is
+            // especially relevant when the archive includes a prune control entry after the
+            // snapshot's covered prefix: the local state already contains and verified that suffix.
+            return
+        }
         if (!current.initialPullCompleted) {
             // A completely verified recovery archive may bootstrap an interrupted first pull.
             // Do not overwrite an already advanced/partially materialized local prefix here;
@@ -1181,14 +1197,14 @@ internal class PalleriaSyncCoordinator(
             error("C_MISSING_DEPENDENCY")
         }
         check(current.verifiedSeq == current.materializedSeq) { "C_MISSING_DEPENDENCY" }
-        val coveredHash = current.verifiedHash ?: checkpoint.dataZero ?: error("C_MISSING_DEPENDENCY")
+        check(current.verifiedHash != null || current.verifiedSeq == 0L) { "C_MISSING_DEPENDENCY" }
         val expectedEpochHash = checkpoint.epochHash
         for (compactionId in verifiedArchiveCompactionIds) {
             val candidate = db.snapshotInstallDao().install(chain, compactionId) ?: continue
             if (candidate.status !in setOf("verified", "installed")) continue
             if (
                 candidate.generation != checkpoint.generation ||
-                candidate.coveredThroughSeq != current.verifiedSeq || candidate.coveredLogHash != coveredHash
+                candidate.coveredThroughSeq > current.verifiedSeq
             ) {
                 continue
             }
@@ -1207,17 +1223,25 @@ internal class PalleriaSyncCoordinator(
                     checkpoint.logId,
                     checkpoint.generation,
                     expectedEpochHash,
-                    current.verifiedSeq,
-                    coveredHash,
+                    candidate.coveredThroughSeq,
+                    candidate.coveredLogHash,
+                    { reason -> log(reason) },
                 ) ?: continue
             db.snapshotInstallDao().installVerifiedState(
                 chain,
                 candidate.compactionId,
                 exactRevision,
                 allowInstalledArchiveReinstall = true,
+                allowVerifiedControlSuffixReinstall = candidate.coveredThroughSeq < current.verifiedSeq,
             )
             return
         }
+        log(
+            "Archive snapshot did not match local prefix: generation=${current.generation}/${checkpoint.generation}, " +
+                "epoch=${current.epochHash == checkpoint.epochHash}, " +
+                "verified=${current.verifiedSeq}/${checkpoint.headSeq}, materialized=${current.materializedSeq}, " +
+                "hash=${current.verifiedHash == checkpoint.headHash}, candidates=${verifiedArchiveCompactionIds.size}",
+        )
         error("C_MISSING_DEPENDENCY")
     }
 
