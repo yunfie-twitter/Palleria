@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -463,6 +464,42 @@ fun ViewHistoryScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
+    var historyAutoLoadBlocked by remember { mutableStateOf(false) }
+    val loadMoreHistory: (Boolean) -> Unit = { explicitRetry ->
+        if (explicitRetry) historyAutoLoadBlocked = false
+        val cursor = historyCursor
+        if (cursor != null && !historyPageLoading) {
+            historyPageLoading = true
+            historyPageError = null
+            coroutineScope.launch {
+                try {
+                    val page = checkNotNull(syncManager.getViewHistoryPage(cursor)) { "C_MISSING_DEPENDENCY" }
+                    pagedHistory = pagedHistory + page.items
+                    historyCursor = page.next
+                    historyPartial = page.partial
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    historyPageError = failure.message ?: "C_MISSING_DEPENDENCY"
+                    historyAutoLoadBlocked = true
+                } finally {
+                    historyPageLoading = false
+                }
+            }
+        }
+    }
+    LaunchedEffect(pallaSyncPaging, historyReloadKey, historyCursor, historyPageLoading, historyAutoLoadBlocked) {
+        if (pallaSyncPaging) {
+            snapshotFlow {
+                val layout = gridState.layoutInfo
+                val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val closeToEnd = layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 8
+                closeToEnd && historyCursor != null && !historyPageLoading && !historyAutoLoadBlocked
+            }.collect { shouldLoad ->
+                if (shouldLoad) loadMoreHistory(false)
+            }
+        }
+    }
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -630,24 +667,17 @@ fun ViewHistoryScreen(
             if (pallaSyncPaging && historyCursor != null) {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_more") {
                     TextButton(
-                        text = stringResource(R.string.action_load_more),
+                        text =
+                            if (historyPageLoading) {
+                                stringResource(R.string.pallasync_history_loading)
+                            } else if (historyPageError != null) {
+                                stringResource(R.string.pallasync_history_retry)
+                            } else {
+                                stringResource(R.string.action_load_more)
+                            },
                         enabled = !historyPageLoading,
                         onClick = {
-                            val cursor = historyCursor ?: return@TextButton
-                            historyPageLoading = true
-                            historyPageError = null
-                            coroutineScope.launch {
-                                try {
-                                    val page = checkNotNull(syncManager.getViewHistoryPage(cursor)) { "C_MISSING_DEPENDENCY" }
-                                    pagedHistory = pagedHistory + page.items
-                                    historyCursor = page.next
-                                    historyPartial = page.partial
-                                } catch (failure: Exception) {
-                                    historyPageError = failure.message ?: "C_MISSING_DEPENDENCY"
-                                } finally {
-                                    historyPageLoading = false
-                                }
-                            }
+                            loadMoreHistory(true)
                         },
                     )
                 }
