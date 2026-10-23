@@ -1161,6 +1161,46 @@ class PallaSyncRelayInteropTest {
         println("pallasync_pruned_archive_kinds=$kinds")
         println("pallasync_pruned_archive_boundary_restore=verified")
 
+        // Exercise the same atomic snapshot bootstrap branch used by a newly activated device
+        // whose chain authority is pinned but whose first data pull has not materialized yet.
+        val dataZero = Json.parseToJsonElement(checkNotNull(verified.historyCutJson)).jsonObject
+            .getValue("data_zero").jsonPrimitive.content
+        store.transaction {
+            store.protocolDao().deleteEvents(chain)
+            store.protocolDao().deleteAuthors(chain)
+            store.protocolDao().deleteSnapshotAuthorHeads(chain)
+            store.protocolDao().deleteSnapshotAuthorGaps(chain)
+            store.protocolDao().deleteEntities(chain)
+            store.protocolDao().deleteRegisters(chain)
+            store.protocolDao().deleteHistory(chain)
+            store.protocolDao().deleteProjections(chain)
+            store.dao.updateChainState(
+                restored.copy(
+                    lamport = 0,
+                    chainVectorJson = "{}",
+                    latestControlSeq = 0,
+                    prevControlHash = "",
+                    lastRelaySeq = 0,
+                    initialPullCompleted = false,
+                    authorSeq = 0,
+                    authorTailHash = null,
+                    downloadedSeq = 0,
+                    verifiedSeq = 0,
+                    materializedSeq = 0,
+                    verifiedHash = dataZero,
+                    writeState = "active",
+                ),
+            )
+        }
+        assertEquals(null, store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val bootstrapped = checkNotNull(store.dao.getChainState(chain))
+        assertTrue(bootstrapped.initialPullCompleted)
+        assertEquals(verified.headSeq, bootstrapped.verifiedSeq)
+        assertEquals(bootstrapped.verifiedSeq, bootstrapped.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        println("pallasync_pruned_archive_bootstrap_install=verified")
+
         // A signed deletion ledger that appears after the archive was created overrides its
         // older writable state. Restore must stop before local mutation and keep keys/evidence.
         assertEquals(
