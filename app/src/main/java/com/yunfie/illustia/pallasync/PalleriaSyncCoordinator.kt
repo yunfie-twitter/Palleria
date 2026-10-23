@@ -8930,7 +8930,7 @@ internal class PalleriaSyncCoordinator(
         ) { "C_ACCEPTANCE_UNPROVEN" }
         val receiptKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
         val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
-        val proof =
+        var proof =
             protocol
                 .evidenceAt(
                     pin.getValue("origin").jsonPrimitive.content,
@@ -8939,7 +8939,29 @@ internal class PalleriaSyncCoordinator(
                     logId,
                     "transparency",
                     transparencyIndex,
-                ).singleOrNull() ?: error("C_MISSING_DEPENDENCY")
+                ).singleOrNull()
+        if (proof == null) {
+            consistencyProbe.recoverHistoricalEvidence(
+                pin
+                    .getValue("origin")
+                    .jsonPrimitive
+                    .content
+                    .toHttpUrl(),
+                chainId,
+                transparencyIndex,
+            )
+            proof =
+                protocol
+                    .evidenceAt(
+                        pin.getValue("origin").jsonPrimitive.content,
+                        receiptKeyId,
+                        chainId,
+                        logId,
+                        "transparency",
+                        transparencyIndex,
+                    ).singleOrNull()
+        }
+        checkNotNull(proof) { "C_MISSING_DEPENDENCY" }
         val anchor = checkNotNull(keystore.transparencyPin(chainId)) { "C_MISSING_DEPENDENCY" }
         check(PallaSyncCore.validateReceiptInclusion(receipt.toString(), proof, pin.toString(), anchor.toString())) {
             "C_ACCEPTANCE_UNPROVEN"

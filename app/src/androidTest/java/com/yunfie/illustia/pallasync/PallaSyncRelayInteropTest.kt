@@ -1325,14 +1325,42 @@ class PallaSyncRelayInteropTest {
         assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
         assertEquals("resolved", acceptanceResolved.resolutionState)
 
-        // Exercise the ordinary inbox disposition path without manufacturing a quarantine row.
-        // The settings retry must fetch current proof, then revalidate and apply the same bytes.
+        // Remove one historical inclusion entry after the relay head is already fully verified.
+        // The ordinary retry must re-fetch the bounded signed range, restore the proof, then
+        // revalidate and apply the same immutable bytes.
+        val logId = checkNotNull(store.dao.getChainState(chain)?.logId)
+        val accepted = checkNotNull(store.protocolDao().logEntry(chain, logId, checkNotNull(event.relaySeq)))
+        val receipt = Json.parseToJsonElement(accepted.receiptJson).jsonObject
+        val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        val receiptKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
+        val origin =
+            Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain)))
+                .jsonObject
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "DELETE FROM ps_evidence WHERE origin=? AND relay_key_id=? AND chain_id=? AND log_id=? AND kind='transparency' AND sequence=?",
+            arrayOf<Any?>(origin, receiptKeyId, chain, logId, transparencyIndex),
+        )
+        assertTrue(
+            store.protocolDao()
+                .evidenceAt(origin, receiptKeyId, chain, logId, "transparency", transparencyIndex)
+                .isEmpty(),
+        )
         store.snapshotDatabase().openHelper.writableDatabase.execSQL(
             "UPDATE pallasync_inbox SET status='pending_evidence',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
             arrayOf(chain, event.recordId),
         )
         assertEquals(1, coordinator.retryPendingInboxEvidence(limit = 1))
         assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        assertEquals(
+            1,
+            store.protocolDao()
+                .evidenceAt(origin, receiptKeyId, chain, logId, "transparency", transparencyIndex)
+                .size,
+        )
         assertEquals(0L, store.dao.pendingInboxDispositionCount(chain))
     }
 

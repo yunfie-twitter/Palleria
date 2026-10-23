@@ -47,6 +47,115 @@ internal class PallaSyncConsistencyProbe(
         return result
     }
 
+    /** Re-fetch a missing historical entry through the last fully verified signed head (§10.17/§17.9). */
+    suspend fun recoverHistoricalEvidence(
+        base: HttpUrl,
+        chainId: String,
+        targetIndex: Long,
+    ): Boolean {
+        require(targetIndex > 0) { "C_SCHEMA_VIOLATION" }
+        val context = context(base, chainId, migrationDestination = false)
+        val head = keys.verifiedTransparencyHead(chainId) ?: return false
+        val headIndex = head.getValue("entry_index").jsonPrimitive.long
+        val anchorIndex =
+            context
+                .anchor
+                .getValue("index")
+                .jsonPrimitive
+                .long
+        if (targetIndex > headIndex || anchorIndex != headIndex) return false
+        check(
+            head.getValue("transparency_id") == context.anchor.getValue("transparency_id") &&
+                head.getValue("transparency_hash") == context.anchor.getValue("hash"),
+        ) { "C_TRANSPARENCY_INVALID" }
+
+        // Restart from the protocol-defined T0. The locally pinned current index is checked by
+        // persistPage at its boundary, and the signed verified head bounds this historical read.
+        var anchor =
+            buildJsonObject {
+                put("transparency_id", head.getValue("transparency_id"))
+                put(
+                    "hash",
+                    pallaSyncTransparencyZero(
+                        chainId,
+                        head.getValue("transparency_id").jsonPrimitive.content,
+                        head.getValue("relay_key_id").jsonPrimitive.content,
+                    ),
+                )
+                put("index", 0)
+            }
+        val through = headIndex
+        val id = head.getValue("transparency_id").jsonPrimitive.content
+        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, policy.pageLimit(context.origin))
+        var cursor: String? = null
+        val seen = mutableSetOf<String>()
+        var rangeStart: Long? = null
+        do {
+            currentCoroutineContext().ensureActive()
+            val afterIndex =
+                if (cursor == null) {
+                    anchor
+                        .getValue("index")
+                        .jsonPrimitive
+                        .long
+                        .also { rangeStart = it }
+                } else {
+                    checkNotNull(rangeStart)
+                }
+            val url =
+                PallaSyncUrls.transparencyEntries(
+                    context.base,
+                    chainId,
+                    id,
+                    afterIndex,
+                    through,
+                    cursor,
+                    pageLimit,
+                )
+            val checked =
+                remote.execute(request(url, chainId)) { response ->
+                    PallaSyncHttpResult.Success(
+                        json
+                            .parseToJsonElement(
+                                PallaSyncCore.validateTransparencyPage(
+                                    response.pallaSyncBytes(),
+                                    context.pin,
+                                    anchor.toString(),
+                                    head.toString(),
+                                    pageLimit,
+                                ),
+                            ).jsonObject,
+                    )
+                }
+            if (checked !is PallaSyncHttpResult.Success) return false
+            val page = checked.value.getValue("response").jsonObject
+            val next = checked.value.getValue("next_anchor").jsonObject
+            persistPage(context, page, next)
+            anchor = next
+            cursor =
+                page
+                    .getValue("next_cursor")
+                    .jsonPrimitive
+                    .takeIf { it.isString }
+                    ?.content
+            check(cursor == null || seen.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
+        } while (cursor != null)
+        check(
+            anchor.getValue("index").jsonPrimitive.long == headIndex &&
+                anchor.getValue("hash") == head.getValue("transparency_hash"),
+        ) { "C_TRANSPARENCY_INVALID" }
+        return store
+            .protocolDao()
+            .evidenceAt(
+                context.origin,
+                head.getValue("relay_key_id").jsonPrimitive.content,
+                chainId,
+                context.logId,
+                "transparency",
+                targetIndex,
+            ).isNotEmpty()
+    }
+
     private suspend fun context(
         base: HttpUrl,
         chain: String,
