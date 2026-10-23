@@ -20,6 +20,21 @@ class PallaSyncKeystoreIndependentComparisonTest {
     }
 
     @Test
+    fun `comparison record without generation is not treated as current`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        preferences
+            .edit()
+            .putString(
+                "independent_checkpoint_comparison.$CHAIN",
+                """{"checked_at_ms":1800000000000,"peer_device_id":"11111111-1111-4111-8111-111111111111","data_sequence":72,"transparency_index":91}""",
+            ).commit() shouldBe true
+
+        PallaSyncKeystore(preferences).independentCheckpointComparison(CHAIN) shouldBe null
+    }
+
+    @Test
     fun `independent checkpoint comparison persists per chain and is removed with verified deletion`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
