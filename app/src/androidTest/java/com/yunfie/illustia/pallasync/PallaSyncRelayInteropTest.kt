@@ -1279,6 +1279,16 @@ class PallaSyncRelayInteropTest {
         }
         val sources = store.dao.queuedBatch(chain, PALLASYNC_PAGE_SIZE)
         assertEquals(2, sources.size)
+        // Mirror the durable state written by reconcileUploadOutcome for a §19.2
+        // per-item EPOCH_STALE rejection. The subsequent verified epoch cut must
+        // rebuild these unaccepted intents rather than retry their old signatures.
+        sources.forEach { source ->
+            store.dao.updateOutboxEvent(source.copy(status = "awaiting_reconciliation:EPOCH_STALE"))
+            assertEquals(
+                "awaiting_reconciliation:EPOCH_STALE",
+                store.dao.outboxEvent(source.id)?.status,
+            )
+        }
         val lastSequence = checkNotNull(store.dao.getChainState(chain)).authorSeq
         val rotated = coordinator.rotateEpoch(phrase)
         if (interrupt) {
