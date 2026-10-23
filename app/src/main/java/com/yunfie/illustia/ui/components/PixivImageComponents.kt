@@ -162,12 +162,8 @@ fun PixivImage(
                         }
                         val supportsWcg = PlatformCapabilities.supportsWideColorGamut(context)
                         if (wideColorGamutEnabled && supportsWcg && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            if (hasSuccessListener) {
-                                bitmapConfig(Bitmap.Config.RGBA_F16)
-                            } else {
-                                allowHardware(true)
-                                bitmapConfig(Bitmap.Config.HARDWARE)
-                            }
+                            allowHardware(true)
+                            bitmapConfig(Bitmap.Config.HARDWARE)
                         } else {
                             val shouldAllowRgb565 =
                                 allowRgb565 ||

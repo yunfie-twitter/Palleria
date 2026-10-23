@@ -83,7 +83,7 @@ internal fun IllustDetailInfo(
 ) {
     val uriHandler = LocalUriHandler.current
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
-    val relatedSectionTriggerPx = with(LocalDensity.current) { screenHeightDp.dp.toPx() * 1.5f }
+    val relatedSectionTriggerPx = with(LocalDensity.current) { screenHeightDp.dp.toPx() * 1.05f }
     val relatedSectionReady = remember(illust.id) { mutableStateOf(false) }
     var followAnimationTrigger by remember(illust.artistId) { mutableIntStateOf(0) }
     val customUriHandler =

@@ -32,22 +32,32 @@ abstract class IllustiaDetailProfileModule(
     fun openIllust(illust: Illust) {
         captureProfileReturnDetail()
         recordViewHistory(illust)
+        val cached = detailSnapshots[illust.id]
         _uiState.update {
-            it.copy(selectedIllust = illust, selectedIllustUser = null, selectedIllustFirstComment = null, relatedIllusts = emptyList())
+            it.copy(
+                selectedIllust = cached?.illust ?: illust,
+                selectedIllustUser = cached?.user,
+                selectedIllustFirstComment = cached?.firstComment,
+                relatedIllusts = cached?.relatedIllusts ?: emptyList(),
+            )
         }
         _detailNavigationRequests.tryEmit(illust.id)
         launchDetailExtras(illust)
     }
 
     private fun recordViewHistory(illust: Illust) {
-        if (_uiState.value.settings.saveViewHistory) {
-            val isBookmarked = illust.isBookmarked || _uiState.value.bookmarkItems.any { it.id == illust.id }
-            val recordedIllust = if (illust.isBookmarked != isBookmarked) illust.copy(isBookmarked = isBookmarked) else illust
-            val history =
-                (listOf(recordedIllust) + _uiState.value.settings.viewHistory)
-                    .distinctBy { it.id }
-                    .take(48)
-            updateSettings { it.copy(viewHistory = history) }
+        viewModelScope.launch(Dispatchers.Default) {
+            val currentSettings = _uiState.value.settings
+            if (currentSettings.saveViewHistory) {
+                if (currentSettings.viewHistory.firstOrNull()?.id == illust.id) return@launch
+                val isBookmarked = illust.isBookmarked || _uiState.value.bookmarkItems.any { it.id == illust.id }
+                val recordedIllust = if (illust.isBookmarked != isBookmarked) illust.copy(isBookmarked = isBookmarked) else illust
+                val history =
+                    (listOf(recordedIllust) + currentSettings.viewHistory)
+                        .distinctBy { it.id }
+                        .take(48)
+                updateSettings { it.copy(viewHistory = history) }
+            }
         }
     }
 
