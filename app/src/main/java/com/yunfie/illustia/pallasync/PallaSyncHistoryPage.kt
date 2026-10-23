@@ -55,6 +55,14 @@ data class PallaSyncCapacityIssue(
     val observedAtMs: Long,
 )
 
+/** Last locally observed, independently authenticated device checkpoint comparison (§11.5). */
+data class PallaSyncIndependentCheckpointComparison(
+    val checkedAtMs: Long,
+    val peerDeviceId: String,
+    val dataSequence: Long,
+    val transparencyIndex: Long,
+)
+
 /** Local bounded status summary; sequence positions are independent verified pipeline marks. */
 data class PallaSyncClientStatus(
     val downloadedSeq: Long,
@@ -88,6 +96,7 @@ data class PallaSyncClientStatus(
     val favoriteProjectionCount: Long = minOf(favoriteCount, PALLASYNC_PAGE_SIZE.toLong()),
     val muteCount: Long = 0,
     val muteProjectionCount: Long = minOf(muteCount, PALLASYNC_PAGE_SIZE.toLong()),
+    val lastIndependentCheckpointComparison: PallaSyncIndependentCheckpointComparison? = null,
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)

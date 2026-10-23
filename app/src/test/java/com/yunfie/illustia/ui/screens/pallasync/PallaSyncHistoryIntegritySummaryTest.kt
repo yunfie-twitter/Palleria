@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncClientStatus
+import com.yunfie.illustia.pallasync.PallaSyncIndependentCheckpointComparison
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,6 +42,13 @@ class PallaSyncHistoryIntegritySummaryTest {
                 viewedCeiling = 100,
                 seenCount = 0,
                 seenCeiling = 100,
+                lastIndependentCheckpointComparison =
+                    PallaSyncIndependentCheckpointComparison(
+                        checkedAtMs = System.currentTimeMillis(),
+                        peerDeviceId = "peer-device",
+                        dataSequence = 10,
+                        transparencyIndex = 24,
+                    ),
             )
 
         compose.setContent {
@@ -51,6 +59,18 @@ class PallaSyncHistoryIntegritySummaryTest {
 
         compose.onNodeWithText(context.getString(R.string.pallasync_progress_author_gaps, 2)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.pallasync_progress_source_completeness)).assertIsDisplayed()
+        val comparison = checkNotNull(status.lastIndependentCheckpointComparison)
+        val comparisonText =
+            context.getString(
+                R.string.pallasync_progress_last_independent_comparison,
+                java.text.DateFormat
+                    .getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
+                    .format(java.util.Date(comparison.checkedAtMs)),
+                comparison.peerDeviceId,
+                comparison.dataSequence,
+                comparison.transparencyIndex,
+            )
+        compose.onNodeWithText(comparisonText).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.pallasync_progress_transparency_conflict)).assertIsDisplayed()
         compose
             .onNodeWithText(context.getString(R.string.pallasync_v3_history_outbox_quarantine, 3, 1, "paused_integrity"))

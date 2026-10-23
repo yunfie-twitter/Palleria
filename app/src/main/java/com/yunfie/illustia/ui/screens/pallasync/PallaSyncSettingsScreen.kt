@@ -2160,6 +2160,7 @@ fun PallaSyncSettingsScreen(
                             )
                             Text(stringResource(R.string.pallasync_progress_author_gaps, status.authorGaps))
                             Text(stringResource(R.string.pallasync_progress_source_completeness))
+                            PallaSyncIndependentCheckpointComparisonSummary(status)
                             Text(
                                 stringResource(
                                     R.string.pallasync_progress_blockers,

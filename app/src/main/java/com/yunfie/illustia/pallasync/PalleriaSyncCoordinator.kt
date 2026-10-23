@@ -2037,6 +2037,17 @@ internal class PalleriaSyncCoordinator(
                         expectedTransparencyId = state.transparencyId,
                         certifiedRelayKey = policy.trustedRelayKey(origin),
                     )
+                if (localTransparencyMatches) {
+                    keystore.retainIndependentCheckpointComparison(
+                        chain,
+                        PallaSyncIndependentCheckpointComparison(
+                            checkedAtMs = System.currentTimeMillis(),
+                            peerDeviceId = deviceId,
+                            dataSequence = seq,
+                            transparencyIndex = peerTransparencyIndex,
+                        ),
+                    )
+                }
                 if (localTransparencyMatches) "verified_data_and_transparency_prefix" else "verified_data_prefix_transparency_unmatched"
             }
         }
@@ -8474,6 +8485,7 @@ internal class PalleriaSyncCoordinator(
                 favoriteProjectionCount = minOf(favoriteCount, PALLASYNC_PAGE_SIZE.toLong()),
                 muteCount = muteCount,
                 muteProjectionCount = minOf(muteCount, PALLASYNC_PAGE_SIZE.toLong()),
+                lastIndependentCheckpointComparison = keystore.independentCheckpointComparison(state.chainId),
                 availableStorageBytes =
                     runCatching {
                         val stats = StatFs(appContext.filesDir.absolutePath)

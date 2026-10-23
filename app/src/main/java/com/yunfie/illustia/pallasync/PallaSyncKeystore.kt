@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -106,6 +108,40 @@ class PallaSyncKeystore internal constructor(
     }
 
     internal fun authorityHash(chainId: String): String? = sharedPrefs.getString("authority.$chainId.hash", null)
+
+    /** Retain only a successful comparison against an independently signed, locally verified device checkpoint. */
+    internal fun retainIndependentCheckpointComparison(
+        chainId: String,
+        comparison: PallaSyncIndependentCheckpointComparison,
+    ): Boolean {
+        require(chainId.isNotBlank() && comparison.checkedAtMs > 0 && comparison.peerDeviceId.isNotBlank())
+        require(comparison.dataSequence >= 0 && comparison.transparencyIndex >= 0)
+        val key = "independent_checkpoint_comparison.$chainId"
+        val value =
+            buildJsonObject {
+                put("checked_at_ms", JsonPrimitive(comparison.checkedAtMs))
+                put("peer_device_id", JsonPrimitive(comparison.peerDeviceId))
+                put("data_sequence", JsonPrimitive(comparison.dataSequence))
+                put("transparency_index", JsonPrimitive(comparison.transparencyIndex))
+            }.toString()
+        return sharedPrefs.edit().putString(key, value).commit() && independentCheckpointComparison(chainId) == comparison
+    }
+
+    internal fun independentCheckpointComparison(chainId: String): PallaSyncIndependentCheckpointComparison? =
+        runCatching {
+            val value =
+                kotlinx.serialization.json.Json
+                    .parseToJsonElement(checkNotNull(sharedPrefs.getString("independent_checkpoint_comparison.$chainId", null)))
+                    .jsonObject
+            PallaSyncIndependentCheckpointComparison(
+                checkedAtMs = value.getValue("checked_at_ms").jsonPrimitive.long,
+                peerDeviceId = value.getValue("peer_device_id").jsonPrimitive.content,
+                dataSequence = value.getValue("data_sequence").jsonPrimitive.long,
+                transparencyIndex = value.getValue("transparency_index").jsonPrimitive.long,
+            ).takeIf {
+                it.checkedAtMs > 0 && it.peerDeviceId.isNotBlank() && it.dataSequence >= 0 && it.transparencyIndex >= 0
+            }
+        }.getOrNull()
 
     internal fun authorityTransition(chain: String): JsonObject? =
         sharedPrefs.getString("authority.$chain.transition", null)?.let { Json.decodeFromString<JsonObject>(it) }
@@ -1012,6 +1048,7 @@ class PallaSyncKeystore internal constructor(
             "transparency.$chainId",
             "transparency.verified_head.$chainId",
             "transparency.progress.$chainId",
+            "independent_checkpoint_comparison.$chainId",
             "identity.$chainId",
         ).forEach(editor::remove)
         sharedPrefs.all.keys
