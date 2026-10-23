@@ -21,27 +21,48 @@ class PallaSyncHistoryIntegritySummaryTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    fun `missing independent checkpoint prompts local comparison`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val status = status().copy(lastIndependentCheckpointComparison = null)
+
+        compose.setContent {
+            MiuixTheme {
+                PallaSyncHistoryIntegritySummary(status)
+            }
+        }
+
+        compose.onNodeWithText(context.getString(R.string.pallasync_progress_no_independent_comparison)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.pallasync_progress_independent_comparison_offer)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `comparison older than thirty days prompts another local comparison`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val status =
+            status().copy(
+                lastIndependentCheckpointComparison =
+                    PallaSyncIndependentCheckpointComparison(
+                        checkedAtMs = System.currentTimeMillis() - 31L * 24 * 60 * 60 * 1000,
+                        peerDeviceId = "peer-device",
+                        dataSequence = 10,
+                        transparencyIndex = 24,
+                    ),
+            )
+
+        compose.setContent {
+            MiuixTheme {
+                PallaSyncHistoryIntegritySummary(status)
+            }
+        }
+
+        compose.onNodeWithText(context.getString(R.string.pallasync_progress_independent_comparison_offer)).assertIsDisplayed()
+    }
+
+    @Test
     fun `author gap relay completeness and transparency conflict are separate`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val status =
-            PallaSyncClientStatus(
-                downloadedSeq = 12,
-                verifiedSeq = 10,
-                materializedSeq = 9,
-                verifiedTransparencyIndex = 20,
-                observedTransparencyTargetIndex = 24,
-                transparencyObservationConflict = true,
-                pendingOutbox = 3,
-                authorGaps = 2,
-                unresolvedQuarantine = 1,
-                writeState = "paused_integrity",
-                initialPullCompleted = false,
-                searchCount = 0,
-                searchCeiling = 100,
-                viewedCount = 0,
-                viewedCeiling = 100,
-                seenCount = 0,
-                seenCeiling = 100,
+            status().copy(
                 lastIndependentCheckpointComparison =
                     PallaSyncIndependentCheckpointComparison(
                         checkedAtMs = System.currentTimeMillis(),
@@ -76,4 +97,25 @@ class PallaSyncHistoryIntegritySummaryTest {
             .onNodeWithText(context.getString(R.string.pallasync_v3_history_outbox_quarantine, 3, 1, "paused_integrity"))
             .assertIsDisplayed()
     }
+
+    private fun status() =
+        PallaSyncClientStatus(
+            downloadedSeq = 12,
+            verifiedSeq = 10,
+            materializedSeq = 9,
+            verifiedTransparencyIndex = 20,
+            observedTransparencyTargetIndex = 24,
+            transparencyObservationConflict = true,
+            pendingOutbox = 3,
+            authorGaps = 2,
+            unresolvedQuarantine = 1,
+            writeState = "paused_integrity",
+            initialPullCompleted = false,
+            searchCount = 0,
+            searchCeiling = 100,
+            viewedCount = 0,
+            viewedCeiling = 100,
+            seenCount = 0,
+            seenCeiling = 100,
+        )
 }
