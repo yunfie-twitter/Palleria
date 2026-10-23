@@ -10,10 +10,11 @@ data class PixivImageProxy(
     val baseUrl: String,
 )
 
-const val PALLERIA_IMAGE_PROXY_BASE_URL = "https://webp.yunfi.f5.si/image.webp?url="
+const val PALLERIA_IMAGE_PROXY_BASE_URL = "https://media.yunfi.f5.si/image.webp?url="
 private const val PALLERIA_WORKERS_HOST_PREFIX = "https://piximg.2wf6bfhvwk.workers.dev/"
+private const val LEGACY_PALLERIA_WEBP_PROXY_BASE_URL = "https://webp.yunfi.f5.si/image.webp?url="
 private const val LEGACY_PALLERIA_PROXY_BASE_URL = "https://i.yunfi.f5.si/"
-private const val LEGACY_PALLERIA_WEBP_PROXY_BASE_URL = "https://proxy.yunfi.f5.si/image.webp?url="
+private const val LEGACY_PALLERIA_OLD_WEBP_PROXY_BASE_URL = "https://proxy.yunfi.f5.si/image.webp?url="
 
 val PixivImageProxyOptions =
     listOf(
@@ -32,8 +33,11 @@ fun proxyPixivImageUrl(
     val relativePath = url.removePrefix(sourcePrefix)
 
     if (proxyBaseUrl == PALLERIA_IMAGE_PROXY_BASE_URL ||
+        proxyBaseUrl == LEGACY_PALLERIA_WEBP_PROXY_BASE_URL ||
         proxyBaseUrl == LEGACY_PALLERIA_PROXY_BASE_URL ||
-        proxyBaseUrl == LEGACY_PALLERIA_WEBP_PROXY_BASE_URL
+        proxyBaseUrl == LEGACY_PALLERIA_OLD_WEBP_PROXY_BASE_URL ||
+        proxyBaseUrl.startsWith("https://media.yunfi.f5.si/") ||
+        proxyBaseUrl.startsWith("https://webp.yunfi.f5.si/")
     ) {
         val workersUrl = PALLERIA_WORKERS_HOST_PREFIX + relativePath
         return PALLERIA_IMAGE_PROXY_BASE_URL + URLEncoder.encode(workersUrl, StandardCharsets.UTF_8.name())
@@ -51,6 +55,10 @@ fun normalizePixivImageProxyBaseUrl(url: String): String =
         "https://i.yunfi.f5.si",
         "https://proxy.yunfi.f5.si/image.webp?url=",
         "https://proxy.yunfi.f5.si/image.webp?url",
+        "https://webp.yunfi.f5.si/image.webp?url=",
+        "https://webp.yunfi.f5.si/image.webp?url",
+        "https://media.yunfi.f5.si/image.webp?url=",
+        "https://media.yunfi.f5.si/image.webp?url",
         -> PALLERIA_IMAGE_PROXY_BASE_URL
 
         else -> url
