@@ -58,6 +58,7 @@ data class PallaSyncCapacityIssue(
 /** Last locally observed, independently authenticated device checkpoint comparison (§11.5). */
 data class PallaSyncIndependentCheckpointComparison(
     val checkedAtMs: Long,
+    val generation: Long,
     val peerDeviceId: String,
     val dataSequence: Long,
     val transparencyIndex: Long,

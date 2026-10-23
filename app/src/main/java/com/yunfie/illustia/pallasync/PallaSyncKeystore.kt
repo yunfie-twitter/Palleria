@@ -115,11 +115,12 @@ class PallaSyncKeystore internal constructor(
         comparison: PallaSyncIndependentCheckpointComparison,
     ): Boolean {
         require(chainId.isNotBlank() && comparison.checkedAtMs > 0 && comparison.peerDeviceId.isNotBlank())
-        require(comparison.dataSequence >= 0 && comparison.transparencyIndex >= 0)
+        require(comparison.generation in 0..MAX_EPOCH && comparison.dataSequence >= 0 && comparison.transparencyIndex >= 0)
         val key = "independent_checkpoint_comparison.$chainId"
         val value =
             buildJsonObject {
                 put("checked_at_ms", JsonPrimitive(comparison.checkedAtMs))
+                put("generation", JsonPrimitive(comparison.generation))
                 put("peer_device_id", JsonPrimitive(comparison.peerDeviceId))
                 put("data_sequence", JsonPrimitive(comparison.dataSequence))
                 put("transparency_index", JsonPrimitive(comparison.transparencyIndex))
@@ -135,11 +136,13 @@ class PallaSyncKeystore internal constructor(
                     .jsonObject
             PallaSyncIndependentCheckpointComparison(
                 checkedAtMs = value.getValue("checked_at_ms").jsonPrimitive.long,
+                generation = value.getValue("generation").jsonPrimitive.long,
                 peerDeviceId = value.getValue("peer_device_id").jsonPrimitive.content,
                 dataSequence = value.getValue("data_sequence").jsonPrimitive.long,
                 transparencyIndex = value.getValue("transparency_index").jsonPrimitive.long,
             ).takeIf {
-                it.checkedAtMs > 0 && it.peerDeviceId.isNotBlank() && it.dataSequence >= 0 && it.transparencyIndex >= 0
+                it.checkedAtMs > 0 && it.generation in 0..MAX_EPOCH && it.peerDeviceId.isNotBlank() &&
+                    it.dataSequence >= 0 && it.transparencyIndex >= 0
             }
         }.getOrNull()
 

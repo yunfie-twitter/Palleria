@@ -43,6 +43,7 @@ class PallaSyncHistoryIntegritySummaryTest {
                 lastIndependentCheckpointComparison =
                     PallaSyncIndependentCheckpointComparison(
                         checkedAtMs = System.currentTimeMillis() - 31L * 24 * 60 * 60 * 1000,
+                        generation = 7,
                         peerDeviceId = "peer-device",
                         dataSequence = 10,
                         transparencyIndex = 24,
@@ -66,6 +67,7 @@ class PallaSyncHistoryIntegritySummaryTest {
                 lastIndependentCheckpointComparison =
                     PallaSyncIndependentCheckpointComparison(
                         checkedAtMs = System.currentTimeMillis(),
+                        generation = 7,
                         peerDeviceId = "peer-device",
                         dataSequence = 10,
                         transparencyIndex = 24,
@@ -87,6 +89,7 @@ class PallaSyncHistoryIntegritySummaryTest {
                 java.text.DateFormat
                     .getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
                     .format(java.util.Date(comparison.checkedAtMs)),
+                comparison.generation,
                 comparison.peerDeviceId,
                 comparison.dataSequence,
                 comparison.transparencyIndex,

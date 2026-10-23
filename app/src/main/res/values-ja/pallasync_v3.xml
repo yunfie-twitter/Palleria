@@ -178,7 +178,7 @@
     <string name="pallasync_progress_current">ダウンロード済みのレコードはすべて検証・適用済みです。</string>
     <string name="pallasync_progress_author_gaps">未解決のauthor sequence欠落: %1$d</string>
     <string name="pallasync_progress_source_completeness">リレー履歴の完全性は独立に証明されていません。孤立したリレーは未提示の履歴を隠せます。</string>
-    <string name="pallasync_progress_last_independent_comparison">最後に独立した端末checkpointを照合した時刻（端末の現地時刻）: %1$s・相手端末 %2$s・データseq %3$d・transparency index %4$d</string>
+    <string name="pallasync_progress_last_independent_comparison">最後に独立した端末checkpointを照合した時刻（端末の現地時刻）: %1$s・generation %2$d・相手端末 %3$s・データseq %4$d・transparency index %5$d</string>
     <string name="pallasync_progress_no_independent_comparison">独立認証された端末checkpointはまだ照合されていません。</string>
     <string name="pallasync_progress_independent_comparison_offer">同期設定から、ローカルで交換した端末checkpointを照合してください。30日以上照合がない場合は再確認してください。</string>
     <string name="pallasync_progress_blockers">送信待ち %1$d · 未解決隔離 %2$d</string>

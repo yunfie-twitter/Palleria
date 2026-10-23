@@ -208,7 +208,7 @@
     <string name="pallasync_progress_current">All downloaded records are verified and materialized.</string>
     <string name="pallasync_progress_author_gaps">Unresolved author sequence gaps: %1$d</string>
     <string name="pallasync_progress_source_completeness">Relay history completeness is not independently proven; an isolated relay can hide unseen entries.</string>
-    <string name="pallasync_progress_last_independent_comparison">Last independent checkpoint comparison (local time): %1$s · peer %2$s · data seq %3$d · transparency index %4$d</string>
+    <string name="pallasync_progress_last_independent_comparison">Last independent checkpoint comparison (local time): %1$s · generation %2$d · peer %3$s · data seq %4$d · transparency index %5$d</string>
     <string name="pallasync_progress_no_independent_comparison">No independently authenticated device checkpoint has been compared yet.</string>
     <string name="pallasync_progress_independent_comparison_offer">Compare a locally exchanged device checkpoint from Sync settings. After 30 days without one, review this comparison again.</string>
     <string name="pallasync_progress_blockers">Pending outbox %1$d · unresolved quarantine %2$d</string>

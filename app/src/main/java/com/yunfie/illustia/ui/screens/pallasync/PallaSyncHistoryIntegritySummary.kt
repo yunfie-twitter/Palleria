@@ -46,6 +46,7 @@ internal fun PallaSyncIndependentCheckpointComparisonSummary(status: PallaSyncCl
         stringResource(
             R.string.pallasync_progress_last_independent_comparison,
             checkedAt,
+            comparison.generation,
             comparison.peerDeviceId,
             comparison.dataSequence,
             comparison.transparencyIndex,

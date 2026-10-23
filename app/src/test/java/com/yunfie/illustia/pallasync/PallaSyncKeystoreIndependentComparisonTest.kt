@@ -28,6 +28,7 @@ class PallaSyncKeystoreIndependentComparisonTest {
         val comparison =
             PallaSyncIndependentCheckpointComparison(
                 checkedAtMs = 1_800_000_000_000,
+                generation = 7,
                 peerDeviceId = "11111111-1111-4111-8111-111111111111",
                 dataSequence = 72,
                 transparencyIndex = 91,

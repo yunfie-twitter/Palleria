@@ -2042,6 +2042,7 @@ internal class PalleriaSyncCoordinator(
                         chain,
                         PallaSyncIndependentCheckpointComparison(
                             checkedAtMs = System.currentTimeMillis(),
+                            generation = generation,
                             peerDeviceId = deviceId,
                             dataSequence = seq,
                             transparencyIndex = peerTransparencyIndex,
