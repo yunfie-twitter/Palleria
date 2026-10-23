@@ -40,14 +40,28 @@ internal fun PallaSyncGenesisDialog(
         onDismiss()
     }, busy = busy, onSaved = { passphrase ->
         busy = true
+        val previousLog = PalleriaSyncManager.syncLogs.value.firstOrNull()
         operation =
             scope.launch {
                 try {
                     val completed = manager.createGenesis(phrase, origin, passphrase, cancellation)
+                    val failureDetail =
+                        if (completed) {
+                            null
+                        } else {
+                            PalleriaSyncManager.syncLogs.value
+                                .firstOrNull()
+                                ?.takeIf { it != previousLog }
+                                ?.substringAfter("] ")
+                        }
                     Toast
                         .makeText(
                             context,
-                            if (completed) R.string.pallasync_v3_root_completed else R.string.error_pallasync_create_chain_failed,
+                            if (completed) {
+                                context.getString(R.string.pallasync_v3_root_completed)
+                            } else {
+                                failureDetail ?: context.getString(R.string.error_pallasync_create_chain_failed)
+                            },
                             Toast.LENGTH_LONG,
                         ).show()
                     onDismiss()

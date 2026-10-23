@@ -5767,6 +5767,10 @@ internal class PalleriaSyncCoordinator(
             }.getOrElse { expectedFailure ->
                 val error = expectedFailure
                 if (error is CancellationException) throw error
+                if (error is GenesisAttemptFailure) {
+                    log(error.message ?: "Genesis request did not complete")
+                    return@getOrElse activatedChainId != null
+                }
                 val code = error.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_SCHEMA_VIOLATION"
                 val debugFrames =
                     if (appContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
@@ -5836,9 +5840,8 @@ internal class PalleriaSyncCoordinator(
             if (isGenesis) {
                 prepareGenesis(rootSession, deviceName, base, origin)
             } else {
-                prepareMnemonicEnrollment(rootSession, deviceName, base, origin)
+                checkNotNull(prepareMnemonicEnrollment(rootSession, deviceName, base, origin)) { "C_MISSING_DEPENDENCY" }
             }
-        checkNotNull(prepared) { "C_MISSING_DEPENDENCY" }
         if (!isGenesis) {
             val review =
                 PallaSyncBootstrapReview.fromVerifiedCheckpoint(
@@ -6086,12 +6089,15 @@ internal class PalleriaSyncCoordinator(
         val checkpoint: PallaSyncGenesisCheckpoint?,
     )
 
+    /** Preserve an authoritative relay outcome instead of collapsing it into a local missing-dependency error. */
+    private class GenesisAttemptFailure(result: PallaSyncHttpResult<*>) : IllegalStateException(result.genesisFailureSummary())
+
     private suspend fun prepareGenesis(
         root: PallaSyncRootSession,
         name: String,
         base: HttpUrl,
         origin: String,
-    ): PreparedJoin? {
+    ): PreparedJoin {
         val (body, keys) = prepareGenesisCandidate(root, name, origin)
         // An exact durable retry gets a fresh audience/body-bound token; tokens are never journaled.
         val token =
@@ -6124,7 +6130,7 @@ internal class PalleriaSyncCoordinator(
             }
         return when (response) {
             is PallaSyncHttpResult.Success -> PreparedJoin(keys, response.value)
-            else -> null.also { log("Genesis acceptance is unresolved; the exact request and candidate keys were retained") }
+            else -> throw GenesisAttemptFailure(response)
         }
     }
 

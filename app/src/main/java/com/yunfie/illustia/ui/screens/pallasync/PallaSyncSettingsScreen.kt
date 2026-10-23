@@ -77,7 +77,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -86,6 +86,22 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 import java.util.UUID
+
+/** Keep the sync-settings actions aligned and equally tappable across long and short labels. */
+@Composable
+private fun PallaSyncActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    MiuixTextButton(
+        text = text,
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp),
+        enabled = enabled,
+    )
+}
 
 @Composable
 private fun PallaSyncRecoveryHintText(code: String) {
@@ -663,13 +679,13 @@ fun PallaSyncSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    MiuixTextButton(
                         onClick = { showUrlDialog = false },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         text = stringResource(R.string.action_cancel),
                     )
                     Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    MiuixTextButton(
                         onClick = {
                             val normalized = syncManager.normalizeServerUrl(tempUrl)
                             if (normalized == null) {
@@ -679,7 +695,7 @@ fun PallaSyncSettingsScreen(
                                 showUrlDialog = false
                             }
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         text = stringResource(R.string.action_confirm),
                     )
@@ -709,13 +725,13 @@ fun PallaSyncSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    MiuixTextButton(
                         onClick = { showReseedImportTarget = false },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         text = stringResource(R.string.action_cancel),
                     )
                     Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    MiuixTextButton(
                         onClick = {
                             val normalized = syncManager.normalizeServerUrl(reseedImportTargetUrl)
                             if (normalized == null) {
@@ -726,7 +742,7 @@ fun PallaSyncSettingsScreen(
                                 showReseedImportRootInput = true
                             }
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         text = stringResource(R.string.action_confirm),
                     )
@@ -2012,7 +2028,7 @@ fun PallaSyncSettingsScreen(
                             legacyMigrationCursor?.let { cursor ->
                                 if (!loadingLegacyMigrationPage) {
                                     DividerLine()
-                                    TextButton(
+                                    PallaSyncActionButton(
                                         text = stringResource(R.string.pallasync_legacy_migration_more),
                                         onClick = {
                                             loadingLegacyMigrationPage = true
@@ -2161,7 +2177,7 @@ fun PallaSyncSettingsScreen(
                                 Text(stringResource(R.string.pallasync_request_blocked, code))
                                 PallaSyncRecoveryHintText(code)
                                 if (status.capacityIssue?.code != code && PallaSyncRetryGate.canRetryAfterResolution(code)) {
-                                    TextButton(
+                                    PallaSyncActionButton(
                                         text = stringResource(R.string.pallasync_blocked_retry_action),
                                         enabled = retryingBlockedRequestCode == null,
                                         onClick = { pendingBlockedRetryCode = code },
@@ -2171,7 +2187,7 @@ fun PallaSyncSettingsScreen(
                             if (status.favoriteOrderReindexRequired) {
                                 DividerLine()
                                 Text(stringResource(R.string.pallasync_favorite_order_reindex_required))
-                                TextButton(
+                                PallaSyncActionButton(
                                     text = stringResource(R.string.pallasync_favorite_order_reindex_action),
                                     enabled = !reindexingFavoriteOrder,
                                     onClick = { showFavoriteOrderReindexConfirm = true },
@@ -2192,7 +2208,7 @@ fun PallaSyncSettingsScreen(
                                         maximum?.toString() ?: "—",
                                     ),
                                 )
-                                TextButton(
+                                PallaSyncActionButton(
                                     text = stringResource(R.string.pallasync_relay_capacity_resume),
                                     enabled = !resolvingCapacityRecovery,
                                     onClick = { showCapacityRecoveryConfirm = true },
@@ -2243,7 +2259,7 @@ fun PallaSyncSettingsScreen(
                             }
                             if (!status.initialPullCompleted && status.pendingOutbox == 0L && status.unresolvedQuarantine == 0L) {
                                 DividerLine()
-                                TextButton(
+                                PallaSyncActionButton(
                                     text =
                                         stringResource(
                                             if (loadingTrustedSnapshots) {
@@ -2299,7 +2315,7 @@ fun PallaSyncSettingsScreen(
                                     }
                                 Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash, resolutionLabel))
                                 if (entry.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN")) {
-                                    TextButton(
+                                    PallaSyncActionButton(
                                         text =
                                             stringResource(
                                                 if (retryingQuarantineHash == entry.objectHash) {
@@ -2346,7 +2362,7 @@ fun PallaSyncSettingsScreen(
                                 when (entry.reason) {
                                     "C_COMMITMENT_MISMATCH" -> {
                                         Text(stringResource(R.string.pallasync_quarantine_commitment_repair_guidance))
-                                        TextButton(
+                                        PallaSyncActionButton(
                                             text = stringResource(R.string.pallasync_quarantine_commitment_repair_action),
                                             enabled = !repairingCommitmentEnvelope,
                                             onClick = {
@@ -2358,7 +2374,7 @@ fun PallaSyncSettingsScreen(
 
                                     in PallaSyncQuarantineDisposition.trustedBranchReviewReasons -> {
                                         Text(stringResource(R.string.pallasync_quarantine_reseed_guidance))
-                                        TextButton(
+                                        PallaSyncActionButton(
                                             text = stringResource(R.string.pallasync_quarantine_reseed),
                                             enabled = !stagingReseedImport && !committingReseedImport,
                                             onClick = { showReseedImportTarget = true },
@@ -2367,7 +2383,7 @@ fun PallaSyncSettingsScreen(
 
                                     "C_LOG_HASH_MISMATCH" -> {
                                         Text(stringResource(R.string.pallasync_quarantine_repair_guidance))
-                                        TextButton(
+                                        PallaSyncActionButton(
                                             text = stringResource(R.string.pallasync_quarantine_repair),
                                             enabled = !repairingRelayHistory,
                                             onClick = { showRepairRootInput = true },
@@ -2376,7 +2392,7 @@ fun PallaSyncSettingsScreen(
 
                                     "C_SNAPSHOT_INVALID" -> {
                                         Text(stringResource(R.string.pallasync_quarantine_snapshot_guidance))
-                                        TextButton(
+                                        PallaSyncActionButton(
                                             text = stringResource(R.string.pallasync_quarantine_snapshot),
                                             enabled = trustedSnapshotCandidates.isNotEmpty() && !installingTrustedSnapshot,
                                             onClick = {
@@ -2394,7 +2410,7 @@ fun PallaSyncSettingsScreen(
                                         Text(stringResource(R.string.pallasync_quarantine_independent_evidence_guidance))
                                         if (PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview(entry.reason)) {
                                             Text(stringResource(R.string.pallasync_checkpoint_import_summary))
-                                            TextButton(
+                                            PallaSyncActionButton(
                                                 text = stringResource(R.string.pallasync_checkpoint_import_title),
                                                 onClick = { checkpointImporter.launch(arrayOf("application/json")) },
                                             )
@@ -2404,7 +2420,7 @@ fun PallaSyncSettingsScreen(
                                 if (entry.resolutionState != "excluded" &&
                                     PallaSyncQuarantineDisposition.canExplicitlyExclude(entry.reason)
                                 ) {
-                                    TextButton(
+                                    PallaSyncActionButton(
                                         text = stringResource(R.string.pallasync_quarantine_exclude_action),
                                         enabled = pendingQuarantineExclusion == null,
                                         onClick = { pendingQuarantineExclusion = entry },
@@ -2414,7 +2430,7 @@ fun PallaSyncSettingsScreen(
                             quarantineCursor?.let { cursor ->
                                 if (!loadingQuarantinePage) {
                                     DividerLine()
-                                    TextButton(
+                                    PallaSyncActionButton(
                                         text = stringResource(R.string.pallasync_legacy_migration_more),
                                         onClick = {
                                             loadingQuarantinePage = true
@@ -2647,7 +2663,7 @@ fun PallaSyncSettingsScreen(
                 )
                 if (migration.state == "legacy_receipts_complete") {
                     Text(stringResource(R.string.pallasync_legacy_migration_replay_required))
-                    TextButton(
+                    PallaSyncActionButton(
                         text = stringResource(R.string.pallasync_legacy_migration_verify_snapshot),
                         enabled = !loadingLegacyDecisions,
                         onClick = {
@@ -2681,7 +2697,7 @@ fun PallaSyncSettingsScreen(
                             migration.completionCoveredThroughSeq ?: 0L,
                         ),
                     )
-                    TextButton(
+                    PallaSyncActionButton(
                         text = stringResource(R.string.pallasync_legacy_migration_retry_audit),
                         enabled = !loadingLegacyDecisions,
                         onClick = {
@@ -2721,7 +2737,7 @@ fun PallaSyncSettingsScreen(
                 }
                 migration.schemaCounts.forEach { (schema, count) -> Text("$schema: $count") }
                 Text(stringResource(R.string.pallasync_legacy_migration_candidates_title, migration.candidates))
-                TextButton(
+                PallaSyncActionButton(
                     text = stringResource(R.string.pallasync_legacy_migration_export_report),
                     onClick = {
                         pendingLegacyReport = migration
@@ -2752,7 +2768,7 @@ fun PallaSyncSettingsScreen(
                         }
                         if (candidate.requiresChoice) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(
+                                PallaSyncActionButton(
                                     text =
                                         stringResource(
                                             when {
@@ -2795,11 +2811,11 @@ fun PallaSyncSettingsScreen(
                         DividerLine()
                     }
                     if (legacyCandidateCursor != null && !loadingLegacyDecisions) {
-                        TextButton(
+                        PallaSyncActionButton(
                             text = stringResource(R.string.pallasync_legacy_migration_more_candidates),
                             enabled = !loadingLegacyDecisions,
                             onClick = {
-                                val cursor = legacyCandidateCursor ?: return@TextButton
+                                val cursor = legacyCandidateCursor ?: return@PallaSyncActionButton
                                 loadingLegacyDecisions = true
                                 scope.launch {
                                     try {
@@ -2816,7 +2832,7 @@ fun PallaSyncSettingsScreen(
                         )
                     }
                     if (migration.sourceComplete) {
-                        TextButton(
+                        PallaSyncActionButton(
                             text = stringResource(R.string.pallasync_legacy_migration_finalize_choices),
                             enabled = !loadingLegacyDecisions,
                             onClick = {
@@ -2853,11 +2869,11 @@ fun PallaSyncSettingsScreen(
                         DividerLine()
                     }
                     if (legacyDecisionCursor != null && !loadingLegacyDecisions) {
-                        TextButton(
+                        PallaSyncActionButton(
                             text = stringResource(R.string.pallasync_legacy_migration_more),
                             enabled = !loadingLegacyDecisions,
                             onClick = {
-                                val cursor = legacyDecisionCursor ?: return@TextButton
+                                val cursor = legacyDecisionCursor ?: return@PallaSyncActionButton
                                 loadingLegacyDecisions = true
                                 scope.launch {
                                     try {
@@ -2874,7 +2890,7 @@ fun PallaSyncSettingsScreen(
                         )
                     }
                 }
-                TextButton(text = stringResource(R.string.action_cancel), onClick = { selectedLegacyMigration = null })
+                PallaSyncActionButton(text = stringResource(R.string.action_cancel), onClick = { selectedLegacyMigration = null })
             }
         }
     }

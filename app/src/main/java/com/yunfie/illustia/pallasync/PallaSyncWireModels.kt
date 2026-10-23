@@ -422,6 +422,19 @@ internal sealed interface PallaSyncHttpResult<out T> {
     ) : PallaSyncHttpResult<Nothing>
 }
 
+/** Keep Genesis relay failures actionable without inventing a protocol error code. */
+internal fun PallaSyncHttpResult<*>.genesisFailureSummary(): String =
+    when (this) {
+        is PallaSyncHttpResult.ProtocolError ->
+            "Genesis request rejected: $message" + (statusCode?.let { " (HTTP $it)" } ?: "")
+        is PallaSyncHttpResult.Retryable ->
+            "Genesis request unresolved: $message" +
+                (statusCode?.let { " (HTTP $it)" } ?: "") +
+                (retryAfterMs.takeIf { it > 0 }?.let { "; retry after ${it}ms" } ?: "")
+        PallaSyncHttpResult.Gone -> "Genesis endpoint returned HTTP 410; activation was not committed"
+        is PallaSyncHttpResult.Success -> error("Genesis failure cannot contain success")
+    }
+
 /** Parse only a strictly validated RFC 9457 response; malformed content stays non-authoritative. */
 internal fun parsePallaSyncProblem(
     statusCode: Int,
