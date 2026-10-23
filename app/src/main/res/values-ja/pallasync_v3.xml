@@ -61,7 +61,7 @@
     <string name="pallasync_v3_history_partial">未取得・未検証の範囲があります。表示はローカルに保存済みの履歴です。</string>
     <string name="pallasync_v3_history_sync_positions">同期位置 — 取得済み: %1$d、検証済み: %2$d、反映済み: %3$d</string>
     <string name="pallasync_v3_history_transparency">透明性checkpoint — 検証済み: %1$d、観測した目標: %2$d</string>
-    <string name="pallasync_v3_history_pending">未送信outbox: %1$d・author gap: %2$d・隔離: %3$d・書込み状態: %4$s</string>
+    <string name="pallasync_v3_history_outbox_quarantine">未送信outbox: %1$d・隔離: %2$d・書込み状態: %3$s</string>
     <string name="pallasync_v3_history_capacity">論理履歴 / 安全上限 — 検索 %1$d/%2$d・閲覧 %3$d/%4$d・既読 %5$d/%6$d</string>
     <string name="pallasync_v3_history_first">最初のページ</string>
     <string name="pallasync_v3_history_older">古い履歴を表示</string>

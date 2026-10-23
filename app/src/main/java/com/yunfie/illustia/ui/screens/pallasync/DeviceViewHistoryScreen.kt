@@ -222,15 +222,7 @@ fun DeviceViewHistoryScreen(
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(
-                            R.string.pallasync_v3_history_pending,
-                            status.pendingOutbox,
-                            status.authorGaps,
-                            status.unresolvedQuarantine,
-                            status.writeState,
-                        ),
-                    )
+                    PallaSyncHistoryIntegritySummary(status)
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
