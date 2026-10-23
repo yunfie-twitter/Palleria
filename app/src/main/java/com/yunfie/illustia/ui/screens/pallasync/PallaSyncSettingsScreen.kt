@@ -48,6 +48,8 @@ import com.yunfie.illustia.pallasync.PallaSyncHttpResult
 import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PallaSyncQuarantineDisposition
+import com.yunfie.illustia.pallasync.PallaSyncRecoveryGuidance
+import com.yunfie.illustia.pallasync.PallaSyncRecoveryHint
 import com.yunfie.illustia.pallasync.PallaSyncReseedSourceConflict
 import com.yunfie.illustia.pallasync.PallaSyncRetryGate
 import com.yunfie.illustia.pallasync.PallaSyncRootSession
@@ -84,6 +86,32 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
 import java.util.UUID
+
+@Composable
+private fun PallaSyncRecoveryHintText(code: String) {
+    val message =
+        when (PallaSyncRecoveryGuidance.forCode(code)) {
+            PallaSyncRecoveryHint.REFRESH_TOKEN -> R.string.pallasync_recovery_hint_token
+            PallaSyncRecoveryHint.EXPLICIT_ADMIN_AUTH -> R.string.pallasync_recovery_hint_admin
+            PallaSyncRecoveryHint.APPROVED_DEVICE_FLOW -> R.string.pallasync_recovery_hint_device
+            PallaSyncRecoveryHint.DEVICE_SLOT_RELEASE -> R.string.pallasync_recovery_hint_device_limit
+            PallaSyncRecoveryHint.VERIFY_ORIGIN_AND_HISTORY -> R.string.pallasync_recovery_hint_origin
+            PallaSyncRecoveryHint.VERIFY_EPOCH_HISTORY -> R.string.pallasync_recovery_hint_epoch
+            PallaSyncRecoveryHint.NEW_ENROLLMENT_OFFER -> R.string.pallasync_recovery_hint_offer
+            PallaSyncRecoveryHint.RESEND_AUTHORIZED_ENVELOPE -> R.string.pallasync_recovery_hint_envelope
+            PallaSyncRecoveryHint.RESTORE_SNAPSHOT -> R.string.pallasync_recovery_hint_snapshot
+            PallaSyncRecoveryHint.REBUILD_STALE_REQUEST -> R.string.pallasync_recovery_hint_rebuild
+            PallaSyncRecoveryHint.RESTART_DURABLE_CURSOR -> R.string.pallasync_recovery_hint_cursor
+            PallaSyncRecoveryHint.SPLIT_OVERSIZED_BATCH -> R.string.pallasync_recovery_hint_payload
+            PallaSyncRecoveryHint.HONOR_RETRY_AFTER -> R.string.pallasync_recovery_hint_rate
+            PallaSyncRecoveryHint.RETAIN_AND_RECONCILE -> R.string.pallasync_recovery_hint_reconcile
+            PallaSyncRecoveryHint.EXPLICIT_RELAY_MIGRATION -> R.string.pallasync_recovery_hint_migration
+            PallaSyncRecoveryHint.USER_CAPACITY_RECOVERY -> R.string.pallasync_recovery_hint_capacity
+            PallaSyncRecoveryHint.WAIT_FOR_RECEIPT_EVIDENCE -> R.string.pallasync_recovery_hint_receipt
+            null -> return
+        }
+    Text(stringResource(message))
+}
 
 @Composable
 @Suppress("ThrowsCount", "TooGenericExceptionCaught") // SAF and snapshot-source failures are mapped to retained-state UI outcomes.
@@ -2087,6 +2115,7 @@ fun PallaSyncSettingsScreen(
                                 }
                             blockedCodes.forEach { code ->
                                 Text(stringResource(R.string.pallasync_request_blocked, code))
+                                PallaSyncRecoveryHintText(code)
                                 if (status.capacityIssue?.code != code && PallaSyncRetryGate.canRetryAfterResolution(code)) {
                                     TextButton(
                                         text = stringResource(R.string.pallasync_blocked_retry_action),
