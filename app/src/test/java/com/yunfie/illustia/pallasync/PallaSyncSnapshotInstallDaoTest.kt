@@ -215,6 +215,28 @@ class PallaSyncSnapshotInstallDaoTest {
                         listOf(1L, 1L, 1L, COVERED_HASH)
                 }
                 dao.install(CHAIN, COMPACTION)?.status shouldBe "installed"
+
+                val installedManifest = checkNotNull(dao.install(CHAIN, COMPACTION))
+                dao.begin(installedManifest.copy(status = "staging"))
+                dao.retainVerifiedPart(
+                    SnapshotInstallPartEntity(CHAIN, COMPACTION, 0, RECORD, "part-hash", rows.size),
+                    rows,
+                )
+                dao.markVerified(CHAIN, COMPACTION)
+                PallaSyncSnapshotSemanticComparator.compare(dao, CHAIN, COMPACTION) { emit ->
+                    rows.forEach { emit(it.entryJson) }
+                }
+                dao.installVerifiedState(
+                    CHAIN,
+                    COMPACTION,
+                    expectedIndexRevision = 1,
+                    explicitlyTrustedBootstrap = true,
+                    allowInstalledArchiveReinstall = true,
+                )
+
+                db.protocolDao().entity(CHAIN, COLLECTION, ENTITY)?.operation shouldBe "upsert"
+                db.pallaSyncDao().getChainState(CHAIN)?.indexRevision shouldBe 2
+                dao.install(CHAIN, COMPACTION)?.status shouldBe "installed"
             } finally {
                 db.close()
             }

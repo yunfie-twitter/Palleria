@@ -181,7 +181,7 @@ internal object PallaSyncSnapshotSemanticComparator {
         compactionId: String,
         emitLocalState: suspend (suspend (String) -> Unit) -> Unit,
     ) {
-        check(dao.install(chainId, compactionId)?.status == "verified") { "C_SNAPSHOT_INVALID" }
+        check(dao.install(chainId, compactionId)?.status in setOf("verified", "installed")) { "C_SNAPSHOT_INVALID" }
         var part = -1
         var entry = -1
         var page = emptyList<com.yunfie.illustia.pallasync.data.SnapshotInstallEntryEntity>()

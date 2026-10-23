@@ -794,6 +794,16 @@ class PallaSyncRelayInteropTest {
                 initialPullCompleted = false,
             ),
         )
+        store.transaction {
+            store.snapshotInstallDao().deleteHistory(chain)
+            store.snapshotInstallDao().deleteEntities(chain)
+            store.snapshotInstallDao().deleteRegisters(chain)
+            store.snapshotInstallDao().deleteAuthors(chain)
+            store.snapshotInstallDao().deleteAuthorHeads(chain)
+            store.snapshotInstallDao().deleteAuthorGaps(chain)
+            store.snapshotInstallDao().deleteProjections(chain)
+            store.protocolDao().deleteEvents(chain)
+        }
 
         coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
         val state = checkNotNull(store.dao.getChainState(chain))

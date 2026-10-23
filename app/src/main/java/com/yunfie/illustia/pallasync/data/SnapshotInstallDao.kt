@@ -85,7 +85,9 @@ interface SnapshotInstallDao {
         trustedBootstrap: Boolean,
     ): Int
 
-    @Query("UPDATE ps_snapshot_installs SET status='installed' WHERE chain_id=:chain AND compaction_id=:compaction AND status='verified'")
+    @Query(
+        "UPDATE ps_snapshot_installs SET status='installed' WHERE chain_id=:chain AND compaction_id=:compaction AND status IN ('verified','installed')",
+    )
     suspend fun markInstalled(
         chain: String,
         compaction: String,
@@ -143,7 +145,7 @@ interface SnapshotInstallDao {
     ): List<SnapshotInstallEntryEntity>
 
     @Query(
-        "SELECT e.* FROM ps_snapshot_install_entries e INNER JOIN ps_snapshot_installs i ON i.chain_id=e.chain_id AND i.compaction_id=e.compaction_id WHERE e.chain_id=:chain AND e.compaction_id=:compaction AND i.status='verified' AND (e.part_index>:afterPart OR (e.part_index=:afterPart AND e.entry_index>:afterEntry)) ORDER BY e.part_index,e.entry_index LIMIT :limit",
+        "SELECT e.* FROM ps_snapshot_install_entries e INNER JOIN ps_snapshot_installs i ON i.chain_id=e.chain_id AND i.compaction_id=e.compaction_id WHERE e.chain_id=:chain AND e.compaction_id=:compaction AND i.status IN ('verified','installed') AND (e.part_index>:afterPart OR (e.part_index=:afterPart AND e.entry_index>:afterEntry)) ORDER BY e.part_index,e.entry_index LIMIT :limit",
     )
     suspend fun entryPage(
         chain: String,
@@ -173,6 +175,8 @@ interface SnapshotInstallDao {
         val old = install(install.chainId, install.compactionId)
         if (old == null) {
             insertInstall(install)
+        } else if (old.status == "installed") {
+            check(old.copy(status = "staging") == install) { "C_SNAPSHOT_INVALID" }
         } else {
             check(old.status in setOf("staging", "verified")) { "C_SNAPSHOT_INVALID" }
             check(old.copy(status = "staging") == install) { "C_SNAPSHOT_INVALID" }
@@ -187,7 +191,7 @@ interface SnapshotInstallDao {
         rows: List<SnapshotInstallEntryEntity>,
     ) {
         val manifest = checkNotNull(install(part.chainId, part.compactionId)) { "C_SNAPSHOT_INVALID" }
-        check(manifest.status in setOf("staging", "verified") && part.partIndex in 0 until manifest.partCount) {
+        check(manifest.status in setOf("staging", "verified", "installed") && part.partIndex in 0 until manifest.partCount) {
             "C_SNAPSHOT_INVALID"
         }
         check(
@@ -219,6 +223,7 @@ interface SnapshotInstallDao {
         val manifest = checkNotNull(install(chain, compaction)) { "C_SNAPSHOT_INVALID" }
         val parts = parts(chain, compaction)
         check(parts.size == manifest.partCount && parts.indices.all { parts[it].partIndex == it }) { "C_SNAPSHOT_INVALID" }
+        if (manifest.status == "installed") return
         check(setVerified(chain, compaction) == 1) { "C_LOCAL_STORAGE_FULL" }
         check(install(chain, compaction)?.status == "verified") { "C_LOCAL_STORAGE_FULL" }
     }
@@ -263,10 +268,14 @@ interface SnapshotInstallDao {
         compaction: String,
         expectedIndexRevision: Long,
         explicitlyTrustedBootstrap: Boolean = false,
+        allowInstalledArchiveReinstall: Boolean = false,
     ) {
         val manifest = checkNotNull(install(chain, compaction)) { "C_SNAPSHOT_INVALID" }
-        if (manifest.status == "installed") return
-        check(manifest.status == "verified" && pendingOutboxCount(chain) == 0L) { "C_SNAPSHOT_INVALID" }
+        if (manifest.status == "installed" && !allowInstalledArchiveReinstall) return
+        check(
+            manifest.status == "verified" || (manifest.status == "installed" && allowInstalledArchiveReinstall),
+        ) { "C_SNAPSHOT_INVALID" }
+        check(pendingOutboxCount(chain) == 0L) { "C_SNAPSHOT_INVALID" }
         check(unresolvedQuarantineCount(chain) == 0L) { "C_SNAPSHOT_INVALID" }
         val state = checkNotNull(chainState(chain)) { "C_SNAPSHOT_INVALID" }
         check(

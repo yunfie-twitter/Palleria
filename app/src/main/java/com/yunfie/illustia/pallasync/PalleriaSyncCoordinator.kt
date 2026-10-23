@@ -984,7 +984,14 @@ internal class PalleriaSyncCoordinator(
             requireSnapshotResult(refreshRelayHealth(base))
             // Recheck the active chain and signed data/transparency cut immediately before local restore.
             requireSnapshotResult(consistencyProbe.run(base, beforeProbe.chainId))
-            val snapshot = verifyRelayArchiveLocked(input, expectedSource, retainEvidence = true)
+            val verifiedArchiveSnapshots = linkedSetOf<String>()
+            val snapshot =
+                verifyRelayArchiveLocked(
+                    input,
+                    expectedSource,
+                    retainEvidence = true,
+                    verifiedSnapshotCompactionIds = verifiedArchiveSnapshots,
+                )
             val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             val cut = Json.parseToJsonElement(checkNotNull(snapshot.historyCutJson)).jsonObject
@@ -1003,7 +1010,7 @@ internal class PalleriaSyncCoordinator(
                     generation = snapshot.generation,
                     dataZero = cut.getValue("data_zero").jsonPrimitive.content,
                 )
-            installExactArchiveSnapshot(state.chainId, checkpoint)
+            installExactArchiveSnapshot(state.chainId, checkpoint, verifiedArchiveSnapshots)
             PallaSyncPrefixMaterializer(db, keystore).apply(state.chainId, device, checkpoint)
             projection.publish(state.chainId, db)
         }
@@ -1128,6 +1135,7 @@ internal class PalleriaSyncCoordinator(
     private suspend fun installExactArchiveSnapshot(
         chain: String,
         checkpoint: PallaSyncGenesisCheckpoint,
+        verifiedArchiveCompactionIds: Set<String>,
     ) {
         val current = checkNotNull(db.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
         check(current.logId == checkpoint.logId) { "C_MISSING_DEPENDENCY" }
@@ -1139,12 +1147,15 @@ internal class PalleriaSyncCoordinator(
                 current.lastRelaySeq == 0L && current.verifiedSeq == 0L && current.materializedSeq == 0L &&
                     current.generation == checkpoint.generation && current.epochHash == checkpoint.epochHash,
             ) { "C_MISSING_DEPENDENCY" }
-            val candidates = db.snapshotInstallDao().latestVerifiedInstalls(chain, checkpoint.generation)
-            for (candidate in candidates) {
+            for (compactionId in verifiedArchiveCompactionIds) {
+                val candidate = db.snapshotInstallDao().install(chain, compactionId) ?: continue
+                if (candidate.status !in setOf("verified", "installed")) continue
                 val compaction = Json.parseToJsonElement(candidate.compactionJson).jsonObject
                 val covered = candidate.coveredThroughSeq
                 if (
+                    candidate.generation != checkpoint.generation ||
                     compaction["log_id"]?.jsonPrimitive?.content != checkpoint.logId ||
+                    compaction["generation"]?.jsonPrimitive?.long != checkpoint.generation ||
                     compaction["epoch_hash"]?.jsonPrimitive?.content != checkpoint.epochHash ||
                     covered > checkpoint.headSeq
                 ) {
@@ -1155,7 +1166,16 @@ internal class PalleriaSyncCoordinator(
                     candidate.compactionId,
                     current.indexRevision,
                     explicitlyTrustedBootstrap = true,
+                    allowInstalledArchiveReinstall = true,
                 )
+                return
+            }
+            if (
+                current.verifiedHash == checkpoint.dataZero &&
+                hasCompleteRetainedArchivePrefix(chain, checkpoint.logId, checkpoint.headSeq)
+            ) {
+                // A complete, unpruned archive needs no snapshot: the materializer will
+                // verify every retained receipt/hash link from H0 and replay the full log.
                 return
             }
             error("C_MISSING_DEPENDENCY")
@@ -1163,16 +1183,22 @@ internal class PalleriaSyncCoordinator(
         check(current.verifiedSeq == current.materializedSeq) { "C_MISSING_DEPENDENCY" }
         val coveredHash = current.verifiedHash ?: checkpoint.dataZero ?: error("C_MISSING_DEPENDENCY")
         val expectedEpochHash = checkpoint.epochHash
-        val candidates =
-            db.snapshotInstallDao().matchingVerifiedInstalls(
-                chain,
-                checkpoint.generation,
-                current.verifiedSeq,
-                coveredHash,
-            )
-        for (candidate in candidates) {
+        for (compactionId in verifiedArchiveCompactionIds) {
+            val candidate = db.snapshotInstallDao().install(chain, compactionId) ?: continue
+            if (candidate.status !in setOf("verified", "installed")) continue
+            if (
+                candidate.generation != checkpoint.generation ||
+                candidate.coveredThroughSeq != current.verifiedSeq || candidate.coveredLogHash != coveredHash
+            ) {
+                continue
+            }
             val compaction = Json.parseToJsonElement(candidate.compactionJson).jsonObject
-            if (compaction["epoch_hash"]?.jsonPrimitive?.content != expectedEpochHash) continue
+            if (
+                compaction["log_id"]?.jsonPrimitive?.content != checkpoint.logId ||
+                compaction["epoch_hash"]?.jsonPrimitive?.content != expectedEpochHash
+            ) {
+                continue
+            }
             val exactRevision =
                 PallaSyncSnapshotSemanticComparator.compareWithExactLocalReplay(
                     db,
@@ -1184,16 +1210,43 @@ internal class PalleriaSyncCoordinator(
                     current.verifiedSeq,
                     coveredHash,
                 ) ?: continue
-            db.snapshotInstallDao().installVerifiedState(chain, candidate.compactionId, exactRevision)
+            db.snapshotInstallDao().installVerifiedState(
+                chain,
+                candidate.compactionId,
+                exactRevision,
+                allowInstalledArchiveReinstall = true,
+            )
             return
         }
         error("C_MISSING_DEPENDENCY")
+    }
+
+    private suspend fun hasCompleteRetainedArchivePrefix(
+        chain: String,
+        logId: String,
+        headSeq: Long,
+    ): Boolean {
+        var expectedSequence = 1L
+        while (expectedSequence <= headSeq) {
+            val page = db.protocolDao().logPage(chain, logId, expectedSequence - 1L, headSeq, 200)
+            if (page.isEmpty()) return false
+            for (entry in page) {
+                if (entry.relaySeq != expectedSequence ||
+                    entry.validationState !in setOf("authority_verified", "materialized")
+                ) {
+                    return false
+                }
+                expectedSequence = Math.addExact(expectedSequence, 1L)
+            }
+        }
+        return expectedSequence == headSeq + 1L
     }
 
     private suspend fun verifyRelayArchiveLocked(
         input: java.io.InputStream,
         expectedSource: PallaSyncExportArchive.ExpectedSource,
         retainEvidence: Boolean = false,
+        verifiedSnapshotCompactionIds: MutableSet<String>? = null,
     ): PallaSyncExportArchiveVerifier.Header {
         check(expectedSource.includeRecovery && expectedSource.identityJson != null) { "C_RECOVERY_AUTH_REQUIRED" }
         val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -1241,6 +1294,15 @@ internal class PalleriaSyncCoordinator(
                                 retainForRestore = retainEvidence,
                                 stagedInstalls = stagedSnapshotInstalls,
                             )
+                            if (retainEvidence) {
+                                verifiedSnapshotCompactionIds?.add(
+                                    Json
+                                        .parseToJsonElement(compaction)
+                                        .jsonObject
+                                        .getValue("compaction_id")
+                                        .jsonPrimitive.content,
+                                )
+                            }
                         },
                         logEntrySink =
                             if (retainEvidence) {
@@ -1637,9 +1699,8 @@ internal class PalleriaSyncCoordinator(
         val authorKey = author.getValue("device_public_key").jsonPrimitive.content
         val references = compaction.getValue("snapshot_parts").jsonArray
         val snapshotDao = db.snapshotInstallDao()
-        val alreadyInstalled = snapshotDao.install(chain, compaction.getValue("compaction_id").jsonPrimitive.content)?.status == "installed"
         val stateStager =
-            if (retainForRestore && !alreadyInstalled) {
+            if (retainForRestore) {
                 PallaSyncSnapshotStateStager(snapshotDao, chain, compaction).also {
                     it.begin()
                     checkNotNull(stagedInstalls).add(it)
