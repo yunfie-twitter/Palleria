@@ -2,7 +2,6 @@ package com.yunfie.illustia.pallasync
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import okhttp3.Authenticator
 import okhttp3.Call
 import okhttp3.ConnectionSpec
@@ -224,13 +223,8 @@ internal class PallaSyncRemoteService(
         }
     }
 
-    private fun problem(response: Response): PallaSyncProblemHint? {
-        if (response.code in SUCCESS_CODES) return null
-        return runCatching {
-            check(response.header("Content-Type")?.substringBefore(';')?.trim() == "application/problem+json")
-            Json.decodeFromString<PallaSyncProblemHint>(PallaSyncCore.validateProblem(response.pallaSyncBytes(), response.code))
-        }.getOrNull()
-    }
+    private fun problem(response: Response): PallaSyncProblemHint? =
+        parsePallaSyncProblem(response.code, response.header("Content-Type"), response.pallaSyncBytes())
 }
 
 @Serializable

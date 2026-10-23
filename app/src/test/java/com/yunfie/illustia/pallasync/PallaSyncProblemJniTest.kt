@@ -20,4 +20,16 @@ class PallaSyncProblemJniTest {
         problem.maxBytes shouldBe 1000
         problem.retryAfterMs shouldBe null
     }
+
+    @Test
+    fun `unvalidated problem bodies never supply retry semantics`() {
+        val body = """{"status":403,"code":"DEVICE_PENDING_KEYS","retryable":true}"""
+
+        parsePallaSyncProblem(403, "application/problem+json", body.toByteArray()) shouldBe null
+        parsePallaSyncProblem(403, "text/html", "<html>403</html>".toByteArray()) shouldBe null
+        classifyPallaSyncHttpStatus(
+            403,
+            parsePallaSyncProblem(403, "application/problem+json", body.toByteArray()),
+        ) shouldBe PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION", 403)
+    }
 }

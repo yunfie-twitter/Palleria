@@ -422,6 +422,19 @@ internal sealed interface PallaSyncHttpResult<out T> {
     ) : PallaSyncHttpResult<Nothing>
 }
 
+/** Parse only a strictly validated RFC 9457 response; malformed content stays non-authoritative. */
+internal fun parsePallaSyncProblem(
+    statusCode: Int,
+    contentType: String?,
+    body: ByteArray,
+): PallaSyncProblemHint? {
+    if (statusCode in 200..299) return null
+    return runCatching {
+        check(contentType?.substringBefore(';')?.trim() == "application/problem+json")
+        Json.decodeFromString<PallaSyncProblemHint>(PallaSyncCore.validateProblem(body, statusCode))
+    }.getOrNull()
+}
+
 internal fun classifyPallaSyncHttpStatus(
     statusCode: Int,
     problem: PallaSyncProblemHint? = null,
