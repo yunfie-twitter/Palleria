@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncRootCancellation
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -69,6 +70,11 @@ internal fun PallaSyncGenesisDialog(
                             onFailure(checkNotNull(failureDetail))
                             onDismiss()
                         }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        onFailure(context.getString(R.string.error_pallasync_create_chain_failed))
+                        onDismiss()
                     } finally {
                         busy = false
                     }
