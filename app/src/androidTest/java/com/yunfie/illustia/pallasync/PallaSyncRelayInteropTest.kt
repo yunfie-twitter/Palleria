@@ -1193,7 +1193,37 @@ class PallaSyncRelayInteropTest {
             )
         }
         assertEquals(null, store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
-        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        var archiveRestoreFaultInjected = false
+        coordinator.setArchiveRestoreFaultForTest { boundary ->
+            if (boundary == PallaSyncArchiveRestoreBoundary.SNAPSHOT_INSTALLED) {
+                archiveRestoreFaultInjected = true
+                error("Injected archive restore interruption")
+            }
+        }
+        val interruptedRestore =
+            try {
+                runCatching { coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "") }
+                    .exceptionOrNull()
+            } finally {
+                coordinator.setArchiveRestoreFaultForTest {}
+            }
+        assertEquals("Injected archive restore interruption", interruptedRestore?.message)
+        assertTrue(archiveRestoreFaultInjected)
+        val interruptedState = checkNotNull(store.dao.getChainState(chain))
+        assertFalse(interruptedState.initialPullCompleted)
+        assertTrue(interruptedState.verifiedSeq > 0)
+        assertEquals(interruptedState.verifiedSeq, interruptedState.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+
+        // A new coordinator can re-verify the same archive and resume from the durable boundary.
+        val resumedCoordinator =
+            PalleriaSyncCoordinator(
+                client,
+                ApplicationProvider.getApplicationContext(),
+                suppliedPolicy = policy,
+                suppliedStore = store,
+            )
+        resumedCoordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
         val bootstrapped = checkNotNull(store.dao.getChainState(chain))
         assertTrue(bootstrapped.initialPullCompleted)
         assertEquals(verified.headSeq, bootstrapped.verifiedSeq)

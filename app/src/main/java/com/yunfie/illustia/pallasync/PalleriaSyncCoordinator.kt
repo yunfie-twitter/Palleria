@@ -155,6 +155,8 @@ internal data class PallaSyncDeletionWitnessPreview(
     val existingWitnessCount: Int,
 )
 
+internal enum class PallaSyncArchiveRestoreBoundary { SNAPSHOT_INSTALLED, PREFIX_MATERIALIZED }
+
 internal class PalleriaSyncCoordinator(
     client: OkHttpClient = OkHttpClient(),
     context: Context,
@@ -165,6 +167,7 @@ internal class PalleriaSyncCoordinator(
 ) : PallaSyncEventWriter {
     private val appContext = context.applicationContext
     private val scope = coordinatorScope ?: CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var archiveRestoreFault: (PallaSyncArchiveRestoreBoundary) -> Unit = {}
     private val operationMutex = Mutex()
     private val jobLock = Any()
 
@@ -179,6 +182,10 @@ internal class PalleriaSyncCoordinator(
         PallaSyncConsistencyProbe(db, remote, policy, keystore, ::makeCapabilityToken, ::resolvePruneCompaction)
     }
     private val projection = PallaSyncProjection(appContext)
+
+    internal fun setArchiveRestoreFaultForTest(fault: (PallaSyncArchiveRestoreBoundary) -> Unit) {
+        archiveRestoreFault = fault
+    }
     private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
     private val localIntents by lazy { PallaSyncLocalIntents(db, localAuthor, ::orderLocalEvents) }
     private val membership by lazy { PallaSyncMembershipReader(db) }
@@ -1028,7 +1035,9 @@ internal class PalleriaSyncCoordinator(
                     dataZero = cut.getValue("data_zero").jsonPrimitive.content,
                 )
             installExactArchiveSnapshot(state.chainId, checkpoint, verifiedArchiveSnapshots)
+            archiveRestoreFault(PallaSyncArchiveRestoreBoundary.SNAPSHOT_INSTALLED)
             PallaSyncPrefixMaterializer(db, keystore).apply(state.chainId, device, checkpoint)
+            archiveRestoreFault(PallaSyncArchiveRestoreBoundary.PREFIX_MATERIALIZED)
             projection.publish(state.chainId, db)
         }
     }
@@ -1173,6 +1182,39 @@ internal class PalleriaSyncCoordinator(
             return
         }
         if (!current.initialPullCompleted) {
+            // A process can stop after the snapshot transaction commits but before its
+            // authenticated suffix is materialized. Re-selecting the same complete archive
+            // re-verifies its evidence; resume only from the exact installed boundary.
+            if (
+                current.verifiedSeq > 0L && current.verifiedSeq == current.materializedSeq &&
+                current.lastRelaySeq == current.verifiedSeq && current.verifiedHash != null
+            ) {
+                for (compactionId in verifiedArchiveCompactionIds) {
+                    val installed = db.snapshotInstallDao().install(chain, compactionId) ?: continue
+                    if (
+                        installed.status != "installed" || installed.generation != checkpoint.generation ||
+                        installed.coveredThroughSeq != current.verifiedSeq ||
+                        installed.coveredLogHash != current.verifiedHash
+                    ) {
+                        continue
+                    }
+                    val installedCompaction = Json.parseToJsonElement(installed.compactionJson).jsonObject
+                    if (
+                        installedCompaction["log_id"]?.jsonPrimitive?.content != checkpoint.logId ||
+                        installedCompaction["epoch_hash"]?.jsonPrimitive?.content != checkpoint.epochHash
+                    ) {
+                        continue
+                    }
+                    db.snapshotInstallDao().installVerifiedState(
+                        chain,
+                        compactionId,
+                        current.indexRevision,
+                        explicitlyTrustedBootstrap = true,
+                        allowInstalledArchiveReinstall = true,
+                    )
+                    return
+                }
+            }
             // A completely verified recovery archive may bootstrap an interrupted first pull.
             // Do not overwrite an already advanced/partially materialized local prefix here;
             // that state must use ordinary suffix reconciliation instead.
