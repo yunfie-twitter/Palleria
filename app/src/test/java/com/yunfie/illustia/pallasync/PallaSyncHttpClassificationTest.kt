@@ -22,6 +22,17 @@ class PallaSyncHttpClassificationTest :
                 )
         }
 
+        "receipt absence is pending evidence and remains retryable while other 404s remain errors" {
+            val missingReceipt = PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", true)
+            classifyPallaSyncHttpStatus(404, missingReceipt) shouldBe
+                PallaSyncHttpResult.Retryable("RECEIPT_NOT_FOUND", statusCode = 404)
+
+            classifyPallaSyncHttpStatus(404, PallaSyncProblemHint(404, "CHAIN_NOT_FOUND", true)) shouldBe
+                PallaSyncHttpResult.ProtocolError("CHAIN_NOT_FOUND", 404)
+            classifyPallaSyncHttpStatus(404, PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", false)) shouldBe
+                PallaSyncHttpResult.ProtocolError("RECEIPT_NOT_FOUND", 404)
+        }
+
         "rate limits and server failures are retryable while 2xx continues parsing" {
             (classifyPallaSyncHttpStatus(429) is PallaSyncHttpResult.Retryable) shouldBe true
             (classifyPallaSyncHttpStatus(500) is PallaSyncHttpResult.Retryable) shouldBe true

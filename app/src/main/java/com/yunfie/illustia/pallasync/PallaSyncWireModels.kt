@@ -439,6 +439,17 @@ internal fun classifyPallaSyncHttpStatus(
             PallaSyncHttpResult.ProtocolError(problem.code, statusCode)
         }
 
+        // §19.2: a missing receipt is pending acceptance evidence, not proof of rejection.
+        // Keep the exact request/evidence and retry it only after the normal backoff so the
+        // caller can reconcile the accepted object and receipt again.
+        statusCode == 404 && problem?.code == "RECEIPT_NOT_FOUND" && problem.retryable -> {
+            PallaSyncHttpResult.Retryable(
+                problem.code,
+                retryAfterMs = problem.retryAfterMs ?: 0,
+                statusCode = statusCode,
+            )
+        }
+
         statusCode in PALLASYNC_AUTOMATIC_RETRY_STATUSES ||
             (
                 statusCode == HTTP_UNAUTHORIZED &&

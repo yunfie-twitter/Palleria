@@ -146,6 +146,26 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `missing receipt retries after backoff without discarding or blocking the exact evidence request`() {
+        val gate = gate { it }
+        val request =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/$chain/receipts/7?log_id=11111111-1111-4111-8111-111111111111")
+                .get()
+                .build()
+        val hint = PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", true)
+        val retry = checkNotNull(classifyPallaSyncHttpStatus(404, hint))
+
+        gate.observe(request, retry, hint)
+        gate.blockedCode(origin, chain) shouldBe null
+        gate.before(request) shouldBe PallaSyncHttpResult.Retryable("PallaSync retry is deferred", 1000)
+        elapsed += 1000
+        wall += 1000
+        gate.before(request) shouldBe null
+    }
+
+    @Test
     fun `local parse failures do not become server request blockers`() {
         val gate = gate()
         gate.observe(request(), PallaSyncHttpResult.ProtocolError("C_SCHEMA_VIOLATION"))
