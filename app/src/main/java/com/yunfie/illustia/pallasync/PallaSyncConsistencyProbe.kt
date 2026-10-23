@@ -29,10 +29,11 @@ internal class PallaSyncConsistencyProbe(
     suspend fun run(
         base: HttpUrl,
         chainId: String,
+        migrationDestination: Boolean = false,
     ): PallaSyncHttpResult<Unit> {
         val result =
             try {
-                compare(context(base, chainId))
+                compare(context(base, chainId, migrationDestination))
             } catch (failure: ProbeFailure) {
                 failure.result
             } catch (error: IllegalStateException) {
@@ -47,6 +48,7 @@ internal class PallaSyncConsistencyProbe(
     private suspend fun context(
         base: HttpUrl,
         chain: String,
+        migrationDestination: Boolean,
     ): ProbeContext {
         val state = checkNotNull(store.dao.getChainState(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         checkNotNull(state.logId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
@@ -86,14 +88,17 @@ internal class PallaSyncConsistencyProbe(
                 put("parameters_hash", checkNotNull(state.parametersHash) { "C_BOOTSTRAP_TRUST_REQUIRED" })
                 put("epoch_hash", checkNotNull(state.epochHash) { "C_BOOTSTRAP_TRUST_REQUIRED" })
             }.toString()
-        return ProbeContext(base, state, origin, pin, checkpoint, anchor)
+        return ProbeContext(base, state, origin, pin, checkpoint, anchor, migrationDestination)
     }
 
     private suspend fun compare(context: ProbeContext): PallaSyncHttpResult<Unit> {
         val log = readLogHead(context).requireValue()
         val response =
             remote
-                .execute(request(PallaSyncUrls.transparencyHead(context.base, context.chain), context.chain)) {
+                .execute(
+                    request(PallaSyncUrls.transparencyHead(context.base, context.chain), context.chain),
+                    migrationDestination = context.migrationDestination,
+                ) {
                     val bytes = it.pallaSyncBytes()
                     val head = json.parseToJsonElement(PallaSyncCore.observeTransparencyHead(bytes, context.pin)).jsonObject
                     PallaSyncHttpResult.Success(ObservedHead(bytes, head))
@@ -199,7 +204,10 @@ internal class PallaSyncConsistencyProbe(
     ): Boolean = PallaSyncCore.compareLogHeads(log.toString(), head.toString(), context.pin, context.state.generation)
 
     private fun readLogHead(context: ProbeContext): PallaSyncHttpResult<JsonObject> =
-        remote.execute(request(PallaSyncUrls.logHead(context.base, context.chain), context.chain)) {
+        remote.execute(
+            request(PallaSyncUrls.logHead(context.base, context.chain), context.chain),
+            migrationDestination = context.migrationDestination,
+        ) {
             PallaSyncHttpResult.Success(json.parseToJsonElement(PallaSyncCore.validateLogHead(it.pallaSyncBytes())).jsonObject)
         }
 
@@ -266,7 +274,7 @@ internal class PallaSyncConsistencyProbe(
                     pageLimit,
                 )
             val checked =
-                remote.execute(request(url, context.chain)) { response ->
+                remote.execute(request(url, context.chain), migrationDestination = context.migrationDestination) { response ->
                     PallaSyncHttpResult.Success(
                         json
                             .parseToJsonElement(
@@ -444,6 +452,7 @@ internal class PallaSyncConsistencyProbe(
         val pin: String,
         val checkpoint: String,
         val anchor: JsonObject,
+        val migrationDestination: Boolean,
     ) {
         val chain: String get() = state.chainId
         val logId: String get() = checkNotNull(state.logId)

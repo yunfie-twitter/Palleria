@@ -69,6 +69,22 @@ internal class PallaSyncRemoteService(
                 PallaSyncUrls.extractOrigin(request.url) == scope.origin &&
                 chainIdForAuthorization(request.url.pathSegments) == scope.chainId
 
+        internal fun allowsMigrationDestination(
+            request: Request,
+            chainId: String,
+        ): Boolean {
+            if (chainIdForAuthorization(request.url.pathSegments) != chainId) return false
+            val suffix = request.url.encodedPath.removePrefix("/pallasync/v3/chains/$chainId")
+            return when {
+                request.method == "POST" && suffix == "/snapshots/parts" -> true
+                request.method == "PUT" && suffix == "/parameters" -> true
+                request.method == "GET" && suffix == "/log/head" -> true
+                request.method == "GET" && suffix in setOf("/transparency/head", "/transparency/entries") -> true
+                request.method == "POST" && Regex("/devices/[0-9a-f-]{36}/keys/ack").matches(suffix) -> true
+                else -> false
+            }
+        }
+
         fun cancelOrigin(origin: String) {
             calls.filter { PallaSyncUrls.extractOrigin(it.request().url) == origin }.forEach { it.cancel() }
             clients.forEach { reference ->
@@ -208,17 +224,7 @@ internal class PallaSyncRemoteService(
             } else {
                 chainIdForAuthorization(request.url.pathSegments)?.let { chainId ->
                     if (migrationDestination) {
-                        val prefix = "/pallasync/v3/chains/$chainId"
-                        val suffix = request.url.encodedPath.removePrefix(prefix)
-                        val allowed =
-                            when {
-                                request.method == "POST" && suffix == "/snapshots/parts" -> true
-                                request.method == "PUT" && suffix == "/parameters" -> true
-                                request.method == "GET" && suffix in setOf("/transparency/head", "/transparency/entries") -> true
-                                request.method == "POST" && Regex("/devices/[0-9a-f-]{36}/keys/ack").matches(suffix) -> true
-                                else -> false
-                            }
-                        check(allowed) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                        check(allowsMigrationDestination(request, chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
                         policy.requireMigrationDestination(requestOrigin)
                     } else {
                         policy.requireChainOrigin(chainId, requestOrigin)

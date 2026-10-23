@@ -3368,6 +3368,29 @@ internal class PalleriaSyncCoordinator(
                 targetKeys.epoch == targetEpoch,
         ) { "C_ROLLBACK_DETECTED" }
         outboxRebase.resumeReseed(chain, targetKeys, sourceKeys, sourceAuthority)
+        // §17.6 requires a target client to bootstrap successfully before this client
+        // changes its selected origin or resumes writes. Seed the target transparency
+        // verifier only from the complete signed suffix already checked at commit, then
+        // authenticate a fresh device-token GET against the selected target origin.
+        policy.requireCurrent(journal.targetOrigin)
+        val targetBase =
+            when (val normalized = PallaSyncUrls.normalize(journal.targetOrigin)) {
+                is PallaSyncHttpResult.Success -> normalized.value
+                else -> error("C_BOOTSTRAP_TRUST_REQUIRED")
+            }
+        check(PallaSyncUrls.extractOrigin(targetBase) == journal.targetOrigin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+        val verifiedTargetHead = Json.parseToJsonElement(checkNotNull(journal.transparencyHeadJson)).jsonObject
+        val anchorIndex = anchor.getValue("index").jsonPrimitive.long
+        check(
+            verifiedTargetHead.getValue("type").jsonPrimitive.content == "PALLASYNC-TRANSPARENCY-HEAD-v3" &&
+                verifiedTargetHead.getValue("chain_id").jsonPrimitive.content == chain &&
+                verifiedTargetHead.getValue("log_id").jsonPrimitive.content == targetPin.getValue("log_id").jsonPrimitive.content &&
+                verifiedTargetHead.getValue("transparency_id").jsonPrimitive.content == anchor.getValue("transparency_id").jsonPrimitive.content &&
+                verifiedTargetHead.getValue("entry_index").jsonPrimitive.long == anchorIndex &&
+                verifiedTargetHead.getValue("transparency_hash").jsonPrimitive.content == anchor.getValue("hash").jsonPrimitive.content,
+        ) { "C_TRANSPARENCY_INVALID" }
+        check(keystore.retainVerifiedTransparencyHead(chain, verifiedTargetHead)) { "C_LOCAL_STORAGE_FULL" }
+        requireSnapshotResult(consistencyProbe.run(targetBase, chain, migrationDestination = true))
         rebaseFault(PallaSyncOutboxRebase.Boundary.RESEED_OUTBOX_REBASED)
         policy.commitAuthenticatedMigrationOrigin(
             chain,

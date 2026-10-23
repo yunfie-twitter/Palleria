@@ -61,6 +61,39 @@ class PallaSyncRemoteServicePathTest {
         PallaSyncRemoteService.allowsHistoricalSourceRead(mutation, scope) shouldBe false
     }
 
+    @Test
+    fun `migration destination allows authenticated log-head bootstrap but no data log reads or writes`() {
+        val targetHead =
+            Request
+                .Builder()
+                .url("https://target.example/pallasync/v3/chains/$CHAIN_ID/log/head")
+                .get()
+                .build()
+        val targetLog =
+            Request
+                .Builder()
+                .url("https://target.example/pallasync/v3/chains/$CHAIN_ID/log?after=0&limit=1")
+                .get()
+                .build()
+        val targetWrite =
+            Request
+                .Builder()
+                .url("https://target.example/pallasync/v3/chains/$CHAIN_ID/records")
+                .post("{}".toRequestBody())
+                .build()
+        val otherChain =
+            Request
+                .Builder()
+                .url("https://target.example/pallasync/v3/chains/other/log/head")
+                .get()
+                .build()
+
+        PallaSyncRemoteService.allowsMigrationDestination(targetHead, CHAIN_ID) shouldBe true
+        PallaSyncRemoteService.allowsMigrationDestination(targetLog, CHAIN_ID) shouldBe false
+        PallaSyncRemoteService.allowsMigrationDestination(targetWrite, CHAIN_ID) shouldBe false
+        PallaSyncRemoteService.allowsMigrationDestination(otherChain, CHAIN_ID) shouldBe false
+    }
+
     private companion object {
         const val CHAIN_ID = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
     }

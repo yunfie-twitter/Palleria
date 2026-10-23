@@ -645,7 +645,10 @@ class PallaSyncRelayInteropTest {
                     val requestedFault = args.getString("rebase_fault")?.takeIf { it.isNotEmpty() }
                     if (requestedFault != null) {
                         val firstCommit = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
-                        assertTrue("Reseed cutover fault was not injected: $requestedFault", faultInjected)
+                        assertTrue(
+                            "Reseed cutover fault was not injected: $requestedFault; cutover failure=${firstCommit.exceptionOrNull()?.stackTraceToString()}",
+                            faultInjected,
+                        )
                         assertTrue("Reseed cutover fault did not interrupt commit", firstCommit.isFailure)
                         val sourceAuthority =
                             Json
