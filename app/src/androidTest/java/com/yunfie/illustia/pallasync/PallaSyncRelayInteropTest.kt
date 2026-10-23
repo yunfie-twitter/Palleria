@@ -732,6 +732,9 @@ class PallaSyncRelayInteropTest {
                         keys,
                         store,
                         context,
+                        client,
+                        policy,
+                        selected,
                         phrase,
                         state.chainId,
                         requestedFault != null,
@@ -1248,6 +1251,9 @@ class PallaSyncRelayInteropTest {
         keys: PallaSyncKeystore,
         store: PallaSyncLocalStore,
         context: Context,
+        client: OkHttpClient,
+        policy: PallaSyncPolicyGate,
+        selected: String,
         phrase: String,
         chain: String,
         interrupt: Boolean,
@@ -1279,16 +1285,71 @@ class PallaSyncRelayInteropTest {
         }
         val sources = store.dao.queuedBatch(chain, PALLASYNC_PAGE_SIZE)
         assertEquals(2, sources.size)
-        // Mirror the durable state written by reconcileUploadOutcome for a §19.2
-        // per-item EPOCH_STALE rejection. The subsequent verified epoch cut must
-        // rebuild these unaccepted intents rather than retry their old signatures.
+        val armRequest =
+            Request
+                .Builder()
+                .url("$selected/__test__/arm-epoch-stale")
+                .header("X-Test-Chain-Id", chain)
+                .post(ByteArray(0).toRequestBody(null))
+                .build()
+        val responseMetadata =
+            client.newCall(armRequest).execute().use { response ->
+                assertEquals(200, response.code)
+                Json.parseToJsonElement(checkNotNull(response.body).string()).jsonObject.getValue("metadata").jsonObject
+            }
+        val pin =
+            buildJsonObject {
+                put("origin", PallaSyncUrls.extractOrigin(selected.toHttpUrl()))
+                put("chain_id", chain)
+                put("public_key", policy.trustedRelayKey(PallaSyncUrls.extractOrigin(selected.toHttpUrl())))
+                put("log_id", checkNotNull(store.dao.getChainState(chain)).logId)
+            }
+        assertEquals(responseMetadata.getValue("log_id").jsonPrimitive.content, pin.getValue("log_id").jsonPrimitive.content)
+        val protocolResponse =
+            buildJsonObject {
+                put("accepted", JsonArray(emptyList()))
+                put(
+                    "rejected",
+                    JsonArray(
+                        sources.map { source ->
+                            buildJsonObject {
+                                put("record_id", checkNotNull(source.recordId))
+                                put("status", 409)
+                                put("code", "EPOCH_STALE")
+                                put("retryable", true)
+                            }
+                        },
+                    ),
+                )
+                put("upload_receipts", JsonArray(emptyList()))
+                put("generation", responseMetadata.getValue("generation"))
+                put("log_id", responseMetadata.getValue("log_id"))
+                put("head_seq", responseMetadata.getValue("head_seq"))
+                put("head_hash", responseMetadata.getValue("head_hash"))
+            }
+        PallaSyncCore.validateRecordUpload(
+            protocolResponse.toString().toByteArray(),
+            JsonArray(sources.map { Json.parseToJsonElement(it.eventJson) }).toString(),
+            pin.toString(),
+        )
+        val staleSyncSucceeded = coordinator.syncNow()
+        assertFalse(
+            "Injected §10.6 per-item EPOCH_STALE response must stop upload processing: ${PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")}",
+            staleSyncSucceeded,
+        )
         sources.forEach { source ->
-            store.dao.updateOutboxEvent(source.copy(status = "awaiting_reconciliation:EPOCH_STALE"))
             assertEquals(
+                "Response-to-Room recovery failed; sync log: ${PalleriaSyncCoordinator.syncLogs.value.joinToString(" | ")}",
                 "awaiting_reconciliation:EPOCH_STALE",
                 store.dao.outboxEvent(source.id)?.status,
             )
+            assertEquals(source.eventJson, store.dao.outboxEvent(source.id)?.eventJson)
         }
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_epoch_stale_response", "passed") },
+        )
+        println("pallasync_epoch_stale_response=passed")
         val lastSequence = checkNotNull(store.dao.getChainState(chain)).authorSeq
         val rotated = coordinator.rotateEpoch(phrase)
         if (interrupt) {

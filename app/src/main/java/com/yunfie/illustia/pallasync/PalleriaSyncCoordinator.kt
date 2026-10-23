@@ -7732,7 +7732,17 @@ internal class PalleriaSyncCoordinator(
     ): PallaSyncHttpResult<Unit> {
         retainUploadEvidence(outcome, chain, PallaSyncUrls.extractOrigin(base))
         val proof = consistencyProbe.run(base, chain)
-        if (proof !is PallaSyncHttpResult.Success) return proof
+        if (proof !is PallaSyncHttpResult.Success) {
+            val reason =
+                when (proof) {
+                    is PallaSyncHttpResult.ProtocolError -> proof.message
+                    is PallaSyncHttpResult.Retryable -> proof.message
+                    PallaSyncHttpResult.Gone -> "CHAIN_DELETED"
+                    is PallaSyncHttpResult.Success -> "unexpected success result"
+                }
+            log("Upload consistency proof failed: $reason")
+            return proof
+        }
         return try {
             verifyUploadInclusions(outcome, chain, PallaSyncUrls.extractOrigin(base))
             PallaSyncHttpResult.Success(Unit)

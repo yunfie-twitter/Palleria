@@ -53,6 +53,42 @@ class PallaSyncAttestationJniTest :
                 PallaSyncCore.validateRecordUpload(body.replace("\"generation\":0", "\"generation\":-0").toByteArray(), "[$record]", pin)
             }.message shouldBe "C_SCHEMA_VIOLATION"
         }
+        "per-item EPOCH_STALE rejection is accepted only as the exact normative result" {
+            val record = Json.parseToJsonElement(vector("record")).jsonObject
+            val receipt = Json.parseToJsonElement(vector("receipt")).jsonObject
+            val pin =
+                buildJsonObject {
+                    put("origin", "https://relay.example.com")
+                    put("chain_id", record.getValue("chain_id"))
+                    put("public_key", "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ")
+                    put("log_id", receipt.getValue("log_id"))
+                }.toString()
+            val response =
+                buildJsonObject {
+                    put("accepted", kotlinx.serialization.json.JsonArray(emptyList()))
+                    put(
+                        "rejected",
+                        kotlinx.serialization.json.buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("record_id", record.getValue("record_id"))
+                                    put("status", 409)
+                                    put("code", "EPOCH_STALE")
+                                    put("retryable", true)
+                                },
+                            )
+                        },
+                    )
+                    put("upload_receipts", kotlinx.serialization.json.JsonArray(emptyList()))
+                    put("generation", record.getValue("generation"))
+                    put("log_id", receipt.getValue("log_id"))
+                    put("head_seq", 7)
+                    put("head_hash", receipt.getValue("resulting_head_hash"))
+                }
+            Json.parseToJsonElement(
+                PallaSyncCore.validateRecordUpload(response.toString().toByteArray(), "[$record]", pin),
+            ) shouldBe response
+        }
         "export attestation verifier rejects unsigned receipt and transparency evidence" {
             val pin =
                 """{"origin":"https://relay.example.com","chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","public_key":"T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy-ZcQ","log_id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc"}"""
