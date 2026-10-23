@@ -23,6 +23,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,8 @@ import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -271,27 +274,41 @@ internal fun IllustDetailInfo(
                                         modifier = Modifier.padding(horizontal = 12.dp),
                                         contentPadding = PaddingValues(16.dp),
                                     ) {
-                                        val annotatedCaption =
-                                            remember(illust.caption) {
+                                        val annotatedCaption by produceState<AnnotatedString?>(
+                                            initialValue = null,
+                                            key1 = illust.caption,
+                                        ) {
+                                            value =
                                                 if (illust.caption.isBlank()) {
                                                     null
                                                 } else {
-                                                    try {
-                                                        AnnotatedString.fromHtml(illust.caption)
-                                                    } catch (_: Exception) {
-                                                        AnnotatedString(illust.caption)
+                                                    withContext(Dispatchers.Default) {
+                                                        try {
+                                                            AnnotatedString.fromHtml(illust.caption)
+                                                        } catch (_: Exception) {
+                                                            AnnotatedString(illust.caption)
+                                                        }
                                                     }
                                                 }
-                                            }
+                                        }
                                         SelectionContainer {
-                                            Text(
-                                                text =
-                                                    annotatedCaption
-                                                        ?: AnnotatedString(stringResource(R.string.detail_no_caption)),
-                                                color = MiuixTheme.colorScheme.onBackground,
-                                                style = MiuixTheme.textStyles.body1,
-                                                lineHeight = 23.sp,
-                                            )
+                                            if (illust.caption.isBlank()) {
+                                                Text(
+                                                    text = stringResource(R.string.detail_no_caption),
+                                                    color = MiuixTheme.colorScheme.onBackground,
+                                                    style = MiuixTheme.textStyles.body1,
+                                                    lineHeight = 23.sp,
+                                                )
+                                            } else {
+                                                annotatedCaption?.let { caption ->
+                                                    Text(
+                                                        text = caption,
+                                                        color = MiuixTheme.colorScheme.onBackground,
+                                                        style = MiuixTheme.textStyles.body1,
+                                                        lineHeight = 23.sp,
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }

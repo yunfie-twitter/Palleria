@@ -640,6 +640,9 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun applyTaskSnapshotBlur(isEnteringBackground: Boolean) {
+        // Finishing this activity removes its task snapshot; applying a full-window blur
+        // during the exit transition only adds GPU work to the Back path.
+        if (isFinishing && isEnteringBackground) return
         val settings = viewModel.uiState.value.settings
         if (settings.secureWindow) return
 

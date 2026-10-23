@@ -412,17 +412,36 @@ class IllustiaRepository(
     suspend fun illustComments(
         illustId: Long,
         offset: Int? = null,
-    ): CommentResponse = withSessionRetry { session -> apiClient.illustComments(session, illustId, offset) }
+        forceRefresh: Boolean = false,
+    ): CommentResponse =
+        withApiCache("comments:illust:$illustId:${offset ?: 0}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
+            withSessionRetry { session -> apiClient.illustComments(session, illustId, offset) }
+        }
 
     suspend fun illustCommentReplies(
         commentId: Long,
         offset: Int? = null,
-    ): CommentResponse = withSessionRetry { session -> apiClient.illustCommentReplies(session, commentId, offset) }
+        forceRefresh: Boolean = false,
+    ): CommentResponse =
+        withApiCache("comments:illust_replies:$commentId:${offset ?: 0}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
+            withSessionRetry { session -> apiClient.illustCommentReplies(session, commentId, offset) }
+        }
 
-    suspend fun novelComments(novelId: Long): CommentResponse = withSessionRetry { session -> apiClient.novelComments(session, novelId) }
+    suspend fun novelComments(
+        novelId: Long,
+        forceRefresh: Boolean = false,
+    ): CommentResponse =
+        withApiCache("comments:novel:$novelId", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
+            withSessionRetry { session -> apiClient.novelComments(session, novelId) }
+        }
 
-    suspend fun novelCommentReplies(commentId: Long): CommentResponse =
-        withSessionRetry { session -> apiClient.novelCommentReplies(session, commentId) }
+    suspend fun novelCommentReplies(
+        commentId: Long,
+        forceRefresh: Boolean = false,
+    ): CommentResponse =
+        withApiCache("comments:novel_replies:$commentId", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
+            withSessionRetry { session -> apiClient.novelCommentReplies(session, commentId) }
+        }
 
     suspend fun nextCommentPage(nextUrl: String): CommentResponse =
         withSessionRetry { session -> apiClient.nextCommentPage(session, nextUrl) }
@@ -433,6 +452,8 @@ class IllustiaRepository(
         parentCommentId: Long? = null,
     ) {
         withSessionRetry { session -> apiClient.addIllustComment(session, illustId, comment, parentCommentId) }
+        apiCache.remove("comments:illust:$illustId:0")
+        parentCommentId?.let { apiCache.remove("comments:illust_replies:$it:0") }
     }
 
     suspend fun addIllustStampComment(
@@ -443,10 +464,14 @@ class IllustiaRepository(
         withSessionRetry { session ->
             apiClient.addIllustStampComment(session, illustId, stampId, parentCommentId)
         }
+        apiCache.remove("comments:illust:$illustId:0")
+        parentCommentId?.let { apiCache.remove("comments:illust_replies:$it:0") }
     }
 
     suspend fun deleteIllustComment(commentId: Long) {
         withSessionRetry { session -> apiClient.deleteIllustComment(session, commentId) }
+        apiCache.removeByPrefix("comments:illust:")
+        apiCache.removeByPrefix("comments:illust_replies:")
     }
 
     suspend fun isAiContentVisible(): Boolean = withSessionRetry { session -> apiClient.isAiContentVisible(session) }
@@ -461,6 +486,8 @@ class IllustiaRepository(
         parentCommentId: Long? = null,
     ) {
         withSessionRetry { session -> apiClient.addNovelComment(session, novelId, comment, parentCommentId) }
+        apiCache.remove("comments:novel:$novelId")
+        parentCommentId?.let { apiCache.remove("comments:novel_replies:$it") }
     }
 
     suspend fun watchlistMangaAdd(seriesId: Long) {

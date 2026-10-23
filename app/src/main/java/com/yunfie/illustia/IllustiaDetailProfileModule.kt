@@ -76,18 +76,11 @@ abstract class IllustiaDetailProfileModule(
                             }
                         kotlinx.coroutines.coroutineScope {
                             val relatedDeferred = async { repository.relatedIllusts(illust.id) }
-                            val firstCommentDeferred =
-                                async {
-                                    runCatching {
-                                        repository.illustComments(illust.id).comments.firstOrNull()
-                                    }.getOrNull()
-                                }
                             val userDeferred =
                                 fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
                                     async { repository.userDetail(artistId) }
                                 }
                             val related = relatedDeferred.await()
-                            val firstComment = firstCommentDeferred.await()
                             val user = userDeferred?.await()
                             _uiState.update {
                                 if (it.selectedIllust?.id != illust.id) {
@@ -108,7 +101,7 @@ abstract class IllustiaDetailProfileModule(
                                         selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                         selectedIllustUser = user,
-                                        selectedIllustFirstComment = firstComment,
+                                        selectedIllustFirstComment = null,
                                     )
                                 }
                             }
@@ -181,18 +174,11 @@ abstract class IllustiaDetailProfileModule(
                     val fullIllust = repository.illustDetail(illustId)
                     kotlinx.coroutines.coroutineScope {
                         val relatedDeferred = async { repository.relatedIllusts(illustId) }
-                        val firstCommentDeferred =
-                            async {
-                                runCatching {
-                                    repository.illustComments(illustId).comments.firstOrNull()
-                                }.getOrNull()
-                            }
                         val userDeferred =
                             fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
                                 async { repository.userDetail(artistId) }
                             }
                         val related = relatedDeferred.await()
-                        val firstComment = firstCommentDeferred.await()
                         val user = userDeferred?.await()
                         _uiState.update {
                             if (it.selectedIllust?.id != illustId) {
@@ -202,7 +188,7 @@ abstract class IllustiaDetailProfileModule(
                                     selectedIllust = fullIllust,
                                     relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                     selectedIllustUser = user,
-                                    selectedIllustFirstComment = firstComment,
+                                    selectedIllustFirstComment = null,
                                 )
                             }
                         }
