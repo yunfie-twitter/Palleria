@@ -54,6 +54,7 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
@@ -146,6 +147,18 @@ fun RankingScreen(
 
     val scheme = MiuixTheme.colorScheme
     val scrollBehavior = MiuixScrollBehavior()
+
+    LaunchedEffect(viewModel) {
+        viewModel.tabScrollToTopRequests.collect { tab ->
+            if (tab == AppTab.Ranking) {
+                val currentMode = modes.getOrNull(pagerState.currentPage)
+                if (currentMode != null) {
+                    viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+                }
+            }
+        }
+    }
+
     ScrollBlurScaffold(
         modifier =
             Modifier
@@ -198,9 +211,17 @@ fun RankingScreen(
                     val onTabSelected: (Int) -> Unit =
                         remember(modes) {
                             { index ->
-                                if (modes.getOrNull(index) != null) {
-                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
-                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                val targetMode = modes.getOrNull(index)
+                                if (targetMode != null) {
+                                    if (index != pagerState.currentPage) {
+                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                    } else {
+                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                                        coroutineScope.launch {
+                                            viewModel.rankingGridState(targetMode).smoothScrollToTop(scrollBehavior)
+                                        }
+                                    }
                                 }
                             }
                         }

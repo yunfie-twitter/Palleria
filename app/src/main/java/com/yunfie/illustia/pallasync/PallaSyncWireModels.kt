@@ -1,5 +1,7 @@
 package com.yunfie.illustia.pallasync
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -9,6 +11,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okio.ByteString.Companion.decodeBase64
+import java.util.UUID
 
 internal const val PALLASYNC_PROTOCOL_VERSION = "3.0"
 internal const val PALLASYNC_LEGACY_PROTOCOL_VERSION = "2.1"
@@ -17,17 +21,98 @@ internal const val PALLASYNC_MEDIA_TYPE = "application/vnd.palleria.sync.v3+json
 internal const val PALLASYNC_PAGE_SIZE = 200
 internal const val PALLASYNC_NEXT_SEQ_HEADER = "X-PallaSync-Next-Seq"
 internal const val PALLASYNC_HAS_MORE_HEADER = "X-PallaSync-Has-More"
+private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
+private const val ED25519_PUBLIC_KEY_BYTES = 32
+internal val PALLASYNC_HARD_LIMITS = PallaSyncLimits(8_388_608, 64, 1_000, 128)
 
 @Serializable
 internal data class PallaSyncHealth(
-    val status: String = "ok",
-    val protocol: String = PALLASYNC_PROTOCOL_IDENTIFIER,
-    @SerialName("protocol_version") val protocolVersion: String = PALLASYNC_PROTOCOL_VERSION,
-    @SerialName("relay_origin") val relayOrigin: String = "",
-    @SerialName("server_time_ms") val serverTimeMs: Long = 0L,
-    @SerialName("relay_public_key") val relayPublicKey: String = "",
-    @SerialName("relay_key_id") val relayKeyId: String = "",
+    val protocol: String,
+    @SerialName("relay_origin") val relayOrigin: String,
+    @SerialName("server_time_ms") val serverTimeMs: Long,
+    @SerialName("durability_tier") val durabilityTier: String,
+    val limits: PallaSyncLimits,
+    @SerialName("shutdown_at_ms") val shutdownAtMs: Long?,
+    @SerialName("migration_origin") val migrationOrigin: String?,
+    @SerialName("relay_public_key") val relayPublicKey: String,
+    @SerialName("relay_key_id") val relayKeyId: String,
 )
+
+@Serializable
+internal data class PallaSyncLimits(
+    @SerialName("max_request_bytes") val maxRequestBytes: Int,
+    @SerialName("max_records_per_upload") val maxRecordsPerUpload: Int,
+    @SerialName("page_limit") val pageLimit: Int,
+    @SerialName("max_devices") val maxDevices: Int,
+)
+
+internal fun parseHealthResponseBody(
+    body: String,
+    selectedOrigin: String,
+): PallaSyncHttpResult<PallaSyncHealth> {
+    val health =
+        runCatching { Json.decodeFromString<PallaSyncHealth>(body) }.getOrNull()
+            ?: return PallaSyncHttpResult.ProtocolError("PallaSync health response was invalid")
+    return if (validHealthIdentity(health, selectedOrigin) && validHealthTiming(health) && validHealthConfiguration(health)) {
+        PallaSyncHttpResult.Success(health)
+    } else {
+        PallaSyncHttpResult.ProtocolError("PallaSync health response did not match the selected v3 relay")
+    }
+}
+
+private fun validHealthIdentity(
+    health: PallaSyncHealth,
+    selectedOrigin: String,
+): Boolean =
+    health.protocol == PALLASYNC_PROTOCOL_IDENTIFIER && health.relayOrigin == selectedOrigin &&
+        validRelayKeyFingerprint(health.relayPublicKey, health.relayKeyId)
+
+private fun validRelayKeyFingerprint(
+    publicKey: String,
+    keyId: String,
+): Boolean {
+    val key = publicKey.decodeBase64() ?: return false
+    return key.size == ED25519_PUBLIC_KEY_BYTES && key.base64Url().trimEnd('=') == publicKey &&
+        key.sha256().base64Url().trimEnd('=') == keyId
+}
+
+private fun validHealthTiming(health: PallaSyncHealth): Boolean =
+    health.serverTimeMs in 0..MAX_SAFE_INTEGER && health.shutdownAtMs?.let { it in 0..MAX_SAFE_INTEGER } != false
+
+private fun validHealthConfiguration(health: PallaSyncHealth): Boolean {
+    val tier = health.durabilityTier in setOf("single-durable", "replicated-durable", "backup-durable")
+    val limits =
+        listOf(
+            health.limits.maxRequestBytes to PALLASYNC_HARD_LIMITS.maxRequestBytes,
+            health.limits.maxRecordsPerUpload to PALLASYNC_HARD_LIMITS.maxRecordsPerUpload,
+            health.limits.pageLimit to PALLASYNC_HARD_LIMITS.pageLimit,
+            health.limits.maxDevices to PALLASYNC_HARD_LIMITS.maxDevices,
+        ).all { (value, maximum) -> value in 1..maximum }
+    val migration =
+        health.migrationOrigin?.let {
+            val normalized = PallaSyncUrls.normalize(it)
+            normalized is PallaSyncHttpResult.Success && PallaSyncUrls.extractOrigin(normalized.value) == it
+        } != false
+    return tier && limits && migration
+}
+
+/** §3.4 and §7.1 require UUIDv4, including encrypted records generated locally. */
+internal fun newPallaSyncRecordId(): String = UUID.randomUUID().toString()
+
+internal fun recordUploadBatchSize(
+    records: List<String>,
+    limits: PallaSyncLimits,
+): Int {
+    var bytes = "{\"records\":[]}".toByteArray(Charsets.UTF_8).size
+    var count = 0
+    for (record in records.take(limits.maxRecordsPerUpload)) {
+        val additional = record.toByteArray(Charsets.UTF_8).size + if (count == 0) 0 else 1
+        if (bytes + additional > limits.maxRequestBytes) break
+        bytes += additional
+        count++
+    }
+    return count
+}
 
 @Serializable
 internal data class PallaSyncWireRecord(
@@ -47,20 +132,26 @@ internal data class PallaSyncWireRecord(
 }
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 internal data class PallaSyncInnerRecord(
     val collection: String,
     @SerialName("device_seq") val deviceSeq: Long,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("prev_record_hash") val prevRecordHash: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val operations: List<PallaSyncOperation> = emptyList(),
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 internal data class PallaSyncOperation(
     @SerialName("entity_id") val entityId: String,
     val operation: String, // "upsert", "delete", "clear"
     val lamport: Long,
     @SerialName("created_at_ms") val createdAtMs: Long,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val context: JsonObject = JsonObject(emptyMap()),
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val body: JsonObject = JsonObject(emptyMap()),
 )
 
@@ -209,40 +300,37 @@ internal data class PallaSyncMnemonicEnrollmentBundle(
 )
 
 @Serializable
-internal data class PallaSyncFetchDevicesResponse(
-    val devices: List<PallaSyncWireDevice> = emptyList(),
-    @SerialName("next_cursor") val nextCursor: String? = null,
+internal data class PallaSyncRegistryEntry(
+    @SerialName("device_record") val deviceRecord: JsonObject,
+    val status: String,
+    @SerialName("enrolled_seq") val enrolledSeq: Long,
+    @SerialName("revoked_seq") val revokedSeq: Long?,
 )
 
-@Suppress("ReturnCount")
-internal fun parseDeviceIdsResponseBody(
+@Serializable
+internal data class PallaSyncFetchDevicesResponse(
+    val items: List<PallaSyncRegistryEntry>,
+    @SerialName("next_cursor") val nextCursor: String?,
+    @SerialName("has_more") val hasMore: Boolean,
+    @SerialName("log_id") val logId: String,
+    val generation: Long,
+    @SerialName("head_seq") val headSeq: Long,
+)
+
+internal fun parseDevicesResponseBody(
     json: Json,
     body: String,
-): PallaSyncHttpResult<List<String>> {
-    val element =
-        runCatching { json.parseToJsonElement(body) }.getOrNull()
-            ?: return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
-
-    val array =
-        when (element) {
-            is JsonObject -> {
-                if (!element.containsKey("devices")) {
-                    return PallaSyncHttpResult.ProtocolError("Device response devices field was missing")
-                }
-                element["devices"] as? JsonArray
-                    ?: return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
-            }
-
-            is JsonArray -> {
-                element
-            }
-
-            else -> {
-                return PallaSyncHttpResult.ProtocolError("Device response was not valid JSON")
-            }
-        }
-
-    return PallaSyncHttpResult.Success(array.map { it.toString() })
+): PallaSyncHttpResult<PallaSyncFetchDevicesResponse> {
+    val page =
+        runCatching { json.decodeFromString<PallaSyncFetchDevicesResponse>(body) }.getOrNull()
+            ?: return PallaSyncHttpResult.ProtocolError("Device response was not a v3 registry page")
+    return if (page.hasMore != (page.nextCursor != null) ||
+        page.items.any { it.status !in setOf("active", "pending_keys", "revoked") || it.enrolledSeq < 1 }
+    ) {
+        PallaSyncHttpResult.ProtocolError("Device response contained invalid registry state")
+    } else {
+        PallaSyncHttpResult.Success(page)
+    }
 }
 
 @Serializable
@@ -264,8 +352,8 @@ internal data class PallaSyncLogEntry(
 
 @Serializable
 internal data class PallaSyncPostRecordsResponse(
-    val accepted: List<PallaSyncAcceptedRecord> = emptyList(),
-    val rejected: List<PallaSyncRejectedRecord> = emptyList(),
+    val accepted: List<PallaSyncAcceptedRecord>,
+    val rejected: List<PallaSyncRejectedRecord>,
     @SerialName("log_id") val logId: String? = null,
     @SerialName("head_seq") val headSeq: Long? = null,
     @SerialName("head_hash") val headHash: String? = null,
@@ -274,16 +362,37 @@ internal data class PallaSyncPostRecordsResponse(
 @Serializable
 internal data class PallaSyncAcceptedRecord(
     @SerialName("record_id") val recordId: String,
-    val duplicate: Boolean = false,
+    val duplicate: Boolean,
+    val receipt: PallaSyncLogEntry,
 )
 
 @Serializable
 internal data class PallaSyncRejectedRecord(
     @SerialName("record_id") val recordId: String,
-    val status: Int = 400,
-    val code: String = "",
-    val retryable: Boolean = false,
+    val status: Int,
+    val code: String,
+    val retryable: Boolean,
 )
+
+/** §10.6: HTTP 200 is a per-item result; missing IDs never imply acceptance. */
+internal fun parseRecordUploadResponseBody(
+    json: Json,
+    body: String,
+    submitted: Map<String, JsonObject>,
+): PallaSyncHttpResult<PallaSyncPostRecordsResponse> {
+    val result =
+        runCatching { json.decodeFromString<PallaSyncPostRecordsResponse>(body) }.getOrNull()
+            ?: return PallaSyncHttpResult.ProtocolError("Record upload response was invalid")
+    val ids = result.accepted.map { it.recordId } + result.rejected.map { it.recordId }
+    val coverageMatches = ids.size == submitted.size && ids.toSet() == submitted.keys
+    return if (!coverageMatches ||
+        result.accepted.any { it.receipt.kind != "record" || it.receipt.payloadObject != submitted[it.recordId] }
+    ) {
+        PallaSyncHttpResult.ProtocolError("Record upload response did not account for every submitted record")
+    } else {
+        PallaSyncHttpResult.Success(result)
+    }
+}
 
 internal data class PallaSyncRecordsPage(
     val records: List<PallaSyncPageRecord>,
@@ -406,11 +515,14 @@ internal object PallaSyncUrls {
         val parsed =
             trimmed.trimEnd('/').toHttpUrlOrNull()
                 ?: return PallaSyncHttpResult.ProtocolError("Invalid PallaSync server URL")
-        if (parsed.scheme != "https" && parsed.scheme != "http") {
-            return PallaSyncHttpResult.ProtocolError("PallaSync server URL must use HTTP or HTTPS")
+        if (parsed.scheme != "https") {
+            return PallaSyncHttpResult.ProtocolError("PallaSync server URL must use HTTPS")
         }
         if (parsed.username.isNotEmpty() || parsed.password.isNotEmpty()) {
             return PallaSyncHttpResult.ProtocolError("PallaSync server URL must not contain credentials")
+        }
+        if (parsed.encodedPath != "/") {
+            return PallaSyncHttpResult.ProtocolError("PallaSync server URL must be an origin without an API path")
         }
         return PallaSyncHttpResult.Success(parsed)
     }
@@ -439,7 +551,14 @@ internal object PallaSyncUrls {
     fun devices(
         baseUrl: HttpUrl,
         chainId: String,
-    ): HttpUrl = endpoint(baseUrl, "chains", chainId, "devices")
+        cursor: String? = null,
+        limit: Int = PALLASYNC_PAGE_SIZE,
+    ): HttpUrl =
+        endpoint(baseUrl, "chains", chainId, "devices")
+            .newBuilder()
+            .addQueryParameter("limit", limit.toString())
+            .apply { if (cursor != null) addQueryParameter("cursor", cursor) }
+            .build()
 
     fun enrollDevice(
         baseUrl: HttpUrl,

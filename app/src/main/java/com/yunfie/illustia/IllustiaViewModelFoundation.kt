@@ -278,6 +278,7 @@ abstract class IllustiaViewModelFoundation(
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val userNavigationRequests: SharedFlow<Long> = _userNavigationRequests
+    internal val tabScrollToTopRequests = MutableSharedFlow<AppTab>(extraBufferCapacity = 16)
     val appUpdaterRepository: AppUpdaterRepository by lazy {
         AppUpdaterRepository(
             context = getApplication(),

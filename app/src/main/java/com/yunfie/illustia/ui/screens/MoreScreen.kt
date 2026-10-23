@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.PixivImage
@@ -87,6 +89,13 @@ fun MoreScreen(
     val performHaptic = rememberHapticFeedbackAction()
 
     val scrollBehavior = MiuixScrollBehavior()
+    LaunchedEffect(viewModel) {
+        viewModel.tabScrollToTopRequests.collect { tab ->
+            if (tab == AppTab.More) {
+                listState.smoothScrollToTop(scrollBehavior)
+            }
+        }
+    }
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {

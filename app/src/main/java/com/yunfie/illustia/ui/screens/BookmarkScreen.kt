@@ -34,6 +34,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
@@ -155,6 +156,22 @@ fun BookmarkScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
     val performHaptic = rememberHapticFeedbackAction()
+
+    LaunchedEffect(viewModel) {
+        viewModel.tabScrollToTopRequests.collect { tab ->
+            if (tab == AppTab.Bookmarks) {
+                val targetState =
+                    when (pagerState.currentPage) {
+                        0 -> viewModel.bookmarkTimelineGridState
+                        1 -> viewModel.bookmarkMainGridState
+                        2 -> viewModel.bookmarkWatchlistGridState
+                        3 -> viewModel.bookmarkFollowingGridState
+                        else -> null
+                    }
+                targetState?.smoothScrollToTop(scrollBehavior)
+            }
+        }
+    }
 
     ScrollBlurScaffold(
         modifier =
@@ -357,8 +374,21 @@ fun BookmarkScreen(
                         onSelect = { index ->
                             if (index != selectedTopTab) {
                                 performHaptic(AppHapticEffect.Toggle)
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            } else {
+                                performHaptic(AppHapticEffect.Click)
+                                coroutineScope.launch {
+                                    val targetState =
+                                        when (index) {
+                                            0 -> viewModel.bookmarkTimelineGridState
+                                            1 -> viewModel.bookmarkMainGridState
+                                            2 -> viewModel.bookmarkWatchlistGridState
+                                            3 -> viewModel.bookmarkFollowingGridState
+                                            else -> null
+                                        }
+                                    targetState?.smoothScrollToTop(scrollBehavior)
+                                }
                             }
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
                         isBlurEnabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),

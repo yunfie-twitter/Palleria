@@ -9,7 +9,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -133,16 +133,17 @@ internal fun UgoiraArtwork(
     var offset by remember(previewUrl) { mutableStateOf(Offset.Zero) }
     var localScale by remember(previewUrl) { mutableFloatStateOf(1f) }
     var localOffset by remember(previewUrl) { mutableStateOf(Offset.Zero) }
+    var reportedZoomed by remember(previewUrl) { mutableStateOf(false) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
+    val currentOnTap by rememberUpdatedState(onTap)
 
-    fun notifyZoomChanged(
-        previous: Float,
-        current: Float,
-    ) {
-        val wasZoomed = previous > 1.02f
+    fun syncZoomChanged(current: Float = scale) {
         val zoomed = current > 1.02f
-        if (wasZoomed != zoomed) onZoomChanged(zoomed)
+        if (reportedZoomed != zoomed) {
+            reportedZoomed = zoomed
+            onZoomChanged(zoomed)
+        }
     }
 
     fun clampedOffset(
@@ -171,7 +172,6 @@ internal fun UgoiraArtwork(
                     targetValue = 1f,
                     animationSpec = tween(260, easing = FastOutSlowInEasing),
                 ) { progress, _ ->
-                    val previous = scale
                     scale = startScale + (targetScale - startScale) * progress
                     offset =
                         Offset(
@@ -180,7 +180,7 @@ internal fun UgoiraArtwork(
                         )
                     localScale = scale
                     localOffset = offset
-                    notifyZoomChanged(previous, scale)
+                    syncZoomChanged(scale)
                 }
             }
     }
@@ -188,12 +188,11 @@ internal fun UgoiraArtwork(
     LaunchedEffect(zoomEnabled) {
         if (!zoomEnabled) {
             zoomAnimation[0]?.cancel()
-            val previous = scale
             scale = 1f
             offset = Offset.Zero
             localScale = 1f
             localOffset = Offset.Zero
-            notifyZoomChanged(previous, scale)
+            syncZoomChanged(1f)
         }
     }
 
@@ -394,9 +393,9 @@ internal fun UgoiraArtwork(
                     .fillMaxSize()
                     .clipToBounds()
                     .onSizeChanged { viewportSize = it }
-                    .pointerInput(previewUrl, zoomEnabled, onTap) {
+                    .pointerInput(previewUrl, zoomEnabled) {
                         detectTapGestures(
-                            onTap = { onTap?.invoke() },
+                            onTap = { currentOnTap?.invoke() },
                             onDoubleTap =
                                 if (zoomEnabled) {
                                     { tapOffset ->
@@ -420,54 +419,66 @@ internal fun UgoiraArtwork(
                             Modifier.pointerInput(previewUrl) {
                                 var atMinLimit = false
                                 var atMaxLimit = false
-                                detectTransformGestures { centroid, pan, zoom, _ ->
-                                    if (!zoom.isFinite() || zoom <= 0f) return@detectTransformGestures
-                                    zoomAnimation[0]?.cancel()
-                                    val previousScale = localScale
-                                    val unconstrainedScale = localScale * zoom
-                                    val nextScale = unconstrainedScale.coerceIn(1f, 6f)
-                                    if (!nextScale.isFinite() || localScale <= 0f) return@detectTransformGestures
+                                detectZoomAndPanGestures(
+                                    isZoomed = { localScale > 1.02f },
+                                    onGesture = { centroid, pan, zoom ->
+                                        if (!zoom.isFinite() || zoom <= 0f) return@detectZoomAndPanGestures
+                                        zoomAnimation[0]?.cancel()
+                                        val unconstrainedScale = localScale * zoom
+                                        val nextScale = unconstrainedScale.coerceIn(1f, 6f)
+                                        if (!nextScale.isFinite() || localScale <= 0f) return@detectZoomAndPanGestures
 
-                                    if (unconstrainedScale <= 1f) {
-                                        if (!atMinLimit && zoom < 1f) {
-                                            performHaptic(AppHapticEffect.BoundaryLimit)
-                                            atMinLimit = true
-                                        }
-                                    } else {
-                                        atMinLimit = false
-                                    }
-
-                                    if (unconstrainedScale >= 6f) {
-                                        if (!atMaxLimit && zoom > 1f) {
-                                            performHaptic(AppHapticEffect.BoundaryLimit)
-                                            atMaxLimit = true
-                                        }
-                                    } else {
-                                        atMaxLimit = false
-                                    }
-
-                                    val appliedZoom = nextScale / localScale
-                                    val viewportCenter =
-                                        Offset(
-                                            viewportSize.width / 2f,
-                                            viewportSize.height / 2f,
-                                        )
-                                    val focalPoint = centroid - viewportCenter
-                                    val transformedOffset =
-                                        localOffset + pan +
-                                            (focalPoint - localOffset) * (1f - appliedZoom)
-
-                                    localScale = nextScale
-                                    localOffset =
-                                        if (localScale > 1.02f) {
-                                            clampedOffset(transformedOffset, localScale)
+                                        if (unconstrainedScale <= 1f) {
+                                            if (!atMinLimit && zoom < 1f) {
+                                                performHaptic(AppHapticEffect.BoundaryLimit)
+                                                atMinLimit = true
+                                            }
                                         } else {
-                                            Offset.Zero
+                                            atMinLimit = false
                                         }
-                                    scale = localScale
-                                    offset = localOffset
-                                    notifyZoomChanged(previousScale, localScale)
-                                }
+
+                                        if (unconstrainedScale >= 6f) {
+                                            if (!atMaxLimit && zoom > 1f) {
+                                                performHaptic(AppHapticEffect.BoundaryLimit)
+                                                atMaxLimit = true
+                                            }
+                                        } else {
+                                            atMaxLimit = false
+                                        }
+
+                                        val appliedZoom = nextScale / localScale
+                                        val viewportCenter =
+                                            Offset(
+                                                viewportSize.width / 2f,
+                                                viewportSize.height / 2f,
+                                            )
+                                        val focalPoint = centroid - viewportCenter
+                                        val transformedOffset =
+                                            localOffset + pan +
+                                                (focalPoint - localOffset) * (1f - appliedZoom)
+
+                                        localScale = nextScale
+                                        localOffset =
+                                            if (localScale > 1.02f) {
+                                                clampedOffset(transformedOffset, localScale)
+                                            } else {
+                                                Offset.Zero
+                                            }
+                                        scale = localScale
+                                        offset = localOffset
+                                    },
+                                    onGestureEnd = {
+                                        atMinLimit = false
+                                        atMaxLimit = false
+                                        if (localScale < 1.02f) {
+                                            animateTo(1f, Offset.Zero)
+                                        } else {
+                                            localOffset = clampedOffset(localOffset, localScale)
+                                            offset = localOffset
+                                            syncZoomChanged(localScale)
+                                        }
+                                    },
+                                )
                             }
                         } else {
                             Modifier

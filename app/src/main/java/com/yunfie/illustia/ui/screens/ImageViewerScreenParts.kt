@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -42,7 +41,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-private suspend fun PointerInputScope.detectZoomAndPanGestures(
+internal suspend fun PointerInputScope.detectZoomAndPanGestures(
     isZoomed: () -> Boolean,
     onGesture: (centroid: Offset, pan: Offset, zoom: Float) -> Unit,
     onGestureEnd: () -> Unit,
@@ -73,9 +72,7 @@ private suspend fun PointerInputScope.detectZoomAndPanGestures(
                         onGesture(centroid, panChange, zoomChange)
                     }
                     event.changes.forEach { change ->
-                        if (change.positionChanged()) {
-                            change.consume()
-                        }
+                        change.consume()
                     }
                 }
             }
@@ -95,19 +92,19 @@ internal fun ZoomablePixivImage(
 ) {
     var scale by remember(url) { mutableFloatStateOf(1f) }
     var offset by remember(url) { mutableStateOf(Offset.Zero) }
+    var reportedZoomed by remember(url) { mutableStateOf(false) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     var isLoading by remember(url) { mutableStateOf(true) }
     val animationScope = rememberCoroutineScope()
     val zoomAnimation = remember { arrayOfNulls<Job>(1) }
     val performHaptic = rememberHapticFeedbackAction()
 
-    fun notifyZoomChanged(
-        previous: Float,
-        current: Float,
-    ) {
-        val wasZoomed = previous > 1.02f
+    fun syncZoomChanged(current: Float = scale) {
         val zoomed = current > 1.02f
-        if (wasZoomed != zoomed) onZoomChanged(zoomed)
+        if (reportedZoomed != zoomed) {
+            reportedZoomed = zoomed
+            onZoomChanged(zoomed)
+        }
     }
 
     fun clampedOffset(
@@ -136,14 +133,13 @@ internal fun ZoomablePixivImage(
                     targetValue = 1f,
                     animationSpec = tween(260, easing = FastOutSlowInEasing),
                 ) { progress, _ ->
-                    val previous = scale
                     scale = startScale + (targetScale - startScale) * progress
                     offset =
                         Offset(
                             startOffset.x + (targetOffset.x - startOffset.x) * progress,
                             startOffset.y + (targetOffset.y - startOffset.y) * progress,
                         )
-                    notifyZoomChanged(previous, scale)
+                    syncZoomChanged(scale)
                 }
             }
     }
@@ -151,10 +147,9 @@ internal fun ZoomablePixivImage(
     LaunchedEffect(isActive) {
         if (!isActive) {
             zoomAnimation[0]?.cancel()
-            val previous = scale
             scale = 1f
             offset = Offset.Zero
-            notifyZoomChanged(previous, 1f)
+            syncZoomChanged(1f)
         }
     }
 
@@ -188,7 +183,6 @@ internal fun ZoomablePixivImage(
                         onGesture = { centroid, pan, zoom ->
                             if (!zoom.isFinite() || zoom <= 0f) return@detectZoomAndPanGestures
                             zoomAnimation[0]?.cancel()
-                            val previousScale = scale
                             val unconstrainedScale = scale * zoom
                             val nextScale = unconstrainedScale.coerceIn(1f, 6f)
                             if (!nextScale.isFinite() || scale <= 0f) return@detectZoomAndPanGestures
@@ -224,7 +218,6 @@ internal fun ZoomablePixivImage(
                                 } else {
                                     Offset.Zero
                                 }
-                            notifyZoomChanged(previousScale, scale)
                         },
                         onGestureEnd = {
                             atMinLimit = false
@@ -233,6 +226,7 @@ internal fun ZoomablePixivImage(
                                 animateTo(1f, Offset.Zero)
                             } else {
                                 offset = clampedOffset(offset, scale)
+                                syncZoomChanged(scale)
                             }
                         },
                     )
