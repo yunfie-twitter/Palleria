@@ -37,6 +37,7 @@
     <string name="action_download">Download</string>
     <string name="action_load_more">Load More</string>
     <string name="pallasync_history_page_notice">Showing %1$d synchronized view-history items. Search and sorting apply to items already loaded.</string>
+    <string name="pallasync_history_page_totals">Synced view history: %1$d logical items (%2$d eager projection, %3$d cold archive); %4$d loaded. Search and sorting apply to loaded items.</string>
     <string name="pallasync_history_page_partial">Sync is still in progress; this page shows only history currently verified by this device.</string>
     <string name="pallasync_history_page_error">Could not load synchronized history (%1$s). Reload to try again.</string>
     <string name="pallasync_history_loading">Loading history…</string>

@@ -43,6 +43,7 @@
     <string name="action_download">ダウンロード</string>
     <string name="action_load_more">さらに読み込む</string>
     <string name="pallasync_history_page_notice">同期済み閲覧履歴を%1$d件表示中です。検索と並べ替えは読み込み済みの項目に適用されます。</string>
+    <string name="pallasync_history_page_totals">同期済み閲覧履歴: 論理件数 %1$d（即時表示 %2$d・低温アーカイブ %3$d）· 読込済み %4$d件。検索と並べ替えは読み込み済みの項目に適用されます。</string>
     <string name="pallasync_history_page_partial">同期処理が未完了のため、表示は現在確認済みの履歴に限られます。</string>
     <string name="pallasync_history_page_error">同期済み履歴を読み込めませんでした（%1$s）。再読み込みしてください。</string>
     <string name="pallasync_history_loading">履歴を読み込んでいます…</string>

@@ -31,6 +31,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.pallasync.PallaSyncClientStatus
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.HistoryCursor
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -98,6 +99,7 @@ fun ViewHistoryScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     var pallaSyncPaging by remember { mutableStateOf(false) }
     var pagedHistory by remember { mutableStateOf<List<Illust>>(emptyList()) }
+    var historyStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
     var historyCursor by remember { mutableStateOf<HistoryCursor?>(null) }
     var historyPartial by remember { mutableStateOf(false) }
     var historyPageLoading by remember { mutableStateOf(false) }
@@ -108,11 +110,20 @@ fun ViewHistoryScreen(
             pallaSyncPaging = false
             pagedHistory = emptyList()
             historyCursor = null
+            historyStatus = null
             viewModel.loadFullViewHistory()
         } else {
             historyPageLoading = true
             historyPageError = null
             try {
+                historyStatus =
+                    try {
+                        syncManager.getClientStatus()
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        null
+                    }
                 val page = syncManager.getViewHistoryPage()
                 if (page == null) {
                     pallaSyncPaging = false
@@ -125,6 +136,8 @@ fun ViewHistoryScreen(
                     historyCursor = page.next
                     historyPartial = page.partial
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (failure: Exception) {
                 pallaSyncPaging = true
                 pagedHistory = emptyList()
@@ -589,7 +602,20 @@ fun ViewHistoryScreen(
         ) {
             if (pallaSyncPaging) {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_notice") {
-                    Text(stringResource(R.string.pallasync_history_page_notice, pagedHistory.size))
+                    val status = historyStatus
+                    Text(
+                        if (status == null) {
+                            stringResource(R.string.pallasync_history_page_notice, pagedHistory.size)
+                        } else {
+                            stringResource(
+                                R.string.pallasync_history_page_totals,
+                                status.viewedCount,
+                                status.viewedProjectionCount,
+                                status.viewedColdCount,
+                                pagedHistory.size,
+                            )
+                        },
+                    )
                 }
                 if (historyPartial) {
                     item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_partial") {
