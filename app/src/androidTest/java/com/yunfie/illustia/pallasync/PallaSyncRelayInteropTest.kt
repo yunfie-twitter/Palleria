@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -391,7 +392,50 @@ class PallaSyncRelayInteropTest {
                         },
                     ),
                 )
+                val receiptNotFound = args.getString("receipt_not_found") == "true"
+                if (receiptNotFound) {
+                    val armRequest =
+                        Request
+                            .Builder()
+                            .url("$selected/__test__/arm-receipt-not-found")
+                            .post(ByteArray(0).toRequestBody(null))
+                            .build()
+                    client.newCall(armRequest).execute().use { response ->
+                        assertEquals(200, response.code)
+                        assertEquals("{\"armed\":true}", response.body.string())
+                    }
+                    assertFalse(
+                        "The injected receipt absence did not defer the active sync",
+                        coordinator.syncNow(),
+                    )
+                    val relayOrigin = PallaSyncUrls.extractOrigin(selected.toHttpUrl())
+                    val deferredMs = policy.retry.remaining(relayOrigin)
+                    assertTrue(
+                        "RECEIPT_NOT_FOUND unexpectedly became a permanent blocker: ${policy.retry.blockedCodes(relayOrigin, state.chainId)}",
+                        "RECEIPT_NOT_FOUND" !in policy.retry.blockedCodes(relayOrigin, state.chainId),
+                    )
+                    assertEquals(
+                        "The accepted write was discarded despite its receipt evidence",
+                        0L,
+                        store.dao.pendingOutboxCount(state.chainId),
+                    )
+                    if (deferredMs > 0) {
+                        assertFalse("A second sync bypassed the retry backoff", coordinator.syncNow())
+                        delay(deferredMs + 10)
+                    }
+                }
                 assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                if (receiptNotFound) {
+                    val recovered = checkNotNull(store.dao.getChainState(state.chainId))
+                    assertEquals(recovered.downloadedSeq, recovered.verifiedSeq)
+                    assertEquals(recovered.verifiedSeq, recovered.materializedSeq)
+                    assertNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Android interop"))
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_receipt_not_found_recovery", "passed") },
+                    )
+                    println("pallasync_receipt_not_found_recovery=passed")
+                }
                 if (args.getString("pruned_archive_probe") == "true") {
                     probePrunedArchive(coordinator, store, keys, policy, client, phrase, state.chainId)
                     InstrumentationRegistry.getInstrumentation().sendStatus(
