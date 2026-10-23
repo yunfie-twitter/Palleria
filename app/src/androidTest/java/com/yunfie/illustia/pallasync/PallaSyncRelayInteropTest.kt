@@ -14,6 +14,7 @@ import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -61,11 +62,17 @@ class PallaSyncRelayInteropTest {
             val reseedProcessDeath = args.getString("reseed_process_death") == "true"
             val records413ProcessDeath = args.getString("records_413_process_death") == "true"
             val records413ResumeAfterDeath = args.getString("records_413_resume_after_death") == "true"
-            val processDeathMode = reseedProcessDeath || records413ProcessDeath
-            val resumeAfterDeath = args.getString("reseed_resume_after_death") == "true" || records413ResumeAfterDeath
+            val receiptNotFoundProcessDeath = args.getString("receipt_not_found_process_death") == "true"
+            val receiptNotFoundResumeAfterDeath = args.getString("receipt_not_found_resume_after_death") == "true"
+            val processDeathMode = reseedProcessDeath || records413ProcessDeath || receiptNotFoundProcessDeath
+            val resumeAfterDeath =
+                args.getString("reseed_resume_after_death") == "true" ||
+                    records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath
             val processDeathDatabase =
                 if (records413ProcessDeath) {
                     "pallasync-413-process-death-test.db"
+                } else if (receiptNotFoundProcessDeath) {
+                    "pallasync-receipt-not-found-process-death-test.db"
                 } else {
                     "pallasync-reseed-process-death-test.db"
                 }
@@ -120,6 +127,45 @@ class PallaSyncRelayInteropTest {
                     }
                 }
             try {
+                if (receiptNotFoundResumeAfterDeath) {
+                    check(receiptNotFoundProcessDeath && args.getString("receipt_not_found") == "true") { "C_MISSING_DEPENDENCY" }
+                    val state = checkNotNull(store.dao.getActiveChainState())
+                    assertEquals("active", state.writeState)
+                    assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                    PallaSyncCore.setSecretForeground(true)
+                    val selectedOrigin = PallaSyncUrls.extractOrigin(checkNotNull(origin).toHttpUrl())
+                    val remainingMs = policy.retry.remaining(selectedOrigin)
+                    if (remainingMs > 0) delay(remainingMs + 10)
+                    assertTrue(
+                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                        coordinator.resumeBoundChain(startWorker = false),
+                    )
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    val recovered = checkNotNull(store.dao.getChainState(state.chainId))
+                    assertEquals(recovered.downloadedSeq, recovered.verifiedSeq)
+                    assertEquals(recovered.verifiedSeq, recovered.materializedSeq)
+                    assertNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Android interop"))
+                    exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
+                    exerciseBoundOrigin(client, policy, state.chainId, checkNotNull(origin))
+                    val resumedDeviceId = checkNotNull(keys.getActiveChainKeys()).deviceId
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_receipt_not_found_recovery", "passed") },
+                    )
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_receipt_not_found_process_death", "resumed")
+                            putString("pallasync_local_boundary", "verified")
+                            putString("pallasync_bound_origin", "verified")
+                            putString("pallasync_device_id", resumedDeviceId)
+                        },
+                    )
+                    println("pallasync_receipt_not_found_recovery=passed")
+                    println("pallasync_receipt_not_found_process_death=resumed")
+                    println("pallasync_device_id=$resumedDeviceId")
+                    return@runBlocking
+                }
                 if (records413ResumeAfterDeath) {
                     check(records413ProcessDeath) { "C_MISSING_DEPENDENCY" }
                     val state = checkNotNull(store.dao.getActiveChainState())
@@ -419,6 +465,16 @@ class PallaSyncRelayInteropTest {
                         0L,
                         store.dao.pendingOutboxCount(state.chainId),
                     )
+                    if (receiptNotFoundProcessDeath) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_receipt_not_found_process_death", "waiting_after_404")
+                            },
+                        )
+                        println("pallasync_receipt_not_found_process_death=waiting_after_404")
+                        awaitCancellation()
+                    }
                     if (deferredMs > 0) {
                         assertFalse("A second sync bypassed the retry backoff", coordinator.syncNow())
                         delay(deferredMs + 10)
