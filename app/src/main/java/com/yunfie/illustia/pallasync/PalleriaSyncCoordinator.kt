@@ -8409,6 +8409,11 @@ internal class PalleriaSyncCoordinator(
                         .boundChainOrigin(state.chainId)
                         ?.let { origin -> policy.retry.blockedCodes(origin, state.chainId) }
                         .orEmpty(),
+                originBlockedRequestCodes =
+                    policy
+                        .boundChainOrigin(state.chainId)
+                        ?.let(policy.retry::unscopedBlockedCodes)
+                        .orEmpty(),
                 capacityIssue =
                     policy
                         .boundChainOrigin(state.chainId)

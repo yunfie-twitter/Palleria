@@ -2109,6 +2109,10 @@ fun PallaSyncSettingsScreen(
                             if (status.retryAfterMs > 0) {
                                 Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
                             }
+                            status.originBlockedRequestCodes.forEach { code ->
+                                Text(stringResource(R.string.pallasync_origin_request_blocked, code))
+                                PallaSyncRecoveryHintText(code)
+                            }
                             val blockedCodes =
                                 status.blockedRequestCodes.ifEmpty {
                                     listOfNotNull(status.blockedRequestCode)

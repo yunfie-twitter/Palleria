@@ -114,6 +114,18 @@ internal class PallaSyncRetryGate(
                 .sorted()
         }
 
+    /** Blocked exact requests outside a chain route remain visible at the selected origin scope. */
+    fun unscopedBlockedCodes(origin: String): List<String> =
+        synchronized(lock) {
+            val state = load(origin)
+            state.blockedRequests
+                .toSortedMap()
+                .entries
+                .mapNotNull { (key, code) -> code.takeIf { state.blockedRequestChains[key] == null } }
+                .distinct()
+                .sorted()
+        }
+
     fun before(request: Request): PallaSyncHttpResult<Nothing>? {
         val origin = PallaSyncUrls.extractOrigin(request.url)
         synchronized(lock) {

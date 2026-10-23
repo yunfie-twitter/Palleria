@@ -215,6 +215,30 @@ class PallaSyncRetryGateTest {
     }
 
     @Test
+    fun `origin status exposes only unscoped blocked control requests`() {
+        val gate = gate()
+        val chainRequest = request()
+        val importRequest =
+            Request
+                .Builder()
+                .url("$origin/pallasync/v3/chains/import")
+                .post("{}".toRequestBody())
+                .build()
+        val tokenRequired = PallaSyncHttpResult.ProtocolError("TOKEN_REQUIRED", 401)
+        val hint = PallaSyncProblemHint(401, "TOKEN_REQUIRED", true)
+
+        gate.observe(chainRequest, tokenRequired, hint)
+        gate.observe(importRequest, tokenRequired, hint)
+
+        gate.blockedCodes(origin, chain) shouldBe listOf("TOKEN_REQUIRED")
+        gate.unscopedBlockedCodes(origin) shouldBe listOf("TOKEN_REQUIRED")
+        gate.unscopedBlockedCodes("https://other.example.com") shouldBe emptyList()
+        gate.resolved(origin, chain, "TOKEN_REQUIRED") shouldBe true
+        gate.blockedCodes(origin, chain) shouldBe emptyList()
+        gate.unscopedBlockedCodes(origin) shouldBe listOf("TOKEN_REQUIRED")
+    }
+
+    @Test
     fun `device limit blocker is released only by explicit chain scoped lifecycle resolution`() {
         val gate = gate()
         val anotherChain = "AbCdEf0123456789012345678901234567890123456"

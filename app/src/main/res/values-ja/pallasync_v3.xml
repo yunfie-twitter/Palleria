@@ -135,6 +135,7 @@
     <string name="pallasync_progress_title">同期進捗とローカル履歴容量</string>
     <string name="pallasync_retry_wait">自動再試行まで: %1$d 秒</string>
     <string name="pallasync_request_blocked">操作が必要な応答（%1$s）のため、この要求を一時停止しています。キュー済みデータは保持されています。</string>
+    <string name="pallasync_origin_request_blocked">origin単位の制御要求は、対応が必要な応答（%1$s）のため停止中です。前提条件を解決した後、その操作を明示的に再開してください。</string>
     <string name="pallasync_recovery_hint_token">クライアントは新しいnonceで認可済みtokenを更新します。operation IDは維持し、保存された再試行期限を待ってください。</string>
     <string name="pallasync_recovery_hint_admin">元の操作を開き、明示的に認可したmnemonic holder／管理者セッションで再実行してください。この応答自体は権限を与えません。</string>
     <string name="pallasync_recovery_hint_device">承認済みQR／ファイル登録を使うか、既に承認された端末envelopeを取得・検証してください。代替identityを自動登録しないでください。</string>

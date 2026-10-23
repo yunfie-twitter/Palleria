@@ -165,6 +165,7 @@
     <string name="pallasync_progress_title">Sync progress and local history capacity</string>
     <string name="pallasync_retry_wait">Automatic retry wait: %1$d seconds</string>
     <string name="pallasync_request_blocked">This request is paused after a response requiring action (%1$s). Queued data is retained.</string>
+    <string name="pallasync_origin_request_blocked">An origin-level control request is paused after a response requiring action (%1$s). Resume that operation explicitly after resolving its prerequisite.</string>
     <string name="pallasync_recovery_hint_token">The client renews the authorized token with a fresh nonce; keep the same operation ID and wait for the saved retry deadline.</string>
     <string name="pallasync_recovery_hint_admin">Reopen the original operation with an explicitly authorized mnemonic-holder/admin session. This response does not grant authority.</string>
     <string name="pallasync_recovery_hint_device">Use the approved QR/file enrollment flow or fetch and verify the already-approved device envelope. Never auto-register a replacement identity.</string>

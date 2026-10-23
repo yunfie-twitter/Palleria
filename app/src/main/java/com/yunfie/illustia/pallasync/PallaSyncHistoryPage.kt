@@ -82,6 +82,7 @@ data class PallaSyncClientStatus(
     val capacityIssue: PallaSyncCapacityIssue? = null,
     val blockedRequestCode: String? = null,
     val blockedRequestCodes: List<String> = emptyList(),
+    val originBlockedRequestCodes: List<String> = emptyList(),
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)
