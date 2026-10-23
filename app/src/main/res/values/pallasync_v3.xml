@@ -215,6 +215,9 @@
     <string name="pallasync_progress_independent_comparison_offer">Compare a locally exchanged device checkpoint from Sync settings. After 30 days without one, review this comparison again.</string>
     <string name="pallasync_progress_blockers">Pending outbox %1$d · unresolved quarantine %2$d</string>
     <string name="pallasync_progress_record_dispositions">Records awaiting dependency, evidence, or operational resolution: %1$d. Sync coverage remains partial.</string>
+    <string name="pallasync_pending_evidence_retry">Retry pending record evidence</string>
+    <string name="pallasync_pending_evidence_retry_running">Checking pending records…</string>
+    <string name="pallasync_pending_evidence_retry_result">Applied %1$d previously pending records. Remaining records still require their listed evidence or operational resolution.</string>
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>

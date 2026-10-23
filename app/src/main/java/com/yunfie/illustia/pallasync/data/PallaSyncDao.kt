@@ -241,6 +241,25 @@ interface PallaSyncDao {
     )
     suspend fun pendingInboxDispositionCount(chainId: String): Long
 
+    @Query(
+        "SELECT * FROM pallasync_inbox WHERE chain_id=:chainId AND status IN ('pending_dependency','pending_evidence') ORDER BY relay_seq ASC LIMIT :limit",
+    )
+    suspend fun pendingInboxEvidenceRecords(
+        chainId: String,
+        limit: Int,
+    ): List<PallaSyncInboxEntity>
+
+    @Query(
+        "UPDATE pallasync_inbox SET status=:status, quarantine_reason=:reason WHERE chain_id=:chainId AND record_id=:recordId AND raw_record_json=:rawRecordJson",
+    )
+    suspend fun updateInboxDisposition(
+        chainId: String,
+        recordId: String,
+        rawRecordJson: String,
+        status: String,
+        reason: String,
+    ): Int
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertInboxRecords(records: List<PallaSyncInboxEntity>): List<Long>
 

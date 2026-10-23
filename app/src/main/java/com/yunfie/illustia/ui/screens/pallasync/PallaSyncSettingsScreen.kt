@@ -224,6 +224,7 @@ fun PallaSyncSettingsScreen(
     var quarantineCursor by remember { mutableStateOf<String?>(null) }
     var loadingQuarantinePage by remember { mutableStateOf(false) }
     var retryingQuarantineHash by remember { mutableStateOf<String?>(null) }
+    var retryingPendingInboxEvidence by remember { mutableStateOf(false) }
     var pendingQuarantineExclusion by remember { mutableStateOf<QuarantineSummaryRow?>(null) }
     var showCapacityRecoveryConfirm by remember { mutableStateOf(false) }
     var resolvingCapacityRecovery by remember { mutableStateOf(false) }
@@ -2219,6 +2220,50 @@ fun PallaSyncSettingsScreen(
                                         R.string.pallasync_progress_record_dispositions,
                                         status.pendingRecordDispositions,
                                     ),
+                                )
+                                PallaSyncActionButton(
+                                    text =
+                                        stringResource(
+                                            if (retryingPendingInboxEvidence) {
+                                                R.string.pallasync_pending_evidence_retry_running
+                                            } else {
+                                                R.string.pallasync_pending_evidence_retry
+                                            },
+                                        ),
+                                    enabled = !retryingPendingInboxEvidence,
+                                    onClick = {
+                                        retryingPendingInboxEvidence = true
+                                        scope.launch {
+                                            val applied =
+                                                try {
+                                                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                        syncManager.retryPendingInboxEvidence()
+                                                    }
+                                                } catch (cancelled: CancellationException) {
+                                                    throw cancelled
+                                                } catch (_: Exception) {
+                                                    0
+                                                } finally {
+                                                    retryingPendingInboxEvidence = false
+                                                }
+                                            clientStatus = syncManager.getClientStatus()
+                                            try {
+                                                val page = syncManager.getUnresolvedQuarantinePage(limit = 50)
+                                                unresolvedQuarantine = page.items
+                                                quarantineCursor = page.nextHash
+                                            } catch (cancelled: CancellationException) {
+                                                throw cancelled
+                                            } catch (_: Exception) {
+                                                // Keep the last validated quarantine page visible on a local read failure.
+                                            }
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    context.getString(R.string.pallasync_pending_evidence_retry_result, applied),
+                                                    Toast.LENGTH_LONG,
+                                                ).show()
+                                        }
+                                    },
                                 )
                             }
                             if (status.retryAfterMs > 0) {

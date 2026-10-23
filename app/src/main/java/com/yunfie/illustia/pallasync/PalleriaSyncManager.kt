@@ -381,6 +381,8 @@ class PalleriaSyncManager(
         limit: Int = 50,
     ): PallaSyncQuarantinePage = coordinator.getUnresolvedQuarantinePage(afterHash, limit)
 
+    internal suspend fun retryPendingInboxEvidence(limit: Int = 50): Int = coordinator.retryPendingInboxEvidence(limit)
+
     internal suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean =
         coordinator.retryQuarantinedRecordEvidence(objectHash)
 

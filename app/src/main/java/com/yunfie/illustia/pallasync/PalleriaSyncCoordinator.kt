@@ -8622,6 +8622,128 @@ internal class PalleriaSyncCoordinator(
             PallaSyncQuarantinePage(page, page.lastOrNull()?.objectHash.takeIf { rows.size > limit })
         }
 
+    /** §19.4: fetch missing evidence, then replay bounded immutable inbox records in relay order. */
+    suspend fun retryPendingInboxEvidence(limit: Int = 50): Int {
+        require(limit in 1..50) { "C_SCHEMA_VIOLATION" }
+        syncNow()
+        val chainId = withContext(Dispatchers.IO) { db.dao.getActiveChainState()?.chainId } ?: return 0
+        val pending = withContext(Dispatchers.IO) { db.dao.pendingInboxEvidenceRecords(chainId, limit) }
+        var applied = 0
+        for (record in pending) {
+            val didApply =
+                withContext(Dispatchers.IO) {
+                    operationMutex.withLock { retryPendingInboxEvidenceLocked(record) }
+                }
+            if (didApply) applied++
+        }
+        return applied
+    }
+
+    private suspend fun retryPendingInboxEvidenceLocked(record: PallaSyncInboxEntity): Boolean {
+        try {
+            val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
+            check(state.chainId == record.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            check(record.status in setOf("pending_dependency", "pending_evidence")) { "C_ROLLBACK_DETECTED" }
+            val dao = db.dao
+            val protocol = db.protocolDao()
+            val current = checkNotNull(dao.getInboxRecord(record.chainId, record.recordId)) { "C_MISSING_DEPENDENCY" }
+            check(current == record) { "C_ROLLBACK_DETECTED" }
+            val wire =
+                try {
+                    json.decodeFromString<PallaSyncWireRecord>(record.rawRecordJson)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    error("C_SCHEMA_VIOLATION")
+                }
+            check(wire.chainId == record.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            check(wire.recordId == record.recordId) { "C_RECORD_ID_CONFLICT" }
+            val authorityText = checkNotNull(protocol.currentAuthority(record.chainId)) { "C_MISSING_DEPENDENCY" }
+            check(keystore.authorityHash(record.chainId) == crypto.objectHash(authorityText)) { "C_ROLLBACK_DETECTED" }
+            check(PallaSyncCore.validateRecordAuthority(authorityText, record.rawRecordJson, record.relaySeq)) {
+                "C_MISSING_DEPENDENCY"
+            }
+            verifyQuarantinedRecordAcceptance(protocol, record.chainId, record.relaySeq, record.rawRecordJson, authorityText)
+            val keys = checkNotNull(keysForChainLocked(record.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val epochKeys = checkNotNull(keystore.keysForEpoch(keys, wire.epoch)) { "C_MISSING_DEPENDENCY" }
+            val payload =
+                PallaSyncEpochSession.begin(epochKeys, authorityText, wire.epoch).use {
+                    it.decryptRecord(record.rawRecordJson)
+                }
+            val inner =
+                try {
+                    json.decodeFromString<PallaSyncInnerRecord>(payload)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    error("C_SCHEMA_VIOLATION")
+                }
+            check(inner.operations.isNotEmpty()) { "C_SCHEMA_VIOLATION" }
+            val result =
+                db.transaction {
+                    val unchanged = checkNotNull(dao.getInboxRecord(record.chainId, record.recordId)) { "C_MISSING_DEPENDENCY" }
+                    check(unchanged == record) { "C_ROLLBACK_DETECTED" }
+                    val disposition =
+                        materializeCandidate(
+                            record.chainId,
+                            checkNotNull(state.logId) { "C_MISSING_DEPENDENCY" },
+                            DecryptedCandidate(
+                                record.recordId,
+                                record.relaySeq,
+                                inner.operations.maxOf { it.lamport },
+                                record.rawRecordJson,
+                                payload,
+                            ),
+                        )
+                    if (disposition.status == PallaSyncInboxEntity.STATUS_QUARANTINED) {
+                        retainRecordQuarantine(disposition)
+                        check(
+                            dao.updateInboxDisposition(
+                                record.chainId,
+                                record.recordId,
+                                record.rawRecordJson,
+                                disposition.status,
+                                checkNotNull(disposition.quarantineReason),
+                            ) == 1,
+                        ) { "C_ROLLBACK_DETECTED" }
+                    } else {
+                        check(disposition.status == PallaSyncInboxEntity.STATUS_APPLIED) { "C_SCHEMA_VIOLATION" }
+                        check(dao.getInboxRecord(record.chainId, record.recordId)?.status == PallaSyncInboxEntity.STATUS_APPLIED) {
+                            "C_ROLLBACK_DETECTED"
+                        }
+                    }
+                    disposition.status == PallaSyncInboxEntity.STATUS_APPLIED
+                }
+            projection.publish(record.chainId, db)
+            return result
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_MISSING_DEPENDENCY"
+            val status = validationState(code)
+            if (status in setOf("pending_dependency", "pending_evidence")) {
+                db.transaction {
+                    val current = db.dao.getInboxRecord(record.chainId, record.recordId) ?: return@transaction
+                    if (current != record) return@transaction
+                    check(
+                        db.dao.updateInboxDisposition(record.chainId, record.recordId, record.rawRecordJson, status, code) == 1,
+                    ) { "C_ROLLBACK_DETECTED" }
+                }
+                return false
+            }
+            val unresolved = inboxRecord(record.chainId, record.recordId, record.relaySeq, record.rawRecordJson, status, code)
+            db.transaction {
+                val current = db.dao.getInboxRecord(record.chainId, record.recordId) ?: return@transaction
+                if (current != record) return@transaction
+                if (status == PallaSyncInboxEntity.STATUS_QUARANTINED) retainRecordQuarantine(unresolved)
+                check(
+                    db.dao.updateInboxDisposition(record.chainId, record.recordId, record.rawRecordJson, status, code) == 1,
+                ) { "C_ROLLBACK_DETECTED" }
+            }
+            return false
+        }
+    }
+
     /** §19.3/§19.4: an explicit root ceremony replaces a bad device envelope, then replays its original record. */
     internal suspend fun repairQuarantinedCommitment(
         objectHash: String,

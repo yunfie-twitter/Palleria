@@ -185,6 +185,9 @@
     <string name="pallasync_progress_independent_comparison_offer">同期設定から、ローカルで交換した端末checkpointを照合してください。30日以上照合がない場合は再確認してください。</string>
     <string name="pallasync_progress_blockers">送信待ち %1$d · 未解決隔離 %2$d</string>
     <string name="pallasync_progress_record_dispositions">依存証拠の取得または運用上の解決を待つレコード: %1$d。同期範囲は未完了です。</string>
+    <string name="pallasync_pending_evidence_retry">保留中のレコード証拠を再確認</string>
+    <string name="pallasync_pending_evidence_retry_running">保留中のレコードを確認中…</string>
+    <string name="pallasync_pending_evidence_retry_result">保留中のレコードを %1$d 件適用しました。残りは表示された証拠または運用上の解決が必要です。</string>
     <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>

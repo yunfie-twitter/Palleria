@@ -105,7 +105,7 @@ class PallaSyncDatabaseTest {
                 dao.updateChainState(chainState("chain-dispositions"))
                 dao.commitInboxPage(
                     chainId = "chain-dispositions",
-                    lastRelaySeq = 4L,
+                    lastRelaySeq = 6L,
                     maxLamport = 0L,
                     records =
                         listOf(
@@ -121,9 +121,9 @@ class PallaSyncDatabaseTest {
                                 chainId = "chain-dispositions",
                                 recordId = "blocked",
                                 relaySeq = 2L,
-                                status = PallaSyncInboxEntity.STATUS_OPERATIONALLY_BLOCKED,
+                                status = PallaSyncInboxEntity.STATUS_PENDING_EVIDENCE,
                                 rawRecordJson = "{}",
-                                quarantineReason = "C_LOCAL_STORAGE_FULL",
+                                quarantineReason = "C_ACCEPTANCE_UNPROVEN",
                             ),
                             PallaSyncInboxEntity.quarantined(
                                 chainId = "chain-dispositions",
@@ -138,10 +138,28 @@ class PallaSyncDatabaseTest {
                                 relaySeq = 4L,
                                 rawRecordJson = "{}",
                             ),
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "unsupported",
+                                relaySeq = 5L,
+                                status = PallaSyncInboxEntity.STATUS_UNSUPPORTED_COLLECTION,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_UNSUPPORTED_SCHEMA",
+                            ),
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "suspended",
+                                relaySeq = 6L,
+                                status = PallaSyncInboxEntity.STATUS_CHAIN_SUSPENDED,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_RELAY_KEY_MISMATCH",
+                            ),
                         ),
                 )
 
-                dao.pendingInboxDispositionCount("chain-dispositions") shouldBe 2L
+                dao.pendingInboxDispositionCount("chain-dispositions") shouldBe 4L
+                dao.pendingInboxEvidenceRecords("chain-dispositions", 50).map { it.recordId } shouldBe
+                    listOf("dependency", "blocked")
                 dao.getQuarantinedInboxRecords("chain-dispositions").map { it.recordId } shouldBe listOf("invalid")
             } finally {
                 database.close()
