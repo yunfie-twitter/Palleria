@@ -1,5 +1,6 @@
 package com.yunfie.illustia.pallasync
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -73,6 +74,21 @@ class PallaSyncJcsVectorsJniTest {
         invalidBodies.forEach { body ->
             runCatching { PallaSyncCore.validateLogHead(body) }.isFailure shouldBe true
         }
+    }
+
+    @Test
+    fun `native strict base64url decoder rejects nonzero trailing bits`() {
+        val nonCanonical32ByteValue = "A".repeat(42) + "B"
+
+        shouldThrow<IllegalStateException> {
+            PallaSyncCore.beginLegacyMigrationSession(
+                byteArrayOf(),
+                byteArrayOf(),
+                nonCanonical32ByteValue,
+                "",
+                "",
+            )
+        }.message shouldBe "C_SCHEMA_VIOLATION"
     }
 
     private data class Vector(
