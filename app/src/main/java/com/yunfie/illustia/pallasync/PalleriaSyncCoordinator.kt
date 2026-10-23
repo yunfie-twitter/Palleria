@@ -969,6 +969,7 @@ internal class PalleriaSyncCoordinator(
     ) = withContext(Dispatchers.IO) {
         operationMutex.withLock {
             val beforeProbe = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            check(!db.deletionEvidenceDao().hasDeletionReceipt(beforeProbe.chainId)) { "C_DELETION_UNVERIFIED" }
             val beforeAuthority =
                 Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(beforeProbe.chainId))).jsonObject
             val beforePin = beforeAuthority.getValue("pin").jsonObject
@@ -5829,7 +5830,11 @@ internal class PalleriaSyncCoordinator(
         val normalized = PallaSyncUrls.normalize(serverUrl ?: getServerUrl())
         check(normalized is PallaSyncHttpResult.Success) { "C_BOOTSTRAP_TRUST_REQUIRED" }
         val health = refreshRelayHealth(normalized.value)
-        if (health !is PallaSyncHttpResult.Success) throw PallaSyncInitialHistory.Failure(health)
+        if (health !is PallaSyncHttpResult.Success) {
+            val reason = (health as? PallaSyncHttpResult.ProtocolError)?.message ?: "relay health unavailable"
+            log("Initial PallaSync relay health check failed: $reason")
+            throw PallaSyncInitialHistory.Failure(health)
+        }
         return normalized.value
     }
 
@@ -7545,7 +7550,7 @@ internal class PalleriaSyncCoordinator(
             Request
                 .Builder()
                 .url(PallaSyncUrls.health(baseUrl))
-                .header("Accept", JSON_MEDIA_TYPE.toString())
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
                 .get()
                 .build()
         return when (

@@ -60,6 +60,26 @@ class PallaSyncRelayInteropTest {
             val recordsLimitPreflight = args.getString("records_limit_preflight") == "true"
             val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
             val context = ApplicationProvider.getApplicationContext<Context>()
+            val healthOrigin = checkNotNull(origin)
+            val healthRequest =
+                Request
+                    .Builder()
+                    .url(PallaSyncUrls.health(healthOrigin.toHttpUrl()))
+                    .header("Accept", PALLASYNC_MEDIA_TYPE)
+                    .get()
+                    .build()
+            val healthBody =
+                client.newCall(healthRequest).execute().use { response ->
+                    assertEquals("Isolated relay health returned an unexpected status", 200, response.code)
+                    assertEquals(PALLASYNC_MEDIA_TYPE, response.header("Content-Type")?.substringBefore(';')?.trim())
+                    checkNotNull(response.body).bytes()
+                }
+            val healthJson = PallaSyncCore.validateHealth(healthBody, PallaSyncUrls.extractOrigin(healthOrigin.toHttpUrl()))
+            assertTrue(
+                "Isolated relay health did not parse as a selected v3 relay",
+                parseHealthResponseBody(healthJson, PallaSyncUrls.extractOrigin(healthOrigin.toHttpUrl())) is
+                    PallaSyncHttpResult.Success,
+            )
             val reseedProcessDeath = args.getString("reseed_process_death") == "true"
             val records413ProcessDeath = args.getString("records_413_process_death") == "true"
             val records413ResumeAfterDeath = args.getString("records_413_resume_after_death") == "true"
@@ -1140,6 +1160,27 @@ class PallaSyncRelayInteropTest {
         assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         println("pallasync_pruned_archive_kinds=$kinds")
         println("pallasync_pruned_archive_boundary_restore=verified")
+
+        // A signed deletion ledger that appears after the archive was created overrides its
+        // older writable state. Restore must stop before local mutation and keep keys/evidence.
+        assertEquals(
+            PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT,
+            coordinator.requestChainDeletion(mnemonic),
+        )
+        val retainedBeforeRejectedRestore = checkNotNull(store.dao.getChainState(chain))
+        val retainedKeysBeforeRejectedRestore = checkNotNull(keys.getActiveChainKeys())
+        val deletedRestore =
+            runCatching {
+                coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+            }.exceptionOrNull()
+        assertEquals("C_DELETION_UNVERIFIED", deletedRestore?.message)
+        assertEquals(retainedBeforeRejectedRestore, store.dao.getChainState(chain))
+        assertEquals(retainedKeysBeforeRejectedRestore, keys.getActiveChainKeys())
+        assertNotNull(coordinator.pendingDeletionProof())
+        assertNotNull(
+            store.deletionEvidenceDao().latestReceiptRevision(chain, checkNotNull(retainedBeforeRejectedRestore.logId)),
+        )
+        println("pallasync_deleted_archive_restore=blocked_with_local_state_retained")
     }
 
     private suspend fun exerciseMissingDependencyQuarantineRetry(

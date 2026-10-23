@@ -132,7 +132,9 @@ internal class PallaSyncRemoteService(
                 authorize(request, migrationDestination, historicalSourceRead)
                 attempted = true
                 call.execute().use { response ->
-                    hint = problem(response)
+                    // Success bodies belong to the endpoint parser. Reading them here while
+                    // probing for RFC 9457 hints consumes the one-shot response stream.
+                    hint = if (response.isSuccessful) null else problem(response)
                     relayDate = response.header("Date")
                     val classified = classifyPallaSyncHttpStatus(response.code, hint, request)
                     val headerWait =
