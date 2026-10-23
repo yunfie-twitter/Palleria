@@ -303,6 +303,13 @@ class PallaSyncRelayInteropTest {
                 assertEquals(null, keys.getPendingChainKeys())
                 assertTrue(state.initialPullCompleted)
                 assertTrue(state.verifiedSeq >= 9 && state.materializedSeq >= 9)
+                if (args.getString("cursor_expired") == "true") {
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_cursor_expired_recovery", "passed") },
+                    )
+                    println("pallasync_cursor_expired_recovery=passed")
+                }
                 assertTrue(
                     checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.lamport >
                         1_000_000L,

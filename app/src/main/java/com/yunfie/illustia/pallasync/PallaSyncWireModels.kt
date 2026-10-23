@@ -681,13 +681,14 @@ internal object PallaSyncUrls {
         after: Long,
         through: Long,
         cursor: String?,
+        limit: Int = PALLASYNC_PAGE_SIZE,
     ): HttpUrl =
         endpoint(baseUrl, "chains", chainId, "transparency", "entries")
             .newBuilder()
             .addQueryParameter("transparency_id", id)
             .addQueryParameter("after_index", after.toString())
             .addQueryParameter("through_index", through.toString())
-            .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+            .addQueryParameter("limit", limit.toString())
             .apply { if (cursor != null) addQueryParameter("cursor", cursor) }
             .build()
 

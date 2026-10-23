@@ -236,12 +236,13 @@ internal class PallaSyncMnemonicEnrollment(
     ) {
         val chain = checkNotNull(candidate.keys.chainId)
         val device = checkNotNull(candidate.keys.deviceId)
+        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, policy.pageLimit(PallaSyncUrls.extractOrigin(base)))
         val url =
             base
                 .newBuilder()
                 .encodedPath("/pallasync/v3/chains/$chain/devices/$device/envelopes")
                 .addQueryParameter("epoch", candidate.keys.epoch.toString())
-                .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+                .addQueryParameter("limit", pageLimit.toString())
                 .build()
         val token =
             checkNotNull(

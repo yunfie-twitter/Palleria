@@ -182,7 +182,16 @@ internal class PalleriaSyncCoordinator(
     private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
     private val localIntents by lazy { PallaSyncLocalIntents(db, localAuthor, ::orderLocalEvents) }
     private val membership by lazy { PallaSyncMembershipReader(db) }
-    private val liveHistory by lazy { PallaSyncLiveHistory(db, remote, keystore, consistencyProbe, ::makeCapabilityToken) }
+    private val liveHistory by lazy {
+        PallaSyncLiveHistory(
+            db,
+            remote,
+            keystore,
+            policy::pageLimit,
+            consistencyProbe,
+            ::makeCapabilityToken,
+        )
+    }
     private val legacyV21Source by lazy { PallaSyncLegacyV21Source(remote) }
     private val epochLifecycle by lazy {
         PallaSyncEpochLifecycle(db, keystore, remote, policy, crypto, PallaSyncEpochJournal(appContext), localAuthor)
@@ -865,7 +874,14 @@ internal class PalleriaSyncCoordinator(
                         var cursor: String? = null
                         do {
                             currentCoroutineContext().ensureActive()
-                            val url = PallaSyncUrls.export(base, state.chainId, cursor, includeRecovery = true)
+                            val url =
+                                PallaSyncUrls.export(
+                                    base,
+                                    state.chainId,
+                                    cursor,
+                                    limit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit),
+                                    includeRecovery = true,
+                                )
                             val token =
                                 checkNotNull(
                                     session.token(origin, "GET", url.encodedPath, url.encodedQuery.orEmpty()),
@@ -8086,12 +8102,13 @@ internal class PalleriaSyncCoordinator(
                 put("log_id", logId)
             }.toString()
         val path = "/pallasync/v3/chains/$chainId/records"
-        val query = "after_seq=$afterSeq&limit=$PALLASYNC_PAGE_SIZE"
+        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit)
+        val query = "after_seq=$afterSeq&limit=$pageLimit"
         val token = makeCapabilityToken(baseUrl, chainId, "GET", path, query, "")
         val requestBuilder =
             Request
                 .Builder()
-                .url(PallaSyncUrls.records(baseUrl, chainId, null, afterSeq, PALLASYNC_PAGE_SIZE))
+                .url(PallaSyncUrls.records(baseUrl, chainId, null, afterSeq, pageLimit))
                 .header("Accept", JSON_MEDIA_TYPE.toString())
         if (token != null) {
             requestBuilder.header("Authorization", "PallaSync $token")
@@ -8104,7 +8121,7 @@ internal class PalleriaSyncCoordinator(
                     pin,
                     state.generation,
                     afterSeq,
-                    PALLASYNC_PAGE_SIZE,
+                    pageLimit,
                 )
             parseRecordsResponseBody(json, validated, afterSeq)
         }

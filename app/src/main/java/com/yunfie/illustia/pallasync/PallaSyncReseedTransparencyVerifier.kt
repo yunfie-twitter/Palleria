@@ -110,10 +110,26 @@ internal class PallaSyncReseedTransparencyVerifier(
         var nextAnchor = startAnchor
         var expiredCursorRequest: Request? = null
         var lastExpiredIndex: Long? = null
+        var cursorRangeStart: Long? = null
         do {
             currentCoroutineContext().ensureActive()
-            val afterIndex = nextAnchor.getValue("index").jsonPrimitive.long
-            val url = PallaSyncUrls.transparencyEntries(base, chainId, transparencyId, afterIndex, through, cursor)
+            val afterIndex =
+                if (cursor == null) {
+                    val index = nextAnchor.getValue("index").jsonPrimitive.long
+                    cursorRangeStart = index
+                    index
+                } else {
+                    checkNotNull(cursorRangeStart) { "C_MISSING_DEPENDENCY" }
+                }
+            val url =
+                PallaSyncUrls.transparencyEntries(
+                    base,
+                    chainId,
+                    transparencyId,
+                    afterIndex,
+                    through,
+                    cursor,
+                )
             val token =
                 checkNotNull(root.token(origin, "GET", url.encodedPath, query = url.encodedQuery.orEmpty())) {
                     "C_RELAY_POLICY_CONSENT_REQUIRED"
@@ -156,6 +172,7 @@ internal class PallaSyncReseedTransparencyVerifier(
                         lastExpiredIndex = afterIndex
                         expiredCursorRequest = request
                         cursor = null
+                        cursorRangeStart = null
                         seenCursors.clear()
                         continue
                     }

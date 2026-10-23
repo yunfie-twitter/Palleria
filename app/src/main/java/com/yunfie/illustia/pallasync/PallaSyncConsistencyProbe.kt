@@ -243,10 +243,28 @@ internal class PallaSyncConsistencyProbe(
         val seenCursors = mutableSetOf<String>()
         var expiredCursorRequest: Request? = null
         var lastExpiredIndex: Long? = null
+        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, policy.pageLimit(context.origin))
+        var cursorRangeStart: Long? = null
         while (anchor.getValue("index").jsonPrimitive.long < through || cursor != null) {
             currentCoroutineContext().ensureActive()
-            val afterIndex = anchor.getValue("index").jsonPrimitive.long
-            val url = PallaSyncUrls.transparencyEntries(context.base, context.chain, id, afterIndex, through, cursor)
+            val afterIndex =
+                if (cursor == null) {
+                    val index = anchor.getValue("index").jsonPrimitive.long
+                    cursorRangeStart = index
+                    index
+                } else {
+                    checkNotNull(cursorRangeStart) { "C_MISSING_DEPENDENCY" }
+                }
+            val url =
+                PallaSyncUrls.transparencyEntries(
+                    context.base,
+                    context.chain,
+                    id,
+                    afterIndex,
+                    through,
+                    cursor,
+                    pageLimit,
+                )
             val checked =
                 remote.execute(request(url, context.chain)) { response ->
                     PallaSyncHttpResult.Success(
@@ -257,7 +275,7 @@ internal class PallaSyncConsistencyProbe(
                                     context.pin,
                                     anchor.toString(),
                                     head.toString(),
-                                    PALLASYNC_PAGE_SIZE,
+                                    pageLimit,
                                 ),
                             ).jsonObject,
                     )
@@ -267,6 +285,7 @@ internal class PallaSyncConsistencyProbe(
                 lastExpiredIndex = afterIndex
                 expiredCursorRequest = request(url, context.chain)
                 cursor = null
+                cursorRangeStart = null
                 seenCursors.clear()
                 continue
             }

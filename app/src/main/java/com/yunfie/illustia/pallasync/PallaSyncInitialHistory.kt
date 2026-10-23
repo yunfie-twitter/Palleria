@@ -41,6 +41,7 @@ internal class PallaSyncInitialHistory(
     private val adminPublicKey = root?.identity?.adminPublicKey ?: checkNotNull(peerAdminPublicKey) { "C_BOOTSTRAP_TRUST_REQUIRED" }
     private val prefix = "/pallasync/v3/chains/$chain"
     private val json = Json
+    private val pageLimit = minOf(PALLASYNC_PAGE_SIZE, policy.pageLimit(origin))
 
     init {
         check(
@@ -474,7 +475,7 @@ internal class PallaSyncInitialHistory(
             val requestUrl =
                 url("snapshots")
                     .newBuilder()
-                    .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+                    .addQueryParameter("limit", pageLimit.toString())
                     .apply { cursor?.let { addQueryParameter("cursor", it) } }
                     .build()
             val pageBytes =
@@ -506,7 +507,7 @@ internal class PallaSyncInitialHistory(
                             pinJson,
                             generation,
                             headSeq,
-                            PALLASYNC_PAGE_SIZE,
+                            pageLimit,
                         ),
                     ).jsonObject
             expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
@@ -590,9 +591,13 @@ internal class PallaSyncInitialHistory(
             val requestUrl =
                 url("log")
                     .newBuilder()
-                    .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+                    .addQueryParameter("limit", pageLimit.toString())
                     .apply {
-                        if (cursor == null) addQueryParameter("after_seq", after.toString()) else addQueryParameter("cursor", cursor)
+                        if (cursor == null) {
+                            addQueryParameter("after_seq", after.toString())
+                        } else {
+                            addQueryParameter("cursor", cursor)
+                        }
                     }.build()
             val pageBytes =
                 try {
@@ -620,7 +625,7 @@ internal class PallaSyncInitialHistory(
                             pin.toString(),
                             generation,
                             after,
-                            PALLASYNC_PAGE_SIZE,
+                            pageLimit,
                         ),
                     ).jsonObject
             expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
@@ -705,9 +710,17 @@ internal class PallaSyncInitialHistory(
         val seen = mutableSetOf<String>()
         var expiredCursorRequest: okhttp3.Request? = null
         var lastExpiredIndex: Long? = null
+        var cursorRangeStart: Long? = null
         while (true) {
             currentCoroutineContext().ensureActive()
-            val afterIndex = anchor.getValue("index").jsonPrimitive.long
+            val afterIndex =
+                if (cursor == null) {
+                    val index = anchor.getValue("index").jsonPrimitive.long
+                    cursorRangeStart = index
+                    index
+                } else {
+                    checkNotNull(cursorRangeStart) { "C_MISSING_DEPENDENCY" }
+                }
             val requestUrl =
                 PallaSyncUrls.transparencyEntries(
                     base,
@@ -716,6 +729,7 @@ internal class PallaSyncInitialHistory(
                     afterIndex,
                     through,
                     cursor,
+                    pageLimit,
                 )
             val responseBytes =
                 try {
@@ -732,6 +746,7 @@ internal class PallaSyncInitialHistory(
                             .get()
                             .build()
                     cursor = null
+                    cursorRangeStart = null
                     seen.clear()
                     continue
                 }
@@ -743,7 +758,7 @@ internal class PallaSyncInitialHistory(
                             pin.toString(),
                             anchor.toString(),
                             head.toString(),
-                            PALLASYNC_PAGE_SIZE,
+                            pageLimit,
                         ),
                     ).jsonObject
             expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }

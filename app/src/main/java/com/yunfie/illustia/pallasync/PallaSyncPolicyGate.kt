@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Authenticator
 import okhttp3.ConnectionSpec
 import okhttp3.CookieJar
@@ -337,6 +340,15 @@ class PallaSyncPolicyGate internal constructor(
             )
         }
     }
+
+    /** The disclosure is revalidated by requireCurrent before a chain operation uses this limit. */
+    internal fun pageLimit(origin: String): Int =
+        checkNotNull(acceptedReview(origin)) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
+            .validated.disclosure
+            .getValue("limits")
+            .jsonObject
+            .getValue("page_limit")
+            .jsonPrimitive.int
 
     fun withdraw(origin: String) {
         synchronized(consentLock) {

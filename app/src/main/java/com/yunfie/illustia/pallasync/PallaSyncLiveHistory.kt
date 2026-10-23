@@ -18,6 +18,7 @@ internal class PallaSyncLiveHistory(
     private val store: PallaSyncLocalStore,
     private val remote: PallaSyncRemoteService,
     private val keys: PallaSyncKeystore,
+    private val disclosedPageLimit: (String) -> Int,
     private val probe: PallaSyncConsistencyProbe,
     private val token: (HttpUrl, String, String, String, String, String) -> String?,
 ) {
@@ -111,13 +112,26 @@ internal class PallaSyncLiveHistory(
         val seen = mutableSetOf<String>()
         var expiredCursorRequest: Request? = null
         var lastExpiredSequence: Long? = null
+        var cursorStartSequence: Long? = null
+        val pageLimit =
+            minOf(
+                PALLASYNC_PAGE_SIZE,
+                disclosedPageLimit(PallaSyncUrls.extractOrigin(base)),
+            )
         while (true) {
             currentCoroutineContext().ensureActive()
-            val after = authority.getValue("sequence").jsonPrimitive.long
+            val after =
+                if (cursor == null) {
+                    val sequence = authority.getValue("sequence").jsonPrimitive.long
+                    cursorStartSequence = sequence
+                    sequence
+                } else {
+                    checkNotNull(cursorStartSequence) { "C_MISSING_DEPENDENCY" }
+                }
             val url =
                 endpoint(base, chain, "log")
                     .newBuilder()
-                    .addQueryParameter("limit", PALLASYNC_PAGE_SIZE.toString())
+                    .addQueryParameter("limit", pageLimit.toString())
                     .apply {
                         if (cursor ==
                             null
@@ -142,6 +156,7 @@ internal class PallaSyncLiveHistory(
                             .get()
                             .build()
                     cursor = null
+                    cursorStartSequence = null
                     seen.clear()
                     continue
                 }
@@ -153,7 +168,7 @@ internal class PallaSyncLiveHistory(
                             pin.toString(),
                             generation,
                             after,
-                            PALLASYNC_PAGE_SIZE,
+                            pageLimit,
                         ),
                     ).jsonObject
             expiredCursorRequest?.let { remote.cursorRestarted(base, chain, it) }
