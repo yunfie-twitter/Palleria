@@ -57,7 +57,7 @@ internal fun PallaSyncRecoveryReceiveDialog(
     val protector = remember { PallaSyncRecoveryKeyProtector(context.applicationContext) }
     val activity = context.pallaSyncInputActivity() as? FragmentActivity
     var files by remember { mutableStateOf<Map<RecoveryReceiveFile, Uri>>(emptyMap()) }
-    var scannedPeerDescriptor by remember { mutableStateOf<String?>(null) }
+    val peerSelection = remember { PallaSyncRecoveryQrSelection() }
     var choosing by remember { mutableStateOf(RecoveryReceiveFile.MANIFEST) }
     var offline by remember { mutableStateOf(false) }
     var instance by remember { mutableStateOf("") }
@@ -76,7 +76,7 @@ internal fun PallaSyncRecoveryReceiveDialog(
             PallaSyncRecoveryOfflineMedia.requireLocal(uri)
             check(files.filterKeys { it != choosing }.values.none { it == uri }) { "C_RECOVERY_STORAGE_UNSAFE" }
             files = files + (choosing to uri)
-            if (choosing == RecoveryReceiveFile.PEER) scannedPeerDescriptor = null
+            if (choosing == RecoveryReceiveFile.PEER) peerSelection.selectFile()
             failed = false
         } catch (_: Exception) {
             failed = true
@@ -86,13 +86,9 @@ internal fun PallaSyncRecoveryReceiveDialog(
     val create = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream"), ::select)
     val scanner =
         rememberLauncherForActivityResult(ScanContract()) { result ->
-            val descriptor = PallaSyncRecoveryQrSelection.fromScan(result.contents)
-            scannedPeerDescriptor = descriptor
-            if (descriptor != null) {
+            failed = peerSelection.completeScan(result.contents)
+            if (peerSelection.descriptor != null) {
                 files = files - RecoveryReceiveFile.PEER
-                failed = false
-            } else if (result.contents != null) {
-                failed = true
             }
         }
     DisposableEffect(owner, lifecycle) {
@@ -141,12 +137,13 @@ internal fun PallaSyncRecoveryReceiveDialog(
                 RecoveryReceiveFile.entries.filter { offline || it != RecoveryReceiveFile.PACKAGE }.forEach { file ->
                     if (file == RecoveryReceiveFile.PEER) {
                         PallaSyncRecoveryQrEntryButton(
-                            scanned = scannedPeerDescriptor != null,
+                            scanned = peerSelection.descriptor != null,
                             enabled = !busy && !started,
                             onClick = {
                                 // A canceled or invalid rescan must never leave an older QR trusted.
-                                scannedPeerDescriptor = null
+                                peerSelection.beginScan()
                                 files = files - RecoveryReceiveFile.PEER
+                                failed = false
                                 scanner.launch(
                                     ScanOptions()
                                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
@@ -159,7 +156,7 @@ internal fun PallaSyncRecoveryReceiveDialog(
                     }
                     TextButton(
                         stringResource(file.label) +
-                            if ((file == RecoveryReceiveFile.PEER && scannedPeerDescriptor != null) || files.containsKey(file)) {
+                            if ((file == RecoveryReceiveFile.PEER && peerSelection.descriptor != null) || files.containsKey(file)) {
                                 " ✓"
                             } else {
                                 ""
@@ -214,7 +211,7 @@ internal fun PallaSyncRecoveryReceiveDialog(
                     enabled =
                         !busy && !started && independence && (offline || (activity != null && protector.available())) &&
                             RecoveryReceiveFile.entries.filter { offline || it != RecoveryReceiveFile.PACKAGE }.all {
-                                (it == RecoveryReceiveFile.PEER && scannedPeerDescriptor != null) || files.containsKey(it)
+                                (it == RecoveryReceiveFile.PEER && peerSelection.descriptor != null) || files.containsKey(it)
                             },
                     onClick = {
                         occupied = !offline && slot.read() != null
@@ -237,7 +234,7 @@ internal fun PallaSyncRecoveryReceiveDialog(
                                                 files.getValue(RecoveryReceiveFile.STATUSES),
                                             )
                                         val peer =
-                                            scannedPeerDescriptor
+                                            peerSelection.descriptor
                                                 ?: PallaSyncRecoveryLocalFiles.read(context, files.getValue(RecoveryReceiveFile.PEER))
                                         val holder = if (offline) null else PallaSyncRecoveryHolder(slot, protector)
                                         owner.begin(
