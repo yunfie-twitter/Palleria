@@ -51,12 +51,12 @@ import javax.net.ssl.X509TrustManager
 @RunWith(AndroidJUnit4::class)
 class PallaSyncRelayInteropTest {
     @Test
-    fun mnemonicEnrollmentAndInitialSyncUseTheRealRelay() =
+    fun mnemonicEnrollmentAndInitialSyncUseTheRealRelay() {
+        val args = InstrumentationRegistry.getArguments()
+        val origin = args.getString("relay_origin")
+        assumeTrue("Disposable relay arguments are required", origin?.startsWith("https://127.0.0.1:") == true)
         runBlocking<Unit> {
-            val args = InstrumentationRegistry.getArguments()
             val recordsLimitPreflight = args.getString("records_limit_preflight") == "true"
-            val origin = args.getString("relay_origin")
-            assumeTrue("Disposable relay arguments are required", origin?.startsWith("https://127.0.0.1:") == true)
             val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
             val context = ApplicationProvider.getApplicationContext<Context>()
             val reseedProcessDeath = args.getString("reseed_process_death") == "true"
@@ -805,6 +805,7 @@ class PallaSyncRelayInteropTest {
                 PallaSyncCore.endSecretSessions()
             }
         }
+    }
 
     private suspend fun exerciseLocalArtifactBoundary(
         coordinator: PalleriaSyncCoordinator,

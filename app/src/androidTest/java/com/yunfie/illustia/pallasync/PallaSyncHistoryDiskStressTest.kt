@@ -21,11 +21,15 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PallaSyncHistoryDiskStressTest {
     @Test(timeout = 1_800_000)
-    fun tenMillionSeenRowsRemainDiskBackedAndKeysetPaged() = runBlocking<Unit> {
+    fun tenMillionSeenRowsRemainDiskBackedAndKeysetPaged() {
         assumeTrue(
             "Set pallasyncLargeHistoryStress=true for the destructive-sized disposable DB run",
             InstrumentationRegistry.getArguments().getString("pallasyncLargeHistoryStress") == "true",
         )
+        runBlocking<Unit> { runStress() }
+    }
+
+    private suspend fun runStress() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val databaseName = "pallasync-history-stress-${UUID.randomUUID()}.db"
         val chain = "history-stress-chain"
