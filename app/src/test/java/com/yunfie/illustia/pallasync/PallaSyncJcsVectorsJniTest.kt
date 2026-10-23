@@ -62,6 +62,19 @@ class PallaSyncJcsVectorsJniTest {
         }
     }
 
+    @Test
+    fun `byte oriented JNI parser rejects invalid UTF-8 and a leading BOM`() {
+        val invalidBodies =
+            listOf(
+                byteArrayOf(0xc0.toByte(), 0xaf.toByte()),
+                byteArrayOf(0xef.toByte(), 0xbb.toByte(), 0xbf.toByte()) + "{}".toByteArray(),
+            )
+
+        invalidBodies.forEach { body ->
+            runCatching { PallaSyncCore.validateLogHead(body) }.isFailure shouldBe true
+        }
+    }
+
     private data class Vector(
         val input: String,
         val expected: String,
