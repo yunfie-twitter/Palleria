@@ -78,4 +78,23 @@ internal object PallaSyncFractionalOrder {
         check(order.zipWithNext().all { (a, b) -> result.getValue(a) < result.getValue(b) }) { "C_MISSING_DEPENDENCY" }
         return result
     }
+
+    /** Assign evenly spaced exact keys without changing a list's already verified order (§15.5). */
+    fun reindexedKey(
+        zeroBasedIndex: Long,
+        count: Long,
+    ): String {
+        require(count > 0 && zeroBasedIndex in 0 until count) { "C_SCHEMA_VIOLATION" }
+        var digits = 1
+        var space = BigInteger.valueOf(RADIX.toLong())
+        val required = BigInteger.valueOf(count).add(BigInteger.ONE)
+        while (space <= required) {
+            check(digits < MAX_ORDER_BYTES) { "C_ORDER_KEY_EXHAUSTED" }
+            digits++
+            space = space.shiftLeft(DIGIT_BITS)
+        }
+        val numerator = BigInteger.valueOf(zeroBasedIndex + 1).multiply(space)
+        val value = numerator.divide(required)
+        return value.toString(RADIX).padStart(digits, '0').trimEnd('0')
+    }
 }

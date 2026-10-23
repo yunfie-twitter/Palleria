@@ -371,6 +371,8 @@ class PalleriaSyncManager(
 
     internal suspend fun retryBlockedRequestsAfterResolution(code: String): Boolean = coordinator.retryBlockedRequestsAfterResolution(code)
 
+    internal suspend fun reindexBlockedFavoriteOrder(): Boolean = coordinator.reindexBlockedFavoriteOrder()
+
     internal suspend fun getUnresolvedQuarantinePage(
         afterHash: String = "",
         limit: Int = 50,

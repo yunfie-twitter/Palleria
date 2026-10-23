@@ -6199,6 +6199,17 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
+    suspend fun reindexBlockedFavoriteOrder(): Boolean =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val state = activeChainStateLocked() ?: return@withLock false
+                if (!localIntents.hasBlockedFavoriteOrderReindex(state.chainId)) return@withLock false
+                if (localIntents.reindexBlockedFavoriteOrder(state.chainId) == 0) return@withLock false
+                resumeLocalIntentsLocked()
+                true
+            }
+        }
+
     /** Optional recovery audit must not be published into a concurrently selected different chain. */
     internal suspend fun enqueueRecoveryAudit(
         chainId: String,
@@ -8461,6 +8472,7 @@ internal class PalleriaSyncCoordinator(
                         .boundChainOrigin(state.chainId)
                         ?.let(policy.retry::unscopedBlockedCodes)
                         .orEmpty(),
+                favoriteOrderReindexRequired = localIntents.hasBlockedFavoriteOrderReindex(state.chainId),
                 capacityIssue =
                     policy
                         .boundChainOrigin(state.chainId)

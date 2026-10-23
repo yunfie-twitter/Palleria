@@ -96,6 +96,11 @@ interface ProtocolDao {
     ): List<MigrationJournalEntity>
 
     @Query(
+        "SELECT EXISTS(SELECT 1 FROM ps_migrations WHERE migration_id=:id AND state='pending' AND report_json LIKE '%\"blockedCode\":\"C_ORDER_KEY_EXHAUSTED\"%')",
+    )
+    suspend fun hasBlockedFavoriteOrderReindex(id: String): Boolean
+
+    @Query(
         "SELECT * FROM ps_migrations WHERE migration_id=:id AND state IN ('pending','constructed','receipt_verified','legacy_candidate_excluded') AND source_identity LIKE 'legacy:%' AND source_identity NOT LIKE 'legacy-audit:%' AND chunk_index>:after ORDER BY chunk_index LIMIT :limit",
     )
     suspend fun legacyCandidatePage(

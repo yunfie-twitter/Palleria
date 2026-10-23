@@ -205,6 +205,8 @@ fun PallaSyncSettingsScreen(
     var pendingQuarantineExclusion by remember { mutableStateOf<QuarantineSummaryRow?>(null) }
     var showCapacityRecoveryConfirm by remember { mutableStateOf(false) }
     var resolvingCapacityRecovery by remember { mutableStateOf(false) }
+    var showFavoriteOrderReindexConfirm by remember { mutableStateOf(false) }
+    var reindexingFavoriteOrder by remember { mutableStateOf(false) }
     var pendingBlockedRetryCode by remember { mutableStateOf<String?>(null) }
     var retryingBlockedRequestCode by remember { mutableStateOf<String?>(null) }
     var selectedLegacyMigration by remember { mutableStateOf<PallaSyncLocalIntents.LegacyMigrationProgress?>(null) }
@@ -763,6 +765,39 @@ fun PallaSyncSettingsScreen(
                 }
             },
             onDismiss = { showCapacityRecoveryConfirm = false },
+        )
+    }
+
+    if (showFavoriteOrderReindexConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(R.string.pallasync_favorite_order_reindex_title),
+            summary = stringResource(R.string.pallasync_favorite_order_reindex_summary),
+            confirmText = stringResource(R.string.pallasync_favorite_order_reindex_action),
+            destructive = false,
+            onConfirm = {
+                showFavoriteOrderReindexConfirm = false
+                reindexingFavoriteOrder = true
+                scope.launch {
+                    val resumed =
+                        try {
+                            syncManager.reindexBlockedFavoriteOrder()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            false
+                        } finally {
+                            reindexingFavoriteOrder = false
+                        }
+                    clientStatus = syncManager.getClientStatus()
+                    Toast.makeText(
+                        context,
+                        if (resumed) R.string.pallasync_favorite_order_reindex_started else R.string.pallasync_favorite_order_reindex_failed,
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            },
+            onDismiss = { showFavoriteOrderReindexConfirm = false },
         )
     }
 
@@ -2127,6 +2162,15 @@ fun PallaSyncSettingsScreen(
                                         onClick = { pendingBlockedRetryCode = code },
                                     )
                                 }
+                            }
+                            if (status.favoriteOrderReindexRequired) {
+                                DividerLine()
+                                Text(stringResource(R.string.pallasync_favorite_order_reindex_required))
+                                TextButton(
+                                    text = stringResource(R.string.pallasync_favorite_order_reindex_action),
+                                    enabled = !reindexingFavoriteOrder,
+                                    onClick = { showFavoriteOrderReindexConfirm = true },
+                                )
                             }
                             status.capacityIssue?.let { issue ->
                                 DividerLine()

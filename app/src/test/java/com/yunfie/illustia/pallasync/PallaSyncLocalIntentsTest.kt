@@ -11,6 +11,7 @@ import com.yunfie.illustia.pallasync.data.SnapshotInstallEntryEntity
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -28,6 +29,64 @@ class PallaSyncLocalIntentsTest {
     private val chain = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
     private val device = "11111111-1111-4111-8111-111111111111"
     private val log = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+    @Test
+    fun `explicit favorite order reindex resumes exhausted full order from durable intents`() =
+        runBlocking<Unit> {
+            val db = database()
+            try {
+                val store = PallaSyncLocalStore(ApplicationProvider.getApplicationContext(), db)
+                val intents = queue(store, author(store, MemoryStorage()))
+                store.dao.updateChainState(ChainStateEntity(chain, 0, 0, "{}", logId = log, writeState = "active"))
+                val order = listOf("first", "middle", "last")
+                val failed =
+                    PallaSyncPendingEvent(
+                        schema = FAVORITE_TAG_SCHEMA_V3,
+                        entityId = "middle",
+                        operation = SYNC_OPERATION_UPSERT,
+                        body = buildJsonObject { put("tag", "middle") },
+                        favoriteOrder = order,
+                    )
+                intents.stage(chain, listOf(failed))
+                val migrationId = PallaSyncLocalIntents.journalId(chain)
+                val failedRow = checkNotNull(store.protocolDao().migrationChunk(migrationId, 1))
+                val failedWork = Json.decodeFromString<PallaSyncReplayWork>(failedRow.reportJson)
+                store.protocolDao().updateMigrationReport(
+                    migrationId,
+                    1,
+                    failedRow.sourceHash,
+                    "pending",
+                    Json.encodeToString(failedWork.copy(blockedCode = "C_ORDER_KEY_EXHAUSTED")),
+                ) shouldBe 1
+                intents.hasBlockedFavoriteOrderReindex(chain) shouldBe true
+
+                intents.reindexBlockedFavoriteOrder(chain) shouldBe order.size
+                intents.hasBlockedFavoriteOrderReindex(chain) shouldBe false
+                val rows = store.protocolDao().migrationChunks(migrationId, 10).filter { it.chunkIndex > 0 }
+                val works = rows.map { Json.decodeFromString<PallaSyncReplayWork>(it.reportJson) }
+                works.map { it.event.entityId }.toSet() shouldBe order.toSet()
+                works.all {
+                    it.localPrepared && it.blockedCode == null && it.event.favoriteOrder == null
+                } shouldBe true
+                val assigned =
+                    works.associate { work ->
+                        val context = work.event.context
+                        val encodedKey = context.getValue("order_key").toString()
+                        val key = Json.decodeFromString<String>(encodedKey)
+                        work.event.entityId to key
+                    }
+                order
+                    .zipWithNext()
+                    .all { (left, right) -> assigned.getValue(left) < assigned.getValue(right) } shouldBe true
+
+                val restarted = queue(store, author(store, MemoryStorage()))
+                restarted.resume(chain, keys())
+                store.dao.queuedBatch(chain, 200).size shouldBe order.size
+                store.dao.getChainState(chain)?.authorSeq shouldBe order.size.toLong()
+            } finally {
+                db.close()
+            }
+        }
 
     @Test
     fun `legacy migration completion compares verified snapshot authors audit and waits for receipt`() =

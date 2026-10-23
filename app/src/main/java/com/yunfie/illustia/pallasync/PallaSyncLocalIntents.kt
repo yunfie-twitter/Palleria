@@ -263,6 +263,104 @@ internal class PallaSyncLocalIntents(
         }
     }
 
+    suspend fun hasBlockedFavoriteOrderReindex(chain: String): Boolean =
+        store.protocolDao().hasBlockedFavoriteOrderReindex(journalId(chain))
+
+    /** User-confirmed §15.5 recovery; rewrite the blocked intended list and add a fresh upsert per tag. */
+    suspend fun reindexBlockedFavoriteOrder(chain: String): Int =
+        store.transaction {
+            val dao = store.protocolDao()
+            val id = journalId(chain)
+            val state = checkNotNull(store.dao.getChainState(chain)) { "C_MISSING_DEPENDENCY" }
+            var after = 0L
+            var target: PallaSyncPendingEvent? = null
+            while (target == null) {
+                val page = dao.pendingMigrationPage(id, after, PAGE_SIZE)
+                if (page.isEmpty()) break
+                for (row in page) {
+                    val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                    if (work.blockedCode == "C_ORDER_KEY_EXHAUSTED") {
+                        val original = work.sourceEvent ?: work.event
+                        if (original.schema == FAVORITE_TAG_SCHEMA_V3 && original.operation == SYNC_OPERATION_UPSERT) {
+                            target = original
+                            break
+                        }
+                    }
+                }
+                after = page.last().chunkIndex
+            }
+            val blocked = target ?: return@transaction 0
+            val order = checkNotNull(blocked.favoriteOrder) { "C_MISSING_DEPENDENCY" }
+            check(order.isNotEmpty() && order.distinct().size == order.size) { "C_SCHEMA_VIOLATION" }
+            val keys =
+                order.mapIndexed { index, _ ->
+                    PallaSyncFractionalOrder.reindexedKey(index.toLong(), order.size.toLong())
+                }
+            val keyByTag = order.zip(keys).toMap()
+            val existingPendingTags = mutableSetOf<String>()
+            var rewritten = 0
+            after = 0L
+            while (true) {
+                val page = dao.pendingMigrationPage(id, after, PAGE_SIZE)
+                if (page.isEmpty()) break
+                for (row in page) {
+                    val work = Json.decodeFromString<PallaSyncReplayWork>(row.reportJson)
+                    val original = work.sourceEvent ?: work.event
+                    if (
+                        original.schema != FAVORITE_TAG_SCHEMA_V3 || original.operation != SYNC_OPERATION_UPSERT ||
+                        original.favoriteOrder != order || original.entityId !in keyByTag
+                    ) {
+                        continue
+                    }
+                    val prepared =
+                        original.copy(
+                            context = buildJsonObject { put("order_key", keyByTag.getValue(original.entityId)) },
+                            favoriteOrder = null,
+                        )
+                    val next = work.copy(event = prepared, sourceEvent = original, localPrepared = true, blockedCode = null)
+                    check(
+                        dao.updateMigrationReport(
+                            row.migrationId,
+                            row.chunkIndex,
+                            row.sourceHash,
+                            "pending",
+                            Json.encodeToString(next),
+                        ) == 1,
+                    ) { "C_LOCAL_STORAGE_FULL" }
+                    existingPendingTags += original.entityId
+                    rewritten++
+                }
+                after = page.last().chunkIndex
+            }
+            var nextIndex = checkNotNull(dao.lastMigrationIndex(id))
+            for (tag in order) {
+                if (tag in existingPendingTags) continue
+                check(nextIndex < PallaSyncConflictResolver.MAX_COUNTER) { "C_COUNTER_EXHAUSTED" }
+                val event =
+                    PallaSyncPendingEvent(
+                        schema = FAVORITE_TAG_SCHEMA_V3,
+                        entityId = tag,
+                        operation = SYNC_OPERATION_UPSERT,
+                        body = buildJsonObject { put("tag", tag) },
+                        context = buildJsonObject { put("order_key", keyByTag.getValue(tag)) },
+                    )
+                val work = PallaSyncReplayWork(event, targetGeneration = state.generation, localPrepared = true)
+                dao.putMigrationChunk(
+                    MigrationJournalEntity(
+                        id,
+                        ++nextIndex,
+                        sourceHash(event),
+                        FAVORITE_TAG_SCHEMA_V3,
+                        chain,
+                        "pending",
+                        Json.encodeToString(work),
+                    ),
+                )
+                rewritten++
+            }
+            rewritten
+        }
+
     /** Atomically checkpoints a verified source page with the exact target intents it contributed (§13.8). */
     suspend fun stageNewRootMigrationPage(
         targetChain: String,

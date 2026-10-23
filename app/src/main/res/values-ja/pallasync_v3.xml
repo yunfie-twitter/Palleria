@@ -281,4 +281,10 @@
     <string name="pallasync_reseed_source_audit_failed">旧リレーを検証できませんでした。ローカル状態と移行証拠は保持しています。</string>
     <string name="pallasync_archive_restore_root_title">削除状態を検証</string>
     <string name="pallasync_archive_restore_root_summary">このchainの復旧ニーモニックとBIP39パスフレーズを入力してください。archiveを反映する前に、現在の署名済み削除台帳を確認します。</string>
+    <string name="pallasync_favorite_order_reindex_required">favoriteの小数順序キーを使い切りました。保留中の順序とローカルintentは保持されています。</string>
+    <string name="pallasync_favorite_order_reindex_title">favoriteの順序を再indexしますか？</string>
+    <string name="pallasync_favorite_order_reindex_summary">保留中の順序を維持し、間隔を空けた新しいキーを使う高いLamport値のupsertを作成します。この順序を同期したい場合のみ確認してください。</string>
+    <string name="pallasync_favorite_order_reindex_action">再indexして再開</string>
+    <string name="pallasync_favorite_order_reindex_started">favorite順序の再indexをjournalへ保存し、同期を再開しました。</string>
+    <string name="pallasync_favorite_order_reindex_failed">保留中favorite順序を再indexできませんでした。元のintentは保持されています。</string>
 </resources>

@@ -31,4 +31,11 @@ class PallaSyncFractionalOrderTest :
             placed.getValue("visible") shouldBe "1"
             (placed.getValue("new") > "8") shouldBe true
         }
+        "reindex assigns canonical increasing keys across bounded pages" {
+            val keys = (0L until 10_000L).map { PallaSyncFractionalOrder.reindexedKey(it, 10_000) }
+            keys.distinct().size shouldBe keys.size
+            keys.zipWithNext().all { (a, b) -> a < b } shouldBe true
+            keys.all { it.length in 1..256 && it.last() != '0' && it.all { digit -> digit in '0'..'9' || digit in 'a'..'f' } } shouldBe true
+            shouldThrow<IllegalArgumentException> { PallaSyncFractionalOrder.reindexedKey(0, 0) }
+        }
     })
