@@ -34,7 +34,17 @@ internal object PallaSyncSnapshotSemanticComparator {
                     local.materializedSeq == local.verifiedSeq,
                 ).all { it }
         if (!matches) return null
-        if (!verifyControlOnlySuffix(store, chainId, logId, coveredSeq, coveredHash, local.verifiedSeq, local.verifiedHash ?: return null)) {
+        if (
+            !verifyControlOnlySuffix(
+                store,
+                chainId,
+                logId,
+                coveredSeq,
+                coveredHash,
+                local.verifiedSeq,
+                local.verifiedHash ?: return null,
+            )
+        ) {
             return null
         }
         val reader = PallaSyncSnapshotStateReader(store.snapshotDatabase())
@@ -61,7 +71,12 @@ internal object PallaSyncSnapshotSemanticComparator {
         if (coveredSeq > throughSeq) return false
         if (coveredSeq == throughSeq) return coveredHash == expectedHeadHash
         val authorityText = store.protocolDao().currentAuthority(chainId) ?: return false
-        val pin = Json.parseToJsonElement(authorityText).jsonObject.getValue("pin").toString()
+        val pin =
+            Json
+                .parseToJsonElement(authorityText)
+                .jsonObject
+                .getValue("pin")
+                .toString()
         var sequence = coveredSeq
         var previousHash = coveredHash
         while (sequence < throughSeq) {
@@ -75,9 +90,16 @@ internal object PallaSyncSnapshotSemanticComparator {
                 if (entry.getValue("kind").jsonPrimitive.content == "record") return false
                 previousHash =
                     runCatching {
-                        Json.parseToJsonElement(
-                            PallaSyncCore.validateRetainedLogLink(row.signedJson, row.receiptJson, pin, sequence, previousHash),
-                        ).jsonPrimitive.content
+                        Json
+                            .parseToJsonElement(
+                                PallaSyncCore.validateRetainedLogLink(
+                                    row.signedJson,
+                                    row.receiptJson,
+                                    pin,
+                                    sequence,
+                                    previousHash,
+                                ),
+                            ).jsonPrimitive.content
                     }.getOrNull() ?: return false
                 sequence = row.relaySeq
             }
@@ -274,14 +296,20 @@ internal object PallaSyncSnapshotSemanticComparator {
             ) {
                 false
             } else {
-                val archivedLogical = archivedHeader.toMutableMap().apply {
-                    remove("covered_through_seq")
-                    remove("covered_log_hash")
-                }
-                val localLogical = localHeader.toMutableMap().apply {
-                    remove("covered_through_seq")
-                    remove("covered_log_hash")
-                }
+                val archivedLogical =
+                    archivedHeader
+                        .toMutableMap()
+                        .apply {
+                            remove("covered_through_seq")
+                            remove("covered_log_hash")
+                        }
+                val localLogical =
+                    localHeader
+                        .toMutableMap()
+                        .apply {
+                            remove("covered_through_seq")
+                            remove("covered_log_hash")
+                        }
                 JsonObject(archivedLogical) == JsonObject(localLogical)
             }
         }.getOrDefault(false)

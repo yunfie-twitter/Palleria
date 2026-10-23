@@ -135,7 +135,7 @@ internal class PallaSyncRemoteService(
                 call.execute().use { response ->
                     hint = problem(response)
                     relayDate = response.header("Date")
-                    val classified = classifyPallaSyncHttpStatus(response.code, hint)
+                    val classified = classifyPallaSyncHttpStatus(response.code, hint, request)
                     val headerWait =
                         PallaSyncRetryGate.retryAfter(
                             response.header("Retry-After"),

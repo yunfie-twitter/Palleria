@@ -155,7 +155,7 @@ class PallaSyncRetryGateTest {
                 .get()
                 .build()
         val hint = PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", true)
-        val retry = checkNotNull(classifyPallaSyncHttpStatus(404, hint))
+        val retry = checkNotNull(classifyPallaSyncHttpStatus(404, hint, request))
 
         gate.observe(request, retry, hint)
         gate.blockedCode(origin, chain) shouldBe null

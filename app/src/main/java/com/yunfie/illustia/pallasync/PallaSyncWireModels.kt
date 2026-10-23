@@ -425,6 +425,7 @@ internal sealed interface PallaSyncHttpResult<out T> {
 internal fun classifyPallaSyncHttpStatus(
     statusCode: Int,
     problem: PallaSyncProblemHint? = null,
+    request: okhttp3.Request? = null,
 ): PallaSyncHttpResult<Nothing>? =
     when {
         statusCode in 200..299 -> {
@@ -442,7 +443,7 @@ internal fun classifyPallaSyncHttpStatus(
         // §19.2: a missing receipt is pending acceptance evidence, not proof of rejection.
         // Keep the exact request/evidence and retry it only after the normal backoff so the
         // caller can reconcile the accepted object and receipt again.
-        statusCode == 404 && problem?.code == "RECEIPT_NOT_FOUND" && problem.retryable -> {
+        statusCode == 404 && problem?.code == "RECEIPT_NOT_FOUND" && problem.retryable && request.isReceiptLookup() -> {
             PallaSyncHttpResult.Retryable(
                 problem.code,
                 retryAfterMs = problem.retryAfterMs ?: 0,
@@ -476,6 +477,17 @@ internal fun classifyPallaSyncHttpStatus(
             )
         }
     }
+
+private fun okhttp3.Request?.isReceiptLookup(): Boolean {
+    if (this == null || method != "GET") return false
+    val segments = url.pathSegments
+    return segments.size == 6 &&
+        segments.take(3) == listOf("pallasync", "v3", "chains") &&
+        segments[4] == "receipts" &&
+        segments[5].toLongOrNull()?.let { it > 0L } == true &&
+        url.queryParameterNames == setOf("log_id") &&
+        url.queryParameter("log_id") != null
+}
 
 internal fun parseRecordsResponseBody(
     json: Json,

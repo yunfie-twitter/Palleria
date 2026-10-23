@@ -409,7 +409,7 @@ class PallaSyncPolicyGate internal constructor(
                 check(response.header("Content-Type")?.substringBefore(';')?.trim() == "application/problem+json")
                 Json.decodeFromString<PallaSyncProblemHint>(PallaSyncCore.validateProblem(response.pallaSyncBytes(), response.code))
             }.getOrNull()
-        val outcome = classifyPallaSyncHttpStatus(response.code, hint)
+        val outcome = classifyPallaSyncHttpStatus(response.code, hint, request)
         if (outcome is PallaSyncHttpResult.Retryable) {
             val wait =
                 PallaSyncRetryGate.retryAfter(

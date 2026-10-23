@@ -24,12 +24,21 @@ class PallaSyncHttpClassificationTest :
 
         "receipt absence is pending evidence and remains retryable while other 404s remain errors" {
             val missingReceipt = PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", true)
-            classifyPallaSyncHttpStatus(404, missingReceipt) shouldBe
+            val chainId = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
+            val receiptRequest =
+                okhttp3.Request
+                    .Builder()
+                    .url("https://relay.example.com/pallasync/v3/chains/$chainId/receipts/5?log_id=$logId")
+                    .get()
+                    .build()
+            classifyPallaSyncHttpStatus(404, missingReceipt, receiptRequest) shouldBe
                 PallaSyncHttpResult.Retryable("RECEIPT_NOT_FOUND", statusCode = 404)
 
             classifyPallaSyncHttpStatus(404, PallaSyncProblemHint(404, "CHAIN_NOT_FOUND", true)) shouldBe
                 PallaSyncHttpResult.ProtocolError("CHAIN_NOT_FOUND", 404)
-            classifyPallaSyncHttpStatus(404, PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", false)) shouldBe
+            classifyPallaSyncHttpStatus(404, missingReceipt) shouldBe
+                PallaSyncHttpResult.ProtocolError("RECEIPT_NOT_FOUND", 404)
+            classifyPallaSyncHttpStatus(404, PallaSyncProblemHint(404, "RECEIPT_NOT_FOUND", false), receiptRequest) shouldBe
                 PallaSyncHttpResult.ProtocolError("RECEIPT_NOT_FOUND", 404)
         }
 
