@@ -552,7 +552,7 @@ internal class PallaSyncEpochLifecycle(
             }
         val result =
             requireSuccess(
-                remote.execute(request(url, token, body)) {
+                remote.execute(request(url, token, body), explicitRootAuthorization = signerAdmin) {
                     val bytes = it.pallaSyncBytes()
                     val checked =
                         if (target ==

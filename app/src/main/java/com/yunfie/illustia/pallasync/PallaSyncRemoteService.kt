@@ -112,6 +112,7 @@ internal class PallaSyncRemoteService(
         migrationDestination: Boolean = false,
         historicalSourceRead: HistoricalSourceRead? = null,
         enforceRetryGate: Boolean = true,
+        explicitRootAuthorization: Boolean = false,
         onSuccess: (Response) -> PallaSyncHttpResult<T>,
     ): PallaSyncHttpResult<T> {
         val chainRequest = request.url.encodedPath == "/pallasync/v3/chains" || request.url.encodedPath.startsWith("/pallasync/v3/chains/")
@@ -121,7 +122,10 @@ internal class PallaSyncRemoteService(
                     .substringAfter("/pallasync/v2/chains/")
                     .contains('/')
         val trackedRequest = chainRequest || legacySourceRequest
-        if (trackedRequest && enforceRetryGate) policy.retry.before(request)?.let { return it }
+        if (trackedRequest && enforceRetryGate) {
+            if (explicitRootAuthorization) policy.retry.retryWithExplicitRootAuthorization(request)
+            policy.retry.before(request)?.let { return it }
+        }
         val call = client.newCall(request)
         calls.add(call)
         var hint: PallaSyncProblemHint? = null

@@ -342,6 +342,31 @@ internal class PallaSyncRetryGate(
             true
         }
 
+    /**
+     * A foreground mnemonic-holder ceremony may rebuild the same request with an admin
+     * capability token. Release only that exact request after the catalogue's named
+     * authorization precondition changed; never release sibling requests or other codes.
+     */
+    fun retryWithExplicitRootAuthorization(request: Request): Boolean =
+        synchronized(lock) {
+            if (request.header("Authorization")?.startsWith("PallaSync ") != true) {
+                return@synchronized false
+            }
+            val origin = PallaSyncUrls.extractOrigin(request.url)
+            val state = load(origin)
+            val key = fingerprint(request)
+            val code = state.blockedRequests[key]
+            if (code !in ROOT_AUTHORIZATION_RETRY_CODES) return@synchronized false
+            save(
+                origin,
+                state.copy(
+                    blockedRequests = state.blockedRequests - key,
+                    blockedRequestChains = state.blockedRequestChains - key,
+                ),
+            )
+            true
+        }
+
     /** §17.8: a capacity error is unblocked only after the user confirms the prerequisite changed. */
     fun resolveCapacity(
         origin: String,
@@ -530,6 +555,7 @@ internal class PallaSyncRetryGate(
         private const val RATE_MAX_SECONDS = 3600L
         private val CLIENT_ACTION_STATUSES = (400..499).toSet() + 507
         private val CAPACITY_CODES = setOf("QUOTA_EXCEEDED", "STORAGE_UNAVAILABLE")
+        private val ROOT_AUTHORIZATION_RETRY_CODES = setOf("ADMIN_REQUIRED", "ROTATION_NOT_ALLOWED")
 
         // §19.2 retryable means a named precondition changed, not that replaying
         // an old signed proposal is useful. The generic Settings action is only

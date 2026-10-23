@@ -33,7 +33,7 @@ internal class PallaSyncLogPruneRelay(
                 )
             }
         val checked =
-            remote.execute(request) { response ->
+            remote.execute(request, explicitRootAuthorization = true) { response ->
                 validatePruneResponse(response.pallaSyncBytes(), compactionId, throughSeq)
             }
         return when (checked) {

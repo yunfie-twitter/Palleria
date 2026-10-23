@@ -24,12 +24,22 @@ class PallaSyncRetryGateTest {
 
     private fun gate(random: (Long) -> Long = { it }) = PallaSyncRetryGate(prefs, { boot }, { wall }, { elapsed }, random)
 
+    private fun freshGate() =
+        PallaSyncRetryGate(
+            context.getSharedPreferences("retry-root-${UUID.randomUUID()}", Context.MODE_PRIVATE),
+            { boot },
+            { wall },
+            { elapsed },
+        )
+
     private fun request(
         body: String = "{}",
         requestOrigin: String = origin,
+        authorization: String? = null,
     ) = Request
         .Builder()
         .url("$requestOrigin/pallasync/v3/chains/$chain/records")
+        .apply { authorization?.let { header("Authorization", it) } }
         .post(body.toRequestBody())
         .build()
 
@@ -212,6 +222,46 @@ class PallaSyncRetryGateTest {
         gate.resolved(origin, anotherChain, "EPOCH_STALE") shouldBe false
         gate.resolved(origin, anotherChain, "DEVICE_PENDING_KEYS") shouldBe true
         gate.before(second) shouldBe null
+    }
+
+    @Test
+    fun `explicit root authorization releases only exact admin authorization blockers`() {
+        val first = request("{\"epoch\":7}", authorization = "PallaSync expired-device-token")
+        val sibling = request("{\"epoch\":8}", authorization = "PallaSync expired-device-token")
+
+        for (code in listOf("ADMIN_REQUIRED", "ROTATION_NOT_ALLOWED")) {
+            val gate = freshGate()
+            val querySibling =
+                Request
+                    .Builder()
+                    .url("$origin/pallasync/v3/chains/$chain/records?cursor=next")
+                    .header("Authorization", "PallaSync expired-device-token")
+                    .post("{\"epoch\":7}".toRequestBody())
+                    .build()
+            gate.observe(first, PallaSyncHttpResult.ProtocolError(code, 403), PallaSyncProblemHint(403, code, true))
+            gate.observe(sibling, PallaSyncHttpResult.ProtocolError(code, 403), PallaSyncProblemHint(403, code, true))
+            gate.observe(querySibling, PallaSyncHttpResult.ProtocolError(code, 403), PallaSyncProblemHint(403, code, true))
+            gate.before(first) shouldBe PallaSyncHttpResult.ProtocolError(code)
+
+            val refreshedRootRequest = request("{\"epoch\":7}", authorization = "PallaSync fresh-root-token")
+            gate.retryWithExplicitRootAuthorization(request("{\"epoch\":7}")) shouldBe false
+            gate.retryWithExplicitRootAuthorization(refreshedRootRequest) shouldBe true
+            gate.before(refreshedRootRequest) shouldBe null
+            gate.before(sibling) shouldBe PallaSyncHttpResult.ProtocolError(code)
+            gate.before(querySibling) shouldBe PallaSyncHttpResult.ProtocolError(code)
+        }
+
+        val terminalGate = freshGate()
+        val terminal = request("{\"epoch\":9}", authorization = "PallaSync expired-device-token")
+        terminalGate.observe(
+            terminal,
+            PallaSyncHttpResult.ProtocolError("DEVICE_REVOKED", 403),
+            PallaSyncProblemHint(403, "DEVICE_REVOKED", false),
+        )
+        terminalGate.retryWithExplicitRootAuthorization(
+            request("{\"epoch\":9}", authorization = "PallaSync fresh-root-token"),
+        ) shouldBe false
+        terminalGate.before(terminal) shouldBe PallaSyncHttpResult.ProtocolError("DEVICE_REVOKED")
     }
 
     @Test

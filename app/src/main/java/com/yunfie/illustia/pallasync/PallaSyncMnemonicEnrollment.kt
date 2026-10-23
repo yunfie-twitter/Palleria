@@ -171,7 +171,7 @@ internal class PallaSyncMnemonicEnrollment(
             checkNotNull(root.token(origin, "POST", url.encodedPath, body = candidate.body.toByteArray())) { "C_RECOVERY_AUTH_REQUIRED" }
         val request = request(url, token, candidate.body)
         val response =
-            remote.execute(request) {
+            remote.execute(request, explicitRootAuthorization = true) {
                 PallaSyncHttpResult.Success(
                     Json
                         .parseToJsonElement(

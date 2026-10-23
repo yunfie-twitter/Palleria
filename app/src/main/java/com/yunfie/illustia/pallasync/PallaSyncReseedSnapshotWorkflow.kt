@@ -217,7 +217,7 @@ internal class PallaSyncReseedCommitRelay(
                 .build()
         val committed =
             runInterruptible(Dispatchers.IO) {
-                remote.execute(request, migrationDestination = true) { response ->
+                remote.execute(request, migrationDestination = true, explicitRootAuthorization = true) { response ->
                     check(response.code == HTTP_OK) { "C_SCHEMA_VIOLATION" }
                     val checkpoint =
                         PallaSyncCore.validateReseedCommitAcceptance(

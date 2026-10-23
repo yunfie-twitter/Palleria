@@ -904,7 +904,7 @@ internal class PalleriaSyncCoordinator(
                                     .get()
                                     .build()
                             val result =
-                                remote.execute(request) { response ->
+                                remote.execute(request, explicitRootAuthorization = true) { response ->
                                     PallaSyncHttpResult.Success(
                                         response.pallaSyncBytes().also {
                                             check(it.size <= MAX_EXPORT_CHUNK_BYTES) { "C_LOCAL_LIMIT" }
@@ -2390,6 +2390,7 @@ internal class PalleriaSyncCoordinator(
                         root.token(PallaSyncUrls.extractOrigin(base), method, path, query, body.toByteArray())
                     },
                     migrationDestination = true,
+                    explicitRootAuthorization = true,
                 ) { records, response -> snapshotJournal.retainStagedUploadReceipts(records, response) }
 
             suspend fun flushStagedParts() {
@@ -3665,7 +3666,7 @@ internal class PalleriaSyncCoordinator(
         val head =
             when (
                 val result =
-                    remote.execute(request) { response ->
+                    remote.execute(request, explicitRootAuthorization = true) { response ->
                         PallaSyncHttpResult.Success(
                             Json.parseToJsonElement(PallaSyncCore.validateLogHead(response.pallaSyncBytes())).jsonObject,
                         )
@@ -6104,7 +6105,7 @@ internal class PalleriaSyncCoordinator(
                 .post(body.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
         val response =
-            remote.execute(request) { result ->
+            remote.execute(request, explicitRootAuthorization = true) { result ->
                 val liveIdentity = root.identity
                 val publicIdentity =
                     buildJsonObject {
@@ -6440,7 +6441,7 @@ internal class PalleriaSyncCoordinator(
                 .get()
                 .build()
         val proofBytes =
-            when (val result = remote.execute(getRequest) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }) {
+            when (val result = remote.execute(getRequest, explicitRootAuthorization = true) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }) {
                 is PallaSyncHttpResult.Success -> result.value
 
                 else -> return PallaSyncDeletionRequestResult.PENDING_EVIDENCE.also {
@@ -6846,6 +6847,7 @@ internal class PalleriaSyncCoordinator(
                                 .header("Authorization", "PallaSync $token")
                                 .get()
                                 .build(),
+                            explicitRootAuthorization = true,
                         ) { PallaSyncHttpResult.Success(it.pallaSyncBytes()) }
                     val proofBytes =
                         when (response) {

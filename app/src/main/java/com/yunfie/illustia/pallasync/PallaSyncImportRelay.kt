@@ -289,7 +289,7 @@ internal class PallaSyncImportRelay(
                     .build()
             val result =
                 runInterruptible(Dispatchers.IO) {
-                    remote.execute(request) { response ->
+                    remote.execute(request, explicitRootAuthorization = true) { response ->
                         check(response.code == HTTP_ACCEPTED) { "C_SCHEMA_VIOLATION" }
                         PallaSyncHttpResult.Success(PallaSyncImportStageResponse.validate(response.pallaSyncBytes(), chainId))
                     }

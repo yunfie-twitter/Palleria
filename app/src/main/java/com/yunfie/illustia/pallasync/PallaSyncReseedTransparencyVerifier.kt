@@ -283,7 +283,7 @@ internal class PallaSyncReseedTransparencyVerifier(
                 .get()
                 .build()
         return runInterruptible(Dispatchers.IO) {
-            remote.execute(request, migrationDestination = true) { response ->
+            remote.execute(request, migrationDestination = true, explicitRootAuthorization = true) { response ->
                 PallaSyncHttpResult.Success(
                     Json.parseToJsonElement(PallaSyncCore.observeTransparencyHead(response.pallaSyncBytes(), pinJson)).jsonObject,
                 )

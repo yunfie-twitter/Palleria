@@ -107,7 +107,7 @@ internal class PallaSyncRecordRepairRelay(
                 ),
             ) { "C_RELAY_POLICY_CONSENT_REQUIRED" }
         val request = createRequest(url, token, body)
-        return remote.execute(request) { response ->
+        return remote.execute(request, explicitRootAuthorization = true) { response ->
             parseRepairResponse(response.pallaSyncBytes(), pinJson, records)
         }
     }
