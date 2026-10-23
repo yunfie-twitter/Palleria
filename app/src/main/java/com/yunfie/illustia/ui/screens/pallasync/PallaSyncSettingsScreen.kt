@@ -108,6 +108,11 @@ private fun PallaSyncRecoveryHintText(code: String) {
             PallaSyncRecoveryHint.EXPLICIT_RELAY_MIGRATION -> R.string.pallasync_recovery_hint_migration
             PallaSyncRecoveryHint.USER_CAPACITY_RECOVERY -> R.string.pallasync_recovery_hint_capacity
             PallaSyncRecoveryHint.WAIT_FOR_RECEIPT_EVIDENCE -> R.string.pallasync_recovery_hint_receipt
+            PallaSyncRecoveryHint.CORRECT_REQUEST -> R.string.pallasync_recovery_hint_request
+            PallaSyncRecoveryHint.REBUILD_AUTHORIZATION -> R.string.pallasync_recovery_hint_authorization
+            PallaSyncRecoveryHint.VERIFY_IDENTITY -> R.string.pallasync_recovery_hint_identity
+            PallaSyncRecoveryHint.COMPARE_EXISTING_STATE -> R.string.pallasync_recovery_hint_conflict
+            PallaSyncRecoveryHint.VERIFY_DELETION -> R.string.pallasync_recovery_hint_deleted
             null -> return
         }
     Text(stringResource(message))

@@ -19,6 +19,11 @@ internal enum class PallaSyncRecoveryHint {
     EXPLICIT_RELAY_MIGRATION,
     USER_CAPACITY_RECOVERY,
     WAIT_FOR_RECEIPT_EVIDENCE,
+    CORRECT_REQUEST,
+    REBUILD_AUTHORIZATION,
+    VERIFY_IDENTITY,
+    COMPARE_EXISTING_STATE,
+    VERIFY_DELETION,
 }
 
 internal object PallaSyncRecoveryGuidance {
@@ -66,10 +71,63 @@ internal object PallaSyncRecoveryGuidance {
             "QUOTA_EXCEEDED" to PallaSyncRecoveryHint.USER_CAPACITY_RECOVERY,
             "STORAGE_UNAVAILABLE" to PallaSyncRecoveryHint.USER_CAPACITY_RECOVERY,
             "RECEIPT_NOT_FOUND" to PallaSyncRecoveryHint.WAIT_FOR_RECEIPT_EVIDENCE,
+            "INVALID_JSON" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "INVALID_FIELD" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "CURSOR_INVALID" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "FILTER_NOT_ALLOWED" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "ENDPOINT_NOT_FOUND" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "METHOD_NOT_ALLOWED" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "UNSUPPORTED_MEDIA_TYPE" to PallaSyncRecoveryHint.CORRECT_REQUEST,
+            "TOKEN_TTL_TOO_LONG" to PallaSyncRecoveryHint.REBUILD_AUTHORIZATION,
+            "TOKEN_SIGNATURE_INVALID" to PallaSyncRecoveryHint.REBUILD_AUTHORIZATION,
+            "TOKEN_BINDING_MISMATCH" to PallaSyncRecoveryHint.REBUILD_AUTHORIZATION,
+            "DEVICE_REVOKED" to PallaSyncRecoveryHint.VERIFY_IDENTITY,
+            "DEVICE_KEY_MISMATCH" to PallaSyncRecoveryHint.VERIFY_IDENTITY,
+            "ENVELOPE_ACCESS_DENIED" to PallaSyncRecoveryHint.VERIFY_IDENTITY,
+            "OBJECT_SIGNATURE_INVALID" to PallaSyncRecoveryHint.VERIFY_IDENTITY,
+            "ENROLLMENT_CERTIFICATE_INVALID" to PallaSyncRecoveryHint.VERIFY_IDENTITY,
+            "EPOCH_CHAIN_INVALID" to PallaSyncRecoveryHint.VERIFY_IDENTITY,
+            "CHAIN_EXISTS" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "RECORD_ID_CONFLICT" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "DEVICE_ID_CONFLICT" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "REQUEST_ID_CONFLICT" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "ENVELOPE_ID_CONFLICT" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "OPERATION_ID_CONFLICT" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "IMPORT_CONFLICT" to PallaSyncRecoveryHint.COMPARE_EXISTING_STATE,
+            "CHAIN_DELETED" to PallaSyncRecoveryHint.VERIFY_DELETION,
+        )
+
+    /** §19.2 non-retryable server codes: explain the required review without offering replay. */
+    internal val terminalServerCodes: Set<String> =
+        setOf(
+            "INVALID_JSON",
+            "INVALID_FIELD",
+            "CURSOR_INVALID",
+            "FILTER_NOT_ALLOWED",
+            "TOKEN_TTL_TOO_LONG",
+            "TOKEN_SIGNATURE_INVALID",
+            "TOKEN_BINDING_MISMATCH",
+            "DEVICE_REVOKED",
+            "DEVICE_KEY_MISMATCH",
+            "ENVELOPE_ACCESS_DENIED",
+            "ENDPOINT_NOT_FOUND",
+            "METHOD_NOT_ALLOWED",
+            "CHAIN_EXISTS",
+            "RECORD_ID_CONFLICT",
+            "DEVICE_ID_CONFLICT",
+            "REQUEST_ID_CONFLICT",
+            "ENVELOPE_ID_CONFLICT",
+            "OPERATION_ID_CONFLICT",
+            "IMPORT_CONFLICT",
+            "CHAIN_DELETED",
+            "UNSUPPORTED_MEDIA_TYPE",
+            "OBJECT_SIGNATURE_INVALID",
+            "ENROLLMENT_CERTIFICATE_INVALID",
+            "EPOCH_CHAIN_INVALID",
         )
 
     fun forCode(code: String): PallaSyncRecoveryHint? = byCode[code]
 
     /** Normative §19.2 retryable server codes, used to keep UI coverage auditable. */
-    internal val retryableServerCodes: Set<String> = byCode.keys
+    internal val retryableServerCodes: Set<String> = byCode.keys - terminalServerCodes
 }

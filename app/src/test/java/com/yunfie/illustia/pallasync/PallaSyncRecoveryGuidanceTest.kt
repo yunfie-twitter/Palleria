@@ -2,6 +2,7 @@ package com.yunfie.illustia.pallasync
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 
 class PallaSyncRecoveryGuidanceTest :
@@ -63,6 +64,40 @@ class PallaSyncRecoveryGuidanceTest :
                 PallaSyncRecoveryHint.WAIT_FOR_RECEIPT_EVIDENCE
             PallaSyncRecoveryGuidance.forCode("EPOCH_STALE") shouldBe
                 PallaSyncRecoveryHint.VERIFY_EPOCH_HISTORY
-            PallaSyncRecoveryGuidance.forCode("TOKEN_SIGNATURE_INVALID") shouldBe null
+            PallaSyncRecoveryGuidance.forCode("TOKEN_SIGNATURE_INVALID") shouldBe PallaSyncRecoveryHint.REBUILD_AUTHORIZATION
+        }
+
+        "every terminal §19.2 server code has review guidance and no generic retry action" {
+            PallaSyncRecoveryGuidance.terminalServerCodes shouldContainExactlyInAnyOrder
+                setOf(
+                    "INVALID_JSON",
+                    "INVALID_FIELD",
+                    "CURSOR_INVALID",
+                    "FILTER_NOT_ALLOWED",
+                    "TOKEN_TTL_TOO_LONG",
+                    "TOKEN_SIGNATURE_INVALID",
+                    "TOKEN_BINDING_MISMATCH",
+                    "DEVICE_REVOKED",
+                    "DEVICE_KEY_MISMATCH",
+                    "ENVELOPE_ACCESS_DENIED",
+                    "ENDPOINT_NOT_FOUND",
+                    "METHOD_NOT_ALLOWED",
+                    "CHAIN_EXISTS",
+                    "RECORD_ID_CONFLICT",
+                    "DEVICE_ID_CONFLICT",
+                    "REQUEST_ID_CONFLICT",
+                    "ENVELOPE_ID_CONFLICT",
+                    "OPERATION_ID_CONFLICT",
+                    "IMPORT_CONFLICT",
+                    "CHAIN_DELETED",
+                    "UNSUPPORTED_MEDIA_TYPE",
+                    "OBJECT_SIGNATURE_INVALID",
+                    "ENROLLMENT_CERTIFICATE_INVALID",
+                    "EPOCH_CHAIN_INVALID",
+                )
+            PallaSyncRecoveryGuidance.terminalServerCodes.forEach { code ->
+                PallaSyncRecoveryGuidance.forCode(code).shouldNotBeNull()
+                PallaSyncRetryGate.canRetryAfterResolution(code) shouldBe false
+            }
         }
     })

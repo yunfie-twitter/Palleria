@@ -153,6 +153,11 @@
     <string name="pallasync_recovery_hint_migration">relay-noticeとmigration_originは未署名の提案としてのみ扱ってください。移行先を明示選択し、転送・切替の前にorigin、TLS、relay-key pin、chainの完全な連続性を検証してください。</string>
     <string name="pallasync_recovery_hint_capacity">relayの割当量または保存領域を対処し、回復を明示確認してください。未署名のbyte数は診断hintに限られます。</string>
     <string name="pallasync_recovery_hint_receipt">受理済みobjectの署名receiptを待っている可能性があります。objectを保持し、backoff後に同じreceipt lookupを再試行してください。objectを作り直さないでください。</string>
+    <string name="pallasync_recovery_hint_request">このrequestは無効なため停止状態を保ちます。仕様に従ってendpoint、method、media type、filter、cursorまたはbodyを修正してください。同じbytesをそのまま再送しないでください。</string>
+    <string name="pallasync_recovery_hint_authorization">正確なmethod、path、query、bodyに結び付く新しい有効tokenで認可を作り直してください。エラー応答はoperationやbindingを変更する権限を与えません。</string>
+    <string name="pallasync_recovery_hint_identity">このrequestを停止し、固定済みdevice identity、certified key、署名object、epoch chain、recipient認可を検証してください。承認済み修復・登録だけを使い、エラー本文を権限根拠にしないでください。</string>
+    <string name="pallasync_recovery_hint_conflict">認証済みの既存chain、record、device、requestまたはimport状態とローカルpinを比較してください。このrequestは停止したままにし、状態を上書きしたり衝突したimmutable IDを再利用したりしないでください。</string>
+    <string name="pallasync_recovery_hint_deleted">HTTP 410だけでは消去を許可しません。GET /deletionを取得し、署名とledger linkageを固定済みauthorityに対して検証してから削除操作を行ってください。</string>
     <string name="pallasync_blocked_retry_action">前提条件の解消後に再試行</string>
     <string name="pallasync_blocked_retry_title">停止中の要求を再試行しますか？</string>
     <string name="pallasync_blocked_retry_summary">%1$sで停止中の保存済み要求だけを解除して同期を再開します。サーバーのエラー情報は署名されておらず、権限の根拠ではありません。原因となった前提条件を解消した場合のみ確認してください。キュー済みデータは保持されます。単発操作は元の画面から再実行してください。</string>
