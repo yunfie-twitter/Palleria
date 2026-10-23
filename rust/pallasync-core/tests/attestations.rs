@@ -594,6 +594,16 @@ fn deletion_witness_requires_current_certified_device_seed_and_binds_receipt() {
     bundle["witnesses"] = json!([witness.clone()]);
     validate_deletion_evidence_bundle(&receipt, &bundle, &authority).unwrap();
 
+    // §7.12.5 requires unique witness_device_id values, even when the
+    // duplicated witness bytes are otherwise valid and correctly signed.
+    bundle["witnesses"] = json!([witness.clone(), witness.clone()]);
+    assert_eq!(
+        validate_deletion_evidence_bundle(&receipt, &bundle, &authority)
+            .unwrap_err()
+            .0,
+        "C_DELETION_UNVERIFIED"
+    );
+
     let mut wrong_key_seed = [0x44; 32];
     assert_eq!(
         create_deletion_witness(
