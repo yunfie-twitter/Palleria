@@ -170,7 +170,20 @@ class PallaSyncRootInputUiTest {
             }
         }
         compose.onNodeWithText(words).assertIsDisplayed()
-        compose.runOnIdle { assertTrue(secure()) }
+        compose.runOnIdle {
+            assertTrue(secure())
+            val activityWindow = compose.activity.window.decorView
+            assertTrue(
+                "the generated mnemonic must be shown in its own protected dialog window",
+                WindowInspector.getGlobalWindowViews().any { view ->
+                    view !== activityWindow &&
+                        (view.layoutParams as? WindowManager.LayoutParams)?.let { params ->
+                            params.type == WindowManager.LayoutParams.TYPE_APPLICATION &&
+                                params.flags and WindowManager.LayoutParams.FLAG_SECURE != 0
+                        } == true
+                },
+            )
+        }
         compose.onNodeWithText(compose.activity.getString(R.string.action_cancel)).performScrollTo().performClick()
         compose.onNodeWithText(words).assertDoesNotExist()
         compose.runOnIdle { assertFalse(secure()) }
