@@ -39,6 +39,7 @@ internal typealias PallaSyncArchiveBoundaryAuthorityProvider =
     suspend (kotlinx.serialization.json.JsonObject) -> PallaSyncArchiveBoundaryProof?
 internal typealias PallaSyncArchiveSourceEntrySink = suspend (String, String, String, Long) -> Unit
 internal typealias PallaSyncArchiveRemovedIdSink = suspend (String, String, String, String, String) -> Unit
+internal typealias PallaSyncArchiveEvidenceCommit = suspend (suspend () -> Unit) -> Unit
 
 /** Streaming §17.4 footer and line-integrity check; signatures and AEAD remain separate gates. */
 internal object PallaSyncExportArchiveVerifier {
@@ -73,6 +74,7 @@ internal object PallaSyncExportArchiveVerifier {
         boundaryAuthorityProvider: PallaSyncArchiveBoundaryAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
         removedIdSink: PallaSyncArchiveRemovedIdSink? = null,
+        evidenceCommit: PallaSyncArchiveEvidenceCommit? = null,
     ): Header =
         runBlocking {
             verifySuspending(
@@ -88,6 +90,7 @@ internal object PallaSyncExportArchiveVerifier {
                 boundaryAuthorityProvider,
                 sourceEntrySink,
                 removedIdSink,
+                evidenceCommit,
             )
         }
 
@@ -104,6 +107,7 @@ internal object PallaSyncExportArchiveVerifier {
         boundaryAuthorityProvider: PallaSyncArchiveBoundaryAuthorityProvider? = null,
         sourceEntrySink: PallaSyncArchiveSourceEntrySink? = null,
         removedIdSink: PallaSyncArchiveRemovedIdSink? = null,
+        evidenceCommit: PallaSyncArchiveEvidenceCommit? = null,
     ): Header {
         val source = BufferedInputStream(input)
         val digest = MessageDigest.getInstance("SHA-256")
@@ -222,14 +226,22 @@ internal object PallaSyncExportArchiveVerifier {
                             archiveHash = hash,
                         )
                     if (complete) beforeRetain?.invoke(verifiedHeader)
-                    if (complete && removedIdSink != null) {
-                        checkNotNull(receiptLinks).retainRemovedIds(verifiedHeader.logId, hash, removedIdSink)
-                    }
-                    if (complete && logEntrySink != null) {
-                        checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
-                            verifiedAuthorityJson ?: error("C_MISSING_DEPENDENCY"),
-                            logEntrySink,
-                        )
+                    if (complete) {
+                        val retainVerifiedEvidence: suspend () -> Unit = {
+                            if (sourceEntrySink != null) {
+                                checkNotNull(receiptLinks).retainVerifiedSourceEntries(sourceEntrySink)
+                            }
+                            if (removedIdSink != null) {
+                                checkNotNull(receiptLinks).retainRemovedIds(verifiedHeader.logId, hash, removedIdSink)
+                            }
+                            if (logEntrySink != null) {
+                                checkNotNull(receiptLinks).retainVerifiedAuthorityHistory(
+                                    verifiedAuthorityJson ?: error("C_MISSING_DEPENDENCY"),
+                                    logEntrySink,
+                                )
+                            }
+                        }
+                        evidenceCommit?.invoke(retainVerifiedEvidence) ?: retainVerifiedEvidence()
                     }
                     return verifiedHeader
                 }
@@ -389,6 +401,9 @@ internal object PallaSyncExportArchiveVerifier {
             database.execSQL("CREATE TABLE export_source_record_ids (record_id TEXT PRIMARY KEY, record_hash TEXT NOT NULL)")
             database.execSQL(
                 "CREATE TABLE export_source_entries (entry_hash TEXT PRIMARY KEY, relay_seq INTEGER NOT NULL, entry_json TEXT NOT NULL)",
+            )
+            database.execSQL(
+                "CREATE TABLE export_verified_source_entries (source_log_id TEXT NOT NULL, relay_seq INTEGER NOT NULL, entry_json TEXT NOT NULL, receipt_json TEXT NOT NULL, PRIMARY KEY(source_log_id,relay_seq))",
             )
         }
 
@@ -766,7 +781,21 @@ internal object PallaSyncExportArchiveVerifier {
                         }
                     }
                     receiptAuthorityPairs.forEach { (receiptJson, sourceLogId, _) ->
-                        sourceEntrySink?.invoke(sourceLogId, entryJson, receiptJson, sequence)
+                        if (sourceEntrySink != null) {
+                            database.execSQL(
+                                "INSERT OR IGNORE INTO export_verified_source_entries(source_log_id,relay_seq,entry_json,receipt_json) VALUES (?,?,?,?)",
+                                arrayOf<Any>(sourceLogId, sequence, entryJson, receiptJson),
+                            )
+                            val retained =
+                                database
+                                    .rawQuery(
+                                        "SELECT entry_json,receipt_json FROM export_verified_source_entries WHERE source_log_id=? AND relay_seq=?",
+                                        arrayOf(sourceLogId, sequence.toString()),
+                                    ).use { rows ->
+                                        rows.moveToFirst() && rows.getString(0) == entryJson && rows.getString(1) == receiptJson
+                                    }
+                            check(retained) { "C_ACCEPTANCE_UNPROVEN" }
+                        }
                     }
                 }
             }
@@ -808,6 +837,18 @@ internal object PallaSyncExportArchiveVerifier {
                 }
             }
             return true
+        }
+
+        suspend fun retainVerifiedSourceEntries(sink: PallaSyncArchiveSourceEntrySink) {
+            database
+                .rawQuery(
+                    "SELECT source_log_id,relay_seq,entry_json,receipt_json FROM export_verified_source_entries ORDER BY source_log_id,relay_seq",
+                    null,
+                ).use { rows ->
+                    while (rows.moveToNext()) {
+                        sink.invoke(rows.getString(0), rows.getString(2), rows.getString(3), rows.getLong(1))
+                    }
+                }
         }
 
         fun addCompaction(compaction: kotlinx.serialization.json.JsonObject) {

@@ -770,6 +770,24 @@ class PallaSyncExportArchiveTest {
         verified.complete shouldBe true
         retainedSequences shouldBe listOf(1L)
 
+        retainedSequences.clear()
+        shouldThrow<IllegalStateException> {
+            PallaSyncExportArchiveVerifier.verify(
+                ByteArrayInputStream(archive),
+                expected,
+                PallaSyncArchiveRecordVerifier { authority, record, relaySequence ->
+                    PallaSyncCore.validateRecordAuthority(authority, record, relaySequence) shouldBe true
+                },
+                PallaSyncArchiveSnapshotVerifier { _, _, _ -> },
+                beforeRetain = { error("C_ROLLBACK_DETECTED") },
+                sourceLogAuthorityProvider = { _, candidateLogId ->
+                    priorAuthority.takeIf { candidateLogId == sourceLogId }
+                },
+                sourceEntrySink = { _, _, _, _ -> retainedSequences += 1L },
+            )
+        }.message shouldBe "C_ROLLBACK_DETECTED"
+        retainedSequences shouldBe emptyList()
+
         val archiveLines =
             archive
                 .toString(Charsets.UTF_8)

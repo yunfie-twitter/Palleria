@@ -1424,7 +1424,6 @@ internal class PalleriaSyncCoordinator(
                                             db.dao.pendingOutboxCount(state.chainId) == 0L &&
                                             db.protocolDao().unresolvedQuarantineCount(state.chainId) == 0L,
                                     ) { "C_ROLLBACK_DETECTED" }
-                                    stagedSnapshotInstalls.forEach { it.complete() }
                                 }
                             } else {
                                 null
@@ -1666,6 +1665,17 @@ internal class PalleriaSyncCoordinator(
                                                 evidenceJson,
                                             ),
                                         )
+                                    }
+                                }
+                            } else {
+                                null
+                            },
+                        evidenceCommit =
+                            if (retainEvidence) {
+                                { retainVerifiedEvidence ->
+                                    db.transaction {
+                                        retainVerifiedEvidence()
+                                        stagedSnapshotInstalls.forEach { it.complete() }
                                     }
                                 }
                             } else {
