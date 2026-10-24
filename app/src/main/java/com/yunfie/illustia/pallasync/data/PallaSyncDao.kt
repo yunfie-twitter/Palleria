@@ -51,6 +51,20 @@ interface PallaSyncDao {
         sequence: Long,
     ): Int
 
+    /** Verified full-log replay may bind the same immutable record to a repaired incarnation (§10.17). */
+    @Query(
+        "UPDATE pallasync_inbox SET status=:status,quarantine_reason=:reason,relay_seq=:sequence " +
+            "WHERE chain_id=:chain AND record_id=:record AND raw_record_json=:raw",
+    )
+    suspend fun retainLogInboxDisposition(
+        chain: String,
+        record: String,
+        raw: String,
+        sequence: Long,
+        status: String,
+        reason: String?,
+    ): Int
+
     @Query(
         "UPDATE pallasync_outbox SET status = 'queued' WHERE chain_id = :chainId AND device_seq = 0 AND status NOT IN ('accepted','reseed_rebased')",
     )

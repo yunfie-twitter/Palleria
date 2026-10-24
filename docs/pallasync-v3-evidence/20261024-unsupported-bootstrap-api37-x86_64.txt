@@ -1,0 +1,31 @@
+PASS: independent Python signed public recovery-type extensions were rejected without data-log advancement
+PASS: independent Python signature/AEAD and exact relay receipt for unsupported content followed by a valid record
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest:
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: pallasync_reseed_target_argument=missing
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_unsupported_bootstrap=retained_partial_prefix
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 47.226
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1
+
+PASS: Android retained unsupported full-log ciphertext in the recovery inbox, applied the independent valid suffix, and refused complete activation

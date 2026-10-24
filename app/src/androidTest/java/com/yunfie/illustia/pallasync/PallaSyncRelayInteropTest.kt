@@ -313,6 +313,10 @@ class PallaSyncRelayInteropTest {
                             true
                         },
                     )
+                if (args.getString("unsupported_bootstrap") == "true") {
+                    PallaSyncUnsupportedBootstrapInterop.verify(args, joined, store, keys)
+                    return@runBlocking
+                }
                 assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), joined)
                 coordinator.stopBackgroundSync()
                 val state = checkNotNull(store.dao.getActiveChainState())

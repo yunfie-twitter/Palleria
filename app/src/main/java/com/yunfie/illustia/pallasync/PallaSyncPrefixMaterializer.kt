@@ -95,7 +95,7 @@ internal class PallaSyncPrefixMaterializer(
             val entry = Json.parseToJsonElement(row.signedJson).jsonObject
             val prepared = runCatching { prepare(row, entry, authority, device) }
             prepared.exceptionOrNull()?.let { if (it is kotlinx.coroutines.CancellationException) throw it }
-            val code = commit(row, prepared, nextHash, contiguous)
+            val code = commit(row, entry, prepared, nextHash, contiguous)
             if (firstFailure == null) firstFailure = code
             contiguous = contiguous && code == null
             fault(Boundary.PROGRESS_COMMITTED)
@@ -107,6 +107,7 @@ internal class PallaSyncPrefixMaterializer(
 
     private suspend fun commit(
         row: LogEntryEntity,
+        entry: JsonObject,
         prepared: Result<Prepared?>,
         nextHash: String,
         contiguous: Boolean,
@@ -114,12 +115,14 @@ internal class PallaSyncPrefixMaterializer(
         store.transaction {
             val value = prepared.getOrNull()
             val failure = prepared.exceptionOrNull()
-            var code = failure?.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: if (failure == null) null else "C_SCHEMA_VIOLATION"
+            // A runtime/storage/cancellation failure is not evidence of invalid signed content.
+            var code = failure?.let { pendingInboxFailureCode(it) ?: throw it }
             if (value != null) {
                 code = store.protocolDao().recordConflict(value.signed, value.generation, value.device, value.inner)
                 if (code == null) store.protocolDao().applyVerifiedRecord(value.signed, value.generation, value.device, value.inner)
             }
             fault(Boundary.EFFECTS_APPLIED)
+            PallaSyncLogRecordDisposition(store).retain(row, entry, code)
             if (code != null && validationState(code) == "quarantined") {
                 store.protocolDao().quarantine(
                     QuarantineEvidenceEntity(row.chainId, row.entryHash, code, row.signedJson, "pending_resolution"),

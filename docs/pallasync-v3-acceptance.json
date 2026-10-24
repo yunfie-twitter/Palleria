@@ -448,6 +448,8 @@
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRemoteService.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInboxRetry.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncUnsupportedInboxRecovery.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLogRecordDisposition.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPrefixMaterializer.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSchemaRecovery.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncLocalStorageRecovery.kt",
         "PallaSync/src/api/error.rs"
@@ -458,6 +460,9 @@
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncValidationStateTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInboxStorageRecoveryTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncUnsupportedInboxRecoveryTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLogRecordDispositionTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncUnsupportedBootstrapInterop.kt",
+        "PallaSync/tests/reference/unsupported_bootstrap.py",
         "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSchemaRecoveryTest.kt",
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncSchemaRecoveryInterop.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncLocalStorageRecoveryTest.kt",
@@ -465,7 +470,7 @@
         "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncSqliteCapacityFault.kt"
       ],
       "result": "pending",
-      "remaining": "Inbox counts distinguish retryable evidence from unsupported and local operational/recovery states; generic retry is limited to missing dependency/acceptance evidence. Retryable 503 during the exact transparency-evidence GET has isolated Android/relay coverage for byte-preserving pending state and later recovery. Inbox retries persist only explicit protocol codes or SQLiteFullException as C_LOCAL_STORAGE_FULL; unknown local exceptions leave the signed inbox row unchanged. A separate explicit local-storage action now selects only C_LOCAL_STORAGE_FULL operational rows, checks capacity per record and reuses full immutable-record revalidation. An explicit schema-support action now keyset-pages C_UNSUPPORTED_SCHEMA originals through the full verification pipeline after a compatible client update; complete upgrade-version and unsupported-schema interoperability coverage remains pending. An on-disk SQLite page-limit fault now verifies actual SQLiteFullException rollback and retry of the same accepted record after capacity restoration. OS-level ENOSPC, previously unmaterialized multi-table commits, process death/cancellation at other storage boundaries, physical-device UI and remaining catalogue-specific recovery paths still need validation; see the dated report for executed scope.",
+      "remaining": "Inbox counts distinguish retryable evidence from unsupported and local operational/recovery states; generic retry is limited to missing dependency/acceptance evidence. Retryable 503 during the exact transparency-evidence GET has isolated Android/relay coverage for byte-preserving pending state and later recovery. Inbox retries persist only explicit protocol codes or SQLiteFullException as C_LOCAL_STORAGE_FULL; unknown local exceptions leave the signed inbox row unchanged. A separate explicit local-storage action now selects only C_LOCAL_STORAGE_FULL operational rows, checks capacity per record and reuses full immutable-record revalidation. An explicit schema-support action now keyset-pages C_UNSUPPORTED_SCHEMA originals through the full verification pipeline after a compatible client update; a real independent-Python unsupported bootstrap now verifies inbox/log retention, valid suffix application and conservative progress without complete activation. Cross-version upgrade, inactive-bootstrap UI and broader unsupported-schema interoperability coverage remain pending. An on-disk SQLite page-limit fault now verifies actual SQLiteFullException rollback and retry of the same accepted record after capacity restoration. OS-level ENOSPC, previously unmaterialized multi-table commits, process death/cancellation at other storage boundaries, physical-device UI and remaining catalogue-specific recovery paths still need validation; see the dated report for executed scope.",
       "verification_scope": "targeted_partial"
     },
     {
