@@ -41738,7 +41738,7 @@
     "added": 1792764130.0
   },
   "Palleria-v7.0.0-beta.5-release-arm64-v8a.apk": {
-    "hash": "d1417d66540020061e25c0fe602eaa615b7f1f241e4169fd9ea185b1fbd35f49",
+    "hash": "4e22ca3f24771daa22ab2fdc44d28087a919c843e960f1a0a74d7f752c7b747e",
     "hashType": "sha256",
     "uses-permission": [
       [
@@ -41842,12 +41842,12 @@
     ],
     "sig": "f647964cdccdcc133cade2961a136053",
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
-    "size": 64157048,
+    "size": 64182624,
     "apkName": "Palleria-v7.0.0-beta.5-release-arm64-v8a.apk",
-    "added": 1792793617.017349
+    "added": 1792837698.997719
   },
   "Palleria-v7.0.0-beta.5-release-armeabi-v7a.apk": {
-    "hash": "bf0a308aa5f0a818b236cc376e4e97ac500556efaa21cd365bbbc8344636733f",
+    "hash": "a7f2cb2d7c7ed75bde289864b5b142920c449dfdeabde5bfc9cf8d816c424954",
     "hashType": "sha256",
     "uses-permission": [
       [
@@ -41951,12 +41951,12 @@
     ],
     "sig": "f647964cdccdcc133cade2961a136053",
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
-    "size": 60826522,
+    "size": 60852098,
     "apkName": "Palleria-v7.0.0-beta.5-release-armeabi-v7a.apk",
-    "added": 1792793617.810691
+    "added": 1792837699.917899
   },
   "Palleria-v7.0.0-beta.5-release-universal.apk": {
-    "hash": "2ff65dee3fcf9660f212a3b1551d3b18dbce521b94cb74ea35b24707094206f9",
+    "hash": "eb2d48f4f6aba9eebdde648b9ac350d9b19900207613f5b5520b32944c30e313",
     "hashType": "sha256",
     "uses-permission": [
       [
@@ -42066,12 +42066,12 @@
     ],
     "sig": "f647964cdccdcc133cade2961a136053",
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
-    "size": 84508197,
+    "size": 84533773,
     "apkName": "Palleria-v7.0.0-beta.5-release-universal.apk",
-    "added": 1792793618.80122
+    "added": 1792837700.837065
   },
   "Palleria-v7.0.0-beta.5-release-x86_64.apk": {
-    "hash": "9daba23bc1ebaf685efc85a347bb508b257417a38462252c96c7ebe9c7fd198d",
+    "hash": "9a8c29ec718d413e9268c202f4f715e54b4def2cd5e020201fcdb61e179334d1",
     "hashType": "sha256",
     "uses-permission": [
       [
@@ -42175,8 +42175,8 @@
     ],
     "sig": "f647964cdccdcc133cade2961a136053",
     "signer": "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9",
-    "size": 64845643,
+    "size": 64871219,
     "apkName": "Palleria-v7.0.0-beta.5-release-x86_64.apk",
-    "added": 1792793619.641445
+    "added": 1792837701.698583
   }
 }
