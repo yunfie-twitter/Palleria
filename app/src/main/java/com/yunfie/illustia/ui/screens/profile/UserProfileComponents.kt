@@ -141,6 +141,8 @@ internal fun UserProfilePagerContent(
     isBookmarkPaginating: Boolean = false,
     worksLoaded: Boolean = true,
     bookmarksLoaded: Boolean = true,
+    worksError: String? = null,
+    bookmarksError: String? = null,
     allowAutoLoadMore: Boolean = true,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
@@ -236,6 +238,7 @@ internal fun UserProfilePagerContent(
                         settings = settings,
                         hasMore = hasMore,
                         loaded = worksLoaded,
+                        errorMessage = worksError,
                         autoLoadMore = settings.autoLoadMore && allowAutoLoadMore,
                         active = pagerState.settledPage == 0 && !pagerState.isScrollInProgress,
                         nextUrl = nextUrl,
@@ -259,6 +262,7 @@ internal fun UserProfilePagerContent(
                             settings = settings,
                             hasMore = bookmarkHasMore,
                             loaded = bookmarksLoaded,
+                            errorMessage = bookmarksError,
                             autoLoadMore = settings.autoLoadMore && allowAutoLoadMore,
                             active = pagerState.settledPage == 1 && !pagerState.isScrollInProgress,
                             nextUrl = bookmarkNextUrl,
@@ -841,6 +845,7 @@ private fun UserIllustGridPage(
     emptyLabel: String = stringResource(R.string.search_empty_illust),
     keyPrefix: String = "user_illust",
     loaded: Boolean = true,
+    errorMessage: String? = null,
     autoLoadMore: Boolean = settings.autoLoadMore,
     active: Boolean = true,
     onIllustLongClick: ((Illust) -> Unit)? = null,
@@ -865,7 +870,6 @@ private fun UserIllustGridPage(
     )
 
     val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
-    val showRetry = !loaded && !isPaginating && active
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
@@ -901,8 +905,29 @@ private fun UserIllustGridPage(
                 ) {
                     IllustCardSkeleton(shimmerValue = shimmer)
                 }
+            } else if (errorMessage != null || !loaded) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "illust_error") {
+                    UserProfileStatusPlaceholder(
+                        message = errorMessage ?: stringResource(R.string.error_load_artist_failed),
+                        isError = true,
+                        onClick = onLoadMore,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 64.dp),
+                    )
+                }
             } else if (loaded) {
-                item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(emptyLabel) }
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "illust_empty") {
+                    UserProfileStatusPlaceholder(
+                        message = emptyLabel,
+                        isError = false,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 64.dp),
+                    )
+                }
             }
         }
         if (autoLoadMore && isPaginating && illusts.isNotEmpty()) {
@@ -913,7 +938,7 @@ private fun UserIllustGridPage(
             ) {
                 IllustCardSkeleton(shimmerValue = shimmer)
             }
-        } else if ((!autoLoadMore && hasMore) || showRetry) {
+        } else if (!autoLoadMore && hasMore && illusts.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Button(
                     onClick = onLoadMore,

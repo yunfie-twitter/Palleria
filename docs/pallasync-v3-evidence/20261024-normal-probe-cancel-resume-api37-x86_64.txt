@@ -1,0 +1,63 @@
+PASS: independent Python signed public recovery-type extensions were rejected without data-log advancement
+PASS: independent Python verified all three suffix signatures/hash links and their immutable upload receipts
+PASS: a fresh Android coordinator resumed the new signed transparency suffix from its previously verified non-zero anchor
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncTransparencyAnchorInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.yunfie.illustia.pallasync.PallaSyncTransparencyAnchorInteropTest:
+INSTRUMENTATION_STATUS: test=retainedVerifiedAnchorStartsTheNextSuffixRange
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: pallasync_transparency_anchor_resume_baseline=10
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_transparency_anchor_resume_baseline_hash=SXYsvK7dF8UXdCo92lkj4iG5t0d8gvKuR58DxVC3rgI
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncTransparencyAnchorInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=retainedVerifiedAnchorStartsTheNextSuffixRange
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 104.629
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1
+
+RETAINED TRANSPARENCY ANCHOR RESUME
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncTransparencyAnchorInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.yunfie.illustia.pallasync.PallaSyncTransparencyAnchorInteropTest:
+INSTRUMENTATION_STATUS: test=retainedVerifiedAnchorStartsTheNextSuffixRange
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: pallasync_transparency_anchor_cancel=11:13
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_transparency_anchor_resume=10:13
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_transparency_anchor_resume_hash=ctQAezz4Lfi3y4Vmaq33k8KVdP6uR6xdMDF3I92sndc
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncTransparencyAnchorInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=retainedVerifiedAnchorStartsTheNextSuffixRange
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 38.019
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1
+
+PASS: verified retained anchor 10 advanced to signed target 13 in exactly 3 one-entry pages, with matching Android/Python target hashes and no prefix replay; cancellation preserved partial progress and resumed at the next verified index

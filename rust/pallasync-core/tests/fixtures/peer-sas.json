@@ -1,0 +1,31 @@
+{
+  "offer": {
+    "protocol": "pallasync/3",
+    "relay_origin": "https://relay.example.com",
+    "chain_id": "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+    "generation": 0,
+    "parameters_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "epoch_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "request_id": "77777777-7777-4777-8777-777777777777",
+    "offer_nonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+    "expires_at_ms": 1791684300000,
+    "admin_public_key": "DimsluvAJ6cBo17C-yH4Mawy9ZH85cB1odeDncCyFw0",
+    "approver_device_id": "11111111-1111-4111-8111-111111111111",
+    "approver_device_public_key": "JUO5L_EJVRFHatyDadtt3JM2ZaEZeN2hQE7hBmypVZ0",
+    "approver_device_kex_public_key": "j0DFrbaPJWJK5bIU6nZ6bslNgp09e14a0bpvPiE4KF8",
+    "approver_device_record_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  },
+  "request": {
+    "request_id": "77777777-7777-4777-8777-777777777777",
+    "chain_id": "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc",
+    "generation": 0,
+    "device_id": "22222222-2222-4222-8222-222222222222",
+    "device_public_key": "F0VTtFbd38aQjsqxwQH-arIeK6oGF3lbfUOmNIKZP9U",
+    "device_kex_public_key": "NYBy1jZYgNGu6jKa35EhODhR7SGijjt16WXQ0s0WYlQ",
+    "offer_nonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+    "created_at_ms": 1791684000000,
+    "expires_at_ms": 1791684300000,
+    "signature": "pg6pJmACRRA78iVin-eoKartJFnftDo3O2Hskxx4Y4exBXCagcm2SpnHD8xPnppgzTIfOKjqIEF4OwLq1lL0BA"
+  },
+  "expected_sas": "22a8c3123c52"
+}

@@ -1,10 +1,11 @@
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use pallasync_core::crypto::{self};
-use pallasync_core::models::{self, CapabilityToken, InnerRecord, Operation, RecordAAD, SyncRecord};
+use pallasync_core::models::{
+    self, CapabilityToken, InnerRecord, Operation, RecordAAD, SyncRecord,
+};
 
-const KDF01_MNEMONIC: &str =
-    "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
+const KDF01_MNEMONIC: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
 const KDF01_EPOCH_SECRET_HEX: &str =
     "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf";
 
@@ -69,12 +70,11 @@ fn test_tag_01_collection_tag() {
         .try_into()
         .unwrap();
     let root_keys = crypto::derive_root_keys(KDF01_MNEMONIC, "").unwrap();
-    let epoch_keys = crypto::derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret).unwrap();
+    let epoch_keys =
+        crypto::derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret).unwrap();
 
-    let tag = crypto::compute_collection_tag(
-        &epoch_keys.collection_tag_key,
-        "palleria.search_history/3",
-    );
+    let tag =
+        crypto::compute_collection_tag(&epoch_keys.collection_tag_key, "palleria.search_history/3");
     assert_eq!(tag, "ug37uPKZb2rNd2W3emGy3A");
 }
 
@@ -85,7 +85,8 @@ fn test_aad_01_and_frame_01() {
         .try_into()
         .unwrap();
     let root_keys = crypto::derive_root_keys(KDF01_MNEMONIC, "").unwrap();
-    let epoch_keys = crypto::derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret).unwrap();
+    let epoch_keys =
+        crypto::derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret).unwrap();
 
     let aad_obj = RecordAAD {
         r#type: "PALLASYNC-AAD-v3",
@@ -137,10 +138,19 @@ fn test_aad_01_and_frame_01() {
         .unwrap()
         .try_into()
         .unwrap();
-    use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce, aead::{Aead, Payload}};
+    use chacha20poly1305::{
+        KeyInit, XChaCha20Poly1305, XNonce,
+        aead::{Aead, Payload},
+    };
     let cipher = XChaCha20Poly1305::new((&epoch_keys.record_key).into());
     let ciphertext = cipher
-        .encrypt(XNonce::from_slice(&nonce_bytes), Payload { msg: &framed, aad: &aad })
+        .encrypt(
+            XNonce::from_slice(&nonce_bytes),
+            Payload {
+                msg: &framed,
+                aad: &aad,
+            },
+        )
         .unwrap();
 
     assert_eq!(ciphertext.len(), 1040);
@@ -157,10 +167,11 @@ fn test_aad_01_and_frame_01() {
 
 #[test]
 fn test_sig_01_signature_verification() {
-    let device_seed: [u8; 32] = hex::decode("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
-        .unwrap()
-        .try_into()
-        .unwrap();
+    let device_seed: [u8; 32] =
+        hex::decode("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+            .unwrap()
+            .try_into()
+            .unwrap();
     let signing_key = SigningKey::from_bytes(&device_seed);
     let pub_key_bytes = signing_key.verifying_key().to_bytes();
     assert_eq!(
@@ -174,10 +185,10 @@ fn test_sig_01_signature_verification() {
     let pub_key_b64u = URL_SAFE_NO_PAD.encode(pub_key_bytes);
     assert!(crypto::verify_sync_record(&record, &pub_key_b64u).expect("valid signature"));
 
-    // Check with relay metadata added
+    // §§7.1/10.9: relay metadata belongs in a wrapper, never in the signed object.
     let mut relayed = serde_json::to_value(&record).unwrap();
     relayed["relay_seq"] = serde_json::json!(123);
-    assert!(crypto::verify_sync_record_json(&relayed.to_string(), &pub_key_b64u).unwrap());
+    assert!(crypto::verify_sync_record_json(&relayed.to_string(), &pub_key_b64u).is_err());
 
     // Tampering fails
     let mut tampered = record.clone();
@@ -204,8 +215,11 @@ fn test_capability_token_creation_and_canonical_query() {
     )
     .expect("capability token created");
 
-    let token_json_bytes = URL_SAFE_NO_PAD.decode(&token_b64u).expect("decoded base64url");
-    let token: CapabilityToken = serde_json::from_slice(&token_json_bytes).expect("valid token json");
+    let token_json_bytes = URL_SAFE_NO_PAD
+        .decode(&token_b64u)
+        .expect("decoded base64url");
+    let token: CapabilityToken =
+        serde_json::from_slice(&token_json_bytes).expect("valid token json");
 
     assert_eq!(token.v, 3);
     assert_eq!(token.aud, "https://api.yunfi.f5.si");
@@ -223,7 +237,8 @@ fn test_capability_token_creation_and_canonical_query() {
 fn test_sync_record_full_lifecycle() {
     let root_keys = crypto::derive_root_keys(KDF01_MNEMONIC, "").unwrap();
     let epoch_secret = crypto::generate_epoch_secret();
-    let epoch_keys = crypto::derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret).unwrap();
+    let epoch_keys =
+        crypto::derive_epoch_keys(&root_keys.chain_id_digest, 0, &epoch_secret).unwrap();
 
     let (device_signing_key, _) = crypto::generate_device_keys();
     let device_pub_b64u = URL_SAFE_NO_PAD.encode(device_signing_key.verifying_key().as_bytes());
@@ -276,10 +291,11 @@ fn test_hpke_01_and_recovery_01_envelopes() {
     let hpke_01_json = r#"{"chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","ciphertext":"9vikn8cAvrlCPqmNU3R4TjkCs_Fw9-lDDRrRRwXL5T-uK_qFcYo9nuEjxwR9Th80","enc":"eaYx7t4b-cmPEgMs3q3Q56B5OY_HhriMyEbsia-FpRo","envelope_id":"44444444-4444-4444-8444-444444444444","epoch":0,"epoch_commitment":"3fT41zGvEMHJhoQzcQO_4BC_hPtkbiz6Ea7K-rmG9JM","generation":0,"nonce":null,"previous_epoch_hash":null,"recipient_device_id":"11111111-1111-4111-8111-111111111111","recipient_key_hash":"oCiYEAMutBcnTuvEo45ombk1Mh1TVU4y7GMi8Poeck4","recipient_kind":"device","signature":"6E0YidG1-Z2oIMzFci0JyVFjX01-BwxqXxg8SSDWEQGUrJOaO0nlSR6_u4rQJEN_4hQ1iDJ0VsrJItiun3O4AA","signer_device_id":"11111111-1111-4111-8111-111111111111","signer_kind":"device"}"#;
 
     let device_envelope: models::EpochKeyEnvelope = serde_json::from_str(hpke_01_json).unwrap();
-    let recipient_x25519_sk: [u8; 32] = hex::decode("202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f")
-        .unwrap()
-        .try_into()
-        .unwrap();
+    let recipient_x25519_sk: [u8; 32] =
+        hex::decode("202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f")
+            .unwrap()
+            .try_into()
+            .unwrap();
 
     let unwrapped_device_secret = crypto::unwrap_device_epoch_envelope(
         &device_envelope,
@@ -292,7 +308,8 @@ fn test_hpke_01_and_recovery_01_envelopes() {
     // RECOVERY-01 test vector envelope
     let recovery_01_json = r#"{"chain_id":"ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc","ciphertext":"rrR4otAXCIwwqYkaeqeXmkRnNMtLOExnZZrNxkcq58nN4rN42R31yvdUJXf2O_r5","enc":null,"envelope_id":"55555555-5555-4555-8555-555555555555","epoch":0,"epoch_commitment":"3fT41zGvEMHJhoQzcQO_4BC_hPtkbiz6Ea7K-rmG9JM","generation":0,"nonce":"GBkaGxwdHh8gISIjJCUmJygpKissLS4v","previous_epoch_hash":null,"recipient_device_id":null,"recipient_key_hash":null,"recipient_kind":"recovery","signature":"OenLBOTZTIGhUxg7iqFrPnm0gawvCOt7K8-Rq1k8DQc6JIuRzJCpnQ720LoIRYTvML-pi6lqLAv2WlmqHDgYDQ","signer_device_id":"11111111-1111-4111-8111-111111111111","signer_kind":"device"}"#;
 
-    let recovery_envelope: models::EpochKeyEnvelope = serde_json::from_str(recovery_01_json).unwrap();
+    let recovery_envelope: models::EpochKeyEnvelope =
+        serde_json::from_str(recovery_01_json).unwrap();
     let unwrapped_recovery_secret = crypto::unwrap_recovery_epoch_envelope(
         &recovery_envelope,
         &root_keys.recovery_kek,
@@ -333,10 +350,12 @@ fn test_genesis_bundle_creation() {
     )
     .expect("Genesis bundle creation succeeded");
 
-    assert_eq!(bundle.chain_id, "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc");
+    assert_eq!(
+        bundle.chain_id,
+        "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
+    );
     assert_eq!(bundle.epoch, 0);
     assert!(!bundle.device_id.is_empty());
     assert!(!bundle.genesis_request_body_json.is_empty());
     assert!(!bundle.admin_capability_token.is_empty());
 }
-

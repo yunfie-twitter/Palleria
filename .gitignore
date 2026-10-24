@@ -63,3 +63,7 @@ pixez/
 mcp/
 AGENTs.md
 .agents/
+
+# Local Python tooling caches
+__pycache__/
+*.pyc

@@ -30,6 +30,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.AppStorageUsage
 import com.yunfie.illustia.data.readAppStorageUsage
+import com.yunfie.illustia.pallasync.PallaSyncClientStatus
+import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -39,6 +41,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -71,13 +74,23 @@ fun AppDataScreen(
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val context = LocalContext.current
+    val syncManager = remember(context) { PalleriaSyncManager(context = context) }
     val pageTitle = stringResource(R.string.app_data_title)
     var storageUsage by remember { mutableStateOf<AppStorageUsage?>(null) }
+    var syncStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
     var deleteTarget by remember { mutableStateOf<AppDataDeleteTarget?>(null) }
     val mutedTotal = state.settings.mutedIllusts.size + state.settings.mutedUsers.size + state.settings.mutedTags.size
 
-    LaunchedEffect(state.message) {
+    LaunchedEffect(state.message, state.settings.pallaSyncEnabled) {
         storageUsage = withContext(Dispatchers.IO) { context.readAppStorageUsage() }
+        syncStatus =
+            try {
+                syncManager.getClientStatus()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
     }
 
     deleteTarget?.let { target ->
@@ -206,9 +219,68 @@ fun AppDataScreen(
             item {
                 Section(stringResource(R.string.app_data_section_overview)) {
                     ElevatedPanel {
+                        val status = syncStatus
+                        if (status?.partial == true) {
+                            Text(stringResource(R.string.pallasync_count_partial))
+                            DividerLine()
+                        }
+                        val viewCountSummary =
+                            when {
+                                status != null ->
+                                    stringResource(
+                                        R.string.pallasync_capacity_details,
+                                        stringResource(R.string.pallasync_capacity_viewed_scope),
+                                        status.viewedCount,
+                                        status.viewedProjectionCount,
+                                        status.viewedColdCount,
+                                        status.viewedCeiling,
+                                    )
+                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
+                                else -> stringResource(R.string.data_items_count, state.settings.viewHistory.size)
+                            }
+                        val searchCountSummary =
+                            when {
+                                status != null ->
+                                    stringResource(
+                                        R.string.pallasync_capacity_details,
+                                        stringResource(R.string.pallasync_capacity_search_scope),
+                                        status.searchCount,
+                                        status.searchProjectionCount,
+                                        status.searchColdCount,
+                                        status.searchCeiling,
+                                    )
+                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
+                                else -> stringResource(R.string.data_items_count, state.settings.searchHistory.size)
+                            }
+                        val favoriteCountSummary =
+                            when {
+                                status != null ->
+                                    stringResource(
+                                        R.string.pallasync_logical_projection_details,
+                                        stringResource(R.string.data_watchlist_tags),
+                                        status.favoriteCount,
+                                        status.favoriteProjectionCount,
+                                        status.favoriteColdCount,
+                                    )
+                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
+                                else -> stringResource(R.string.data_items_count, state.settings.favoriteTags.size)
+                            }
+                        val muteCountSummary =
+                            when {
+                                status != null ->
+                                    stringResource(
+                                        R.string.pallasync_logical_projection_details,
+                                        stringResource(R.string.data_mute_data),
+                                        status.muteCount,
+                                        status.muteProjectionCount,
+                                        status.muteColdCount,
+                                    )
+                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
+                                else -> stringResource(R.string.data_items_count, mutedTotal)
+                            }
                         SettingRow(
                             stringResource(R.string.data_view_history),
-                            stringResource(R.string.data_items_count, state.settings.viewHistory.size),
+                            viewCountSummary,
                         ) {
                             Text(
                                 stringResource(R.string.data_view_history_badge),
@@ -219,7 +291,7 @@ fun AppDataScreen(
                         DividerLine()
                         SettingRow(
                             stringResource(R.string.data_search_history),
-                            stringResource(R.string.data_items_count, state.settings.searchHistory.size),
+                            searchCountSummary,
                         ) {
                             Text(
                                 stringResource(R.string.data_search_history_badge),
@@ -230,7 +302,7 @@ fun AppDataScreen(
                         DividerLine()
                         SettingRow(
                             stringResource(R.string.data_watchlist_tags),
-                            stringResource(R.string.data_items_count, state.settings.favoriteTags.size),
+                            favoriteCountSummary,
                         ) {
                             Text(
                                 stringResource(R.string.data_watchlist_tags_badge),
@@ -239,7 +311,7 @@ fun AppDataScreen(
                             )
                         }
                         DividerLine()
-                        SettingRow(stringResource(R.string.data_mute_data), stringResource(R.string.data_items_count, mutedTotal)) {
+                        SettingRow(stringResource(R.string.data_mute_data), muteCountSummary) {
                             Text(
                                 stringResource(R.string.data_mute_data_badge),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

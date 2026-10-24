@@ -142,7 +142,10 @@ abstract class IllustiaBookmarkModule(
     }
 
     fun loadMoreUserIllusts() {
-        val session = userProfileRequests.current() ?: return
+        val session =
+            userProfileRequests.current()
+                ?: _uiState.value.selectedUserId?.let { userProfileRequests.open(it, _uiState.value.settings.refreshToken) }
+                ?: return
         val state = _uiState.value
         if (!state.selectedUserIllustsLoaded) {
             loadProfileWorks(session)
@@ -166,9 +169,17 @@ abstract class IllustiaBookmarkModule(
     }
 
     private fun loadProfileBookmarks(nextUrl: String? = null) {
-        val session = userProfileRequests.current() ?: return
+        val session =
+            userProfileRequests.current()
+                ?: _uiState.value.selectedUserId?.let { userProfileRequests.open(it, _uiState.value.settings.refreshToken) }
+                ?: return
         if (!isCurrentProfileRequest(session) || _uiState.value.isSelectedUserBookmarksPaginating) return
-        _uiState.update { it.copy(isSelectedUserBookmarksPaginating = true) }
+        _uiState.update {
+            it.copy(
+                isSelectedUserBookmarksPaginating = true,
+                selectedUserBookmarksError = null,
+            )
+        }
         session.scope.launch {
             try {
                 val page =
@@ -183,6 +194,7 @@ abstract class IllustiaBookmarkModule(
                         selectedUserBookmarks = if (nextUrl == null) items else state.selectedUserBookmarks.appendIllusts(items),
                         selectedUserBookmarksNextUrl = page.nextUrl,
                         selectedUserBookmarksLoaded = true,
+                        selectedUserBookmarksError = null,
                         isSelectedUserBookmarksPaginating = false,
                     )
                 }
@@ -194,7 +206,14 @@ abstract class IllustiaBookmarkModule(
                 _uiState.update { it.copy(isSelectedUserBookmarksPaginating = false) }
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "user_bookmarks_load")
-                _uiState.update { it.copy(message = cleanErrorMessage(error)) }
+                val errorMsg = profileFailureMessage(error)
+                _uiState.update { state ->
+                    if (nextUrl == null && state.selectedUserBookmarks.isEmpty()) {
+                        state.copy(selectedUserBookmarksError = errorMsg)
+                    } else {
+                        state.copy(message = cleanErrorMessage(error))
+                    }
+                }
             }
         }
     }
