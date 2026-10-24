@@ -93,6 +93,9 @@ fun ScrollBlurOverlay(
     val outline = MiuixTheme.colorScheme.outline
     val backdrop = rememberLayerBackdrop()
     val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // クイック設定に覆われている間は、覆われたヘッダーのバックドロップ再録画と
+    // 追加のぼかし合成を止める（スクロール位置は保持したまま）。
+    val systemCovered by rememberSystemUiCoveredState()
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
@@ -113,7 +116,7 @@ fun ScrollBlurOverlay(
             Modifier
                 .fillMaxSize()
                 .then(
-                    if (supportsBlur) {
+                    if (supportsBlur && !systemCovered) {
                         Modifier.layerBackdrop(backdrop)
                     } else {
                         Modifier
@@ -125,14 +128,14 @@ fun ScrollBlurOverlay(
             val totalBackdropHeightDp = with(density) { measuredHeaderHeight.toDp() }
             val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.28f * progress).coerceIn(0f, 1f)
 
-            if (baseAlpha > 0f || (supportsBlur && progress > 0f)) {
+            if (baseAlpha > 0f || (supportsBlur && progress > 0f && !systemCovered)) {
                 Box(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .height(totalBackdropHeightDp)
                             .then(
-                                if (supportsBlur && progress > 0f) {
+                                if (supportsBlur && progress > 0f && !systemCovered) {
                                     Modifier.progressiveTextureBlur(
                                         backdrop = backdrop,
                                         shape = RectangleShape,

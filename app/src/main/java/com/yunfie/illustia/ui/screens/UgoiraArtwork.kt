@@ -76,6 +76,12 @@ private const val UGOIRA_START_DELAY_MS = 150L
 private const val POWER_SAVE_IDLE_DELAY_MS = 150L
 private const val SEEKING_IDLE_DELAY_MS = 60L
 
+/**
+ * Fixed requester key for the high refresh-rate request. Keying by mode would collide with the
+ * viewer's request for the same mode: its onDispose would release this page's boost too.
+ */
+private val GOING_UGOIRA_HZ_KEY = Any()
+
 @Composable
 internal fun UgoiraArtwork(
     previewUrl: String,
@@ -199,13 +205,27 @@ internal fun UgoiraArtwork(
     val bitmapPool = remember(playback) { java.util.concurrent.ConcurrentLinkedQueue<Bitmap>() }
     if (isActive && playback != null && playback.frames.isNotEmpty()) {
         com.yunfie.illustia.platform
-            .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost)
+            .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost, key = GOING_UGOIRA_HZ_KEY)
     }
     val context = LocalContext.current
     val preferredConfig = remember(context) { PlatformCapabilities.recommendedBitmapConfig(context) }
     val maxCachedFrames = remember(context) { PlatformCapabilities.recommendedUgoiraMaxCachedFrames(context) }
     val prefetchAhead = remember(context) { PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) }
     val keepBehind = remember(context) { PlatformCapabilities.recommendedUgoiraKeepBehind(context) }
+
+    DisposableEffect(isActive, playback) {
+        onDispose {
+            if (isActive) return@onDispose
+            // 画面外（非アクティブ）のページはデコード済みフレームを保持し続けるとメモリを圧迫する。
+            // 復帰時は上の LaunchedEffect が現在位置から再デコードするため再生挙動は変わらない���
+            decodedBitmaps.clear()
+            currentBitmap = null
+            while (true) {
+                val queued = bitmapPool.poll() ?: break
+                if (!queued.isRecycled) queued.recycle()
+            }
+        }
+    }
 
     // フレームのデコードは ConcurrentHashMap に書き込む。
     // メモリ上限を超えないよう、フレーム数が多い場合は再生位置前後のスライディングウィンドウで管理する。
