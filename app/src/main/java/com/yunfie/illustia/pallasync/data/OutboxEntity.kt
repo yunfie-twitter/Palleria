@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["status"]),
         Index(value = ["chain_id", "status"]),
+        Index(value = ["chain_id", "record_id"], unique = true),
     ],
 )
 data class OutboxEntity(
@@ -19,4 +20,7 @@ data class OutboxEntity(
     @ColumnInfo(name = "status") val status: String, // queued, pending_initial_merge, uploading, accepted, rejected
     @ColumnInfo(name = "event_json") val eventJson: String,
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "record_id") val recordId: String? = null,
+    @ColumnInfo(name = "object_hash") val objectHash: String? = null,
+    @ColumnInfo(name = "receipt_json") val receiptJson: String? = null,
 )

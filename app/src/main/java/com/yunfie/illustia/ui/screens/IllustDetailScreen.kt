@@ -164,7 +164,7 @@ fun IllustDetailScreen(
     var revealMutedArtwork by remember(illust.id, isArtistMuted, isTagMuted) { mutableStateOf(!isArtworkMuted) }
     val pixivUrl = remember(illust.id) { "https://www.pixiv.net/artworks/${illust.id}" }
     var isRefreshing by rememberSaveable { mutableStateOf(false) }
-    var lastMouseScrollTime by remember { mutableStateOf(0L) }
+    val lastMouseScrollTime = remember { LongArray(1) }
     val mouseScrollConnection =
         remember {
             object : NestedScrollConnection {
@@ -173,7 +173,7 @@ fun IllustDetailScreen(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (System.currentTimeMillis() - lastMouseScrollTime < 400L && available.y > 0f) {
+                    if (System.currentTimeMillis() - lastMouseScrollTime[0] < 400L && available.y > 0f) {
                         return Offset(0f, available.y)
                     }
                     return Offset.Zero
@@ -400,7 +400,7 @@ fun IllustDetailScreen(
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
         ) {
-            if (isActive && PlatformCapabilities.supportsHardwareBlur(context)) {
+            if (isActive && isPulling && PlatformCapabilities.supportsHardwareBlur(context)) {
                 PixivImage(
                     url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
                     contentDescription = null,
@@ -417,16 +417,18 @@ fun IllustDetailScreen(
                     thumbnail = true,
                 )
             }
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            val raw = pullToRefreshState.pullProgress
-                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
-                            alpha = progress * 0.42f
-                        }.background(MiuixTheme.colorScheme.surface),
-            )
+            if (isPulling) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val raw = pullToRefreshState.pullProgress
+                                val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                                alpha = progress * 0.42f
+                            }.background(MiuixTheme.colorScheme.surface),
+                )
+            }
 
             Surface(
                 modifier =
@@ -456,7 +458,7 @@ fun IllustDetailScreen(
                                             if (event.type == PointerEventType.Scroll ||
                                                 event.changes.any { it.type == PointerType.Mouse }
                                             ) {
-                                                lastMouseScrollTime = System.currentTimeMillis()
+                                                lastMouseScrollTime[0] = System.currentTimeMillis()
                                             }
                                         }
                                     }

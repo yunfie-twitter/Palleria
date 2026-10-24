@@ -1,0 +1,3 @@
+# Signed disclosures are authenticated over exact Markdown bytes (§7.13/§17.12).
+rust/pallasync-core/tests/fixtures/privacy.md -text -whitespace
+rust/pallasync-core/tests/fixtures/privacy.json -text

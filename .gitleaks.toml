@@ -1,0 +1,27 @@
+# These files are fixed, public cryptographic interoperability fixtures. Their
+# private test keys are required to reproduce the cross-language vectors and
+# are not application credentials. Keep this list limited to the exact files.
+title = "Palleria with public PallaSync test vectors"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixed published PallaSync protocol test vectors only"
+paths = [
+    '''(^|/)app/src/test/resources/pallasync/python-genesis-acceptance\.json$''',
+    '''(^|/)app/src/androidTest/assets/pallasync/python-genesis-acceptance\.json$''',
+    '''(^|/)app/src/test/resources/pallasync/python-epoch-acceptance\.json$''',
+    '''(^|/)app/src/androidTest/assets/pallasync/python-epoch-acceptance\.json$''',
+    '''(^|/)app/src/test/resources/pallasync/python-recovery-c8-package\.json$''',
+    '''(^|/)app/src/test/resources/pallasync/python-peer-genesis\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/python-genesis-acceptance\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/python-epoch-acceptance\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/recovery-blob-aad-c8\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/recovery-blob-plaintext-c8\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/recovery-manifest-c8\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/recovery-package-c8\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/recovery-share-c8\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/recovery-share-aad-c8\.json$''',
+    '''(^|/)rust/pallasync-core/tests/fixtures/privacy\.md$''',
+]

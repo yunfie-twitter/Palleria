@@ -41,6 +41,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
@@ -66,6 +67,8 @@ fun UserProfileScreen(
     isBookmarkPaginating: Boolean = false,
     worksLoaded: Boolean = true,
     bookmarksLoaded: Boolean = true,
+    worksError: String? = null,
+    bookmarksError: String? = null,
     onBack: () -> Unit,
     onOpenIllust: (Illust) -> Unit,
     onBookmark: (Illust) -> Unit,
@@ -93,11 +96,12 @@ fun UserProfileScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val profileBackgroundColor =
-        if (settings.useDynamicColor && isDynamicColorAvailable()) {
-            backgroundColor
-        } else {
-            MiuixTheme.colorScheme.surface
-        }
+        resolvePageBackgroundColor(
+            useDynamicColor = settings.useDynamicColor,
+            dynamicColorAvailable = isDynamicColorAvailable(),
+            dynamicBackgroundColor = backgroundColor,
+            fallbackBackgroundColor = MiuixTheme.colorScheme.surface,
+        )
     val isDarkTheme = profileBackgroundColor.luminance() < 0.5f
 
     var showUnfollowConfirm by remember(user.id) { mutableStateOf(false) }
@@ -264,6 +268,8 @@ fun UserProfileScreen(
             isPaginating = isPaginating || processedIllusts.processing,
             worksLoaded = worksLoaded,
             bookmarksLoaded = bookmarksLoaded,
+            worksError = worksError,
+            bookmarksError = bookmarksError,
             allowAutoLoadMore = typeFilter == UserWorkTypeFilter.All && sortOrder == UserWorkSortOrder.Newest,
             isBookmarkPaginating = isBookmarkPaginating || processedBookmarks.processing,
             onOpenIllust = onOpenIllust,

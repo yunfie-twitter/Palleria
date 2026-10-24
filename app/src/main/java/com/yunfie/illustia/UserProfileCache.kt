@@ -15,12 +15,15 @@ internal data class CachedUserProfile(
     fun restore(state: IllustiaUiState): IllustiaUiState =
         state.copy(
             selectedUser = user,
+            selectedUserError = null,
             selectedUserIllusts = works,
             selectedUserNextUrl = nextUrl,
             selectedUserBookmarks = bookmarks,
             selectedUserBookmarksNextUrl = bookmarkNextUrl,
             selectedUserIllustsLoaded = true,
             selectedUserBookmarksLoaded = bookmarksLoaded,
+            selectedUserIllustsError = null,
+            selectedUserBookmarksError = null,
         )
 }
 

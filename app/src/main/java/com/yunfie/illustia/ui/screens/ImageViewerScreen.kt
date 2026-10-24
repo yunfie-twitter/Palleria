@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -558,15 +559,16 @@ fun ImageViewerScreen(
         val bgAlpha = (1f - dismissProgress * 1.2f).coerceIn(0f, 1f)
         val contentScale = (1f - dismissProgress * 0.2f).coerceIn(0.7f, 1f)
 
+        val currentIsZoomed by rememberUpdatedState(isZoomed)
         val swipeModifier =
-            if (swipeToDismissEnabled && !comicMode && !isZoomed) {
-                Modifier.pointerInput(swipeToDismissEnabled, isZoomed, comicMode) {
+            if (swipeToDismissEnabled && !comicMode) {
+                Modifier.pointerInput(swipeToDismissEnabled, comicMode) {
                     detectVerticalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
-                                if (dismissOffsetY.value > dismissThresholdPx) {
+                                if (!currentIsZoomed && dismissOffsetY.value > dismissThresholdPx) {
                                     onBack()
-                                } else {
+                                } else if (dismissOffsetY.value != 0f) {
                                     dismissOffsetY.animateTo(
                                         0f,
                                         spring(dampingRatio = 0.8f, stiffness = 600f),
@@ -576,13 +578,21 @@ fun ImageViewerScreen(
                         },
                         onDragCancel = {
                             coroutineScope.launch {
-                                dismissOffsetY.animateTo(
-                                    0f,
-                                    spring(dampingRatio = 0.8f, stiffness = 600f),
-                                )
+                                if (dismissOffsetY.value != 0f) {
+                                    dismissOffsetY.animateTo(
+                                        0f,
+                                        spring(dampingRatio = 0.8f, stiffness = 600f),
+                                    )
+                                }
                             }
                         },
                         onVerticalDrag = { change, dragAmount ->
+                            if (currentIsZoomed) {
+                                if (dismissOffsetY.value != 0f) {
+                                    coroutineScope.launch { dismissOffsetY.snapTo(0f) }
+                                }
+                                return@detectVerticalDragGestures
+                            }
                             if (dragAmount > 0f || dismissOffsetY.value > 0f) {
                                 change.consume()
                                 val currentOffset = dismissOffsetY.value

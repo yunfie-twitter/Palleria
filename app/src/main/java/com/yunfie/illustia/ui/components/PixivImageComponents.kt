@@ -81,25 +81,41 @@ fun PixivImage(
             val maxCap = PlatformCapabilities.maxImageDecodeDimension(context)
             (screenMaxDim * 1.25f).toInt().coerceIn(1080, maxCap)
         }
+    val decodeDimensionPx =
+        if (thumbnail) {
+            if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
+                maxDecodeDimensionPx
+            } else {
+                PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
+            }
+        } else if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
+            maxDecodeDimensionPx
+        } else if (maxDecodeDimensionPx == null) {
+            defaultMaxDimension
+        } else {
+            null
+        }
     val imageRequest =
         remember(
             effectiveUrl,
             refreshRequest,
             thumbnail,
-            maxDecodeDimensionPx,
-            defaultMaxDimension,
+            decodeDimensionPx,
             allowRgb565,
             wideColorGamutEnabled,
             hasSuccessListener,
             hasLoadingListener,
         ) {
+            val memoryCacheKey =
+                pixivImageMemoryCacheKey(effectiveUrl, thumbnail, decodeDimensionPx) +
+                    (if (refreshRequest == 0) "" else "#reload-$refreshRequest")
             val builder =
                 ImageRequest
                     .Builder(context)
                     .data(effectiveUrl)
                     .httpHeaders(PixivImageHeaders)
                     .diskCachePolicy(if (refreshRequest == 0) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY)
-                    .memoryCacheKey(if (refreshRequest == 0) effectiveUrl else "$effectiveUrl#reload-$refreshRequest")
+                    .memoryCacheKey(memoryCacheKey)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .crossfade(!thumbnail && crossfade && PlatformCapabilities.supportsImageCrossfade(context))
 
@@ -134,39 +150,20 @@ fun PixivImage(
             builder
                 .apply {
                     if (thumbnail) {
-                        val defaultThumbSize = PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
-                        val thumbSize =
-                            if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
-                                maxDecodeDimensionPx
-                            } else {
-                                defaultThumbSize
-                            }
-                        size(thumbSize)
+                        size(requireNotNull(decodeDimensionPx))
                         scale(Scale.FILL)
                         precision(Precision.INEXACT)
                         allowRgb565(true)
                     } else {
-                        val targetSize =
-                            if (maxDecodeDimensionPx != null && maxDecodeDimensionPx > 0) {
-                                maxDecodeDimensionPx
-                            } else if (maxDecodeDimensionPx == null) {
-                                defaultMaxDimension
-                            } else {
-                                null
-                            }
-                        if (targetSize != null) {
-                            size(targetSize)
+                        if (decodeDimensionPx != null) {
+                            size(decodeDimensionPx)
                             scale(Scale.FIT)
                             precision(Precision.INEXACT)
                         }
                         val supportsWcg = PlatformCapabilities.supportsWideColorGamut(context)
                         if (wideColorGamutEnabled && supportsWcg && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            if (hasSuccessListener) {
-                                bitmapConfig(Bitmap.Config.RGBA_F16)
-                            } else {
-                                allowHardware(true)
-                                bitmapConfig(Bitmap.Config.HARDWARE)
-                            }
+                            allowHardware(true)
+                            bitmapConfig(Bitmap.Config.HARDWARE)
                         } else {
                             val shouldAllowRgb565 =
                                 allowRgb565 ||
@@ -246,11 +243,18 @@ fun PrefetchPixivImages(
 
         val imageLoader = SingletonImageLoader.get(context)
         val memoryCache = imageLoader.memoryCache
+        val thumbnailDecodeDimension = PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
         for (i in prefetchUrls.indices) {
             val url = prefetchUrls[i]
             if (!activeRequests.containsKey(url)) {
+                val memoryCacheKey =
+                    pixivImageMemoryCacheKey(
+                        url,
+                        thumbnail = true,
+                        decodeDimensionPx = thumbnailDecodeDimension,
+                    )
                 // If the image is already in memory cache, no need to issue prefetch request.
-                if (memoryCache != null && memoryCache[coil3.memory.MemoryCache.Key(url)] != null) {
+                if (memoryCache != null && memoryCache[coil3.memory.MemoryCache.Key(memoryCacheKey)] != null) {
                     continue
                 }
 
@@ -264,9 +268,10 @@ fun PrefetchPixivImages(
                         .Builder(context)
                         .data(url)
                         .httpHeaders(PixivImageHeaders)
+                        .memoryCacheKey(memoryCacheKey)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .memoryCachePolicy(CachePolicy.ENABLED)
-                        .size(PlatformCapabilities.recommendedThumbnailDecodeDimension(context))
+                        .size(thumbnailDecodeDimension)
                         .scale(Scale.FILL)
                         .precision(Precision.INEXACT)
                         .allowRgb565(true)

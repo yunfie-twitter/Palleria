@@ -48,6 +48,18 @@ fun isAppDarkTheme(
 
 fun isDynamicColorAvailable(): Boolean = PlatformCapabilities.supportsDynamicColor()
 
+internal fun resolvePageBackgroundColor(
+    useDynamicColor: Boolean,
+    dynamicColorAvailable: Boolean,
+    dynamicBackgroundColor: Color,
+    fallbackBackgroundColor: Color,
+): Color =
+    if (useDynamicColor && dynamicColorAvailable) {
+        dynamicBackgroundColor
+    } else {
+        fallbackBackgroundColor
+    }
+
 private fun Colors.withArtworkAccent(accent: Color): Colors {
     val readableOnAccent = if (accent.luminance() > 0.52f) Color.Black else Color.White
     return copy(

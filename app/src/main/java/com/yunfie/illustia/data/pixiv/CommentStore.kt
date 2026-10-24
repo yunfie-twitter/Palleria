@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+private fun Comment.isPixivCommentDisabledNotice(): Boolean = comment?.contains("コメントがオフにされています") == true
+
 enum class CommentArtworkType {
     ILLUST,
     NOVEL,
@@ -16,6 +18,7 @@ enum class CommentArtworkType {
 
 data class CommentState(
     val comments: List<Comment> = emptyList(),
+    val hasDisabledNotice: Boolean = false,
     val nextUrl: String? = null,
     val errorMessage: String? = null,
     val isEmpty: Boolean = false,
@@ -46,19 +49,25 @@ class CommentStore(
             val response =
                 when {
                     type == CommentArtworkType.ILLUST && isReplay -> {
-                        repository.illustCommentReplies(parentCommentId ?: error("parentCommentId is required"))
+                        repository.illustCommentReplies(
+                            parentCommentId ?: error("parentCommentId is required"),
+                            forceRefresh = forceRefresh,
+                        )
                     }
 
                     type == CommentArtworkType.ILLUST -> {
-                        repository.illustComments(id)
+                        repository.illustComments(id, forceRefresh = forceRefresh)
                     }
 
                     type == CommentArtworkType.NOVEL && isReplay -> {
-                        repository.novelCommentReplies(parentCommentId ?: error("parentCommentId is required"))
+                        repository.novelCommentReplies(
+                            parentCommentId ?: error("parentCommentId is required"),
+                            forceRefresh = forceRefresh,
+                        )
                     }
 
                     else -> {
-                        repository.novelComments(id)
+                        repository.novelComments(id, forceRefresh = forceRefresh)
                     }
                 }
             applyResponse(response)
@@ -122,6 +131,12 @@ class CommentStore(
         _state.update { current ->
             current.copy(
                 comments = if (append) current.comments + response.comments else response.comments,
+                hasDisabledNotice =
+                    if (append) {
+                        current.hasDisabledNotice || response.comments.any { it.isPixivCommentDisabledNotice() }
+                    } else {
+                        response.comments.any { it.isPixivCommentDisabledNotice() }
+                    },
                 nextUrl = response.nextUrl,
                 isEmpty = response.comments.isEmpty() && !append,
                 isLoading = false,

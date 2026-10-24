@@ -16,7 +16,7 @@ class PallaSyncSettingsEventsTest :
             buildSettingsSyncEvents(previous, next) shouldBe emptyList()
         }
 
-        "all four domains emit item-level upserts and deletes" {
+        "history cache changes emit upserts and only explicit collections infer deletes" {
             val previous =
                 AppSettings(
                     favoriteTags = listOf("old"),
@@ -43,21 +43,59 @@ class PallaSyncSettingsEventsTest :
                     .map { Triple(it.schema, it.entityId, it.operation) }
 
             operations.shouldContainAll(
-                Triple(FAVORITE_TAG_SCHEMA_V2, "old", SYNC_OPERATION_DELETE),
-                Triple(FAVORITE_TAG_SCHEMA_V2, "new", SYNC_OPERATION_UPSERT),
-                Triple(SEARCH_HISTORY_SCHEMA_V2, "old query", SYNC_OPERATION_DELETE),
-                Triple(SEARCH_HISTORY_SCHEMA_V2, "new query", SYNC_OPERATION_UPSERT),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "tag:old mute", SYNC_OPERATION_DELETE),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "tag:new mute", SYNC_OPERATION_UPSERT),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "user:1", SYNC_OPERATION_DELETE),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "user:11", SYNC_OPERATION_UPSERT),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "illust:2", SYNC_OPERATION_DELETE),
-                Triple(MUTE_SETTINGS_SCHEMA_V2, "illust:12", SYNC_OPERATION_UPSERT),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "seen:3", SYNC_OPERATION_DELETE),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "seen:13", SYNC_OPERATION_UPSERT),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "viewed:4", SYNC_OPERATION_DELETE),
-                Triple(VIEW_HISTORY_SCHEMA_V2, "viewed:14", SYNC_OPERATION_UPSERT),
+                Triple(FAVORITE_TAG_SCHEMA_V3, "old", SYNC_OPERATION_DELETE),
+                Triple(FAVORITE_TAG_SCHEMA_V3, "new", SYNC_OPERATION_UPSERT),
+                Triple(SEARCH_HISTORY_SCHEMA_V3, "new query", SYNC_OPERATION_UPSERT),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "tag:old mute", SYNC_OPERATION_DELETE),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "tag:new mute", SYNC_OPERATION_UPSERT),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "user:1", SYNC_OPERATION_DELETE),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "user:11", SYNC_OPERATION_UPSERT),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "illust:2", SYNC_OPERATION_DELETE),
+                Triple(MUTE_SETTINGS_SCHEMA_V3, "illust:12", SYNC_OPERATION_UPSERT),
+                Triple(VIEW_HISTORY_SCHEMA_V3, "seen:13", SYNC_OPERATION_UPSERT),
+                Triple(VIEW_HISTORY_SCHEMA_V3, "viewed:14", SYNC_OPERATION_UPSERT),
             )
+        }
+
+        "evicting a display suffix or emptying a cache never deletes logical history" {
+            val previous =
+                AppSettings(
+                    searchHistory = (1..200).map { "query $it" },
+                    seenFeedIllusts = (1L..200L).toList(),
+                    viewHistory = (1L..200L).map { syncIllust(it, "Viewed") },
+                )
+            val next =
+                previous.copy(
+                    searchHistory = listOf("new query") + previous.searchHistory.take(199),
+                    seenFeedIllusts = listOf(201L) + previous.seenFeedIllusts.take(199),
+                    viewHistory = listOf(syncIllust(201L, "New")) + previous.viewHistory.take(199),
+                )
+            buildSettingsSyncEvents(previous, next).all { it.operation == "upsert" } shouldBe true
+            buildSettingsSyncEvents(previous, next).size shouldBe 3
+            buildSettingsSyncEvents(
+                previous,
+                previous.copy(
+                    searchHistory = emptyList(),
+                    seenFeedIllusts = emptyList(),
+                    viewHistory = emptyList(),
+                ),
+            ) shouldBe emptyList()
+        }
+
+        "explicit history erasure uses scoped watermarks and complete entity IDs" {
+            val edits =
+                listOf(
+                    PallaSyncHistoryEdit.ClearSearch,
+                    PallaSyncHistoryEdit.ClearViewed,
+                    PallaSyncHistoryEdit.RemoveQuery("old query"),
+                    PallaSyncHistoryEdit.RemoveViewed(listOf(3L, 3L)),
+                )
+            val events = edits.events()
+            events.map { it.operation } shouldBe listOf("clear", "clear", "delete", "delete")
+            events.map { it.entityId } shouldBe listOf("*", "*", "old query", "viewed:3")
+            events[0].context.toString() shouldBe "{\"scope\":\"all\"}"
+            events[1].context.toString() shouldBe "{\"scope\":\"viewed\"}"
+            events.all { it.body.toString() == "{}" } shouldBe true
         }
 
         "history reorder emits only the item that must move to the front" {
@@ -66,7 +104,7 @@ class PallaSyncSettingsEventsTest :
 
             val historyEvents =
                 buildSettingsSyncEvents(previous, next)
-                    .filter { it.schema == SEARCH_HISTORY_SCHEMA_V2 }
+                    .filter { it.schema == SEARCH_HISTORY_SCHEMA_V3 }
 
             historyEvents.map { it.operation } shouldBe listOf(SYNC_OPERATION_UPSERT)
             historyEvents.map { it.entityId } shouldBe listOf("gamma")
@@ -89,12 +127,12 @@ class PallaSyncSettingsEventsTest :
             buildSettingsSyncEvents(previous, next)
                 .map { Triple(it.schema, it.entityId, it.operation) } shouldBe
                 listOf(
-                    Triple(SEARCH_HISTORY_SCHEMA_V2, "new", SYNC_OPERATION_UPSERT),
-                    Triple(VIEW_HISTORY_SCHEMA_V2, "viewed:41", SYNC_OPERATION_UPSERT),
+                    Triple(SEARCH_HISTORY_SCHEMA_V3, "new", SYNC_OPERATION_UPSERT),
+                    Triple(VIEW_HISTORY_SCHEMA_V3, "viewed:41", SYNC_OPERATION_UPSERT),
                 )
         }
 
-        "seen history uses reverse initial upserts and a minimal reorder upsert" {
+        "seen membership adds new IDs and ignores display reorder" {
             val initial =
                 buildSettingsSyncEvents(
                     SyncedCollectionsSnapshot(),
@@ -107,7 +145,7 @@ class PallaSyncSettingsEventsTest :
                     SyncedCollectionsSnapshot(seenFeedIllusts = listOf(3L, 2L, 1L)),
                     SyncedCollectionsSnapshot(seenFeedIllusts = listOf(2L, 3L, 1L)),
                 ).filter { it.entityId.startsWith("seen:") }
-            reordered.map { it.entityId } shouldBe listOf("seen:2")
+            reordered shouldBe emptyList()
         }
     })
 

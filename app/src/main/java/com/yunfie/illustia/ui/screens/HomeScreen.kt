@@ -33,6 +33,7 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.onTopBarTap
@@ -84,6 +85,20 @@ fun HomeScreen(
 
     LaunchedEffect(pagerState.currentPage) {
         viewModel.updateHomeSelectedTab(pagerState.currentPage)
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.tabScrollToTopRequests.collect { tab ->
+            if (tab == AppTab.Home) {
+                val currentTab = HomeTab.entries[pagerState.currentPage]
+                val gridState =
+                    when (currentTab) {
+                        HomeTab.Feed -> viewModel.homeFeedGridState
+                        HomeTab.Following -> viewModel.homeTimelineGridState
+                    }
+                gridState.smoothScrollToTop(scrollBehavior)
+            }
+        }
     }
 
     LaunchedEffect(selectedTab) {
@@ -205,8 +220,18 @@ fun HomeScreen(
                         onTabSelected = { index ->
                             if (index != selectedTab.ordinal) {
                                 performHaptic(AppHapticEffect.Toggle)
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            } else {
+                                performHaptic(AppHapticEffect.Click)
+                                coroutineScope.launch {
+                                    val gridState =
+                                        when (selectedTab) {
+                                            HomeTab.Feed -> viewModel.homeFeedGridState
+                                            HomeTab.Following -> viewModel.homeTimelineGridState
+                                        }
+                                    gridState.smoothScrollToTop(scrollBehavior)
+                                }
                             }
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
                         isBlurEnabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
                         modifier =

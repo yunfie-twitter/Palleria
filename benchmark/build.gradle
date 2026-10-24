@@ -45,7 +45,7 @@ baselineProfile {
 
 dependencies {
     constraints {
-        def wireVersion = "7.0.4"
+        def wireVersion = "7.1.0"
         implementation("com.squareup.wire:wire-runtime:${wireVersion}") {
             because "GHSA-9rm7-3qhh-h2mc: validate protobuf lengths before advancing decoder cursors"
         }

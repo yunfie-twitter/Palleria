@@ -70,6 +70,7 @@ import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGridSkeleton
@@ -78,6 +79,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -263,6 +265,26 @@ fun SearchScreen(
 
     val scheme = MiuixTheme.colorScheme
     val performHaptic = rememberHapticFeedbackAction()
+    val scrollBehavior = MiuixScrollBehavior()
+    LaunchedEffect(viewModel, isResultRoute, isResultMode, state.searchSelectedTab) {
+        if (!isResultRoute) {
+            viewModel.tabScrollToTopRequests.collect { tab ->
+                if (tab == AppTab.Search) {
+                    val targetGrid =
+                        if (isResultMode) {
+                            if (state.searchSelectedTab == 1) {
+                                viewModel.userSearchResultGridState
+                            } else {
+                                viewModel.searchResultGridState
+                            }
+                        } else {
+                            viewModel.searchBrowseGridState
+                        }
+                    targetGrid.smoothScrollToTop(scrollBehavior)
+                }
+            }
+        }
+    }
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = scheme.surface,
@@ -270,7 +292,7 @@ fun SearchScreen(
         ScrollBlurScaffold(
             modifier = Modifier.fillMaxSize(),
             enabled = state.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur) && !isResultMode && !searchExpanded,
-            scrollBehavior = MiuixScrollBehavior(),
+            scrollBehavior = scrollBehavior,
             scrollFraction = {
                 val grid = viewModel.searchBrowseGridState
                 if (grid.firstVisibleItemIndex > 0) 1f else (grid.firstVisibleItemScrollOffset / 64f).coerceIn(0f, 1f)

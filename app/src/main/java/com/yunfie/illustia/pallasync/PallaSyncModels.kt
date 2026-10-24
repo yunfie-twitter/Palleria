@@ -5,12 +5,19 @@ import kotlinx.serialization.json.JsonElement
 
 internal const val FAVORITE_TAG_SCHEMA_V1 = "palleria.favorite_tag/1"
 internal const val FAVORITE_TAG_SCHEMA_V2 = "palleria.favorite_tag/2"
+internal const val FAVORITE_TAG_SCHEMA_V3 = "palleria.favorite_tag/3"
 internal const val SEARCH_HISTORY_SCHEMA_V1 = "palleria.search_history/1"
 internal const val SEARCH_HISTORY_SCHEMA_V2 = "palleria.search_history/2"
+internal const val SEARCH_HISTORY_SCHEMA_V3 = "palleria.search_history/3"
 internal const val MUTE_SETTINGS_SCHEMA_V1 = "palleria.mute_settings/1"
 internal const val MUTE_SETTINGS_SCHEMA_V2 = "palleria.mute_settings/2"
+internal const val MUTE_SETTINGS_SCHEMA_V3 = "palleria.mute_settings/3"
 internal const val VIEW_HISTORY_SCHEMA_V1 = "palleria.view_history/1"
 internal const val VIEW_HISTORY_SCHEMA_V2 = "palleria.view_history/2"
+internal const val VIEW_HISTORY_SCHEMA_V3 = "palleria.view_history/3"
+internal const val DEVICE_LIFECYCLE_SCHEMA_V3 = "pallasync.device/3"
+internal const val AUDIT_SCHEMA_V3 = "pallasync.audit/3"
+internal const val CHAIN_SCHEMA_V3 = "palleria.chain/3"
 
 internal const val SYNC_OPERATION_UPSERT = "upsert"
 internal const val SYNC_OPERATION_DELETE = "delete"
@@ -50,22 +57,29 @@ data class SeenIllustBody(
 @Serializable
 data class ViewedIllustBody(
     val id: Long,
-    val title: String,
-    val artistName: String,
-    val imageUrl: String,
-    val pageCount: Int,
-    val type: String,
-    val isBookmarked: Boolean = false,
-    val xRestrict: Int = 0,
-    val tags: List<String> = emptyList(),
-    val illustAiType: Int = 0,
+    val title: String? = null,
+    val artistName: String? = null,
+    val imageUrl: String? = null,
+    val pageCount: Int? = null,
+    val type: String? = null,
+    val isBookmarked: Boolean? = null,
+    val xRestrict: Int? = null,
+    val tags: List<String>? = null,
+    val illustAiType: Int? = null,
+    val ext: kotlinx.serialization.json.JsonObject? = null,
 )
 
+@Serializable
 internal data class PallaSyncPendingEvent(
     val schema: String,
     val entityId: String,
     val operation: String,
     val body: JsonElement,
+    val context: kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(emptyMap()),
+    // A local ordering intent, consumed before wire encoding; never a signed/wire member.
+    val favoriteOrder: List<String>? = null,
+    // Local occurrence time survives deferred audit publication; encoded only as Operation.created_at_ms.
+    val createdAtMs: Long? = null,
 )
 
 internal sealed interface PallaSyncApplyResult {

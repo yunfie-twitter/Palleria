@@ -1,7 +1,7 @@
 [versions]
 agp = "9.4.1"
 baseline-profile = "1.5.0"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 ksp = "2.3.12"
 ktlint-plugin = "14.2.0"
 detekt = "2.0.0-alpha.6"
@@ -13,7 +13,7 @@ core-splashscreen = "1.2.0"
 security-crypto = "1.1.0"
 datastore = "1.2.1"
 room = "2.8.5"
-sentry = "8.59.0"
+sentry = "8.61.0"
 zxing-android = "4.3.0"
 zxing = "3.5.4"
 desugar = "2.1.5"
@@ -30,13 +30,14 @@ biometric = "1.4.0-alpha07"
 miuix = "0.9.3"
 miuix-blur = "0.9.4"
 shizuku = "13.1.5"
-kotest = "6.2.5"
+kotest = "6.2.6"
 junit4 = "4.13.2"
 androidx-test-core = "1.7.0"
 robolectric = "4.17"
 junit-vintage = "6.1.3"
 androidx-test-junit = "1.3.0"
 androidx-test-runner = "1.7.0"
+androidx-test-espresso = "3.7.0"
 uiautomator = "2.4.0"
 benchmark = "1.5.0"
 glance = "1.1.1"
@@ -91,6 +92,7 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 junit-vintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit-vintage" }
 androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-junit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
 uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 benchmark-macro = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }

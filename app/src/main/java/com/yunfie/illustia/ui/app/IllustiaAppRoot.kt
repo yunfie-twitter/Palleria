@@ -1036,13 +1036,14 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                                 selected = isSelected,
                                                 onClick = {
                                                     viewModel.closeAccountSwitcher()
-                                                    if (backStack.lastOrNull() != AppRoute.Main) {
+                                                    val wasOnMain = backStack.lastOrNull() == AppRoute.Main
+                                                    if (!wasOnMain) {
                                                         backStack.clear()
                                                         backStack.add(AppRoute.Main)
                                                         selectedWatchlistSeriesIds.clear()
                                                     }
-                                                    if (tab == AppTab.ShortsFeed && selectedTab == AppTab.ShortsFeed) {
-                                                        viewModel.refreshShortsFeed()
+                                                    if (wasOnMain && selectedTab == tab && pagerState.currentPage == pageIndex) {
+                                                        viewModel.tabScrollToTopRequests.tryEmit(tab)
                                                     } else {
                                                         selectedTab = tab
                                                         coroutineScope.launch { pagerState.animateScrollToPage(pageIndex) }
@@ -1091,8 +1092,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                         onPopRoute = ::popRoute,
                                         onSearchTag = ::searchFromDetail,
                                         onTabSelected = { index, tab ->
-                                            if (tab == AppTab.ShortsFeed && selectedTab == AppTab.ShortsFeed) {
-                                                viewModel.refreshShortsFeed()
+                                            if (selectedTab == tab && pagerState.currentPage == index) {
+                                                viewModel.tabScrollToTopRequests.tryEmit(tab)
                                             } else {
                                                 selectedTab = tab
                                                 coroutineScope.launch { pagerState.animateScrollToPage(index) }

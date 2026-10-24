@@ -32,22 +32,32 @@ abstract class IllustiaDetailProfileModule(
     fun openIllust(illust: Illust) {
         captureProfileReturnDetail()
         recordViewHistory(illust)
+        val cached = detailSnapshots[illust.id]
         _uiState.update {
-            it.copy(selectedIllust = illust, selectedIllustUser = null, selectedIllustFirstComment = null, relatedIllusts = emptyList())
+            it.copy(
+                selectedIllust = cached?.illust ?: illust,
+                selectedIllustUser = cached?.user,
+                selectedIllustFirstComment = cached?.firstComment,
+                relatedIllusts = cached?.relatedIllusts ?: emptyList(),
+            )
         }
         _detailNavigationRequests.tryEmit(illust.id)
         launchDetailExtras(illust)
     }
 
     private fun recordViewHistory(illust: Illust) {
-        if (_uiState.value.settings.saveViewHistory) {
-            val isBookmarked = illust.isBookmarked || _uiState.value.bookmarkItems.any { it.id == illust.id }
-            val recordedIllust = if (illust.isBookmarked != isBookmarked) illust.copy(isBookmarked = isBookmarked) else illust
-            val history =
-                (listOf(recordedIllust) + _uiState.value.settings.viewHistory)
-                    .distinctBy { it.id }
-                    .take(48)
-            updateSettings { it.copy(viewHistory = history) }
+        viewModelScope.launch(Dispatchers.Default) {
+            val currentSettings = _uiState.value.settings
+            if (currentSettings.saveViewHistory) {
+                if (currentSettings.viewHistory.firstOrNull()?.id == illust.id) return@launch
+                val isBookmarked = illust.isBookmarked || _uiState.value.bookmarkItems.any { it.id == illust.id }
+                val recordedIllust = if (illust.isBookmarked != isBookmarked) illust.copy(isBookmarked = isBookmarked) else illust
+                val history =
+                    (listOf(recordedIllust) + currentSettings.viewHistory)
+                        .distinctBy { it.id }
+                        .take(48)
+                updateSettings { it.copy(viewHistory = history) }
+            }
         }
     }
 
@@ -66,18 +76,11 @@ abstract class IllustiaDetailProfileModule(
                             }
                         kotlinx.coroutines.coroutineScope {
                             val relatedDeferred = async { repository.relatedIllusts(illust.id) }
-                            val firstCommentDeferred =
-                                async {
-                                    runCatching {
-                                        repository.illustComments(illust.id).comments.firstOrNull()
-                                    }.getOrNull()
-                                }
                             val userDeferred =
                                 fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
                                     async { repository.userDetail(artistId) }
                                 }
                             val related = relatedDeferred.await()
-                            val firstComment = firstCommentDeferred.await()
                             val user = userDeferred?.await()
                             _uiState.update {
                                 if (it.selectedIllust?.id != illust.id) {
@@ -98,7 +101,7 @@ abstract class IllustiaDetailProfileModule(
                                         selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                         selectedIllustUser = user,
-                                        selectedIllustFirstComment = firstComment,
+                                        selectedIllustFirstComment = null,
                                     )
                                 }
                             }
@@ -171,18 +174,11 @@ abstract class IllustiaDetailProfileModule(
                     val fullIllust = repository.illustDetail(illustId)
                     kotlinx.coroutines.coroutineScope {
                         val relatedDeferred = async { repository.relatedIllusts(illustId) }
-                        val firstCommentDeferred =
-                            async {
-                                runCatching {
-                                    repository.illustComments(illustId).comments.firstOrNull()
-                                }.getOrNull()
-                            }
                         val userDeferred =
                             fullIllust.artistId.takeIf { it > 0L }?.let { artistId ->
                                 async { repository.userDetail(artistId) }
                             }
                         val related = relatedDeferred.await()
-                        val firstComment = firstCommentDeferred.await()
                         val user = userDeferred?.await()
                         _uiState.update {
                             if (it.selectedIllust?.id != illustId) {
@@ -192,7 +188,7 @@ abstract class IllustiaDetailProfileModule(
                                     selectedIllust = fullIllust,
                                     relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
                                     selectedIllustUser = user,
-                                    selectedIllustFirstComment = firstComment,
+                                    selectedIllustFirstComment = null,
                                 )
                             }
                         }
@@ -486,7 +482,13 @@ abstract class IllustiaDetailProfileModule(
             try {
                 val profile = withContext(Dispatchers.IO) { repository.userDetail(userId, forceRefresh = forceRefresh) }
                 if (!isCurrentProfileRequest(session)) return@launch
-                _uiState.update { it.copy(selectedUser = profile, loadState = LoadState.Loaded) }
+                _uiState.update {
+                    it.copy(
+                        selectedUser = profile,
+                        selectedUserError = null,
+                        loadState = LoadState.Loaded,
+                    )
+                }
                 userPageSnapshot = null
                 userProfileCache.put(_uiState.value)
             } catch (expectedFailure: Exception) {
@@ -495,9 +497,14 @@ abstract class IllustiaDetailProfileModule(
                 if (!isCurrentProfileRequest(session)) return@launch
                 if (handleAuthExpired(error)) return@launch
                 userProfileRequests.close()
-                restoreUserPageSnapshot()
-                val message = loadFailureMessage(_uiState.value, error, str(R.string.error_load_artist_failed))
-                _uiState.update { it.copy(message = message, loadState = LoadState.Error(message)) }
+                val message = profileFailureMessage(error, str(R.string.error_load_artist_failed))
+                _uiState.update {
+                    it.copy(
+                        selectedUserError = message,
+                        isSelectedUserIllustsPaginating = false,
+                        isSelectedUserBookmarksPaginating = false,
+                    )
+                }
             }
         }
         loadProfileWorks(session)
@@ -508,7 +515,12 @@ abstract class IllustiaDetailProfileModule(
         nextUrl: String? = null,
     ) {
         if (!isCurrentProfileRequest(session) || _uiState.value.isSelectedUserIllustsPaginating) return
-        _uiState.update { it.copy(isSelectedUserIllustsPaginating = true) }
+        _uiState.update {
+            it.copy(
+                isSelectedUserIllustsPaginating = true,
+                selectedUserIllustsError = null,
+            )
+        }
         session.scope.launch {
             try {
                 val page =
@@ -523,6 +535,7 @@ abstract class IllustiaDetailProfileModule(
                         selectedUserIllusts = if (nextUrl == null) items else state.selectedUserIllusts.appendIllusts(items),
                         selectedUserNextUrl = page.nextUrl,
                         selectedUserIllustsLoaded = true,
+                        selectedUserIllustsError = null,
                         isSelectedUserIllustsPaginating = false,
                     )
                 }
@@ -534,7 +547,14 @@ abstract class IllustiaDetailProfileModule(
                 _uiState.update { it.copy(isSelectedUserIllustsPaginating = false) }
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "user_illusts_load")
-                _uiState.update { it.copy(message = cleanErrorMessage(error)) }
+                val errorMsg = profileFailureMessage(error, str(R.string.error_load_artist_failed))
+                _uiState.update { state ->
+                    if (nextUrl == null && state.selectedUserIllusts.isEmpty()) {
+                        state.copy(selectedUserIllustsError = errorMsg)
+                    } else {
+                        state.copy(message = cleanErrorMessage(error))
+                    }
+                }
             }
         }
     }
@@ -550,10 +570,12 @@ abstract class IllustiaDetailProfileModule(
         val state = _uiState.value
         if (state.selectedUserId == userId && !state.userPageDismissed) {
             if (state.selectedUser == null) {
-                openUserPage(userId)
+                if (state.selectedUserError == null) {
+                    openUserPage(userId)
+                }
             } else {
                 val session = userProfileRequests.open(userId, state.settings.refreshToken)
-                if (!state.selectedUserIllustsLoaded) loadProfileWorks(session)
+                if (!state.selectedUserIllustsLoaded && state.selectedUserIllustsError == null) loadProfileWorks(session)
             }
         }
     }
