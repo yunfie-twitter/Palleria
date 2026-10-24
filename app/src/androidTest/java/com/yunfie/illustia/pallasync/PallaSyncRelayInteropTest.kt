@@ -9,15 +9,15 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.yunfie.illustia.pallasync.data.OutboxEntity
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -1294,7 +1294,9 @@ class PallaSyncRelayInteropTest {
                     error("Injected archive restore interruption")
                 }
 
-                PallaSyncArchiveRestoreBoundary.PREFIX_MATERIALIZED -> Unit
+                PallaSyncArchiveRestoreBoundary.PREFIX_MATERIALIZED -> {
+                    Unit
+                }
             }
         }
         val interruptedRestore =
@@ -1545,8 +1547,20 @@ class PallaSyncRelayInteropTest {
             assertEquals("pending_evidence", retained.status)
             assertEquals(event.signedJson, retained.rawRecordJson)
             val savedProgress = checkNotNull(keys.transparencyRecoveryProgress(chain))
-            assertEquals(1L, savedProgress.getValue("anchor").jsonObject.getValue("index").jsonPrimitive.long)
-            val targetIndex = savedProgress.getValue("target_head").jsonObject.getValue("entry_index").jsonPrimitive.long
+            assertEquals(
+                1L,
+                savedProgress
+                    .getValue("anchor")
+                    .jsonObject
+                    .getValue("index")
+                    .jsonPrimitive.long,
+            )
+            val targetIndex =
+                savedProgress
+                    .getValue("target_head")
+                    .jsonObject
+                    .getValue("entry_index")
+                    .jsonPrimitive.long
             assertTrue("The test range did not contain another transparency page", targetIndex > 1L)
             InstrumentationRegistry.getInstrumentation().sendStatus(
                 0,
@@ -1562,8 +1576,7 @@ class PallaSyncRelayInteropTest {
                     .post(
                         "{\"successful_pages\":1,\"missing_page\":$injectMissingTransparencyPage}"
                             .toRequestBody(null),
-                    )
-                    .build()
+                    ).build()
             client.newCall(armRequest).execute().use { response ->
                 assertEquals(200, response.code)
                 assertEquals("{\"armed\":true}", response.body.string())
@@ -1573,8 +1586,21 @@ class PallaSyncRelayInteropTest {
             assertTrue(stillPending.status, stillPending.status in setOf("pending_dependency", "pending_evidence"))
             assertEquals(event.signedJson, stillPending.rawRecordJson)
             val partialProgress = checkNotNull(keys.transparencyRecoveryProgress(chain))
-            assertEquals(1L, partialProgress.getValue("anchor").jsonObject.getValue("index").jsonPrimitive.long)
-            assertTrue(partialProgress.getValue("target_head").jsonObject.getValue("entry_index").jsonPrimitive.long > 1L)
+            assertEquals(
+                1L,
+                partialProgress
+                    .getValue("anchor")
+                    .jsonObject
+                    .getValue("index")
+                    .jsonPrimitive.long,
+            )
+            assertTrue(
+                partialProgress
+                    .getValue("target_head")
+                    .jsonObject
+                    .getValue("entry_index")
+                    .jsonPrimitive.long > 1L,
+            )
             assertEquals(0, store.protocolDao().unresolvedQuarantineCount(chain))
             delay(1_200)
         }
@@ -1613,6 +1639,7 @@ class PallaSyncRelayInteropTest {
             println("pallasync_transparency_recovery_cancel_resume=resumed_and_applied")
         }
         PallaSyncStorageRecoveryInterop.exercise(coordinator, store, keys, chain)
+        PallaSyncSchemaRecoveryInterop.exercise(coordinator, store, keys, chain)
     }
 
     private fun exerciseBoundOrigin(

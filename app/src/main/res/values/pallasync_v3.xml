@@ -342,4 +342,7 @@
     <string name="pallasync_favorite_order_reindex_action">Reindex and resume</string>
     <string name="pallasync_favorite_order_reindex_started">Favorite order reindex was staged; sync will resume.</string>
     <string name="pallasync_favorite_order_reindex_failed">Could not reindex the pending favorite order. The original intents were retained.</string>
+    <string name="pallasync_schema_recovery_help">After updating to a version that supports these records, revalidate their saved originals. Records that are still unsupported remain encrypted and are not applied.</string>
+    <string name="pallasync_schema_recovery_retry">Recheck schema support after updating</string>
+    <string name="pallasync_schema_recovery_failed">Revalidation stopped. Unresolved records and evidence are kept; any records already verified and applied remain saved. Resolve the reported sync condition before retrying.</string>
 </resources>

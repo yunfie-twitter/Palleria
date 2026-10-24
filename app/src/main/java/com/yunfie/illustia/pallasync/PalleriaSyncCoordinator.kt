@@ -8731,6 +8731,20 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    /** §19.3/§19.4: an explicit retry after installing compatible schema support; never relabel signed input. */
+    suspend fun retryUnsupportedInbox(): Long =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val chain = activeChainStateLocked()?.chainId ?: return@withLock 0L
+                PallaSyncUnsupportedInboxRecovery(db.dao).retry(chain) { record ->
+                    val applied = retryInboxRecordLocked(record, PallaSyncInboxRetry.SCHEMA_SUPPORT)
+                    val remaining = db.dao.getInboxRecord(chain, record.recordId)
+                    check(remaining == null || !PallaSyncInboxRetry.LOCAL_STORAGE.accepts(remaining)) { "C_LOCAL_STORAGE_FULL" }
+                    applied
+                }
+            }
+        }
+
     private suspend fun retryInboxRecordLocked(
         record: PallaSyncInboxEntity,
         retry: PallaSyncInboxRetry,

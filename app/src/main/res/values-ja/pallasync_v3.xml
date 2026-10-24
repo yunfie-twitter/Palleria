@@ -314,4 +314,7 @@
     <string name="pallasync_favorite_order_reindex_action">再indexして再開</string>
     <string name="pallasync_favorite_order_reindex_started">favorite順序の再indexをjournalへ保存し、同期を再開しました。</string>
     <string name="pallasync_favorite_order_reindex_failed">保留中favorite順序を再indexできませんでした。元のintentは保持されています。</string>
+    <string name="pallasync_schema_recovery_help">この形式に対応したバージョンへ更新した後、保存済みの原本を再検証してください。引き続き未対応のレコードは暗号文を保持し、適用しません。</string>
+    <string name="pallasync_schema_recovery_retry">更新後の形式対応を再確認</string>
+    <string name="pallasync_schema_recovery_failed">再検証を中断しました。未解決のレコードと証拠、検証・適用が完了したレコードは保持されています。表示された同期の問題を解消してから再試行してください。</string>
 </resources>

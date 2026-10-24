@@ -6,12 +6,14 @@ import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 internal enum class PallaSyncInboxRetry {
     EVIDENCE,
     LOCAL_STORAGE,
+    SCHEMA_SUPPORT,
     ;
 
     fun accepts(record: PallaSyncInboxEntity): Boolean =
         when (this) {
             EVIDENCE -> record.status in setOf("pending_dependency", "pending_evidence")
             LOCAL_STORAGE -> record.status == "operationally_blocked" && record.quarantineReason == "C_LOCAL_STORAGE_FULL"
+            SCHEMA_SUPPORT -> record.status == "unsupported_collection" && record.quarantineReason == "C_UNSUPPORTED_SCHEMA"
         }
 }
 

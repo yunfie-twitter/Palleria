@@ -2293,6 +2293,13 @@ fun PallaSyncSettingsScreen(
                                     ),
                                 )
                             }
+                            PallaSyncSchemaRecovery(unsupportedCount) {
+                                try {
+                                    syncManager.retryUnsupportedInbox()
+                                } finally {
+                                    clientStatus = syncManager.getClientStatus()
+                                }
+                            }
                             if (operationallyBlockedCount > 0) {
                                 Text(
                                     stringResource(

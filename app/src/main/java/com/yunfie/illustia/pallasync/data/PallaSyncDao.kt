@@ -268,6 +268,26 @@ interface PallaSyncDao {
     suspend fun storageBlockedInboxCount(chainId: String): Long
 
     @Query(
+        "SELECT MAX(relay_seq) FROM pallasync_inbox WHERE chain_id=:chainId AND status='unsupported_collection' " +
+            "AND quarantine_reason='C_UNSUPPORTED_SCHEMA'",
+    )
+    suspend fun unsupportedInboxThroughSeq(chainId: String): Long?
+
+    @Query(
+        "SELECT * FROM pallasync_inbox WHERE chain_id=:chainId AND status='unsupported_collection' " +
+            "AND quarantine_reason='C_UNSUPPORTED_SCHEMA' AND relay_seq<=:throughSeq " +
+            "AND (relay_seq>:afterSeq OR (relay_seq=:afterSeq AND record_id>:afterId)) " +
+            "ORDER BY relay_seq ASC, record_id ASC LIMIT :limit",
+    )
+    suspend fun unsupportedInboxPage(
+        chainId: String,
+        throughSeq: Long,
+        afterSeq: Long,
+        afterId: String,
+        limit: Int,
+    ): List<PallaSyncInboxEntity>
+
+    @Query(
         "UPDATE pallasync_inbox SET status=:status, quarantine_reason=:reason WHERE chain_id=:chainId AND record_id=:recordId AND raw_record_json=:rawRecordJson",
     )
     suspend fun updateInboxDisposition(
