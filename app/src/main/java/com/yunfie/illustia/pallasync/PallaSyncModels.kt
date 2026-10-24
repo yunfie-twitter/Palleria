@@ -57,23 +57,29 @@ data class SeenIllustBody(
 @Serializable
 data class ViewedIllustBody(
     val id: Long,
-    val title: String,
-    val artistName: String,
-    val imageUrl: String,
-    val pageCount: Int,
-    val type: String,
-    val isBookmarked: Boolean = false,
-    val xRestrict: Int = 0,
-    val tags: List<String> = emptyList(),
-    val illustAiType: Int = 0,
+    val title: String? = null,
+    val artistName: String? = null,
+    val imageUrl: String? = null,
+    val pageCount: Int? = null,
+    val type: String? = null,
+    val isBookmarked: Boolean? = null,
+    val xRestrict: Int? = null,
+    val tags: List<String>? = null,
+    val illustAiType: Int? = null,
+    val ext: kotlinx.serialization.json.JsonObject? = null,
 )
 
+@Serializable
 internal data class PallaSyncPendingEvent(
     val schema: String,
     val entityId: String,
     val operation: String,
     val body: JsonElement,
     val context: kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(emptyMap()),
+    // A local ordering intent, consumed before wire encoding; never a signed/wire member.
+    val favoriteOrder: List<String>? = null,
+    // Local occurrence time survives deferred audit publication; encoded only as Operation.created_at_ms.
+    val createdAtMs: Long? = null,
 )
 
 internal sealed interface PallaSyncApplyResult {

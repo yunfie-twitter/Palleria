@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,8 +45,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.SingletonImageLoader
+import coil3.network.httpHeaders
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.toBitmap
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.NativeImageAnalysis
+import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
@@ -53,8 +60,10 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.Dispatchers
@@ -205,6 +214,30 @@ internal fun IllustDetailHeader(
 
     val pagerState = rememberPagerState(pageCount = { imageUrls.size })
 
+    val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
+    LaunchedEffect(illust.id, proxyBaseUrl) {
+        val thumbUrl = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } }
+        if (thumbUrl.isNotBlank()) {
+            runCatching {
+                val request =
+                    ImageRequest
+                        .Builder(context)
+                        .data(proxyPixivImageUrl(thumbUrl, proxyBaseUrl))
+                        .httpHeaders(PixivImageHeaders)
+                        .size(64)
+                        .build()
+                val result = SingletonImageLoader.get(context).execute(request)
+                if (result is SuccessResult) {
+                    val isDark = withContext(Dispatchers.Default) {
+                        NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap())
+                    }
+                    useDarkHeaderIcons = isDark
+                    onHeaderIconsThemeChanged(isDark)
+                }
+            }
+        }
+    }
+
     Box(
         modifier =
             modifier
@@ -286,19 +319,6 @@ internal fun IllustDetailHeader(
                                         },
                                     ),
                             crossfade = true,
-                            onSuccess = { bitmap ->
-                                if (page == pagerState.currentPage) {
-                                    scope.launch(Dispatchers.Default) {
-                                        val isDark = NativeImageAnalysis.shouldUseDarkHeaderIcons(bitmap)
-                                        withContext(Dispatchers.Main) {
-                                            if (page == pagerState.currentPage) {
-                                                useDarkHeaderIcons = isDark
-                                                onHeaderIconsThemeChanged(isDark)
-                                            }
-                                        }
-                                    }
-                                }
-                            },
                         )
                         if (maskMutedArtwork) {
                             Box(

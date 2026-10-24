@@ -87,10 +87,7 @@ fun CommentScreen(
     val scope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
     var commentText by remember { mutableStateOf("") }
-    val hideCommentInput =
-        remember(state.comments) {
-            state.comments.any { it.isPixivCommentDisabledNotice() }
-        }
+    val hideCommentInput = state.hasDisabledNotice
 
     var showStampPicker by remember { mutableStateOf(false) }
     var stamps by remember { mutableStateOf<List<PixivStamp>>(emptyList()) }
@@ -131,7 +128,7 @@ fun CommentScreen(
             }
         },
         endAction = {
-            IconButton(onClick = { scope.launch { store.fetch() } }) {
+            IconButton(onClick = { scope.launch { store.fetch(forceRefresh = true) } }) {
                 Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.action_load_more))
             }
         },
@@ -152,7 +149,7 @@ fun CommentScreen(
             val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
             PullToRefresh(
                 isRefreshing = state.isRefreshing,
-                onRefresh = { scope.launch { store.fetch() } },
+                onRefresh = { scope.launch { store.fetch(forceRefresh = true) } },
                 modifier = Modifier.weight(1f),
             ) {
                 androidx.compose.foundation.lazy.LazyColumn(
@@ -340,8 +337,6 @@ fun CommentScreen(
         }
     }
 }
-
-private fun Comment.isPixivCommentDisabledNotice(): Boolean = comment?.contains("コメントがオフにされています") == true
 
 @Composable
 private fun CommentRow(

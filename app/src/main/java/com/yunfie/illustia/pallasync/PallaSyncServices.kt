@@ -1,101 +1,55 @@
 package com.yunfie.illustia.pallasync
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.yunfie.illustia.pallasync.data.PallaSyncDao
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal class PallaSyncLocalStore(
     context: Context,
+    suppliedDatabase: PallaSyncDatabase? = null,
 ) {
-    private val database by lazy { PallaSyncDatabase.getDatabase(context.applicationContext) }
+    private val database by lazy { suppliedDatabase ?: PallaSyncDatabase.getDatabase(context.applicationContext) }
 
     val dao: PallaSyncDao
         get() = database.pallaSyncDao()
 
     fun pallaSyncDao(): PallaSyncDao = dao
+
+    fun protocolDao() = database.protocolDao()
+
+    fun compactionCatalogueDao() = database.compactionCatalogueDao()
+
+    fun deletionEvidenceDao() = database.deletionEvidenceDao()
+
+    fun snapshotDatabase(): PallaSyncDatabase = database
+
+    fun snapshotInstallDao() = database.snapshotInstallDao()
+
+    suspend fun <T> transaction(block: suspend () -> T): T = database.withTransaction { block() }
 }
 
 @Suppress("TooManyFunctions")
-internal class PallaSyncCryptoService {
+internal class PallaSyncCryptoService(
+    private val policy: PallaSyncPolicyGate,
+) {
+    private val tokenTtlMs = 120_000L
+
+    fun objectHash(valueJson: String): String? = PallaSyncCore.objectHash(valueJson)
+
     fun generateSeedPhrase(): String = PallaSyncCore.generateSeedPhrase()
-
-    fun generateDeviceKeys(): String = PallaSyncCore.generateDeviceKeys()
-
-    fun deriveRootKeys(
-        seedPhrase: String,
-        passphrase: String = "",
-    ): String? = PallaSyncCore.deriveRootKeys(seedPhrase, passphrase)
-
-    fun deriveEpochKeys(
-        epochSecretBase64: String,
-        chainId: String,
-        epoch: Long,
-    ): String? = PallaSyncCore.deriveEpochKeys(epochSecretBase64, chainId, epoch)
-
-    fun createSyncRecord(
-        chainId: String,
-        generation: Int,
-        recordId: String,
-        deviceId: String,
-        epoch: Int,
-        collectionTag: String?,
-        innerRecordJson: String,
-        recordKeyBase64: String,
-        signingKeyBase64: String,
-    ): String? =
-        PallaSyncCore.createSyncRecord(
-            chainId,
-            generation,
-            recordId,
-            deviceId,
-            epoch,
-            collectionTag,
-            innerRecordJson,
-            recordKeyBase64,
-            signingKeyBase64,
-        )
 
     fun verifySyncRecord(
         recordJson: String,
         devicePublicKeyBase64: String,
     ): Boolean = PallaSyncCore.verifySyncRecord(recordJson, devicePublicKeyBase64)
 
-    fun decryptSyncRecord(
-        recordJson: String,
-        recordKeyBase64: String,
-    ): String? = PallaSyncCore.decryptSyncRecord(recordJson, recordKeyBase64)
-
-    fun createDeviceRecord(
-        chainId: String,
-        generation: Int,
-        deviceId: String,
-        deviceSigningKeyBase64: String,
-        deviceKexPublicKeyBase64: String,
-        deviceName: String,
-        keyProtection: String,
-        metaEpoch: Int,
-        deviceMetaKeyBase64: String,
-        enrollmentCertificateJson: String,
-    ): String? =
-        PallaSyncCore.createDeviceRecord(
-            chainId,
-            generation,
-            deviceId,
-            deviceSigningKeyBase64,
-            deviceKexPublicKeyBase64,
-            deviceName,
-            keyProtection,
-            metaEpoch,
-            deviceMetaKeyBase64,
-            enrollmentCertificateJson,
-        )
-
     fun verifyDeviceRecord(recordJson: String): Boolean = PallaSyncCore.verifyDeviceRecord(recordJson)
-
-    fun decryptDeviceRecord(
-        recordJson: String,
-        deviceMetaKeyBase64: String,
-    ): String? = PallaSyncCore.decryptDeviceRecord(recordJson, deviceMetaKeyBase64)
 
     fun createCapabilityToken(
         aud: String,
@@ -109,58 +63,98 @@ internal class PallaSyncCryptoService {
         signingKeyBase64: String,
         ttlMs: Long = 120_000L,
     ): String? =
-        PallaSyncCore.createCapabilityToken(
-            aud,
-            chainId,
-            signerKind,
-            deviceId,
-            method,
-            path,
-            query,
-            bodyJson,
-            signingKeyBase64,
-            ttlMs,
-        )
+        run {
+            policy.requireCurrent(aud)
+            check(signerKind == "device" && deviceId != null) { "C_RECOVERY_AUTH_REQUIRED" }
+            check(ttlMs == tokenTtlMs) { "C_SCHEMA_VIOLATION" }
+            val binding =
+                buildJsonObject {
+                    put("aud", aud)
+                    put("chain_id", chainId)
+                    put("device_id", deviceId)
+                    put("method", method)
+                    put("path", path)
+                    put("query", query)
+                }.toString()
+            PallaSyncDeviceSession.beginToken(signingKeyBase64).use {
+                PallaSyncCore.deviceCapabilityToken(it.handle, binding, bodyJson.toByteArray(), policy.retry.correctedTime(aud))
+            }
+        }
 
     fun createGenesisBundle(
-        seedPhrase: String,
-        passphrase: String = "",
+        rootSession: PallaSyncRootSession,
         deviceName: String,
         keyProtection: String = "os-keystore",
         aud: String,
-    ): String? =
-        PallaSyncCore.createGenesisBundle(
-            seedPhrase,
-            passphrase,
-            deviceName,
-            keyProtection,
-            aud,
-        )
+    ): PallaSyncPreparedKeys =
+        run {
+            policy.requireCurrent(aud)
+            PallaSyncCore.createGenesisBundle(
+                rootSession.handle,
+                deviceName,
+                keyProtection,
+                aud,
+            )
+        }
 
     fun createMnemonicEnrollmentBundle(
-        seedPhrase: String,
-        passphrase: String = "",
+        rootSession: PallaSyncRootSession,
         deviceName: String,
         keyProtection: String = "os-keystore",
-        generation: Int,
-        epoch: Int,
-        recoveryEnvelopeJson: String,
+        generation: Long,
+        epoch: Long,
+        recoveryEnvelopesJson: String,
         expectedParametersHash: String,
         expectedEpochHash: String,
         aud: String,
-    ): String? =
-        PallaSyncCore.createMnemonicEnrollmentBundle(
-            seedPhrase,
-            passphrase,
-            deviceName,
-            keyProtection,
-            generation,
-            epoch,
-            recoveryEnvelopeJson,
-            expectedParametersHash,
-            expectedEpochHash,
-            aud,
-        )
+    ): PallaSyncPreparedKeys =
+        run {
+            policy.requireCurrent(aud)
+            PallaSyncCore.createMnemonicEnrollmentBundle(
+                rootSession.handle,
+                deviceName,
+                keyProtection,
+                generation,
+                epoch,
+                recoveryEnvelopesJson,
+                expectedParametersHash,
+                expectedEpochHash,
+                aud,
+            )
+        }
+
+    fun prepareEpoch(
+        root: PallaSyncRootSession,
+        authority: String,
+        previous: PallaSyncKeySnapshot,
+        reason: String,
+        revoked: List<String>,
+        admin: Boolean,
+        aud: String,
+    ): PallaSyncPreparedEpoch {
+        policy.requireCurrent(aud)
+        val input =
+            buildJsonObject {
+                put("reason", reason)
+                put("signer_kind", if (admin) "admin" else "device")
+                put("signer_device_id", if (admin) JsonNull else JsonPrimitive(checkNotNull(previous.deviceId)))
+                put("revoked_device_ids", JsonArray(revoked.sorted().map(::JsonPrimitive)))
+                put("created_at_ms", policy.retry.correctedTime(aud))
+            }
+        val seed =
+            if (admin) {
+                byteArrayOf()
+            } else {
+                java.util.Base64
+                    .getUrlDecoder()
+                    .decode(previous.signingKeyBase64Url)
+            }
+        return try {
+            PallaSyncCore.prepareEpochBundle(root.handle, root.operation.wire, authority, input.toString(), seed)
+        } finally {
+            seed.fill(0)
+        }
+    }
 }
 
 internal class PallaSyncRecordProcessor(

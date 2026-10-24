@@ -17,6 +17,27 @@ import java.lang.reflect.Proxy
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncDatabaseTest {
     @Test
+    fun `new root source selection lists active and archived chains without recovery metadata`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val database =
+                Room
+                    .inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java)
+                    .build()
+            try {
+                val dao = database.pallaSyncDao()
+                dao.updateChainState(chainState("archived-chain").copy(writeState = "archived"))
+                dao.updateChainState(chainState("active-chain").copy(writeState = "active"))
+                dao.updateChainState(chainState("paused-chain").copy(writeState = "integrity_paused"))
+
+                dao.getNewRootMigrationSourceIds() shouldBe listOf("active-chain", "archived-chain")
+            } finally {
+                database.close()
+            }
+        }
+    }
+
+    @Test
     fun `cursor inbox and lamport commit atomically while a failed page rolls back`() {
         runBlocking {
             val context = ApplicationProvider.getApplicationContext<Context>()
@@ -65,6 +86,90 @@ class PallaSyncDatabaseTest {
                 }
                 dao.hasInboxRecord("missing-chain", "rollback-record") shouldBe false
                 dao.getChainState("chain-a")?.lastRelaySeq shouldBe 12L
+            } finally {
+                database.close()
+            }
+        }
+    }
+
+    @Test
+    fun `unresolved protocol dispositions persist without counting as corrupt quarantine`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val database =
+                Room
+                    .inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java)
+                    .build()
+            try {
+                val dao = database.pallaSyncDao()
+                dao.updateChainState(chainState("chain-dispositions"))
+                dao.commitInboxPage(
+                    chainId = "chain-dispositions",
+                    lastRelaySeq = 6L,
+                    maxLamport = 0L,
+                    records =
+                        listOf(
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "dependency",
+                                relaySeq = 1L,
+                                status = PallaSyncInboxEntity.STATUS_PENDING_DEPENDENCY,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_MISSING_DEPENDENCY",
+                            ),
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "blocked",
+                                relaySeq = 2L,
+                                status = PallaSyncInboxEntity.STATUS_PENDING_EVIDENCE,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_ACCEPTANCE_UNPROVEN",
+                            ),
+                            PallaSyncInboxEntity.quarantined(
+                                chainId = "chain-dispositions",
+                                recordId = "invalid",
+                                relaySeq = 3L,
+                                rawRecordJson = "{}",
+                                reason = "C_SIGNATURE_INVALID",
+                            ),
+                            PallaSyncInboxEntity.applied(
+                                chainId = "chain-dispositions",
+                                recordId = "applied",
+                                relaySeq = 4L,
+                                rawRecordJson = "{}",
+                            ),
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "unsupported",
+                                relaySeq = 5L,
+                                status = PallaSyncInboxEntity.STATUS_UNSUPPORTED_COLLECTION,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_UNSUPPORTED_SCHEMA",
+                            ),
+                            PallaSyncInboxEntity(
+                                chainId = "chain-dispositions",
+                                recordId = "suspended",
+                                relaySeq = 6L,
+                                status = PallaSyncInboxEntity.STATUS_CHAIN_SUSPENDED,
+                                rawRecordJson = "{}",
+                                quarantineReason = "C_RELAY_KEY_MISMATCH",
+                            ),
+                        ),
+                )
+
+                dao.pendingInboxDispositionCount("chain-dispositions") shouldBe 3L
+                dao.inboxDispositionCounts("chain-dispositions").associate { it.status to it.count } shouldBe
+                    mapOf(
+                        "applied" to 1L,
+                        "chain_suspended" to 1L,
+                        "pending_dependency" to 1L,
+                        "pending_evidence" to 1L,
+                        "quarantined" to 1L,
+                        "unsupported_collection" to 1L,
+                    )
+                dao.pendingInboxEvidenceRecords("chain-dispositions", 50).map { it.recordId } shouldBe
+                    listOf("dependency", "blocked")
+                dao.getQuarantinedInboxRecords("chain-dispositions").map { it.recordId } shouldBe listOf("invalid")
             } finally {
                 database.close()
             }

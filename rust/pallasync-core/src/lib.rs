@@ -1,18 +1,36 @@
+pub mod admin_action;
+pub mod attestations;
+pub mod authority;
+pub mod bootstrap;
+pub mod checkpoint;
+pub mod client_error;
+pub mod client_response;
 pub mod crypto;
+pub mod device_session;
+pub mod disclosure;
+mod disclosure_schema;
+pub mod epoch_session;
+pub mod error_catalogue;
 pub mod ffi_jni;
+mod ffi_peer_enrollment;
+mod ffi_recovery;
+mod ffi_recovery_media;
+pub mod legacy_migration;
+pub mod local_transfer;
+mod locked_memory;
 pub mod models;
-
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod normal_data_boundary;
+pub mod peer_enrollment;
+pub mod peer_response;
+pub mod public_wire;
+pub mod recovery;
+pub mod recovery_flow;
+pub mod reseed;
+pub mod root_session;
+pub mod rotation;
+pub mod schema;
+pub mod secret_lifetime;
+pub mod shamir;
+pub mod snapshot;
+pub mod strict;
+mod vendor;

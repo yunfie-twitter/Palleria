@@ -20,6 +20,9 @@ class UserPageStateTest :
             val state =
                 IllustiaUiState(
                     selectedUserId = artist.id,
+                    selectedUserError = "error-profile",
+                    selectedUserIllustsError = "error-works",
+                    selectedUserBookmarksError = "error-bookmarks",
                     selectedUserNextUrl = "profile-next-page",
                     selectedUserBookmarksNextUrl = "bookmarks-next-page",
                     userPageDismissed = true,
@@ -31,6 +34,9 @@ class UserPageStateTest :
             val cleared = state.clearClosedUserPage()
 
             cleared.selectedUserId shouldBe null
+            cleared.selectedUserError shouldBe null
+            cleared.selectedUserIllustsError shouldBe null
+            cleared.selectedUserBookmarksError shouldBe null
             cleared.selectedUserNextUrl shouldBe null
             cleared.selectedUserBookmarksNextUrl shouldBe null
             cleared.userPageDismissed shouldBe false

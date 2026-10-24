@@ -127,8 +127,10 @@ object NativeIntentRouter {
         enabled: Boolean = true,
     ): String {
         if (!enabled || text.isBlank()) return text
-        val trimmed = text.trim()
-        val cleaned = cleanTrackingParameters(trimmed)
+        // This runs for every keystroke. Keep boundary whitespace so an IME can
+        // insert the separator before the next word; parseText trims only for
+        // intent detection and does not mutate the user's query.
+        val cleaned = cleanTrackingParameters(text)
         // Pixiv の作品URLまたはユーザーURLが直接貼られた場合、ID を抽出して検索欄をすっきりさせる
         val event = parseText(cleaned)
         return when (event) {

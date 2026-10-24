@@ -1,0 +1,2047 @@
+package com.yunfie.illustia.pallasync
+
+import android.content.Context
+import android.os.Bundle
+import android.util.Base64
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.yunfie.illustia.pallasync.data.OutboxEntity
+import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
+import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.security.KeyStore
+import java.security.cert.CertificateFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+
+/** Actual coordinator/JNI/Room/Keystore -> isolated HTTPS relay -> independent Python receiver.
+ * Run only with the disposable harness arguments; absence is a skipped test, never a passing IT.
+ */
+@RunWith(AndroidJUnit4::class)
+class PallaSyncRelayInteropTest {
+    @Test
+    @PallaSyncHarnessOnly
+    fun mnemonicEnrollmentAndInitialSyncUseTheRealRelay() {
+        val args = InstrumentationRegistry.getArguments()
+        val origin = args.getString("relay_origin")
+        assumeTrue("Disposable relay arguments are required", origin?.startsWith("https://127.0.0.1:") == true)
+        runBlocking<Unit> {
+            val recordsLimitPreflight = args.getString("records_limit_preflight") == "true"
+            val client = testTransport(checkNotNull(args.getString("relay_ca_base64")))
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            verifyIsolatedRelayHealth(client, checkNotNull(origin))
+            val reseedProcessDeath = args.getString("reseed_process_death") == "true"
+            val records413ProcessDeath = args.getString("records_413_process_death") == "true"
+            val records413ResumeAfterDeath = args.getString("records_413_resume_after_death") == "true"
+            val receiptNotFoundProcessDeath = args.getString("receipt_not_found_process_death") == "true"
+            val receiptNotFoundResumeAfterDeath = args.getString("receipt_not_found_resume_after_death") == "true"
+            val archiveRestoreProcessDeath = args.getString("archive_restore_process_death") == "true"
+            val archiveRestoreResumeAfterDeath = args.getString("archive_restore_resume_after_death") == "true"
+            val transparencyRecoveryProcessDeath = args.getString("transparency_recovery_process_death") == "true"
+            val transparencyRecoveryResumeAfterDeath = args.getString("transparency_recovery_resume_after_death") == "true"
+            val transparencyRecoveryCancelResume = args.getString("transparency_recovery_cancel_resume") == "true"
+            val processDeathMode =
+                reseedProcessDeath || records413ProcessDeath || receiptNotFoundProcessDeath || archiveRestoreProcessDeath ||
+                    transparencyRecoveryProcessDeath || transparencyRecoveryCancelResume
+            val resumeAfterDeath =
+                args.getString("reseed_resume_after_death") == "true" ||
+                    records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath || archiveRestoreResumeAfterDeath ||
+                    transparencyRecoveryResumeAfterDeath
+            val database = PallaSyncInteropDatabase.open(context, processDeathMode, resumeAfterDeath, args)
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val keys = PallaSyncKeystore(context)
+            val reseedTargetOrigin = args.getString("reseed_target_origin")
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_reseed_target_argument", reseedTargetOrigin ?: "missing") },
+            )
+            if (!resumeAfterDeath) {
+                keys.clearAllKeys()
+                context
+                    .getSharedPreferences("pallasync_policy", Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .commit()
+                context
+                    .getSharedPreferences("pallasync_epoch_journal", Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .commit()
+            }
+            val settings =
+                com.yunfie.illustia.settings
+                    .SettingsStore(context)
+            if (!resumeAfterDeath) {
+                settings.setPallaSyncEnabledFromCoordinator(false)
+                settings.writeSyncedCollections(
+                    com.yunfie.illustia.settings
+                        .SyncedCollectionsSnapshot(searchHistory = listOf("Python interop")),
+                )
+            }
+            val policy = PallaSyncPolicyGate(context, client)
+            val store = PallaSyncLocalStore(context, database)
+            val requestedFault = args.getString("rebase_fault")?.takeIf { it.isNotEmpty() }
+            var faultInjected = false
+            val coordinator =
+                PalleriaSyncCoordinator(client, context, scope, policy, store) {
+                    if (!faultInjected && requestedFault == it.name) {
+                        faultInjected = true
+                        error("Injected durable rebase boundary")
+                    }
+                }
+            if (transparencyRecoveryProcessDeath && !transparencyRecoveryResumeAfterDeath) {
+                coordinator.setTransparencyRecoveryFaultForTest { boundary ->
+                    check(boundary == PallaSyncTransparencyRecoveryBoundary.PAGE_PERSISTED_BEFORE_CHECKPOINT)
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_transparency_recovery_process_death", "page_persisted") },
+                    )
+                    println("pallasync_transparency_recovery_process_death=page_persisted")
+                    System.err.flush()
+                    Thread.sleep(500)
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                    error("Process termination did not occur after transparency page persistence")
+                }
+            }
+            try {
+                if (transparencyRecoveryResumeAfterDeath) {
+                    check(transparencyRecoveryProcessDeath) { "C_MISSING_DEPENDENCY" }
+                    resumeHistoricalTransparencyRecovery(coordinator, store, keys)
+                    return@runBlocking
+                }
+                if (archiveRestoreResumeAfterDeath) {
+                    check(archiveRestoreProcessDeath) { "C_MISSING_DEPENDENCY" }
+                    resumeArchiveRestoreAfterProcessDeath(coordinator, store, context)
+                    return@runBlocking
+                }
+                if (receiptNotFoundResumeAfterDeath) {
+                    check(receiptNotFoundProcessDeath && args.getString("receipt_not_found") == "true") { "C_MISSING_DEPENDENCY" }
+                    val state = checkNotNull(store.dao.getActiveChainState())
+                    assertEquals("active", state.writeState)
+                    assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                    PallaSyncCore.setSecretForeground(true)
+                    val selectedOrigin = PallaSyncUrls.extractOrigin(checkNotNull(origin).toHttpUrl())
+                    val remainingMs = policy.retry.remaining(selectedOrigin)
+                    if (remainingMs > 0) delay(remainingMs + 10)
+                    assertTrue(
+                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                        coordinator.resumeBoundChain(startWorker = false),
+                    )
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    val recovered = checkNotNull(store.dao.getChainState(state.chainId))
+                    assertEquals(recovered.downloadedSeq, recovered.verifiedSeq)
+                    assertEquals(recovered.verifiedSeq, recovered.materializedSeq)
+                    assertNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Android interop"))
+                    exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
+                    exerciseBoundOrigin(client, policy, state.chainId, checkNotNull(origin))
+                    val resumedDeviceId = checkNotNull(keys.getActiveChainKeys()).deviceId
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_receipt_not_found_recovery", "passed") },
+                    )
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_receipt_not_found_process_death", "resumed")
+                            putString("pallasync_local_boundary", "verified")
+                            putString("pallasync_bound_origin", "verified")
+                            putString("pallasync_device_id", resumedDeviceId)
+                        },
+                    )
+                    println("pallasync_receipt_not_found_recovery=passed")
+                    println("pallasync_receipt_not_found_process_death=resumed")
+                    println("pallasync_device_id=$resumedDeviceId")
+                    return@runBlocking
+                }
+                if (records413ResumeAfterDeath) {
+                    check(records413ProcessDeath) { "C_MISSING_DEPENDENCY" }
+                    val state = checkNotNull(store.dao.getActiveChainState())
+                    assertEquals("active", state.writeState)
+                    assertEquals(0L, state.generation)
+                    val selectedOrigin = PallaSyncUrls.extractOrigin(checkNotNull(origin).toHttpUrl())
+                    assertEquals(2, policy.retry.recordBatchLimit(selectedOrigin, state.chainId, 10))
+                    PallaSyncCore.setSecretForeground(true)
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.resumeBoundChain(startWorker = false))
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                    assertEquals(2, policy.retry.recordBatchLimit(selectedOrigin, state.chainId, 10))
+                    (0 until 4).forEach { index ->
+                        assertNotNull(
+                            store.protocolDao().entity(
+                                state.chainId,
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                "Android 413 split $index",
+                            ),
+                        )
+                    }
+                    exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
+                    exerciseBoundOrigin(client, policy, state.chainId, selectedOrigin)
+                    exercisePausedEdits(
+                        coordinator,
+                        client,
+                        context,
+                        scope,
+                        policy,
+                        store,
+                        settings,
+                        state.chainId,
+                        checkNotNull(keys.getActiveChainKeys()).deviceId,
+                    )
+                    assertTrue(
+                        coordinator.enqueueDataEvent(
+                            SEARCH_HISTORY_SCHEMA_V3,
+                            "Android interop",
+                            "upsert",
+                            buildJsonObject { put("query", "Android interop") },
+                        ),
+                    )
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_records_413_process_death", "resumed_and_drained")
+                            putString("pallasync_device_id", checkNotNull(keys.getActiveChainKeys()).deviceId.orEmpty())
+                            putString("pallasync_local_boundary", "verified")
+                            putString("pallasync_bound_origin", "verified")
+                        },
+                    )
+                    println("pallasync_records_413_process_death=resumed_and_drained")
+                    println("pallasync_device_id=${checkNotNull(keys.getActiveChainKeys()).deviceId}")
+                    return@runBlocking
+                }
+                if (resumeAfterDeath) {
+                    check(processDeathMode && reseedTargetOrigin != null) { "C_MISSING_DEPENDENCY" }
+                    val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
+                    val before = checkNotNull(store.dao.getActiveChainState())
+                    check(before.generation == 1L || before.writeState == "epoch_rebase_required") { "C_ROLLBACK_DETECTED" }
+                    PallaSyncCore.setSecretForeground(true)
+                    val resumed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), resumed is PallaSyncHttpResult.Success)
+                    val migrated = checkNotNull(store.dao.getActiveChainState())
+                    val migratedKeys = checkNotNull(keys.getActiveChainKeys())
+                    val authority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(migrated.chainId))).jsonObject
+                    assertEquals(1L, migrated.generation)
+                    assertEquals(
+                        reseedTargetOrigin,
+                        authority
+                            .getValue("pin")
+                            .jsonObject
+                            .getValue("origin")
+                            .jsonPrimitive.content,
+                    )
+                    assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
+                    assertTrue(coordinator.canAuditReseedSource())
+                    val sourceAudit = coordinator.auditReseedSource()
+                    if (args.getString("reseed_expect_late_source_write") == "true") {
+                        assertNotNull(sourceAudit)
+                        assertEquals(1L, checkNotNull(sourceAudit).entryCount)
+                        assertEquals(checkNotNull(sourceAudit).firstSequence, checkNotNull(sourceAudit).lastSequence)
+                    } else {
+                        assertEquals(null, sourceAudit)
+                    }
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                            putString("pallasync_reseed_generation", migrated.generation.toString())
+                            putString("pallasync_reseed_source_audit", if (sourceAudit == null) "clean" else "unimported")
+                            sourceAudit?.let { putString("pallasync_reseed_unimported_count", it.entryCount.toString()) }
+                            putString("reseed_resumed_after_process_death", "true")
+                        },
+                    )
+                    println("reseed_resumed_after_process_death=true")
+                    println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
+                    println("pallasync_reseed_generation=${migrated.generation}")
+                    println("pallasync_reseed_source_audit=${if (sourceAudit == null) "clean" else "unimported"}")
+                    sourceAudit?.let { println("pallasync_reseed_unimported_count=${it.entryCount}") }
+                    return@runBlocking
+                }
+                val selected = checkNotNull(origin)
+                policy.chooseSource(selected, "relay_full_replay", true)
+                policy.confirmKey(policy.inspectRelay(selected), true)
+                policy.accept(policy.currentReview(selected), true)
+                PallaSyncCore.setSecretForeground(true)
+                val phrase = (List(23) { "abandon" } + "art").joinToString(" ")
+                val joined =
+                    coordinator.joinChain(
+                        phrase,
+                        "Android integration endpoint",
+                        selected,
+                        bootstrapReview = { review ->
+                            assertEquals(selected, review.relayOrigin)
+                            assertTrue(review.chainId.isNotBlank())
+                            assertTrue(review.adminPublicKey.isNotBlank())
+                            assertTrue(review.logId.isNotBlank())
+                            assertTrue(review.headSeq >= 0)
+                            assertTrue(review.headHash.isNotBlank())
+                            assertTrue(review.parametersHash.isNotBlank())
+                            assertTrue(review.epochHash.isNotBlank())
+                            true
+                        },
+                    )
+                if (args.getString("unsupported_bootstrap") == "true") {
+                    PallaSyncUnsupportedBootstrapInterop.verify(args, joined, store, keys)
+                    return@runBlocking
+                }
+                assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), joined)
+                coordinator.stopBackgroundSync()
+                val state = checkNotNull(store.dao.getActiveChainState())
+                val active = checkNotNull(keys.getActiveChainKeys())
+                var activeDeviceId = active.deviceId
+                var replacedDeviceId: String? = null
+                assertEquals("active", state.writeState)
+                assertEquals(active.deviceId, keys.boundDeviceId(state.chainId))
+                assertEquals(null, keys.getPendingChainKeys())
+                assertTrue(state.initialPullCompleted)
+                assertTrue(state.verifiedSeq >= 9 && state.materializedSeq >= 9)
+                if (args.getString("cursor_expired") == "true") {
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_cursor_expired_recovery", "passed") },
+                    )
+                    println("pallasync_cursor_expired_recovery=passed")
+                }
+                assertTrue(
+                    checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.lamport >
+                        1_000_000L,
+                )
+                if (args.getString("records_413_split") == "true" || records413ProcessDeath) {
+                    val recoveryEvents =
+                        (0 until 4).map { index ->
+                            val query =
+                                "Android 413 split $index" +
+                                    if (recordsLimitPreflight) " " + "x".repeat(1400) else ""
+                            PallaSyncPendingEvent(
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                query,
+                                "upsert",
+                                buildJsonObject { put("query", query) },
+                            )
+                        }
+                    assertTrue(coordinator.enqueueDataEvents(recoveryEvents))
+                    val armRequest =
+                        Request
+                            .Builder()
+                            .url(
+                                if (records413ProcessDeath) {
+                                    "$selected/__test__/arm-records-413-process-death"
+                                } else {
+                                    if (recordsLimitPreflight) {
+                                        "$selected/__test__/track-limited-records"
+                                    } else {
+                                        "$selected/__test__/arm-records-413"
+                                    }
+                                },
+                            ).post(ByteArray(0).toRequestBody(null))
+                            .build()
+                    client.newCall(armRequest).execute().use { response ->
+                        assertEquals(200, response.code)
+                        assertEquals("{\"armed\":true}", response.body.string())
+                    }
+                    if (records413ProcessDeath) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("pallasync_records_413_process_death", "waiting_for_held_replacement") },
+                        )
+                        println("pallasync_records_413_process_death=first_replacement_held")
+                        coordinator.syncNow()
+                        error("The held record replacement unexpectedly returned")
+                    } else {
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                        assertEquals(0L, store.dao.pendingOutboxCount(state.chainId))
+                        val marker =
+                            if (recordsLimitPreflight) {
+                                "pallasync_records_limit_preflight"
+                            } else {
+                                "pallasync_records_413_split"
+                            }
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString(marker, "passed") },
+                        )
+                        println("$marker=passed")
+                    }
+                }
+                val replacingDevice = args.getString("replace_device") == "true"
+                if (!replacingDevice) {
+                    exerciseCompleteArchiveRoundTrip(coordinator, store, phrase, state.chainId)
+                    exerciseMissingDependencyQuarantineRetry(
+                        coordinator,
+                        store,
+                        state.chainId,
+                        keys,
+                        scope,
+                        client,
+                        selected,
+                        args.getString("pending_evidence_withhold") == "true",
+                        transparencyRecoveryCancelResume,
+                    )
+                    exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
+                    exerciseBoundOrigin(client, policy, state.chainId, selected)
+                }
+                args.getString("peer_transfer_id")?.let { transferId ->
+                    if (!replacingDevice) {
+                        PallaSyncPeerRelayBoundary(context, store, keys, policy, client).exercise(selected.toHttpUrl(), transferId)
+                    }
+                }
+                exercisePausedEdits(coordinator, client, context, scope, policy, store, settings, state.chainId, active.deviceId)
+                if (replacingDevice) {
+                    val pendingQuery = "Replacement pending"
+                    assertTrue(
+                        coordinator.enqueueDataEvent(
+                            SEARCH_HISTORY_SCHEMA_V3,
+                            pendingQuery,
+                            "upsert",
+                            buildJsonObject { put("query", pendingQuery) },
+                        ),
+                    )
+                    replacedDeviceId = active.deviceId
+                    val replaced = coordinator.replaceCurrentDevice(phrase)
+                    if (requestedFault != null) {
+                        assertFalse(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), replaced)
+                        assertTrue("Replacement boundary fault was not reached", faultInjected)
+                        val resumed = coordinator.replaceCurrentDevice(phrase)
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), resumed)
+                    } else {
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), replaced)
+                    }
+                    val replacement = checkNotNull(keys.getActiveChainKeys())
+                    activeDeviceId = replacement.deviceId
+                    assertTrue(replacement.deviceId != replacedDeviceId)
+                    assertEquals(1, replacement.epoch)
+                    assertEquals(null, keys.pendingReplacementOldDevice(state.chainId))
+                    assertEquals(1L, store.dao.getChainState(state.chainId)?.authorSeq)
+                    val authority = checkNotNull(store.protocolDao().currentAuthority(state.chainId))
+                    val devices =
+                        Json
+                            .parseToJsonElement(authority)
+                            .jsonObject
+                            .getValue("devices")
+                            .jsonObject
+                    assertEquals(
+                        "null",
+                        devices
+                            .getValue(checkNotNull(replacement.deviceId))
+                            .jsonObject
+                            .getValue("revoked_seq")
+                            .jsonPrimitive.content,
+                    )
+                    assertTrue(
+                        devices
+                            .getValue(checkNotNull(replacedDeviceId))
+                            .jsonObject
+                            .getValue("revoked_seq")
+                            .jsonPrimitive.content != "null",
+                    )
+                    assertTrue(store.dao.pendingOutboxCount(state.chainId) > 0L)
+                }
+                assertTrue(
+                    coordinator.enqueueDataEvent(
+                        SEARCH_HISTORY_SCHEMA_V3,
+                        "Android interop",
+                        "upsert",
+                        buildJsonObject {
+                            put("query", "Android interop")
+                        },
+                    ),
+                )
+                val receiptNotFound = args.getString("receipt_not_found") == "true"
+                if (receiptNotFound) {
+                    val armRequest =
+                        Request
+                            .Builder()
+                            .url("$selected/__test__/arm-receipt-not-found")
+                            .post(ByteArray(0).toRequestBody(null))
+                            .build()
+                    client.newCall(armRequest).execute().use { response ->
+                        assertEquals(200, response.code)
+                        assertEquals("{\"armed\":true}", response.body.string())
+                    }
+                    assertFalse(
+                        "The injected receipt absence did not defer the active sync",
+                        coordinator.syncNow(),
+                    )
+                    val relayOrigin = PallaSyncUrls.extractOrigin(selected.toHttpUrl())
+                    val deferredMs = policy.retry.remaining(relayOrigin)
+                    assertTrue(
+                        "RECEIPT_NOT_FOUND unexpectedly became a permanent blocker: ${policy.retry.blockedCodes(
+                            relayOrigin,
+                            state.chainId,
+                        )}",
+                        "RECEIPT_NOT_FOUND" !in policy.retry.blockedCodes(relayOrigin, state.chainId),
+                    )
+                    assertEquals(
+                        "The accepted write was discarded despite its receipt evidence",
+                        0L,
+                        store.dao.pendingOutboxCount(state.chainId),
+                    )
+                    if (receiptNotFoundProcessDeath) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_receipt_not_found_process_death", "waiting_after_404")
+                            },
+                        )
+                        println("pallasync_receipt_not_found_process_death=waiting_after_404")
+                        awaitCancellation()
+                    }
+                    if (deferredMs > 0) {
+                        assertFalse("A second sync bypassed the retry backoff", coordinator.syncNow())
+                        delay(deferredMs + 10)
+                    }
+                }
+                assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+                if (receiptNotFound) {
+                    val recovered = checkNotNull(store.dao.getChainState(state.chainId))
+                    assertEquals(recovered.downloadedSeq, recovered.verifiedSeq)
+                    assertEquals(recovered.verifiedSeq, recovered.materializedSeq)
+                    assertNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Android interop"))
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_receipt_not_found_recovery", "passed") },
+                    )
+                    println("pallasync_receipt_not_found_recovery=passed")
+                }
+                if (args.getString("pruned_archive_probe") == "true") {
+                    probePrunedArchive(
+                        coordinator,
+                        store,
+                        keys,
+                        policy,
+                        client,
+                        context,
+                        phrase,
+                        state.chainId,
+                        archiveRestoreProcessDeath,
+                        args.getString("archive_deletion_race") == "true",
+                    )
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_pruned_archive_probe", "boundary_verified_and_restored") },
+                    )
+                    return@runBlocking
+                }
+                if (reseedTargetOrigin != null) {
+                    policy.chooseSource(reseedTargetOrigin, "authenticated_export", explicitlyConfirmed = true)
+                    policy.confirmKey(policy.inspectRelay(reseedTargetOrigin), explicitlyConfirmed = true)
+                    policy.accept(policy.currentReview(reseedTargetOrigin), explicitlyConfirmed = true)
+                    val sourceAuthorityHash = checkNotNull(keys.authorityHash(state.chainId))
+                    val sourceWinnerId =
+                        checkNotNull(store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop")).winner.recordId
+                    val staged = coordinator.stageReseedHistory(reseedTargetOrigin, phrase, "")
+                    assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), staged is PallaSyncHttpResult.Success)
+                    if (args.getString("reseed_expect_staging_source_write") == "true") {
+                        val cutover = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        assertTrue("Source write during snapshot staging unexpectedly cut over", cutover.isFailure)
+                        val preserved = checkNotNull(store.dao.getActiveChainState())
+                        assertEquals(0L, preserved.generation)
+                        assertEquals(state.logId, preserved.logId)
+                        assertTrue(
+                            "Source was not retained in a writable or explicitly pending state: ${preserved.writeState}",
+                            preserved.writeState in setOf("active", "epoch_rebase_required"),
+                        )
+                        assertNotNull(keys.getActiveChainKeys())
+                        assertEquals(sourceAuthorityHash, keys.authorityHash(state.chainId))
+                        assertTrue(
+                            sourceWinnerId.contentEquals(
+                                checkNotNull(
+                                    store.protocolDao().entity(state.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop"),
+                                ).winner.recordId,
+                            ),
+                        )
+                        assertTrue("Could not download the racing source record after the rejected cutover", coordinator.syncNow())
+                        val caughtUp = checkNotNull(store.dao.getChainState(state.chainId))
+                        assertEquals(caughtUp.downloadedSeq, caughtUp.materializedSeq)
+                        assertTrue(caughtUp.materializedSeq > state.materializedSeq)
+                        assertNotNull(
+                            store.protocolDao().entity(
+                                state.chainId,
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                "Python source race before capture",
+                            ),
+                        )
+                        val retryStage = coordinator.stageReseedHistory(reseedTargetOrigin, phrase, "")
+                        assertTrue(
+                            "Could not restage after incorporating source write: ${PalleriaSyncCoordinator.syncLogs.value.joinToString(
+                                "\n",
+                            )}",
+                            retryStage is PallaSyncHttpResult.Success,
+                        )
+                        val retryCommit = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
+                        assertTrue(
+                            "Could not finish reseed after rebuilding the snapshot: ${PalleriaSyncCoordinator.syncLogs.value.joinToString(
+                                "\n",
+                            )}",
+                            retryCommit is PallaSyncHttpResult.Success,
+                        )
+                        val migrated = checkNotNull(store.dao.getActiveChainState())
+                        assertEquals(1L, migrated.generation)
+                        val migratedKeys = checkNotNull(keys.getActiveChainKeys())
+                        assertEquals(migratedKeys.deviceId, keys.boundDeviceId(state.chainId))
+                        assertTrue(coordinator.canAuditReseedSource())
+                        assertEquals(null, coordinator.auditReseedSource())
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_reseed_staging_race_rejected", "true")
+                                putString("pallasync_reseed_staging_race_recovered", "true")
+                                putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                                putString("pallasync_reseed_generation", migrated.generation.toString())
+                                putString("pallasync_reseed_source_audit", "clean")
+                                putString("pallasync_reseed_staging_race_error", cutover.exceptionOrNull()?.message ?: "missing")
+                            },
+                        )
+                        println("pallasync_reseed_staging_race_rejected=true")
+                        println("pallasync_reseed_staging_race_recovered=true")
+                        println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
+                        println("pallasync_reseed_generation=${migrated.generation}")
+                        println("pallasync_reseed_source_audit=clean")
+                        return@runBlocking
+                    }
+                    if (args.getString("reseed_expect_split_view") == "true") {
+                        val cutover = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        assertTrue("Signed split view unexpectedly allowed reseed cutover", cutover.isFailure)
+                        val preserved = checkNotNull(store.dao.getActiveChainState())
+                        assertEquals(0L, preserved.generation)
+                        assertTrue(
+                            "Source writes were not suspended: ${preserved.writeState}",
+                            preserved.writeState in setOf("integrity_paused", "epoch_rebase_required"),
+                        )
+                        assertEquals(state.logId, preserved.logId)
+                        assertNotNull(keys.getActiveChainKeys())
+                        val evidenceRows = store.protocolDao().unresolvedQuarantinePage(state.chainId, "", 50)
+                        val splitEvidence =
+                            evidenceRows.firstOrNull {
+                                it.reason in
+                                    setOf("C_ROLLBACK_DETECTED", "C_TRANSPARENCY_INVALID", "C_LOG_HASH_MISMATCH")
+                            }
+                        assertNotNull("Signed contradictory transparency head was not quarantined", splitEvidence)
+                        val retained =
+                            checkNotNull(store.protocolDao().quarantineEvidence(state.chainId, checkNotNull(splitEvidence).objectHash))
+                        assertTrue(retained.evidenceJson.contains("PALLASYNC-TRANSPARENCY-HEAD-v3"))
+                        assertEquals(sourceAuthorityHash, keys.authorityHash(state.chainId))
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_reseed_split_view_rejected", "true")
+                                putString("pallasync_reseed_split_view_evidence", "retained")
+                                putString("pallasync_reseed_split_view_writes", preserved.writeState)
+                                putString("pallasync_reseed_split_view_error", cutover.exceptionOrNull()?.message ?: "missing")
+                            },
+                        )
+                        println("pallasync_reseed_split_view_rejected=true")
+                        println("pallasync_reseed_split_view_evidence=retained")
+                        println("pallasync_reseed_split_view_writes=${preserved.writeState}")
+                        return@runBlocking
+                    }
+                    val requestedFault = args.getString("rebase_fault")?.takeIf { it.isNotEmpty() }
+                    if (requestedFault != null) {
+                        val firstCommit = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        assertTrue(
+                            "Reseed cutover fault was not injected: $requestedFault; cutover failure=${firstCommit.exceptionOrNull()?.stackTraceToString()}",
+                            faultInjected,
+                        )
+                        assertTrue("Reseed cutover fault did not interrupt commit", firstCommit.isFailure)
+                        val sourceAuthority =
+                            Json
+                                .parseToJsonElement(
+                                    checkNotNull(store.protocolDao().archivedAuthority(state.chainId, 0)).signedJson,
+                                ).jsonObject
+                        val sourceHash = PallaSyncCore.objectHash(sourceAuthority.toString())
+                        val targetHash = PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId)))
+                        val interruptedState = checkNotNull(store.dao.getChainState(state.chainId))
+                        val interruptedJournal = checkNotNull(store.snapshotDatabase().reseedJournalDao().get(state.chainId))
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("reseed_fault_injected", faultInjected.toString())
+                                putString("reseed_fault_phase", interruptedJournal.phase.toString())
+                                putString("reseed_fault_generation", interruptedState.generation.toString())
+                                putString("reseed_fault_pinned_source", (keys.authorityHash(state.chainId) == sourceHash).toString())
+                                putString("reseed_fault_pinned_target", (keys.authorityHash(state.chainId) == targetHash).toString())
+                                putString(
+                                    "reseed_fault_active_is_archived",
+                                    (
+                                        keys.getActiveChainKeys()?.deviceId ==
+                                            keys.getArchivedChainKeys(state.chainId)?.deviceId
+                                    ).toString(),
+                                )
+                            },
+                        )
+                        if (processDeathMode) {
+                            InstrumentationRegistry.getInstrumentation().sendStatus(
+                                0,
+                                Bundle().apply { putString("reseed_process_death_phase_one", "ready") },
+                            )
+                            System.err.flush()
+                            Thread.sleep(500)
+                            android.os.Process.killProcess(android.os.Process.myPid())
+                            error("Process termination did not occur")
+                        }
+                        val resumed = runCatching { coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "") }
+                        if (resumed.isFailure) {
+                            InstrumentationRegistry.getInstrumentation().sendStatus(
+                                0,
+                                Bundle().apply { putString("reseed_resume_error", resumed.exceptionOrNull()?.message) },
+                            )
+                        }
+                        assertTrue(
+                            PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                            resumed.getOrThrow() is PallaSyncHttpResult.Success,
+                        )
+                    } else {
+                        val committed = coordinator.commitStagedReseedHistory(reseedTargetOrigin, phrase, "")
+                        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), committed is PallaSyncHttpResult.Success)
+                    }
+                    val migrated = checkNotNull(store.dao.getActiveChainState())
+                    val migratedKeys = checkNotNull(keys.getActiveChainKeys())
+                    val migratedAuthority =
+                        Json
+                            .parseToJsonElement(
+                                checkNotNull(store.protocolDao().currentAuthority(migrated.chainId)),
+                            ).jsonObject
+                    assertEquals(1, migrated.generation)
+                    assertEquals(
+                        reseedTargetOrigin,
+                        migratedAuthority
+                            .getValue("pin")
+                            .jsonObject
+                            .getValue("origin")
+                            .jsonPrimitive.content,
+                    )
+                    assertEquals(1, migratedKeys.epoch)
+                    assertEquals(migratedKeys.deviceId, keys.boundDeviceId(migrated.chainId))
+                    if (args.getString("reseed_archive_probe") == "true") {
+                        probeGenerationOneArchive(coordinator, store, phrase, state.chainId)
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply {
+                                putString("pallasync_gen1_archive_probe", "complete_archive_restored")
+                                putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                                putString("pallasync_reseed_generation", migrated.generation.toString())
+                                putString("pallasync_reseed_source_audit", "clean")
+                            },
+                        )
+                        println("pallasync_reseed_generation=${migrated.generation}")
+                        println("pallasync_reseed_source_audit=clean")
+                        return@runBlocking
+                    }
+                    assertTrue(coordinator.canAuditReseedSource())
+                    val sourceAudit = coordinator.auditReseedSource()
+                    if (args.getString("reseed_expect_pre_capture_source_write") == "true") {
+                        assertNotNull(sourceAudit)
+                        assertEquals(1L, checkNotNull(sourceAudit).entryCount)
+                        assertEquals(checkNotNull(sourceAudit).firstSequence, checkNotNull(sourceAudit).lastSequence)
+                    } else {
+                        assertEquals(null, sourceAudit)
+                    }
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply {
+                            putString("pallasync_reseed_device_id", migratedKeys.deviceId)
+                            putString("pallasync_reseed_generation", migrated.generation.toString())
+                            putString("pallasync_reseed_source_audit", if (sourceAudit == null) "clean" else "unimported")
+                            sourceAudit?.let { putString("pallasync_reseed_unimported_count", it.entryCount.toString()) }
+                        },
+                    )
+                    println("pallasync_reseed_device_id=${migratedKeys.deviceId}")
+                    println("pallasync_reseed_generation=${migrated.generation}")
+                    println("pallasync_reseed_log_id=${migrated.logId}")
+                    println("pallasync_reseed_source_audit=${if (sourceAudit == null) "clean" else "unimported"}")
+                    sourceAudit?.let { println("pallasync_reseed_unimported_count=${it.entryCount}") }
+                }
+                if (args.getString("rotate_epoch") == "true" && args.getString("replace_device") != "true") {
+                    exerciseEpochRotation(
+                        coordinator,
+                        keys,
+                        store,
+                        context,
+                        client,
+                        policy,
+                        selected,
+                        phrase,
+                        state.chainId,
+                        requestedFault != null,
+                    ) { faultInjected }
+                }
+                assertTrue(store.dao.queuedBatch(state.chainId, PALLASYNC_PAGE_SIZE).isEmpty())
+                val applied = checkNotNull(store.dao.getChainState(state.chainId))
+                assertEquals(applied.downloadedSeq, applied.verifiedSeq)
+                assertEquals(applied.verifiedSeq, applied.materializedSeq)
+                assertEquals(null, keys.authorityTransition(state.chainId))
+                assertEquals(
+                    keys.authorityHash(state.chainId),
+                    PallaSyncCore.objectHash(checkNotNull(store.protocolDao().currentAuthority(state.chainId))),
+                )
+                if (args.getString("delete_chain") == "true") {
+                    val lostResponse = args.getString("delete_response_lost") == "true"
+                    val firstDeletion = coordinator.requestChainDeletion(phrase)
+                    if (lostResponse) {
+                        assertEquals(PallaSyncDeletionRequestResult.PENDING_EVIDENCE, firstDeletion)
+                        assertNotNull(store.dao.getChainState(state.chainId))
+                        kotlinx.coroutines.delay(1_500)
+                    }
+                    val deletion = if (lostResponse) coordinator.requestChainDeletion(phrase) else firstDeletion
+                    assertEquals(
+                        PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+                        PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT,
+                        deletion,
+                    )
+                    val proof = checkNotNull(coordinator.pendingDeletionProof())
+                    val proofFile = java.io.File.createTempFile("pallasync-delete-proof-", ".json", context.cacheDir)
+                    val bundleFile = java.io.File.createTempFile("pallasync-delete-bundle-", ".json", context.cacheDir)
+                    try {
+                        proofFile.writeText(proof, Charsets.UTF_8)
+                        val proofReadback = proofFile.readText(Charsets.UTF_8)
+                        assertEquals(proof, proofReadback)
+                        val archive = checkNotNull(coordinator.pendingDeletionEvidenceArchive())
+                        bundleFile.writeText(archive, Charsets.UTF_8)
+                        val archiveReadback = PallaSyncDeletionEvidenceArchive.parseStrictObject(bundleFile.readText(Charsets.UTF_8))
+                        assertEquals(setOf("delete_receipt", "evidence_bundle"), archiveReadback.keys)
+                        assertTrue(coordinator.completeDeletionAfterExport(proofReadback, explicitlyConfirmedOfflineCopy = true))
+                        assertEquals(null, store.dao.getChainState(state.chainId))
+                        assertNotNull(store.deletionEvidenceDao().latestReceiptRevision(state.chainId, checkNotNull(state.logId)))
+                    } finally {
+                        proofFile.delete()
+                        bundleFile.delete()
+                    }
+                }
+                if (args.getString("records_413_single") == "true") {
+                    verifySingleRecord413Retention(coordinator, store, policy, client, selected, state.chainId)
+                }
+                InstrumentationRegistry.getInstrumentation().sendStatus(
+                    0,
+                    Bundle().apply {
+                        putString("pallasync_device_id", activeDeviceId)
+                        replacedDeviceId?.let { putString("pallasync_replaced_old_device", it) }
+                        putString("pallasync_local_boundary", "verified")
+                        putString("pallasync_bound_origin", "verified")
+                        args.getString("peer_transfer_id")?.let { putString("pallasync_peer_approval", "verified") }
+                    },
+                )
+            } finally {
+                coordinator.stopBackgroundSync()
+                scope.cancel()
+                PallaSyncInteropDatabase.close(database, context)
+                keys.clearAllKeys()
+                context
+                    .getSharedPreferences("pallasync_epoch_journal", Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .commit()
+                PallaSyncCore.endSecretSessions()
+            }
+        }
+    }
+
+    private suspend fun exerciseLocalArtifactBoundary(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        chain: String,
+    ) {
+        val before = checkNotNull(store.dao.getChainState(chain))
+        val outbox = store.dao.queuedBatch(chain, 200)
+        val journal = store.protocolDao().lastMigrationIndex(PallaSyncLocalIntents.journalId(chain))
+        val artifacts =
+            listOf(
+                "PALLASYNC-RECOVERY-BLOB-v3",
+                "PALLASYNC-RECOVERY-SET-v3",
+                "PALLASYNC-RECOVERY-STATUS-v3",
+                "PALLASYNC-RECOVERY-SHARE-v3",
+                "PALLASYNC-RECOVERY-PACKAGE-v3",
+                "PALLASYNC-OFFLINE-SHARE-KEY-v3",
+                "PALLASYNC-RECOVERY-SESSION-v3",
+                "PALLASYNC-RECOVERY-TRANSFER-v3",
+            ).map { kind -> buildJsonObject { put("nested", buildJsonObject { put("type", kind) }) } } +
+                buildJsonObject {
+                    put("mnemonic", "public fixture only")
+                    put("passphrase", "")
+                } +
+                buildJsonObject {
+                    val encoded =
+                        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
+                            "{\"type\":\"PALLASYNC-RECOVERY-PACKAGE-v3\"}".toByteArray(Charsets.UTF_8),
+                        )
+                    put("file", "PSR3:$encoded")
+                }
+        for (body in artifacts) {
+            var persisted = false
+            val failure =
+                runCatching {
+                    coordinator.enqueueDataEventsThen(
+                        listOf(
+                            PallaSyncPendingEvent(
+                                SEARCH_HISTORY_SCHEMA_V3,
+                                "boundary fixture",
+                                "upsert",
+                                buildJsonObject { put("query", "boundary fixture") },
+                            ),
+                            PallaSyncPendingEvent(SEARCH_HISTORY_SCHEMA_V3, "forbidden fixture", "upsert", body),
+                        ),
+                    ) { persisted = true }
+                }.exceptionOrNull()
+            assertTrue(failure is IllegalStateException)
+            assertEquals("C_SCHEMA_VIOLATION", failure?.message)
+            assertFalse(persisted)
+            assertEquals(before.authorSeq, store.dao.getChainState(chain)?.authorSeq)
+            assertEquals(outbox, store.dao.queuedBatch(chain, 200))
+            assertEquals(journal, store.protocolDao().lastMigrationIndex(PallaSyncLocalIntents.journalId(chain)))
+        }
+    }
+
+    private suspend fun exerciseCompleteArchiveRoundTrip(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        mnemonic: String,
+        chain: String,
+    ) {
+        val archive = ByteArrayOutputStream()
+        val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
+        val bytes = archive.toByteArray()
+        val verified = coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
+        assertTrue("Archive was not marked complete", verified.complete)
+        assertTrue("Archive omitted recovery", verified.includeRecovery)
+        assertEquals(chain, verified.chainId)
+
+        // Model the durable state left by a new device whose authenticated enrollment
+        // checkpoint exists but whose first data pull never committed. The complete
+        // archive must bootstrap from its verified snapshot and replay its retained suffix.
+        val beforeRestore = checkNotNull(store.dao.getChainState(chain))
+        val dataZero =
+            Json
+                .parseToJsonElement(checkNotNull(verified.historyCutJson))
+                .jsonObject
+                .getValue("data_zero")
+                .jsonPrimitive.content
+        store.dao.updateChainState(
+            beforeRestore.copy(
+                lastRelaySeq = 0,
+                downloadedSeq = 0,
+                verifiedSeq = 0,
+                materializedSeq = 0,
+                verifiedHash = dataZero,
+                initialPullCompleted = false,
+            ),
+        )
+        store.transaction {
+            store.snapshotInstallDao().deleteHistory(chain)
+            store.snapshotInstallDao().deleteEntities(chain)
+            store.snapshotInstallDao().deleteRegisters(chain)
+            store.snapshotInstallDao().deleteAuthors(chain)
+            store.snapshotInstallDao().deleteAuthorHeads(chain)
+            store.snapshotInstallDao().deleteAuthorGaps(chain)
+            store.snapshotInstallDao().deleteProjections(chain)
+            store.protocolDao().deleteEvents(chain)
+        }
+
+        var archiveVerifiedBeforeInstall = false
+        coordinator.setArchiveRestoreFaultForTest { boundary ->
+            if (boundary == PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL) {
+                archiveVerifiedBeforeInstall = true
+            }
+        }
+        try {
+            coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        } finally {
+            coordinator.setArchiveRestoreFaultForTest {}
+        }
+        assertTrue("Restore did not reach the final deletion-ledger guard", archiveVerifiedBeforeInstall)
+        val state = checkNotNull(store.dao.getChainState(chain))
+        assertTrue(state.initialPullCompleted)
+        assertEquals(state.verifiedSeq, state.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        println("pallasync_complete_archive_round_trip=verified")
+    }
+
+    private suspend fun probeGenerationOneArchive(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        mnemonic: String,
+        chain: String,
+    ) {
+        val archive = ByteArrayOutputStream()
+        val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
+        val bytes = archive.toByteArray()
+        val lines =
+            bytes
+                .toString(Charsets.UTF_8)
+                .lineSequence()
+                .filter(String::isNotBlank)
+                .toList()
+        val header = Json.parseToJsonElement(lines.first()).jsonObject
+        assertEquals(chain, header.getValue("chain_id").jsonPrimitive.content)
+        assertEquals(1L, header.getValue("generation").jsonPrimitive.long)
+        val kinds =
+            lines
+                .drop(1)
+                .mapNotNull { line ->
+                    Json
+                        .parseToJsonElement(line)
+                        .jsonObject["kind"]
+                        ?.jsonPrimitive
+                        ?.content
+                }.groupingBy { it }
+                .eachCount()
+                .toSortedMap()
+        val verification =
+            runCatching {
+                coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
+            }
+        println("pallasync_gen1_archive_bytes=${bytes.size}")
+        println("pallasync_gen1_archive_kinds=$kinds")
+        val verificationResult = if (verification.isSuccess) "PASS" else verification.exceptionOrNull()?.message ?: "unknown"
+        println("pallasync_gen1_archive_verify=$verificationResult")
+        val verified = verification.getOrThrow()
+        val verifiedAuthority = Json.parseToJsonElement(checkNotNull(verified.authorityJson)).jsonObject
+        val verifiedParameters = verifiedAuthority.getValue("parameters").jsonObject
+        val verifiedPin = verifiedAuthority.getValue("pin").jsonObject
+        val verifiedHistoryCut = Json.parseToJsonElement(checkNotNull(verified.historyCutJson)).jsonObject
+        val verifiedHead = verifiedHistoryCut.getValue("head").jsonObject
+        assertEquals(1L, verifiedParameters.getValue("generation").jsonPrimitive.long)
+        assertEquals(verified.headSeq, verifiedAuthority.getValue("sequence").jsonPrimitive.long)
+        assertEquals(verified.headHash, verifiedAuthority.getValue("head_hash").jsonPrimitive.content)
+        assertEquals(verified.logId, verifiedPin.getValue("log_id").jsonPrimitive.content)
+        assertEquals(verified.headSeq, verifiedHead.getValue("head_seq").jsonPrimitive.long)
+        assertEquals(verified.headHash, verifiedHead.getValue("head_hash").jsonPrimitive.content)
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply {
+                putString("pallasync_gen1_archive_bytes", bytes.size.toString())
+                putString("pallasync_gen1_archive_kinds", kinds.toString())
+                putString("pallasync_gen1_archive_authority_replay", "verified_generation_transition")
+                putString("pallasync_gen1_archive_verify", verificationResult)
+            },
+        )
+        assertTrue("Generation 1 archive was not complete", verified.complete)
+        assertEquals(1L, verified.generation)
+        assertTrue(verified.includeRecovery)
+        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val restored = checkNotNull(store.dao.getChainState(chain))
+        assertEquals(1L, restored.generation)
+        assertEquals(verified.logId, restored.logId)
+        assertEquals(verified.headSeq, restored.verifiedSeq)
+        assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        println("pallasync_gen1_archive_restore=verified")
+    }
+
+    private suspend fun probePrunedArchive(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        keys: PallaSyncKeystore,
+        policy: PallaSyncPolicyGate,
+        client: OkHttpClient,
+        context: Context,
+        mnemonic: String,
+        chain: String,
+        terminateAfterInstall: Boolean,
+        injectDeletionRace: Boolean,
+    ) {
+        // Mnemonic enrollment admits the Android device but does not silently rewrite the current
+        // EpochRecord's membership. Commit an explicit device-authorized rotation first so the snapshot
+        // publisher is an authorized member under §§10.4 and 13.2.
+        PallaSyncCore.setSecretForeground(true)
+        val rotated = coordinator.rotateEpoch(mnemonic, reason = "manual")
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), rotated)
+        val current = checkNotNull(store.dao.getChainState(chain))
+        val localKeys = checkNotNull(keys.getActiveChainKeys())
+        val authority = Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain))).jsonObject
+        val deviceId = checkNotNull(localKeys.deviceId)
+        val admission = authority.getValue("devices").jsonObject[deviceId]?.jsonObject
+        val record = admission?.get("record")?.jsonObject
+        val epochRecord =
+            authority
+                .getValue("epochs")
+                .jsonObject
+                .getValue(current.keyEpoch.toString())
+                .jsonObject
+                .getValue("record")
+                .jsonObject
+        assertTrue(
+            "Admin epoch rotation did not include the enrolled Android device",
+            epochRecord.getValue("members").jsonArray.any { it.jsonPrimitive.content == deviceId },
+        )
+        val origin =
+            authority
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
+        val trustCheck =
+            runCatching {
+                policy.requireCurrent(origin)
+                policy.trustedRelayKey(origin)
+                "trusted"
+            }.getOrElse { it.message ?: it.javaClass.simpleName }
+        val publisherSummary =
+            "generation=${current.generation}; epoch=${current.keyEpoch}; device=$deviceId; " +
+                "epochMembers=${epochRecord.getValue("members")}; admissionGeneration=${record?.get("generation")}; " +
+                "revokedSeq=${admission?.get("revoked_seq")}; " +
+                "publicKeyMatches=${record?.get("device_public_key")?.jsonPrimitive?.content == localKeys.publicKeyBase64Url}; " +
+                "serverUrl=${coordinator.getServerUrl()}; " +
+                "authorityOrigin=$origin; trust=$trustCheck"
+        println(
+            "pallasync_prune_probe_publisher=$publisherSummary",
+        )
+        val published = coordinator.publishSnapshot()
+        val publicationLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
+        assertTrue("$publisherSummary\n$publicationLogs", published)
+        val publishedState = checkNotNull(store.dao.getChainState(chain))
+        val publication =
+            store
+                .snapshotDatabase()
+                .snapshotPublicationDao()
+                .latestPublishedForEpoch(chain, publishedState.generation, publishedState.keyEpoch)
+        val publicationParts =
+            publication
+                ?.let {
+                    store.snapshotDatabase().snapshotPublicationDao().parts(chain, it.compactionId)
+                }.orEmpty()
+        val catalogueEntries =
+            publication
+                ?.let {
+                    store.compactionCatalogueDao().verifiedEntries(chain, checkNotNull(publishedState.logId), it.compactionId)
+                }.orEmpty()
+        val compactionRow =
+            publication?.let {
+                store.protocolDao().logEntry(chain, it.logId, it.coveredThroughSeq + 1L)
+            }
+        val latestVerified = PallaSyncRetentionHandoff(store).latestVerifiedPublishedCompaction(chain, authority)
+        val handoffSummary =
+            "state={write=${publishedState.writeState},generation=${publishedState.generation},epoch=${publishedState.keyEpoch}," +
+                "epochHash=${publishedState.epochHash},verified=${publishedState.verifiedSeq}," +
+                "materialized=${publishedState.materializedSeq}," +
+                "verifiedHash=${publishedState.verifiedHash},outbox=${store.dao.pendingOutboxCount(chain)}," +
+                "quarantine=${store.snapshotInstallDao().unresolvedQuarantineCount(chain)}," +
+                "authorGaps=${store.protocolDao().unresolvedAuthorGapCount(chain)}}; " +
+                "publication=${publication?.let {
+                    "status=${it.status},epoch=${it.epoch},coverage=${it.coveredThroughSeq}," +
+                        "parts=${it.partCount},log=${it.logId},compaction=${it.compactionJson != null}"
+                } ?: "missing"}; " +
+                "partStatuses=${publicationParts.map { it.status }}; catalogue=${catalogueEntries.size}; " +
+                "nextLog=${compactionRow?.let { "seq=${it.relaySeq},state=${it.validationState},json=${it.signedJson}" } ?: "missing"}; " +
+                "latestVerified=${latestVerified != null}"
+        println("pallasync_pruned_archive_handoff=$handoffSummary")
+        assertNotNull(handoffSummary, latestVerified)
+        val pruned = coordinator.prunePublishedLog(mnemonic, "")
+        val pruneLogs = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
+        assertTrue("$handoffSummary\n$pruneLogs", pruned)
+        val deletionUrl = "${coordinator.getServerUrl().trimEnd('/')}/pallasync/v3/chains/$chain/deletion"
+        val deletionProbe =
+            PallaSyncRootSession
+                .beginText(
+                    mnemonic,
+                    "",
+                    PallaSyncRootSession.Operation.DELETE,
+                    chain,
+                    authority.getValue("admin_public_key").jsonPrimitive.content,
+                    policy::requireCurrent,
+                    policy.retry::correctedTime,
+                ).use { root ->
+                    val url = deletionUrl.toHttpUrl()
+                    val token = checkNotNull(root.token(origin, "GET", url.encodedPath))
+                    client
+                        .newCall(
+                            Request
+                                .Builder()
+                                .url(url)
+                                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                                .header("Authorization", "PallaSync $token")
+                                .get()
+                                .build(),
+                        ).execute()
+                        .use { response -> "${response.code} ${response.body.string()}" }
+                }
+        assertTrue(
+            "Unexpected undeleted-chain GET /deletion response after prune: $deletionProbe",
+            deletionProbe.startsWith("404 ") && deletionProbe.contains("CHAIN_NOT_FOUND"),
+        )
+        val archive = ByteArrayOutputStream()
+        val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
+        val bytes = archive.toByteArray()
+        val lines =
+            bytes
+                .toString(Charsets.UTF_8)
+                .lineSequence()
+                .filter(String::isNotBlank)
+                .toList()
+        val kinds =
+            lines
+                .drop(1)
+                .mapNotNull {
+                    Json
+                        .parseToJsonElement(it)
+                        .jsonObject["kind"]
+                        ?.jsonPrimitive
+                        ?.content
+                }.groupingBy { it }
+                .eachCount()
+        assertTrue("Pruned archive has no compaction boundary: $kinds", (kinds["boundary"] ?: 0) > 0)
+        val verified = coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
+        assertTrue("Pruned archive was not complete", verified.complete)
+        assertEquals(0L, verified.generation)
+        val restoreFailure =
+            runCatching { coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "") }
+                .exceptionOrNull()
+        assertTrue(
+            "Pruned archive restore failed: $restoreFailure\n" +
+                "${restoreFailure?.stackTrace?.take(12)?.joinToString("\n")}\n" +
+                PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"),
+            restoreFailure == null,
+        )
+        val restored = checkNotNull(store.dao.getChainState(chain))
+        assertEquals(verified.logId, restored.logId)
+        assertEquals(verified.headSeq, restored.verifiedSeq)
+        assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        println("pallasync_pruned_archive_kinds=$kinds")
+        println("pallasync_pruned_archive_boundary_restore=verified")
+
+        // Exercise the same atomic snapshot bootstrap branch used by a newly activated device
+        // whose chain authority is pinned but whose first data pull has not materialized yet.
+        val dataZero =
+            Json
+                .parseToJsonElement(checkNotNull(verified.historyCutJson))
+                .jsonObject
+                .getValue("data_zero")
+                .jsonPrimitive.content
+        store.transaction {
+            store.protocolDao().deleteEvents(chain)
+            store.protocolDao().deleteAuthors(chain)
+            store.protocolDao().deleteSnapshotAuthorHeads(chain)
+            store.protocolDao().deleteSnapshotAuthorGaps(chain)
+            store.protocolDao().deleteEntities(chain)
+            store.protocolDao().deleteRegisters(chain)
+            store.protocolDao().deleteHistory(chain)
+            store.protocolDao().deleteProjections(chain)
+            store.dao.updateChainState(
+                restored.copy(
+                    lamport = 0,
+                    chainVectorJson = "{}",
+                    latestControlSeq = 0,
+                    prevControlHash = "",
+                    lastRelaySeq = 0,
+                    initialPullCompleted = false,
+                    authorSeq = 0,
+                    authorTailHash = null,
+                    downloadedSeq = 0,
+                    verifiedSeq = 0,
+                    materializedSeq = 0,
+                    verifiedHash = dataZero,
+                    writeState = "active",
+                ),
+            )
+        }
+        assertEquals(null, store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        var archiveRestoreFaultInjected = false
+        var archiveVerifiedBeforeInstall = false
+        if (terminateAfterInstall) {
+            context.filesDir.resolve("pallasync-archive-restore-process-death.ndjson").writeBytes(bytes)
+            context
+                .filesDir
+                .resolve("pallasync-archive-restore-process-death-source.json")
+                .writeText(encodeExpectedArchiveSource(expectedSource), Charsets.UTF_8)
+        }
+        coordinator.setArchiveRestoreFaultForTest { boundary ->
+            when (boundary) {
+                PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL -> {
+                    archiveVerifiedBeforeInstall = true
+                }
+
+                PallaSyncArchiveRestoreBoundary.SNAPSHOT_INSTALLED -> {
+                    archiveRestoreFaultInjected = true
+                    if (terminateAfterInstall) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("pallasync_archive_restore_process_death", "snapshot_installed") },
+                        )
+                        println("pallasync_archive_restore_process_death=snapshot_installed")
+                        System.err.flush()
+                        Thread.sleep(500)
+                        android.os.Process.killProcess(android.os.Process.myPid())
+                        error("Process termination did not occur")
+                    }
+                    error("Injected archive restore interruption")
+                }
+
+                PallaSyncArchiveRestoreBoundary.PREFIX_MATERIALIZED -> {
+                    Unit
+                }
+            }
+        }
+        val interruptedRestore =
+            try {
+                runCatching { coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "") }
+                    .exceptionOrNull()
+            } finally {
+                coordinator.setArchiveRestoreFaultForTest {}
+            }
+        assertEquals("Injected archive restore interruption", interruptedRestore?.message)
+        assertTrue(archiveRestoreFaultInjected)
+        assertTrue("Archive restore skipped the final deletion-ledger guard", archiveVerifiedBeforeInstall)
+        val interruptedState = checkNotNull(store.dao.getChainState(chain))
+        assertFalse(interruptedState.initialPullCompleted)
+        assertTrue(interruptedState.verifiedSeq > 0)
+        assertEquals(interruptedState.verifiedSeq, interruptedState.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+
+        // A new coordinator can re-verify the same archive and resume from the durable boundary.
+        val resumedCoordinator =
+            PalleriaSyncCoordinator(
+                client,
+                ApplicationProvider.getApplicationContext(),
+                suppliedPolicy = policy,
+                suppliedStore = store,
+            )
+        resumedCoordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        val bootstrapped = checkNotNull(store.dao.getChainState(chain))
+        assertTrue(bootstrapped.initialPullCompleted)
+        assertEquals(verified.headSeq, bootstrapped.verifiedSeq)
+        assertEquals(bootstrapped.verifiedSeq, bootstrapped.materializedSeq)
+        assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        println("pallasync_pruned_archive_bootstrap_install=verified")
+
+        if (injectDeletionRace) {
+            val stateBeforeRace = checkNotNull(store.dao.getChainState(chain))
+            val keysBeforeRace = checkNotNull(keys.getActiveChainKeys())
+            var raceBoundaryReached = false
+            coordinator.setArchiveRestoreFaultForTest { boundary ->
+                if (boundary == PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL) {
+                    raceBoundaryReached = true
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_archive_deletion_race", "waiting_for_external_delete") },
+                    )
+                    println("pallasync_archive_deletion_race=waiting_for_external_delete")
+                    System.err.flush()
+                    Thread.sleep(15_000)
+                }
+            }
+            val racedRestore =
+                try {
+                    runCatching { coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "") }
+                        .exceptionOrNull()
+                } finally {
+                    coordinator.setArchiveRestoreFaultForTest {}
+                }
+            assertTrue("Restore did not pause after full archive verification", raceBoundaryReached)
+            assertEquals("C_MISSING_DEPENDENCY", racedRestore?.message)
+            assertEquals("Deletion racing archive verification changed local chain state", stateBeforeRace, store.dao.getChainState(chain))
+            assertEquals("Deletion racing archive verification erased device keys", keysBeforeRace, keys.getActiveChainKeys())
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply {
+                    putString(
+                        "pallasync_archive_deletion_race",
+                        "blocked_for_transparency_dependency_with_state_retained",
+                    )
+                },
+            )
+            println("pallasync_archive_deletion_race=blocked_for_transparency_dependency_with_state_retained")
+            return
+        }
+
+        // A signed deletion ledger that appears after the archive was created overrides its
+        // older writable state. Restore must stop before local mutation and keep keys/evidence.
+        assertEquals(
+            PallaSyncDeletionRequestResult.PROOF_READY_FOR_EXPORT,
+            coordinator.requestChainDeletion(mnemonic),
+        )
+        val retainedBeforeRejectedRestore = checkNotNull(store.dao.getChainState(chain))
+        val retainedKeysBeforeRejectedRestore = checkNotNull(keys.getActiveChainKeys())
+        val deletedRestore =
+            runCatching {
+                coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+            }.exceptionOrNull()
+        assertEquals("C_DELETION_UNVERIFIED", deletedRestore?.message)
+        assertEquals(retainedBeforeRejectedRestore, store.dao.getChainState(chain))
+        assertEquals(retainedKeysBeforeRejectedRestore, keys.getActiveChainKeys())
+        assertNotNull(coordinator.pendingDeletionProof())
+        assertNotNull(
+            store.deletionEvidenceDao().latestReceiptRevision(chain, checkNotNull(retainedBeforeRejectedRestore.logId)),
+        )
+        println("pallasync_deleted_archive_restore=blocked_with_local_state_retained")
+    }
+
+    private suspend fun resumeHistoricalTransparencyRecovery(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        keys: PallaSyncKeystore,
+    ) {
+        val state = checkNotNull(store.dao.getActiveChainState())
+        assertEquals("active", state.writeState)
+        val pending = store.dao.pendingInboxEvidenceRecords(state.chainId, 2)
+        assertEquals(1, pending.size)
+        val progress = checkNotNull(keys.transparencyRecoveryProgress(state.chainId))
+        val savedAnchor = progress.getValue("anchor").jsonObject
+        assertEquals(0L, savedAnchor.getValue("index").jsonPrimitive.long)
+        PallaSyncCore.setSecretForeground(true)
+        assertEquals(1, coordinator.retryPendingInboxEvidence(limit = 1))
+        assertEquals("applied", store.dao.getInboxRecord(state.chainId, pending.single().recordId)?.status)
+        assertEquals(0L, store.dao.pendingInboxDispositionCount(state.chainId))
+        assertEquals(null, keys.transparencyRecoveryProgress(state.chainId))
+
+        val logEntry = checkNotNull(store.protocolDao().logEntry(state.chainId, checkNotNull(state.logId), pending.single().relaySeq))
+        val receipt = Json.parseToJsonElement(checkNotNull(logEntry.receiptJson)).jsonObject
+        val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        val relayKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
+        val origin =
+            Json
+                .parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(state.chainId)))
+                .jsonObject
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
+        assertEquals(
+            1,
+            store
+                .protocolDao()
+                .evidenceAt(origin, relayKeyId, state.chainId, checkNotNull(state.logId), "transparency", transparencyIndex)
+                .size,
+        )
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_transparency_recovery_process_death", "resumed_and_applied") },
+        )
+        println("pallasync_transparency_recovery_process_death=resumed_and_applied")
+    }
+
+    private suspend fun exerciseMissingDependencyQuarantineRetry(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        chain: String,
+        keys: PallaSyncKeystore,
+        scope: CoroutineScope,
+        client: OkHttpClient,
+        selected: String,
+        withholdRelayEvidence: Boolean,
+        cancelTransparencyRecovery: Boolean,
+    ) {
+        val injectMissingTransparencyPage =
+            InstrumentationRegistry.getArguments().getString("transparency_page_gap") == "true"
+        val event = checkNotNull(store.protocolDao().firstAcceptedEvent(chain))
+        val originalHash = checkNotNull(PallaSyncCore.objectHash(event.signedJson))
+        assertEquals(event.objectHash, originalHash)
+        val inbox =
+            store.dao.getInboxRecord(chain, event.recordId)
+                ?: PallaSyncInboxEntity
+                    .applied(chain, event.recordId, checkNotNull(event.relaySeq), event.signedJson)
+                    .also { store.dao.insertInboxRecords(listOf(it)) }
+        assertEquals("applied", inbox.status)
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_MISSING_DEPENDENCY' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        store.protocolDao().quarantine(
+            QuarantineEvidenceEntity(chain, event.objectHash, "C_MISSING_DEPENDENCY", event.signedJson, "unresolved"),
+        )
+
+        val retryMissingDependency = coordinator.retryQuarantinedRecordEvidence(event.objectHash)
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), retryMissingDependency)
+        assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        val resolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
+        assertEquals(event.signedJson, resolved.evidenceJson)
+        assertEquals("resolved", resolved.resolutionState)
+
+        // A separate authority proof gap has a distinct recovery reason. Re-stage the same
+        // immutable accepted object as unproven and require the retry to fetch and validate its
+        // exact signed receipt/transparency evidence before materializing it again.
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE ps_quarantine SET reason='C_ACCEPTANCE_UNPROVEN',resolution_state='unresolved' WHERE chain_id=? AND object_hash=?",
+            arrayOf(chain, event.objectHash),
+        )
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='quarantined',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        val retryAcceptanceProof = coordinator.retryQuarantinedRecordEvidence(event.objectHash)
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), retryAcceptanceProof)
+        assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        val acceptanceResolved = checkNotNull(store.protocolDao().quarantineEvidence(chain, event.objectHash))
+        assertEquals("C_ACCEPTANCE_UNPROVEN", acceptanceResolved.reason)
+        assertEquals(event.signedJson, acceptanceResolved.evidenceJson)
+        assertEquals("resolved", acceptanceResolved.resolutionState)
+
+        // Remove one historical inclusion entry after the relay head is already fully verified.
+        // The ordinary retry must re-fetch the bounded signed range, restore the proof, then
+        // revalidate and apply the same immutable bytes.
+        val logId = checkNotNull(store.dao.getChainState(chain)?.logId)
+        val accepted = checkNotNull(store.protocolDao().logEntry(chain, logId, checkNotNull(event.relaySeq)))
+        val receipt = Json.parseToJsonElement(accepted.receiptJson).jsonObject
+        val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        val receiptKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
+        val origin =
+            Json
+                .parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain)))
+                .jsonObject
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "DELETE FROM ps_evidence WHERE origin=? AND relay_key_id=? AND chain_id=? AND log_id=? AND kind='transparency' AND sequence=?",
+            arrayOf<Any?>(origin, receiptKeyId, chain, logId, transparencyIndex),
+        )
+        assertTrue(
+            store
+                .protocolDao()
+                .evidenceAt(origin, receiptKeyId, chain, logId, "transparency", transparencyIndex)
+                .isEmpty(),
+        )
+        store.snapshotDatabase().openHelper.writableDatabase.execSQL(
+            "UPDATE pallasync_inbox SET status='pending_evidence',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
+            arrayOf(chain, event.recordId),
+        )
+        if (cancelTransparencyRecovery) {
+            coordinator.setTransparencyRecoveryAfterCheckpointForTest {
+                client
+                    .newCall(
+                        Request
+                            .Builder()
+                            .url("$selected/__test__/clear-transparency-observations")
+                            .post(ByteArray(0).toRequestBody(null))
+                            .build(),
+                    ).execute()
+                    .use { response ->
+                        assertEquals(200, response.code)
+                        assertEquals("{\"cleared\":true}", response.body.string())
+                    }
+                currentCoroutineContext()[Job]?.cancel(CancellationException("Injected cancellation after durable transparency page"))
+            }
+            val cancelledRetry = scope.launch { coordinator.retryPendingInboxEvidence(limit = 1) }
+            cancelledRetry.join()
+            assertTrue("The injected page-boundary cancellation did not stop the retry", cancelledRetry.isCancelled)
+            coordinator.setTransparencyRecoveryAfterCheckpointForTest {}
+            val retained = checkNotNull(store.dao.getInboxRecord(chain, event.recordId))
+            assertEquals("pending_evidence", retained.status)
+            assertEquals(event.signedJson, retained.rawRecordJson)
+            val savedProgress = checkNotNull(keys.transparencyRecoveryProgress(chain))
+            assertEquals(
+                1L,
+                savedProgress
+                    .getValue("anchor")
+                    .jsonObject
+                    .getValue("index")
+                    .jsonPrimitive.long,
+            )
+            val targetIndex =
+                savedProgress
+                    .getValue("target_head")
+                    .jsonObject
+                    .getValue("entry_index")
+                    .jsonPrimitive.long
+            assertTrue("The test range did not contain another transparency page", targetIndex > 1L)
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_transparency_recovery_cancel_resume", "cancelled_at_page_checkpoint") },
+            )
+            println("pallasync_transparency_recovery_cancel_resume=cancelled_at_page_checkpoint")
+        }
+        if (withholdRelayEvidence || injectMissingTransparencyPage) {
+            val armRequest =
+                Request
+                    .Builder()
+                    .url("$selected/__test__/arm-pending-evidence-withhold")
+                    .post(
+                        "{\"successful_pages\":1,\"missing_page\":$injectMissingTransparencyPage}"
+                            .toRequestBody(null),
+                    ).build()
+            client.newCall(armRequest).execute().use { response ->
+                assertEquals(200, response.code)
+                assertEquals("{\"armed\":true}", response.body.string())
+            }
+            assertEquals(0, coordinator.retryPendingInboxEvidence(limit = 1))
+            val stillPending = checkNotNull(store.dao.getInboxRecord(chain, event.recordId))
+            assertTrue(stillPending.status, stillPending.status in setOf("pending_dependency", "pending_evidence"))
+            assertEquals(event.signedJson, stillPending.rawRecordJson)
+            val partialProgress = checkNotNull(keys.transparencyRecoveryProgress(chain))
+            assertEquals(
+                1L,
+                partialProgress
+                    .getValue("anchor")
+                    .jsonObject
+                    .getValue("index")
+                    .jsonPrimitive.long,
+            )
+            assertTrue(
+                partialProgress
+                    .getValue("target_head")
+                    .jsonObject
+                    .getValue("entry_index")
+                    .jsonPrimitive.long > 1L,
+            )
+            assertEquals(0, store.protocolDao().unresolvedQuarantineCount(chain))
+            delay(1_200)
+        }
+        assertEquals(1, coordinator.retryPendingInboxEvidence(limit = 1))
+        assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+        assertEquals(
+            1,
+            store
+                .protocolDao()
+                .evidenceAt(origin, receiptKeyId, chain, logId, "transparency", transparencyIndex)
+                .size,
+        )
+        assertEquals(0L, store.dao.pendingInboxDispositionCount(chain))
+        if (withholdRelayEvidence) {
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_pending_evidence_withhold", "preserved_then_recovered") },
+            )
+            println("pallasync_pending_evidence_withhold=preserved_then_recovered")
+        }
+        if (injectMissingTransparencyPage) {
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_transparency_page_gap", "preserved_then_recovered") },
+            )
+            println("pallasync_transparency_page_gap=preserved_then_recovered")
+        }
+        if (cancelTransparencyRecovery) {
+            assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+            assertEquals(0L, store.dao.pendingInboxDispositionCount(chain))
+            assertEquals(null, keys.transparencyRecoveryProgress(chain))
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_transparency_recovery_cancel_resume", "resumed_and_applied") },
+            )
+            println("pallasync_transparency_recovery_cancel_resume=resumed_and_applied")
+        }
+        PallaSyncStorageRecoveryInterop.exercise(coordinator, store, keys, chain)
+        PallaSyncSchemaRecoveryInterop.exercise(coordinator, store, keys, chain)
+    }
+
+    private fun exerciseBoundOrigin(
+        client: OkHttpClient,
+        policy: PallaSyncPolicyGate,
+        chain: String,
+        selected: String,
+    ) {
+        val other = "https://different.invalid"
+        val response =
+            PallaSyncRemoteService(client, policy).executeUnit(
+                okhttp3.Request
+                    .Builder()
+                    .url(
+                        "$other/pallasync/v3/chains/$chain/log/head",
+                    ).header("Accept", PALLASYNC_MEDIA_TYPE)
+                    .get()
+                    .build(),
+            )
+        assertEquals(PallaSyncHttpResult.ProtocolError("C_BOOTSTRAP_TRUST_REQUIRED"), response)
+        val changed = runCatching { policy.bindChainOrigin(chain, other) }.exceptionOrNull()
+        assertEquals("C_BOOTSTRAP_TRUST_REQUIRED", changed?.message)
+        policy.requireChainOrigin(chain, selected)
+    }
+
+    private suspend fun exercisePausedEdits(
+        coordinator: PalleriaSyncCoordinator,
+        client: OkHttpClient,
+        context: Context,
+        scope: CoroutineScope,
+        policy: PallaSyncPolicyGate,
+        store: PallaSyncLocalStore,
+        settings: com.yunfie.illustia.settings.SettingsStore,
+        chain: String,
+        device: String?,
+    ) {
+        val before = checkNotNull(store.dao.getChainState(chain))
+        val query = "Android paused interop"
+        settings.setPallaSyncEnabledFromCoordinator(false)
+        coordinator.enqueueDataEventsThen(
+            listOf(PallaSyncPendingEvent(SEARCH_HISTORY_SCHEMA_V3, query, "upsert", buildJsonObject { put("query", query) })),
+        ) {
+            settings.writeSyncedCollections(
+                com.yunfie.illustia.settings
+                    .SyncedCollectionsSnapshot(searchHistory = listOf(query)),
+            )
+        }
+        assertEquals(before.authorSeq, store.dao.getChainState(chain)?.authorSeq)
+        assertEquals(1L, coordinator.getPendingLocalEditCount())
+        assertTrue(store.dao.queuedBatch(chain, 200).isEmpty())
+        PallaSyncProjection(context).publish(chain, store)
+        assertEquals(listOf(query), settings.readSyncedCollections().searchHistory)
+        PallaSyncCore.endSecretSessions()
+        val reopened = PalleriaSyncCoordinator(client, context, scope, policy, store)
+        assertFalse(reopened.recoverInterruptedActivation())
+        assertFalse(settings.read().pallaSyncEnabled)
+        assertEquals(1L, reopened.getPendingLocalEditCount())
+        PallaSyncCore.setSecretForeground(true)
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), reopened.resumeBoundChain(startWorker = false))
+        assertEquals(device, PallaSyncKeystore(context).boundDeviceId(chain))
+        assertEquals(before.authorSeq + 1, store.dao.getChainState(chain)?.authorSeq)
+        assertEquals(0L, reopened.getPendingLocalEditCount())
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+    }
+
+    private suspend fun exerciseEpochRotation(
+        coordinator: PalleriaSyncCoordinator,
+        keys: PallaSyncKeystore,
+        store: PallaSyncLocalStore,
+        context: Context,
+        client: OkHttpClient,
+        policy: PallaSyncPolicyGate,
+        selected: String,
+        phrase: String,
+        chain: String,
+        interrupt: Boolean,
+        faultInjected: () -> Boolean,
+    ) {
+        val previous = checkNotNull(keys.getActiveChainKeys())
+        val committed = checkNotNull(store.dao.getChainState(chain))
+        val acceptedId =
+            checkNotNull(
+                store.protocolDao().author(chain, committed.generation, checkNotNull(previous.deviceId), committed.authorSeq),
+            ).recordId
+        val accepted = checkNotNull(store.protocolDao().event(chain, acceptedId))
+        assertTrue(accepted.relaySeq != null && accepted.receiptJson != null)
+        val heldAccepted =
+            store.dao.insertOutboxEvent(
+                OutboxEntity(
+                    chainId = chain,
+                    deviceSeq = committed.authorSeq,
+                    eventJson = accepted.signedJson,
+                    status = "awaiting_reconciliation",
+                    recordId = accepted.recordId,
+                    objectHash = accepted.objectHash,
+                    receiptJson = accepted.receiptJson,
+                ),
+            )
+        val staleQueries = listOf("Android stale epoch first", "Android stale epoch second")
+        for (query in staleQueries) {
+            assertTrue(coordinator.enqueueDataEvent(SEARCH_HISTORY_SCHEMA_V3, query, "upsert", buildJsonObject { put("query", query) }))
+        }
+        val sources = store.dao.queuedBatch(chain, PALLASYNC_PAGE_SIZE)
+        assertEquals(2, sources.size)
+        val armRequest =
+            Request
+                .Builder()
+                .url("$selected/__test__/arm-epoch-stale")
+                .header("X-Test-Chain-Id", chain)
+                .post(ByteArray(0).toRequestBody(null))
+                .build()
+        val responseMetadata =
+            client.newCall(armRequest).execute().use { response ->
+                assertEquals(200, response.code)
+                Json
+                    .parseToJsonElement(checkNotNull(response.body).string())
+                    .jsonObject
+                    .getValue("metadata")
+                    .jsonObject
+            }
+        val pin =
+            buildJsonObject {
+                put("origin", PallaSyncUrls.extractOrigin(selected.toHttpUrl()))
+                put("chain_id", chain)
+                put("public_key", policy.trustedRelayKey(PallaSyncUrls.extractOrigin(selected.toHttpUrl())))
+                put("log_id", checkNotNull(store.dao.getChainState(chain)).logId)
+            }
+        assertEquals(responseMetadata.getValue("log_id").jsonPrimitive.content, pin.getValue("log_id").jsonPrimitive.content)
+        val protocolResponse =
+            buildJsonObject {
+                put("accepted", JsonArray(emptyList()))
+                put(
+                    "rejected",
+                    JsonArray(
+                        sources.map { source ->
+                            buildJsonObject {
+                                put("record_id", checkNotNull(source.recordId))
+                                put("status", 409)
+                                put("code", "EPOCH_STALE")
+                                put("retryable", true)
+                            }
+                        },
+                    ),
+                )
+                put("upload_receipts", JsonArray(emptyList()))
+                put("generation", responseMetadata.getValue("generation"))
+                put("log_id", responseMetadata.getValue("log_id"))
+                put("head_seq", responseMetadata.getValue("head_seq"))
+                put("head_hash", responseMetadata.getValue("head_hash"))
+            }
+        PallaSyncCore.validateRecordUpload(
+            protocolResponse.toString().toByteArray(),
+            JsonArray(sources.map { Json.parseToJsonElement(it.eventJson) }).toString(),
+            pin.toString(),
+        )
+        val staleSyncSucceeded = coordinator.syncNow()
+        val staleSyncLog = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
+        assertFalse(
+            "Injected §10.6 per-item EPOCH_STALE response must stop upload processing: $staleSyncLog",
+            staleSyncSucceeded,
+        )
+        sources.forEach { source ->
+            assertEquals(
+                "Response-to-Room recovery failed; sync log: ${PalleriaSyncCoordinator.syncLogs.value.joinToString(" | ")}",
+                "awaiting_reconciliation:EPOCH_STALE",
+                store.dao.outboxEvent(source.id)?.status,
+            )
+            assertEquals(source.eventJson, store.dao.outboxEvent(source.id)?.eventJson)
+        }
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_epoch_stale_response", "passed") },
+        )
+        println("pallasync_epoch_stale_response=passed")
+        val lastSequence = checkNotNull(store.dao.getChainState(chain)).authorSeq
+        val rotated = coordinator.rotateEpoch(phrase)
+        if (interrupt) {
+            assertTrue("The named durable boundary was reached", faultInjected())
+            assertEquals(false, rotated)
+            assertEquals("epoch_rebase_required", store.dao.getChainState(chain)?.writeState)
+            PallaSyncCore.endSecretSessions()
+            val reopened = PallaSyncKeystore(context)
+            PallaSyncOutboxRebase(
+                store,
+                PallaSyncLocalAuthor(context, store),
+                reopened,
+            ).resume(chain, checkNotNull(reopened.getActiveChainKeys()))
+        } else {
+            assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), rotated)
+        }
+        val next = checkNotNull(keys.getActiveChainKeys())
+        val state = checkNotNull(store.dao.getChainState(chain))
+        assertEquals(1L, next.epoch)
+        assertEquals(1L, state.keyEpoch)
+        assertEquals("active", state.writeState)
+        assertEquals(previous.deviceId, next.deviceId)
+        assertEquals(previous.epochSecretBase64Url, checkNotNull(keys.keysForEpoch(next, 0)).epochSecretBase64Url)
+        assertTrue(previous.epochSecretBase64Url != next.epochSecretBase64Url)
+        assertEquals(null, PallaSyncEpochJournal(context).pending(chain))
+        assertEquals(null, store.dao.outboxEvent(heldAccepted))
+        assertEquals(accepted, store.protocolDao().event(chain, acceptedId))
+        val replacements = store.dao.queuedBatch(chain, PALLASYNC_PAGE_SIZE)
+        assertEquals(2, replacements.size)
+        assertEquals(lastSequence + 2, state.authorSeq)
+        for ((index, source) in sources.withIndex()) {
+            assertEquals(null, store.dao.outboxEvent(source.id))
+            val retained = checkNotNull(store.protocolDao().event(chain, checkNotNull(source.recordId)))
+            assertEquals("abandoned_unaccepted", retained.validationState)
+            assertEquals(null, retained.relaySeq)
+            assertEquals(null, retained.receiptJson)
+            assertEquals(source.eventJson, retained.signedJson)
+            val replacement = Json.decodeFromString<PallaSyncWireRecord>(replacements[index].eventJson)
+            val original = Json.decodeFromString<PallaSyncWireRecord>(source.eventJson)
+            assertEquals(1L, replacement.epoch)
+            assertTrue(replacement.recordId != original.recordId && replacement.payloadNonce != original.payloadNonce)
+            PallaSyncDeviceSession.begin(next).use {
+                val inner =
+                    Json.decodeFromString<PallaSyncInnerRecord>(
+                        PallaSyncCore.decryptOwnPreparedRecord(it.handle, replacements[index].eventJson),
+                    )
+                assertEquals(staleQueries[index], inner.operations.single().entityId)
+                assertTrue(inner.deviceSeq > lastSequence)
+                assertEquals(if (index == 0) sources.last().objectHash else replacements[index - 1].objectHash, inner.prevRecordHash)
+            }
+        }
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply {
+                putString("pallasync_rebase_sources", JsonArray(sources.map { Json.parseToJsonElement(it.eventJson) }).toString())
+            },
+        )
+        assertTrue(
+            coordinator.enqueueDataEvent(
+                SEARCH_HISTORY_SCHEMA_V3,
+                "Android rotated interop",
+                "upsert",
+                buildJsonObject {
+                    put("query", "Android rotated interop")
+                },
+            ),
+        )
+        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n"), coordinator.syncNow())
+    }
+
+    private suspend fun verifySingleRecord413Retention(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        policy: PallaSyncPolicyGate,
+        client: OkHttpClient,
+        selected: String,
+        chainId: String,
+    ) {
+        val query = "Android 413 single"
+        val armRequest =
+            Request
+                .Builder()
+                .url("$selected/__test__/arm-records-413")
+                .post(ByteArray(0).toRequestBody(null))
+                .build()
+        client.newCall(armRequest).execute().use { response -> assertEquals(200, response.code) }
+        assertTrue(
+            coordinator.enqueueDataEvent(
+                SEARCH_HISTORY_SCHEMA_V3,
+                query,
+                "upsert",
+                buildJsonObject { put("query", query) },
+            ),
+        )
+        val beforeRejectedUpload = store.dao.queuedBatch(chainId, PALLASYNC_PAGE_SIZE)
+        assertEquals(1, beforeRejectedUpload.size)
+        assertFalse(coordinator.syncNow())
+        val afterRejectedUpload = store.dao.queuedBatch(chainId, PALLASYNC_PAGE_SIZE)
+        assertEquals(beforeRejectedUpload, afterRejectedUpload)
+        assertEquals(1L, store.dao.pendingOutboxCount(chainId))
+        val blockedCodes = policy.retry.blockedCodes(PallaSyncUrls.extractOrigin(selected.toHttpUrl()), chainId)
+        assertTrue("PAYLOAD_TOO_LARGE blocker missing from $blockedCodes", "PAYLOAD_TOO_LARGE" in blockedCodes)
+        assertTrue(
+            PalleriaSyncCoordinator.syncLogs.value
+                .joinToString("\n")
+                .contains("PAYLOAD_TOO_LARGE"),
+        )
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_records_413_single_retained", "true") },
+        )
+        println("pallasync_records_413_single_retained=true")
+    }
+
+    private fun encodeExpectedArchiveSource(source: PallaSyncExportArchive.ExpectedSource): String =
+        buildJsonObject {
+            put("chain_id", source.chainId)
+            put("generation", source.generation)
+            put("log_id", source.logId)
+            put("relay_public_key", source.relayPublicKey)
+            put("relay_key_id", source.relayKeyId)
+            put("include_recovery", source.includeRecovery)
+            put("relay_pin_json", source.relayPinJson)
+            put("identity_json", source.identityJson)
+        }.toString()
+
+    private suspend fun resumeArchiveRestoreAfterProcessDeath(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        context: Context,
+    ) {
+        val archiveFile = context.filesDir.resolve("pallasync-archive-restore-process-death.ndjson")
+        val expectedFile = context.filesDir.resolve("pallasync-archive-restore-process-death-source.json")
+        val expectedSource = decodeExpectedArchiveSource(expectedFile.readText(Charsets.UTF_8))
+        PallaSyncCore.setSecretForeground(true)
+        coordinator.restoreRelayArchive(
+            ByteArrayInputStream(archiveFile.readBytes()),
+            expectedSource,
+            (List(23) { "abandon" } + "art").joinToString(" "),
+            "",
+        )
+        val restored = checkNotNull(store.dao.getActiveChainState())
+        assertTrue(restored.initialPullCompleted)
+        assertEquals(expectedSource.chainId, restored.chainId)
+        assertEquals(expectedSource.generation, restored.generation)
+        assertEquals(expectedSource.logId, restored.logId)
+        assertEquals(restored.verifiedSeq, restored.materializedSeq)
+        assertNotNull(store.protocolDao().entity(restored.chainId, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
+        archiveFile.delete()
+        expectedFile.delete()
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_archive_restore_process_death", "resumed_and_materialized") },
+        )
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_pruned_archive_probe", "boundary_verified_and_restored") },
+        )
+        println("pallasync_archive_restore_process_death=resumed_and_materialized")
+        println("pallasync_pruned_archive_probe=boundary_verified_and_restored")
+    }
+
+    private suspend fun verifyIsolatedRelayHealth(
+        client: OkHttpClient,
+        origin: String,
+    ) {
+        val url = PallaSyncUrls.health(origin.toHttpUrl())
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .header("Accept", PALLASYNC_MEDIA_TYPE)
+                .get()
+                .build()
+        val body =
+            client.newCall(request).execute().use { response ->
+                assertEquals("Isolated relay health returned an unexpected status", 200, response.code)
+                assertEquals(PALLASYNC_MEDIA_TYPE, response.header("Content-Type")?.substringBefore(';')?.trim())
+                checkNotNull(response.body).bytes()
+            }
+        val expectedOrigin = PallaSyncUrls.extractOrigin(origin.toHttpUrl())
+        val validated = PallaSyncCore.validateHealth(body, expectedOrigin)
+        assertTrue(
+            "Isolated relay health did not parse as a selected v3 relay",
+            parseHealthResponseBody(validated, expectedOrigin) is PallaSyncHttpResult.Success,
+        )
+    }
+
+    private fun decodeExpectedArchiveSource(text: String): PallaSyncExportArchive.ExpectedSource {
+        val value = Json.parseToJsonElement(text).jsonObject
+        return PallaSyncExportArchive.ExpectedSource(
+            chainId = value.getValue("chain_id").jsonPrimitive.content,
+            generation =
+                value
+                    .getValue("generation")
+                    .jsonPrimitive.content
+                    .toLong(),
+            logId = value.getValue("log_id").jsonPrimitive.content,
+            relayPublicKey = value.getValue("relay_public_key").jsonPrimitive.content,
+            relayKeyId = value.getValue("relay_key_id").jsonPrimitive.content,
+            includeRecovery =
+                value
+                    .getValue("include_recovery")
+                    .jsonPrimitive.content
+                    .toBooleanStrict(),
+            relayPinJson = value["relay_pin_json"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
+            identityJson = value["identity_json"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
+        )
+    }
+
+    private fun testTransport(encoded: String): OkHttpClient {
+        val certificates =
+            CertificateFactory
+                .getInstance("X.509")
+                .generateCertificates(Base64.decode(encoded, Base64.DEFAULT).inputStream())
+        val trust =
+            KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+                load(null)
+                certificates.forEachIndexed { index, certificate -> setCertificateEntry("disposable-test-$index", certificate) }
+            }
+        val managers = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(trust) }.trustManagers
+        val manager = managers.filterIsInstance<X509TrustManager>().single()
+        val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(manager), null) }
+        // Hostname verification remains enabled for the ephemeral certificate's loopback SAN.
+        return OkHttpClient.Builder().sslSocketFactory(tls.socketFactory, manager).build()
+    }
+}
