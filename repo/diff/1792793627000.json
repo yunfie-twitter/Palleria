@@ -1,0 +1,18 @@
+{
+  "repo": {
+    "timestamp": 1792829830000
+  },
+  "packages": {
+    "com.yunfie.illustia": {
+      "metadata": {
+        "lastUpdated": 1792764130000
+      },
+      "versions": {
+        "d1417d66540020061e25c0fe602eaa615b7f1f241e4169fd9ea185b1fbd35f49": null,
+        "bf0a308aa5f0a818b236cc376e4e97ac500556efaa21cd365bbbc8344636733f": null,
+        "2ff65dee3fcf9660f212a3b1551d3b18dbce521b94cb74ea35b24707094206f9": null,
+        "9daba23bc1ebaf685efc85a347bb508b257417a38462252c96c7ebe9c7fd198d": null
+      }
+    }
+  }
+}
