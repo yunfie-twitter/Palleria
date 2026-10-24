@@ -1,0 +1,42 @@
+PASS: independent Python signed public recovery-type extensions were rejected without data-log advancement
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest:
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: pallasync_reseed_target_argument=missing
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_pending_evidence_withhold=preserved_then_recovered
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_sqlite_full_recovery=transaction_rolled_back
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_local_storage_recovery=revalidated_original_once
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_bound_origin=verified
+INSTRUMENTATION_STATUS: pallasync_device_id=b7471497-846c-4676-a0c6-8275c012e4c5
+INSTRUMENTATION_STATUS: pallasync_local_boundary=verified
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 303.394
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1
+
+PASS: Android retained a verified first page and the unchanged pending record when the next page returned 503; retry resumed at after_index=1, restored proof and materialized the record
+PASS: actual Android JNI/Room rejected eight local artifact types, root-input shape and an encoded PSR3 package before application persistence, journal/outbox or author advancement
+PASS: actual Android rejected a different relay origin before chain transport and retained the protected origin binding
+PASS: actual Android disabled edit/projection preview, native session close/journal reopen and explicit same-identity resume; Python independently verified one exact accepted operation
+PASS: actual Android coordinator enrollment/initial sync/outbox -> isolated relay -> independent Python signature/AEAD receiver
