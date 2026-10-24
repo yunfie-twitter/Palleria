@@ -66,6 +66,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.ui.components.rememberSystemUiCoveredState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -214,6 +215,10 @@ internal fun IllustDetailHeader(
 
     val pagerState = rememberPagerState(pageCount = { imageUrls.size })
 
+    // クイック設定に覆われている間は、覆われたうごイラのフレーム更新（デコード/再描画）を止める。
+    val systemCovered by rememberSystemUiCoveredState()
+    val artworkVisible = isActive && !systemCovered
+
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
     LaunchedEffect(illust.id, proxyBaseUrl) {
         val thumbUrl = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } }
@@ -260,7 +265,7 @@ internal fun IllustDetailHeader(
                         contentDescription = illust.title,
                         loadPlayback = { loadUgoiraPlayback(illust.id) },
                         powerSaveEnabled = ugoiraPowerSave,
-                        isActive = isActive,
+                        isActive = artworkVisible,
                         onTap = { if (!maskMutedArtwork) onOpenImage(0) },
                         modifier =
                             Modifier
