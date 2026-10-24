@@ -1,5 +1,7 @@
 package com.yunfie.illustia.pallasync
 
+import android.database.sqlite.SQLiteFullException
+
 /** §19.3 operational/dependency states never manufacture corrupt-object evidence. */
 private val operationalValidationCodes =
     setOf(
@@ -54,3 +56,15 @@ internal fun validationState(code: String?): String =
 
 /** A missing epoch key is recoverable only by retrying the uncommitted record page. */
 internal fun recordPageMustRemainUncommitted(code: String?): Boolean = code == "C_MISSING_DEPENDENCY"
+
+/** §19.3: only protocol-coded failures and an explicit local disk-full signal get a durable inbox class. */
+internal fun pendingInboxFailureCode(failure: Throwable): String? {
+    val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
+    var current: Throwable? = failure
+    while (current != null && seen.add(current)) {
+        current.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) }?.let { return it }
+        if (current is SQLiteFullException) return "C_LOCAL_STORAGE_FULL"
+        current = current.cause
+    }
+    return null
+}

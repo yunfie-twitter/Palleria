@@ -158,6 +158,15 @@ class PallaSyncDatabaseTest {
                 )
 
                 dao.pendingInboxDispositionCount("chain-dispositions") shouldBe 3L
+                dao.inboxDispositionCounts("chain-dispositions").associate { it.status to it.count } shouldBe
+                    mapOf(
+                        "applied" to 1L,
+                        "chain_suspended" to 1L,
+                        "pending_dependency" to 1L,
+                        "pending_evidence" to 1L,
+                        "quarantined" to 1L,
+                        "unsupported_collection" to 1L,
+                    )
                 dao.pendingInboxEvidenceRecords("chain-dispositions", 50).map { it.recordId } shouldBe
                     listOf("dependency", "blocked")
                 dao.getQuarantinedInboxRecords("chain-dispositions").map { it.recordId } shouldBe listOf("invalid")

@@ -99,6 +99,30 @@ class PallaSyncKeystoreTransparencyHeadTest {
     }
 
     @Test
+    fun `historical evidence replay resumes monotonically and clears only at its signed head`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val keystore = PallaSyncKeystore(preferences)
+        val target = head(index = 11, minimum = 1, hash = "K")
+        val initial = recoveryProgress(target, anchor(index = 0, hash = "T0"))
+
+        keystore.retainTransparencyRecoveryProgress(CHAIN, initial) shouldBe true
+        val resumed = PallaSyncKeystore(preferences).transparencyRecoveryProgress(CHAIN)
+        resumed shouldBe initial
+        val middle = recoveryProgress(target, anchor(index = 7, hash = "H"))
+        keystore.retainTransparencyRecoveryProgress(CHAIN, middle) shouldBe true
+        shouldThrow<IllegalStateException> {
+            keystore.retainTransparencyRecoveryProgress(CHAIN, recoveryProgress(target, anchor(index = 6, hash = "G")))
+        }.message shouldBe "C_ROLLBACK_DETECTED"
+
+        val final = recoveryProgress(target, anchor(index = 11, hash = "K"))
+        keystore.retainTransparencyRecoveryProgress(CHAIN, final) shouldBe true
+        keystore.clearTransparencyRecoveryProgress(CHAIN, target) shouldBe true
+        PallaSyncKeystore(preferences).transparencyRecoveryProgress(CHAIN) shouldBe null
+    }
+
+    @Test
     fun `replacement promotion archives old identity and switches keys atomically`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
@@ -187,6 +211,14 @@ class PallaSyncKeystoreTransparencyHeadTest {
         put("anchor", anchor)
         put("observed_data_head_hash", "E")
         put("observed_minimum", 1)
+    }
+
+    private fun recoveryProgress(
+        target: kotlinx.serialization.json.JsonObject,
+        anchor: kotlinx.serialization.json.JsonObject,
+    ) = buildJsonObject {
+        put("target_head", target)
+        put("anchor", anchor)
     }
 
     private companion object {

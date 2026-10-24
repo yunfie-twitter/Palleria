@@ -4,6 +4,11 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 
+data class PallaSyncInboxDispositionCount(
+    @ColumnInfo(name = "status") val status: String,
+    @ColumnInfo(name = "count") val count: Long,
+)
+
 /**
  * Durable receipt for a relay record.
  *

@@ -7,15 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.yunfie.illustia.pallasync.data.ChainStateEntity
-import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.PALLASYNC_SEEN_SAFETY_LIMIT
-import java.util.UUID
+import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.UUID
 
 /** Opt-in on-device disk stress for §16.5/Appendix B IT-10; writes only a disposable Room DB. */
 @RunWith(AndroidJUnit4::class)
@@ -46,7 +46,8 @@ class PallaSyncHistoryDiskStressTest {
                 ?: PALLASYNC_SEEN_SAFETY_LIMIT.toInt()
         require(seenCount in PAGE_SIZE * 2..PALLASYNC_SEEN_SAFETY_LIMIT.toInt())
         val database =
-            Room.databaseBuilder(context, PallaSyncDatabase::class.java, databaseName)
+            Room
+                .databaseBuilder(context, PallaSyncDatabase::class.java, databaseName)
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 .build()
         try {
@@ -58,31 +59,35 @@ class PallaSyncHistoryDiskStressTest {
             var firstUninserted = 0
             while (firstUninserted < seenCount) {
                 val endExclusive = minOf(firstUninserted + INSERT_BATCH_SIZE, seenCount)
-            val batchSize = endExclusive - firstUninserted
-            val digitCount = (batchSize - 1).toString().length
-            val aliases = (0 until digitCount).map { "d$it" }
-            var decimalPower = 1
-            val number =
-                aliases.joinToString("+") { alias ->
-                    val term = "$alias.d*$decimalPower"
-                    decimalPower *= 10
-                    term
-                }
-            val digitValues = (0..9).joinToString(",") { "($it)" }
-            val digitCrossJoin = aliases.joinToString(" CROSS JOIN ") { "digits $it" }
+                val batchSize = endExclusive - firstUninserted
+                val digitCount = (batchSize - 1).toString().length
+                val aliases = (0 until digitCount).map { "d$it" }
+                var decimalPower = 1
+                val number =
+                    aliases.joinToString("+") { alias ->
+                        val term = "$alias.d*$decimalPower"
+                        decimalPower *= 10
+                        term
+                    }
+                val digitValues = (0..9).joinToString(",") { "($it)" }
+                val digitCrossJoin = aliases.joinToString(" CROSS JOIN ") { "digits $it" }
                 sql.execSQL(
                     "WITH digits(d) AS (VALUES $digitValues) " +
-                        "INSERT INTO ps_entities(chain_id,collection,entity_id,lamport,op_rank,device_id,record_id,op_index,operation,scope,body_json,context_json,order_key) " +
-                    "SELECT ?,?,('seen:'||($firstUninserted+($number))),($firstUninserted+($number))+1,1,?, ?,0,'upsert','seen','{}','{}',NULL " +
-                    "FROM $digitCrossJoin WHERE ($number)<?",
-                arrayOf(chain, collection, device, record, batchSize),
+                        "INSERT INTO ps_entities(" +
+                        "chain_id,collection,entity_id,lamport,op_rank,device_id,record_id,op_index,operation,scope,body_json," +
+                        "context_json,order_key) " +
+                        "SELECT ?,?,('seen:'||($firstUninserted+($number))),($firstUninserted+($number))+1,1,?, ?,0,'upsert'," +
+                        "'seen','{}','{}',NULL " +
+                        "FROM $digitCrossJoin WHERE ($number)<?",
+                    arrayOf(chain, collection, device, record, batchSize),
                 )
                 sql.execSQL(
                     "WITH digits(d) AS (VALUES $digitValues) " +
-                        "INSERT INTO ps_history(chain_id,collection,scope,last_access_seq,entity_id,lamport,op_rank,device_id,record_id,op_index) " +
-                    "SELECT ?,?,?,CAST(printf('%016d',n) AS BLOB),('seen:'||n),n+1,1,?,?,0 " +
-                    "FROM (SELECT ($firstUninserted+($number)) AS n FROM $digitCrossJoin WHERE ($number)<?)",
-                arrayOf(chain, collection, scope, device, record, batchSize),
+                        "INSERT INTO ps_history(" +
+                        "chain_id,collection,scope,last_access_seq,entity_id,lamport,op_rank,device_id,record_id,op_index) " +
+                        "SELECT ?,?,?,CAST(printf('%016d',n) AS BLOB),('seen:'||n),n+1,1,?,?,0 " +
+                        "FROM (SELECT ($firstUninserted+($number)) AS n FROM $digitCrossJoin WHERE ($number)<?)",
+                    arrayOf(chain, collection, scope, device, record, batchSize),
                 )
                 firstUninserted = endExclusive
                 if (firstUninserted % PROGRESS_INTERVAL == 0 || firstUninserted == seenCount) {

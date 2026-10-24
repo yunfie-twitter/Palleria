@@ -151,4 +151,34 @@ mod tests {
         );
         assert_eq!(*reconstruct(&p, 2, 3).unwrap(), rms);
     }
+
+    #[test]
+    fn compatible_profile_matrix_and_u8_boundaries_reconstruct() {
+        let profiles = (3..=16)
+            .flat_map(|n| (2..n).map(move |t| (t, n)))
+            .chain([(2, 255), (254, 255)]);
+        for (t, n) in profiles {
+            let rms =
+                std::array::from_fn(|i| (i as u8).wrapping_add(n as u8).wrapping_add(t as u8));
+            let pieces = split(&rms, t, n).unwrap();
+            assert_eq!(pieces.len(), usize::from(n), "profile {t}-of-{n}");
+
+            let threshold = usize::from(t);
+            for basis in [
+                pieces[..threshold].to_vec(),
+                pieces[pieces.len() - threshold..].to_vec(),
+            ] {
+                assert_eq!(
+                    *reconstruct(&basis, t, n).unwrap(),
+                    rms,
+                    "profile {t}-of-{n}"
+                );
+            }
+            assert_eq!(
+                *reconstruct(&pieces, t, n).unwrap(),
+                rms,
+                "profile {t}-of-{n} full set"
+            );
+        }
+    }
 }

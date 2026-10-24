@@ -43,4 +43,18 @@ class PallaSyncTransparencyProgressTest {
         PallaSyncTransparencyProgress.fromSavedHead(id, log, 12, "not-json") shouldBe
             PallaSyncTransparencyProgress(12, 12, true)
     }
+
+    @Test
+    fun `large safe-integer target remains exact and separate from the verified anchor`() {
+        val verified = 9_007_199_254_740_990L
+        val target = 9_007_199_254_740_991L
+
+        PallaSyncTransparencyProgress
+            .fromSavedHead(
+                id,
+                log,
+                verified,
+                """{"transparency_id":"$id","log_id":"$log","entry_index":$target}""",
+            ) shouldBe PallaSyncTransparencyProgress(verified, target, false)
+    }
 }

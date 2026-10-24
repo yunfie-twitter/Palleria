@@ -706,8 +706,8 @@ internal class PallaSyncInitialHistory(
         val through = head.getValue("entry_index").jsonPrimitive.long
         val start = anchor.getValue("index").jsonPrimitive.long
         check(anchor.getValue("transparency_id") == head.getValue("transparency_id") && start <= through) { "C_ROLLBACK_DETECTED" }
+        // Strict signed next-index validation bounds the loop; do not retain O(suffix) cursor history.
         var cursor: String? = null
-        val seen = mutableSetOf<String>()
         var expiredCursorRequest: okhttp3.Request? = null
         var lastExpiredIndex: Long? = null
         var cursorRangeStart: Long? = null
@@ -747,7 +747,6 @@ internal class PallaSyncInitialHistory(
                             .build()
                     cursor = null
                     cursorRangeStart = null
-                    seen.clear()
                     continue
                 }
             val checked =
@@ -779,7 +778,6 @@ internal class PallaSyncInitialHistory(
                     .jsonPrimitive
                     .takeIf { it.isString }
                     ?.content
-            check(cursor == null || seen.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
             if (cursor == null) break
         }
         retain(pin, head, "transparency_head", through)

@@ -45,6 +45,7 @@ import com.yunfie.illustia.pallasync.PallaSyncDeletionRequestResult
 import com.yunfie.illustia.pallasync.PallaSyncDeletionWitnessPreview
 import com.yunfie.illustia.pallasync.PallaSyncExportArchiveVerifier
 import com.yunfie.illustia.pallasync.PallaSyncHttpResult
+import com.yunfie.illustia.pallasync.PallaSyncInboxDispositionSummary
 import com.yunfie.illustia.pallasync.PallaSyncLegacyMigrationReport
 import com.yunfie.illustia.pallasync.PallaSyncLocalIntents
 import com.yunfie.illustia.pallasync.PallaSyncQuarantineDisposition
@@ -2154,16 +2155,7 @@ fun PallaSyncSettingsScreen(
                                     status.materializedSeq,
                                 ),
                             )
-                            Text(
-                                stringResource(
-                                    R.string.pallasync_progress_transparency,
-                                    status.verifiedTransparencyIndex,
-                                    status.observedTransparencyTargetIndex,
-                                ),
-                            )
-                            if (status.transparencyObservationConflict) {
-                                Text(stringResource(R.string.pallasync_progress_transparency_conflict))
-                            }
+                            PallaSyncTransparencyProgressSummary(status)
                             Text(
                                 stringResource(
                                     if (status.partial) R.string.pallasync_progress_partial else R.string.pallasync_progress_current,
@@ -2214,11 +2206,32 @@ fun PallaSyncSettingsScreen(
                                     status.unresolvedQuarantine,
                                 ),
                             )
+                            val dispositionCounts = status.recordDispositionCounts
+                            val pendingEvidenceCount =
+                                PallaSyncInboxDispositionSummary.retryableEvidenceCount(dispositionCounts)
+                            val unsupportedCount =
+                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "unsupported_collection")
+                            val operationallyBlockedCount =
+                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "operationally_blocked")
+                            val recoverySessionFailedCount =
+                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_session_failed")
+                            val recoveryArtifactQuarantinedCount =
+                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_artifact_quarantined")
+                            val recoveryRotationIncompleteCount =
+                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_rotation_incomplete")
                             if (status.pendingRecordDispositions > 0) {
                                 Text(
                                     stringResource(
                                         R.string.pallasync_progress_record_dispositions,
                                         status.pendingRecordDispositions,
+                                    ),
+                                )
+                            }
+                            if (pendingEvidenceCount > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_pending_evidence,
+                                        pendingEvidenceCount,
                                     ),
                                 )
                                 PallaSyncActionButton(
@@ -2234,6 +2247,7 @@ fun PallaSyncSettingsScreen(
                                     onClick = {
                                         retryingPendingInboxEvidence = true
                                         scope.launch {
+                                            var retryFailed = false
                                             val applied =
                                                 try {
                                                     withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -2242,6 +2256,7 @@ fun PallaSyncSettingsScreen(
                                                 } catch (cancelled: CancellationException) {
                                                     throw cancelled
                                                 } catch (_: Exception) {
+                                                    retryFailed = true
                                                     0
                                                 } finally {
                                                     retryingPendingInboxEvidence = false
@@ -2259,11 +2274,55 @@ fun PallaSyncSettingsScreen(
                                             Toast
                                                 .makeText(
                                                     context,
-                                                    context.getString(R.string.pallasync_pending_evidence_retry_result, applied),
+                                                    if (retryFailed) {
+                                                        context.getString(R.string.pallasync_pending_evidence_retry_failed)
+                                                    } else {
+                                                        context.getString(R.string.pallasync_pending_evidence_retry_result, applied)
+                                                    },
                                                     Toast.LENGTH_LONG,
                                                 ).show()
                                         }
                                     },
+                                )
+                            }
+                            if (unsupportedCount > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_unsupported_records,
+                                        unsupportedCount,
+                                    ),
+                                )
+                            }
+                            if (operationallyBlockedCount > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_operationally_blocked,
+                                        operationallyBlockedCount,
+                                    ),
+                                )
+                            }
+                            if (recoverySessionFailedCount > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_recovery_session_failed,
+                                        recoverySessionFailedCount,
+                                    ),
+                                )
+                            }
+                            if (recoveryArtifactQuarantinedCount > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_recovery_artifact_quarantined,
+                                        recoveryArtifactQuarantinedCount,
+                                    ),
+                                )
+                            }
+                            if (recoveryRotationIncompleteCount > 0) {
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_recovery_rotation_incomplete,
+                                        recoveryRotationIncompleteCount,
+                                    ),
                                 )
                             }
                             if (status.retryAfterMs > 0) {

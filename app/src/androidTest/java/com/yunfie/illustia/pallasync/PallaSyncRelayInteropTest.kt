@@ -12,11 +12,15 @@ import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -69,10 +73,16 @@ class PallaSyncRelayInteropTest {
             val receiptNotFoundResumeAfterDeath = args.getString("receipt_not_found_resume_after_death") == "true"
             val archiveRestoreProcessDeath = args.getString("archive_restore_process_death") == "true"
             val archiveRestoreResumeAfterDeath = args.getString("archive_restore_resume_after_death") == "true"
-            val processDeathMode = reseedProcessDeath || records413ProcessDeath || receiptNotFoundProcessDeath || archiveRestoreProcessDeath
+            val transparencyRecoveryProcessDeath = args.getString("transparency_recovery_process_death") == "true"
+            val transparencyRecoveryResumeAfterDeath = args.getString("transparency_recovery_resume_after_death") == "true"
+            val transparencyRecoveryCancelResume = args.getString("transparency_recovery_cancel_resume") == "true"
+            val processDeathMode =
+                reseedProcessDeath || records413ProcessDeath || receiptNotFoundProcessDeath || archiveRestoreProcessDeath ||
+                    transparencyRecoveryProcessDeath || transparencyRecoveryCancelResume
             val resumeAfterDeath =
                 args.getString("reseed_resume_after_death") == "true" ||
-                    records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath || archiveRestoreResumeAfterDeath
+                    records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath || archiveRestoreResumeAfterDeath ||
+                    transparencyRecoveryResumeAfterDeath
             val processDeathDatabase =
                 if (archiveRestoreProcessDeath) {
                     "pallasync-archive-restore-process-death-test.db"
@@ -80,6 +90,10 @@ class PallaSyncRelayInteropTest {
                     "pallasync-413-process-death-test.db"
                 } else if (receiptNotFoundProcessDeath) {
                     "pallasync-receipt-not-found-process-death-test.db"
+                } else if (transparencyRecoveryProcessDeath) {
+                    "pallasync-transparency-recovery-process-death-test.db"
+                } else if (transparencyRecoveryCancelResume) {
+                    "pallasync-transparency-recovery-cancel-test.db"
                 } else {
                     "pallasync-reseed-process-death-test.db"
                 }
@@ -133,7 +147,26 @@ class PallaSyncRelayInteropTest {
                         error("Injected durable rebase boundary")
                     }
                 }
+            if (transparencyRecoveryProcessDeath && !transparencyRecoveryResumeAfterDeath) {
+                coordinator.setTransparencyRecoveryFaultForTest { boundary ->
+                    check(boundary == PallaSyncTransparencyRecoveryBoundary.PAGE_PERSISTED_BEFORE_CHECKPOINT)
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_transparency_recovery_process_death", "page_persisted") },
+                    )
+                    println("pallasync_transparency_recovery_process_death=page_persisted")
+                    System.err.flush()
+                    Thread.sleep(500)
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                    error("Process termination did not occur after transparency page persistence")
+                }
+            }
             try {
+                if (transparencyRecoveryResumeAfterDeath) {
+                    check(transparencyRecoveryProcessDeath) { "C_MISSING_DEPENDENCY" }
+                    resumeHistoricalTransparencyRecovery(coordinator, store, keys)
+                    return@runBlocking
+                }
                 if (archiveRestoreResumeAfterDeath) {
                     check(archiveRestoreProcessDeath) { "C_MISSING_DEPENDENCY" }
                     resumeArchiveRestoreAfterProcessDeath(coordinator, store, context)
@@ -353,8 +386,7 @@ class PallaSyncRelayInteropTest {
                                         "$selected/__test__/arm-records-413"
                                     }
                                 },
-                            )
-                            .post(ByteArray(0).toRequestBody(null))
+                            ).post(ByteArray(0).toRequestBody(null))
                             .build()
                     client.newCall(armRequest).execute().use { response ->
                         assertEquals(200, response.code)
@@ -387,7 +419,17 @@ class PallaSyncRelayInteropTest {
                 val replacingDevice = args.getString("replace_device") == "true"
                 if (!replacingDevice) {
                     exerciseCompleteArchiveRoundTrip(coordinator, store, phrase, state.chainId)
-                    exerciseMissingDependencyQuarantineRetry(coordinator, store, state.chainId)
+                    exerciseMissingDependencyQuarantineRetry(
+                        coordinator,
+                        store,
+                        state.chainId,
+                        keys,
+                        scope,
+                        client,
+                        selected,
+                        args.getString("pending_evidence_withhold") == "true",
+                        transparencyRecoveryCancelResume,
+                    )
                     exerciseLocalArtifactBoundary(coordinator, store, state.chainId)
                     exerciseBoundOrigin(client, policy, state.chainId, selected)
                 }
@@ -476,7 +518,10 @@ class PallaSyncRelayInteropTest {
                     val relayOrigin = PallaSyncUrls.extractOrigin(selected.toHttpUrl())
                     val deferredMs = policy.retry.remaining(relayOrigin)
                     assertTrue(
-                        "RECEIPT_NOT_FOUND unexpectedly became a permanent blocker: ${policy.retry.blockedCodes(relayOrigin, state.chainId)}",
+                        "RECEIPT_NOT_FOUND unexpectedly became a permanent blocker: ${policy.retry.blockedCodes(
+                            relayOrigin,
+                            state.chainId,
+                        )}",
                         "RECEIPT_NOT_FOUND" !in policy.retry.blockedCodes(relayOrigin, state.chainId),
                     )
                     assertEquals(
@@ -522,6 +567,7 @@ class PallaSyncRelayInteropTest {
                         phrase,
                         state.chainId,
                         archiveRestoreProcessDeath,
+                        args.getString("archive_deletion_race") == "true",
                     )
                     InstrumentationRegistry.getInstrumentation().sendStatus(
                         0,
@@ -942,7 +988,18 @@ class PallaSyncRelayInteropTest {
             store.protocolDao().deleteEvents(chain)
         }
 
-        coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        var archiveVerifiedBeforeInstall = false
+        coordinator.setArchiveRestoreFaultForTest { boundary ->
+            if (boundary == PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL) {
+                archiveVerifiedBeforeInstall = true
+            }
+        }
+        try {
+            coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "")
+        } finally {
+            coordinator.setArchiveRestoreFaultForTest {}
+        }
+        assertTrue("Restore did not reach the final deletion-ledger guard", archiveVerifiedBeforeInstall)
         val state = checkNotNull(store.dao.getChainState(chain))
         assertTrue(state.initialPullCompleted)
         assertEquals(state.verifiedSeq, state.materializedSeq)
@@ -1032,6 +1089,7 @@ class PallaSyncRelayInteropTest {
         mnemonic: String,
         chain: String,
         terminateAfterInstall: Boolean,
+        injectDeletionRace: Boolean,
     ) {
         // Mnemonic enrollment admits the Android device but does not silently rewrite the current
         // EpochRecord's membership. Commit an explicit device-authorized rotation first so the snapshot
@@ -1046,12 +1104,23 @@ class PallaSyncRelayInteropTest {
         val admission = authority.getValue("devices").jsonObject[deviceId]?.jsonObject
         val record = admission?.get("record")?.jsonObject
         val epochRecord =
-            authority.getValue("epochs").jsonObject.getValue(current.keyEpoch.toString()).jsonObject.getValue("record").jsonObject
+            authority
+                .getValue("epochs")
+                .jsonObject
+                .getValue(current.keyEpoch.toString())
+                .jsonObject
+                .getValue("record")
+                .jsonObject
         assertTrue(
             "Admin epoch rotation did not include the enrolled Android device",
             epochRecord.getValue("members").jsonArray.any { it.jsonPrimitive.content == deviceId },
         )
-        val origin = authority.getValue("pin").jsonObject.getValue("origin").jsonPrimitive.content
+        val origin =
+            authority
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
         val trustCheck =
             runCatching {
                 policy.requireCurrent(origin)
@@ -1078,13 +1147,15 @@ class PallaSyncRelayInteropTest {
                 .snapshotPublicationDao()
                 .latestPublishedForEpoch(chain, publishedState.generation, publishedState.keyEpoch)
         val publicationParts =
-            publication?.let {
-                store.snapshotDatabase().snapshotPublicationDao().parts(chain, it.compactionId)
-            }.orEmpty()
+            publication
+                ?.let {
+                    store.snapshotDatabase().snapshotPublicationDao().parts(chain, it.compactionId)
+                }.orEmpty()
         val catalogueEntries =
-            publication?.let {
-                store.compactionCatalogueDao().verifiedEntries(chain, checkNotNull(publishedState.logId), it.compactionId)
-            }.orEmpty()
+            publication
+                ?.let {
+                    store.compactionCatalogueDao().verifiedEntries(chain, checkNotNull(publishedState.logId), it.compactionId)
+                }.orEmpty()
         val compactionRow =
             publication?.let {
                 store.protocolDao().logEntry(chain, it.logId, it.coveredThroughSeq + 1L)
@@ -1092,12 +1163,15 @@ class PallaSyncRelayInteropTest {
         val latestVerified = PallaSyncRetentionHandoff(store).latestVerifiedPublishedCompaction(chain, authority)
         val handoffSummary =
             "state={write=${publishedState.writeState},generation=${publishedState.generation},epoch=${publishedState.keyEpoch}," +
-                "epochHash=${publishedState.epochHash},verified=${publishedState.verifiedSeq},materialized=${publishedState.materializedSeq}," +
+                "epochHash=${publishedState.epochHash},verified=${publishedState.verifiedSeq}," +
+                "materialized=${publishedState.materializedSeq}," +
                 "verifiedHash=${publishedState.verifiedHash},outbox=${store.dao.pendingOutboxCount(chain)}," +
                 "quarantine=${store.snapshotInstallDao().unresolvedQuarantineCount(chain)}," +
                 "authorGaps=${store.protocolDao().unresolvedAuthorGapCount(chain)}}; " +
-                "publication=${publication?.let { "status=${it.status},epoch=${it.epoch},coverage=${it.coveredThroughSeq}," +
-                    "parts=${it.partCount},log=${it.logId},compaction=${it.compactionJson != null}" } ?: "missing"}; " +
+                "publication=${publication?.let {
+                    "status=${it.status},epoch=${it.epoch},coverage=${it.coveredThroughSeq}," +
+                        "parts=${it.partCount},log=${it.logId},compaction=${it.compactionJson != null}"
+                } ?: "missing"}; " +
                 "partStatuses=${publicationParts.map { it.status }}; catalogue=${catalogueEntries.size}; " +
                 "nextLog=${compactionRow?.let { "seq=${it.relaySeq},state=${it.validationState},json=${it.signedJson}" } ?: "missing"}; " +
                 "latestVerified=${latestVerified != null}"
@@ -1139,12 +1213,22 @@ class PallaSyncRelayInteropTest {
         val archive = ByteArrayOutputStream()
         val expectedSource = coordinator.exportRelayArchiveWithRecovery(archive, mnemonic, "")
         val bytes = archive.toByteArray()
-        val lines = bytes.toString(Charsets.UTF_8).lineSequence().filter(String::isNotBlank).toList()
+        val lines =
+            bytes
+                .toString(Charsets.UTF_8)
+                .lineSequence()
+                .filter(String::isNotBlank)
+                .toList()
         val kinds =
             lines
                 .drop(1)
-                .mapNotNull { Json.parseToJsonElement(it).jsonObject["kind"]?.jsonPrimitive?.content }
-                .groupingBy { it }
+                .mapNotNull {
+                    Json
+                        .parseToJsonElement(it)
+                        .jsonObject["kind"]
+                        ?.jsonPrimitive
+                        ?.content
+                }.groupingBy { it }
                 .eachCount()
         assertTrue("Pruned archive has no compaction boundary: $kinds", (kinds["boundary"] ?: 0) > 0)
         val verified = coordinator.verifyRelayArchive(ByteArrayInputStream(bytes), expectedSource)
@@ -1169,8 +1253,12 @@ class PallaSyncRelayInteropTest {
 
         // Exercise the same atomic snapshot bootstrap branch used by a newly activated device
         // whose chain authority is pinned but whose first data pull has not materialized yet.
-        val dataZero = Json.parseToJsonElement(checkNotNull(verified.historyCutJson)).jsonObject
-            .getValue("data_zero").jsonPrimitive.content
+        val dataZero =
+            Json
+                .parseToJsonElement(checkNotNull(verified.historyCutJson))
+                .jsonObject
+                .getValue("data_zero")
+                .jsonPrimitive.content
         store.transaction {
             store.protocolDao().deleteEvents(chain)
             store.protocolDao().deleteAuthors(chain)
@@ -1200,6 +1288,7 @@ class PallaSyncRelayInteropTest {
         }
         assertEquals(null, store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         var archiveRestoreFaultInjected = false
+        var archiveVerifiedBeforeInstall = false
         if (terminateAfterInstall) {
             context.filesDir.resolve("pallasync-archive-restore-process-death.ndjson").writeBytes(bytes)
             context
@@ -1208,20 +1297,28 @@ class PallaSyncRelayInteropTest {
                 .writeText(encodeExpectedArchiveSource(expectedSource), Charsets.UTF_8)
         }
         coordinator.setArchiveRestoreFaultForTest { boundary ->
-            if (boundary == PallaSyncArchiveRestoreBoundary.SNAPSHOT_INSTALLED) {
-                archiveRestoreFaultInjected = true
-                if (terminateAfterInstall) {
-                    InstrumentationRegistry.getInstrumentation().sendStatus(
-                        0,
-                        Bundle().apply { putString("pallasync_archive_restore_process_death", "snapshot_installed") },
-                    )
-                    println("pallasync_archive_restore_process_death=snapshot_installed")
-                    System.err.flush()
-                    Thread.sleep(500)
-                    android.os.Process.killProcess(android.os.Process.myPid())
-                    error("Process termination did not occur")
+            when (boundary) {
+                PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL -> {
+                    archiveVerifiedBeforeInstall = true
                 }
-                error("Injected archive restore interruption")
+
+                PallaSyncArchiveRestoreBoundary.SNAPSHOT_INSTALLED -> {
+                    archiveRestoreFaultInjected = true
+                    if (terminateAfterInstall) {
+                        InstrumentationRegistry.getInstrumentation().sendStatus(
+                            0,
+                            Bundle().apply { putString("pallasync_archive_restore_process_death", "snapshot_installed") },
+                        )
+                        println("pallasync_archive_restore_process_death=snapshot_installed")
+                        System.err.flush()
+                        Thread.sleep(500)
+                        android.os.Process.killProcess(android.os.Process.myPid())
+                        error("Process termination did not occur")
+                    }
+                    error("Injected archive restore interruption")
+                }
+
+                PallaSyncArchiveRestoreBoundary.PREFIX_MATERIALIZED -> Unit
             }
         }
         val interruptedRestore =
@@ -1233,6 +1330,7 @@ class PallaSyncRelayInteropTest {
             }
         assertEquals("Injected archive restore interruption", interruptedRestore?.message)
         assertTrue(archiveRestoreFaultInjected)
+        assertTrue("Archive restore skipped the final deletion-ledger guard", archiveVerifiedBeforeInstall)
         val interruptedState = checkNotNull(store.dao.getChainState(chain))
         assertFalse(interruptedState.initialPullCompleted)
         assertTrue(interruptedState.verifiedSeq > 0)
@@ -1254,6 +1352,46 @@ class PallaSyncRelayInteropTest {
         assertEquals(bootstrapped.verifiedSeq, bootstrapped.materializedSeq)
         assertNotNull(store.protocolDao().entity(chain, SEARCH_HISTORY_SCHEMA_V3, "Python interop"))
         println("pallasync_pruned_archive_bootstrap_install=verified")
+
+        if (injectDeletionRace) {
+            val stateBeforeRace = checkNotNull(store.dao.getChainState(chain))
+            val keysBeforeRace = checkNotNull(keys.getActiveChainKeys())
+            var raceBoundaryReached = false
+            coordinator.setArchiveRestoreFaultForTest { boundary ->
+                if (boundary == PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL) {
+                    raceBoundaryReached = true
+                    InstrumentationRegistry.getInstrumentation().sendStatus(
+                        0,
+                        Bundle().apply { putString("pallasync_archive_deletion_race", "waiting_for_external_delete") },
+                    )
+                    println("pallasync_archive_deletion_race=waiting_for_external_delete")
+                    System.err.flush()
+                    Thread.sleep(15_000)
+                }
+            }
+            val racedRestore =
+                try {
+                    runCatching { coordinator.restoreRelayArchive(ByteArrayInputStream(bytes), expectedSource, mnemonic, "") }
+                        .exceptionOrNull()
+                } finally {
+                    coordinator.setArchiveRestoreFaultForTest {}
+                }
+            assertTrue("Restore did not pause after full archive verification", raceBoundaryReached)
+            assertEquals("C_MISSING_DEPENDENCY", racedRestore?.message)
+            assertEquals("Deletion racing archive verification changed local chain state", stateBeforeRace, store.dao.getChainState(chain))
+            assertEquals("Deletion racing archive verification erased device keys", keysBeforeRace, keys.getActiveChainKeys())
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply {
+                    putString(
+                        "pallasync_archive_deletion_race",
+                        "blocked_for_transparency_dependency_with_state_retained",
+                    )
+                },
+            )
+            println("pallasync_archive_deletion_race=blocked_for_transparency_dependency_with_state_retained")
+            return
+        }
 
         // A signed deletion ledger that appears after the archive was created overrides its
         // older writable state. Restore must stop before local mutation and keep keys/evidence.
@@ -1277,11 +1415,63 @@ class PallaSyncRelayInteropTest {
         println("pallasync_deleted_archive_restore=blocked_with_local_state_retained")
     }
 
+    private suspend fun resumeHistoricalTransparencyRecovery(
+        coordinator: PalleriaSyncCoordinator,
+        store: PallaSyncLocalStore,
+        keys: PallaSyncKeystore,
+    ) {
+        val state = checkNotNull(store.dao.getActiveChainState())
+        assertEquals("active", state.writeState)
+        val pending = store.dao.pendingInboxEvidenceRecords(state.chainId, 2)
+        assertEquals(1, pending.size)
+        val progress = checkNotNull(keys.transparencyRecoveryProgress(state.chainId))
+        val savedAnchor = progress.getValue("anchor").jsonObject
+        assertEquals(0L, savedAnchor.getValue("index").jsonPrimitive.long)
+        PallaSyncCore.setSecretForeground(true)
+        assertEquals(1, coordinator.retryPendingInboxEvidence(limit = 1))
+        assertEquals("applied", store.dao.getInboxRecord(state.chainId, pending.single().recordId)?.status)
+        assertEquals(0L, store.dao.pendingInboxDispositionCount(state.chainId))
+        assertEquals(null, keys.transparencyRecoveryProgress(state.chainId))
+
+        val logEntry = checkNotNull(store.protocolDao().logEntry(state.chainId, checkNotNull(state.logId), pending.single().relaySeq))
+        val receipt = Json.parseToJsonElement(checkNotNull(logEntry.receiptJson)).jsonObject
+        val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        val relayKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
+        val origin =
+            Json
+                .parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(state.chainId)))
+                .jsonObject
+                .getValue("pin")
+                .jsonObject
+                .getValue("origin")
+                .jsonPrimitive.content
+        assertEquals(
+            1,
+            store
+                .protocolDao()
+                .evidenceAt(origin, relayKeyId, state.chainId, checkNotNull(state.logId), "transparency", transparencyIndex)
+                .size,
+        )
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString("pallasync_transparency_recovery_process_death", "resumed_and_applied") },
+        )
+        println("pallasync_transparency_recovery_process_death=resumed_and_applied")
+    }
+
     private suspend fun exerciseMissingDependencyQuarantineRetry(
         coordinator: PalleriaSyncCoordinator,
         store: PallaSyncLocalStore,
         chain: String,
+        keys: PallaSyncKeystore,
+        scope: CoroutineScope,
+        client: OkHttpClient,
+        selected: String,
+        withholdRelayEvidence: Boolean,
+        cancelTransparencyRecovery: Boolean,
     ) {
+        val injectMissingTransparencyPage =
+            InstrumentationRegistry.getArguments().getString("transparency_page_gap") == "true"
         val event = checkNotNull(store.protocolDao().firstAcceptedEvent(chain))
         val originalHash = checkNotNull(PallaSyncCore.objectHash(event.signedJson))
         assertEquals(event.objectHash, originalHash)
@@ -1334,7 +1524,8 @@ class PallaSyncRelayInteropTest {
         val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
         val receiptKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
         val origin =
-            Json.parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain)))
+            Json
+                .parseToJsonElement(checkNotNull(store.protocolDao().currentAuthority(chain)))
                 .jsonObject
                 .getValue("pin")
                 .jsonObject
@@ -1345,7 +1536,8 @@ class PallaSyncRelayInteropTest {
             arrayOf<Any?>(origin, receiptKeyId, chain, logId, transparencyIndex),
         )
         assertTrue(
-            store.protocolDao()
+            store
+                .protocolDao()
                 .evidenceAt(origin, receiptKeyId, chain, logId, "transparency", transparencyIndex)
                 .isEmpty(),
         )
@@ -1353,15 +1545,97 @@ class PallaSyncRelayInteropTest {
             "UPDATE pallasync_inbox SET status='pending_evidence',quarantine_reason='C_ACCEPTANCE_UNPROVEN' WHERE chain_id=? AND record_id=?",
             arrayOf(chain, event.recordId),
         )
+        if (cancelTransparencyRecovery) {
+            coordinator.setTransparencyRecoveryAfterCheckpointForTest {
+                client
+                    .newCall(
+                        Request
+                            .Builder()
+                            .url("$selected/__test__/clear-transparency-observations")
+                            .post(ByteArray(0).toRequestBody(null))
+                            .build(),
+                    ).execute()
+                    .use { response ->
+                        assertEquals(200, response.code)
+                        assertEquals("{\"cleared\":true}", response.body.string())
+                    }
+                currentCoroutineContext()[Job]?.cancel(CancellationException("Injected cancellation after durable transparency page"))
+            }
+            val cancelledRetry = scope.launch { coordinator.retryPendingInboxEvidence(limit = 1) }
+            cancelledRetry.join()
+            assertTrue("The injected page-boundary cancellation did not stop the retry", cancelledRetry.isCancelled)
+            coordinator.setTransparencyRecoveryAfterCheckpointForTest {}
+            val retained = checkNotNull(store.dao.getInboxRecord(chain, event.recordId))
+            assertEquals("pending_evidence", retained.status)
+            assertEquals(event.signedJson, retained.rawRecordJson)
+            val savedProgress = checkNotNull(keys.transparencyRecoveryProgress(chain))
+            assertEquals(1L, savedProgress.getValue("anchor").jsonObject.getValue("index").jsonPrimitive.long)
+            val targetIndex = savedProgress.getValue("target_head").jsonObject.getValue("entry_index").jsonPrimitive.long
+            assertTrue("The test range did not contain another transparency page", targetIndex > 1L)
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_transparency_recovery_cancel_resume", "cancelled_at_page_checkpoint") },
+            )
+            println("pallasync_transparency_recovery_cancel_resume=cancelled_at_page_checkpoint")
+        }
+        if (withholdRelayEvidence || injectMissingTransparencyPage) {
+            val armRequest =
+                Request
+                    .Builder()
+                    .url("$selected/__test__/arm-pending-evidence-withhold")
+                    .post(
+                        "{\"successful_pages\":1,\"missing_page\":$injectMissingTransparencyPage}"
+                            .toRequestBody(null),
+                    )
+                    .build()
+            client.newCall(armRequest).execute().use { response ->
+                assertEquals(200, response.code)
+                assertEquals("{\"armed\":true}", response.body.string())
+            }
+            assertEquals(0, coordinator.retryPendingInboxEvidence(limit = 1))
+            val stillPending = checkNotNull(store.dao.getInboxRecord(chain, event.recordId))
+            assertTrue(stillPending.status, stillPending.status in setOf("pending_dependency", "pending_evidence"))
+            assertEquals(event.signedJson, stillPending.rawRecordJson)
+            val partialProgress = checkNotNull(keys.transparencyRecoveryProgress(chain))
+            assertEquals(1L, partialProgress.getValue("anchor").jsonObject.getValue("index").jsonPrimitive.long)
+            assertTrue(partialProgress.getValue("target_head").jsonObject.getValue("entry_index").jsonPrimitive.long > 1L)
+            assertEquals(0, store.protocolDao().unresolvedQuarantineCount(chain))
+            delay(1_200)
+        }
         assertEquals(1, coordinator.retryPendingInboxEvidence(limit = 1))
         assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
         assertEquals(
             1,
-            store.protocolDao()
+            store
+                .protocolDao()
                 .evidenceAt(origin, receiptKeyId, chain, logId, "transparency", transparencyIndex)
                 .size,
         )
         assertEquals(0L, store.dao.pendingInboxDispositionCount(chain))
+        if (withholdRelayEvidence) {
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_pending_evidence_withhold", "preserved_then_recovered") },
+            )
+            println("pallasync_pending_evidence_withhold=preserved_then_recovered")
+        }
+        if (injectMissingTransparencyPage) {
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_transparency_page_gap", "preserved_then_recovered") },
+            )
+            println("pallasync_transparency_page_gap=preserved_then_recovered")
+        }
+        if (cancelTransparencyRecovery) {
+            assertEquals("applied", store.dao.getInboxRecord(chain, event.recordId)?.status)
+            assertEquals(0L, store.dao.pendingInboxDispositionCount(chain))
+            assertEquals(null, keys.transparencyRecoveryProgress(chain))
+            InstrumentationRegistry.getInstrumentation().sendStatus(
+                0,
+                Bundle().apply { putString("pallasync_transparency_recovery_cancel_resume", "resumed_and_applied") },
+            )
+            println("pallasync_transparency_recovery_cancel_resume=resumed_and_applied")
+        }
     }
 
     private fun exerciseBoundOrigin(
@@ -1476,7 +1750,11 @@ class PallaSyncRelayInteropTest {
         val responseMetadata =
             client.newCall(armRequest).execute().use { response ->
                 assertEquals(200, response.code)
-                Json.parseToJsonElement(checkNotNull(response.body).string()).jsonObject.getValue("metadata").jsonObject
+                Json
+                    .parseToJsonElement(checkNotNull(response.body).string())
+                    .jsonObject
+                    .getValue("metadata")
+                    .jsonObject
             }
         val pin =
             buildJsonObject {
@@ -1514,8 +1792,9 @@ class PallaSyncRelayInteropTest {
             pin.toString(),
         )
         val staleSyncSucceeded = coordinator.syncNow()
+        val staleSyncLog = PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")
         assertFalse(
-            "Injected §10.6 per-item EPOCH_STALE response must stop upload processing: ${PalleriaSyncCoordinator.syncLogs.value.joinToString("\n")}",
+            "Injected §10.6 per-item EPOCH_STALE response must stop upload processing: $staleSyncLog",
             staleSyncSucceeded,
         )
         sources.forEach { source ->
@@ -1633,7 +1912,11 @@ class PallaSyncRelayInteropTest {
         assertEquals(1L, store.dao.pendingOutboxCount(chainId))
         val blockedCodes = policy.retry.blockedCodes(PallaSyncUrls.extractOrigin(selected.toHttpUrl()), chainId)
         assertTrue("PAYLOAD_TOO_LARGE blocker missing from $blockedCodes", "PAYLOAD_TOO_LARGE" in blockedCodes)
-        assertTrue(PalleriaSyncCoordinator.syncLogs.value.joinToString("\n").contains("PAYLOAD_TOO_LARGE"))
+        assertTrue(
+            PalleriaSyncCoordinator.syncLogs.value
+                .joinToString("\n")
+                .contains("PAYLOAD_TOO_LARGE"),
+        )
         InstrumentationRegistry.getInstrumentation().sendStatus(
             0,
             Bundle().apply { putString("pallasync_records_413_single_retained", "true") },
@@ -1689,7 +1972,10 @@ class PallaSyncRelayInteropTest {
         println("pallasync_pruned_archive_probe=boundary_verified_and_restored")
     }
 
-    private suspend fun verifyIsolatedRelayHealth(client: OkHttpClient, origin: String) {
+    private suspend fun verifyIsolatedRelayHealth(
+        client: OkHttpClient,
+        origin: String,
+    ) {
         val url = PallaSyncUrls.health(origin.toHttpUrl())
         val request =
             Request
@@ -1716,11 +2002,19 @@ class PallaSyncRelayInteropTest {
         val value = Json.parseToJsonElement(text).jsonObject
         return PallaSyncExportArchive.ExpectedSource(
             chainId = value.getValue("chain_id").jsonPrimitive.content,
-            generation = value.getValue("generation").jsonPrimitive.content.toLong(),
+            generation =
+                value
+                    .getValue("generation")
+                    .jsonPrimitive.content
+                    .toLong(),
             logId = value.getValue("log_id").jsonPrimitive.content,
             relayPublicKey = value.getValue("relay_public_key").jsonPrimitive.content,
             relayKeyId = value.getValue("relay_key_id").jsonPrimitive.content,
-            includeRecovery = value.getValue("include_recovery").jsonPrimitive.content.toBooleanStrict(),
+            includeRecovery =
+                value
+                    .getValue("include_recovery")
+                    .jsonPrimitive.content
+                    .toBooleanStrict(),
             relayPinJson = value["relay_pin_json"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
             identityJson = value["identity_json"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content,
         )

@@ -204,7 +204,7 @@
     <string name="pallasync_relay_capacity_not_resolved">No saved capacity blocker could be cleared</string>
     <string name="pallasync_progress_state">Write state: %1$s</string>
     <string name="pallasync_progress_positions">Downloaded %1$d · verified %2$d · materialized %3$d</string>
-    <string name="pallasync_progress_transparency">Transparency entry_index: verified anchor %1$d · last signed target %2$d (separate counter)</string>
+    <string name="pallasync_progress_transparency">Transparency entry_index: verified anchor %1$d · last verified signed target %2$d (separate counter)</string>
     <string name="pallasync_progress_transparency_conflict">The latest signed transparency head names a different chain; it is not counted as verified progress.</string>
     <string name="pallasync_progress_partial">Partial: initial pull complete = %1$b. Verified and materialized positions can still lag the downloaded position.</string>
     <string name="pallasync_progress_current">All downloaded records are verified and materialized.</string>
@@ -215,9 +215,16 @@
     <string name="pallasync_progress_independent_comparison_offer">Compare a locally exchanged device checkpoint from Sync settings. After 30 days without one, review this comparison again.</string>
     <string name="pallasync_progress_blockers">Pending outbox %1$d · unresolved quarantine %2$d</string>
     <string name="pallasync_progress_record_dispositions">Records awaiting dependency, evidence, or operational resolution: %1$d. Sync coverage remains partial.</string>
+    <string name="pallasync_progress_pending_evidence">Records with retryable missing evidence: %1$d. Other dispositions are not retried by this action.</string>
+    <string name="pallasync_progress_unsupported_records">Records using an unsupported schema: %1$d. Their ciphertext is retained until compatible support is available.</string>
+    <string name="pallasync_progress_operationally_blocked">Records blocked by a local operational prerequisite: %1$d. Resolve the listed condition before retrying.</string>
+    <string name="pallasync_progress_recovery_session_failed">Recovery sessions requiring a fresh ceremony: %1$d. The failed session is not resumed.</string>
+    <string name="pallasync_progress_recovery_artifact_quarantined">Invalid recovery artifacts retained for review: %1$d. Use recovery controls; these are not application records.</string>
+    <string name="pallasync_progress_recovery_rotation_incomplete">Recovery set rotations not yet complete: %1$d. The prepared set is not active.</string>
     <string name="pallasync_pending_evidence_retry">Retry pending record evidence</string>
     <string name="pallasync_pending_evidence_retry_running">Checking pending records…</string>
     <string name="pallasync_pending_evidence_retry_result">Applied %1$d previously pending records. Remaining records still require their listed evidence or operational resolution.</string>
+    <string name="pallasync_pending_evidence_retry_failed">Could not check pending records. Their stored evidence was kept; resolve the local issue and retry.</string>
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>

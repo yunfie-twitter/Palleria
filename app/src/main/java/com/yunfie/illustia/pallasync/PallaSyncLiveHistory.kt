@@ -2,6 +2,7 @@ package com.yunfie.illustia.pallasync
 
 import com.yunfie.illustia.pallasync.data.LogEntryEntity
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
@@ -30,6 +31,8 @@ internal class PallaSyncLiveHistory(
         try {
             pullChecked(base, chain, device)
             PallaSyncHttpResult.Success(Unit)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (failure: ReadFailure) {
             failure.result
         } catch (failure: IllegalStateException) {
@@ -109,10 +112,8 @@ internal class PallaSyncLiveHistory(
                 .getValue("generation")
                 .jsonPrimitive.long
         var cursor: String? = null
-        val seen = mutableSetOf<String>()
         var expiredCursorRequest: Request? = null
         var lastExpiredSequence: Long? = null
-        var cursorStartSequence: Long? = null
         val pageLimit =
             minOf(
                 PALLASYNC_PAGE_SIZE,
@@ -120,14 +121,9 @@ internal class PallaSyncLiveHistory(
             )
         while (true) {
             currentCoroutineContext().ensureActive()
-            val after =
-                if (cursor == null) {
-                    val sequence = authority.getValue("sequence").jsonPrimitive.long
-                    cursorStartSequence = sequence
-                    sequence
-                } else {
-                    checkNotNull(cursorStartSequence) { "C_MISSING_DEPENDENCY" }
-                }
+            // The cursor carries the HTTP range; native contiguous-page verification
+            // always starts at the latest verified entry, including continuations.
+            val after = authority.getValue("sequence").jsonPrimitive.long
             val url =
                 endpoint(base, chain, "log")
                     .newBuilder()
@@ -156,8 +152,6 @@ internal class PallaSyncLiveHistory(
                             .get()
                             .build()
                     cursor = null
-                    cursorStartSequence = null
-                    seen.clear()
                     continue
                 }
             val page =
@@ -189,7 +183,8 @@ internal class PallaSyncLiveHistory(
                     .jsonPrimitive
                     .takeIf { it.isString }
                     ?.content
-            check(cursor == null || seen.add(checkNotNull(cursor))) { "C_SCHEMA_VIOLATION" }
+            // Native validation requires contiguous forward progress and ends at the
+            // pinned data head. Keep this cursor only, without a history-sized set.
             if (cursor == null) break
         }
         return authority

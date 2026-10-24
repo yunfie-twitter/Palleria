@@ -144,6 +144,10 @@ fn full_log_pages_cannot_hide_a_control_or_claim_a_contiguous_omitted_prefix() {
         authority.head_hash,
         f["parameters"]["head_hash"].as_str().unwrap()
     );
+    // A continuation's HTTP cursor may retain its original range start, but the
+    // validator must use the preceding page's verified sequence for contiguity.
+    assert!(page(&f["log_pages"][1], "log", &authority.pin, 0, 3, 200).is_ok());
+    assert!(page(&f["log_pages"][1], "log", &authority.pin, 0, 0, 200).is_err());
     let mut dropped = f["log_pages"][0].clone();
     dropped["items"].as_array_mut().unwrap().remove(1);
     assert!(page(&dropped, "log", &authority.pin, 0, 0, 200).is_err());

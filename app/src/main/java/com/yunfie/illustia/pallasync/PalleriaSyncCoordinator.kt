@@ -155,7 +155,13 @@ internal data class PallaSyncDeletionWitnessPreview(
     val existingWitnessCount: Int,
 )
 
-internal enum class PallaSyncArchiveRestoreBoundary { SNAPSHOT_INSTALLED, PREFIX_MATERIALIZED }
+internal enum class PallaSyncArchiveRestoreBoundary {
+    ARCHIVE_VERIFIED_BEFORE_INSTALL,
+    SNAPSHOT_INSTALLED,
+    PREFIX_MATERIALIZED,
+}
+
+internal enum class PallaSyncTransparencyRecoveryBoundary { PAGE_PERSISTED_BEFORE_CHECKPOINT }
 
 internal class PalleriaSyncCoordinator(
     client: OkHttpClient = OkHttpClient(),
@@ -175,6 +181,15 @@ internal class PalleriaSyncCoordinator(
     private val remote by lazy { PallaSyncRemoteService(client, policy) }
     private val localStore = suppliedStore ?: PallaSyncLocalStore(appContext)
     private val db = localStore
+
+    @Volatile
+    private var transparencyRecoveryFault: (PallaSyncTransparencyRecoveryBoundary) -> Unit = {}
+
+    @Volatile
+    private var transparencyRecoveryAfterCheckpoint: suspend () -> Unit = {}
+
+    @Volatile
+    private var transparencyProbeAfterCheckpoint: suspend () -> Unit = {}
     private val crypto by lazy { PallaSyncCryptoService(policy) }
     private val keystore by lazy { PallaSyncKeystore(appContext) }
     private val recoveryAudits by lazy { PallaSyncRecoverySetStore(appContext).auditQueue }
@@ -187,12 +202,29 @@ internal class PalleriaSyncCoordinator(
             ::makeCapabilityToken,
             ::resolvePruneCompaction,
             onSuccessfulComparison = { chain -> policy.recordConsistencyProbeSuccess(chain, System.currentTimeMillis()) },
+            afterHistoricalPagePersisted = {
+                transparencyRecoveryFault(PallaSyncTransparencyRecoveryBoundary.PAGE_PERSISTED_BEFORE_CHECKPOINT)
+            },
+            afterHistoricalPageCheckpoint = { transparencyRecoveryAfterCheckpoint() },
+            afterProbePageCheckpoint = { transparencyProbeAfterCheckpoint() },
         )
     }
     private val projection = PallaSyncProjection(appContext)
 
     internal fun setArchiveRestoreFaultForTest(fault: (PallaSyncArchiveRestoreBoundary) -> Unit) {
         archiveRestoreFault = fault
+    }
+
+    internal fun setTransparencyRecoveryFaultForTest(fault: (PallaSyncTransparencyRecoveryBoundary) -> Unit) {
+        transparencyRecoveryFault = fault
+    }
+
+    internal fun setTransparencyRecoveryAfterCheckpointForTest(hook: suspend () -> Unit) {
+        transparencyRecoveryAfterCheckpoint = hook
+    }
+
+    internal fun setTransparencyProbeAfterCheckpointForTest(hook: suspend () -> Unit) {
+        transparencyProbeAfterCheckpoint = hook
     }
 
     private val localAuthor by lazy { PallaSyncLocalAuthor(appContext, db) }
@@ -354,6 +386,7 @@ internal class PalleriaSyncCoordinator(
                 }
             }.getOrElse { expectedFailure ->
                 val error = expectedFailure
+                if (error is CancellationException) throw error
                 log("Manual sync failed without clearing local chain data: ${error.message}")
                 return false
             }
@@ -897,7 +930,7 @@ internal class PalleriaSyncCoordinator(
                                     base,
                                     state.chainId,
                                     cursor,
-                                    limit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit),
+                                    limit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit, policy.pageLimit(origin)),
                                     includeRecovery = true,
                                 )
                             val token =
@@ -1027,7 +1060,33 @@ internal class PalleriaSyncCoordinator(
                     retainEvidence = true,
                     verifiedSnapshotCompactionIds = verifiedArchiveSnapshots,
                 )
+            archiveRestoreFault(PallaSyncArchiveRestoreBoundary.ARCHIVE_VERIFIED_BEFORE_INSTALL)
             val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            val currentAuthority =
+                Json.parseToJsonElement(checkNotNull(db.protocolDao().currentAuthority(state.chainId))).jsonObject
+            val currentPin = currentAuthority.getValue("pin").jsonObject
+            check(
+                state.chainId == beforeProbe.chainId && state.generation == beforeProbe.generation &&
+                    currentAuthority == beforeAuthority,
+            ) { "C_ROLLBACK_DETECTED" }
+            check(currentPin.getValue("origin").jsonPrimitive.content == origin) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+            policy.requireCurrent(origin)
+            PallaSyncRootSession
+                .beginText(
+                    mnemonic,
+                    passphrase,
+                    PallaSyncRootSession.Operation.DELETE,
+                    expectedChain = state.chainId,
+                    expectedAdmin = currentAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                    requestGuard = policy::requireCurrent,
+                    clock = policy.retry::correctedTime,
+                ).use { session ->
+                    check(
+                        session.identity.chainId == state.chainId &&
+                            session.identity.adminPublicKey == currentAuthority.getValue("admin_public_key").jsonPrimitive.content,
+                    ) { "C_RECOVERY_ROOT_MISMATCH" }
+                    checkNoVerifiedDeletionLedger(session, base, origin, state, currentAuthority, currentPin)
+                }
             val device = checkNotNull(keysForChainLocked(state.chainId)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
             val cut = Json.parseToJsonElement(checkNotNull(snapshot.historyCutJson)).jsonObject
             val head = cut.getValue("head").jsonObject
@@ -8049,6 +8108,9 @@ internal class PalleriaSyncCoordinator(
         chainId: String,
     ): PallaSyncHttpResult<Unit> {
         val path = "/pallasync/v3/chains/$chainId/devices"
+        // A fresh coordinator has not loaded health limits yet; the consented signed
+        // disclosure already bounds every registry request, including restart probes.
+        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit, policy.pageLimit(PallaSyncUrls.extractOrigin(baseUrl)))
         val registry = mutableListOf<PallaSyncRegistryEntry>()
         var cursor: String? = null
         val seenCursors = mutableSetOf<String>()
@@ -8056,7 +8118,7 @@ internal class PalleriaSyncCoordinator(
         var expiredCursorRequest: Request? = null
         var lastExpiredItemCount: Int? = null
         do {
-            val url = PallaSyncUrls.devices(baseUrl, chainId, cursor, minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit))
+            val url = PallaSyncUrls.devices(baseUrl, chainId, cursor, pageLimit)
             val token =
                 makeCapabilityToken(baseUrl, chainId, "GET", path, url.encodedQuery.orEmpty(), "")
                     ?: return PallaSyncHttpResult.ProtocolError("Active PallaSync keys are missing")
@@ -8244,7 +8306,7 @@ internal class PalleriaSyncCoordinator(
                 put("log_id", logId)
             }.toString()
         val path = "/pallasync/v3/chains/$chainId/records"
-        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit)
+        val pageLimit = minOf(PALLASYNC_PAGE_SIZE, relayLimits.pageLimit, policy.pageLimit(origin))
         val query = "after_seq=$afterSeq&limit=$pageLimit"
         val token = makeCapabilityToken(baseUrl, chainId, "GET", path, query, "")
         val requestBuilder =
@@ -8486,7 +8548,11 @@ internal class PalleriaSyncCoordinator(
                     transparencyId = state.transparencyId,
                     logId = state.logId,
                     verifiedIndex = state.transparencyIndex,
-                    savedHeadJson = state.logId?.let { protocol.latestEvidence(state.chainId, it, "transparency_head") },
+                    // `transparency_head` is retained before signature verification so malformed or
+                    // conflicting relay observations remain available as evidence. It must never
+                    // be presented as progress. `transparency_target` is stored only after the
+                    // signed head and its data-log view have both been verified.
+                    savedHeadJson = state.logId?.let { protocol.latestEvidence(state.chainId, it, "transparency_target") },
                 )
             val searchCount = protocol.liveScopeCount(state.chainId, "palleria.search_history/3", "all")
             val favoriteCount = protocol.liveScopeCount(state.chainId, FAVORITE_TAG_SCHEMA_V3, "all")
@@ -8522,6 +8588,7 @@ internal class PalleriaSyncCoordinator(
                 authorGaps = protocol.unresolvedAuthorGapCount(state.chainId),
                 unresolvedQuarantine = protocol.unresolvedQuarantineCount(state.chainId),
                 pendingRecordDispositions = db.dao.pendingInboxDispositionCount(state.chainId),
+                recordDispositionCounts = db.dao.inboxDispositionCounts(state.chainId).associate { it.status to it.count },
                 writeState = state.writeState,
                 initialPullCompleted = state.initialPullCompleted,
                 searchCount = searchCount,
@@ -8723,7 +8790,9 @@ internal class PalleriaSyncCoordinator(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            val code = failure.message?.takeIf { it.matches(Regex("C_[A-Z_]+")) } ?: "C_MISSING_DEPENDENCY"
+            // Do not turn arbitrary local/programming failures into retryable evidence or
+            // cryptographic quarantine. Leave the signed inbox row unchanged and surface it.
+            val code = pendingInboxFailureCode(failure) ?: throw failure
             val status = validationState(code)
             if (status in setOf("pending_dependency", "pending_evidence")) {
                 db.transaction {
@@ -8930,6 +8999,17 @@ internal class PalleriaSyncCoordinator(
         ) { "C_ACCEPTANCE_UNPROVEN" }
         val receiptKeyId = receipt.getValue("relay_key_id").jsonPrimitive.content
         val transparencyIndex = receipt.getValue("transparency_index").jsonPrimitive.long
+        val base =
+            pin
+                .getValue("origin")
+                .jsonPrimitive.content
+                .toHttpUrl()
+        // A process can stop after the verified page commits to Room but before the protected
+        // resume anchor advances. The proof may therefore already be present on restart; resume
+        // the durable range before accepting that proof so its checkpoint is completed and cleared.
+        if (keystore.transparencyRecoveryProgress(chainId) != null) {
+            consistencyProbe.recoverHistoricalEvidence(base, chainId, transparencyIndex)
+        }
         var proof =
             protocol
                 .evidenceAt(
@@ -8942,11 +9022,7 @@ internal class PalleriaSyncCoordinator(
                 ).singleOrNull()
         if (proof == null) {
             consistencyProbe.recoverHistoricalEvidence(
-                pin
-                    .getValue("origin")
-                    .jsonPrimitive
-                    .content
-                    .toHttpUrl(),
+                base,
                 chainId,
                 transparencyIndex,
             )

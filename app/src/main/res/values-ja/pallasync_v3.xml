@@ -174,7 +174,7 @@
     <string name="pallasync_relay_capacity_not_resolved">解除できる容量ブロックがありません</string>
     <string name="pallasync_progress_state">書込み状態: %1$s</string>
     <string name="pallasync_progress_positions">ダウンロード済み %1$d · 検証済み %2$d · 適用済み %3$d</string>
-    <string name="pallasync_progress_transparency">透明性entry_index: 検証済みanchor %1$d · 最後に署名確認したtarget %2$d（別カウンタ）</string>
+    <string name="pallasync_progress_transparency">透明性entry_index: 検証済みanchor %1$d · 最後に検証済みの署名付きtarget %2$d（別カウンタ）</string>
     <string name="pallasync_progress_transparency_conflict">最新の署名済みtransparency headが別chainを示しています。検証済み進捗には算入しません。</string>
     <string name="pallasync_progress_partial">一部未完了: 初回取得完了=%1$b。検証済み／適用済み位置がダウンロード済み位置に届いていない場合があります。</string>
     <string name="pallasync_progress_current">ダウンロード済みのレコードはすべて検証・適用済みです。</string>
@@ -185,9 +185,16 @@
     <string name="pallasync_progress_independent_comparison_offer">同期設定から、ローカルで交換した端末checkpointを照合してください。30日以上照合がない場合は再確認してください。</string>
     <string name="pallasync_progress_blockers">送信待ち %1$d · 未解決隔離 %2$d</string>
     <string name="pallasync_progress_record_dispositions">依存証拠の取得または運用上の解決を待つレコード: %1$d。同期範囲は未完了です。</string>
+    <string name="pallasync_progress_pending_evidence">再取得可能な不足証拠があるレコード: %1$d。ほかの状態はこの操作では再試行しません。</string>
+    <string name="pallasync_progress_unsupported_records">未対応schemaのレコード: %1$d。対応する実装が利用可能になるまで暗号文を保持します。</string>
+    <string name="pallasync_progress_operationally_blocked">端末側の運用条件で停止中のレコード: %1$d。再試行前に表示された条件を解決してください。</string>
+    <string name="pallasync_progress_recovery_session_failed">新しいceremonyが必要な復旧セッション: %1$d。失敗したセッションは再開しません。</string>
+    <string name="pallasync_progress_recovery_artifact_quarantined">確認のため保持している不正な復旧artifact: %1$d。復旧画面で扱い、アプリの同期レコードにはしません。</string>
+    <string name="pallasync_progress_recovery_rotation_incomplete">未完了の復旧セット交換: %1$d。準備中のセットは有効化されていません。</string>
     <string name="pallasync_pending_evidence_retry">保留中のレコード証拠を再確認</string>
     <string name="pallasync_pending_evidence_retry_running">保留中のレコードを確認中…</string>
     <string name="pallasync_pending_evidence_retry_result">保留中のレコードを %1$d 件適用しました。残りは表示された証拠または運用上の解決が必要です。</string>
+    <string name="pallasync_pending_evidence_retry_failed">保留中のレコードを確認できませんでした。保存済みの証拠は保持されています。端末側の問題を解消して再試行してください。</string>
     <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>

@@ -241,6 +241,9 @@ interface PallaSyncDao {
     )
     suspend fun pendingInboxDispositionCount(chainId: String): Long
 
+    @Query("SELECT status, COUNT(*) AS count FROM pallasync_inbox WHERE chain_id=:chainId GROUP BY status ORDER BY status")
+    suspend fun inboxDispositionCounts(chainId: String): List<PallaSyncInboxDispositionCount>
+
     @Query(
         "SELECT * FROM pallasync_inbox WHERE chain_id=:chainId AND status IN ('pending_dependency','pending_evidence') ORDER BY relay_seq ASC LIMIT :limit",
     )

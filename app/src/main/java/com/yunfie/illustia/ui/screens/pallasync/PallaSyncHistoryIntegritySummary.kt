@@ -32,6 +32,23 @@ internal fun PallaSyncHistoryIntegritySummary(status: PallaSyncClientStatus) {
     }
 }
 
+/** Show the relay's verified transparency prefix separately from its validated target head (§§11.5, 17.9). */
+@Composable
+internal fun PallaSyncTransparencyProgressSummary(status: PallaSyncClientStatus) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            stringResource(
+                R.string.pallasync_progress_transparency,
+                status.verifiedTransparencyIndex,
+                status.observedTransparencyTargetIndex,
+            ),
+        )
+        if (status.transparencyObservationConflict) {
+            Text(stringResource(R.string.pallasync_progress_transparency_conflict))
+        }
+    }
+}
+
 /** Relay advertisements never update this status; only a verified peer-signed checkpoint can do so (§11.5). */
 @Composable
 internal fun PallaSyncIndependentCheckpointComparisonSummary(status: PallaSyncClientStatus) {

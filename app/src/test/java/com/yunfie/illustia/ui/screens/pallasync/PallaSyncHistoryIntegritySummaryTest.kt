@@ -101,6 +101,29 @@ class PallaSyncHistoryIntegritySummaryTest {
             .assertIsDisplayed()
     }
 
+    @Test
+    fun `transparency progress renders large verified anchor and target as separate exact counters`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val verified = 9_007_199_254_740_990L
+        val target = 9_007_199_254_740_991L
+        val progress =
+            status().copy(
+                verifiedTransparencyIndex = verified,
+                observedTransparencyTargetIndex = target,
+                transparencyObservationConflict = false,
+            )
+
+        compose.setContent {
+            MiuixTheme {
+                PallaSyncTransparencyProgressSummary(progress)
+            }
+        }
+
+        compose
+            .onNodeWithText(context.getString(R.string.pallasync_progress_transparency, verified, target))
+            .assertIsDisplayed()
+    }
+
     private fun status() =
         PallaSyncClientStatus(
             downloadedSeq = 12,

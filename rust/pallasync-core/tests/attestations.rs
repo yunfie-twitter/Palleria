@@ -446,6 +446,37 @@ fn signed_page_does_not_skip_gaps_or_reset_a_pinned_prefix() {
         verify_transparency_page(&anchor, std::slice::from_ref(&entry), &head, &pin).unwrap();
     assert_eq!(next.index, 1);
     assert_eq!(anchor, original);
+    assert_eq!(
+        verify_transparency_page(&next, std::slice::from_ref(&entry), &head, &pin)
+            .unwrap_err()
+            .0,
+        "C_TRANSPARENCY_INVALID",
+        "a valid signed page cannot be replayed after its anchor advances"
+    );
+    let response = json!({
+        "items": [entry.clone()], "head": head.clone(),
+        "anchor_index": anchor.index, "anchor_hash": anchor.hash,
+        "next_cursor": null, "has_more": false
+    });
+    assert_eq!(
+        pallasync_core::client_response::transparency_page(&response, &pin, &anchor, &head, 1)
+            .unwrap(),
+        next
+    );
+    let mut false_continuation = response.clone();
+    false_continuation["next_cursor"] = json!("repeated_cursor");
+    false_continuation["has_more"] = json!(true);
+    assert!(
+        pallasync_core::client_response::transparency_page(
+            &false_continuation,
+            &pin,
+            &anchor,
+            &head,
+            1
+        )
+        .is_err(),
+        "a cursor cannot keep a completed signed target running"
+    );
     let mut prior_incarnation = entry.clone();
     prior_incarnation["log_id"] = json!("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
     sign_relay(&key, &mut prior_incarnation, CTX_TRANSPARENCY).unwrap();

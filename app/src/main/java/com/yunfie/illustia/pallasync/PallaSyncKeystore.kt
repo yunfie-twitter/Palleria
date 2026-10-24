@@ -197,6 +197,56 @@ class PallaSyncKeystore internal constructor(
             .getString("transparency.progress.$chainId", null)
             ?.let { Json.decodeFromString<JsonObject>(it) }
 
+    /** Durable restart point for re-reading a previously verified historical transparency range. */
+    internal fun transparencyRecoveryProgress(chainId: String): JsonObject? =
+        sharedPrefs
+            .getString("transparency.recovery.progress.$chainId", null)
+            ?.let { Json.decodeFromString<JsonObject>(it) }
+
+    internal fun retainTransparencyRecoveryProgress(
+        chainId: String,
+        progress: JsonObject,
+    ): Boolean {
+        val head = progress["target_head"] as? JsonObject ?: error("C_TRANSPARENCY_INVALID")
+        val anchor = progress["anchor"] as? JsonObject ?: error("C_TRANSPARENCY_INVALID")
+        val headIndex = head["entry_index"]?.jsonPrimitive?.long ?: error("C_TRANSPARENCY_INVALID")
+        val anchorIndex = anchor["index"]?.jsonPrimitive?.long ?: error("C_TRANSPARENCY_INVALID")
+        check(
+            head["type"]?.jsonPrimitive?.content == "PALLASYNC-TRANSPARENCY-HEAD-v3" &&
+                head["chain_id"]?.jsonPrimitive?.content == chainId &&
+                anchor["transparency_id"] == head["transparency_id"] &&
+                anchorIndex in 0L..headIndex &&
+                (anchorIndex != headIndex || anchor["hash"] == head["transparency_hash"]),
+        ) { "C_TRANSPARENCY_INVALID" }
+        val previous = transparencyRecoveryProgress(chainId)
+        if (previous != null && previous["target_head"] == head) {
+            val previousAnchor = previous["anchor"] as? JsonObject ?: error("C_TRANSPARENCY_INVALID")
+            val previousIndex = previousAnchor["index"]?.jsonPrimitive?.long ?: error("C_TRANSPARENCY_INVALID")
+            check(previousIndex <= anchorIndex) { "C_ROLLBACK_DETECTED" }
+            if (previousIndex == anchorIndex) check(previousAnchor == anchor) { "C_TRANSPARENCY_INVALID" }
+        } else {
+            check(previous == null || recoveryProgressComplete(previous)) { "C_TRANSPARENCY_INVALID" }
+        }
+        return sharedPrefs.edit().putString("transparency.recovery.progress.$chainId", progress.toString()).commit() &&
+            transparencyRecoveryProgress(chainId) == progress
+    }
+
+    internal fun clearTransparencyRecoveryProgress(
+        chainId: String,
+        head: JsonObject,
+    ): Boolean {
+        val progress = transparencyRecoveryProgress(chainId) ?: return true
+        check(progress["target_head"] == head && recoveryProgressComplete(progress)) { "C_TRANSPARENCY_INVALID" }
+        return sharedPrefs.edit().remove("transparency.recovery.progress.$chainId").commit() &&
+            transparencyRecoveryProgress(chainId) == null
+    }
+
+    private fun recoveryProgressComplete(progress: JsonObject): Boolean {
+        val head = progress["target_head"] as? JsonObject ?: return false
+        val anchor = progress["anchor"] as? JsonObject ?: return false
+        return anchor["index"] == head["entry_index"] && anchor["hash"] == head["transparency_hash"]
+    }
+
     internal fun retainTransparencyProgress(
         chainId: String,
         progress: JsonObject,

@@ -123,7 +123,9 @@ class PallaSyncDeletionWitnessAuthenticationAndroidTest {
         }
 
     private fun temporaryAliases(): Set<String> =
-        KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        KeyStore
+            .getInstance("AndroidKeyStore")
+            .apply { load(null) }
             .aliases()
             .toList()
             .filter { it.startsWith(TEMP_ALIAS_PREFIX) }

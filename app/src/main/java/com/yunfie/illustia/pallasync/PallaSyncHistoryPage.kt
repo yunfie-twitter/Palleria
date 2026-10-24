@@ -16,6 +16,16 @@ data class PallaSyncQuarantinePage(
     val nextHash: String?,
 )
 
+internal object PallaSyncInboxDispositionSummary {
+    fun retryableEvidenceCount(counts: Map<String, Long>): Long =
+        counts.getOrDefault("pending_dependency", 0L) + counts.getOrDefault("pending_evidence", 0L)
+
+    fun count(
+        counts: Map<String, Long>,
+        disposition: String,
+    ): Long = counts.getOrDefault(disposition, 0L)
+}
+
 /** §19.4 permits explicit exclusion only for terminally invalid originals, never as proof of resolution. */
 internal object PallaSyncQuarantineDisposition {
     private val independentCheckpointReviewReasons =
@@ -123,6 +133,7 @@ data class PallaSyncClientStatus(
     val consistencyProbeDeferred: Boolean = false,
     val consistencyProbeDelayMs: Long? = null,
     val pendingRecordDispositions: Long = 0,
+    val recordDispositionCounts: Map<String, Long> = emptyMap(),
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)

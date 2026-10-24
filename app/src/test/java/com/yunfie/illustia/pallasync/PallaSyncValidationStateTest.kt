@@ -1,15 +1,40 @@
 package com.yunfie.illustia.pallasync
 
+import android.database.sqlite.SQLiteFullException
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class PallaSyncValidationStateTest {
     @Test
+    fun `generic evidence retry counts only dependency and acceptance evidence`() {
+        PallaSyncInboxDispositionSummary.retryableEvidenceCount(
+            mapOf(
+                "pending_dependency" to 2L,
+                "pending_evidence" to 1L,
+                "unsupported_collection" to 9L,
+                "operationally_blocked" to 4L,
+                "quarantined" to 3L,
+            ),
+        ) shouldBe 3L
+        PallaSyncInboxDispositionSummary.retryableEvidenceCount(mapOf("unsupported_collection" to 1L)) shouldBe 0L
+    }
+
+    @Test
     fun `missing dependency keeps page cursor uncommitted`() {
         recordPageMustRemainUncommitted("C_MISSING_DEPENDENCY") shouldBe true
         recordPageMustRemainUncommitted("C_SCHEMA_VIOLATION") shouldBe false
         recordPageMustRemainUncommitted(null) shouldBe false
+    }
+
+    @Test
+    fun `pending inbox retry classifies only explicit protocol or disk full errors`() {
+        pendingInboxFailureCode(IllegalStateException("C_MISSING_DEPENDENCY")) shouldBe "C_MISSING_DEPENDENCY"
+        pendingInboxFailureCode(IllegalStateException("wrapped", SQLiteFullException("disk full"))) shouldBe
+            "C_LOCAL_STORAGE_FULL"
+        pendingInboxFailureCode(IllegalStateException("unexpected local failure")) shouldBe null
+        pendingInboxFailureCode(IllegalStateException("outer", IllegalArgumentException("C_SCHEMA_VIOLATION"))) shouldBe
+            "C_SCHEMA_VIOLATION"
     }
 
     @Test

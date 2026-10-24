@@ -105,8 +105,8 @@ internal class PallaSyncReseedTransparencyVerifier(
             ) { "C_ACCEPTANCE_UNPROVEN" }
         }
         val receiptMatches = resume?.verifiedReceiptIndices?.toMutableSet() ?: mutableSetOf()
+        // Each native-verified page advances the signed index; cursor history would grow with the suffix.
         var cursor: String? = null
-        val seenCursors = mutableSetOf<String>()
         var nextAnchor = startAnchor
         var expiredCursorRequest: Request? = null
         var lastExpiredIndex: Long? = null
@@ -173,7 +173,6 @@ internal class PallaSyncReseedTransparencyVerifier(
                         expiredCursorRequest = request
                         cursor = null
                         cursorRangeStart = null
-                        seenCursors.clear()
                         continue
                     }
 
@@ -226,7 +225,6 @@ internal class PallaSyncReseedTransparencyVerifier(
                     .jsonPrimitive
                     .takeIf { it.isString }
                     ?.content
-            check(cursor == null || seenCursors.add(checkNotNull(cursor))) { "C_TRANSPARENCY_INVALID" }
         } while (cursor != null)
         check(nextAnchor.getValue("index").jsonPrimitive.long == through && receiptMatches == receiptIndices.keys) {
             "C_ACCEPTANCE_UNPROVEN"
