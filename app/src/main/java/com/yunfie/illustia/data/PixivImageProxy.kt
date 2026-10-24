@@ -11,7 +11,7 @@ data class PixivImageProxy(
 )
 
 const val PALLERIA_IMAGE_PROXY_BASE_URL = "https://media.yunfi.f5.si/image.webp?url="
-private const val PALLERIA_WORKERS_HOST_PREFIX = "https://piximg.2wf6bfhvwk.workers.dev/"
+private const val PALLERIA_WORKERS_HOST_PREFIX = "https://pximg.2wf6bfhvwk.workers.dev/"
 
 val PixivImageProxyOptions =
     listOf(
