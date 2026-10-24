@@ -145,6 +145,9 @@ abstract class IllustiaViewModelFoundation(
     protected val downloadMutex = Mutex()
     protected var searchJob: Job? = null
     protected var detailExtrasJob: Job? = null
+
+    /** コメントシート等が作品詳細の上に重なっている間は詳細の追加取得を行わない。 */
+    protected var detailExtrasPaused: Boolean = false
     protected var loadingJob: Job? = null
     internal val userProfileRequests = UserProfileRequests(viewModelScope)
     internal val userProfileCache = UserProfileCache()

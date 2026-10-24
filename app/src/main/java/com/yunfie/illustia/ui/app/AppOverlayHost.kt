@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +75,12 @@ internal fun AppOverlayHost(
     val copyFailedMessage = stringResource(R.string.copy_image_failed)
 
     selectedCommentTarget?.let { target ->
+        // シートが開いている間は、背面の作品詳細が関連作品・ユーザー詳細を読み続けて
+        // 状態更新を重ねないようにする（シートを閉じると元に戻る）。
+        DisposableEffect(target) {
+            viewModel.setDetailExtrasSuppressed(true)
+            onDispose { viewModel.setDetailExtrasSuppressed(false) }
+        }
         CommentScreen(
             show = true,
             id = target.first,
