@@ -8817,6 +8817,9 @@ internal class PalleriaSyncCoordinator(
             // Do not turn arbitrary local/programming failures into retryable evidence or
             // cryptographic quarantine. Leave the signed inbox row unchanged and surface it.
             val code = pendingInboxFailureCode(failure) ?: throw failure
+            // A storage retry already has the exact durable disposition. Do not attempt another
+            // write into a full DB merely to store the same reason; preserve the original failure.
+            if (code == "C_LOCAL_STORAGE_FULL" && retry == PallaSyncInboxRetry.LOCAL_STORAGE) throw failure
             val status = validationState(code)
             if (status in setOf("pending_dependency", "pending_evidence")) {
                 db.transaction {

@@ -3,12 +3,10 @@ package com.yunfie.illustia.pallasync
 import android.content.Context
 import android.os.Bundle
 import android.util.Base64
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.yunfie.illustia.pallasync.data.OutboxEntity
-import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.PallaSyncInboxEntity
 import com.yunfie.illustia.pallasync.data.QuarantineEvidenceEntity
 import kotlinx.coroutines.CoroutineScope
@@ -83,29 +81,7 @@ class PallaSyncRelayInteropTest {
                 args.getString("reseed_resume_after_death") == "true" ||
                     records413ResumeAfterDeath || receiptNotFoundResumeAfterDeath || archiveRestoreResumeAfterDeath ||
                     transparencyRecoveryResumeAfterDeath
-            val processDeathDatabase =
-                if (archiveRestoreProcessDeath) {
-                    "pallasync-archive-restore-process-death-test.db"
-                } else if (records413ProcessDeath) {
-                    "pallasync-413-process-death-test.db"
-                } else if (receiptNotFoundProcessDeath) {
-                    "pallasync-receipt-not-found-process-death-test.db"
-                } else if (transparencyRecoveryProcessDeath) {
-                    "pallasync-transparency-recovery-process-death-test.db"
-                } else if (transparencyRecoveryCancelResume) {
-                    "pallasync-transparency-recovery-cancel-test.db"
-                } else {
-                    "pallasync-reseed-process-death-test.db"
-                }
-            if (processDeathMode && !resumeAfterDeath) {
-                context.deleteDatabase(processDeathDatabase)
-            }
-            val database =
-                if (processDeathMode) {
-                    Room.databaseBuilder(context, PallaSyncDatabase::class.java, processDeathDatabase).build()
-                } else {
-                    Room.inMemoryDatabaseBuilder(context, PallaSyncDatabase::class.java).build()
-                }
+            val database = PallaSyncInteropDatabase.open(context, processDeathMode, resumeAfterDeath, args)
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val keys = PallaSyncKeystore(context)
             val reseedTargetOrigin = args.getString("reseed_target_origin")
@@ -876,7 +852,7 @@ class PallaSyncRelayInteropTest {
             } finally {
                 coordinator.stopBackgroundSync()
                 scope.cancel()
-                database.close()
+                PallaSyncInteropDatabase.close(database, context)
                 keys.clearAllKeys()
                 context
                     .getSharedPreferences("pallasync_epoch_journal", Context.MODE_PRIVATE)
