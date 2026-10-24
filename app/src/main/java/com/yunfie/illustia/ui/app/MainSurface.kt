@@ -58,6 +58,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AppNavigationBar
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberSystemUiCoveredState
 import com.yunfie.illustia.ui.screens.AccountSwitchSheet
 import com.yunfie.illustia.ui.screens.AppLockScreen
 import com.yunfie.illustia.ui.screens.BookmarkScreen
@@ -195,6 +196,9 @@ internal fun MainSurface(
                 }
             },
         ) { paddingValues ->
+            // クイック設定に覆われている間は、覆われた下部ナビのバックドロップ再録画と
+            // 追加のぼかし合成を止める。
+            val systemCovered by rememberSystemUiCoveredState()
             Box(
                 modifier =
                     Modifier
@@ -216,7 +220,7 @@ internal fun MainSurface(
                         Modifier
                             .fillMaxSize()
                             .then(
-                                if (isBlurEnabled && supportsBlur && !useNavigationRail) {
+                                if (isBlurEnabled && supportsBlur && !useNavigationRail && !systemCovered) {
                                     Modifier.layerBackdrop(navBackdrop)
                                 } else {
                                     Modifier
@@ -324,7 +328,7 @@ internal fun MainSurface(
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
                                 .then(
-                                    if (supportsBlur) {
+                                    if (supportsBlur && !systemCovered) {
                                         Modifier.progressiveTextureBlur(
                                             backdrop = navBackdrop,
                                             shape = RectangleShape,
