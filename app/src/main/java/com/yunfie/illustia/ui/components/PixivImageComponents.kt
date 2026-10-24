@@ -24,6 +24,7 @@ import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.request.allowRgb565
 import coil3.request.bitmapConfig
@@ -31,6 +32,7 @@ import coil3.request.crossfade
 import coil3.size.Precision
 import coil3.size.Scale
 import coil3.toBitmap
+import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.platform.PlatformCapabilities
 
@@ -44,6 +46,51 @@ val PixivImageHeaders =
 val LocalWideColorGamutEnabled = compositionLocalOf { true }
 
 internal val LocalImageRefreshRequest = compositionLocalOf { 0 }
+
+private const val HEADER_THEME_ANALYSIS_CACHE_SIZE = 32
+
+/** Bounded cache of per-artwork header theme analysis; the same thumbnail is often analyzed by several screens. */
+private val headerThemeAnalysisCache: MutableMap<String, Boolean> =
+    object : java.util.LinkedHashMap<String, Boolean>(HEADER_THEME_ANALYSIS_CACHE_SIZE, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?): Boolean =
+            size > HEADER_THEME_ANALYSIS_CACHE_SIZE
+    }
+
+private val headerThemeAnalysisMutex = kotlinx.coroutines.sync.Mutex()
+
+/**
+ * Resolves whether the header overlay should use dark icons for [thumbnailUrl], reusing the cached
+ * result when this artwork was analyzed before. Never blocks the caller on the result path.
+ */
+internal suspend fun resolveDarkHeaderIcons(
+    context: android.content.Context,
+    thumbnailUrl: String,
+    proxyBaseUrl: String,
+): Boolean {
+    val key = proxyPixivImageUrl(thumbnailUrl, proxyBaseUrl)
+    synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[key] }?.let { return it }
+    headerThemeAnalysisMutex.lock()
+    try {
+        synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[key] }?.let { return it }
+        val request =
+            ImageRequest
+                .Builder(context)
+                .data(key)
+                .httpHeaders(PixivImageHeaders)
+                .size(64)
+                .build()
+        val result = SingletonImageLoader.get(context).execute(request)
+        if (result !is SuccessResult) return false
+        val isDark =
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                runCatching { NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap()) }.getOrDefault(false)
+            }
+        synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[key] = isDark }
+        return isDark
+    } finally {
+        headerThemeAnalysisMutex.unlock()
+    }
+}
 
 @Composable
 fun PixivImage(
