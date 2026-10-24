@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 private fun Comment.isPixivCommentDisabledNotice(): Boolean = comment?.contains("コメントがオフにされています") == true
 
 /** キャッシュ済みのレスポンスを初期表示用の状態へ変換する（スケルトン表示を挟まないため）。 */
-private fun CommentResponse.toCommentState(): CommentState =
+internal fun CommentResponse.toCommentState(): CommentState =
     CommentState(
         comments = comments,
         hasDisabledNotice = comments.any { it.isPixivCommentDisabledNotice() },
