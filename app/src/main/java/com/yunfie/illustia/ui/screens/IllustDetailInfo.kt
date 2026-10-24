@@ -18,12 +18,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,6 +91,10 @@ internal fun IllustDetailInfo(
     val relatedSectionTriggerPx = with(LocalDensity.current) { screenHeightDp.dp.toPx() * 1.05f }
     val relatedSectionReady = remember(illust.id) { mutableStateOf(false) }
     var followAnimationTrigger by remember(illust.artistId) { mutableIntStateOf(0) }
+    // Cached so the link handler survives recomposition; otherwise the whole caption subtree is invalidated.
+    val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
+    val currentOnOpenUserById by rememberUpdatedState(onOpenUserById)
+    val currentOnSearchTag by rememberUpdatedState(onSearchTag)
     val customUriHandler =
         remember(uriHandler) {
             object : UriHandler {
@@ -96,15 +102,15 @@ internal fun IllustDetailInfo(
                     val event = NativeIntentRouter.parseText(uri)
                     when (event) {
                         is NativeIntentEvent.Artwork -> {
-                            onOpenIllustById(event.id)
+                            currentOnOpenIllustById(event.id)
                         }
 
                         is NativeIntentEvent.User -> {
-                            onOpenUserById(event.id)
+                            currentOnOpenUserById(event.id)
                         }
 
                         is NativeIntentEvent.Tag -> {
-                            onSearchTag(event.tag)
+                            currentOnSearchTag(event.tag)
                         }
 
                         else -> {
@@ -126,6 +132,22 @@ internal fun IllustDetailInfo(
         remember(illust.tags) {
             if (illust.tags.size <= 12) illust.tags else illust.tags.take(12)
         }
+    // HTML キャプションの解析は1回だけ行い、他の設定変更による再コンポーズでは再解析しない。
+    val captionKey = illust.caption
+    val parsedCaptions = remember(captionKey) { mutableStateMapOf<String, AnnotatedString>() }
+    LaunchedEffect(captionKey) {
+        if (captionKey.isNotBlank() && parsedCaptions[captionKey] == null) {
+            val parsed =
+                withContext(Dispatchers.Default) {
+                    try {
+                        AnnotatedString.fromHtml(captionKey)
+                    } catch (_: Exception) {
+                        AnnotatedString(captionKey)
+                    }
+                }
+            parsedCaptions[captionKey] = parsed
+        }
+    }
 
     Column(
         modifier =
@@ -274,23 +296,7 @@ internal fun IllustDetailInfo(
                                         modifier = Modifier.padding(horizontal = 12.dp),
                                         contentPadding = PaddingValues(16.dp),
                                     ) {
-                                        val annotatedCaption by produceState<AnnotatedString?>(
-                                            initialValue = null,
-                                            key1 = illust.caption,
-                                        ) {
-                                            value =
-                                                if (illust.caption.isBlank()) {
-                                                    null
-                                                } else {
-                                                    withContext(Dispatchers.Default) {
-                                                        try {
-                                                            AnnotatedString.fromHtml(illust.caption)
-                                                        } catch (_: Exception) {
-                                                            AnnotatedString(illust.caption)
-                                                        }
-                                                    }
-                                                }
-                                        }
+                                        val annotatedCaption = parsedCaptions[captionKey]
                                         SelectionContainer {
                                             if (illust.caption.isBlank()) {
                                                 Text(

@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -300,11 +301,11 @@ fun IllustDetailScreen(
             stringResource(R.string.detail_muted_work_blur)
         }
     val detailHeaderContent: @Composable (Boolean, Modifier) -> Unit = { expanded, modifier ->
-        IllustDetailHeader(
+        DetailHeaderSlot(
             illust = illust,
             highQualityImages = highQualityImages,
             detailQuality = detailQuality,
-            prefetchImages = prefetchImages && isActive,
+            prefetchImages = prefetchImages,
             confirmOnLongPressSave = confirmOnLongPressSave,
             skipConfirmOnDetailSave = skipConfirmOnDetailSave,
             smartDownloadNaming = smartDownloadNaming,
@@ -325,8 +326,8 @@ fun IllustDetailScreen(
             onReport = onReport,
             onMessage = onMessage,
             loadUgoiraPlayback = loadUgoiraPlayback,
-            showImage = true,
-            maskMutedArtwork = isArtworkMuted && !revealMutedArtwork,
+            isArtworkMuted = isArtworkMuted,
+            revealMutedArtwork = revealMutedArtwork,
             onRevealMutedArtwork = { revealMutedArtwork = true },
             mutedArtworkTitle = mutedArtworkTitle,
             mutedArtworkSummary = mutedArtworkSummary,
@@ -337,44 +338,24 @@ fun IllustDetailScreen(
         )
     }
     val detailInfoContent: @Composable () -> Unit = {
-        IllustDetailInfo(
+        DetailInfoSlot(
             illust = illust,
             isArtistFollowed = isArtistFollowed,
             isArtistMuted = isArtistMuted,
-            onOpenUser = { onOpenUser(illust.artistId) },
-            onOpenUserById = onOpenUser,
+            relatedIllusts = relatedIllusts,
+            onOpenUser = onOpenUser,
             onOpenIllustById = onOpenIllustById,
             onOpenComments = onOpenComments,
             onOpenSeries = onOpenSeries,
-            onToggleFollow = {
-                if (isArtistFollowed) showUnfollowConfirm = true else onToggleFollow()
-            },
+            onToggleFollow = onToggleFollow,
             onUnmuteUser = onUnmuteUser,
             onSearchTag = onSearchTag,
             onLongPressTag = onLongPressTag,
-            sectionOrder = detailSectionOrder,
-            relatedContent = { isNearViewport ->
-                if (!isNearViewport) {
-                    Spacer(Modifier.height(24.dp))
-                } else if (relatedIllusts.isNotEmpty()) {
-                    RelatedIllustsList(
-                        relatedIllusts = relatedIllusts,
-                        onOpenIllust = onOpenIllust,
-                        onLongPressIllust = onLongPressIllust,
-                        configuredColumns = relatedIllustColumnCount,
-                    )
-                } else {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator()
-                    }
-                }
-            },
+            detailSectionOrder = detailSectionOrder,
+            relatedIllustColumnCount = relatedIllustColumnCount,
+            onOpenIllust = onOpenIllust,
+            onLongPressIllust = onLongPressIllust,
+            onRequestUnfollowConfirm = { showUnfollowConfirm = true },
         )
     }
 
@@ -452,6 +433,10 @@ fun IllustDetailScreen(
                             Modifier
                                 .fillMaxSize()
                                 .pointerInput(Unit) {
+                                    // Inactive (background) pages keep receiving pointer events while a
+                                    // new artwork slides in; only the visible page may drive the
+                                    // mouse-wheel coalescing timestamp shared by both lists.
+                                    if (!isActive) return@pointerInput
                                     awaitPointerEventScope {
                                         while (true) {
                                             val event = awaitPointerEvent(PointerEventPass.Initial)
@@ -511,4 +496,161 @@ fun IllustDetailScreen(
             }
         }
     }
+}
+
+/**
+ * Header slot. Kept as its own composable so the header (pager, ugoira playback, decode effects)
+ * keeps one stable recomposition scope when settings or state change in [IllustDetailScreen].
+ * Callers re-create the argument lambdas on every parent recomposition, so they are re-read
+ * through [rememberUpdatedState] to keep identity stable for the subtree.
+ */
+@Composable
+private fun DetailHeaderSlot(
+    illust: Illust,
+    highQualityImages: Boolean,
+    detailQuality: String,
+    prefetchImages: Boolean,
+    confirmOnLongPressSave: Boolean,
+    skipConfirmOnDetailSave: Boolean,
+    smartDownloadNaming: Boolean,
+    ugoiraPowerSave: Boolean,
+    isActive: Boolean,
+    mangaAdaptivePreload: Boolean,
+    pixivUrl: String,
+    onBack: () -> Unit,
+    onOpenImage: (Int) -> Unit,
+    onDoubleTapImage: () -> Unit,
+    onSaveImage: (String, String, Boolean) -> Unit,
+    onSaveAllImages: (List<String>, String) -> Unit,
+    onMuteIllust: () -> Unit,
+    onMuteUser: () -> Unit,
+    onReport: (String?, (Boolean) -> Unit) -> Unit,
+    onMessage: (String) -> Unit,
+    loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
+    isArtworkMuted: Boolean,
+    revealMutedArtwork: Boolean,
+    onRevealMutedArtwork: () -> Unit,
+    mutedArtworkTitle: String,
+    mutedArtworkSummary: String,
+    showLikeAnimation: Boolean,
+    expanded: Boolean,
+    onHeaderIconsThemeChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val currentOnBack by rememberUpdatedState(onBack)
+    val currentOnOpenImage by rememberUpdatedState(onOpenImage)
+    val currentOnDoubleTap by rememberUpdatedState(onDoubleTapImage)
+    val currentOnSaveImage by rememberUpdatedState(onSaveImage)
+    val currentOnSaveAllImages by rememberUpdatedState(onSaveAllImages)
+    val currentOnMuteIllust by rememberUpdatedState(onMuteIllust)
+    val currentOnMuteUser by rememberUpdatedState(onMuteUser)
+    val currentOnReport by rememberUpdatedState(onReport)
+    val currentOnMessage by rememberUpdatedState(onMessage)
+    val currentOnReveal by rememberUpdatedState(onRevealMutedArtwork)
+    val currentOnTheme by rememberUpdatedState(onHeaderIconsThemeChanged)
+    IllustDetailHeader(
+        illust = illust,
+        highQualityImages = highQualityImages,
+        detailQuality = detailQuality,
+        prefetchImages = prefetchImages && isActive,
+        confirmOnLongPressSave = confirmOnLongPressSave,
+        skipConfirmOnDetailSave = skipConfirmOnDetailSave,
+        smartDownloadNaming = smartDownloadNaming,
+        ugoiraPowerSave = ugoiraPowerSave,
+        isActive = isActive,
+        mangaAdaptivePreload = mangaAdaptivePreload,
+        pixivUrl = pixivUrl,
+        onBack = { currentOnBack() },
+        onOpenImage = { currentOnOpenImage(it) },
+        onDoubleTapImage = { currentOnDoubleTap() },
+        onSaveImage = { url, name, confirm -> currentOnSaveImage(url, name, confirm) },
+        onSaveAllImages = { urls, prefix -> currentOnSaveAllImages(urls, prefix) },
+        onMuteIllust = { currentOnMuteIllust() },
+        onMuteUser = { currentOnMuteUser() },
+        onReport = { reason, complete -> currentOnReport(reason, complete) },
+        onMessage = { currentOnMessage(it) },
+        loadUgoiraPlayback = loadUgoiraPlayback,
+        showImage = true,
+        maskMutedArtwork = isArtworkMuted && !revealMutedArtwork,
+        onRevealMutedArtwork = { currentOnReveal() },
+        mutedArtworkTitle = mutedArtworkTitle,
+        mutedArtworkSummary = mutedArtworkSummary,
+        showLikeAnimation = showLikeAnimation,
+        expanded = expanded,
+        onHeaderIconsThemeChanged = { currentOnTheme(it) },
+        modifier = modifier,
+    )
+}
+
+/** Info slot; see [DetailHeaderSlot] for why the lambdas are re-read via [rememberUpdatedState]. */
+@Composable
+private fun DetailInfoSlot(
+    illust: Illust,
+    isArtistFollowed: Boolean,
+    isArtistMuted: Boolean,
+    relatedIllusts: List<Illust>,
+    onOpenUser: (Long) -> Unit,
+    onOpenIllustById: (Long) -> Unit,
+    onOpenComments: () -> Unit,
+    onOpenSeries: (() -> Unit)?,
+    onToggleFollow: () -> Unit,
+    onUnmuteUser: () -> Unit,
+    onSearchTag: (String) -> Unit,
+    onLongPressTag: (String) -> Unit,
+    detailSectionOrder: List<String>,
+    relatedIllustColumnCount: Int,
+    onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
+    onRequestUnfollowConfirm: () -> Unit,
+) {
+    val currentOnOpenUser by rememberUpdatedState(onOpenUser)
+    val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
+    val currentOnOpenComments by rememberUpdatedState(onOpenComments)
+    val currentOnOpenSeries by rememberUpdatedState(onOpenSeries)
+    val currentOnToggleFollow by rememberUpdatedState(onToggleFollow)
+    val currentOnUnmuteUser by rememberUpdatedState(onUnmuteUser)
+    val currentOnSearchTag by rememberUpdatedState(onSearchTag)
+    val currentOnLongPressTag by rememberUpdatedState(onLongPressTag)
+    val currentOnOpenIllust by rememberUpdatedState(onOpenIllust)
+    val currentOnLongPressIllust by rememberUpdatedState(onLongPressIllust)
+    val currentOnUnfollowConfirm by rememberUpdatedState(onRequestUnfollowConfirm)
+    IllustDetailInfo(
+        illust = illust,
+        isArtistFollowed = isArtistFollowed,
+        isArtistMuted = isArtistMuted,
+        onOpenUser = { currentOnOpenUser(illust.artistId) },
+        onOpenUserById = { currentOnOpenUser(it) },
+        onOpenIllustById = { currentOnOpenIllustById(it) },
+        onOpenComments = { currentOnOpenComments() },
+        onOpenSeries = currentOnOpenSeries?.let { openSeries -> { openSeries() } },
+        onToggleFollow = {
+            if (isArtistFollowed) currentOnUnfollowConfirm() else currentOnToggleFollow()
+        },
+        onUnmuteUser = { currentOnUnmuteUser() },
+        onSearchTag = { currentOnSearchTag(it) },
+        onLongPressTag = { currentOnLongPressTag(it) },
+        sectionOrder = detailSectionOrder,
+        relatedContent = { isNearViewport ->
+            if (!isNearViewport) {
+                Spacer(Modifier.height(24.dp))
+            } else if (relatedIllusts.isNotEmpty()) {
+                RelatedIllustsList(
+                    relatedIllusts = relatedIllusts,
+                    onOpenIllust = { currentOnOpenIllust(it) },
+                    onLongPressIllust = { currentOnLongPressIllust(it) },
+                    configuredColumns = relatedIllustColumnCount,
+                )
+            } else {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingIndicator()
+                }
+            }
+        },
+    )
 }
