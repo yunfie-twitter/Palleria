@@ -383,6 +383,8 @@ class PalleriaSyncManager(
 
     internal suspend fun retryPendingInboxEvidence(limit: Int = 50): Int = coordinator.retryPendingInboxEvidence(limit)
 
+    internal suspend fun retryStorageBlockedInbox(limit: Int = 50): Int = coordinator.retryStorageBlockedInbox(limit)
+
     internal suspend fun retryQuarantinedRecordEvidence(objectHash: String): Boolean =
         coordinator.retryQuarantinedRecordEvidence(objectHash)
 

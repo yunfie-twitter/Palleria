@@ -435,23 +435,30 @@
       "requirement": "Implement all catalogue errors and appropriate backoff; never treat an error body as signed authority or discard unsent data on retry.",
       "sections": [
         "6.3",
+        "16.5",
         "17.8",
         "19.2",
-        "19.3"
+        "19.3",
+        "19.4"
       ],
       "implementation": [
         "Palleria/rust/pallasync-core/src/error_catalogue.rs",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRetryGate.kt",
         "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRemoteService.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInboxRetry.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncLocalStorageRecovery.kt",
         "PallaSync/src/api/error.rs"
       ],
       "tests": [
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRetryGateTest.kt",
         "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncHttpClassificationTest.kt",
-        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncValidationStateTest.kt"
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncValidationStateTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInboxStorageRecoveryTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncLocalStorageRecoveryTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncStorageRecoveryInterop.kt"
       ],
       "result": "pending",
-      "remaining": "Inbox counts distinguish retryable evidence from unsupported and local operational/recovery states; generic retry is limited to missing dependency/acceptance evidence. Retryable 503 during the exact transparency-evidence GET has isolated Android/relay coverage for byte-preserving pending state and later recovery. Inbox retries now persist only explicit protocol codes or SQLiteFullException as C_LOCAL_STORAGE_FULL; unknown local exceptions leave the signed inbox row unchanged and surface to the caller. Complete actionable handling and per-code relay fault/capacity recovery coverage for the remaining catalogue cases.",
+      "remaining": "Inbox counts distinguish retryable evidence from unsupported and local operational/recovery states; generic retry is limited to missing dependency/acceptance evidence. Retryable 503 during the exact transparency-evidence GET has isolated Android/relay coverage for byte-preserving pending state and later recovery. Inbox retries persist only explicit protocol codes or SQLiteFullException as C_LOCAL_STORAGE_FULL; unknown local exceptions leave the signed inbox row unchanged. A separate explicit local-storage action now selects only C_LOCAL_STORAGE_FULL operational rows, checks capacity per record and reuses full immutable-record revalidation. Actual filesystem exhaustion during commit, process death/cancellation, physical-device UI and remaining catalogue-specific recovery paths still need validation; see the dated validation report for executed test scope.",
       "verification_scope": "targeted_partial"
     },
     {

@@ -225,6 +225,9 @@
     <string name="pallasync_pending_evidence_retry_running">Checking pending records…</string>
     <string name="pallasync_pending_evidence_retry_result">Applied %1$d previously pending records. Remaining records still require their listed evidence or operational resolution.</string>
     <string name="pallasync_pending_evidence_retry_failed">Could not check pending records. Their stored evidence was kept; resolve the local issue and retry.</string>
+    <string name="pallasync_storage_recovery_help">Records paused for device storage: %1$d. Free unrelated files or cache, then check capacity and revalidate the saved records. Sync history and keys are kept.</string>
+    <string name="pallasync_storage_recovery_retry">Check free space and retry saved records</string>
+    <string name="pallasync_storage_recovery_failed">Could not finish revalidation. Free device storage or resolve the reported sync condition, then retry. Unresolved records and evidence are kept.</string>
     <string name="pallasync_capacity_search">Search history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_viewed">Viewed history: %1$d / %2$d safety ceiling</string>
     <string name="pallasync_capacity_seen">Seen history: %1$d / %2$d safety ceiling</string>

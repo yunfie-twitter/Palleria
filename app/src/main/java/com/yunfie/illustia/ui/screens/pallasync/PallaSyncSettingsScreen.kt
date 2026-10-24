@@ -89,7 +89,7 @@ import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 
 /** Keep the sync-settings actions aligned and equally tappable across long and short labels. */
 @Composable
-private fun PallaSyncActionButton(
+internal fun PallaSyncActionButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -2300,6 +2300,13 @@ fun PallaSyncSettingsScreen(
                                         operationallyBlockedCount,
                                     ),
                                 )
+                            }
+                            PallaSyncLocalStorageRecovery(status.storageBlockedRecords) {
+                                try {
+                                    syncManager.retryStorageBlockedInbox()
+                                } finally {
+                                    clientStatus = syncManager.getClientStatus()
+                                }
                             }
                             if (recoverySessionFailedCount > 0) {
                                 Text(

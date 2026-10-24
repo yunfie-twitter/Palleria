@@ -8589,6 +8589,7 @@ internal class PalleriaSyncCoordinator(
                 unresolvedQuarantine = protocol.unresolvedQuarantineCount(state.chainId),
                 pendingRecordDispositions = db.dao.pendingInboxDispositionCount(state.chainId),
                 recordDispositionCounts = db.dao.inboxDispositionCounts(state.chainId).associate { it.status to it.count },
+                storageBlockedRecords = db.dao.storageBlockedInboxCount(state.chainId),
                 writeState = state.writeState,
                 initialPullCompleted = state.initialPullCompleted,
                 searchCount = searchCount,
@@ -8703,18 +8704,41 @@ internal class PalleriaSyncCoordinator(
         for (record in pending) {
             val didApply =
                 withContext(Dispatchers.IO) {
-                    operationMutex.withLock { retryPendingInboxEvidenceLocked(record) }
+                    operationMutex.withLock { retryInboxRecordLocked(record, PallaSyncInboxRetry.EVIDENCE) }
                 }
             if (didApply) applied++
         }
         return applied
     }
 
-    private suspend fun retryPendingInboxEvidenceLocked(record: PallaSyncInboxEntity): Boolean {
+    /** §16.5/§19.3: explicit local-capacity recovery, without changing a record's disposition in advance. */
+    suspend fun retryStorageBlockedInbox(limit: Int = PallaSyncInboxStorageCapacity.MAX_RETRY_BATCH): Int =
+        withContext(Dispatchers.IO) {
+            require(limit in 1..PallaSyncInboxStorageCapacity.MAX_RETRY_BATCH) { "C_SCHEMA_VIOLATION" }
+            operationMutex.withLock {
+                val chain = activeChainStateLocked()?.chainId ?: return@withLock 0
+                val records = db.dao.storageBlockedInboxRecords(chain, limit)
+                var applied = 0
+                for (record in records) {
+                    currentCoroutineContext().ensureActive()
+                    val available = runCatching { StatFs(appContext.filesDir.absolutePath).availableBytes }.getOrNull()
+                    PallaSyncInboxStorageCapacity.requireAvailable(record, available)
+                    if (retryInboxRecordLocked(record, PallaSyncInboxRetry.LOCAL_STORAGE)) applied++
+                    val remaining = db.dao.getInboxRecord(chain, record.recordId)
+                    check(remaining == null || !PallaSyncInboxRetry.LOCAL_STORAGE.accepts(remaining)) { "C_LOCAL_STORAGE_FULL" }
+                }
+                applied
+            }
+        }
+
+    private suspend fun retryInboxRecordLocked(
+        record: PallaSyncInboxEntity,
+        retry: PallaSyncInboxRetry,
+    ): Boolean {
         try {
             val state = checkNotNull(activeChainStateLocked()) { "C_MISSING_DEPENDENCY" }
             check(state.chainId == record.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
-            check(record.status in setOf("pending_dependency", "pending_evidence")) { "C_ROLLBACK_DETECTED" }
+            check(retry.accepts(record)) { "C_ROLLBACK_DETECTED" }
             val dao = db.dao
             val protocol = db.protocolDao()
             val current = checkNotNull(dao.getInboxRecord(record.chainId, record.recordId)) { "C_MISSING_DEPENDENCY" }

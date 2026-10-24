@@ -1636,6 +1636,7 @@ class PallaSyncRelayInteropTest {
             )
             println("pallasync_transparency_recovery_cancel_resume=resumed_and_applied")
         }
+        PallaSyncStorageRecoveryInterop.exercise(coordinator, store, keys, chain)
     }
 
     private fun exerciseBoundOrigin(

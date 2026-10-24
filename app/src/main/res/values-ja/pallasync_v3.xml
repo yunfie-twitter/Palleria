@@ -195,6 +195,9 @@
     <string name="pallasync_pending_evidence_retry_running">保留中のレコードを確認中…</string>
     <string name="pallasync_pending_evidence_retry_result">保留中のレコードを %1$d 件適用しました。残りは表示された証拠または運用上の解決が必要です。</string>
     <string name="pallasync_pending_evidence_retry_failed">保留中のレコードを確認できませんでした。保存済みの証拠は保持されています。端末側の問題を解消して再試行してください。</string>
+    <string name="pallasync_storage_recovery_help">端末の容量不足で保留中のレコード: %1$d。不要なファイルやキャッシュを整理してから、空き容量の確認と保存済みレコードの再検証を行ってください。同期履歴と鍵は保持されます。</string>
+    <string name="pallasync_storage_recovery_retry">空き容量を確認して保存済みレコードを再検証</string>
+    <string name="pallasync_storage_recovery_failed">再検証を完了できませんでした。端末の空き容量や表示された同期の問題を解消して再試行してください。未解決のレコードと証拠は保持されています。</string>
     <string name="pallasync_capacity_search">検索履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_viewed">閲覧履歴: %1$d / 安全上限 %2$d</string>
     <string name="pallasync_capacity_seen">既読履歴: %1$d / 安全上限 %2$d</string>

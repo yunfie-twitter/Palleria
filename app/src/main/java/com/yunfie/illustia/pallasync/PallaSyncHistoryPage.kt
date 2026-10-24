@@ -134,6 +134,7 @@ data class PallaSyncClientStatus(
     val consistencyProbeDelayMs: Long? = null,
     val pendingRecordDispositions: Long = 0,
     val recordDispositionCounts: Map<String, Long> = emptyMap(),
+    val storageBlockedRecords: Long = 0,
 ) {
     val searchColdCount: Long get() = (searchCount - searchProjectionCount).coerceAtLeast(0)
     val viewedColdCount: Long get() = (viewedCount - viewedProjectionCount).coerceAtLeast(0)

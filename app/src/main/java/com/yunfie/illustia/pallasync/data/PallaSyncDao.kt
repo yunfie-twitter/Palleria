@@ -253,6 +253,21 @@ interface PallaSyncDao {
     ): List<PallaSyncInboxEntity>
 
     @Query(
+        "SELECT * FROM pallasync_inbox WHERE chain_id=:chainId AND status='operationally_blocked' " +
+            "AND quarantine_reason='C_LOCAL_STORAGE_FULL' ORDER BY relay_seq ASC, record_id ASC LIMIT :limit",
+    )
+    suspend fun storageBlockedInboxRecords(
+        chainId: String,
+        limit: Int,
+    ): List<PallaSyncInboxEntity>
+
+    @Query(
+        "SELECT COUNT(*) FROM pallasync_inbox WHERE chain_id=:chainId AND status='operationally_blocked' " +
+            "AND quarantine_reason='C_LOCAL_STORAGE_FULL'",
+    )
+    suspend fun storageBlockedInboxCount(chainId: String): Long
+
+    @Query(
         "UPDATE pallasync_inbox SET status=:status, quarantine_reason=:reason WHERE chain_id=:chainId AND record_id=:recordId AND raw_record_json=:rawRecordJson",
     )
     suspend fun updateInboxDisposition(
