@@ -418,6 +418,9 @@ class IllustiaRepository(
             withSessionRetry { session -> apiClient.illustComments(session, illustId, offset) }
         }
 
+    /** 期限内キャッシュ済みのコメント先頭ページ（未取得・期限切れなら null）。UI スレッドから即時に確認する用途。 */
+    fun illustCommentsSnapshot(illustId: Long): CommentResponse? = apiCache.get("comments:illust:$illustId:0")
+
     suspend fun illustCommentReplies(
         commentId: Long,
         offset: Int? = null,

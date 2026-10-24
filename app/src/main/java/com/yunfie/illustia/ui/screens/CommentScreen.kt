@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +37,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.data.pixiv.CommentStore
+import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivStamp
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -47,12 +49,18 @@ import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.prefetchPixivThumbnail
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -68,6 +76,9 @@ import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
+
+/** 開いた直後に表示されるコメント行のアバターを先に温める件数。 */
+private const val COMMENT_AVATAR_PREFETCH_LIMIT = 8
 
 @Composable
 fun CommentScreen(
@@ -85,9 +96,21 @@ fun CommentScreen(
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val applicationContext = LocalContext.current.applicationContext
     val performHaptic = rememberHapticFeedbackAction()
     var commentText by remember { mutableStateOf("") }
     val hideCommentInput = state.hasDisabledNotice
+
+    // 取得済みのコメントは同期的に初期状態へ入れる。開いた直後に全面スケルトン
+    // （squircle の saveLayer + 無限シマー）を出さないことで、シートのスライド中に
+    // 毎フレームのオフスクリーン合成が走らないようにする。
+    LaunchedEffect(store) {
+        store.cachedState()?.let { store.seed(it) }
+    }
+    // 開く直前にスケルトンを見せた場合のちらつきを抑えるため、一度でも内容を表示したら
+    // 以後の再取得・再構成ではシマーを出さない。
+    var hasShownContent by remember(store) { mutableStateOf(false) }
+    if (state.comments.isNotEmpty()) hasShownContent = true
 
     var showStampPicker by remember { mutableStateOf(false) }
     var stamps by remember { mutableStateOf<List<PixivStamp>>(emptyList()) }
@@ -105,6 +128,25 @@ fun CommentScreen(
 
     LaunchedEffect(store) {
         store.fetch()
+    }
+    // アバターは開いた後に初めて要求されるため、シートのスライドアニメーション中に
+    // ネットワーク取得とデコードが走ってメインスレッドに割り込む。先に一度だけ
+    // 非同期で温め、以降の追加取得では再実行しない。
+    val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
+    LaunchedEffect(store, proxyBaseUrl) {
+        val context = applicationContext
+        store.state
+            .map { comments -> comments.comments }
+            .first { it.isNotEmpty() }
+            .take(COMMENT_AVATAR_PREFETCH_LIMIT)
+            .forEach { comment ->
+                val url = comment.user?.profileImageUrls?.medium
+                if (!url.isNullOrBlank()) {
+                    withContext(Dispatchers.IO) {
+                        prefetchPixivThumbnail(context, proxyPixivImageUrl(url, proxyBaseUrl))
+                    }
+                }
+            }
     }
     val listState = rememberLazyListState()
     AutoLoadMoreEffect(
@@ -144,7 +186,8 @@ fun CommentScreen(
                     .padding(horizontal = 4.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            val showInitialSkeletons = state.isLoading && state.comments.isEmpty()
+            val showInitialSkeletons =
+                state.isLoading && state.comments.isEmpty() && !hasShownContent
             val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
             val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
             PullToRefresh(
