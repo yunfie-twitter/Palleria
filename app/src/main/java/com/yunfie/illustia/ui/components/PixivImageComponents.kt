@@ -336,3 +336,43 @@ fun PrefetchPixivImages(
         }
     }
 }
+
+/** サムネイル解像度で先読みする際のメモリキャッシュキー。通常表示の [PixivImage] と一致させる必要がある。 */
+internal fun pixivImagePrefetchCacheKey(
+    url: String,
+    decodeDimensionPx: Int,
+): String =
+    pixivImageMemoryCacheKey(
+        url,
+        thumbnail = true,
+        decodeDimensionPx = decodeDimensionPx,
+    )
+
+/**
+ * [PixivImage]（サムネイル表示）と同じキー・設定で画像を先読みする。
+ * メモリキャッシュに載っている場合は何もしない。
+ */
+internal suspend fun prefetchPixivThumbnail(
+    context: android.content.Context,
+    url: String,
+) {
+    if (url.isBlank()) return
+    val imageLoader = SingletonImageLoader.get(context)
+    val decodeDimensionPx = PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
+    val memoryCacheKey = pixivImagePrefetchCacheKey(url, decodeDimensionPx)
+    if (imageLoader.memoryCache?.get(coil3.memory.MemoryCache.Key(memoryCacheKey)) != null) return
+    val request =
+        ImageRequest
+            .Builder(context)
+            .data(url)
+            .httpHeaders(PixivImageHeaders)
+            .memoryCacheKey(memoryCacheKey)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .size(decodeDimensionPx)
+            .scale(Scale.FILL)
+            .precision(Precision.INEXACT)
+            .allowRgb565(true)
+            .build()
+    imageLoader.enqueue(request)
+}

@@ -4,12 +4,24 @@ import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 
 private fun Comment.isPixivCommentDisabledNotice(): Boolean = comment?.contains("コメントがオフにされています") == true
+
+/** キャッシュ済みのレスポンスを初期表示用の状態へ変換する（スケルトン表示を挟まないため）。 */
+internal fun CommentResponse.toCommentState(): CommentState =
+    CommentState(
+        comments = comments,
+        hasDisabledNotice = comments.any { it.isPixivCommentDisabledNotice() },
+        nextUrl = nextUrl,
+        isEmpty = comments.isEmpty(),
+    )
+
 
 enum class CommentArtworkType {
     ILLUST,
@@ -37,6 +49,14 @@ class CommentStore(
     private val _state = MutableStateFlow(CommentState())
     val state: StateFlow<CommentState> = _state.asStateFlow()
 
+    /** 既に取得済みで期限内のコメントを同期的に返す（未取得なら null）。 */
+    fun cachedState(): CommentState? = repository.illustCommentsSnapshot(id)?.toCommentState()
+
+    /** キャッシュ済みの内容を、取得を待たずに初期表示として反映する。 */
+    fun seed(state: CommentState) {
+        _state.value = state
+    }
+
     suspend fun fetch(forceRefresh: Boolean = false) {
         _state.update {
             it.copy(
@@ -46,28 +66,32 @@ class CommentStore(
             )
         }
         try {
+            // JSON パース（Comment/User/Stamp の生成）を UI スレッドで行うと、シートの
+            // スライドアニメーション初回フレームにそのまま割り込むため IO へ逃がす。
             val response =
-                when {
-                    type == CommentArtworkType.ILLUST && isReplay -> {
-                        repository.illustCommentReplies(
-                            parentCommentId ?: error("parentCommentId is required"),
-                            forceRefresh = forceRefresh,
-                        )
-                    }
+                withContext(Dispatchers.Default) {
+                    when {
+                        type == CommentArtworkType.ILLUST && isReplay -> {
+                            repository.illustCommentReplies(
+                                parentCommentId ?: error("parentCommentId is required"),
+                                forceRefresh = forceRefresh,
+                            )
+                        }
 
-                    type == CommentArtworkType.ILLUST -> {
-                        repository.illustComments(id, forceRefresh = forceRefresh)
-                    }
+                        type == CommentArtworkType.ILLUST -> {
+                            repository.illustComments(id, forceRefresh = forceRefresh)
+                        }
 
-                    type == CommentArtworkType.NOVEL && isReplay -> {
-                        repository.novelCommentReplies(
-                            parentCommentId ?: error("parentCommentId is required"),
-                            forceRefresh = forceRefresh,
-                        )
-                    }
+                        type == CommentArtworkType.NOVEL && isReplay -> {
+                            repository.novelCommentReplies(
+                                parentCommentId ?: error("parentCommentId is required"),
+                                forceRefresh = forceRefresh,
+                            )
+                        }
 
-                    else -> {
-                        repository.novelComments(id, forceRefresh = forceRefresh)
+                        else -> {
+                            repository.novelComments(id, forceRefresh = forceRefresh)
+                        }
                     }
                 }
             applyResponse(response)

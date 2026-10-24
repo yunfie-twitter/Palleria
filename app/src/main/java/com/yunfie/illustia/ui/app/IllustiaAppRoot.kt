@@ -171,6 +171,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     fun popRoute() {
         if (selectedCommentTarget != null) {
             selectedCommentTarget = null
+            viewModel.setDetailExtrasSuppressed(false)
             return
         }
         if (backStack.size <= 1) {

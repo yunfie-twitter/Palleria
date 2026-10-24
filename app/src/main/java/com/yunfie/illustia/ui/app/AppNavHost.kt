@@ -139,6 +139,7 @@ internal fun AppNavHost(
                         onNavigate(AppRoute.NovelList)
                     },
                     onOpenComments = { illustId ->
+                        viewModel.openComments(illustId to CommentArtworkType.ILLUST)
                         onSelectedCommentTargetChange(illustId to CommentArtworkType.ILLUST)
                     },
                     onOpenWatchlistSeries = { seriesId ->
@@ -305,6 +306,7 @@ internal fun AppNavHost(
                         onRefresh = { viewModel.refreshIllustDetail(illust.id) },
                         onOpenUser = viewModel::openUser,
                         onOpenComments = {
+                            viewModel.openComments(illust.id to CommentArtworkType.ILLUST)
                             onSelectedCommentTargetChange(illust.id to CommentArtworkType.ILLUST)
                         },
                         onOpenSeries =

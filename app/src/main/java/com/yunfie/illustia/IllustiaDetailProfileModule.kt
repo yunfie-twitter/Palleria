@@ -63,6 +63,7 @@ abstract class IllustiaDetailProfileModule(
 
     @Suppress("LongMethod")
     private fun launchDetailExtras(illust: Illust) {
+        if (detailExtrasPaused) return
         detailExtrasJob?.cancel()
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
@@ -226,6 +227,33 @@ abstract class IllustiaDetailProfileModule(
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
                 Log.w("IllustiaViewModel", "Failed to lazily refresh illustration detail", expectedFailure)
+            }
+        }
+    }
+
+    /**
+     * コメントシートが作品詳細の上に開く間、関連作品・ユーザー詳細の取得と、その結果による
+     * UI 状態の更新を止める。重なったアニメーション中に状態更新が走らないようにするだけで、
+     * 表示内容は変わらない（シートを閉じると通常の詳細取得に戻る）。
+     */
+    fun setDetailExtrasSuppressed(suppressed: Boolean) {
+        detailExtrasPaused = suppressed
+        if (suppressed) detailExtrasJob?.cancel()
+    }
+
+    /**
+     * コメントシートを開く直前に呼ぶ。詳細の追加取得を止め、コメントの取得とパースを
+     * 先に走らせておくことで、シートのスライドインと状態更新が重ならないようにする。
+     * コメントの描画は従来どおり [CommentScreen] が行う。
+     */
+    fun openComments(target: Pair<Long, com.yunfie.illustia.data.pixiv.CommentArtworkType>) {
+        setDetailExtrasSuppressed(true)
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                when (target.second) {
+                    com.yunfie.illustia.data.pixiv.CommentArtworkType.ILLUST -> repository.illustComments(target.first)
+                    com.yunfie.illustia.data.pixiv.CommentArtworkType.NOVEL -> repository.novelComments(target.first)
+                }
             }
         }
     }
