@@ -108,7 +108,7 @@ internal class PallaSyncTransparencySuffix(
 
         fun requireComplete(range: PallaSyncTransparencyRange) {
             check(minimum == expectedMinimum) { "C_TRANSPARENCY_INVALID" }
-            check((minimumAlreadyAdvanced || matchedPruneEntry) == (expectedMinimum > previousMinimum)) { "C_TRANSPARENCY_INVALID" }
+            check(((minimumAlreadyAdvanced || matchedPruneEntry) == (expectedMinimum > previousMinimum))) { "C_TRANSPARENCY_INVALID" }
             dataHeadHash?.let {
                 check(
                     it ==
