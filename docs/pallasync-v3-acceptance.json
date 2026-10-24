@@ -1,0 +1,1626 @@
+{
+  "document_id": "PALLASYNC-3.0-R1",
+  "protocol": "pallasync/3",
+  "spec_sha256": "df3963183db187a2080283860ae5af51d31dc11e6c2947d58753d586ba2cec56",
+  "conformance_claim": false,
+  "checklist": [
+    {
+      "id": "A-01",
+      "requirement": "Parse with duplicate-key detection, UTF-8/surrogate validation, integer token checks, depth/size bounds and NFC validation; pass JCS vectors with UTF-16 member sorting.",
+      "sections": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "C.1"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/strict/",
+        "Palleria/rust/pallasync-core/src/public_wire.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/strict_wire.rs",
+        "PallaSync/tests/reference/test_vectors.py"
+      ],
+      "result": "pending",
+      "remaining": "Run every positive/negative vector through Android, independent Python and the isolated relay.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-02",
+      "requirement": "Derive the deterministic chain identity/admin/recovery keys exactly; validate BIP39 checksum/passphrase behavior. Generate device keys and independent epoch secrets randomly.",
+      "sections": [
+        "5.1",
+        "5.2",
+        "5.3",
+        "C.2"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/crypto.rs",
+        "Palleria/rust/pallasync-core/src/root_session.rs",
+        "Palleria/rust/pallasync-core/src/rotation.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/protocol_fixture.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRootCancellationJniTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Connect passphrase input to every root workflow and complete three-party key vectors.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-03",
+      "requirement": "Use vetted Ed25519/X25519/HKDF/AEAD/HPKE implementations; reject non-canonical signatures and invalid DH output. Run Appendix C vectors in CI; reference-only HChaCha/HPKE calculations are not production crypto.",
+      "sections": [
+        "4",
+        "4.1",
+        "14",
+        "C.5",
+        "C.6"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/Cargo.lock",
+        "Palleria/rust/pallasync-core/src/strict/verify.rs",
+        "Palleria/rust/pallasync-core/src/epoch_session.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/strict_wire.rs",
+        "Palleria/rust/pallasync-core/tests/epoch_session.rs",
+        "PallaSync/tests/reference/test_vectors.py"
+      ],
+      "result": "pending",
+      "remaining": "Complete every Appendix C cryptographic vector and independent negative interoperability case.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-04",
+      "requirement": "Enforce secure storage and no persisted mnemonic/root material. Exclude key blobs from portable OS backups; zeroize transient root/session material.",
+      "sections": [
+        "5.4",
+        "5.5",
+        "7.11.3"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/locked_memory.rs",
+        "Palleria/rust/pallasync-core/src/secret_lifetime.rs",
+        "Palleria/rust/pallasync-core/src/normal_data_boundary.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPlatformKeys.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncKeystore.kt",
+        "Palleria/app/src/main/res/xml/pallasync_backup_rules.xml"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/secret_lifetime.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRootCancellationJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRootEncodingTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRootInputUiTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Remove remaining normal-key String adapters; test real UI/background/backup/recovery authentication boundaries.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-05",
+      "requirement": "Implement exact signed member sets, nested signature coverage, nullable fields, AAD, collection HMAC, frame/buckets, nonce uniqueness and one collection per record.",
+      "sections": [
+        "3",
+        "7",
+        "14.1",
+        "14.2",
+        "14.3"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/public_wire.rs",
+        "Palleria/rust/pallasync-core/src/schema.rs",
+        "Palleria/rust/pallasync-core/src/device_session.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/device_session.rs",
+        "Palleria/rust/pallasync-core/tests/device_metadata.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInitialRecordJniTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Exercise the complete signed model catalogue, all optional/null cases and size boundaries across three parties.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-06",
+      "requirement": "Bind token aud/method/raw path/canonical query/raw body, use 120-second TTL, fresh retry nonce, durable atomic replay protection and ±60-second checks.",
+      "sections": [
+        "6.1",
+        "6.2",
+        "6.3",
+        "17.8"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/device_session.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRetryGate.kt",
+        "PallaSync/src/api/auth.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/device_session.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRetryGateTest.kt",
+        "PallaSync/tests/v3_integration.rs"
+      ],
+      "result": "pending",
+      "remaining": "Execute token freshness/replay/restart/clock uncertainty for every authorization role and retry path.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-07",
+      "requirement": "Require approved enrollment/SAS, pending-key acknowledgement, immutable device identities, atomic revocation+rotation, historical authority verification and strict self-healing.",
+      "sections": [
+        "7.4",
+        "7.9",
+        "10.4",
+        "10.7",
+        "10.8",
+        "18.1",
+        "18.4",
+        "18.5"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/authority.rs",
+        "Palleria/rust/pallasync-core/src/peer_enrollment.rs",
+        "Palleria/rust/pallasync-core/src/peer_response.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerSession.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerApprover.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelay.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPeerJournal.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncMnemonicEnrollment.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncEpochLifecycle.kt",
+        "PallaSync/src/api/mutation.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/authority.rs",
+        "Palleria/rust/pallasync-core/tests/peer_enrollment.rs",
+        "Palleria/rust/pallasync-core/tests/peer_response.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerPreparedJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncPeerJournalTest.kt",
+        "PallaSync/tests/reference/run_peer_interop.py",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncEpochHistoryJniTest.kt",
+        "PallaSync/tests/reference/run_android_interop.py",
+        "PallaSync/tests/reference/android_peer.py",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncPeerRelayBoundary.kt"
+      ],
+      "result": "pending",
+      "remaining": "Exercise the Compose offer/SAS/file-import UI and OS share/file transfer on physical devices; inject process death and concurrent approvals at each durable acceptance/ack boundary.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-08",
+      "requirement": "Enforce complete recovery/device envelope bundles, commitment checks, epoch CAS/hash ancestry, pinned checkpoint rollback/fork checks and mnemonic participation for each new recovery envelope.",
+      "sections": [
+        "7.6",
+        "7.7",
+        "13.1",
+        "13.3",
+        "13.4",
+        "13.5"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/rotation.rs",
+        "Palleria/rust/pallasync-core/src/epoch_session.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncEpochJournal.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncEpochLifecycle.kt",
+        "PallaSync/src/api/domain.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/rotation.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncEpochProposalJniTest.kt",
+        "PallaSync/tests/reference/android_epoch.py"
+      ],
+      "result": "pending",
+      "remaining": "Implement all-revoked fresh subjects, retention handoff and all epoch journal/process-death/CAS boundaries.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-09",
+      "requirement": "Implement K/rank/clear/tombstones/history order/policy registers and exact replay deduplication; use binary database collation and safe integers. Preserve conflict evidence in snapshots.",
+      "sections": [
+        "8",
+        "12.1",
+        "15",
+        "16.1",
+        "16.2",
+        "D.1",
+        "D.2",
+        "D.4",
+        "D.6",
+        "D.8"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConflictResolver.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncFractionalOrder.kt"
+      ],
+      "tests": [
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncProtocolStoreTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncFractionalOrderTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRetentionProjectionTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Complete every conflict example independently, snapshot preservation and concurrent reorder/UI evidence.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-10",
+      "requirement": "Keep default histories without automatic deletion, enforce safety ceilings as bounded projections, use disk/cold indexes and 100–500-row keyset UI pages, display partial progress/capacity state.",
+      "sections": [
+        "12.3",
+        "15.6",
+        "16.3",
+        "16.4",
+        "16.5"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncProjection.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncHistoryPage.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncFeedMembership.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt"
+      ],
+      "tests": [
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncViewedProjectionTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Exercise archive/history/progress/capacity navigation and first-page rendering on physical Android devices; the full 10,000,000-row safety-ceiling Room stress passed only on the API 36 x86_64 emulator.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-11",
+      "requirement": "Use durable transactional outbox/apply/cursor state, distinguish downloaded/verified/materialized marks, and preserve errors/quarantine evidence across restart.",
+      "sections": [
+        "11.1",
+        "11.2",
+        "12.1",
+        "17.3"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalAuthor.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntents.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPrefixMaterializer.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncOutboxRebase.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolDao.kt"
+      ],
+      "tests": [
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalAuthorTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLocalIntentsTest.kt",
+        "PallaSync/tests/reference/run_android_interop.py",
+        "PallaSync/tests/reference/android_rebase.py"
+      ],
+      "result": "pending",
+      "remaining": "Inject every persistence/cursor boundary with actual restart, capacity failure and uncertain network outcome.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-12",
+      "requirement": "Verify full snapshot state and trusted source before bootstrap/pruning; retain cold history, tombstones, boundaries, identity hashes, registry/epoch history and author evidence.",
+      "sections": [
+        "7.8",
+        "11.6",
+        "16.6",
+        "16.7"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/snapshot.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
+        "PallaSync/src/api/read.rs",
+        "PallaSync/src/api/retention.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/snapshot.rs",
+        "PallaSync/tests/reference/test_snapshot.py"
+      ],
+      "result": "pending",
+      "remaining": "Instrument the initial-source trust/install and explicit prune Compose flows; exercise multi-part download, durable staging, handoff and cancellation/process-death boundaries with an independent client and fresh device. Current source already contains bounded state streaming, semantic comparison, encrypted parts, Room staging/install and explicit Settings publish/bootstrap/prune controls.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-13",
+      "requirement": "Advertise/request-limit/durability/quota accurately, commit before accepted receipts, preserve sequences/incarnations, reconcile deletion ledger on restore, support bounded export/repair/re-seed.",
+      "sections": [
+        "12.2",
+        "17.1",
+        "17.2",
+        "17.3",
+        "17.4",
+        "17.5",
+        "17.8"
+      ],
+      "implementation": [
+        "PallaSync/src/api/store.rs",
+        "PallaSync/src/api/export.rs",
+        "PallaSync/src/api/import.rs",
+        "PallaSync/src/config.rs"
+      ],
+      "tests": [
+        "PallaSync/tests/v3_integration.rs",
+        "PallaSync/tests/reference/run_relay_interop.py"
+      ],
+      "result": "pending",
+      "remaining": "The isolated pruned-archive restore, deletion recheck/race and snapshot-install process-death resume are covered. Connect Android export/repair/reseed and test fresh-device restore, nonce/storage/production boundaries and the remaining restore fault points.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-14",
+      "requirement": "Reserve 410 for authorized chain deletion and verify deletion proof before local erasure. Treat shutdown/migration/404/outages as recoverable lifecycle states.",
+      "sections": [
+        "10.15",
+        "17.6",
+        "17.7",
+        "17.11"
+      ],
+      "implementation": [
+        "PallaSync/src/api/deletion.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
+        "Palleria/rust/pallasync-core/src/attestations.rs"
+      ],
+      "tests": [
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncHttpClassificationTest.kt",
+        "Palleria/rust/pallasync-core/tests/attestations.rs"
+      ],
+      "result": "pending",
+      "remaining": "Exercise stale-head and concurrent deletion CAS, unauthorized 410 plus 404/shutdown/migration/outage recovery, real SAF proof-and-bundle readback with UI confirmation/cancellation, and recovery-key guards across restore/restart on a physical device.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-15",
+      "requirement": "Publish fully populated operator privacy.md and signed schema-valid privacy.json before use; enforce per-origin/key/body-hash affirmative local consent, current-document revalidation, change/withdrawal pause and no upload of consent records. Show fixed bounds versus configurable quota/tier/key/cache/setup choices.",
+      "sections": [
+        "7.13",
+        "11.7",
+        "17.12"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPolicyGate.kt",
+        "PallaSync/src/config.rs",
+        "PallaSync/operator/api.yunfi.f5.si/"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/disclosure.rs",
+        "PallaSync/tests/operator_policy.rs"
+      ],
+      "result": "pending",
+      "remaining": "Execute all Android consent/publication-race/change/withdrawal/failure cases and verify production operating facts.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-16",
+      "requirement": "Require explicit initial recovery source selection when no known pin/peer exists; keep policy consent separate and never waive cryptographic validation or claim unseen-tail completeness.",
+      "sections": [
+        "11.6",
+        "11.7",
+        "17.10",
+        "18.1"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPolicyGate.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncTrustDialog.kt"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/bootstrap.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAuthorityJniTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Test every initial-source UI choice, reject missing ancestry, and show unresolved author/relay completeness separately.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-17",
+      "requirement": "Preserve 3.x snapshot/ID limits, retain full required log when complete snapshot cannot fit, and prohibit dependent pruning/key expiry without full state handoff.",
+      "sections": [
+        "3.4",
+        "16.6",
+        "16.7",
+        "20.3"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/strict/",
+        "Palleria/rust/pallasync-core/src/snapshot.rs",
+        "PallaSync/src/api/retention.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/strict_wire.rs",
+        "Palleria/rust/pallasync-core/tests/snapshot.rs"
+      ],
+      "result": "pending",
+      "remaining": "Exercise maximum part count/external IDs, failed complete-state publication, and dependent pruning/key expiry denial.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-18",
+      "requirement": "Implement all catalogue errors and appropriate backoff; never treat an error body as signed authority or discard unsent data on retry.",
+      "sections": [
+        "6.3",
+        "16.4",
+        "16.5",
+        "17.8",
+        "19.2",
+        "19.3",
+        "19.4"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/error_catalogue.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRetryGate.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRemoteService.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInboxRetry.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncUnsupportedInboxRecovery.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLogRecordDisposition.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncPrefixMaterializer.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSchemaRecovery.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncLocalStorageRecovery.kt",
+        "PallaSync/src/api/error.rs"
+      ],
+      "tests": [
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRetryGateTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncHttpClassificationTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncValidationStateTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncInboxStorageRecoveryTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncUnsupportedInboxRecoveryTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncLogRecordDispositionTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncUnsupportedBootstrapInterop.kt",
+        "PallaSync/tests/reference/unsupported_bootstrap.py",
+        "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncSchemaRecoveryTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncSchemaRecoveryInterop.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncLocalStorageRecoveryTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncStorageRecoveryInterop.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncSqliteCapacityFault.kt"
+      ],
+      "result": "pending",
+      "remaining": "Inbox counts distinguish retryable evidence from unsupported and local operational/recovery states; generic retry is limited to missing dependency/acceptance evidence. Retryable 503 during the exact transparency-evidence GET has isolated Android/relay coverage for byte-preserving pending state and later recovery. Inbox retries persist only explicit protocol codes or SQLiteFullException as C_LOCAL_STORAGE_FULL; unknown local exceptions leave the signed inbox row unchanged. A separate explicit local-storage action now selects only C_LOCAL_STORAGE_FULL operational rows, checks capacity per record and reuses full immutable-record revalidation. An explicit schema-support action now keyset-pages C_UNSUPPORTED_SCHEMA originals through the full verification pipeline after a compatible client update; a real independent-Python unsupported bootstrap now verifies inbox/log retention, valid suffix application and conservative progress without complete activation. Cross-version upgrade, inactive-bootstrap UI and broader unsupported-schema interoperability coverage remain pending. An on-disk SQLite page-limit fault now verifies actual SQLiteFullException rollback and retry of the same accepted record after capacity restoration. OS-level ENOSPC, previously unmaterialized multi-table commits, process death/cancellation at other storage boundaries, physical-device UI and remaining catalogue-specific recovery paths still need validation; see the dated report for executed scope.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-19",
+      "requirement": "Validate legacy-to-v3 conversion on frozen input with a resume journal, independent replay comparison and explicit reporting of truncated/corrupt legacy data.",
+      "sections": [
+        "0 D-02",
+        "9.1",
+        "9.2",
+        "9.3",
+        "9.4"
+      ],
+      "implementation": [
+        "PallaSync/src/api/legacy.rs",
+        "PallaSync/src/bin/pallasync-operator.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/data/ProtocolMigration.kt"
+      ],
+      "tests": [
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncMigrationTest.kt",
+        "PallaSync/tests/reference/run_legacy_interop.py"
+      ],
+      "result": "pending",
+      "remaining": "Complete Android frozen-source conversion/report/journal and independent final-state replay. v2.1 §7.4 includes a ChainParameters signature, but §4.1 does not define its signature context; do not invent one. Current root-derived chain/admin pin checks and independent legacy relay tests do not verify that omitted signature scheme.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-20",
+      "requirement": "Use vetted compatible GF(256) sharing, fresh RMS/coefficients/RSWKs/nonces, exact canonical input/fingerprint/blob/share AAD and signed bindings; run Appendix C.8.",
+      "sections": [
+        "5.6",
+        "7.11.1",
+        "7.11.2",
+        "7.11.4",
+        "C.8"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/vendor/",
+        "Palleria/rust/pallasync-core/src/shamir.rs",
+        "Palleria/rust/pallasync-core/src/recovery.rs",
+        "Palleria/rust/pallasync-core/src/root_session.rs",
+        "Palleria/rust/pallasync-core/src/ffi_recovery.rs",
+        "Palleria/rust/pallasync-core/src/ffi_recovery_media.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryOfflineMedia.kt",
+        "PallaSync/tests/reference/recovery_artifacts.py"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/recovery.rs",
+        "Palleria/rust/pallasync-core/tests/recovery_flow.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryMediaJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryStatusJniTest.kt",
+        "Palleria/rust/pallasync-core/tests/recovery_status.rs",
+        "Palleria/rust/pallasync-core/src/shamir.rs unit tests",
+        "PallaSync/tests/reference/test_vectors.py",
+        "PallaSync/tests/reference/test_recovery.py",
+        "PallaSync/tests/reference/test_recovery_artifacts.py"
+      ],
+      "result": "pending",
+      "remaining": "Lifecycle/status media and issuance/readback/reader actions are connected in source, but still need end-to-end UI/SAF verification. New tests cover every valid profile through n=16 in Rust (plus 2/255 and 254/255), JNI manifest creation for n=3..8, and independent galois reconstruction for every subset at n=3..8 plus the C.8 3-of-5 vector. This is not exhaustive cross-runtime interoperability across all 32,131 valid t/n profiles; that full domain and physical-device ceremonies remain unverified.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-21",
+      "requirement": "Enforce one persisted piece per physical holder, backup exclusion, separate offline credential, local authentication and live SAS including the separate offline reader. Never send any package/piece/blob to the relay.",
+      "sections": [
+        "5.4",
+        "7.11.3",
+        "7.11.4",
+        "7.11.5",
+        "18.6",
+        "18.9"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/local_transfer.rs",
+        "Palleria/rust/pallasync-core/src/recovery_flow.rs",
+        "Palleria/rust/pallasync-core/src/ffi_recovery.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySlot.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryKeyProtector.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryHolder.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryAuthentication.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCollection.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetup.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetStore.kt",
+        "Palleria/app/src/main/res/xml/pallasync_data_extraction_rules.xml"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/recovery_flow.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySlotTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryOfflineMediaTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetupTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryHolderAndroidTest.kt",
+        "PallaSync/tests/reference/test_recovery.py"
+      ],
+      "result": "pending",
+      "remaining": "Complete independent three-party device/offline holder and reader interoperability, live SAS/QR/encrypted-file UI, and OS process/cancel/fault boundaries.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-22",
+      "requirement": "Verify all pieces/status/bindings, interpolation/checksum/derived identity before root authorization; explicit setup/ceremony only, no durable secret resume, zeroize on every exit and sanitize audit allowlist.",
+      "sections": [
+        "5.5",
+        "5.6",
+        "7.11",
+        "11.4",
+        "18.6",
+        "18.9"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/root_session.rs",
+        "Palleria/rust/pallasync-core/src/recovery_flow.rs",
+        "Palleria/rust/pallasync-core/src/secret_lifetime.rs",
+        "Palleria/rust/pallasync-core/src/locked_memory.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCompletion.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCollection.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetup.kt"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/recovery_flow.rs",
+        "Palleria/rust/pallasync-core/tests/secret_lifetime.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLifecycleJniTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Implement all ceremony UI/authentication/cancellation/failure paths and prove no durable collector shares/RMS/root resume.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-23",
+      "requirement": "Display correct `H=t`/`H<t` warnings, compromise/clone/rotation gaps; replace full sets with fresh material and require new root/chain after possible threshold leak.",
+      "sections": [
+        "18.6",
+        "18.7",
+        "18.8",
+        "18.9"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/recovery_flow.rs",
+        "Palleria/rust/pallasync-core/src/recovery.rs",
+        "Palleria/rust/pallasync-core/src/root_session.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetStore.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryManagement.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryAudit.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryAuditQueue.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryResources.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryRetirement.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryPublicStatusMedia.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryConfiguration.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetupOwner.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflow.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryLocalFiles.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryRecipient.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryRecipientOwner.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryReleaseOwner.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCollectorOwner.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryReplayCache.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryCollectDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryReceiveDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryRecipientControls.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryCredentialDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/RecoveryReceiveFile.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryReleaseDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryReleaseControls.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryControls.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryStatusActions.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryCreationDialog.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncRecoveryDealerControls.kt"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/recovery_flow.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySetupTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryInventoryTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryPublicStatusTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoverySlotTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryConfigurationTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerWorkflowTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryRecipientTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCollectorTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryAuditQueueTest.kt",
+        "PallaSync/tests/reference/test_recovery_audit.py",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryAuditAndroidTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryStatusUiTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryCredentialUiTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryPublicStatusAndroidTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRecoveryDealerAndroidTest.kt"
+      ],
+      "result": "pending",
+      "remaining": "Complete recovery enrollment/full-set rotation/new-root migration and remaining named root operations; validate actual SAF/physical media, public retirement propagation, clone/fault/process-death boundaries and independent three-party ceremonies.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-24",
+      "requirement": "Pin relay key to selected origin, atomically sign/persist upload/transparency receipts, keep existing LogEntry hash bytes unchanged and verify complete streaming inclusion links.",
+      "sections": [
+        "7.12.1",
+        "7.12.2",
+        "17.3",
+        "17.9"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/attestations.rs",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncAuthorityCommit.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLiveHistory.kt",
+        "PallaSync/src/api/store.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/attestations.rs",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncAttestationJniTest.kt",
+        "PallaSync/tests/reference/test_attestations.py"
+      ],
+      "result": "pending",
+      "remaining": "Execute forged/omitted/conflicting original acceptance and retained-anchor scenarios across three parties.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-25",
+      "requirement": "Verify a linear transparency suffix in pages of at most 1,000 entries and bounded §17.8 response bytes, from a retained trusted (transparency_id,index,hash) anchor. Check exact next index, each signature/previous hash and recurrence before atomically persisting the verified page checkpoint. Check cancellation between pages; resume from that checkpoint with the same target/head, retaining unresolved gaps. Keep only a bounded page in RAM, expose verified/target counts and pending status, and never advance over unavailable or unverified entries. Work and transfer are O(unverified suffix); no constant-size Merkle proof is claimed. Data relay_seq and transparency entry_index are independent namespaces.",
+      "sections": [
+        "7.12.2",
+        "10.17",
+        "17.8",
+        "17.9"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncLiveHistory.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConsistencyProbe.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncProbeState.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncProbeTransport.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyRange.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncTransparencySuffix.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncHistoricalTransparency.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncInitialHistory.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncReseedTransparencyVerifier.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncHistoryIntegritySummary.kt",
+        "PallaSync/src/api/read.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/client_response.rs",
+        "Palleria/rust/pallasync-core/tests/attestations.rs",
+        "PallaSync/tests/reference/run_relay_interop.py",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncRelayInteropTest.kt",
+        "Palleria/app/src/androidTest/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyAnchorInteropTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/pallasync/PallaSyncTransparencyRangeTest.kt",
+        "Palleria/app/src/test/java/com/yunfie/illustia/ui/screens/pallasync/PallaSyncHistoryIntegritySummaryTest.kt",
+        "PallaSync/tests/reference/run_android_interop.py --transparency-recovery-process-death",
+        "PallaSync/tests/reference/run_android_interop.py --transparency-anchor-resume",
+        "PallaSync/tests/reference/run_android_interop.py --transparency-anchor-resume --transparency-anchor-cancel-resume"
+      ],
+      "result": "pending",
+      "remaining": "One-entry-page AVD cases cover process death, coroutine cancellation, mid-range 503, omitted-entry suspension, and a fresh coordinator resuming from retained anchor 10 to signed target 13 without replaying the prefix. A normal probe now also cancels at anchor 11, preserves data-log marks and the last comparison time, and resumes the exact saved target 13 over two remaining pages. Android and independent Python agree on the target hash and all three suffix receipts. Cursor-history sets were removed from transparency readers and live data replay; this alone does not establish whole-pipeline heap bounds. Full large-history/post-pruning navigation, remaining auxiliary-buffer memory bounds, and physical-device behavior remain unverified.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-26",
+      "requirement": "Export/verify DeletionEvidenceBundle separately from the immutable DeleteReceipt; hash the complete signed receipt and verify each witness's exact binding and authorization-time certified key. Completion revisions need their own bundles.",
+      "sections": [
+        "7.12.3",
+        "7.12.5",
+        "17.10",
+        "17.11",
+        "C.11"
+      ],
+      "implementation": [
+        "Palleria/rust/pallasync-core/src/attestations.rs",
+        "PallaSync/src/api/deletion.rs"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/attestations.rs",
+        "PallaSync/tests/reference/test_attestations.py"
+      ],
+      "result": "pending",
+      "remaining": "Implement Android separate evidence bundle/witness creation, verification, export and completion-revision UI.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-27",
+      "requirement": "Run bounded consistency probes, retain immutable checkpoint/equivocation evidence, authenticate migrations explicitly and preserve keys on unverified 410.",
+      "sections": [
+        "11.5",
+        "17.3",
+        "17.9",
+        "17.10",
+        "17.11"
+      ],
+      "implementation": [
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncConsistencyProbe.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PallaSyncRetryGate.kt",
+        "Palleria/app/src/main/java/com/yunfie/illustia/pallasync/PalleriaSyncCoordinator.kt"
+      ],
+      "tests": [
+        "Palleria/rust/pallasync-core/tests/client_response.rs",
+        "PallaSync/tests/reference/run_android_interop.py"
+      ],
+      "result": "pending",
+      "remaining": "Execute start/resume/unknown/destructive/periodic probes and authenticated relay migration with retained contradiction evidence.",
+      "verification_scope": "targeted_partial"
+    },
+    {
+      "id": "A-28",
+      "requirement": "Preserve ledger/attestation anti-resurrection evidence through restore, export public deletion evidence and verify optional intent witnesses without making them deletion authority.",
+      "sections": [
+        "7.12.3",
+        "7.12.4",
+        "7.12.5",
+        "17.7",
+        "17.10",
+        "17.11"
+      ],
+      "implementation": [
+        "PallaSync/src/api/deletion.rs",
+        "PallaSync/src/api/import.rs",
+        "PallaSync/src/api/export.rs",
+        "Palleria/rust/pallasync-core/src/attestations.rs"
+      ],
+      "tests": [
+        "PallaSync/tests/v3_integration.rs",
+        "Palleria/rust/pallasync-core/tests/attestations.rs"
+      ],
+      "result": "pending",
+      "remaining": "Execute stale restore/ledger reconciliation, public deletion export, optional witness and anti-resurrection client workflows.",
+      "verification_scope": "targeted_partial"
+    }
+  ],
+  "interoperability": [
+    {
+      "id": "IT-01",
+      "scenario": "Run all Appendix C JCS positives/negatives in each implementation; reorder received object members/whitespace.",
+      "expected": "Byte/hash match; signatures verify after re-canonicalization; invalid tokens rejected before numeric conversion.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-01"
+      ]
+    },
+    {
+      "id": "IT-02",
+      "scenario": "Same 24-word mnemonic/passphrase on two fresh devices; different passphrase as control.",
+      "expected": "Same v3 chain/admin/recovery outputs; independently generated device keys differ; control chain differs.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-02"
+      ]
+    },
+    {
+      "id": "IT-03",
+      "scenario": "Encrypt/sign one queryable and one private record, then alter each AAD field/tag/ciphertext.",
+      "expected": "Unchanged fixture applies; tampered signature/AEAD/tag/profile quarantines with appropriate code; no partial record applied.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-03"
+      ]
+    },
+    {
+      "id": "IT-04",
+      "scenario": "Use a valid token twice concurrently; retry with fresh token but same record; crash relay after first commit.",
+      "expected": "One nonce consumption; other request TOKEN_REPLAYED; exact record retry returns original receipt, no duplicate operation/sequence.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-04"
+      ]
+    },
+    {
+      "id": "IT-05",
+      "scenario": "Replay to another origin/method/path/query/body; test TTL 120/300/301 seconds and ±60-second boundaries.",
+      "expected": "Exact binding and specified freshness acceptance/rejection; implementations issue only 120-second tokens.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-05"
+      ]
+    },
+    {
+      "id": "IT-06",
+      "scenario": "Shuffle and duplicate all Appendix D events in all permutations; compare SQLite and in-memory model.",
+      "expected": "Identical winners/order/tombstones/clear/policy registers; duplicate application changes no counters/counts.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-06"
+      ]
+    },
+    {
+      "id": "IT-07",
+      "scenario": "Concurrent delete/upsert and clear/upsert at equal Lamport; delayed old event after snapshot.",
+      "expected": "Rank-one suppresses upsert; scoped effects only; tombstone/floor survives bootstrap.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-07"
+      ]
+    },
+    {
+      "id": "IT-08",
+      "scenario": "Two favorite inserts into same gap, concurrent moves and 256-digit exhaustion.",
+      "expected": "Rational/lexical order agree, K/entity tie deterministic; exhaustion never silently reindexes.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-08"
+      ]
+    },
+    {
+      "id": "IT-09",
+      "scenario": "Upsert one search/viewed entity 10,000 times, reverse/deduplicate replay.",
+      "expected": "One row, greatest K first; no delete-and-recreate or replay-based reorder; seen remains minimal.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-09"
+      ]
+    },
+    {
+      "id": "IT-10",
+      "scenario": "Generate ceiling+1 live histories using a small parameterized fixture for fast testing, then one real-size disk stress run per declared supported platform.",
+      "expected": "Default no logical loss/no refused write solely by count; deterministic cold projection; memory independent of total rows within declared worker/page budget.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-10"
+      ]
+    },
+    {
+      "id": "IT-11",
+      "scenario": "Turn user stop on, add new entity beyond ceiling, receive a remote excess entry; delete one then retry.",
+      "expected": "Local intent paused, remote valid entry retained, explicit delete frees capacity; no automatic tombstones.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-11"
+      ]
+    },
+    {
+      "id": "IT-12",
+      "scenario": "Build multi-part complete snapshot with cold history/deletes/clear/policy/author evidence; change part order/hash/state commitment or omit one old row.",
+      "expected": "Trusted/recomputed original matches full replay; altered/incomplete parts fail; signature alone is not accepted as proof of no semantic omission.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-12"
+      ]
+    },
+    {
+      "id": "IT-13",
+      "scenario": "Crash during snapshot download/install and after record apply before cursor save; restart.",
+      "expected": "Staging resumes by hashes; live DB never partially replaced; apply/cursor atomic and idempotent.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-13"
+      ]
+    },
+    {
+      "id": "IT-14",
+      "scenario": "Two next-epoch proposals from same head, missing recovery/member envelope, tampered commitment, restart after CAS.",
+      "expected": "Exactly one commit; failures leave head unchanged; all members obtain same secret; checkpoint detects inconsistent branch.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-14"
+      ]
+    },
+    {
+      "id": "IT-15",
+      "scenario": "Schedule due while mnemonic unavailable; perform retain/windowed/immediate rotations with and without complete rekey snapshot.",
+      "expected": "Due status without key derivation; expiration postponed until full state handoff; no automatic history loss.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-15"
+      ]
+    },
+    {
+      "id": "IT-16",
+      "scenario": "Attempt unsigned enrollment, wrong SAS, subject replacement, certificate key mismatch, pending upload, revoked re-registration.",
+      "expected": "All refused as specified; pending keys ack activates only approved current subject; no unconditional self-heal.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-16"
+      ]
+    },
+    {
+      "id": "IT-17",
+      "scenario": "Revoke device, replay an independently pinned pre-revocation record and an unproven backdated old record.",
+      "expected": "Proven history retained; new writes denied; unproven malicious acceptance is marked C_ACCEPTANCE_UNPROVEN, not trusted by clock.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-17"
+      ]
+    },
+    {
+      "id": "IT-18",
+      "scenario": "Restore stale backup, keep/change log_id, withhold an author tail, supply conflicting pinned prefix.",
+      "expected": "Declared restore uses new log_id; known prefix mismatch suspends; visible gaps tracked; permanently unseen tail is documented undetectable.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-18"
+      ]
+    },
+    {
+      "id": "IT-19",
+      "scenario": "Export in small chunks, interrupt/resume, import/re-seed next generation at target, race old-source write.",
+      "expected": "Archive/footer/source verification succeeds; target state equals verified source prefix; new audience/generation required; raced suffix reported.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-19"
+      ]
+    },
+    {
+      "id": "IT-20",
+      "scenario": "Trigger quota/rate/storage failures; repeat accepted upload after uncertain network response.",
+      "expected": "Capacity errors preserve outbox; Retry-After/backoff obeyed; no record-ID mutation for exact retry.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-20"
+      ]
+    },
+    {
+      "id": "IT-21",
+      "scenario": "Emit unconfirmed encrypted deletion notice/HTML 410; then authorized ledger deletion; restore an old backup.",
+      "expected": "Unconfirmed signals preserve keys; verified deletion erases local chain; ledger prevents resurrection; upgrades/moves never 410.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-21"
+      ]
+    },
+    {
+      "id": "IT-22",
+      "scenario": "Convert `/1` arrays and `/2` granular events, NFC collisions, random legacy salt, truncated legacy history; interrupt every upload.",
+      "expected": "Correct /3 identities/order/signatures, resumable exact journal, no fabricated missing history/authority, explicit collision/loss report.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-22"
+      ]
+    },
+    {
+      "id": "IT-23",
+      "scenario": "Prune an approved snapshot prefix, replay removed ID with same/different content, validate suffix hash from boundary.",
+      "expected": "Same covered ID no-op; conflicting ID quarantined; exact state and hash continuity preserved; required verification history survives.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-23"
+      ]
+    },
+    {
+      "id": "IT-24",
+      "scenario": "Feed valid unsupported collection, malformed record, missing key, counter exhaustion and history-index revision during paging.",
+      "expected": "Distinct unsupported/quarantine/dependency/operational handling; no global destructive recovery; page cursor either stays pinned or explicitly restarts.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-24"
+      ]
+    },
+    {
+      "id": "IT-25",
+      "scenario": "Generate 2-of-3, 2-of-4, 3-of-4 and 3-of-5 under independent GF libraries; test every threshold subset and shuffled duplicate messages.",
+      "expected": "Same RMS/input/chain identity; n−t losses tolerated; same piece counts once.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-25"
+      ]
+    },
+    {
+      "id": "IT-26",
+      "scenario": "Reject `t=1,n=t,n<t,n>255`, repeated holder/index and a second device package across chains.",
+      "expected": "Setup/refill refused with specified local code; no secret second persistent slot.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-26"
+      ]
+    },
+    {
+      "id": "IT-27",
+      "scenario": "Lose one of a 2-of-3 set, then a second; lose offline credential instead of medium.",
+      "expected": "H=2 next-loss warning, H=1 already unavailable; no automatic ceremony or fabricated missing piece.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-27"
+      ]
+    },
+    {
+      "id": "IT-28",
+      "scenario": "Leak one piece/blob, regenerate full set; mix old/new indexes; retain t old pieces/blob as adversary.",
+      "expected": "Mixed sets rejected; new material differs; retained old threshold still recovers old root and is reported as the fundamental limit.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-28"
+      ]
+    },
+    {
+      "id": "IT-29",
+      "scenario": "Supply wrong set/blob/AAD/commitment/status branch/fingerprint/passphrase and insufficient pieces.",
+      "expected": "No privileged operation/root session before all checks; distinct safe codes; valid packages survive.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-29"
+      ]
+    },
+    {
+      "id": "IT-30",
+      "scenario": "Offline encrypted QR/file roundtrip with separate credential, trusted reader and collector; wrong/missing SAS, stale session and packet replay.",
+      "expected": "Both live confirmations required; ciphertext replay idempotent; no piece leaves endpoint before approval; direct passive scan alone refused.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-30"
+      ]
+    },
+    {
+      "id": "IT-31",
+      "scenario": "Interrupt setup/rotation/ceremony at each transition; inspect DB, backup, temp files, crash output and audits.",
+      "expected": "No root/RMS/raw shares/secret blob copies leak; correct prepared/incomplete status; RAM-only recollection after crash; one persisted piece.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-31"
+      ]
+    },
+    {
+      "id": "IT-32",
+      "scenario": "Compromise holder/OS backup, revoke device, replace DeviceRecord, enroll new device and change BIP39 passphrase.",
+      "expected": "Revocation does not revoke copies; no auto-share allocation; full-set replacement; passphrase/root change creates new chain; threshold leak cannot be cured same-root.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-32"
+      ]
+    },
+    {
+      "id": "IT-33",
+      "scenario": "Upload a multi-entry transaction, exact retry and restart between commit/response; alter receipt signature/hash/link/index.",
+      "expected": "One immutable receipt per log object, original retry receipts, atomic attestation commit; invalid receipt suspends without losing outbox.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-33"
+      ]
+    },
+    {
+      "id": "IT-34",
+      "scenario": "Stream transparency suffix from pinned anchor with small pages; fork/rollback/hide tail, withhold intermediate proof and forge new relay key.",
+      "expected": "Correct hashes/heads; contradiction quarantines; missing proof pending; isolated unseen tail undetectable; key replacement never automatic.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-34"
+      ]
+    },
+    {
+      "id": "IT-35",
+      "scenario": "Send malicious migration notice/redirect to new origin, valid TLS with conflicting chain/admin/epoch/registry pins.",
+      "expected": "No automatic token/data transfer or erasure; explicit origin selection and full continuity required; aud matches actual selected origin.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-35"
+      ]
+    },
+    {
+      "id": "IT-36",
+      "scenario": "Probe concurrently advancing heads, unexplained min_available_seq, own accepted record withholding, unverified 410 and signed contradictory deletion.",
+      "expected": "Concurrent cuts reconciled; gaps reported; positive contradictions suspend writes/destructive actions and preserve keys/evidence.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-36"
+      ]
+    },
+    {
+      "id": "IT-37",
+      "scenario": "Verify admin/device deletion with optional distinct active intent witnesses; missing authority, duplicate/invalid witness, stale backup resurrection.",
+      "expected": "Witnesses never replace authority/physical erasure; unverified deletion keeps keys; valid ledger blocks restore and public evidence export is offered.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-37"
+      ]
+    },
+    {
+      "id": "IT-38",
+      "scenario": "Complete/cancel/resume bounded attestation export, restore lost suffix with new IDs and compare source/target receipts after re-seed.",
+      "expected": "Exact pinned cuts/footer/proof links; old evidence preserved; target receipts do not impersonate source; no federation or secret recovery artifact export.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-38"
+      ]
+    },
+    {
+      "id": "IT-39",
+      "scenario": "Missing/incomplete operator policy, wrong-origin redirect, HTML/invalid UTF-8/oversized body, anonymous fetch and same-origin valid 304.",
+      "expected": "Deployment discloses actual choices; no chain token/ID/data before valid affirmative consent; failed refresh pauses even with an old cache.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-39"
+      ]
+    },
+    {
+      "id": "IT-40",
+      "scenario": "No answer, preselection, timeout, reject/withdraw, altered policy body with unchanged revision, new origin/key and client restart.",
+      "expected": "No automatic consent; exact binding/current hash required; keys/outbox/local export retained; key trust/source selection remain independent.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-40"
+      ]
+    },
+    {
+      "id": "IT-41",
+      "scenario": "First recovery without pin/known peer; accept policy but omit source choice; explicitly select valid/forged/conflicting source.",
+      "expected": "Separate source guard; valid selected input fully checked, invalid crypto/pins never overridden, isolated completeness limit displayed.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-41"
+      ]
+    },
+    {
+      "id": "IT-42",
+      "scenario": "Validate 65,536 versus 65,537 snapshot parts, 2^53−1 versus 2^53 numeric ID bodies, ext/schema/policy attempts to raise limits.",
+      "expected": "In-range formats retain existing validation; out-of-range rejected, full log retained, no incomplete-snapshot pruning, no 3.x exception or rounded/string-substituted /3 body.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-42"
+      ]
+    },
+    {
+      "id": "IT-43",
+      "scenario": "Mandatory Shamir implementation with no set, supported UI t/n subset and restoration of valid other profile configuration; small local cache; lower relay quotas/tier/manual key replacement.",
+      "expected": "Capability implemented with explicit not_provisioned setup; valid profile restoration supported, archive/projection/cache distinguished, truthful disclosures/consent and independent key trust required.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-43"
+      ]
+    },
+    {
+      "id": "IT-44",
+      "scenario": "Original DeleteReceipt plus 0/1/128 witnesses, duplicate IDs, wrong receipt hash and completion revision.",
+      "expected": "Immutable receipt has no witness member; separate bundle verifies exact original hash, unique certified witnesses; prior bundle cannot attest a new receipt revision.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-44"
+      ]
+    },
+    {
+      "id": "IT-45",
+      "scenario": "Complete snapshot divided across different legal part boundaries and with one cold/tombstone/author-gap entry omitted.",
+      "expected": "Same canonical full stream produces identical existing record_key HMAC; omitted state or epoch/generation mismatch is rejected.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-45"
+      ]
+    },
+    {
+      "id": "IT-46",
+      "scenario": "Scope count at MAX_* and MAX_*+1 with default policy, then explicit stop preference and physical/quota exhaustion.",
+      "expected": "Default writes and remote apply continue in cold storage; only explicit local stop or actual capacity pauses; snapshots include full cold state and pruning needs handoff.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-46"
+      ]
+    },
+    {
+      "id": "IT-47",
+      "scenario": "Signed disclosure missing a required field, altered Markdown, invalid signature, impossible backup tier, regressed revision, health/quota mismatch and valid changed pair.",
+      "expected": "Invalid pair pauses; no chain token/data sent before explicit consent; changed valid pair requires new bound consent; truth of physical erasure is not asserted.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-47"
+      ]
+    },
+    {
+      "id": "IT-48",
+      "scenario": "Client TTL120s; server token TTL300s/300s+1ms; restart issued times B−1/B and repeated restart.",
+      "expected": "Client authors120s; server ceiling300s inclusive; B−1 rejected/B eligible under other checks; fresh retry and visible coordinated recovery wait, never enrollment/erasure.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-48"
+      ]
+    },
+    {
+      "id": "IT-49",
+      "scenario": "1,024 small operations, fewer oversized operations, one operation exceeding frame capacity, request encoding overflow.",
+      "expected": "Count and exact byte preflight independently enforced; legal batches split with new IDs, single oversized operation gives C_LOCAL_LIMIT, request overflow PAYLOAD_TOO_LARGE.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-49"
+      ]
+    },
+    {
+      "id": "IT-50",
+      "scenario": "Linear transparency suffix across multiple pages, cancellation/restart and missing page.",
+      "expected": "Atomic verified page anchor resumes; bounded memory, strict signatures/links/indexes, no advancement across missing proof and visible O(suffix) progress.",
+      "palleria": "not_run",
+      "python": "not_run",
+      "isolated_relay": "not_run",
+      "result": "pending_three_party_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix B IT-50"
+      ]
+    }
+  ],
+  "vectors": [
+    {
+      "id": "C.1",
+      "name": "JCS",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.1"
+      ]
+    },
+    {
+      "id": "C.2",
+      "name": "Root and Epoch Derivation",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.2"
+      ]
+    },
+    {
+      "id": "C.3",
+      "name": "Collection Tag",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.3"
+      ]
+    },
+    {
+      "id": "C.4",
+      "name": "AAD, Frame and Record Ciphertext",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.4"
+      ]
+    },
+    {
+      "id": "C.5",
+      "name": "Ed25519 Signatures",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.5"
+      ]
+    },
+    {
+      "id": "C.6",
+      "name": "HPKE Device and Recovery Envelopes",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.6"
+      ]
+    },
+    {
+      "id": "C.7",
+      "name": "Conflict and Ordering Vectors",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.7"
+      ]
+    },
+    {
+      "id": "C.8",
+      "name": "Local Shamir Recovery Vectors",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.8"
+      ]
+    },
+    {
+      "id": "C.9",
+      "name": "Relay Attestation Vectors",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.9"
+      ]
+    },
+    {
+      "id": "C.10",
+      "name": "Snapshot State Commitment",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.10"
+      ]
+    },
+    {
+      "id": "C.11",
+      "name": "Deletion Bundle and Structured Disclosure",
+      "result": "pending_complete_vector_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix C C.11"
+      ]
+    }
+  ],
+  "examples": [
+    {
+      "id": "D.1",
+      "name": "Equal-Lamport Delete Wins",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.1"
+      ]
+    },
+    {
+      "id": "D.2",
+      "name": "Scoped Clear and Offline Upsert",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.2"
+      ]
+    },
+    {
+      "id": "D.3",
+      "name": "Same Entity, One Row and Move to Front",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.3"
+      ]
+    },
+    {
+      "id": "D.4",
+      "name": "Same Fractional Key and Concurrent Move",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.4"
+      ]
+    },
+    {
+      "id": "D.5",
+      "name": "Projection Eviction Does Not Delete History",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.5"
+      ]
+    },
+    {
+      "id": "D.6",
+      "name": "Tombstone After Snapshot and Replay",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.6"
+      ]
+    },
+    {
+      "id": "D.7",
+      "name": "Out-of-Order Author Sequences and Epochs",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.7"
+      ]
+    },
+    {
+      "id": "D.8",
+      "name": "Retention Policy Merge",
+      "result": "pending_complete_example_execution",
+      "artifacts": [],
+      "sections": [
+        "Appendix D D.8"
+      ]
+    }
+  ]
+}

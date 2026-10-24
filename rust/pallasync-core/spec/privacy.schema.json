@@ -1,0 +1,803 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PallaSync RelayPrivacyDisclosure 3.0",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "PALLASYNC-RELAY-PRIVACY-v3"
+    },
+    "version": {
+      "const": "3.0"
+    },
+    "disclosure_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "relay_origin": {
+      "$ref": "#/$defs/origin"
+    },
+    "relay_key_id": {
+      "$ref": "#/$defs/b32"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "published_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "effective_at_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "markdown_sha256": {
+      "$ref": "#/$defs/b32"
+    },
+    "operator": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "contact_url": {
+          "$ref": "#/$defs/url"
+        }
+      },
+      "required": [
+        "name",
+        "contact_url"
+      ],
+      "additionalProperties": false
+    },
+    "durability_tier": {
+      "enum": [
+        "single-durable",
+        "replicated-durable",
+        "backup-durable"
+      ]
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_request_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        },
+        "max_devices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "max_records_per_upload": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "page_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "max_request_bytes",
+        "max_records_per_upload",
+        "page_limit",
+        "max_devices"
+      ],
+      "additionalProperties": false
+    },
+    "quota": {
+      "type": "object",
+      "properties": {
+        "minimum_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "maximum_bytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allow_unconfigured": {
+          "type": "boolean"
+        },
+        "counted_components": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "record",
+              "snapshot",
+              "envelope",
+              "device_meta",
+              "receipt",
+              "transparency",
+              "backup",
+              "control"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "allocation_rule": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "minimum_bytes",
+        "maximum_bytes",
+        "allow_unconfigured",
+        "counted_components",
+        "allocation_rule"
+      ],
+      "additionalProperties": false
+    },
+    "rate_limits": {
+      "type": "object",
+      "properties": {
+        "authorized_signer": {
+          "$ref": "#/$defs/rate"
+        },
+        "record_upload_device": {
+          "$ref": "#/$defs/rate"
+        },
+        "enrollment_source_ip": {
+          "$ref": "#/$defs/rate"
+        },
+        "enrollment_offer": {
+          "$ref": "#/$defs/rate"
+        },
+        "public_document_ip": {
+          "$ref": "#/$defs/rate"
+        }
+      },
+      "required": [
+        "authorized_signer",
+        "record_upload_device",
+        "enrollment_source_ip",
+        "enrollment_offer",
+        "public_document_ip"
+      ],
+      "additionalProperties": false
+    },
+    "backups": {
+      "$ref": "#/$defs/backup"
+    },
+    "copies": {
+      "type": "object",
+      "properties": {
+        "active_store": {
+          "$ref": "#/$defs/copy"
+        },
+        "replica": {
+          "$ref": "#/$defs/copy"
+        },
+        "wal": {
+          "$ref": "#/$defs/copy"
+        },
+        "snapshot_store": {
+          "$ref": "#/$defs/copy"
+        },
+        "backup": {
+          "$ref": "#/$defs/copy"
+        },
+        "staging": {
+          "$ref": "#/$defs/copy"
+        },
+        "temporary_export": {
+          "$ref": "#/$defs/copy"
+        },
+        "support": {
+          "$ref": "#/$defs/copy"
+        },
+        "cache": {
+          "$ref": "#/$defs/copy"
+        },
+        "operational_log": {
+          "$ref": "#/$defs/copy"
+        },
+        "attestations": {
+          "$ref": "#/$defs/copy"
+        },
+        "deletion_ledger": {
+          "$ref": "#/$defs/copy"
+        }
+      },
+      "required": [
+        "active_store",
+        "replica",
+        "wal",
+        "snapshot_store",
+        "backup",
+        "staging",
+        "temporary_export",
+        "support",
+        "cache",
+        "operational_log",
+        "attestations",
+        "deletion_ledger"
+      ],
+      "additionalProperties": false
+    },
+    "deletion": {
+      "type": "object",
+      "properties": {
+        "assurance": {
+          "enum": [
+            "crypto-shred",
+            "backup-expiry"
+          ]
+        },
+        "active_delete_max_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "backup_delete_max_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key_destroy_max_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "assurance",
+        "active_delete_max_ms",
+        "backup_delete_max_ms",
+        "key_destroy_max_ms"
+      ],
+      "additionalProperties": false
+    },
+    "relay_key": {
+      "type": "object",
+      "properties": {
+        "protection": {
+          "enum": [
+            "hardware",
+            "os_keystore",
+            "kms",
+            "passphrase_wrapped"
+          ]
+        },
+        "replacement_mode": {
+          "const": "explicit_trust_reestablishment"
+        },
+        "automatic_rotation": {
+          "const": false
+        },
+        "new_transparency_id_required": {
+          "const": true
+        },
+        "old_verification_keys_retained": {
+          "const": true
+        }
+      },
+      "required": [
+        "protection",
+        "replacement_mode",
+        "automatic_rotation",
+        "new_transparency_id_required",
+        "old_verification_keys_retained"
+      ],
+      "additionalProperties": false
+    },
+    "replay_protection": {
+      "$ref": "#/$defs/replay"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "retained_fields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "ip",
+              "user_agent",
+              "connection_time",
+              "request_path_class",
+              "response_status",
+              "timing",
+              "byte_count"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 7,
+          "uniqueItems": true
+        },
+        "purposes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "minItems": 0,
+          "maxItems": 128
+        },
+        "retention": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "not_retained"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "age"
+                },
+                "max_age_ms": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "mode",
+                "max_age_ms"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "indefinite"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "recipients": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "minItems": 0,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "retained_fields",
+        "purposes",
+        "retention",
+        "recipients"
+      ],
+      "additionalProperties": false
+    },
+    "change_notice": {
+      "type": "object",
+      "properties": {
+        "minimum_notice_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "notice_url": {
+          "$ref": "#/$defs/url"
+        },
+        "archive_url": {
+          "$ref": "#/$defs/url"
+        }
+      },
+      "required": [
+        "minimum_notice_ms",
+        "notice_url",
+        "archive_url"
+      ],
+      "additionalProperties": false
+    },
+    "relay_signature": {
+      "$ref": "#/$defs/b64"
+    }
+  },
+  "required": [
+    "type",
+    "version",
+    "disclosure_id",
+    "relay_origin",
+    "relay_key_id",
+    "revision",
+    "published_at_ms",
+    "effective_at_ms",
+    "markdown_sha256",
+    "operator",
+    "durability_tier",
+    "limits",
+    "quota",
+    "rate_limits",
+    "backups",
+    "copies",
+    "deletion",
+    "relay_key",
+    "replay_protection",
+    "metadata",
+    "change_notice",
+    "relay_signature"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "b32": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "b64": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 4096,
+      "pattern": "^https://[^\\s]+$"
+    },
+    "origin": {
+      "type": "string",
+      "maxLength": 4096,
+      "pattern": "^https://[^/\\s?#]+$"
+    },
+    "retention": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "age"
+            },
+            "max_age_ms": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "mode",
+            "max_age_ms"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "until_chain_deletion"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "indefinite"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "rate": {
+      "type": "object",
+      "properties": {
+        "requests_per_minute": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "burst": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "requests_per_minute",
+        "burst"
+      ],
+      "additionalProperties": false
+    },
+    "copy": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "present": {
+              "const": false
+            }
+          },
+          "required": [
+            "present"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "content": {
+              "enum": [
+                "ciphertext",
+                "metadata",
+                "authority_evidence"
+              ]
+            },
+            "retention": {
+              "$ref": "#/$defs/retention"
+            },
+            "locations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "minItems": 1,
+              "maxItems": 128
+            },
+            "recipients": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "minItems": 1,
+              "maxItems": 128
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "after_delete": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "enum": [
+                    "erase",
+                    "crypto_shred",
+                    "retain_metadata",
+                    "retain_authority_evidence"
+                  ]
+                },
+                "max_ms": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "mode",
+                "max_ms"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "present",
+            "content",
+            "retention",
+            "locations",
+            "recipients",
+            "purpose",
+            "after_delete"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "backup": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "const": false
+            }
+          },
+          "required": [
+            "enabled"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "const": true
+            },
+            "max_interval_ms": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "retention": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "const": "age"
+                    },
+                    "max_age_ms": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "mode",
+                    "max_age_ms"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "const": "until_chain_deletion"
+                    }
+                  },
+                  "required": [
+                    "mode"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "restore_test_max_interval_ms": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_successful_restore_test_at_ms": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "enabled",
+            "max_interval_ms",
+            "retention",
+            "restore_test_max_interval_ms",
+            "last_successful_restore_test_at_ms"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "replay": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "enum": [
+                "durable",
+                "replicated"
+              ]
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "restart_barrier"
+            },
+            "barrier_offset_ms": {
+              "const": 60000
+            },
+            "clock_skew_ms": {
+              "const": 60000
+            },
+            "coordination": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "recovery": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            }
+          },
+          "required": [
+            "mode",
+            "barrier_offset_ms",
+            "clock_skew_ms",
+            "coordination",
+            "recovery"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

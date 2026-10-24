@@ -108,6 +108,24 @@ class MainActivity : FragmentActivity() {
         const val REFRESH_RATE_NORMAL = 60f
         const val REFRESH_RATE_HIGH_MAX = 120f
         const val TASK_SNAPSHOT_BLUR_RADIUS = 60f
+
+        val hasArrSupportMethod by lazy(LazyThreadSafetyMode.NONE) {
+            runCatching { Display::class.java.getMethod("hasArrSupport") }.getOrNull()
+        }
+        val getSuggestedFrameRateMethod by lazy(LazyThreadSafetyMode.NONE) {
+            runCatching { Display::class.java.getMethod("getSuggestedFrameRate", Int::class.javaPrimitiveType) }.getOrNull()
+        }
+        val taskSnapshotBlurEffect: RenderEffect? by lazy(LazyThreadSafetyMode.NONE) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                RenderEffect.createBlurEffect(
+                    TASK_SNAPSHOT_BLUR_RADIUS,
+                    TASK_SNAPSHOT_BLUR_RADIUS,
+                    Shader.TileMode.CLAMP,
+                )
+            } else {
+                null
+            }
+        }
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
@@ -123,6 +141,8 @@ class MainActivity : FragmentActivity() {
     private var appliedAppLanguage: String? = null
     private var appliedDarkTheme: Boolean? = null
     private var isSnapshotBlurApplied = false
+    private var appliedSecureWindowFlag: Boolean? = null
+    private var appliedRecentsScreenshotEnabled: Boolean? = null
     private var clipboardDetectionJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -215,10 +235,12 @@ class MainActivity : FragmentActivity() {
             isAppearanceLightNavigationBars = !isDark
         }
         super.onCreate(savedInstanceState)
+        // Warm up ViewModel immediately so settings/cache loading starts in parallel with window setup.
+        viewModel
         // OSデフォルトのWindow背景を破棄し、最下層のオーバードローを消滅させる
         window.setBackgroundDrawable(null)
         // Keep the first frame protected until the async settings/lock state is known.
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        setWindowSecureFlag(true)
         lastHandledClipboardText = null
 
         setContent {
@@ -277,7 +299,7 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(settingsLoaded, appLocked, settings.secureWindow, settings.appLockEnabled) {
                 if (!settingsLoaded) return@LaunchedEffect
                 if (appLocked && settings.appLockEnabled) {
-                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    setWindowSecureFlag(true)
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                     if (PlatformCapabilities.supportsClipboardClear()) {
                         clipboard?.clearPrimaryClip()
@@ -594,64 +616,60 @@ class MainActivity : FragmentActivity() {
             }
     }
 
-    private fun applySecureWindow(secure: Boolean) {
+    private fun setWindowSecureFlag(secure: Boolean) {
+        if (appliedSecureWindowFlag == secure) return
+        appliedSecureWindowFlag = secure
         if (secure) {
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-            // Android 13+ ではタスク切替画面のスクリーンショットも無効化
-            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
-                setRecentsScreenshotEnabled(false)
-            }
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
-                setRecentsScreenshotEnabled(true)
-            }
         }
     }
 
+    private fun updateRecentsScreenshotEnabled(enabled: Boolean) {
+        if (!PlatformCapabilities.supportsRecentsScreenshotControl()) return
+        if (appliedRecentsScreenshotEnabled == enabled) return
+        appliedRecentsScreenshotEnabled = enabled
+        setRecentsScreenshotEnabled(enabled)
+    }
+
+    private fun applySecureWindow(secure: Boolean) {
+        setWindowSecureFlag(secure)
+        // Android 13+ ではタスク切替画面のスクリーンショットも無効化
+        updateRecentsScreenshotEnabled(!secure)
+    }
+
     private fun applyTaskSnapshotBlur(isEnteringBackground: Boolean) {
+        // Finishing this activity removes its task snapshot; applying a full-window blur
+        // during the exit transition only adds GPU work to the Back path.
+        if (isFinishing && isEnteringBackground) return
         val settings = viewModel.uiState.value.settings
         if (settings.secureWindow) return
 
-        val isBlurEnabled = settings.isFeatureEnabled(com.yunfie.illustia.settings.FeatureFlag.TaskSnapshotBlur)
-
         if (isEnteringBackground) {
-            if (!isBlurEnabled) return
-            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
-                setRecentsScreenshotEnabled(false)
-            }
+            val isBlurEnabled = settings.isFeatureEnabled(com.yunfie.illustia.settings.FeatureFlag.TaskSnapshotBlur)
+            if (!isBlurEnabled || isSnapshotBlurApplied) return
+            updateRecentsScreenshotEnabled(false)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                val blurEffect =
-                    RenderEffect.createBlurEffect(
-                        TASK_SNAPSHOT_BLUR_RADIUS,
-                        TASK_SNAPSHOT_BLUR_RADIUS,
-                        Shader.TileMode.CLAMP,
-                    )
-                window.decorView.setRenderEffect(blurEffect)
+                window.decorView.setRenderEffect(taskSnapshotBlurEffect)
                 window.decorView.invalidate()
-                isSnapshotBlurApplied = true
             } else {
-                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                isSnapshotBlurApplied = true
+                setWindowSecureFlag(true)
             }
+            isSnapshotBlurApplied = true
         } else {
-            if (PlatformCapabilities.supportsRecentsScreenshotControl()) {
-                setRecentsScreenshotEnabled(true)
-            }
-            if (isSnapshotBlurApplied) {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                    window.decorView.setRenderEffect(null)
-                    window.decorView.invalidate()
-                } else {
-                    val appLocked = viewModel.uiState.value.appLocked
-                    if (!settings.secureWindow && !(appLocked && settings.appLockEnabled)) {
-                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                    }
-                }
-                isSnapshotBlurApplied = false
-            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (!isSnapshotBlurApplied) return
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 window.decorView.setRenderEffect(null)
+                window.decorView.invalidate()
+            } else {
+                val appLocked = viewModel.uiState.value.appLocked
+                if (!settings.secureWindow && !(appLocked && settings.appLockEnabled)) {
+                    setWindowSecureFlag(false)
+                }
             }
+            updateRecentsScreenshotEnabled(true)
+            isSnapshotBlurApplied = false
         }
     }
 
@@ -674,7 +692,7 @@ class MainActivity : FragmentActivity() {
 
     private fun hasDisplayArrSupport(display: Display): Boolean =
         runCatching {
-            val method = Display::class.java.getMethod("hasArrSupport")
+            val method = hasArrSupportMethod ?: return false
             (method.invoke(display) as? Boolean) == true
         }.getOrDefault(false)
 
@@ -689,7 +707,7 @@ class MainActivity : FragmentActivity() {
                     com.yunfie.illustia.platform.DynamicHzMode.Normal -> 2
                     com.yunfie.illustia.platform.DynamicHzMode.Boost -> 3
                 }
-            val method = Display::class.java.getMethod("getSuggestedFrameRate", Int::class.javaPrimitiveType)
+            val method = getSuggestedFrameRateMethod ?: return REFRESH_RATE_NORMAL
             (method.invoke(display, category) as? Float) ?: REFRESH_RATE_NORMAL
         }.getOrDefault(REFRESH_RATE_NORMAL)
 
@@ -704,7 +722,7 @@ class MainActivity : FragmentActivity() {
             }
 
             com.yunfie.illustia.platform.DynamicHzMode.Normal -> {
-                REFRESH_RATE_NORMAL
+                0f
             }
 
             com.yunfie.illustia.platform.DynamicHzMode.Boost -> {
@@ -715,6 +733,10 @@ class MainActivity : FragmentActivity() {
 
     private fun applyAdaptiveRefreshRateHint(mode: com.yunfie.illustia.platform.DynamicHzMode = dynamicHzController.currentMode.value) {
         if (!PlatformCapabilities.supportsRefreshRateHint()) return
+        if (mode == com.yunfie.illustia.platform.DynamicHzMode.Normal) {
+            clearAdaptiveRefreshRateHint()
+            return
+        }
 
         val display = window.decorView.display ?: return
         val preferredRefreshRate =

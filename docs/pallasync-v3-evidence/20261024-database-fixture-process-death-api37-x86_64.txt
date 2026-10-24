@@ -1,0 +1,46 @@
+PASS: independent Python signed public recovery-type extensions were rejected without data-log advancement
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest:
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: pallasync_reseed_target_argument=missing
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_transparency_recovery_process_death=page_persisted
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+INSTRUMENTATION_CODE: 0
+
+TRANSPARENCY RECOVERY PROCESS-DEATH RESUME
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest:
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: pallasync_reseed_target_argument=missing
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: pallasync_transparency_recovery_process_death=resumed_and_applied
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.yunfie.illustia.pallasync.PallaSyncRelayInteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mnemonicEnrollmentAndInitialSyncUseTheRealRelay
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 36.173
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1
+
+PASS: Android died after a verified transparency page committed to Room but before the protected resume anchor; a fresh process replayed and applied the pending immutable record across 10 one-entry pages

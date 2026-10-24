@@ -73,7 +73,8 @@ class PallaSyncV3HandshakeTest :
                 """
                 {"accepted":[{"record_id":"one","duplicate":false,
                 "receipt":{"relay_seq":6,"received_at_ms":10,"kind":"record","object":$accepted}}],
-                "rejected":[{"record_id":"two","status":409,"code":"EPOCH_STALE","retryable":true}]}
+                "rejected":[{"record_id":"two","status":409,"code":"EPOCH_STALE","retryable":true}],
+                "upload_receipts":[],"generation":0,"log_id":"log","head_seq":6,"head_hash":"hash"}
                 """.trimIndent()
             val result = (parseRecordUploadResponseBody(json, body, submitted) as PallaSyncHttpResult.Success).value
             result.accepted.map { it.recordId } shouldBe listOf("one")

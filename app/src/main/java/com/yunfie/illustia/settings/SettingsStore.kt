@@ -15,8 +15,10 @@ import com.yunfie.illustia.data.computeAccountKey
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.pallasync.PallaSyncEventWriter
+import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.buildSettingsSyncEvents
+import com.yunfie.illustia.pallasync.events
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.db.IllustiaDatabase
 import com.yunfie.illustia.settings.db.SavedIllustEntity
@@ -294,15 +296,13 @@ class SettingsStore internal constructor(
     suspend fun write(
         settings: AppSettings,
         baseSettings: AppSettings? = null,
+        historyEdits: List<PallaSyncHistoryEdit> = emptyList(),
     ): AppSettings {
         ensureMigrated()
         val base = baseSettings ?: persistenceMutex.withLock { read() }
-        val events =
-            if (base.pallaSyncEnabled && settings.pallaSyncEnabled) {
-                buildSettingsSyncEvents(base, settings)
-            } else {
-                emptyList()
-            }
+        // §§11.1/16.4: a bound chain retains edits even while synchronization is disabled.
+        // The coordinator decides whether a chain exists and whether construction can resume.
+        val events = historyEdits.events() + buildSettingsSyncEvents(base, settings)
 
         suspend fun persistRebased(): AppSettings =
             persistenceMutex.withLock {
@@ -333,7 +333,7 @@ class SettingsStore internal constructor(
         } catch (error: CancellationException) {
             throw error
         } catch (expectedFailure: Exception) {
-            PalleriaSyncManager.log("Failed to durably enqueue local settings changes: ${expectedFailure.message}")
+            PalleriaSyncManager.log("C_LOCAL_STORAGE_FULL: local editing intent could not be retained")
             throw expectedFailure
         }
     }

@@ -40,6 +40,23 @@ class StealthMicroUxPhase1Test {
         val plainQuery = "初音ミク"
         NativeIntentRouter.sanitizeSearchInput(plainQuery, enabled = true) shouldBe "初音ミク"
 
+        listOf(
+            "初",
+            "初音",
+            "初音ミク",
+            "初音ミク ",
+            "初音ミク　",
+            " 初音ミク",
+            "　初音ミク",
+            "初音ミク 巡",
+            "初音ミク  巡音ルカ",
+            "初音ミク 巡音ルカ",
+            "初音ミク　巡音ルカ",
+        ).forEach { typedQuery ->
+            NativeIntentRouter.sanitizeSearchInput(typedQuery, enabled = true) shouldBe typedQuery
+            NativeIntentRouter.sanitizeSearchInput(typedQuery, enabled = false) shouldBe typedQuery
+        }
+
         // When disabled, keep as-is
         NativeIntentRouter.sanitizeSearchInput(pastedArtworkUrl, enabled = false) shouldBe pastedArtworkUrl
     }

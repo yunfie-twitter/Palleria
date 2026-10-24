@@ -13,14 +13,167 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ChainStateEntity::class,
         PallaSyncDeviceEntity::class,
         PallaSyncInboxEntity::class,
+        RegistryHistoryEntity::class,
+        EpochKeyEntity::class,
+        SignedEventEntity::class,
+        AuthorSequenceEntity::class,
+        SnapshotAuthorHeadEntity::class,
+        SnapshotAuthorGapEntity::class,
+        EntityRegisterEntity::class,
+        ScopeRegisterEntity::class,
+        HistoryIndexEntity::class,
+        QuarantineEvidenceEntity::class,
+        SnapshotPartEntity::class,
+        SnapshotPublicationEntity::class,
+        SnapshotPublicationPartEntity::class,
+        SnapshotInstallEntity::class,
+        SnapshotInstallPartEntity::class,
+        SnapshotInstallEntryEntity::class,
+        ProtectedEvidenceEntity::class,
+        AuthorityHistoryEntity::class,
+        MigrationJournalEntity::class,
+        ReseedJournalEntity::class,
+        LegacyMigrationCandidateEntity::class,
+        LegacyMigrationChoiceEntity::class,
+        ProjectionStateEntity::class,
+        LogEntryEntity::class,
+        RemovedRecordIdEntity::class,
     ],
-    version = 6,
+    version = 17,
     exportSchema = false,
 )
 abstract class PallaSyncDatabase : RoomDatabase() {
     abstract fun pallaSyncDao(): PallaSyncDao
 
+    abstract fun protocolDao(): ProtocolDao
+
+    abstract fun compactionCatalogueDao(): CompactionCatalogueDao
+
+    abstract fun snapshotDao(): SnapshotDao
+
+    abstract fun snapshotPublicationDao(): SnapshotPublicationDao
+
+    abstract fun snapshotInstallDao(): SnapshotInstallDao
+
+    abstract fun snapshotStateDao(): SnapshotStateDao
+
+    abstract fun reseedJournalDao(): ReseedJournalDao
+
+    abstract fun deletionEvidenceDao(): DeletionEvidenceDao
+
     companion object {
+        private const val MIGRATION_TARGET_VERSION = 3
+
+        val MIGRATION_7_8 =
+            object : Migration(7, 8) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // v7 staging rows predate receipt persistence; `null` marks them for
+                    // readback instead of inventing evidence or trusting the old row.
+                    db.execSQL("ALTER TABLE ps_snapshots ADD COLUMN upload_receipt_json TEXT NOT NULL DEFAULT 'null'")
+                }
+            }
+
+        val MIGRATION_8_9 =
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_publications (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,generation INTEGER NOT NULL,epoch INTEGER NOT NULL,covered_through_seq INTEGER NOT NULL,log_id TEXT NOT NULL,header_json TEXT NOT NULL,part_count INTEGER NOT NULL,state_sha256 TEXT,compaction_json TEXT,status TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_publication_parts (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,part_index INTEGER NOT NULL,record_id TEXT NOT NULL,record_hash TEXT NOT NULL,signed_json TEXT NOT NULL,upload_receipt_json TEXT,status TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id,part_index))",
+                    )
+                }
+            }
+
+        val MIGRATION_9_10 =
+            object : Migration(9, 10) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_installs (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,compaction_json TEXT NOT NULL,part_count INTEGER NOT NULL,state_sha256 TEXT NOT NULL,covered_through_seq INTEGER NOT NULL,covered_log_hash TEXT NOT NULL,generation INTEGER NOT NULL,status TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_install_parts (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,part_index INTEGER NOT NULL,record_id TEXT NOT NULL,record_hash TEXT NOT NULL,entry_count INTEGER NOT NULL,PRIMARY KEY(chain_id,compaction_id,part_index))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_install_entries (chain_id TEXT NOT NULL,compaction_id TEXT NOT NULL,part_index INTEGER NOT NULL,entry_index INTEGER NOT NULL,entry_json TEXT NOT NULL,PRIMARY KEY(chain_id,compaction_id,part_index,entry_index))",
+                    )
+                }
+            }
+
+        val MIGRATION_10_11 =
+            object : Migration(10, 11) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_author_heads(chain_id TEXT NOT NULL,generation INTEGER NOT NULL,device_id TEXT NOT NULL,device_seq INTEGER NOT NULL,record_hash TEXT NOT NULL,compaction_id TEXT NOT NULL,PRIMARY KEY(chain_id,generation,device_id))",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_snapshot_author_gaps(chain_id TEXT NOT NULL,generation INTEGER NOT NULL,device_id TEXT NOT NULL,first_seq INTEGER NOT NULL,last_seq INTEGER NOT NULL,compaction_id TEXT NOT NULL,PRIMARY KEY(chain_id,generation,device_id,first_seq,last_seq))",
+                    )
+                }
+            }
+
+        val MIGRATION_11_12 =
+            object : Migration(11, 12) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_legacy_migration_candidates (migration_id TEXT NOT NULL,entry_index INTEGER NOT NULL,group_key TEXT NOT NULL,source_sequence INTEGER NOT NULL,candidate_index INTEGER NOT NULL,source_record_id TEXT NOT NULL,source_object_hash TEXT NOT NULL,schema TEXT NOT NULL,entity_id TEXT NOT NULL,operation TEXT NOT NULL,requires_choice INTEGER NOT NULL,PRIMARY KEY(migration_id,entry_index))",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX index_ps_legacy_migration_candidates_migration_id_group_key ON ps_legacy_migration_candidates(migration_id,group_key)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX index_ps_legacy_migration_candidates_migration_id_source_sequence_candidate_index ON ps_legacy_migration_candidates(migration_id,source_sequence,candidate_index)",
+                    )
+                    db.execSQL(
+                        "CREATE TABLE ps_legacy_migration_choices (migration_id TEXT NOT NULL,group_key TEXT NOT NULL,selected_entry_index INTEGER NOT NULL,user_confirmed INTEGER NOT NULL,PRIMARY KEY(migration_id,group_key))",
+                    )
+                }
+            }
+
+        val MIGRATION_12_13 =
+            object : Migration(12, 13) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE ps_migrations ADD COLUMN destination_record_id TEXT")
+                    db.execSQL("ALTER TABLE ps_migrations ADD COLUMN destination_object_hash TEXT")
+                    db.execSQL("ALTER TABLE ps_migrations ADD COLUMN verified_receipt_hash TEXT")
+                    db.execSQL(
+                        "CREATE INDEX index_ps_migrations_target_chain_destination_record_id ON ps_migrations(target_chain,destination_record_id)",
+                    )
+                }
+            }
+
+        val MIGRATION_13_14 =
+            object : Migration(13, 14) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_reseed_journal (chain_id TEXT NOT NULL,source_log_id TEXT NOT NULL,source_generation INTEGER NOT NULL,target_origin TEXT NOT NULL,staged_log_id TEXT,compaction_id TEXT,target_pin_json TEXT NOT NULL,prepared_bundle_json TEXT,commit_body_json TEXT,expected_entries_json TEXT,transparency_head_json TEXT,transparency_anchor_json TEXT,verified_receipt_indices_json TEXT NOT NULL DEFAULT '[]',phase INTEGER NOT NULL,updated_at_ms INTEGER NOT NULL,PRIMARY KEY(chain_id))",
+                    )
+                }
+            }
+
+        val MIGRATION_14_15 =
+            object : Migration(14, 15) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE ps_reseed_journal ADD COLUMN commit_result_json TEXT")
+                }
+            }
+
+        val MIGRATION_15_16 =
+            object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE ps_reseed_journal ADD COLUMN source_conflict_report_json TEXT")
+                }
+            }
+
+        val MIGRATION_16_17 =
+            object : Migration(16, 17) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE ps_removed_ids (chain_id TEXT NOT NULL,record_id TEXT NOT NULL,record_hash TEXT NOT NULL,source_log_id TEXT NOT NULL,archive_hash TEXT NOT NULL,evidence_json TEXT NOT NULL,PRIMARY KEY(chain_id,record_id))",
+                    )
+                }
+            }
+
         @Volatile
         private var INSTANCE: PallaSyncDatabase? = null
 
@@ -32,9 +185,24 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                             context.applicationContext,
                             PallaSyncDatabase::class.java,
                             "pallasync_database",
-                        ).addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-                        .fallbackToDestructiveMigrationFrom(1, 2)
-                        .build()
+                        ).addMigrations(
+                            MIGRATION_1_3,
+                            MIGRATION_2_3,
+                            MIGRATION_3_4,
+                            MIGRATION_4_5,
+                            MIGRATION_5_6,
+                            ProtocolMigration,
+                            MIGRATION_7_8,
+                            MIGRATION_8_9,
+                            MIGRATION_9_10,
+                            MIGRATION_10_11,
+                            MIGRATION_11_12,
+                            MIGRATION_12_13,
+                            MIGRATION_13_14,
+                            MIGRATION_14_15,
+                            MIGRATION_15_16,
+                            MIGRATION_16_17,
+                        ).build()
                 INSTANCE = instance
                 instance
             }
@@ -86,6 +254,32 @@ abstract class PallaSyncDatabase : RoomDatabase() {
                         ON pallasync_inbox(chain_id, status)
                         """.trimIndent(),
                     )
+                }
+            }
+
+        /** Retain old tables/data. Unknown legacy layouts fail closed without a destructive fallback. */
+        val MIGRATION_1_3 = legacyMigration(1)
+        val MIGRATION_2_3 = legacyMigration(2)
+
+        private fun legacyMigration(version: Int) =
+            object : Migration(version, MIGRATION_TARGET_VERSION) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    val columns = mutableSetOf<String>()
+                    db.query("PRAGMA table_info(pallasync_chain_state)").use { cursor ->
+                        val name = cursor.getColumnIndexOrThrow("name")
+                        while (cursor.moveToNext()) columns += cursor.getString(name)
+                    }
+                    check(columns.containsAll(setOf("chainId", "lamport", "key_epoch", "chain_vector_json"))) { "C_SCHEMA_VIOLATION" }
+                    if ("latest_control_seq" !in
+                        columns
+                    ) {
+                        db.execSQL("ALTER TABLE pallasync_chain_state ADD COLUMN latest_control_seq INTEGER NOT NULL DEFAULT 0")
+                    }
+                    if ("prev_control_hash" !in
+                        columns
+                    ) {
+                        db.execSQL("ALTER TABLE pallasync_chain_state ADD COLUMN prev_control_hash TEXT NOT NULL DEFAULT ''")
+                    }
                 }
             }
 

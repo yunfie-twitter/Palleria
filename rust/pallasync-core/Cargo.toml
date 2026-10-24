@@ -24,7 +24,20 @@ serde_jcs = "0.2.0"
 hmac = "0.12"
 hex = "0.4.3"
 pbkdf2 = "0.12"
-bip39 = "2.0.0"
+bip39 = { version = "2.0.0", features = ["zeroize"] }
+curve25519-dalek = "4.1"
+unicode-normalization = "0.1.25"
+zeroize = { version = "1.8", features = ["derive"] }
+subtle = "2.6"
+argon2 = "0.5"
+url = "2.5.8"
+regex = "1.0"
+
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.189"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_System_Memory"] }
 
 [profile.release]
 lto = "fat"

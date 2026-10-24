@@ -14,6 +14,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.NotificationListResult
 import com.yunfie.illustia.models.pixiv.RelatedUsersResult
+import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.settings.AppSettings
 
 internal interface SessionRepository {
@@ -139,6 +140,7 @@ internal interface SettingsRepository {
     suspend fun saveSettings(
         settings: AppSettings,
         baseSettings: AppSettings? = null,
+        historyEdits: List<PallaSyncHistoryEdit> = emptyList(),
     )
 
     suspend fun saveSettingsFromSync(settings: AppSettings)
@@ -294,7 +296,8 @@ private class SettingsRepositoryAdapter(
     override suspend fun saveSettings(
         settings: AppSettings,
         baseSettings: AppSettings?,
-    ) = facade.saveSettings(settings, baseSettings)
+        historyEdits: List<PallaSyncHistoryEdit>,
+    ) = facade.saveSettings(settings, baseSettings, historyEdits)
 
     override suspend fun saveSettingsFromSync(settings: AppSettings) = facade.saveSettingsFromSync(settings)
 }
