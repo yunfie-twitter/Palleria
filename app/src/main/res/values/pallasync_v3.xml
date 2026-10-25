@@ -64,6 +64,27 @@
     <string name="pallasync_archive_verify_failed">The archive could not be completely verified against this chain. No data was installed.</string>
     <string name="pallasync_v3_mnemonic_explanation">Write down these 24 words in a safe offline place. The app does not retain them. The display closes when you leave this screen or after ten minutes.</string>
     <string name="pallasync_v3_mnemonic_saved">I saved these words</string>
+    <string name="pallasync_v3_mnemonic_word">Word %1$d</string>
+    <string name="pallasync_v3_mnemonic_copy">Copy all words</string>
+    <string name="pallasync_v3_mnemonic_copied">Copied. The clipboard is cleared automatically in %1$d seconds.</string>
+    <string name="pallasync_v3_mnemonic_copy_unavailable">Copying is disabled on this Android version because the clipboard cannot be marked sensitive. Write the words down by hand instead.</string>
+    <string name="pallasync_v3_mnemonic_verify_title">Confirm your backup</string>
+    <string name="pallasync_v3_mnemonic_verify_prompt">Select word %1$d exactly as you wrote it down.</string>
+    <string name="pallasync_v3_mnemonic_verify_wrong">That is not the word at that position. Check your written copy.</string>
+    <string name="pallasync_v3_mnemonic_verify_ok">Backup confirmed. These words were never uploaded.</string>
+    <string name="pallasync_v3_passphrase_show">Show passphrase</string>
+    <string name="pallasync_v3_passphrase_hide">Hide passphrase</string>
+    <string name="pallasync_error_code_prefix">Code:</string>
+    <string name="pallasync_error_hint_trust">This relay is not trusted yet. Open the relay trust and policy review, confirm its key, then start pairing again.</string>
+    <string name="pallasync_error_hint_signature">A signature did not verify. Ask the approving device to regenerate the request, and check that both devices have the correct time.</string>
+    <string name="pallasync_error_hint_offer_expired">This request has expired or was already used. Create a new offer on the approving device and scan it again.</string>
+    <string name="pallasync_error_hint_schema">The selected file is not a valid request for this step. Choose the file that the approving device exported for this exact step.</string>
+    <string name="pallasync_error_hint_chain_mismatch">This request belongs to a different chain or relay. Use the QR and the signed file from the same approving device.</string>
+    <string name="pallasync_error_hint_device">This device cannot be enrolled as requested. Check approved device slots and revocations on the approving device.</string>
+    <string name="pallasync_error_hint_missing_file">The file could not be read, or it did not match what was written. Choose it again from local storage.</string>
+    <string name="pallasync_error_hint_storage">The file could not be saved. Free up device storage and try again.</string>
+    <string name="pallasync_error_hint_network">The relay did not respond. Check the connection and try again.</string>
+    <string name="pallasync_error_hint_generic">The operation did not complete. Note the code below, reopen this screen and try again.</string>
     <string name="pallasync_v3_source">Choose the synchronization source</string>
     <string name="pallasync_v3_local_source">Create a new chain from the data on this device.</string>
     <string name="pallasync_v3_source_completeness_limit">This source choice permits recovery from the selected source; it does not prove that the source has shown every valid history entry. Source trust and relay policy consent are separate decisions.</string>
@@ -345,4 +366,8 @@
     <string name="pallasync_schema_recovery_help">After updating to a version that supports these records, revalidate their saved originals. Records that are still unsupported remain encrypted and are not applied.</string>
     <string name="pallasync_schema_recovery_retry">Recheck schema support after updating</string>
     <string name="pallasync_schema_recovery_failed">Revalidation stopped. Unresolved records and evidence are kept; any records already verified and applied remain saved. Resolve the reported sync condition before retrying.</string>
+    <string name="pallasync_role_add_device">Add this device to a sync chain</string>
+    <string name="pallasync_role_add_device_description">This device is new. Have an existing device show its code, then scan it here.</string>
+    <string name="pallasync_role_join_chain">Join with an existing recovery phrase</string>
+    <string name="pallasync_role_join_chain_description">Re-enter the 24 words on this device to take over an existing chain.</string>
 </resources>

@@ -180,7 +180,8 @@ class PallaSyncRootInputUiTest {
                 }
             }
         }
-        compose.onNodeWithText(words).assertIsDisplayed()
+        // The phrase is rendered as individually numbered chips, so prove the list is present.
+        compose.onNodeWithTag("pallasync-mnemonic-grid").assertIsDisplayed()
         compose.runOnIdle {
             assertTrue(secure())
             val activityWindow = compose.activity.window.decorView
@@ -196,7 +197,7 @@ class PallaSyncRootInputUiTest {
             )
         }
         compose.onNodeWithText(compose.activity.getString(R.string.action_cancel)).performScrollTo().performClick()
-        compose.onNodeWithText(words).assertDoesNotExist()
+        compose.onNodeWithTag("pallasync-mnemonic-grid").assertDoesNotExist()
         compose.runOnIdle { assertFalse(secure()) }
     }
 
@@ -218,9 +219,11 @@ class PallaSyncRootInputUiTest {
             }
         }
         compose.onNodeWithTag("pallasync-genesis-passphrase").performScrollTo().performTextInput(passphrase)
+        // The commit action stays locked until the backup step is completed.
+        confirmBackup()
         compose.onNodeWithText(compose.activity.getString(R.string.pallasync_v3_mnemonic_saved)).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(passphrase, submitted) }
-        compose.onNodeWithText(words).assertDoesNotExist()
+        compose.onNodeWithTag("pallasync-mnemonic-grid").assertDoesNotExist()
         compose.onNodeWithTag("pallasync-genesis-passphrase").assertDoesNotExist()
         compose.onNodeWithText(compose.activity.getString(R.string.action_cancel)).performScrollTo().performClick()
         compose.runOnIdle {
@@ -244,6 +247,12 @@ class PallaSyncRootInputUiTest {
             second.close()
             assertFalse(secure())
         }
+    }
+
+    /** Completes the backup step by selecting the two checked positions (3rd and 7th words). */
+    private fun confirmBackup() {
+        compose.onNodeWithTag("pallasync-mnemonic-pick-2").performScrollTo().performClick()
+        compose.onNodeWithTag("pallasync-mnemonic-pick-6").performScrollTo().performClick()
     }
 
     private fun assertEmptyInput(tag: String) {

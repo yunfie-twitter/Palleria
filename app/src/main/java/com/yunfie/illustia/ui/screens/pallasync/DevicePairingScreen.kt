@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.pallasync.PallaSyncBootstrapReview
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncPeerSubjectEnrollment
@@ -46,7 +48,9 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Scan
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** §§5.5/10.4/11.6/18.1: root and physically approved peer enrollment are separate ceremonies. */
@@ -89,11 +93,14 @@ fun DevicePairingScreen(
         }
     }
 
+    val performHaptic = rememberHapticFeedbackAction()
     val scanner =
         rememberLauncherForActivityResult(ScanContract()) { result ->
             result.contents?.let {
                 offerJson = it
                 peerError = null
+                // Confirms the scan landed without the scanner activity needing a result banner.
+                performHaptic(AppHapticEffect.Success)
             }
         }
     val importer =
@@ -280,17 +287,30 @@ fun DevicePairingScreen(
         ) {
             Text(serverUrl)
             Text(stringResource(R.string.pallasync_v3_relay_replay_source))
-            Button(
-                onClick = { trustSource = "relay_full_replay" },
-                enabled = trustSource == null && !showRoot && !peerSetup,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.pallasync_v3_root_enroll))
-            }
-            TextButton(
-                text = stringResource(R.string.pallasync_peer_subject_start),
+            // The step shown is derived from observable state, never advanced by tapping through.
+            PairingStepper(
+                current =
+                    when {
+                        candidate != null || confirmed -> PairingStep.CONFIRM
+                        work != null -> PairingStep.SCAN
+                        else -> PairingStep.SHOW_CODE
+                    },
+            )
+            PairingRoleCard(
+                title = stringResource(R.string.pallasync_role_add_device),
+                description = stringResource(R.string.pallasync_role_add_device_description),
+                icon = MiuixIcons.Add,
+                selected = peerSetup,
                 enabled = trustSource == null && !showRoot && work == null && candidate == null,
                 onClick = { trustSource = "authenticated_export" },
+            )
+            PairingRoleCard(
+                title = stringResource(R.string.pallasync_role_join_chain),
+                description = stringResource(R.string.pallasync_role_join_chain_description),
+                icon = MiuixIcons.Scan,
+                selected = showRoot,
+                enabled = trustSource == null && !showRoot && !peerSetup,
+                onClick = { trustSource = "relay_full_replay" },
             )
             if (peerSetup) {
                 Text(stringResource(R.string.pallasync_peer_subject_guidance))
@@ -356,11 +376,15 @@ fun DevicePairingScreen(
                     enabled = !peerBusy && work == null && candidate == null && offerJson != null && authorityJson != null,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(if (peerBusy) R.string.pallasync_peer_subject_working else R.string.pallasync_peer_subject_submit))
+                    Text(stringResource(R.string.pallasync_peer_subject_submit))
+                }
+                // The native call can take a while; a spinner plus the current step proves progress.
+                if (peerBusy) {
+                    PallaSyncWorkingState(text = stringResource(R.string.pallasync_peer_subject_working))
                 }
                 work?.let { active ->
                     Text(stringResource(R.string.pallasync_peer_subject_sas_title))
-                    Text(active.sas.chunked(4).joinToString(" "))
+                    PairingSasCode(sas = active.sas)
                     Text(stringResource(R.string.pallasync_peer_subject_sas_guidance))
                     Button(
                         enabled = !peerBusy && !confirmed,
@@ -370,6 +394,7 @@ fun DevicePairingScreen(
                                 try {
                                     manager.confirmPeerSubjectSas(active, active.sas)
                                     confirmed = true
+                                    performHaptic(AppHapticEffect.Success)
                                 } catch (cancelled: CancellationException) {
                                     throw cancelled
                                 } catch (failure: Exception) {
@@ -411,7 +436,8 @@ fun DevicePairingScreen(
                         },
                     )
                 }
-                peerError?.let { Text(it) }
+                // A raw C_* code means nothing to the user, so it is paired with a way out.
+                PallaSyncErrorHint(code = peerError)
             }
         }
     }
