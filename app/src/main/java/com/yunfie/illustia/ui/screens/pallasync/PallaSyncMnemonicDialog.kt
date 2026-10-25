@@ -13,12 +13,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -214,21 +210,26 @@ internal fun PallaSyncMnemonicDialog(
     }
 }
 
-/** Numbered words: position labels make order mistakes visible while copying by hand. */
+/**
+ * Numbered words: position labels make order mistakes visible while copying by hand.
+ *
+ * A [FlowRow] rather than a lazy grid: the dialog already scrolls, and nesting an unbounded
+ * lazy list inside a scrolling column is both fragile and pointless for 24 short words.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MnemonicGrid(words: List<String>) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 116.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp).testTag("pallasync-mnemonic-grid"),
+internal fun MnemonicGrid(words: List<String>) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().testTag("pallasync-mnemonic-grid"),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        userScrollEnabled = false,
+        maxItemsInEachRow = 3,
     ) {
-        itemsIndexed(words) { index, word ->
+        words.forEachIndexed { index, word ->
             Row(
                 modifier =
                     Modifier
-                        .fillMaxWidth()
+                        .weight(1f)
                         .background(MiuixTheme.colorScheme.surfaceContainerHigh, WORD_CHIP_SHAPE)
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -294,7 +295,7 @@ private fun MnemonicCopyAction(
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MnemonicBackupCheck(
+internal fun MnemonicBackupCheck(
     words: List<String>,
     confirmed: Boolean,
     onConfirmed: () -> Unit,
@@ -302,6 +303,8 @@ private fun MnemonicBackupCheck(
     if (words.size <= CONFIRMATION_POSITIONS.max()) return
     val picks = remember(words) { mutableStateListOf(-1, -1) }
     var wrongSlot by remember(words) { mutableIntStateOf(-1) }
+    // The check owns its own solved state so the parent only has to react to it once.
+    var solved by remember(words) { mutableStateOf(confirmed) }
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.pallasync_v3_mnemonic_verify_title),
@@ -309,7 +312,7 @@ private fun MnemonicBackupCheck(
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurfaceContainer,
         )
-        if (confirmed) {
+        if (solved) {
             Text(
                 text = stringResource(R.string.pallasync_v3_mnemonic_verify_ok),
                 fontSize = 12.sp,
@@ -346,7 +349,10 @@ private fun MnemonicBackupCheck(
                         if (index == CONFIRMATION_POSITIONS[slot]) {
                             picks[slot] = index
                             wrongSlot = -1
-                            if (picks.all { it >= 0 }) onConfirmed()
+                            if (picks.all { it >= 0 }) {
+                                solved = true
+                                onConfirmed()
+                            }
                         } else {
                             wrongSlot = slot
                         }
