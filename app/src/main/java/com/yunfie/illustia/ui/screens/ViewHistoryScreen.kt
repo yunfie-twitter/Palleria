@@ -47,6 +47,7 @@ import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.pallasync.pallaSyncFailureCode
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -142,7 +143,9 @@ fun ViewHistoryScreen(
                 pallaSyncPaging = true
                 pagedHistory = emptyList()
                 historyCursor = null
-                historyPageError = failure.message ?: "C_MISSING_DEPENDENCY"
+                // Only protocol codes are shown. An uncoded failure keeps "unknown" so the page
+                // still offers a retry without pretending it is pending evidence.
+                historyPageError = pallaSyncFailureCode(failure) ?: "unknown"
             } finally {
                 historyPageLoading = false
             }
@@ -493,7 +496,7 @@ fun ViewHistoryScreen(
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (failure: Exception) {
-                    historyPageError = failure.message ?: "C_MISSING_DEPENDENCY"
+                    historyPageError = pallaSyncFailureCode(failure) ?: "unknown"
                     historyAutoLoadBlocked = true
                 } finally {
                     historyPageLoading = false

@@ -2494,7 +2494,7 @@ fun PallaSyncSettingsScreen(
                                     },
                                 )
                                 Text(stringResource(R.string.pallasync_snapshot_bootstrap_desc))
-                                trustedSnapshotFailure?.let { Text(it) }
+                                PallaSyncErrorHint(trustedSnapshotFailure)
                             }
                         }
                     }
