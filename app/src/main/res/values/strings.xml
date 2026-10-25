@@ -31,6 +31,8 @@
     <!-- Common actions -->
     <string name="action_save">保存</string>
     <string name="action_open">開く</string>
+    <string name="action_next">次へ</string>
+    <string name="action_back">戻る</string>
     <string name="action_cancel">キャンセル</string>
     <string name="action_delete">削除</string>
     <string name="action_close">閉じる</string>
