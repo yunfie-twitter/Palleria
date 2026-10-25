@@ -220,7 +220,7 @@ class PallaSyncRootInputUiTest {
         }
         compose.onNodeWithTag("pallasync-genesis-passphrase").performScrollTo().performTextInput(passphrase)
         // The commit action stays locked until the backup step is completed.
-        confirmBackup()
+        confirmBackup(words)
         compose.onNodeWithText(compose.activity.getString(R.string.pallasync_v3_mnemonic_saved)).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(passphrase, submitted) }
         compose.onNodeWithTag("pallasync-mnemonic-grid").assertDoesNotExist()
@@ -249,10 +249,15 @@ class PallaSyncRootInputUiTest {
         }
     }
 
-    /** Completes the backup step by selecting the two checked positions (3rd and 7th words). */
-    private fun confirmBackup() {
-        compose.onNodeWithTag("pallasync-mnemonic-pick-2").performScrollTo().performClick()
-        compose.onNodeWithTag("pallasync-mnemonic-pick-6").performScrollTo().performClick()
+    /**
+     * Completes the backup step by selecting the word at the two checked positions (3rd and 7th).
+     * The test phrase repeats one word, so the expected answer is derived from the phrase itself.
+     */
+    private fun confirmBackup(words: String) {
+        val split = words.split(' ')
+        listOf(2, 6).forEach { position ->
+            compose.onNodeWithTag("pallasync-mnemonic-pick-${split[position]}").performScrollTo().performClick()
+        }
     }
 
     private fun assertEmptyInput(tag: String) {

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -46,10 +47,11 @@ class PallaSyncMnemonicDialogTest {
 
     /**
      * The backup step must gate the commit action: one accidental tap is exactly the failure mode
-     * this dialog exists to prevent.
+     * this dialog exists to prevent. The options are words, so a correct answer requires the
+     * written copy rather than a lucky tap on a position number.
      */
     @Test
-    fun `backup check completes only for the exact positions`() {
+    fun `backup check completes only for the exact words`() {
         var confirmed = false
         compose.setContent {
             MiuixTheme {
@@ -57,17 +59,37 @@ class PallaSyncMnemonicDialogTest {
             }
         }
 
-        // Positions 3 and 7 are checked (zero-based 2 and 6).
-        compose.onNodeWithTag("pallasync-mnemonic-pick-0").performClick()
+        // Positions 3 and 7 are checked (zero-based 2 and 6): "charlie" and "golf".
+        // A decoy from the same phrase must not satisfy the step. The distractors are chosen by
+        // hash, so the test derives one from the options actually rendered rather than assuming.
+        val decoy =
+            words
+                .filter { it != "charlie" }
+                .first { word -> compose.onAllNodesWithTag("pallasync-mnemonic-pick-$word").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("pallasync-mnemonic-pick-$decoy").performClick()
         compose.onNodeWithTag("pallasync-mnemonic-wrong").assertExists()
         assertEquals(false, confirmed)
 
-        compose.onNodeWithTag("pallasync-mnemonic-pick-2").performClick()
+        compose.onNodeWithTag("pallasync-mnemonic-pick-charlie").performClick()
         assertEquals(false, confirmed)
 
-        compose.onNodeWithTag("pallasync-mnemonic-pick-6").performClick()
+        compose.onNodeWithTag("pallasync-mnemonic-pick-golf").performClick()
         assertEquals(true, confirmed)
         compose.onNodeWithTag("pallasync-mnemonic-wrong").assertDoesNotExist()
+    }
+
+    /** The correct word is always offered, so the step is solvable from the written copy. */
+    @Test
+    fun `backup check always offers the word for the requested position`() {
+        compose.setContent {
+            MiuixTheme {
+                MnemonicBackupCheck(words = words, confirmed = false, onConfirmed = {})
+            }
+        }
+
+        compose.onNodeWithTag("pallasync-mnemonic-pick-charlie").assertExists()
+        compose.onNodeWithTag("pallasync-mnemonic-pick-charlie").performClick()
+        compose.onNodeWithTag("pallasync-mnemonic-pick-golf").assertExists()
     }
 
     /** The protected shell must separate the commit action from a busy status. */
