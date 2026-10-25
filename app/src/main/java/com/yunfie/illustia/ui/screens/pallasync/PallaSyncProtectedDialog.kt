@@ -64,7 +64,11 @@ internal fun PallaSyncProtectedDialog(
         }
         ElevatedPanel(contentPadding = PaddingValues(24.dp)) {
             DialogHeader(title = title, subtitle = subtitle, icon = icon)
-            content()
+            // The body may be tall (word grid, passphrase field). Constraining it in its own box
+            // means a full-height body shrinks here instead of pushing the actions off the panel.
+            Box(Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                content()
+            }
             if (actions != null) {
                 Box(Modifier.fillMaxWidth().height(1.dp).background(MiuixTheme.colorScheme.dividerLine))
                 actions()

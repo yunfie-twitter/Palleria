@@ -370,4 +370,7 @@
     <string name="pallasync_role_add_device_description">This device is new. Have an existing device show its code, then scan it here.</string>
     <string name="pallasync_role_join_chain">Join with an existing recovery phrase</string>
     <string name="pallasync_role_join_chain_description">Re-enter the 24 words on this device to take over an existing chain.</string>
+    <string name="pallasync_trust_fingerprint_label">Relay signing key fingerprint</string>
+    <string name="pallasync_trust_key_id">Key ID: %1$s</string>
+    <string name="pallasync_trust_working">Contacting the relay…</string>
 </resources>

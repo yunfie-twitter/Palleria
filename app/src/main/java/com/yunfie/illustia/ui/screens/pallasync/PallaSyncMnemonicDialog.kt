@@ -87,7 +87,8 @@ internal fun PallaSyncMnemonicDialog(
     var passphraseVisible by remember(phrase) { mutableStateOf(false) }
     var backupConfirmed by remember(phrase) { mutableStateOf(false) }
     var copyCountdown by remember(phrase) { mutableIntStateOf(0) }
-    val words = remember(phrase) { visiblePhrase.split(' ').filter { it.isNotBlank() } }
+    // Keyed on visiblePhrase, not phrase: clearing the display must also empty this list.
+    val words = remember(visiblePhrase) { visiblePhrase.split(' ').filter { it.isNotBlank() } }
     val context = LocalContext.current
     val activity = context.pallaSyncInputActivity()
     val performHaptic = rememberHapticFeedbackAction()
@@ -113,12 +114,17 @@ internal fun PallaSyncMnemonicDialog(
         delay(MNEMONIC_INACTIVITY_TIMEOUT_MILLIS)
         clearAndDismiss()
     }
-    // The countdown only reports the pending clear; the clear itself dies with this dialog.
+    // The countdown only reports the pending clear; the clear itself also dies with this dialog.
     LaunchedEffect(copyCountdown) {
         if (copyCountdown <= 0) return@LaunchedEffect
         delay(1_000L)
         copyCountdown--
         if (copyCountdown == 0) clearMnemonicClipboard(context)
+    }
+    // Dismissing (including ON_STOP, which clears and dismisses) must not leave the phrase on the
+    // clipboard for the remainder of the countdown. The timed clear above is unchanged.
+    DisposableEffect(context) {
+        onDispose { clearMnemonicClipboard(context) }
     }
     PallaSyncProtectedDialog(
         title = stringResource(R.string.pallasync_v3_mnemonic),
@@ -292,6 +298,11 @@ private fun MnemonicCopyAction(
  *
  * A plain "I saved it" button is one accidental tap. Selecting the word at a given position can
  * only succeed by consulting the written copy, which is what this step is meant to prove.
+ *
+ * The options are the words themselves, not their position numbers: picking "03" would show that
+ * the user can count, whereas picking "charlie" shows that the written copy is actually in front
+ * of them. Each slot offers the correct word plus distractors drawn from the same phrase, ordered
+ * deterministically so the answer never moves between recompositions.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -305,6 +316,7 @@ internal fun MnemonicBackupCheck(
     var wrongSlot by remember(words) { mutableIntStateOf(-1) }
     // The check owns its own solved state so the parent only has to react to it once.
     var solved by remember(words) { mutableStateOf(confirmed) }
+    val options = remember(words) { CONFIRMATION_POSITIONS.map { position -> backupOptions(words, position) } }
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.pallasync_v3_mnemonic_verify_title),
@@ -340,14 +352,16 @@ internal fun MnemonicBackupCheck(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            words.indices.forEach { index ->
+            options[nextSlot].forEach { word ->
+                // A word already chosen for an earlier slot cannot be chosen again.
+                val used = (0 until nextSlot).any { picks[it] >= 0 && options[it][picks[it]] == word }
                 TextButton(
-                    text = "%02d".format(index + 1),
+                    text = word,
                     onClick = {
                         val slot = picks.indexOfFirst { it < 0 }
                         if (slot < 0) return@TextButton
-                        if (index == CONFIRMATION_POSITIONS[slot]) {
-                            picks[slot] = index
+                        if (word == words[CONFIRMATION_POSITIONS[slot]]) {
+                            picks[slot] = options[slot].indexOf(word)
                             wrongSlot = -1
                             if (picks.all { it >= 0 }) {
                                 solved = true
@@ -357,12 +371,37 @@ internal fun MnemonicBackupCheck(
                             wrongSlot = slot
                         }
                     },
-                    enabled = !picks.contains(index),
-                    modifier = Modifier.testTag("pallasync-mnemonic-pick-$index"),
+                    enabled = !used,
+                    modifier = Modifier.testTag("pallasync-mnemonic-pick-$word"),
                 )
             }
         }
     }
+}
+
+private const val BACKUP_OPTION_COUNT = 4
+
+/**
+ * The correct word for [position] plus distinct distractors from the same phrase.
+ *
+ * The ordering is derived from the word itself rather than from a random source, so the options
+ * are stable across recompositions while still not listing the answer first every time.
+ */
+private fun backupOptions(
+    words: List<String>,
+    position: Int,
+): List<String> {
+    val answer = words[position]
+    val distractors =
+        words
+            .withIndex()
+            .filter { (index, word) -> index != position && word != answer }
+            .sortedBy { (_, word) -> (word.hashCode() xor position) }
+            .map { (_, word) -> word }
+            .distinct()
+            .take(BACKUP_OPTION_COUNT - 1)
+    val combined = distractors + answer
+    return combined.sortedBy { word -> (word.hashCode() xor (position * 31)) }
 }
 
 /** Copies the phrase with the sensitive flag set so the system hides it from clipboard previews. */

@@ -342,4 +342,7 @@
     <string name="pallasync_role_add_device_description">新しい端末です。既存の端末でコードを表示し、この端末でスキャンします。</string>
     <string name="pallasync_role_join_chain">既存の回復フレーズで参加する</string>
     <string name="pallasync_role_join_chain_description">この端末で24語を再入力し、既存のチェーンを引き継ぎます。</string>
+    <string name="pallasync_trust_fingerprint_label">リレーの署名鍵フィンガープリント</string>
+    <string name="pallasync_trust_key_id">鍵ID：%1$s</string>
+    <string name="pallasync_trust_working">リレーに接続しています…</string>
 </resources>
