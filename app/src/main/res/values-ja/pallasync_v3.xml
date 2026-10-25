@@ -345,4 +345,5 @@
     <string name="pallasync_trust_fingerprint_label">リレーの署名鍵フィンガープリント</string>
     <string name="pallasync_trust_key_id">鍵ID：%1$s</string>
     <string name="pallasync_trust_working">リレーに接続しています…</string>
+    <string name="pallasync_server_url_verifying">リレーを確認しています…</string>
 </resources>

@@ -32,11 +32,16 @@ internal fun rememberSystemUiCoveredState(): State<Boolean> {
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
             val shadeTop =
                 when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-                        insets.getInsets(
-                            WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
-                        ).top
-                    else -> insets.systemWindowInsetTop
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                        insets
+                            .getInsets(
+                                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+                            ).top
+                    }
+
+                    else -> {
+                        insets.systemWindowInsetTop
+                    }
                 }
             val next = imeVisible || shadeTop >= thresholdPx
             if (covered.value != next) covered.value = next
