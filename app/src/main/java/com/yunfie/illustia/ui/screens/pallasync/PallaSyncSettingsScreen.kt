@@ -711,7 +711,12 @@ fun PallaSyncSettingsScreen(
                                 urlVerifying = true
                                 urlFailure = null
                                 scope.launch {
-                                    val verified = runCatching { withContext(Dispatchers.IO) { syncManager.verifyRelayOrigin(normalized) } }.getOrDefault(false)
+                                    val verified =
+                                        runCatching {
+                                            withContext(
+                                                Dispatchers.IO,
+                                            ) { syncManager.verifyRelayOrigin(normalized) }
+                                        }.getOrDefault(false)
                                     urlVerifying = false
                                     if (verified) {
                                         viewModel.updatePallaSyncServerUrl(normalized)

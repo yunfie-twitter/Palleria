@@ -22,7 +22,6 @@ internal fun CommentResponse.toCommentState(): CommentState =
         isEmpty = comments.isEmpty(),
     )
 
-
 enum class CommentArtworkType {
     ILLUST,
     NOVEL,
