@@ -63,7 +63,11 @@ internal fun pallaSyncErrorGuidanceRes(code: String?): Int {
         "C_WRITE_PAUSED_BY_POLICY",
         -> R.string.pallasync_error_hint_device
 
-        "C_MISSING_DEPENDENCY" -> R.string.pallasync_error_hint_missing_file
+        // §19.3 lists this as "pending evidence": an epoch, certificate, predecessor or snapshot
+        // has not been fetched yet. It is never a local file problem, so the hint points at
+        // fetching the missing piece rather than at re-picking a file. Gaps are not forged
+        // signatures, so the hint must not accuse the user either.
+        "C_MISSING_DEPENDENCY" -> R.string.pallasync_error_hint_missing_dependency
 
         "C_LOCAL_STORAGE_FULL",
         "C_LOCAL_LIMIT",
@@ -118,3 +122,17 @@ private fun relayHintRes(code: String): Int? =
 
 @Composable
 internal fun pallaSyncErrorGuidance(code: String?): String = stringResource(pallaSyncErrorGuidanceRes(code))
+
+/**
+ * A code to show for [failure], or null when the failure carries none.
+ *
+ * Only messages that are already protocol codes are surfaced. Falling back to a catalogued code
+ * such as `C_MISSING_DEPENDENCY` would relabel an unrelated exception as "pending evidence", which
+ * the client then classifies as `pending_dependency` and retries forever, hiding the real defect.
+ * §19.3 has no generic code, so an uncoded failure keeps the neutral hint and stays uncoded here.
+ */
+internal fun pallaSyncFailureCode(failure: Throwable?): String? = failure?.message?.trim()?.takeIf { it.matches(Regex("C_[A-Z0-9_]+")) }
+
+/** The code for a failure, falling back to the neutral, uncoded state rather than inventing one. */
+@StringRes
+internal fun pallaSyncFailureGuidanceRes(failure: Throwable?): Int = pallaSyncErrorGuidanceRes(pallaSyncFailureCode(failure))
