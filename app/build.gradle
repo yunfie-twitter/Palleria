@@ -20,9 +20,9 @@ android {
         applicationId = "com.yunfie.illustia"
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
-        targetSdk = 36
-        versionCode = 170
-        versionName = "7.0.0-pre.1"
+        targetSdk = 37
+        versionCode = 171
+        versionName = "7.0.0-pre.2"
         testInstrumentationRunner = "com.yunfie.illustia.pallasync.PallaSyncTestRunner"
     }
 
