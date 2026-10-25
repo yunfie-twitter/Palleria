@@ -338,4 +338,8 @@
     <string name="pallasync_schema_recovery_help">この形式に対応したバージョンへ更新した後、保存済みの原本を再検証してください。引き続き未対応のレコードは暗号文を保持し、適用しません。</string>
     <string name="pallasync_schema_recovery_retry">更新後の形式対応を再確認</string>
     <string name="pallasync_schema_recovery_failed">再検証を中断しました。未解決のレコードと証拠、検証・適用が完了したレコードは保持されています。表示された同期の問題を解消してから再試行してください。</string>
+    <string name="pallasync_role_add_device">この端末を同期チェーンに追加する</string>
+    <string name="pallasync_role_add_device_description">新しい端末です。既存の端末でコードを表示し、この端末でスキャンします。</string>
+    <string name="pallasync_role_join_chain">既存の回復フレーズで参加する</string>
+    <string name="pallasync_role_join_chain_description">この端末で24語を再入力し、既存のチェーンを引き継ぎます。</string>
 </resources>

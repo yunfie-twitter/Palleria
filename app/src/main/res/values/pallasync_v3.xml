@@ -366,4 +366,8 @@
     <string name="pallasync_schema_recovery_help">After updating to a version that supports these records, revalidate their saved originals. Records that are still unsupported remain encrypted and are not applied.</string>
     <string name="pallasync_schema_recovery_retry">Recheck schema support after updating</string>
     <string name="pallasync_schema_recovery_failed">Revalidation stopped. Unresolved records and evidence are kept; any records already verified and applied remain saved. Resolve the reported sync condition before retrying.</string>
+    <string name="pallasync_role_add_device">Add this device to a sync chain</string>
+    <string name="pallasync_role_add_device_description">This device is new. Have an existing device show its code, then scan it here.</string>
+    <string name="pallasync_role_join_chain">Join with an existing recovery phrase</string>
+    <string name="pallasync_role_join_chain_description">Re-enter the 24 words on this device to take over an existing chain.</string>
 </resources>
