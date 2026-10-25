@@ -374,4 +374,5 @@
     <string name="pallasync_trust_fingerprint_label">Relay signing key fingerprint</string>
     <string name="pallasync_trust_key_id">Key ID: %1$s</string>
     <string name="pallasync_trust_working">Contacting the relay…</string>
+    <string name="pallasync_server_url_verifying">Checking the relay…</string>
 </resources>

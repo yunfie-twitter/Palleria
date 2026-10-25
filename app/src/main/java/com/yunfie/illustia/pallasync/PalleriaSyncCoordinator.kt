@@ -4018,8 +4018,7 @@ internal class PalleriaSyncCoordinator(
             }
         }.getOrNull()
 
-    suspend fun getServerUrl(): String =
-        PallaSyncRelayOrigin.resolve(storedServerUrl())
+    suspend fun getServerUrl(): String = PallaSyncRelayOrigin.resolve(storedServerUrl())
 
     /**
      * Verifies the configured relay against its §10.1 health endpoint and, when it is unreachable,

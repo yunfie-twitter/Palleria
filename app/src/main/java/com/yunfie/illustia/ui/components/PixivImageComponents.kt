@@ -52,8 +52,7 @@ private const val HEADER_THEME_ANALYSIS_CACHE_SIZE = 32
 /** Bounded cache of per-artwork header theme analysis; the same thumbnail is often analyzed by several screens. */
 private val headerThemeAnalysisCache: MutableMap<String, Boolean> =
     object : java.util.LinkedHashMap<String, Boolean>(HEADER_THEME_ANALYSIS_CACHE_SIZE, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?): Boolean =
-            size > HEADER_THEME_ANALYSIS_CACHE_SIZE
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?): Boolean = size > HEADER_THEME_ANALYSIS_CACHE_SIZE
     }
 
 private val headerThemeAnalysisMutex = kotlinx.coroutines.sync.Mutex()
