@@ -294,7 +294,6 @@ internal class PalleriaSyncCoordinator(
         }
 
     companion object {
-        private const val DEFAULT_SERVER_URL = "https://api.yunfi.f5.si"
         private const val NORMAL_POLL_DELAY_MS = 5_000L
         private const val PROTOCOL_ERROR_DELAY_MS = 30_000L
         private const val PROBE_JITTER_FRACTION = 0.20
@@ -320,6 +319,10 @@ internal class PalleriaSyncCoordinator(
             nextProbeAt = 0L
             backgroundSyncJob =
                 scope.launch {
+                    // Resolve the configured relay once per session before the first cycle: the
+                    // default origin can move, and an unreachable one must fall back to a known
+                    // alternative rather than failing every request until the user edits settings.
+                    runCatching { verifyAndResolveRelayOrigin() }
                     while (currentCoroutineContext().isActive) {
                         val outcome =
                             runCatching {
@@ -4008,12 +4011,55 @@ internal class PalleriaSyncCoordinator(
         }
     }
 
-    suspend fun getServerUrl(): String =
+    private suspend fun storedServerUrl(): String? =
         runCatching {
             withContext(Dispatchers.IO) {
                 SettingsStore.dataStoreFor(appContext).data.first()[PALLA_SYNC_SERVER_URL]
             }
-        }.getOrNull() ?: DEFAULT_SERVER_URL
+        }.getOrNull()
+
+    suspend fun getServerUrl(): String =
+        PallaSyncRelayOrigin.resolve(storedServerUrl())
+
+    /**
+     * Verifies the configured relay against its §10.1 health endpoint and, when it is unreachable,
+     * switches to the first known origin that answers.
+     *
+     * The role of this check is to tell "the relay moved or is down" apart from "the protocol
+     * failed". It only consults `/pallasync/v3/health`; it never treats the advertised
+     * `migration_origin` as authority, because §11.7 requires authenticated migration rather than
+     * following a URL chosen by the relay.
+     *
+     * Returns the origin that answered, or null when no candidate did — in which case the
+     * configured value is left untouched so the caller can report an unreachable relay.
+     */
+    suspend fun verifyAndResolveRelayOrigin(): String? =
+        withContext(Dispatchers.IO) {
+            val stored = storedServerUrl()
+            val candidates = PallaSyncRelayOrigin.candidates(stored)
+            val healthy =
+                candidates.firstOrNull { origin ->
+                    // inspectRelay performs the full §10.1 validation (strict health shape, origin
+                    // match, pinned key), so a candidate is accepted only if the relay is genuinely
+                    // usable — not merely reachable.
+                    runCatching { policy.inspectRelay(origin) }.isSuccess
+                } ?: return@withContext null
+            if (healthy != PallaSyncRelayOrigin.resolve(stored)) {
+                // Only replace the stored value when the previous one was a shipped default or
+                // unreachable; an explicit user choice that answers is never rewritten.
+                runCatching { SettingsStore(appContext).setPallaSyncServerUrlFromCoordinator(healthy) }
+            }
+            healthy
+        }
+
+    /**
+     * §10.1 check for one specific origin. Used before a user-entered URL is saved so a typo or a
+     * retired host cannot silently replace a working relay.
+     */
+    suspend fun verifyRelayOrigin(origin: String): Boolean =
+        withContext(Dispatchers.IO) {
+            runCatching { policy.inspectRelay(origin) }.isSuccess
+        }
 
     /** Returns a canonical, slash-free server base URL or null when the value is invalid. */
     fun normalizeServerUrl(rawUrl: String): String? =
