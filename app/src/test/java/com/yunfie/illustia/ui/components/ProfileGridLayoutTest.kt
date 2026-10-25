@@ -1,5 +1,6 @@
 package com.yunfie.illustia.ui.components
 
+import com.yunfie.illustia.ui.screens.relatedIllustRows
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -40,5 +41,26 @@ class ProfileGridLayoutTest {
         assertEquals(4, relatedIllustColumnsForWidth(1_199, configuredColumns = 0))
         assertEquals(5, relatedIllustColumnsForWidth(1_200, configuredColumns = 0))
         assertEquals(5, relatedIllustColumnsForWidth(1_920, configuredColumns = 0))
+    }
+
+    /**
+     * The related grid defers off-screen rows, so the split has to stay exact: a wrong last row
+     * would leave a gap or drop an illustration, and a non-positive column count must not throw.
+     */
+    @Test
+    fun `related rows stay a complete partition of the list`() {
+        val illusts = (1..7).map { it.toLong() }
+
+        assertEquals(listOf(listOf(1L, 2L, 3L), listOf(4L, 5L, 6L), listOf(7L)), relatedIllustRows(illusts, 3))
+        assertEquals(listOf(listOf(1L, 2L), listOf(3L, 4L), listOf(5L, 6L), listOf(7L)), relatedIllustRows(illusts, 2))
+        assertEquals(listOf(illusts), relatedIllustRows(illusts, 7))
+
+        // Every row but the last is full, and nothing is lost or duplicated.
+        val rows = relatedIllustRows(illusts, 3)
+        assertEquals(illusts, rows.flatten())
+        rows.dropLast(1).forEach { assertEquals(3, it.size) }
+
+        assertEquals(emptyList<List<Long>>(), relatedIllustRows<Long>(illusts, 0))
+        assertEquals(emptyList<List<Long>>(), relatedIllustRows<Long>(emptyList(), 3))
     }
 }
