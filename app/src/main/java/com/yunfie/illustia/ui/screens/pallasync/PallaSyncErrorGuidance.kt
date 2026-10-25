@@ -30,21 +30,17 @@ internal fun pallaSyncErrorGuidanceRes(code: String?): Int {
         "C_RELAY_POLICY_UNAVAILABLE",
         "C_RELAY_DISCLOSURE_INVALID",
         -> R.string.pallasync_error_hint_trust
+        // Signature/acceptance failures only: the hint tells the user to re-request, which holds
+        // because the cryptographic check really did fail.
         "C_SIGNATURE_INVALID",
         "C_DEVICE_KEY_MISMATCH",
         "C_RELAY_KEY_MISMATCH",
-        "C_DEVICE_EQUIVOCATION",
-        "C_ROLLBACK_DETECTED",
-        "C_LOG_HASH_MISMATCH",
-        "C_TRANSPARENCY_INVALID",
         "C_RECEIPT_INVALID",
         "C_SNAPSHOT_INVALID",
         "C_ACCEPTANCE_UNPROVEN",
         -> R.string.pallasync_error_hint_signature
-        "C_RECOVERY_SESSION_EXPIRED",
-        "C_DEVICE_REVOKED",
-        -> R.string.pallasync_error_hint_offer_expired
-        "C_RECORD_ID_CONFLICT",
+        "C_RECOVERY_SESSION_EXPIRED" -> R.string.pallasync_error_hint_offer_expired
+        // The hint only tells the user the file is not the one expected for this step.
         "C_SCHEMA_VIOLATION",
         "C_UNSUPPORTED_SCHEMA",
         -> R.string.pallasync_error_hint_schema
@@ -55,13 +51,11 @@ internal fun pallaSyncErrorGuidanceRes(code: String?): Int {
         "C_COMMITMENT_MISMATCH",
         "C_CHAIN_ID_MISMATCH",
         -> R.string.pallasync_error_hint_chain_mismatch
-        "C_RECOVERY_AUTH_REQUIRED",
+        // Recovery-slot failures: the hint stays on "check the device's recovery setup", which the
+        // codes do describe (a retired set or an unmet threshold is a recovery-state problem).
         "C_RECOVERY_SET_RETIRED",
-        "C_RECOVERY_SHARE_COMPROMISED",
         "C_RECOVERY_THRESHOLD_NOT_MET",
         "C_WRITE_PAUSED_BY_POLICY",
-        "C_WRITE_PAUSED",
-        "C_DELETION_UNVERIFIED",
         -> R.string.pallasync_error_hint_device
         "C_MISSING_DEPENDENCY" -> R.string.pallasync_error_hint_missing_file
         "C_LOCAL_STORAGE_FULL",
@@ -71,6 +65,15 @@ internal fun pallaSyncErrorGuidanceRes(code: String?): Int {
         "C_ORDER_KEY_EXHAUSTED",
         -> R.string.pallasync_error_hint_storage
         "C_RELAY_UNAVAILABLE" -> R.string.pallasync_error_hint_network
+        // Integrity and policy codes below are deliberately unmapped. Duplicate record ids, a
+        // mis-hashed log, a bogus transparency receipt, a rollback, a revoked device, a write
+        // pause or an unverified deletion do not prove any single cause, so the specific hints
+        // would assert something the client cannot establish:
+        //   C_DEVICE_EQUIVOCATION, C_ROLLBACK_DETECTED, C_LOG_HASH_MISMATCH,
+        //   C_TRANSPARENCY_INVALID, C_DEVICE_REVOKED, C_RECORD_ID_CONFLICT,
+        //   C_RECOVERY_AUTH_REQUIRED, C_RECOVERY_SHARE_COMPROMISED, C_WRITE_PAUSED,
+        //   C_DELETION_UNVERIFIED
+        // They fall through to the neutral hint, which still shows the raw code.
         else -> R.string.pallasync_error_hint_generic
     }
 }
