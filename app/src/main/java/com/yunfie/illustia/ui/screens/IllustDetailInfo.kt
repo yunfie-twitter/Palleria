@@ -49,6 +49,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.FlowButtons
@@ -430,6 +431,46 @@ internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * One row of the related-artwork grid: up to [columns] square cards sharing the full width.
+ *
+ * Kept separate from [RelatedIllustsList] so a single row can be composed on its own once it comes
+ * near the viewport instead of building every card up front.
+ */
+@Composable
+internal fun RelatedIllustRow(
+    rowItems: List<Illust>,
+    columns: Int,
+    cardPreferences: ArtworkCardPreferences,
+    onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        rowItems.forEach { related ->
+            Box(modifier = Modifier.weight(1f)) {
+                RelatedIllustCard(
+                    related = related,
+                    showR18Badge = cardPreferences.showR18Badge,
+                    showRelatedR18 = cardPreferences.showRelatedR18,
+                    onOpenIllust = onOpenIllust,
+                    onLongPressIllust = onLongPressIllust,
+                )
+            }
+        }
+        repeat(columns - rowItems.size) {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+/**
+ * Non-lazy variant kept for hosts that cannot emit lazy items (for example the two-pane header).
+ * Prefer [RelatedIllustRow] inside the paged detail list so off-screen rows stay uncomposed.
+ */
 @Composable
 internal fun RelatedIllustsList(
     relatedIllusts: List<Illust>,
@@ -440,37 +481,91 @@ internal fun RelatedIllustsList(
 ) {
     val cardPreferences = LocalArtworkCardPreferences.current
     val columns = adaptiveRelatedIllustColumns(configuredColumns)
-    val relatedRows = remember(relatedIllusts, columns) { relatedIllusts.chunked(columns) }
+    val relatedRows = remember(relatedIllusts, columns) { relatedIllustRows(relatedIllusts, columns) }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        relatedRows.forEach { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                rowItems.forEach { related ->
-                    Box(modifier = Modifier.weight(1f)) {
-                        key(related.id) {
-                            RelatedIllustCard(
-                                related = related,
-                                showR18Badge = cardPreferences.showR18Badge,
-                                showRelatedR18 = cardPreferences.showRelatedR18,
-                                onOpenIllust = onOpenIllust,
-                                onLongPressIllust = onLongPressIllust,
-                            )
-                        }
-                    }
-                }
-                repeat(columns - rowItems.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
+        relatedRows.forEachIndexed { index, rowItems ->
+            DeferredRelatedIllustRow(
+                // The first rows are visible as soon as the section appears; later rows wait until
+                // they near the viewport so the whole grid never composes and decodes at once.
+                initiallyVisible = index < RELATED_ROWS_COMPOSED_IMMEDIATELY,
+                rowItems = rowItems,
+                columns = columns,
+                cardPreferences = cardPreferences,
+                onOpenIllust = onOpenIllust,
+                onLongPressIllust = onLongPressIllust,
+            )
         }
     }
 }
 
+/**
+ * Renders one row only once it comes close to the viewport.
+ *
+ * The placeholder keeps the row's square height so promoting it does not move the content below.
+ * [columns] is always >= 1 here because [adaptiveRelatedIllustColumns] never returns less.
+ */
+@Composable
+private fun DeferredRelatedIllustRow(
+    initiallyVisible: Boolean,
+    rowItems: List<Illust>,
+    columns: Int,
+    cardPreferences: ArtworkCardPreferences,
+    onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
+) {
+    // Keyed on the row's identities so a re-emitted-but-equal list keeps the promoted state, and a
+    // genuinely different row starts hidden again.
+    val rowKey = remember(rowItems) { rowItems.map { it.id } }
+    var visible by remember(rowKey, initiallyVisible) { mutableStateOf(initiallyVisible) }
+    if (visible) {
+        RelatedIllustRow(
+            rowItems = rowItems,
+            columns = columns,
+            cardPreferences = cardPreferences,
+            onOpenIllust = onOpenIllust,
+            onLongPressIllust = onLongPressIllust,
+        )
+        return
+    }
+    // A row of `columns` square cards spans the full width, so its height is width / columns.
+    // The placeholder matches that so promoting the row does not shift the content below it.
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val rowHeight = configuration.screenWidthDp.dp / columns
+    val triggerPx = with(density) { configuration.screenHeightDp.dp.toPx() } * 1.05f
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(rowHeight),
+    ) {
+        // onGloballyPositioned fires for the placeholder once it is measured; comparing its window
+        // position against a screen-height threshold promotes it exactly like the section gate does.
+        Spacer(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .onGloballyPositioned { coordinates ->
+                        if (coordinates.boundsInWindow().top <= triggerPx) {
+                            visible = true
+                        }
+                    },
+        )
+    }
+}
+
+/** Rows of the related grid that are composed as soon as the section appears. */
+private const val RELATED_ROWS_COMPOSED_IMMEDIATELY = 2
+
+/** Splits the related list into grid rows for the given column count. */
+internal fun <T> relatedIllustRows(
+    relatedIllusts: List<T>,
+    columns: Int,
+): List<List<T>> = if (columns <= 0) emptyList() else relatedIllusts.chunked(columns)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RelatedIllustCard(
+internal fun RelatedIllustCard(
     related: Illust,
     showR18Badge: Boolean,
     showRelatedR18: Boolean,
