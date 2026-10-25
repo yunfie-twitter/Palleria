@@ -117,6 +117,15 @@ class PalleriaSyncManager(
 
     suspend fun getServerUrl(): String = coordinator.getServerUrl()
 
+    /**
+     * Checks the configured relay against §10.1 health and falls back to a known origin when it
+     * does not answer. Returns the origin that answered, or null if none did.
+     */
+    suspend fun verifyAndResolveRelayOrigin(): String? = coordinator.verifyAndResolveRelayOrigin()
+
+    /** §10.1 check for one specific origin, used before a user-entered URL is saved. */
+    suspend fun verifyRelayOrigin(origin: String): Boolean = coordinator.verifyRelayOrigin(origin)
+
     fun normalizeServerUrl(rawUrl: String): String? = coordinator.normalizeServerUrl(rawUrl)
 
     internal fun relayShutdownNotice(rawOrigin: String): PallaSyncRetryGate.RelayShutdownNotice? =
