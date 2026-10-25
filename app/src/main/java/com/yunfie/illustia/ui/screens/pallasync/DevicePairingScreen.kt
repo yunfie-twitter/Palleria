@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.pallasync.PallaSyncBootstrapReview
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncPeerSubjectEnrollment
@@ -91,11 +93,14 @@ fun DevicePairingScreen(
         }
     }
 
+    val performHaptic = rememberHapticFeedbackAction()
     val scanner =
         rememberLauncherForActivityResult(ScanContract()) { result ->
             result.contents?.let {
                 offerJson = it
                 peerError = null
+                // Confirms the scan landed without the scanner activity needing a result banner.
+                performHaptic(AppHapticEffect.Success)
             }
         }
     val importer =
@@ -371,7 +376,11 @@ fun DevicePairingScreen(
                     enabled = !peerBusy && work == null && candidate == null && offerJson != null && authorityJson != null,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(if (peerBusy) R.string.pallasync_peer_subject_working else R.string.pallasync_peer_subject_submit))
+                    Text(stringResource(R.string.pallasync_peer_subject_submit))
+                }
+                // The native call can take a while; a spinner plus the current step proves progress.
+                if (peerBusy) {
+                    PallaSyncWorkingState(text = stringResource(R.string.pallasync_peer_subject_working))
                 }
                 work?.let { active ->
                     Text(stringResource(R.string.pallasync_peer_subject_sas_title))
@@ -385,6 +394,7 @@ fun DevicePairingScreen(
                                 try {
                                     manager.confirmPeerSubjectSas(active, active.sas)
                                     confirmed = true
+                                    performHaptic(AppHapticEffect.Success)
                                 } catch (cancelled: CancellationException) {
                                     throw cancelled
                                 } catch (failure: Exception) {
