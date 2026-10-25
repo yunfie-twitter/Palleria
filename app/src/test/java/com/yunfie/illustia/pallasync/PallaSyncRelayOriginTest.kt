@@ -16,17 +16,15 @@ class PallaSyncRelayOriginTest :
             PallaSyncRelayOrigin.resolve("   ") shouldBe PallaSyncRelayOrigin.DEFAULT_ORIGIN
         }
 
-        /**
-         * The previous release persisted the old host. Those users never chose it, so keeping it
-         * would leave them pointed at an origin that answers HTTP 530.
-         */
+        // The previous release persisted the old host. Those users never chose it, so keeping it
+        // would leave them pointed at an origin that answers HTTP 530.
         "a stored legacy default migrates to the current default" {
             PallaSyncRelayOrigin.resolve("https://api.yunfi.f5.si") shouldBe PallaSyncRelayOrigin.DEFAULT_ORIGIN
             PallaSyncRelayOrigin.resolve("https://api.yunfi.f5.si/") shouldBe PallaSyncRelayOrigin.DEFAULT_ORIGIN
             PallaSyncRelayOrigin.resolve("HTTPS://API.YUNFI.F5.SI") shouldBe PallaSyncRelayOrigin.DEFAULT_ORIGIN
         }
 
-        /** An operator running their own relay must never be redirected without asking. */
+        // An operator running their own relay must never be redirected without asking.
         "an explicitly chosen origin is preserved" {
             val custom = "https://relay.example.com"
             PallaSyncRelayOrigin.resolve(custom) shouldBe custom
