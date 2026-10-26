@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import com.yunfie.illustia.data.normalizePixivImageProxyBaseUrl
 import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.pallasync.PallaSyncRelayOrigin
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
 import com.yunfie.illustia.settings.DEFAULT_NAVIGATION_ORDER
@@ -188,7 +189,7 @@ internal fun readFromDataStore(
         dummyAppName = preferences[DUMMY_APP_NAME].orEmpty(),
         dummyIconVariant = preferences[DUMMY_ICON_VARIANT] ?: "ic_launcher_dummy",
         pallaSyncEnabled = preferences[PALLA_SYNC_ENABLED] ?: false,
-        pallaSyncServerUrl = preferences[PALLA_SYNC_SERVER_URL] ?: "https://api.yunfi.f5.si",
+        pallaSyncServerUrl = PallaSyncRelayOrigin.resolve(preferences[PALLA_SYNC_SERVER_URL]),
         sendTelemetry = preferences[SEND_TELEMETRY] ?: false,
         autoDetectClipboard = preferences[AUTO_DETECT_CLIPBOARD] ?: false,
         updateInstallMethod = preferences[UPDATE_INSTALL_METHOD] ?: "standard_apk",
@@ -383,7 +384,7 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         dummyAppName = "",
         dummyIconVariant = "ic_launcher_dummy",
         pallaSyncEnabled = false,
-        pallaSyncServerUrl = "https://api.yunfi.f5.si",
+        pallaSyncServerUrl = PallaSyncRelayOrigin.DEFAULT_ORIGIN,
         sendTelemetry = false,
         internalProxyEnabled = preferences.getBoolean(KEY_INTERNAL_PROXY_ENABLED, false),
         internalProxyType = preferences.getSafeString(KEY_INTERNAL_PROXY_TYPE, "HTTP"),

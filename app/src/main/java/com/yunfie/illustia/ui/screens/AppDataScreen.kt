@@ -226,7 +226,7 @@ fun AppDataScreen(
                         }
                         val viewCountSummary =
                             when {
-                                status != null ->
+                                status != null -> {
                                     stringResource(
                                         R.string.pallasync_capacity_details,
                                         stringResource(R.string.pallasync_capacity_viewed_scope),
@@ -235,12 +235,19 @@ fun AppDataScreen(
                                         status.viewedColdCount,
                                         status.viewedCeiling,
                                     )
-                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
-                                else -> stringResource(R.string.data_items_count, state.settings.viewHistory.size)
+                                }
+
+                                state.settings.pallaSyncEnabled -> {
+                                    stringResource(R.string.pallasync_count_unavailable)
+                                }
+
+                                else -> {
+                                    stringResource(R.string.data_items_count, state.settings.viewHistory.size)
+                                }
                             }
                         val searchCountSummary =
                             when {
-                                status != null ->
+                                status != null -> {
                                     stringResource(
                                         R.string.pallasync_capacity_details,
                                         stringResource(R.string.pallasync_capacity_search_scope),
@@ -249,12 +256,19 @@ fun AppDataScreen(
                                         status.searchColdCount,
                                         status.searchCeiling,
                                     )
-                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
-                                else -> stringResource(R.string.data_items_count, state.settings.searchHistory.size)
+                                }
+
+                                state.settings.pallaSyncEnabled -> {
+                                    stringResource(R.string.pallasync_count_unavailable)
+                                }
+
+                                else -> {
+                                    stringResource(R.string.data_items_count, state.settings.searchHistory.size)
+                                }
                             }
                         val favoriteCountSummary =
                             when {
-                                status != null ->
+                                status != null -> {
                                     stringResource(
                                         R.string.pallasync_logical_projection_details,
                                         stringResource(R.string.data_watchlist_tags),
@@ -262,12 +276,19 @@ fun AppDataScreen(
                                         status.favoriteProjectionCount,
                                         status.favoriteColdCount,
                                     )
-                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
-                                else -> stringResource(R.string.data_items_count, state.settings.favoriteTags.size)
+                                }
+
+                                state.settings.pallaSyncEnabled -> {
+                                    stringResource(R.string.pallasync_count_unavailable)
+                                }
+
+                                else -> {
+                                    stringResource(R.string.data_items_count, state.settings.favoriteTags.size)
+                                }
                             }
                         val muteCountSummary =
                             when {
-                                status != null ->
+                                status != null -> {
                                     stringResource(
                                         R.string.pallasync_logical_projection_details,
                                         stringResource(R.string.data_mute_data),
@@ -275,8 +296,15 @@ fun AppDataScreen(
                                         status.muteProjectionCount,
                                         status.muteColdCount,
                                     )
-                                state.settings.pallaSyncEnabled -> stringResource(R.string.pallasync_count_unavailable)
-                                else -> stringResource(R.string.data_items_count, mutedTotal)
+                                }
+
+                                state.settings.pallaSyncEnabled -> {
+                                    stringResource(R.string.pallasync_count_unavailable)
+                                }
+
+                                else -> {
+                                    stringResource(R.string.data_items_count, mutedTotal)
+                                }
                             }
                         SettingRow(
                             stringResource(R.string.data_view_history),

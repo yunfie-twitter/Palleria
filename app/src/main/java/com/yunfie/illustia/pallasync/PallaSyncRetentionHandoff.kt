@@ -58,7 +58,12 @@ internal class PallaSyncRetentionHandoff(
     ): List<Long> {
         if (!hasVerifiedCurrentEpochSnapshot(chain, authority)) return emptyList()
         val eligible = PallaSyncPeerEpochEligibility.eligibleEpochs(authority, nowMs, handoffVerified = true).toSet()
-        val expired = currentGenerationEpochs(authority).filterNot { it in eligible }
+        val epochs = currentGenerationEpochs(authority)
+        // The current epoch's secret is the only way to write, so it must stay out of the expiry set:
+        // once marked expired it is never cleared, and every later epoch lookup would fail until the
+        // app's preferences are wiped by a reinstall.
+        val current = epochs.lastOrNull() ?: return emptyList()
+        val expired = epochs.filterNot { it in eligible }.filterNot { it == current }
         if (expired.isEmpty()) return emptyList()
         check(hasVerifiedCurrentEpochSnapshot(chain, authority)) { "C_MISSING_DEPENDENCY" }
         check(expireEpochSecrets(chain, expired)) { "C_LOCAL_STORAGE_FULL" }
