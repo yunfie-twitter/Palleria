@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -428,6 +430,53 @@ fun <T> FlowButtons(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
+        }
+    }
+}
+
+/**
+ * A section whose rows stay collapsed until the user asks for them.
+ *
+ * Long settings screens otherwise show every rare recovery action with the same weight as the
+ * everyday ones, so the common rows get lost in the middle of a wall of equal-looking entries.
+ * The header row keeps the title visible and states how many rows are hidden, so nothing looks
+ * missing while the section is closed.
+ */
+@Composable
+fun CollapsibleSection(
+    title: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    hiddenCount: Int,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+        BasicComponent(
+            title = title,
+            summary =
+                if (expanded) {
+                    null
+                } else {
+                    pluralStringResource(R.plurals.section_hidden_rows, hiddenCount, hiddenCount)
+                },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { heading() },
+            endActions = {
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .size(18.dp)
+                            .rotate(if (expanded) 90f else 0f),
+                )
+            },
+            onClick = { onExpandedChange(!expanded) },
+        )
+        if (expanded) {
+            content()
         }
     }
 }
