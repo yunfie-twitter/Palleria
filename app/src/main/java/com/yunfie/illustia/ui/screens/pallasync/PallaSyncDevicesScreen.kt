@@ -473,8 +473,13 @@ fun PallaSyncDevicesScreen(
                                             val transcript = syncManager.createPeerDeviceOffer()
                                             offerTranscript = transcript
                                             peerOffer = transcript.offer.toString()
-                                        } catch (failure: IllegalStateException) {
-                                            offerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_BOOTSTRAP_TRUST_REQUIRED"
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (failure: Exception) {
+                                            // Relay rejections surface as PallaSyncInitialHistory.Failure,
+                                            // which is not an IllegalStateException; catching only that
+                                            // left the QR offer failing with no feedback at all.
+                                            offerError = pallaSyncFailureCode(failure) ?: "unknown"
                                         } finally {
                                             creatingOffer = false
                                         }
@@ -490,7 +495,20 @@ fun PallaSyncDevicesScreen(
                                 ),
                             )
                         }
-                        offerError?.let { Text(it, modifier = Modifier.padding(horizontal = 16.dp)) }
+                        offerError?.let { code ->
+                            Text(
+                                text = pallaSyncErrorGuidance(code),
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MiuixTheme.colorScheme.error,
+                                style = MiuixTheme.textStyles.body2,
+                            )
+                            Text(
+                                text = code,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                style = MiuixTheme.textStyles.footnote1,
+                            )
+                        }
                         DividerLine()
                         if (devices.isEmpty()) {
                             Text(

@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -155,6 +156,10 @@ fun PallaSyncSettingsScreen(
     var tempUrl by remember { mutableStateOf("") }
     var urlVerifying by remember { mutableStateOf(false) }
     var urlFailure by remember { mutableStateOf<String?>(null) }
+
+    // Rarely used recovery and cutover actions stay folded away so the everyday rows above them
+    // are not buried in a wall of equally weighted entries.
+    var showAdvancedActions by rememberSaveable { mutableStateOf(false) }
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
@@ -1947,26 +1952,6 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_prune_log_title),
                                 summary = stringResource(R.string.pallasync_prune_log_desc),
                                 onClick = { if (!pruningLog) showPruneConfirm = true },
-                            )
-                            DividerLine()
-                            SettingLinkRow(
-                                title = stringResource(R.string.pallasync_sync_now),
-                                summary = stringResource(R.string.pallasync_sync_now_desc),
-                                onClick = {
-                                    scope.launch {
-                                        val success = syncManager.syncNow()
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                if (success) {
-                                                    context.getString(R.string.msg_pallasync_sync_completed)
-                                                } else {
-                                                    context.getString(R.string.error_pallasync_sync_failed)
-                                                },
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                    }
-                                },
                             )
                         }
                     }
