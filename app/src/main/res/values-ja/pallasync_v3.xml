@@ -52,6 +52,7 @@
     <string name="pallasync_error_hint_chain_mismatch">要求が別のchainまたはリレーのものです。同じ承認端末のQRと署名済みファイルを使ってください。</string>
     <string name="pallasync_error_hint_device">この端末は要求どおりに登録できません。承認側の端末で登録枠と失効を確認してください。</string>
     <string name="pallasync_error_hint_missing_file">ファイルを読み出せないか、書き出した内容と一致しません。端末内からファイルを選び直してください。</string>
+    <string name="pallasync_error_hint_missing_dependency">この処理は、エポック・証明書・スナップショットなど、まだ届いていないデータの到着を待っています。端末をオンラインにしたまま、不足分を取得したあとに再試行してください。</string>
     <string name="pallasync_error_hint_storage">ファイルを保存できませんでした。端末の空き容量を確保して再試行してください。</string>
     <string name="pallasync_error_hint_network">リレーから応答がありません。接続を確認して再試行してください。</string>
     <string name="pallasync_error_hint_generic">操作を完了できませんでした。下のコードを控えて、この画面を開き直して再試行してください。</string>
@@ -345,4 +346,5 @@
     <string name="pallasync_trust_fingerprint_label">リレーの署名鍵フィンガープリント</string>
     <string name="pallasync_trust_key_id">鍵ID：%1$s</string>
     <string name="pallasync_trust_working">リレーに接続しています…</string>
+    <string name="pallasync_server_url_verifying">リレーを確認しています…</string>
 </resources>

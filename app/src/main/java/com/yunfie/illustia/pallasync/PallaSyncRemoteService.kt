@@ -245,7 +245,30 @@ internal data class PallaSyncProblemHint(
     val code: String,
     val retryable: Boolean,
     @SerialName("server_time_ms") val serverTimeMs: Long? = null,
+    // §19.1 carries the defined retry/reconciliation values inside `context`, and the relay nests
+    // retry_after_ms, used_bytes, max_bytes, shutdown_at_ms and migration_origin there. Reading
+    // them only at the top level returned null for every real response, so the capacity and
+    // shutdown detail the relay sent never reached the UI. Prefer `context`, and keep accepting
+    // the flat form so callers and tests that build a hint directly still work.
+    @SerialName("context") val context: PallaSyncProblemContext? = null,
+    @SerialName("retry_after_ms") private val topLevelRetryAfterMs: Long? = null,
+    @SerialName("used_bytes") private val topLevelUsedBytes: Long? = null,
+    @SerialName("max_bytes") private val topLevelMaxBytes: Long? = null,
+    @SerialName("shutdown_at_ms") private val topLevelShutdownAtMs: Long? = null,
+    @SerialName("migration_origin") private val topLevelMigrationOrigin: String? = null,
+) {
+    val retryAfterMs: Long? get() = context?.retryAfterMs ?: topLevelRetryAfterMs
+    val usedBytes: Long? get() = context?.usedBytes ?: topLevelUsedBytes
+    val maxBytes: Long? get() = context?.maxBytes ?: topLevelMaxBytes
+    val shutdownAtMs: Long? get() = context?.shutdownAtMs ?: topLevelShutdownAtMs
+    val migrationOrigin: String? get() = context?.migrationOrigin ?: topLevelMigrationOrigin
+}
+
+/** The §19.1 `context` object; only members the relay is allowed to send are modelled. */
+@Serializable
+internal data class PallaSyncProblemContext(
     @SerialName("retry_after_ms") val retryAfterMs: Long? = null,
+    val scope: String? = null,
     @SerialName("used_bytes") val usedBytes: Long? = null,
     @SerialName("max_bytes") val maxBytes: Long? = null,
     @SerialName("shutdown_at_ms") val shutdownAtMs: Long? = null,

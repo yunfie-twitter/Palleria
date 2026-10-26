@@ -428,7 +428,6 @@ class PallaSyncKeystore internal constructor(
             check(secret.size == KEY_BYTES && epoch in 0..MAX_EPOCH) { "C_SCHEMA_VIOLATION" }
             check(material.chainId == chain && material.epoch == epoch) { "C_COMMITMENT_MISMATCH" }
             val secretKey = "epoch.$chain.$epoch.secret"
-            check(!sharedPrefs.getBoolean("epoch.$chain.$epoch.expired", false)) { "C_MISSING_DEPENDENCY" }
             val isActive =
                 sharedPrefs.getString("active_chain_id", null) == chain &&
                     sharedPrefs.getLong("key_epoch_number", -1L) == epoch
@@ -442,6 +441,10 @@ class PallaSyncKeystore internal constructor(
                     .withoutPadding()
                     .encodeToString(secret)
             val editor = sharedPrefs.edit().putString(secretKey, encoded)
+            // Replacing verified, root-authorized material re-establishes this epoch, so a retained
+            // expiry mark must not keep blocking it. The mark is otherwise permanent, which left
+            // affected devices stuck until a reinstall wiped preferences.
+            editor.remove("epoch.$chain.$epoch.expired")
             if (isActive) {
                 editor
                     .putString("epoch_secret", encoded)
