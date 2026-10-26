@@ -24,6 +24,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.NavDisplay.transitionSpec
+import androidx.navigation3.ui.NavDisplayTransitionEffects
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
@@ -780,6 +781,7 @@ internal fun AppNavHost(
                 Modifier
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
+            transitionEffects = navTransitionEffects,
         )
     }
 
@@ -795,6 +797,18 @@ internal fun AppNavHost(
 }
 
 private const val ARTWORK_TRANSITION_DURATION = 320
+
+/**
+ * Nav3 transition effects with the swipe-driven pop direction enabled.
+ *
+ * The defaults already clip corners, dim the outgoing scene and block input; only
+ * [NavDisplayTransitionEffects.popDirectionFollowsSwipeEdge] changes. With it on, a back gesture
+ * from the right edge exits to the left instead of always mirroring the entry direction, which is
+ * what a right-edge swipe suggests to the finger. Nav3 picks the matching flipped pop and
+ * predictive-pop specs itself, so the route metadata above still only adds the forward slide.
+ */
+private val navTransitionEffects =
+    NavDisplayTransitionEffects.Default.copy(popDirectionFollowsSwipeEdge = true)
 
 /**
  * Keeps only the shorter forward slide for the artwork and search routes; the enter is the one
