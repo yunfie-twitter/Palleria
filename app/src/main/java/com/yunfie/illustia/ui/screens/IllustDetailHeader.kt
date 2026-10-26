@@ -67,6 +67,7 @@ import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.rememberSystemUiCoveredState
+import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -308,6 +309,11 @@ internal fun IllustDetailHeader(
                             modifier =
                                 Modifier
                                     .fillMaxSize()
+                                    // Only the first page and only while the header sits in its
+                                    // collapsed slot: that is the state the card thumbnail grows
+                                    // into. Expanding to full screen or swiping to page 2 would
+                                    // otherwise animate from a box the user never started on.
+                                    .then(if (page == 0 && !expanded) Modifier.sharedArtworkElement(illust.id) else Modifier)
                                     .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier)
                                     .combinedClickable(
                                         enabled = !maskMutedArtwork,

@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.app
 
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -34,7 +35,9 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalNavigationPrefetchEnabled
+import com.yunfie.illustia.ui.components.ProvideEntrySharedTransitionScope
 import com.yunfie.illustia.ui.screens.AboutScreen
 import com.yunfie.illustia.ui.screens.AccountLoginMethodScreen
 import com.yunfie.illustia.ui.screens.AccountSettingsScreen
@@ -114,41 +117,47 @@ internal fun AppNavHost(
         remember(effectiveSmoothTransitions) {
             artworkPageTransitionMetadata(effectiveSmoothTransitions)
         }
+    // Off by default. The experimental shared-element path also needs rich animations, so a device
+    // that cannot animate does not pay for the extra lookahead pass.
+    val sharedArtworkTransitionsEnabled =
+        appState.settings.isFeatureEnabled(FeatureFlag.SharedElementTransitions) && effectiveSmoothTransitions
     val entryProvider =
         entryProvider<NavKey> {
             entry(AppRoute.Main) {
-                MainSurface(
-                    onSearchFocusHandled = onSearchFocusHandled,
-                    searchFocusRequest = if (backStack.lastOrNull() == AppRoute.Main) searchFocusRequest else 0,
-                    appState = appState,
-                    viewModel = viewModel,
-                    selectedTab = selectedTab,
-                    pagerState = pagerState,
-                    homeScrollBehavior = homeScrollBehavior,
-                    onTabSelected = onTabSelected,
-                    onSearch = {
-                        if (appState.settings.shortsFeedEnabled) {
-                            onNavigate(AppRoute.Search)
-                        } else {
-                            onTabSelected(mainTabs(appState.settings).indexOf(AppTab.Search), AppTab.Search)
-                        }
-                    },
-                    onOpenNovels = {
-                        onNavigate(AppRoute.NovelList)
-                    },
-                    onOpenComments = { illustId ->
-                        viewModel.openComments(illustId to CommentArtworkType.ILLUST)
-                        onSelectedCommentTargetChange(illustId to CommentArtworkType.ILLUST)
-                    },
-                    onOpenWatchlistSeries = { seriesId ->
-                        onSelectedWatchlistSeriesIdChange(seriesId)
-                        onNavigate(AppRoute.IllustSeries)
-                    },
-                    onNavigateToResults = { query ->
-                        viewModel.submitSearch(query)
-                        onNavigate(AppRoute.SearchResults(query))
-                    },
-                )
+                ProvideEntrySharedTransitionScope {
+                    MainSurface(
+                        onSearchFocusHandled = onSearchFocusHandled,
+                        searchFocusRequest = if (backStack.lastOrNull() == AppRoute.Main) searchFocusRequest else 0,
+                        appState = appState,
+                        viewModel = viewModel,
+                        selectedTab = selectedTab,
+                        pagerState = pagerState,
+                        homeScrollBehavior = homeScrollBehavior,
+                        onTabSelected = onTabSelected,
+                        onSearch = {
+                            if (appState.settings.shortsFeedEnabled) {
+                                onNavigate(AppRoute.Search)
+                            } else {
+                                onTabSelected(mainTabs(appState.settings).indexOf(AppTab.Search), AppTab.Search)
+                            }
+                        },
+                        onOpenNovels = {
+                            onNavigate(AppRoute.NovelList)
+                        },
+                        onOpenComments = { illustId ->
+                            viewModel.openComments(illustId to CommentArtworkType.ILLUST)
+                            onSelectedCommentTargetChange(illustId to CommentArtworkType.ILLUST)
+                        },
+                        onOpenWatchlistSeries = { seriesId ->
+                            onSelectedWatchlistSeriesIdChange(seriesId)
+                            onNavigate(AppRoute.IllustSeries)
+                        },
+                        onNavigateToResults = { query ->
+                            viewModel.submitSearch(query)
+                            onNavigate(AppRoute.SearchResults(query))
+                        },
+                    )
+                }
             }
             entry(
                 AppRoute.Search,
@@ -279,101 +288,103 @@ internal fun AppNavHost(
             entry<AppRoute.Detail>(
                 metadata = artworkMetadata,
             ) { route ->
-                val selectedIllust = appState.state.selectedIllust
-                val snapshot =
-                    if (selectedIllust?.id == route.illustId) {
-                        DetailEntrySnapshot(
-                            illust = selectedIllust,
-                            relatedIllusts = appState.state.relatedIllusts,
-                            firstComment = appState.state.selectedIllustFirstComment,
-                            user = appState.state.selectedIllustUser,
+                ProvideEntrySharedTransitionScope {
+                    val selectedIllust = appState.state.selectedIllust
+                    val snapshot =
+                        if (selectedIllust?.id == route.illustId) {
+                            DetailEntrySnapshot(
+                                illust = selectedIllust,
+                                relatedIllusts = appState.state.relatedIllusts,
+                                firstComment = appState.state.selectedIllustFirstComment,
+                                user = appState.state.selectedIllustUser,
+                            )
+                        } else {
+                            detailSnapshots[route.illustId]
+                        }
+                    if (snapshot != null) {
+                        val illust = snapshot.illust
+                        IllustDetailScreen(
+                            illust = illust,
+                            isActive = backStack.lastOrNull() == route,
+                            relatedIllusts = snapshot.relatedIllusts,
+                            firstComment = snapshot.firstComment,
+                            onBack = onPopRoute,
+                            onBookmark = { viewModel.toggleBookmark(illust) },
+                            onBookmarkLongClick = { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) },
+                            onRefresh = { viewModel.refreshIllustDetail(illust.id) },
+                            onOpenUser = viewModel::openUser,
+                            onOpenComments = {
+                                viewModel.openComments(illust.id to CommentArtworkType.ILLUST)
+                                onSelectedCommentTargetChange(illust.id to CommentArtworkType.ILLUST)
+                            },
+                            onOpenSeries =
+                                illust.series?.id?.let { seriesId ->
+                                    {
+                                        onSelectedWatchlistSeriesIdChange(seriesId)
+                                        onNavigate(AppRoute.IllustSeries)
+                                    }
+                                },
+                            onOpenImage = { page -> viewModel.openImageViewer(illust, page) },
+                            onSearchTag = onSearchTag,
+                            onLongPressTag = { tag ->
+                                viewModel.openTagOptions(
+                                    rawTag = tag,
+                                    imageUrl =
+                                        illust.squareImageUrl.ifBlank {
+                                            illust.thumbnailUrl.ifBlank { illust.imageUrl }
+                                        },
+                                )
+                            },
+                            isArtistFollowed = snapshot.user?.isFollowed == true,
+                            isArtistMuted =
+                                appState.state.settings.mutedUsers
+                                    .contains(illust.artistId),
+                            isTagMuted = illust.isMutedByTags(appState.state.settings),
+                            onToggleFollow = {
+                                snapshot.user?.let { viewModel.toggleFollow(it) }
+                                    ?: viewModel.openUser(illust.artistId)
+                            },
+                            onUnmuteUser = { viewModel.unmuteUser(illust.artistId) },
+                            onMuteIllust = { viewModel.muteIllust(illust.id) },
+                            onMuteUser = { viewModel.muteUser(illust.artistId) },
+                            onReport = { message, onComplete ->
+                                viewModel.reportIllust(illust.id, null, message, onComplete)
+                            },
+                            onMuteTag = { tag -> viewModel.muteTag(tag) },
+                            onOpenIllust = viewModel::openIllust,
+                            onLongPressIllust = viewModel::onIllustLongPress,
+                            onOpenIllustById = viewModel::openIllust,
+                            onSaveImage = viewModel::saveImage,
+                            onSaveAllImages = viewModel::saveImages,
+                            onMessage = viewModel::showMessage,
+                            loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
+                            highQualityImages = appState.state.settings.highQualityImages,
+                            detailQuality =
+                                if (illust.type == "manga") {
+                                    appState.state.settings.mangaDetailQuality
+                                } else {
+                                    appState.state.settings.illustDetailQuality
+                                },
+                            prefetchImages = appState.state.settings.prefetchImages,
+                            confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
+                            skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
+                            smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
+                            ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                            mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
+                            detailSectionOrder = appState.state.settings.detailSectionOrder,
+                            relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
+                            listState = viewModel.illustDetailListState(illust.id),
                         )
                     } else {
-                        detailSnapshots[route.illustId]
-                    }
-                if (snapshot != null) {
-                    val illust = snapshot.illust
-                    IllustDetailScreen(
-                        illust = illust,
-                        isActive = backStack.lastOrNull() == route,
-                        relatedIllusts = snapshot.relatedIllusts,
-                        firstComment = snapshot.firstComment,
-                        onBack = onPopRoute,
-                        onBookmark = { viewModel.toggleBookmark(illust) },
-                        onBookmarkLongClick = { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) },
-                        onRefresh = { viewModel.refreshIllustDetail(illust.id) },
-                        onOpenUser = viewModel::openUser,
-                        onOpenComments = {
-                            viewModel.openComments(illust.id to CommentArtworkType.ILLUST)
-                            onSelectedCommentTargetChange(illust.id to CommentArtworkType.ILLUST)
-                        },
-                        onOpenSeries =
-                            illust.series?.id?.let { seriesId ->
-                                {
-                                    onSelectedWatchlistSeriesIdChange(seriesId)
-                                    onNavigate(AppRoute.IllustSeries)
-                                }
-                            },
-                        onOpenImage = { page -> viewModel.openImageViewer(illust, page) },
-                        onSearchTag = onSearchTag,
-                        onLongPressTag = { tag ->
-                            viewModel.openTagOptions(
-                                rawTag = tag,
-                                imageUrl =
-                                    illust.squareImageUrl.ifBlank {
-                                        illust.thumbnailUrl.ifBlank { illust.imageUrl }
-                                    },
-                            )
-                        },
-                        isArtistFollowed = snapshot.user?.isFollowed == true,
-                        isArtistMuted =
-                            appState.state.settings.mutedUsers
-                                .contains(illust.artistId),
-                        isTagMuted = illust.isMutedByTags(appState.state.settings),
-                        onToggleFollow = {
-                            snapshot.user?.let { viewModel.toggleFollow(it) }
-                                ?: viewModel.openUser(illust.artistId)
-                        },
-                        onUnmuteUser = { viewModel.unmuteUser(illust.artistId) },
-                        onMuteIllust = { viewModel.muteIllust(illust.id) },
-                        onMuteUser = { viewModel.muteUser(illust.artistId) },
-                        onReport = { message, onComplete ->
-                            viewModel.reportIllust(illust.id, null, message, onComplete)
-                        },
-                        onMuteTag = { tag -> viewModel.muteTag(tag) },
-                        onOpenIllust = viewModel::openIllust,
-                        onLongPressIllust = viewModel::onIllustLongPress,
-                        onOpenIllustById = viewModel::openIllust,
-                        onSaveImage = viewModel::saveImage,
-                        onSaveAllImages = viewModel::saveImages,
-                        onMessage = viewModel::showMessage,
-                        loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
-                        highQualityImages = appState.state.settings.highQualityImages,
-                        detailQuality =
-                            if (illust.type == "manga") {
-                                appState.state.settings.mangaDetailQuality
-                            } else {
-                                appState.state.settings.illustDetailQuality
-                            },
-                        prefetchImages = appState.state.settings.prefetchImages,
-                        confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
-                        skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
-                        smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
-                        ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
-                        mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
-                        detailSectionOrder = appState.state.settings.detailSectionOrder,
-                        relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
-                        listState = viewModel.illustDetailListState(illust.id),
-                    )
-                } else {
-                    if (backStack.lastOrNull() == route) {
-                        LaunchedEffect(route.illustId) {
-                            viewModel.openIllust(route.illustId)
+                        if (backStack.lastOrNull() == route) {
+                            LaunchedEffect(route.illustId) {
+                                viewModel.openIllust(route.illustId)
+                            }
                         }
+                        IllustDetailSkeletonScreen(
+                            onBack = onPopRoute,
+                        )
                     }
-                    IllustDetailSkeletonScreen(
-                        onBack = onPopRoute,
-                    )
                 }
             }
             entry(
@@ -774,15 +785,31 @@ internal fun AppNavHost(
             entryProvider = entryProvider,
         )
     CompositionLocalProvider(LocalNavigationPrefetchEnabled provides !artworkPopSettling) {
-        NavDisplay(
-            entries = entries,
-            onBack = onPopRoute,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MiuixTheme.colorScheme.surface),
-            transitionEffects = navTransitionEffects,
-        )
+        if (sharedArtworkTransitionsEnabled) {
+            SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
+                CompositionLocalProvider(LocalNavSharedTransitionScope provides this) {
+                    NavDisplay(
+                        entries = entries,
+                        onBack = onPopRoute,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(MiuixTheme.colorScheme.surface),
+                        transitionEffects = navTransitionEffects,
+                    )
+                }
+            }
+        } else {
+            NavDisplay(
+                entries = entries,
+                onBack = onPopRoute,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.surface),
+                transitionEffects = navTransitionEffects,
+            )
+        }
     }
 
     AppOverlayHost(
