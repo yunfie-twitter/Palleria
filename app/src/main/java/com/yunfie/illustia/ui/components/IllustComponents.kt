@@ -207,6 +207,7 @@ fun IllustCard(
     IllustCardImpl(
         previewUrl = previewUrl,
         title = illust.title,
+        illustId = illust.id,
         artistName = illust.artistName,
         tags = illust.tags,
         totalBookmarks = illust.totalBookmarks,
@@ -230,6 +231,7 @@ fun IllustCard(
 private fun IllustCardImpl(
     previewUrl: String,
     title: String,
+    illustId: Long,
     artistName: String,
     tags: List<String>,
     totalBookmarks: Int,
@@ -300,6 +302,7 @@ private fun IllustCardImpl(
                 IllustCardThumbnail(
                     previewUrl = previewUrl,
                     title = title,
+                    illustId = illustId,
                     badgeText = cardBadgeText,
                     ageRestrictionBadgeText = ageRestrictionBadgeText,
                     isMutedByTag = isMutedByTag,
@@ -356,6 +359,7 @@ private fun IllustCardImpl(
 private fun IllustCardThumbnail(
     previewUrl: String,
     title: String,
+    illustId: Long,
     badgeText: String?,
     ageRestrictionBadgeText: String?,
     isMutedByTag: Boolean,
@@ -365,6 +369,7 @@ private fun IllustCardThumbnail(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.75f)
+                .sharedArtworkElement(illustId)
                 .clip(IllustCardCornerShape)
                 .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {

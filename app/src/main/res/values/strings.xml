@@ -1459,4 +1459,6 @@
     <string name="pallasync_peer_subject_import_acceptance">承認者から受理応答を読み込む</string>
     <string name="pallasync_peer_subject_export_request">承認端末へ署名済み申請を渡す</string>
     <string name="pallasync_peer_subject_request_exported">申請ファイルを保存・readbackしました。承認端末へ渡してください。</string>
+    <string name="flag_shared_element_transitions_title">共有要素トランジション</string>
+    <string name="flag_shared_element_transitions_desc">作品カードのサムネイルが詳細画面の画像へ流れるように拡大するアニメーションにします。戻るときも同じ動きになります。関連イラストからの移動は従来のままです</string>
 </resources>

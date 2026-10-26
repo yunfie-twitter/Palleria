@@ -1355,4 +1355,6 @@
     <string name="pallasync_recovery_sign_retirement">Sign set retirement</string>
     <string name="pallasync_recovery_public_status_guidance">Give holders the original signed statuses. This file contains public status only, without shares, packages or unlock credentials. Hosted providers are refused. Ancestry does not prove global freshness.</string>
     <string name="pallasync_recovery_retirement_guidance">Use root input to sign retirement of this set. Then distribute the public status to reachable holders and separately erase this device\'s share and accessible old media. This step does not erase other media or revoke retained adversarial copies.</string>
+    <string name="flag_shared_element_transitions_title">Shared element transitions</string>
+    <string name="flag_shared_element_transitions_desc">Animates an artwork card thumbnail into the detail image, in both directions. Moving between related artworks keeps the existing transition</string>
 </resources>
