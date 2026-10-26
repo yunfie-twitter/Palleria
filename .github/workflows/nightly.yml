@@ -59,7 +59,7 @@ jobs:
 
       # 生成された APK を Artifact としてアップロード (短期保持: 3日)
       - name: Upload Nightly Release APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: success()
         with:
           name: nightly-release-apks
