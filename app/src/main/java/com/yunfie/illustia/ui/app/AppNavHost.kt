@@ -1,7 +1,6 @@
 package com.yunfie.illustia.ui.app
 
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -24,9 +23,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.NavDisplay.popTransitionSpec
-import androidx.navigation3.ui.NavDisplay.predictivePopTransitionSpec
 import androidx.navigation3.ui.NavDisplay.transitionSpec
+import androidx.navigation3.ui.NavDisplayTransitionEffects
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
@@ -783,6 +781,7 @@ internal fun AppNavHost(
                 Modifier
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.surface),
+            transitionEffects = navTransitionEffects,
         )
     }
 
@@ -798,13 +797,33 @@ internal fun AppNavHost(
 }
 
 private const val ARTWORK_TRANSITION_DURATION = 320
-private const val ARTWORK_POP_TRANSITION_DURATION = 280
-private const val ARTWORK_PREDICTIVE_POP_DURATION = 550
 
+/**
+ * Nav3 transition effects with the swipe-driven pop direction enabled.
+ *
+ * The defaults already clip corners, dim the outgoing scene and block input; only
+ * [NavDisplayTransitionEffects.popDirectionFollowsSwipeEdge] changes. With it on, a back gesture
+ * from the right edge exits to the left instead of always mirroring the entry direction, which is
+ * what a right-edge swipe suggests to the finger. Nav3 picks the matching flipped pop and
+ * predictive-pop specs itself, so the route metadata above still only adds the forward slide.
+ */
+private val navTransitionEffects =
+    NavDisplayTransitionEffects.Default.copy(popDirectionFollowsSwipeEdge = true)
+
+/**
+ * Keeps only the shorter forward slide for the artwork and search routes; the enter is the one
+ * animation that is intentionally snappier than the Nav3 default.
+ *
+ * Every back animation is left to Nav3 by returning no pop or predictive-pop spec. The other ~45
+ * routes inherit `defaultPopTransitionSpec` and `defaultPredictivePopTransitionSpec` (500ms pop and
+ * 550ms predictive pop on the library's spring-like NavAnimationEasing). Overriding these five
+ * routes with a 280ms pop and a 550ms LinearEasing predictive pop replaced that easing with
+ * FastOutSlowInEasing, so backing out of the artwork page settled differently from every settings
+ * and profile screen. The library easing is internal and cannot be reproduced from here, so the
+ * only way to match the rest of the app is to not override the pop at all.
+ */
 private fun artworkPageTransitionMetadata(smoothTransitions: Boolean = true): Map<String, Any> {
     val duration = if (smoothTransitions) ARTWORK_TRANSITION_DURATION else 0
-    val popDuration = if (smoothTransitions) ARTWORK_POP_TRANSITION_DURATION else 0
-    val predictivePopDuration = if (smoothTransitions) ARTWORK_PREDICTIVE_POP_DURATION else 0
     return transitionSpec {
         ContentTransform(
             slideInHorizontally(
@@ -816,29 +835,5 @@ private fun artworkPageTransitionMetadata(smoothTransitions: Boolean = true): Ma
                 animationSpec = tween(duration),
             ),
         )
-    } +
-        popTransitionSpec {
-            ContentTransform(
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> -fullWidth / 4 },
-                    animationSpec = tween(popDuration),
-                ),
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(popDuration),
-                ),
-            )
-        } +
-        predictivePopTransitionSpec {
-            ContentTransform(
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> -fullWidth / 4 },
-                    animationSpec = tween(predictivePopDuration, easing = LinearEasing),
-                ),
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(predictivePopDuration, easing = LinearEasing),
-                ),
-            )
-        }
+    }
 }

@@ -82,6 +82,7 @@
     <string name="pallasync_error_hint_chain_mismatch">This request belongs to a different chain or relay. Use the QR and the signed file from the same approving device.</string>
     <string name="pallasync_error_hint_device">This device cannot be enrolled as requested. Check approved device slots and revocations on the approving device.</string>
     <string name="pallasync_error_hint_missing_file">The file could not be read, or it did not match what was written. Choose it again from local storage.</string>
+    <string name="pallasync_error_hint_missing_dependency">This step is waiting on data that has not arrived yet, such as an epoch, a certificate or a snapshot. Keep the device online and retry once the missing piece has been fetched.</string>
     <string name="pallasync_error_hint_storage">The file could not be saved. Free up device storage and try again.</string>
     <string name="pallasync_error_hint_network">The relay did not respond. Check the connection and try again.</string>
     <string name="pallasync_error_hint_generic">The operation did not complete. Note the code below, reopen this screen and try again.</string>
@@ -373,4 +374,5 @@
     <string name="pallasync_trust_fingerprint_label">Relay signing key fingerprint</string>
     <string name="pallasync_trust_key_id">Key ID: %1$s</string>
     <string name="pallasync_trust_working">Contacting the relay…</string>
+    <string name="pallasync_server_url_verifying">Checking the relay…</string>
 </resources>

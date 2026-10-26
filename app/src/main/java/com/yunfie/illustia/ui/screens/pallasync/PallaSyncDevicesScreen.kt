@@ -221,7 +221,7 @@ fun PallaSyncDevicesScreen(
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (failure: Exception) {
-                                peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY"
+                                peerError = pallaSyncFailureCode(failure) ?: "unknown"
                             } finally {
                                 peerBusy = false
                             }
@@ -257,7 +257,7 @@ fun PallaSyncDevicesScreen(
                         }
                     },
                 )
-                peerError?.let { Text(it) }
+                PallaSyncErrorHint(peerError)
                 TextButton(text = stringResource(R.string.action_cancel), onClick = { peerOffer = null })
             }
         }
@@ -388,7 +388,7 @@ fun PallaSyncDevicesScreen(
                         Text(stringResource(R.string.pallasync_peer_approval_retry))
                     }
                 }
-                peerError?.let { Text(it) }
+                PallaSyncErrorHint(peerError)
                 TextButton(text = stringResource(R.string.action_cancel), onClick = cancelApproval)
             }
         }
@@ -419,14 +419,14 @@ fun PallaSyncDevicesScreen(
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (failure: Exception) {
-                                peerError = failure.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY"
+                                peerError = pallaSyncFailureCode(failure) ?: "unknown"
                             } finally {
                                 peerBusy = false
                             }
                         }
                     },
                 )
-                peerError?.let { Text(it) }
+                PallaSyncErrorHint(peerError)
                 TextButton(text = stringResource(R.string.action_cancel), onClick = { acceptedPeerResponse = null })
             }
         }

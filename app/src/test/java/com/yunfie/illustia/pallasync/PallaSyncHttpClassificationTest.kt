@@ -13,6 +13,18 @@ class PallaSyncHttpClassificationTest :
             """{"items":[],"next_cursor":null,"has_more":false,"scan_through_seq":5,
             "log_id":"$logId","generation":0,"head_seq":5,"head_hash":"$hash"}"""
 
+        "an unreachable origin is transport backoff, not a protocol violation" {
+            // Cloudflare reports an unresponsive origin as 52x/530. Classifying that as a protocol
+            // error surfaced C_RELAY_DISCLOSURE_INVALID, telling the user the relay's documents
+            // were invalid when the relay was simply unreachable.
+            PALLASYNC_EDGE_UNAVAILABLE_STATUSES.forEach { status ->
+                val outcome = classifyPallaSyncHttpStatus(status)
+                (outcome is PallaSyncHttpResult.Retryable) shouldBe true
+                (outcome as PallaSyncHttpResult.Retryable).statusCode shouldBe status
+            }
+            PALLASYNC_EDGE_UNAVAILABLE_STATUSES shouldBe setOf(521, 522, 523, 524, 530)
+        }
+
         "410 is an unverified deletion hint and 404 never implies erasure" {
             classifyPallaSyncHttpStatus(410) shouldBe PallaSyncHttpResult.Gone
             classifyPallaSyncHttpStatus(404) shouldBe
