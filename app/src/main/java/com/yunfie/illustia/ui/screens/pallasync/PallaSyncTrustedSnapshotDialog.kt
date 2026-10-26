@@ -67,7 +67,7 @@ internal fun PallaSyncTrustedSnapshotDialog(
                     )
                 }
             }
-            failure?.let { Text(it) }
+            PallaSyncErrorHint(failure)
             TextButton(text = stringResource(R.string.action_cancel), enabled = !busy, onClick = onDismiss)
         }
     }
