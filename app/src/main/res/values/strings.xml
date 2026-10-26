@@ -1355,6 +1355,8 @@
     <string name="flag_predns_socket_warming_desc">起動時スプラッシュの裏でPixivサーバーへのDNS事前解決とTCP/TLS接続プールを確立し、初速の表示待ちをゼロ化します</string>
     <string name="flag_delta_etag_sync_title">デルタ・ETag同期</string>
     <string name="flag_delta_etag_sync_desc">フォロー新着同期時にETagと既知作品差分（デルタ）のみを取得・先行キャッシュし、通信量を消費せずに最新作を即時表示します</string>
+    <string name="flag_shared_element_transitions_title">共有要素トランジション</string>
+    <string name="flag_shared_element_transitions_desc">作品カードのサムネイルが詳細画面の画像へ流れるように拡大するアニメーションにします。戻るときも同じ動きになります。関連イラストからの移動は従来のままです</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 
