@@ -20,10 +20,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -45,7 +45,7 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 
 @Composable
 fun WallpaperPlaylistSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -55,16 +55,16 @@ fun WallpaperPlaylistSettingsScreen(
     val imageStore = remember(context) { NativeImageStore(context.applicationContext) }
     val liveWallpaperSupported = remember(context) { LiveWallpaperSupport.isSupported(context) }
 
-    LaunchedEffect(liveWallpaperSupported, state.settings.wallpaperPlaylistEnabled) {
-        if (!liveWallpaperSupported && state.settings.wallpaperPlaylistEnabled) {
+    LaunchedEffect(liveWallpaperSupported, settings.wallpaperPlaylistEnabled) {
+        if (!liveWallpaperSupported && settings.wallpaperPlaylistEnabled) {
             viewModel.updateWallpaperPlaylistEnabled(false)
         }
     }
 
     val liveWallpaperSource =
         if (
-            state.settings.liveWallpaperSource == "folder" ||
-            state.settings.liveWallpaperSource == "selected_folder"
+            settings.liveWallpaperSource == "folder" ||
+            settings.liveWallpaperSource == "selected_folder"
         ) {
             "selected_folder"
         } else {
@@ -126,7 +126,7 @@ fun WallpaperPlaylistSettingsScreen(
                         ElevatedPanel {
                             SettingSwitchRow(
                                 title = stringResource(R.string.wallpaper_playlist),
-                                checked = state.settings.wallpaperPlaylistEnabled,
+                                checked = settings.wallpaperPlaylistEnabled,
                                 onCheckedChange = viewModel::updateWallpaperPlaylistEnabled,
                                 summary = stringResource(R.string.wallpaper_playlist_desc),
                             )
@@ -171,7 +171,7 @@ fun WallpaperPlaylistSettingsScreen(
                                     title = stringResource(R.string.live_wallpaper_folder_name),
                                     summary =
                                         imageStore
-                                            .folderLabel(state.settings.liveWallpaperSourceFolder)
+                                            .folderLabel(settings.liveWallpaperSourceFolder)
                                             .ifBlank { stringResource(R.string.live_wallpaper_folder_name_desc) },
                                     modifier = Modifier.fillMaxWidth(),
                                     onClick = { liveWallpaperFolderPicker.launch(null) },
@@ -181,16 +181,16 @@ fun WallpaperPlaylistSettingsScreen(
                             SettingDropdownRow(
                                 title = stringResource(R.string.live_wallpaper_change_mode),
                                 values = listOf("screen", "home", "interval", "double_tap"),
-                                selected = state.settings.liveWallpaperChangeMode,
+                                selected = settings.liveWallpaperChangeMode,
                                 label = { liveWallpaperChangeModeLabel(it) },
                                 onSelect = viewModel::updateLiveWallpaperChangeMode,
                             )
-                            if (state.settings.liveWallpaperChangeMode == "interval") {
+                            if (settings.liveWallpaperChangeMode == "interval") {
                                 DividerLine()
                                 SettingDropdownRow(
                                     title = stringResource(R.string.live_wallpaper_interval),
                                     values = listOf(15, 30, 60, 180, 360, 720, 1440),
-                                    selected = state.settings.liveWallpaperIntervalMinutes,
+                                    selected = settings.liveWallpaperIntervalMinutes,
                                     label = { stringResource(R.string.live_wallpaper_minutes, it) },
                                     onSelect = viewModel::updateLiveWallpaperIntervalMinutes,
                                 )
@@ -199,7 +199,7 @@ fun WallpaperPlaylistSettingsScreen(
                             SettingDropdownRow(
                                 title = stringResource(R.string.live_wallpaper_order),
                                 values = listOf("random", "newest", "oldest"),
-                                selected = state.settings.liveWallpaperOrder,
+                                selected = settings.liveWallpaperOrder,
                                 label = { liveWallpaperOrderLabel(it) },
                                 onSelect = viewModel::updateLiveWallpaperOrder,
                             )
@@ -207,7 +207,7 @@ fun WallpaperPlaylistSettingsScreen(
                             SettingDropdownRow(
                                 title = stringResource(R.string.live_wallpaper_scale),
                                 values = listOf("cover", "contain", "fit_width", "fit_height"),
-                                selected = state.settings.liveWallpaperScaleMode,
+                                selected = settings.liveWallpaperScaleMode,
                                 label = { liveWallpaperScaleLabel(it) },
                                 onSelect = viewModel::updateLiveWallpaperScaleMode,
                             )
@@ -215,21 +215,21 @@ fun WallpaperPlaylistSettingsScreen(
                             SettingDropdownRow(
                                 title = stringResource(R.string.live_wallpaper_background),
                                 values = listOf("black", "white", "dominant", "blur"),
-                                selected = state.settings.liveWallpaperBackground,
+                                selected = settings.liveWallpaperBackground,
                                 label = { liveWallpaperBackgroundLabel(it) },
                                 onSelect = viewModel::updateLiveWallpaperBackground,
                             )
                             DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.live_wallpaper_crossfade),
-                                checked = state.settings.liveWallpaperCrossfade,
+                                checked = settings.liveWallpaperCrossfade,
                                 onCheckedChange = viewModel::updateLiveWallpaperCrossfade,
                                 summary = stringResource(R.string.live_wallpaper_crossfade_desc),
                             )
                             DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.live_wallpaper_exclude_sensitive),
-                                checked = state.settings.liveWallpaperExcludeSensitive,
+                                checked = settings.liveWallpaperExcludeSensitive,
                                 onCheckedChange = viewModel::updateLiveWallpaperExcludeSensitive,
                                 summary = stringResource(R.string.live_wallpaper_exclude_sensitive_desc),
                             )

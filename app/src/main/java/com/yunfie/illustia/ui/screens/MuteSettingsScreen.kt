@@ -23,9 +23,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
@@ -53,7 +53,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun MuteSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -90,7 +90,7 @@ fun MuteSettingsScreen(
         ) {
             item {
                 Section(stringResource(R.string.mute_section_users)) {
-                    if (state.settings.mutedUsers.isEmpty()) {
+                    if (settings.mutedUsers.isEmpty()) {
                         Text(
                             stringResource(R.string.mute_users_empty),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -98,7 +98,7 @@ fun MuteSettingsScreen(
                     }
                 }
             }
-            items(state.settings.mutedUsers, key = { "user_$it" }, contentType = { "muted_user" }) { userId ->
+            items(settings.mutedUsers, key = { "user_$it" }, contentType = { "muted_user" }) { userId ->
                 MuteItemRow(text = stringResource(R.string.mute_user_id, userId)) {
                     viewModel.unmuteUser(userId)
                 }
@@ -108,7 +108,7 @@ fun MuteSettingsScreen(
 
             item {
                 Section(stringResource(R.string.mute_section_works)) {
-                    if (state.settings.mutedIllusts.isEmpty()) {
+                    if (settings.mutedIllusts.isEmpty()) {
                         Text(
                             stringResource(R.string.mute_works_empty),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -116,7 +116,7 @@ fun MuteSettingsScreen(
                     }
                 }
             }
-            items(state.settings.mutedIllusts, key = { "illust_$it" }, contentType = { "muted_illust" }) { illustId ->
+            items(settings.mutedIllusts, key = { "illust_$it" }, contentType = { "muted_illust" }) { illustId ->
                 MuteItemRow(text = stringResource(R.string.mute_illust_id, illustId)) {
                     viewModel.unmuteIllust(illustId)
                 }
@@ -139,7 +139,7 @@ fun MuteSettingsScreen(
                             )
                         }
                     }
-                    if (state.settings.mutedTags.isEmpty()) {
+                    if (settings.mutedTags.isEmpty()) {
                         Text(
                             stringResource(R.string.mute_tags_empty),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -147,7 +147,7 @@ fun MuteSettingsScreen(
                     }
                 }
             }
-            items(state.settings.mutedTags, key = { "tag_$it" }, contentType = { "muted_tag" }) { tag ->
+            items(settings.mutedTags, key = { "tag_$it" }, contentType = { "muted_tag" }) { tag ->
                 MuteItemRow(text = "#$tag") {
                     viewModel.unmuteTag(tag)
                 }

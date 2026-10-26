@@ -41,9 +41,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -78,7 +78,7 @@ private sealed class PinVerifyAction {
 
 @Composable
 fun AppLockSetupScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -99,8 +99,8 @@ fun AppLockSetupScreen(
     val isCooldownActive = cooldownRemaining > 0L
 
     // Cooldown countdown timer — reads from shared ViewModel state
-    LaunchedEffect(state.settings.appLockCooldownUntil) {
-        val until = state.settings.appLockCooldownUntil
+    LaunchedEffect(settings.appLockCooldownUntil) {
+        val until = settings.appLockCooldownUntil
         while (true) {
             val remaining = ((until - android.os.SystemClock.elapsedRealtime()) / 1000L).coerceAtLeast(0L)
             cooldownRemaining = remaining
@@ -268,7 +268,7 @@ fun AppLockSetupScreen(
                         ElevatedPanel {
                             SettingSwitchRow(
                                 title = stringResource(R.string.app_lock_enable),
-                                checked = state.settings.appLockEnabled,
+                                checked = settings.appLockEnabled,
                                 onCheckedChange = { enabled ->
                                     if (!enabled) {
                                         showPinOverlay(PinVerifyAction.Disable)
@@ -277,7 +277,7 @@ fun AppLockSetupScreen(
                                     }
                                 },
                                 summary =
-                                    if (state.settings.appLockEnabled) {
+                                    if (settings.appLockEnabled) {
                                         stringResource(R.string.app_lock_enabled)
                                     } else {
                                         stringResource(R.string.app_lock_disabled)
@@ -287,7 +287,7 @@ fun AppLockSetupScreen(
                     }
                 }
 
-                if (state.settings.appLockEnabled) {
+                if (settings.appLockEnabled) {
                     item {
                         Section(stringResource(R.string.app_lock_section_pin)) {
                             ElevatedPanel {
@@ -304,7 +304,7 @@ fun AppLockSetupScreen(
                             ElevatedPanel {
                                 SettingSwitchRow(
                                     title = stringResource(R.string.app_lock_timing_return),
-                                    checked = state.settings.appLockTiming == "return",
+                                    checked = settings.appLockTiming == "return",
                                     onCheckedChange = { enabled ->
                                         showPinOverlay(
                                             PinVerifyAction.ChangeTiming(if (enabled) "return" else "launch"),
@@ -315,7 +315,7 @@ fun AppLockSetupScreen(
                                 DividerLine()
                                 SettingSwitchRow(
                                     title = stringResource(R.string.app_lock_biometric),
-                                    checked = state.settings.biometricEnabled,
+                                    checked = settings.biometricEnabled,
                                     onCheckedChange = { enable ->
                                         if (enable) {
                                             requestBiometric = true
@@ -402,14 +402,14 @@ fun AppLockSetupScreen(
                                 fontWeight = FontWeight.SemiBold,
                             )
                         } else if (verifyError) {
-                            val attemptsRemaining = (12 - state.settings.appLockFailCount).coerceAtLeast(0)
+                            val attemptsRemaining = (12 - settings.appLockFailCount).coerceAtLeast(0)
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = stringResource(R.string.app_lock_incorrect),
                                     color = MiuixTheme.colorScheme.error,
                                     style = MiuixTheme.textStyles.footnote1,
                                 )
-                                if (state.settings.appLockFailCount in 3..11) {
+                                if (settings.appLockFailCount in 3..11) {
                                     Text(
                                         text = stringResource(R.string.app_lock_attempts_remaining, attemptsRemaining),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

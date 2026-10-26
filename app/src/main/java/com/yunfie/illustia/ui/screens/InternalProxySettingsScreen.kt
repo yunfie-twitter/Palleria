@@ -20,9 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -48,7 +48,7 @@ private val PROXY_TYPES = listOf("HTTP", "SOCKS")
 
 @Composable
 fun InternalProxySettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -56,16 +56,16 @@ fun InternalProxySettingsScreen(
     val scrollBehavior = MiuixScrollBehavior()
 
     var showCustomDohDialog by remember { mutableStateOf(false) }
-    var customDohInput by remember { mutableStateOf(state.settings.dohCustomUrl) }
+    var customDohInput by remember { mutableStateOf(settings.dohCustomUrl) }
 
     var showProxyHostDialog by remember { mutableStateOf(false) }
-    var proxyHostInput by remember { mutableStateOf(state.settings.internalProxyHost) }
+    var proxyHostInput by remember { mutableStateOf(settings.internalProxyHost) }
 
     var showProxyPortDialog by remember { mutableStateOf(false) }
-    var proxyPortInput by remember { mutableStateOf(state.settings.internalProxyPort.toString()) }
+    var proxyPortInput by remember { mutableStateOf(settings.internalProxyPort.toString()) }
 
     var showBypassHostsDialog by remember { mutableStateOf(false) }
-    var bypassHostsInput by remember { mutableStateOf(state.settings.internalProxyBypassHosts) }
+    var bypassHostsInput by remember { mutableStateOf(settings.internalProxyBypassHosts) }
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -102,28 +102,28 @@ fun InternalProxySettingsScreen(
                             title = stringResource(R.string.internal_proxy_doh_provider),
                             summary = stringResource(R.string.internal_proxy_doh_provider_desc),
                             values = DOH_PROVIDERS,
-                            selected = state.settings.dohProvider,
+                            selected = settings.dohProvider,
                             label = { dohProviderLabel(it) },
                             onSelect = { selected ->
                                 viewModel.updateDohProvider(selected)
                                 if (selected == "custom") {
-                                    customDohInput = state.settings.dohCustomUrl
+                                    customDohInput = settings.dohCustomUrl
                                     showCustomDohDialog = true
                                 }
                             },
                         )
-                        if (state.settings.dohProvider == "custom") {
+                        if (settings.dohProvider == "custom") {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.internal_proxy_doh_custom_url),
                                 summary =
-                                    state.settings.dohCustomUrl.ifBlank {
+                                    settings.dohCustomUrl.ifBlank {
                                         stringResource(
                                             R.string.internal_proxy_doh_custom_url_hint,
                                         )
                                     },
                                 onClick = {
-                                    customDohInput = state.settings.dohCustomUrl
+                                    customDohInput = settings.dohCustomUrl
                                     showCustomDohDialog = true
                                 },
                             )
@@ -138,42 +138,42 @@ fun InternalProxySettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.internal_proxy_enable),
                             summary = stringResource(R.string.internal_proxy_enable_desc),
-                            checked = state.settings.internalProxyEnabled,
+                            checked = settings.internalProxyEnabled,
                             onCheckedChange = viewModel::updateInternalProxyEnabled,
                         )
-                        if (state.settings.internalProxyEnabled) {
+                        if (settings.internalProxyEnabled) {
                             DividerLine()
                             SettingDropdownRow(
                                 title = stringResource(R.string.internal_proxy_type),
                                 values = PROXY_TYPES,
-                                selected = state.settings.internalProxyType,
+                                selected = settings.internalProxyType,
                                 label = { it },
                                 onSelect = viewModel::updateInternalProxyType,
                             )
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.internal_proxy_host),
-                                summary = state.settings.internalProxyHost.ifBlank { "127.0.0.1" },
+                                summary = settings.internalProxyHost.ifBlank { "127.0.0.1" },
                                 onClick = {
-                                    proxyHostInput = state.settings.internalProxyHost
+                                    proxyHostInput = settings.internalProxyHost
                                     showProxyHostDialog = true
                                 },
                             )
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.internal_proxy_port),
-                                summary = state.settings.internalProxyPort.toString(),
+                                summary = settings.internalProxyPort.toString(),
                                 onClick = {
-                                    proxyPortInput = state.settings.internalProxyPort.toString()
+                                    proxyPortInput = settings.internalProxyPort.toString()
                                     showProxyPortDialog = true
                                 },
                             )
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.internal_proxy_bypass_hosts),
-                                summary = state.settings.internalProxyBypassHosts.ifBlank { "localhost, 127.0.0.1" },
+                                summary = settings.internalProxyBypassHosts.ifBlank { "localhost, 127.0.0.1" },
                                 onClick = {
-                                    bypassHostsInput = state.settings.internalProxyBypassHosts
+                                    bypassHostsInput = settings.internalProxyBypassHosts
                                     showBypassHostsDialog = true
                                 },
                             )

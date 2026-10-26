@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PALLASYNC_EXPORT_MEDIA_TYPE
@@ -58,6 +57,7 @@ import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.authenticateDeletionWitness
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -138,7 +138,7 @@ private fun PallaSyncRecoveryHintText(code: String) {
 @Composable
 @Suppress("ThrowsCount", "TooGenericExceptionCaught") // SAF and snapshot-source failures are mapped to retained-state UI outcomes.
 fun PallaSyncSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onPairDevice: () -> Unit,
@@ -436,8 +436,8 @@ fun PallaSyncSettingsScreen(
             }
         }
 
-    LaunchedEffect(state.settings.pallaSyncEnabled, hasLocalChain) {
-        if (!state.settings.pallaSyncEnabled && !hasLocalChain) {
+    LaunchedEffect(settings.pallaSyncEnabled, hasLocalChain) {
+        if (!settings.pallaSyncEnabled && !hasLocalChain) {
             clientStatus = null
             relayShutdownNotice = null
             legacyMigrations = emptyList()
@@ -451,14 +451,14 @@ fun PallaSyncSettingsScreen(
                 reseedSourceConflict = syncManager.pendingReseedSourceConflict()
                 relayShutdownNotice =
                     withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        syncManager.relayShutdownNotice(state.settings.pallaSyncServerUrl)
+                        syncManager.relayShutdownNotice(settings.pallaSyncServerUrl)
                     }
-                if (state.settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
+                if (settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
                 val page = syncManager.legacyMigrationProgressPage(limit = 20)
                 legacyMigrations =
                     (legacyMigrations.associateBy { it.migrationId } + page.items.associateBy { it.migrationId }).values.toList()
                 if (legacyMigrationCursor == null) legacyMigrationCursor = page.nextMigrationId
-                if (state.settings.pallaSyncEnabled) {
+                if (settings.pallaSyncEnabled) {
                     val quarantinePage = syncManager.getUnresolvedQuarantinePage(limit = 50)
                     unresolvedQuarantine =
                         (
@@ -633,11 +633,11 @@ fun PallaSyncSettingsScreen(
             }
         }
 
-    LaunchedEffect(state.settings.pallaSyncEnabled) {
+    LaunchedEffect(settings.pallaSyncEnabled) {
         hasLocalChain = syncManager.hasLocalChain()
         pendingDeletionProof = syncManager.pendingDeletionProof()
         deletedChainTargets = syncManager.retainedDeletedChainTargets()
-        if (state.settings.pallaSyncEnabled) {
+        if (settings.pallaSyncEnabled) {
             val db =
                 com.yunfie.illustia.pallasync.data.PallaSyncDatabase
                     .getDatabase(context)
@@ -1526,7 +1526,7 @@ fun PallaSyncSettingsScreen(
 
     if (showTrustDialog) {
         PallaSyncTrustDialog(
-            origin = state.settings.pallaSyncServerUrl,
+            origin = settings.pallaSyncServerUrl,
             sourceKind = "new_chain_local_state",
             sourceLabel = stringResource(R.string.pallasync_v3_local_source),
             onDismiss = { showTrustDialog = false },
@@ -1550,7 +1550,7 @@ fun PallaSyncSettingsScreen(
     }
     if (showPolicyDialog) {
         PallaSyncAcceptedPolicyDialog(
-            origin = state.settings.pallaSyncServerUrl,
+            origin = settings.pallaSyncServerUrl,
             onDismiss = { showPolicyDialog = false },
             onWithdrawn = {
                 syncManager.stopBackgroundSync()
@@ -1562,7 +1562,7 @@ fun PallaSyncSettingsScreen(
         PallaSyncGenesisDialog(
             syncManager,
             phrase,
-            state.settings.pallaSyncServerUrl,
+            settings.pallaSyncServerUrl,
             onFailure = { genesisRetryFailure = it },
             onDismiss = { generatedMnemonic = null },
         )
@@ -1570,7 +1570,7 @@ fun PallaSyncSettingsScreen(
     genesisRetryFailure?.let { failure ->
         PallaSyncGenesisRetryDialog(
             syncManager,
-            state.settings.pallaSyncServerUrl,
+            settings.pallaSyncServerUrl,
             failure,
             onDismiss = { genesisRetryFailure = null },
         )
@@ -1654,9 +1654,9 @@ fun PallaSyncSettingsScreen(
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                         SettingSwitchRow(
                             title = stringResource(R.string.pallasync_enable),
-                            checked = state.settings.pallaSyncEnabled,
+                            checked = settings.pallaSyncEnabled,
                             onCheckedChange = { enabled ->
-                                if (enabled && !state.settings.pallaSyncEnabled && !isCreatingChain) {
+                                if (enabled && !settings.pallaSyncEnabled && !isCreatingChain) {
                                     scope.launch {
                                         if (syncManager.hasLocalChain()) {
                                             if (syncManager.resumeBoundChain()) {
@@ -1668,7 +1668,7 @@ fun PallaSyncSettingsScreen(
                                             showTrustDialog = true
                                         }
                                     }
-                                } else if (!enabled && state.settings.pallaSyncEnabled) {
+                                } else if (!enabled && settings.pallaSyncEnabled) {
                                     syncManager.stopBackgroundSync()
                                     viewModel.updatePallaSyncEnabled(false)
                                 }
@@ -1684,9 +1684,9 @@ fun PallaSyncSettingsScreen(
                         DividerLine()
                         SettingLinkRow(
                             title = stringResource(R.string.pallasync_server_url),
-                            summary = state.settings.pallaSyncServerUrl,
+                            summary = settings.pallaSyncServerUrl,
                             onClick = {
-                                tempUrl = state.settings.pallaSyncServerUrl
+                                tempUrl = settings.pallaSyncServerUrl
                                 showUrlDialog = true
                             },
                         )
@@ -1748,7 +1748,7 @@ fun PallaSyncSettingsScreen(
                             summary = stringResource(R.string.pallasync_pair_device_desc),
                             onClick = onPairDevice,
                         )
-                        if (state.settings.pallaSyncEnabled) {
+                        if (settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_checkpoint_export_title),
@@ -1762,7 +1762,7 @@ fun PallaSyncSettingsScreen(
                                 onClick = { checkpointImporter.launch(arrayOf("application/json")) },
                             )
                         }
-                        if (state.settings.pallaSyncEnabled) {
+                        if (settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_export_title),
@@ -1786,7 +1786,7 @@ fun PallaSyncSettingsScreen(
                                 },
                             )
                         }
-                        if (state.settings.pallaSyncEnabled) {
+                        if (settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_repair_history),
@@ -1794,7 +1794,7 @@ fun PallaSyncSettingsScreen(
                                 onClick = { showRepairRootInput = true },
                             )
                         }
-                        if (state.settings.pallaSyncEnabled) {
+                        if (settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_reseed_import_title),
@@ -1899,7 +1899,7 @@ fun PallaSyncSettingsScreen(
                                 onClick = { showReseedSourceConflict = true },
                             )
                         }
-                        if (state.settings.pallaSyncEnabled) {
+                        if (settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_witness_import_title),
@@ -1907,7 +1907,7 @@ fun PallaSyncSettingsScreen(
                                 onClick = { deletionWitnessImporter.launch(arrayOf("application/json")) },
                             )
                         }
-                        if (state.settings.pallaSyncEnabled) {
+                        if (settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_snapshot_publish),
@@ -1973,11 +1973,11 @@ fun PallaSyncSettingsScreen(
                 }
             }
 
-            if (state.settings.pallaSyncEnabled || hasLocalChain) {
-                item { PallaSyncEpochControls(syncManager, state.settings.pallaSyncEnabled) }
+            if (settings.pallaSyncEnabled || hasLocalChain) {
+                item { PallaSyncEpochControls(syncManager, settings.pallaSyncEnabled) }
                 item { PallaSyncRecoveryControls(syncManager, onManagePallaSyncDevices) }
             }
-            if (state.settings.pallaSyncEnabled) {
+            if (settings.pallaSyncEnabled) {
                 if (devices.isNotEmpty()) {
                     item {
                         Section(stringResource(R.string.pallasync_participating_devices)) {
@@ -2017,10 +2017,10 @@ fun PallaSyncSettingsScreen(
             }
 
             item {
-                if (legacyMigrations.isNotEmpty() || (state.settings.pallaSyncEnabled && hasLocalChain)) {
+                if (legacyMigrations.isNotEmpty() || (settings.pallaSyncEnabled && hasLocalChain)) {
                     Section(stringResource(R.string.pallasync_legacy_migration_title)) {
                         ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                            if (state.settings.pallaSyncEnabled && hasLocalChain) {
+                            if (settings.pallaSyncEnabled && hasLocalChain) {
                                 SettingLinkRow(
                                     title = stringResource(R.string.pallasync_legacy_source_action),
                                     summary = stringResource(R.string.pallasync_legacy_source_action_summary),

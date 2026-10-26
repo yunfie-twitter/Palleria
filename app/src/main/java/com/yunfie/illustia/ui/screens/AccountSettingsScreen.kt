@@ -15,9 +15,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -36,7 +36,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun AccountSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onOpenPallaSync: () -> Unit,
@@ -94,7 +94,7 @@ fun AccountSettingsScreen(
                         SettingRow(stringResource(R.string.account_status)) {
                             Text(
                                 text =
-                                    if (state.settings.refreshToken.isBlank()) {
+                                    if (settings.refreshToken.isBlank()) {
                                         stringResource(
                                             R.string.account_not_logged_in,
                                         )
@@ -102,7 +102,7 @@ fun AccountSettingsScreen(
                                         stringResource(R.string.account_logged_in)
                                     },
                                 color =
-                                    if (state.settings.refreshToken.isBlank()) {
+                                    if (settings.refreshToken.isBlank()) {
                                         MiuixTheme.colorScheme.error
                                     } else {
                                         MiuixTheme.colorScheme.primary
@@ -125,7 +125,7 @@ fun AccountSettingsScreen(
                         SettingLinkRow(
                             title = stringResource(R.string.discord_settings_title),
                             summary =
-                                if (state.settings.discordRpcEnabled) {
+                                if (settings.discordRpcEnabled) {
                                     stringResource(R.string.discord_status_connected)
                                 } else {
                                     stringResource(R.string.discord_status_disconnected)

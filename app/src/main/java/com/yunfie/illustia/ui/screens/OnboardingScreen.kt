@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -45,6 +46,7 @@ internal fun OnboardingLoginScreen(
     showTokenLogin: Boolean = false,
     onTokenLoginDismiss: () -> Unit = {},
 ) {
+    val settings = state.settings
     var showDetails by remember { mutableStateOf(false) }
 
     Scaffold { scaffoldPadding ->
@@ -69,7 +71,7 @@ internal fun OnboardingLoginScreen(
                 ) {
                     BrandLockup(modifier = Modifier.weight(1f))
                     OnboardingActions(
-                        state = state,
+                        settings = settings,
                         viewModel = viewModel,
                         onShowDetails = { showDetails = true },
                         onRefreshTokenLogin = onRefreshTokenLogin,
@@ -89,7 +91,7 @@ internal fun OnboardingLoginScreen(
                     BrandLockup(modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(72.dp))
                     OnboardingActions(
-                        state = state,
+                        settings = settings,
                         viewModel = viewModel,
                         onShowDetails = { showDetails = true },
                         onRefreshTokenLogin = onRefreshTokenLogin,
@@ -137,7 +139,7 @@ internal fun OnboardingLoginScreen(
 
 @Composable
 private fun OnboardingActions(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onShowDetails: () -> Unit,
     onRefreshTokenLogin: () -> Unit,
@@ -153,7 +155,7 @@ private fun OnboardingActions(
         CheckboxPreference(
             title = stringResource(R.string.data_send_telemetry),
             summary = stringResource(R.string.data_send_telemetry_desc),
-            checked = state.settings.sendTelemetry,
+            checked = settings.sendTelemetry,
             onCheckedChange = viewModel::updateSendTelemetry,
             modifier = Modifier.fillMaxWidth(),
         )

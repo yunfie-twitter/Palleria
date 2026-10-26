@@ -432,25 +432,25 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.Settings) {
-                SettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                SettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.GeneralSettings) {
                 GeneralSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenNavigationSettings = { onNavigate(AppRoute.NavigationSettings) },
                 )
             }
             entry(AppRoute.NavigationSettings) {
-                NavigationSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                NavigationSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.FeatureFlags) {
-                FeatureFlagsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                FeatureFlagsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ImageSettings) {
                 ImageSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenWallpaperPlaylistSettings = { onNavigate(AppRoute.WallpaperPlaylistSettings) },
@@ -461,38 +461,38 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.CardCustomizationSettings) {
-                CardCustomizationSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                CardCustomizationSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.DetailSectionSettings) {
-                DetailSectionSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                DetailSectionSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.DownloadSettings) {
-                DownloadSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                DownloadSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.NetworkSettings) {
                 NetworkSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenInternalProxySettings = { onNavigate(AppRoute.InternalProxySettings) },
                 )
             }
             entry(AppRoute.InternalProxySettings) {
-                InternalProxySettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                InternalProxySettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.WallpaperPlaylistSettings) {
                 WallpaperPlaylistSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                 )
             }
             entry(AppRoute.BookmarkSettings) {
-                BookmarkSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                BookmarkSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.AccountSettings) {
                 AccountSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenPallaSync = { onNavigate(AppRoute.PallaSyncSettings) },
@@ -501,7 +501,7 @@ internal fun AppNavHost(
             }
             entry(AppRoute.DiscordSettings) {
                 DiscordSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onOpenDiscordLogin = { onNavigate(AppRoute.DiscordLogin) },
@@ -515,7 +515,7 @@ internal fun AppNavHost(
             }
             entry(AppRoute.PallaSyncSettings) {
                 com.yunfie.illustia.ui.screens.pallasync.PallaSyncSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                     onPairDevice = { onNavigate(AppRoute.DevicePairing) },
@@ -527,7 +527,7 @@ internal fun AppNavHost(
             }
             entry(AppRoute.PallaSyncDevices) {
                 com.yunfie.illustia.ui.screens.pallasync.PallaSyncDevicesScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     onBack = onPopRoute,
                     onDeviceClick = { deviceId, deviceName ->
                         onNavigate(AppRoute.DeviceViewHistory(deviceId, deviceName))
@@ -551,7 +551,7 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.DataSettings) {
-                DataSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                DataSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ViewHistory) {
                 ViewHistoryScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
@@ -560,7 +560,7 @@ internal fun AppNavHost(
                 NotificationScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.MuteSettings) {
-                MuteSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                MuteSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.AppData) {
                 AppDataScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
@@ -583,7 +583,7 @@ internal fun AppNavHost(
             }
             entry(AppRoute.UpdateSettings) {
                 UpdateSettingsScreen(
-                    state = appState.state,
+                    settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                 )
@@ -741,7 +741,7 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.AppLockSetup) {
-                AppLockSetupScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                AppLockSetupScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.AppLockPinEntry) {
                 PinSetupScreen(
@@ -751,7 +751,7 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.PrivacyModeSettings) {
-                PrivacyModeSettingsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                PrivacyModeSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry<AppRoute.DeviceViewHistory> { route ->
                 com.yunfie.illustia.ui.screens.pallasync.DeviceViewHistoryScreen(
