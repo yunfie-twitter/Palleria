@@ -91,7 +91,9 @@ fun DeviceViewHistoryScreen(
             failure = null
             gridState.scrollToItem(0)
         } catch (error: IllegalStateException) {
-            failure = error.message?.takeIf { it.startsWith("C_") } ?: "C_MISSING_DEPENDENCY"
+            // An uncoded IllegalStateException is a defect, not pending evidence: keep it uncoded
+            // so the screen falls back to the neutral hint instead of retrying forever.
+            failure = pallaSyncFailureCode(error) ?: "unknown"
             if (cursor != null) cursor = null // §16.5: a concurrent reorder restarts keyset paging.
         } finally {
             isLoading = false
