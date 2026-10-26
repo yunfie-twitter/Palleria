@@ -1459,4 +1459,8 @@
     <string name="pallasync_peer_subject_import_acceptance">承認者から受理応答を読み込む</string>
     <string name="pallasync_peer_subject_export_request">承認端末へ署名済み申請を渡す</string>
     <string name="pallasync_peer_subject_request_exported">申請ファイルを保存・readbackしました。承認端末へ渡してください。</string>
+    <plurals name="section_hidden_rows">
+        <item quantity="other">%1$d 件の項目を表示</item>
+    </plurals>
+    <string name="pallasync_advanced_actions">高度な操作</string>
 </resources>

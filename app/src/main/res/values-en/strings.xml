@@ -1355,4 +1355,9 @@
     <string name="pallasync_recovery_sign_retirement">Sign set retirement</string>
     <string name="pallasync_recovery_public_status_guidance">Give holders the original signed statuses. This file contains public status only, without shares, packages or unlock credentials. Hosted providers are refused. Ancestry does not prove global freshness.</string>
     <string name="pallasync_recovery_retirement_guidance">Use root input to sign retirement of this set. Then distribute the public status to reachable holders and separately erase this device\'s share and accessible old media. This step does not erase other media or revoke retained adversarial copies.</string>
+    <plurals name="section_hidden_rows">
+        <item quantity="one">Show %1$d hidden item</item>
+        <item quantity="other">Show %1$d hidden items</item>
+    </plurals>
+    <string name="pallasync_advanced_actions">Advanced actions</string>
 </resources>

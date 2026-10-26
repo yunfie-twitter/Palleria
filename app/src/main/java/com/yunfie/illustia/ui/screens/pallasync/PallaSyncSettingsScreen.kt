@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -58,6 +59,7 @@ import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.authenticateDeletionWitness
 import com.yunfie.illustia.pallasync.data.ProtectedEvidenceEntity
 import com.yunfie.illustia.pallasync.data.QuarantineSummaryRow
+import com.yunfie.illustia.ui.components.CollapsibleSection
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -155,6 +157,10 @@ fun PallaSyncSettingsScreen(
     var tempUrl by remember { mutableStateOf("") }
     var urlVerifying by remember { mutableStateOf(false) }
     var urlFailure by remember { mutableStateOf<String?>(null) }
+
+    // Rarely used recovery and cutover actions stay folded away so the everyday rows above them
+    // are not buried in a wall of equally weighted entries.
+    var showAdvancedActions by rememberSaveable { mutableStateOf(false) }
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
@@ -1748,6 +1754,44 @@ fun PallaSyncSettingsScreen(
                             summary = stringResource(R.string.pallasync_pair_device_desc),
                             onClick = onPairDevice,
                         )
+                    }
+                }
+            }
+
+            if (state.settings.pallaSyncEnabled) {
+                item {
+                    ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+                        SettingLinkRow(
+                            title = stringResource(R.string.pallasync_sync_now),
+                            summary = stringResource(R.string.pallasync_sync_now_desc),
+                            onClick = {
+                                scope.launch {
+                                    val success = syncManager.syncNow()
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            if (success) {
+                                                context.getString(R.string.msg_pallasync_sync_completed)
+                                            } else {
+                                                context.getString(R.string.error_pallasync_sync_failed)
+                                            },
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            if (state.settings.pallaSyncEnabled) {
+                item {
+                    CollapsibleSection(
+                        title = stringResource(R.string.pallasync_advanced_actions),
+                        expanded = showAdvancedActions,
+                        onExpandedChange = { showAdvancedActions = it },
+                        hiddenCount = 10,
+                    ) {
                         if (state.settings.pallaSyncEnabled) {
                             DividerLine()
                             SettingLinkRow(
@@ -1947,26 +1991,6 @@ fun PallaSyncSettingsScreen(
                                 title = stringResource(R.string.pallasync_prune_log_title),
                                 summary = stringResource(R.string.pallasync_prune_log_desc),
                                 onClick = { if (!pruningLog) showPruneConfirm = true },
-                            )
-                            DividerLine()
-                            SettingLinkRow(
-                                title = stringResource(R.string.pallasync_sync_now),
-                                summary = stringResource(R.string.pallasync_sync_now_desc),
-                                onClick = {
-                                    scope.launch {
-                                        val success = syncManager.syncNow()
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                if (success) {
-                                                    context.getString(R.string.msg_pallasync_sync_completed)
-                                                } else {
-                                                    context.getString(R.string.error_pallasync_sync_failed)
-                                                },
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                    }
-                                },
                             )
                         }
                     }

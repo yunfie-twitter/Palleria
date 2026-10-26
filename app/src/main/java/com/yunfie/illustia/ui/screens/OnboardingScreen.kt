@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +33,6 @@ import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -47,54 +48,57 @@ internal fun OnboardingLoginScreen(
 ) {
     var showDetails by remember { mutableStateOf(false) }
 
-    Scaffold { scaffoldPadding ->
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(
-                        start = 22.dp,
-                        end = 22.dp,
-                        top = scaffoldPadding.calculateTopPadding(),
-                        bottom = scaffoldPadding.calculateBottomPadding() + 18.dp,
-                    ),
-        ) {
-            val useWideLayout = maxWidth >= 600.dp && maxWidth > maxHeight
+    // The root Scaffold in IllustiaAppRoot uses contentWindowInsets = WindowInsets(0), so a nested
+    // Scaffold receives no insets and the content drew under the status bar. Pad explicitly, as the
+    // earlier onboarding pages in OnboardingSetupScreen do.
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(
+                    start = 22.dp,
+                    end = 22.dp,
+                    top = 18.dp,
+                    bottom = 18.dp,
+                ),
+    ) {
+        val useWideLayout = maxWidth >= 600.dp && maxWidth > maxHeight
 
-            if (useWideLayout) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(48.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    BrandLockup(modifier = Modifier.weight(1f))
-                    OnboardingActions(
-                        state = state,
-                        viewModel = viewModel,
-                        onShowDetails = { showDetails = true },
-                        onRefreshTokenLogin = onRefreshTokenLogin,
-                        modifier = Modifier.weight(1f).widthIn(max = 560.dp),
-                    )
-                }
-            } else {
-                Column(
-                    modifier =
-                        Modifier
-                            .align(Alignment.Center)
-                            .fillMaxWidth()
-                            .widthIn(max = 560.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    BrandLockup(modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(72.dp))
-                    OnboardingActions(
-                        state = state,
-                        viewModel = viewModel,
-                        onShowDetails = { showDetails = true },
-                        onRefreshTokenLogin = onRefreshTokenLogin,
-                    )
-                }
+        if (useWideLayout) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(48.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BrandLockup(modifier = Modifier.weight(1f))
+                OnboardingActions(
+                    state = state,
+                    viewModel = viewModel,
+                    onShowDetails = { showDetails = true },
+                    onRefreshTokenLogin = onRefreshTokenLogin,
+                    modifier = Modifier.weight(1f).widthIn(max = 560.dp),
+                )
+            }
+        } else {
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .widthIn(max = 560.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                BrandLockup(modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(72.dp))
+                OnboardingActions(
+                    state = state,
+                    viewModel = viewModel,
+                    onShowDetails = { showDetails = true },
+                    onRefreshTokenLogin = onRefreshTokenLogin,
+                )
             }
         }
     }
