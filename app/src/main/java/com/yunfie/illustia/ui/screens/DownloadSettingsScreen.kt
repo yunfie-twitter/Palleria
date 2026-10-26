@@ -18,10 +18,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -39,7 +39,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun DownloadSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -90,14 +90,14 @@ fun DownloadSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.image_download_folder_by_artist),
-                            checked = state.settings.downloadFolderByArtist,
+                            checked = settings.downloadFolderByArtist,
                             onCheckedChange = viewModel::updateDownloadFolderByArtist,
                             summary = stringResource(R.string.image_download_folder_by_artist_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.image_download_folder_by_work),
-                            checked = state.settings.downloadFolderByWork,
+                            checked = settings.downloadFolderByWork,
                             onCheckedChange = viewModel::updateDownloadFolderByWork,
                             summary = stringResource(R.string.image_download_folder_by_work_desc),
                         )
@@ -119,7 +119,7 @@ fun DownloadSettingsScreen(
                             title = stringResource(R.string.image_duplicate_save_mode),
                             summary = stringResource(R.string.image_duplicate_save_mode_desc),
                             values = listOf("skip", "overwrite", "always"),
-                            selected = state.settings.duplicateSaveMode,
+                            selected = settings.duplicateSaveMode,
                             label = { duplicateSaveModeLabel(it) },
                             onSelect = viewModel::updateDuplicateSaveMode,
                         )
@@ -128,7 +128,7 @@ fun DownloadSettingsScreen(
                             title = stringResource(R.string.image_ugoira_save_format),
                             summary = stringResource(R.string.image_ugoira_save_format_desc),
                             values = listOf("mp4", "gif"),
-                            selected = state.settings.ugoiraSaveFormat,
+                            selected = settings.ugoiraSaveFormat,
                             label = { ugoiraSaveFormatLabel(it) },
                             onSelect = viewModel::updateUgoiraSaveFormat,
                         )
@@ -136,14 +136,14 @@ fun DownloadSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_simultaneous_downloads),
                             values = listOf(1, 2, 3, 4),
-                            selected = state.settings.simultaneousDownloads.coerceIn(1, 4),
+                            selected = settings.simultaneousDownloads.coerceIn(1, 4),
                             label = { stringResource(R.string.data_items_count, it) },
                             onSelect = viewModel::updateSimultaneousDownloads,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.flag_embed_metadata_title),
-                            checked = state.settings.embedMetadata,
+                            checked = settings.embedMetadata,
                             onCheckedChange = viewModel::updateEmbedMetadata,
                             summary = stringResource(R.string.flag_embed_metadata_desc),
                         )

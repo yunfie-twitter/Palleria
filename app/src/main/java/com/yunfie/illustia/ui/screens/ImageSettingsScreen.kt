@@ -12,10 +12,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -33,7 +33,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun ImageSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onOpenWallpaperPlaylistSettings: () -> Unit = { viewModel.openWallpaperPlaylistSettings() },
@@ -84,14 +84,14 @@ fun ImageSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             stringResource(R.string.image_high_quality),
-                            state.settings.highQualityImages,
+                            settings.highQualityImages,
                             viewModel::updateHighQuality,
                             stringResource(R.string.image_high_quality_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.settings_wide_color_gamut_title),
-                            checked = state.settings.wideColorGamutEnabled && supportsWcg,
+                            checked = settings.wideColorGamutEnabled && supportsWcg,
                             onCheckedChange = { if (supportsWcg) viewModel.updateWideColorGamut(it) },
                             summary =
                                 if (supportsWcg) {
@@ -104,7 +104,7 @@ fun ImageSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             stringResource(R.string.image_prefetch),
-                            state.settings.prefetchImages,
+                            settings.prefetchImages,
                             viewModel::updatePrefetchImages,
                             stringResource(R.string.image_prefetch_desc),
                         )
@@ -112,7 +112,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_preview_quality),
                             values = listOf("low", "medium", "high"),
-                            selected = state.settings.feedPreviewQuality,
+                            selected = settings.feedPreviewQuality,
                             label = { qualityLabel(it) },
                             onSelect = viewModel::updateFeedPreviewQuality,
                         )
@@ -120,7 +120,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_detail_quality),
                             values = listOf("low", "medium", "high"),
-                            selected = state.settings.illustDetailQuality,
+                            selected = settings.illustDetailQuality,
                             label = { qualityLabel(it) },
                             onSelect = viewModel::updateIllustDetailQuality,
                         )
@@ -128,7 +128,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_fullscreen_quality),
                             values = listOf("low", "medium", "high"),
-                            selected = state.settings.fullscreenQuality,
+                            selected = settings.fullscreenQuality,
                             label = { qualityLabel(it) },
                             onSelect = viewModel::updateFullscreenQuality,
                         )
@@ -137,7 +137,7 @@ fun ImageSettingsScreen(
                             title = stringResource(R.string.image_manga_reader_mode),
                             summary = stringResource(R.string.image_manga_reader_mode_desc),
                             values = listOf("paged", "vertical"),
-                            selected = state.settings.mangaReaderMode,
+                            selected = settings.mangaReaderMode,
                             label = {
                                 if (it == "vertical") {
                                     stringResource(R.string.viewer_comic_mode)
@@ -150,14 +150,14 @@ fun ImageSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.ambient_light_viewer_title),
-                            checked = state.settings.dynamicAmbientViewerEnabled,
+                            checked = settings.dynamicAmbientViewerEnabled,
                             onCheckedChange = viewModel::updateDynamicAmbientViewerEnabled,
                             summary = stringResource(R.string.ambient_light_viewer_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.setting_image_viewer_swipe_to_dismiss_title),
-                            checked = state.settings.imageViewerSwipeToDismissEnabled,
+                            checked = settings.imageViewerSwipeToDismissEnabled,
                             onCheckedChange = viewModel::updateImageViewerSwipeToDismissEnabled,
                             summary = stringResource(R.string.setting_image_viewer_swipe_to_dismiss_desc),
                         )
@@ -171,7 +171,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_columns),
                             values = listOf(1, 2, 3, 4),
-                            selected = state.settings.verticalColumnCount.coerceIn(1, 4),
+                            selected = settings.verticalColumnCount.coerceIn(1, 4),
                             label = { stringResource(R.string.data_columns_count, it) },
                             onSelect = viewModel::updateVerticalColumnCount,
                         )
@@ -179,7 +179,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_columns_landscape),
                             values = listOf(3, 4, 5, 6),
-                            selected = state.settings.horizontalColumnCount.coerceIn(3, 6),
+                            selected = settings.horizontalColumnCount.coerceIn(3, 6),
                             label = { stringResource(R.string.data_columns_count, it) },
                             onSelect = viewModel::updateHorizontalColumnCount,
                         )
@@ -187,7 +187,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_related_columns),
                             values = listOf(0, 2, 3, 4, 5),
-                            selected = if (state.settings.relatedIllustColumnCount in 2..5) state.settings.relatedIllustColumnCount else 0,
+                            selected = if (settings.relatedIllustColumnCount in 2..5) settings.relatedIllustColumnCount else 0,
                             label = {
                                 if (it == 0) {
                                     stringResource(R.string.data_columns_dynamic)
@@ -200,7 +200,7 @@ fun ImageSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.setting_grid_pinch_to_zoom_title),
-                            checked = state.settings.gridPinchToZoom,
+                            checked = settings.gridPinchToZoom,
                             onCheckedChange = viewModel::updateGridPinchToZoom,
                             summary = stringResource(R.string.setting_grid_pinch_to_zoom_desc),
                         )
@@ -233,21 +233,21 @@ fun ImageSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.setting_quick_peek_title),
-                            checked = state.settings.quickPeekEnabled,
+                            checked = settings.quickPeekEnabled,
                             onCheckedChange = viewModel::updateQuickPeekEnabled,
                             summary = stringResource(R.string.setting_quick_peek_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
-                            checked = state.settings.quickPeekSharedElementTransition,
+                            checked = settings.quickPeekSharedElementTransition,
                             onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
                             summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.flag_ugoira_auto_play_title),
-                            checked = state.settings.ugoiraAutoPlay,
+                            checked = settings.ugoiraAutoPlay,
                             onCheckedChange = viewModel::updateUgoiraAutoPlay,
                             summary = stringResource(R.string.flag_ugoira_auto_play_desc),
                         )
@@ -272,14 +272,14 @@ fun ImageSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.image_smart_cache),
-                            checked = state.settings.smartCacheEnabled,
+                            checked = settings.smartCacheEnabled,
                             onCheckedChange = viewModel::updateSmartCacheEnabled,
                             summary = stringResource(R.string.image_smart_cache_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.image_smart_cache_wifi),
-                            checked = state.settings.smartCacheWifiOnly,
+                            checked = settings.smartCacheWifiOnly,
                             onCheckedChange = viewModel::updateSmartCacheWifiOnly,
                             summary = stringResource(R.string.image_smart_cache_wifi_desc),
                         )
@@ -287,7 +287,7 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_smart_cache_count),
                             values = listOf(6, 12, 20, 30),
-                            selected = state.settings.smartCacheItemCount,
+                            selected = settings.smartCacheItemCount,
                             label = { stringResource(R.string.data_items_count, it) },
                             onSelect = viewModel::updateSmartCacheItemCount,
                         )
@@ -296,7 +296,7 @@ fun ImageSettingsScreen(
                             title = stringResource(R.string.image_cache_capacity),
                             summary = stringResource(R.string.image_cache_capacity_desc),
                             values = listOf(100, 300, 500, 1000),
-                            selected = state.settings.imageCacheSizeMb,
+                            selected = settings.imageCacheSizeMb,
                             label = { "$it MB" },
                             onSelect = viewModel::updateImageCacheSizeMb,
                         )

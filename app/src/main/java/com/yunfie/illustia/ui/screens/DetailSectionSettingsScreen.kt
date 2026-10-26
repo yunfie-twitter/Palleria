@@ -12,9 +12,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -34,13 +34,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun DetailSectionSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
-    val orderedSections = normalizeDetailOrder(state.settings.detailSectionOrder)
+    val orderedSections = normalizeDetailOrder(settings.detailSectionOrder)
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,

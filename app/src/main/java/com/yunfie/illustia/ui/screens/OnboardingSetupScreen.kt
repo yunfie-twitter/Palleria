@@ -50,6 +50,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
 import com.yunfie.illustia.settings.AppLanguage
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.appLanguageLabelRes
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -68,6 +69,9 @@ fun OnboardingScreen(
     showTokenLogin: Boolean = false,
     onTokenLoginDismiss: () -> Unit = {},
 ) {
+    // この画面だけはトークンログインのシートに状態全体を渡すため state を受け取り続ける。
+    // 言語・ネットワーク設定の子は設定だけを必要とするので settings に絞って渡す。
+    val settings = state.settings
     // Start each new onboarding visit at language selection, even after settings migration.
     // Save only the current visit so rotation and language changes do not reset progress.
     var page by rememberSaveable { mutableIntStateOf(0) }
@@ -119,7 +123,7 @@ fun OnboardingScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MiuixTheme.colorScheme.onBackground,
                             )
-                            if (displayedPage == 0) LanguageSetup(state, viewModel) else NetworkSetup(state, viewModel)
+                            if (displayedPage == 0) LanguageSetup(settings, viewModel) else NetworkSetup(settings, viewModel)
                         }
                     }
                 }
@@ -136,7 +140,7 @@ fun OnboardingScreen(
 
 @Composable
 private fun LanguageSetup(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
 ) {
     Column(
@@ -164,7 +168,7 @@ private fun LanguageSetup(
             RadioButtonPreference(
                 title = stringResource(appLanguageLabelRes(language.value)),
                 summary = language.languageTag,
-                selected = state.settings.appLanguage == language.value,
+                selected = settings.appLanguage == language.value,
                 onClick = { viewModel.updateAppLanguage(language.value) },
             )
         }
@@ -173,7 +177,7 @@ private fun LanguageSetup(
 
 @Composable
 private fun NetworkSetup(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
 ) {
     SetupSectionLabel(stringResource(R.string.image_proxy_title))
@@ -181,18 +185,18 @@ private fun NetworkSetup(
         RadioButtonPreference(
             title = stringResource(R.string.setup_official_images),
             summary = "i.pximg.net",
-            selected = state.settings.pixivImageProxyBaseUrl.isEmpty(),
+            selected = settings.pixivImageProxyBaseUrl.isEmpty(),
             onClick = { viewModel.updatePixivImageProxyBaseUrl("") },
         )
         PixivImageProxyOptions.forEach { proxy ->
             RadioButtonPreference(
                 title = proxy.name,
                 summary = proxy.baseUrl,
-                selected = state.settings.pixivImageProxyBaseUrl == proxy.baseUrl,
+                selected = settings.pixivImageProxyBaseUrl == proxy.baseUrl,
                 onClick = { viewModel.updatePixivImageProxyBaseUrl(proxy.baseUrl) },
             )
         }
-        val current = state.settings.pixivImageProxyBaseUrl
+        val current = settings.pixivImageProxyBaseUrl
         if (current.isNotBlank() && PixivImageProxyOptions.none { it.baseUrl == current }) {
             RadioButtonPreference(
                 title = stringResource(R.string.image_proxy_custom),
@@ -212,7 +216,7 @@ private fun NetworkSetup(
             RadioButtonPreference(
                 title = stringResource(title),
                 summary = stringResource(summary),
-                selected = state.settings.pixivNetworkMode == mode,
+                selected = settings.pixivNetworkMode == mode,
                 onClick = { viewModel.updatePixivNetworkMode(mode) },
             )
         }

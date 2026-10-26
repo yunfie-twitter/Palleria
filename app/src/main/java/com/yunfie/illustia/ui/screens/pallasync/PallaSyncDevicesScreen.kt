@@ -27,13 +27,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncPeerTransferFile
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
 import com.yunfie.illustia.pallasync.data.PallaSyncDeviceEntity
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -64,7 +64,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 @Suppress("TooGenericExceptionCaught", "ThrowsCount")
 fun PallaSyncDevicesScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     onBack: () -> Unit,
     onDeviceClick: (String, String) -> Unit,
 ) {
@@ -174,8 +174,8 @@ fun PallaSyncDevicesScreen(
         }
     }
 
-    LaunchedEffect(state.settings.pallaSyncEnabled) {
-        if (!state.settings.pallaSyncEnabled) return@LaunchedEffect
+    LaunchedEffect(settings.pallaSyncEnabled) {
+        if (!settings.pallaSyncEnabled) return@LaunchedEffect
 
         val dao = PallaSyncDatabase.getDatabase(context).pallaSyncDao()
         devices = withContext(Dispatchers.IO) { dao.getAllDevices() }
@@ -486,7 +486,7 @@ fun PallaSyncDevicesScreen(
                                     }
                                 }
                             },
-                            enabled = state.settings.pallaSyncEnabled && !creatingOffer,
+                            enabled = settings.pallaSyncEnabled && !creatingOffer,
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                         ) {
                             Text(

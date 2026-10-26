@@ -18,10 +18,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
 import com.yunfie.illustia.ui.components.DividerLine
@@ -45,7 +45,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun NetworkSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onOpenInternalProxySettings: () -> Unit = { viewModel.openInternalProxySettings() },
@@ -53,7 +53,7 @@ fun NetworkSettingsScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
 
-    val currentProxy = state.settings.pixivImageProxyBaseUrl
+    val currentProxy = settings.pixivImageProxyBaseUrl
     val isCustomActive = currentProxy.isNotBlank() && PixivImageProxyOptions.none { it.baseUrl == currentProxy }
     val proxyOptions =
         remember(currentProxy) {
@@ -103,7 +103,7 @@ fun NetworkSettingsScreen(
                             title = stringResource(R.string.image_pixiv_network_mode),
                             summary = stringResource(R.string.image_pixiv_network_mode_desc),
                             values = pixivNetworkModeOptions(),
-                            selected = state.settings.pixivNetworkMode,
+                            selected = settings.pixivNetworkMode,
                             label = { pixivNetworkModeLabel(it) },
                             onSelect = viewModel::updatePixivNetworkMode,
                         )

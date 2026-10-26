@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -46,6 +47,7 @@ internal fun OnboardingLoginScreen(
     showTokenLogin: Boolean = false,
     onTokenLoginDismiss: () -> Unit = {},
 ) {
+    val settings = state.settings
     var showDetails by remember { mutableStateOf(false) }
 
     // The root Scaffold in IllustiaAppRoot uses contentWindowInsets = WindowInsets(0), so a nested
@@ -66,39 +68,40 @@ internal fun OnboardingLoginScreen(
     ) {
         val useWideLayout = maxWidth >= 600.dp && maxWidth > maxHeight
 
-        if (useWideLayout) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(48.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                BrandLockup(modifier = Modifier.weight(1f))
-                OnboardingActions(
-                    state = state,
-                    viewModel = viewModel,
-                    onShowDetails = { showDetails = true },
-                    onRefreshTokenLogin = onRefreshTokenLogin,
-                    modifier = Modifier.weight(1f).widthIn(max = 560.dp),
-                )
-            }
-        } else {
-            Column(
-                modifier =
-                    Modifier
-                        .align(Alignment.Center)
-                        .fillMaxWidth()
-                        .widthIn(max = 560.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                BrandLockup(modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(72.dp))
-                OnboardingActions(
-                    state = state,
-                    viewModel = viewModel,
-                    onShowDetails = { showDetails = true },
-                    onRefreshTokenLogin = onRefreshTokenLogin,
-                )
+            if (useWideLayout) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(48.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BrandLockup(modifier = Modifier.weight(1f))
+                    OnboardingActions(
+                        settings = settings,
+                        viewModel = viewModel,
+                        onShowDetails = { showDetails = true },
+                        onRefreshTokenLogin = onRefreshTokenLogin,
+                        modifier = Modifier.weight(1f).widthIn(max = 560.dp),
+                    )
+                }
+            } else {
+                Column(
+                    modifier =
+                        Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth()
+                            .widthIn(max = 560.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    BrandLockup(modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(72.dp))
+                    OnboardingActions(
+                        settings = settings,
+                        viewModel = viewModel,
+                        onShowDetails = { showDetails = true },
+                        onRefreshTokenLogin = onRefreshTokenLogin,
+                    )
+                }
             }
         }
     }
@@ -141,7 +144,7 @@ internal fun OnboardingLoginScreen(
 
 @Composable
 private fun OnboardingActions(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onShowDetails: () -> Unit,
     onRefreshTokenLogin: () -> Unit,
@@ -157,7 +160,7 @@ private fun OnboardingActions(
         CheckboxPreference(
             title = stringResource(R.string.data_send_telemetry),
             summary = stringResource(R.string.data_send_telemetry_desc),
-            checked = state.settings.sendTelemetry,
+            checked = settings.sendTelemetry,
             onCheckedChange = viewModel::updateSendTelemetry,
             modifier = Modifier.fillMaxWidth(),
         )

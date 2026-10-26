@@ -12,9 +12,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.DividerLine
@@ -38,24 +38,24 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun NavigationSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
 
-    val navigationCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
-    val shortsFeedFlag = state.settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
-    val hideHomeNovelButtonFlag = state.settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton)
+    val navigationCustomizationFlag = settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
+    val shortsFeedFlag = settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
+    val hideHomeNovelButtonFlag = settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton)
 
-    val activeIds = activeNavigationIds(state.settings.shortsFeedEnabled)
-    val orderedIds = normalizeNavigationOrder(state.settings.navigationOrder, activeIds)
+    val activeIds = activeNavigationIds(settings.shortsFeedEnabled)
+    val orderedIds = normalizeNavigationOrder(settings.navigationOrder, activeIds)
     val hiddenIds =
-        state.settings.hiddenNavigationTabs.mapTo(mutableSetOf()) { id ->
+        settings.hiddenNavigationTabs.mapTo(mutableSetOf()) { id ->
             when {
-                state.settings.shortsFeedEnabled && id == "search" -> "shorts"
-                !state.settings.shortsFeedEnabled && id == "shorts" -> "search"
+                settings.shortsFeedEnabled && id == "search" -> "shorts"
+                !settings.shortsFeedEnabled && id == "shorts" -> "search"
                 else -> id
             }
         }
@@ -63,9 +63,9 @@ fun NavigationSettingsScreen(
     val selectableStartIds = visibleIds.ifEmpty { orderedIds.take(2) }
     val activeStartId =
         when {
-            state.settings.shortsFeedEnabled && state.settings.startupScreen == "search" -> "shorts"
-            !state.settings.shortsFeedEnabled && state.settings.startupScreen == "shorts" -> "search"
-            else -> state.settings.startupScreen
+            settings.shortsFeedEnabled && settings.startupScreen == "search" -> "shorts"
+            !settings.shortsFeedEnabled && settings.startupScreen == "shorts" -> "search"
+            else -> settings.startupScreen
         }
 
     Scaffold(
@@ -104,7 +104,7 @@ fun NavigationSettingsScreen(
                             SettingDropdownRow(
                                 title = stringResource(R.string.experimental_navigation_style),
                                 summary = stringResource(R.string.experimental_navigation_style_desc),
-                                selected = state.settings.navigationStyle,
+                                selected = settings.navigationStyle,
                                 values = listOf("standard", "floating", "auto"),
                                 label = { navigationStyleLabel(it) },
                                 onSelect = viewModel::updateNavigationStyle,
@@ -125,15 +125,15 @@ fun NavigationSettingsScreen(
                             if (hasItemAbove) DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.general_shorts_feed),
-                                checked = state.settings.shortsFeedEnabled,
+                                checked = settings.shortsFeedEnabled,
                                 onCheckedChange = viewModel::updateShortsFeedEnabled,
                                 summary = stringResource(R.string.general_shorts_feed_desc),
                             )
-                            if (state.settings.shortsFeedEnabled) {
+                            if (settings.shortsFeedEnabled) {
                                 DividerLine()
                                 SettingSwitchRow(
                                     title = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe),
-                                    checked = state.settings.disableHorizontalSwipeInShortsFeed,
+                                    checked = settings.disableHorizontalSwipeInShortsFeed,
                                     onCheckedChange = viewModel::updateDisableHorizontalSwipeInShortsFeed,
                                     summary = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe_desc),
                                 )
@@ -145,7 +145,7 @@ fun NavigationSettingsScreen(
                             if (hasItemAbove) DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.experimental_hide_home_novel_button),
-                                checked = state.settings.hideHomeNovelButton,
+                                checked = settings.hideHomeNovelButton,
                                 onCheckedChange = viewModel::updateHideHomeNovelButton,
                                 summary = stringResource(R.string.experimental_hide_home_novel_button_desc),
                             )

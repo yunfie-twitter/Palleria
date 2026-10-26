@@ -24,9 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -56,7 +56,7 @@ private data class SettingsCategory(
 
 @Composable
 fun SettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -70,15 +70,15 @@ fun SettingsScreen(
             }.getOrNull() ?: "1.0.0"
         }
     val scrollBehavior = MiuixScrollBehavior()
-    val mutedTotal = state.settings.mutedIllusts.size + state.settings.mutedUsers.size + state.settings.mutedTags.size
+    val mutedTotal = settings.mutedIllusts.size + settings.mutedUsers.size + settings.mutedTags.size
 
     var versionTapCount by remember { mutableIntStateOf(0) }
     var lastVersionTapTime by remember { mutableLongStateOf(0L) }
 
-    val hasActiveFeatureFlags = state.settings.featureFlags.any { it.value }
+    val hasActiveFeatureFlags = settings.featureFlags.any { it.value }
 
     val categories =
-        remember(state.settings.refreshToken, state.settings.viewHistory.size, mutedTotal, hasActiveFeatureFlags) {
+        remember(settings.refreshToken, settings.viewHistory.size, mutedTotal, hasActiveFeatureFlags) {
             buildList {
                 add(
                     SettingsCategory(
@@ -110,7 +110,7 @@ fun SettingsScreen(
                 add(
                     SettingsCategory(
                         context.getString(R.string.settings_account),
-                        if (state.settings.refreshToken.isNotBlank()) {
+                        if (settings.refreshToken.isNotBlank()) {
                             context.getString(
                                 R.string.settings_logged_in,
                             )
@@ -129,7 +129,7 @@ fun SettingsScreen(
                             R.string.more_view_history,
                         )} ${context.getString(
                             R.string.data_items_count,
-                            state.settings.viewHistory.size,
+                            settings.viewHistory.size,
                         )} / ${context.getString(R.string.more_mute_settings)} ${context.getString(R.string.data_items_count, mutedTotal)}",
                         MiuixIcons.Timer,
                     ) {

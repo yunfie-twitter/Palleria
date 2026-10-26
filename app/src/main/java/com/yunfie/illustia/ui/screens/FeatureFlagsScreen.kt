@@ -15,9 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.DividerLine
@@ -38,7 +38,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun FeatureFlagsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -98,7 +98,7 @@ fun FeatureFlagsScreen(
                             SettingSwitchRow(
                                 title = stringResource(flag.titleRes),
                                 summary = stringResource(flag.descRes),
-                                checked = state.settings.isFeatureEnabled(flag),
+                                checked = settings.isFeatureEnabled(flag),
                                 onCheckedChange = { enabled ->
                                     viewModel.updateFeatureFlag(flag, enabled)
                                 },

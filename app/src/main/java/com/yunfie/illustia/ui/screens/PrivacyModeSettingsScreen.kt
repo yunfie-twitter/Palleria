@@ -25,9 +25,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -87,7 +87,7 @@ private fun dummyIconLabel(value: String): String =
  */
 @Composable
 fun PrivacyModeSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -154,7 +154,7 @@ fun PrivacyModeSettingsScreen(
                         // 1. Privacy Mode ON/OFF toggle (Req 11.2, 1.1–1.3)
                         SettingSwitchRow(
                             title = stringResource(R.string.privacy_mode_title),
-                            checked = state.settings.privacyModeEnabled,
+                            checked = settings.privacyModeEnabled,
                             onCheckedChange = { enabled ->
                                 if (enabled) {
                                     enableCodeInput = ""
@@ -167,7 +167,7 @@ fun PrivacyModeSettingsScreen(
                                 }
                             },
                             summary =
-                                if (state.settings.privacyModeEnabled) {
+                                if (settings.privacyModeEnabled) {
                                     stringResource(R.string.privacy_mode_enabled_desc)
                                 } else {
                                     stringResource(R.string.privacy_mode_disabled_desc)
@@ -205,7 +205,7 @@ fun PrivacyModeSettingsScreen(
                             title = stringResource(R.string.privacy_auto_lock),
                             summary = stringResource(R.string.privacy_auto_lock_desc),
                             values = AUTO_LOCK_VALUES,
-                            selected = state.settings.privacyModeAutoLockTiming,
+                            selected = settings.privacyModeAutoLockTiming,
                             label = { autoLockLabel(it) },
                             onSelect = { viewModel.updatePrivacyModeAutoLockTiming(it) },
                         )
@@ -220,7 +220,7 @@ fun PrivacyModeSettingsScreen(
                         // 4. Hide Recents toggle (Req 7.1–7.4)
                         SettingSwitchRow(
                             title = stringResource(R.string.privacy_hide_recents),
-                            checked = state.settings.hideRecents,
+                            checked = settings.hideRecents,
                             onCheckedChange = { viewModel.updateHideRecents(it) },
                             summary = stringResource(R.string.privacy_hide_recents_desc),
                         )
@@ -228,7 +228,7 @@ fun PrivacyModeSettingsScreen(
                         // 5. Hide Notifications toggle (Req 9.1–9.4)
                         SettingSwitchRow(
                             title = stringResource(R.string.privacy_hide_notifications),
-                            checked = state.settings.hideNotifications,
+                            checked = settings.hideNotifications,
                             onCheckedChange = { viewModel.updateHideNotifications(it) },
                             summary = stringResource(R.string.privacy_hide_notifications_desc),
                         )
@@ -243,9 +243,9 @@ fun PrivacyModeSettingsScreen(
                         // 6. Dummy app name text input (Req 10.1, 10.3)
                         SettingLinkRow(
                             title = stringResource(R.string.privacy_dummy_app_name),
-                            summary = state.settings.dummyAppName.ifBlank { defaultDummyAppName },
+                            summary = settings.dummyAppName.ifBlank { defaultDummyAppName },
                             onClick = {
-                                dummyNameDraft = state.settings.dummyAppName.ifBlank { defaultDummyAppName }
+                                dummyNameDraft = settings.dummyAppName.ifBlank { defaultDummyAppName }
                                 dummyNameError = null
                                 showDummyNameDialog = true
                             },
@@ -256,7 +256,7 @@ fun PrivacyModeSettingsScreen(
                             title = stringResource(R.string.privacy_dummy_icon),
                             summary = stringResource(R.string.privacy_dummy_icon_desc),
                             values = DUMMY_ICON_VALUES,
-                            selected = state.settings.dummyIconVariant,
+                            selected = settings.dummyIconVariant,
                             label = { dummyIconLabel(it) },
                             onSelect = { viewModel.updateDummyIconVariant(it) },
                         )

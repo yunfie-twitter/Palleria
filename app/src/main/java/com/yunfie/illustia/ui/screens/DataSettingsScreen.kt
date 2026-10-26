@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -40,7 +40,7 @@ import java.time.LocalDate
 
 @Composable
 fun DataSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -121,14 +121,14 @@ fun DataSettingsScreen(
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                         SettingSwitchRow(
                             stringResource(R.string.data_save_view_history),
-                            state.settings.saveViewHistory,
+                            settings.saveViewHistory,
                             viewModel::updateSaveViewHistory,
                             stringResource(R.string.data_save_view_history_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             stringResource(R.string.data_save_search_history),
-                            state.settings.saveSearchHistory,
+                            settings.saveSearchHistory,
                             viewModel::updateSaveSearchHistory,
                             stringResource(R.string.data_save_search_history_desc),
                         )
@@ -169,7 +169,7 @@ fun DataSettingsScreen(
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                         SettingSwitchRow(
                             title = stringResource(R.string.data_send_telemetry),
-                            checked = state.settings.sendTelemetry,
+                            checked = settings.sendTelemetry,
                             onCheckedChange = viewModel::updateSendTelemetry,
                             summary = stringResource(R.string.data_send_telemetry_desc),
                         )

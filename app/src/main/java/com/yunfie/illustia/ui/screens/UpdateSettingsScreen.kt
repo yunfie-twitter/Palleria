@@ -20,9 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun UpdateSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -107,7 +107,7 @@ fun UpdateSettingsScreen(
             }
         }
     val selectedInstallIndex =
-        if (!isDesktop && state.settings.updateInstallMethod == UpdateInstallMethod.SHIZUKU.value) 1 else 0
+        if (!isDesktop && settings.updateInstallMethod == UpdateInstallMethod.SHIZUKU.value) 1 else 0
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -220,22 +220,22 @@ fun UpdateSettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.update_include_prerelease),
                             summary = stringResource(R.string.update_include_prerelease_desc),
-                            checked = state.settings.includePrereleaseUpdates,
+                            checked = settings.includePrereleaseUpdates,
                             onCheckedChange = viewModel::updateIncludePrereleaseUpdates,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.update_notify_new_version),
                             summary = stringResource(R.string.update_notify_new_version_desc),
-                            checked = state.settings.notifyNewVersion,
+                            checked = settings.notifyNewVersion,
                             onCheckedChange = viewModel::updateNotifyNewVersion,
                         )
-                        if (state.settings.notifyNewVersion) {
+                        if (settings.notifyNewVersion) {
                             DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.update_check_background),
                                 summary = stringResource(R.string.update_check_background_desc),
-                                checked = state.settings.checkUpdatesInBackground,
+                                checked = settings.checkUpdatesInBackground,
                                 onCheckedChange = viewModel::updateCheckUpdatesInBackground,
                             )
                         }
@@ -243,15 +243,15 @@ fun UpdateSettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.update_auto_download),
                             summary = stringResource(R.string.update_auto_download_desc),
-                            checked = state.settings.autoDownloadUpdates,
+                            checked = settings.autoDownloadUpdates,
                             onCheckedChange = viewModel::updateAutoDownloadUpdates,
                         )
-                        if (state.settings.autoDownloadUpdates) {
+                        if (settings.autoDownloadUpdates) {
                             DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.update_auto_download_wifi_only),
                                 summary = stringResource(R.string.update_auto_download_wifi_only_desc),
-                                checked = state.settings.autoDownloadWifiOnly,
+                                checked = settings.autoDownloadWifiOnly,
                                 onCheckedChange = viewModel::updateAutoDownloadWifiOnly,
                             )
                         }
@@ -259,7 +259,7 @@ fun UpdateSettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.update_auto_check_startup),
                             summary = stringResource(R.string.update_auto_check_startup_desc),
-                            checked = state.settings.autoCheckUpdateOnStartup,
+                            checked = settings.autoCheckUpdateOnStartup,
                             onCheckedChange = viewModel::updateAutoCheckUpdateOnStartup,
                         )
                     }

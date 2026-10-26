@@ -15,10 +15,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.AppHapticMode
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.appFontLabelRes
 import com.yunfie.illustia.settings.appFontOptions
@@ -49,7 +49,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun GeneralSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onOpenNavigationSettings: () -> Unit = { viewModel.openNavigationSettings() },
@@ -59,13 +59,13 @@ fun GeneralSettingsScreen(
     val dynamicColorAvailable = isDynamicColorAvailable()
     val context = LocalContext.current
     val hapticsSupported = remember(context) { isAppHapticsSupported(context) }
-    val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
+    val effectiveHapticMode = effectiveAppHapticMode(settings.hapticMode, hapticsSupported)
     val hapticsEnabled = effectiveHapticMode != AppHapticMode.Off
 
-    val artworkDynamicThemeFlag = state.settings.isFeatureEnabled(FeatureFlag.ArtworkDynamicTheme)
-    val navigationCustomizationFlag = state.settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
-    val shortsFeedFlag = state.settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
-    val hideHomeNovelButtonFlag = state.settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton)
+    val artworkDynamicThemeFlag = settings.isFeatureEnabled(FeatureFlag.ArtworkDynamicTheme)
+    val navigationCustomizationFlag = settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
+    val shortsFeedFlag = settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
+    val hideHomeNovelButtonFlag = settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton)
 
     val hasNavigationSettings = navigationCustomizationFlag || shortsFeedFlag || hideHomeNovelButtonFlag
 
@@ -104,14 +104,14 @@ fun GeneralSettingsScreen(
                             title = stringResource(R.string.general_theme),
                             summary = stringResource(R.string.general_theme_desc),
                             values = appThemeOptions(),
-                            selected = state.settings.themeMode,
+                            selected = settings.themeMode,
                             label = { appThemeLabel(it) },
                             onSelect = viewModel::updateThemeMode,
                         )
                         DividerLine()
                         ThemeSwitchSettingRow(
                             title = stringResource(R.string.general_dynamic_color),
-                            checked = state.settings.useDynamicColor,
+                            checked = settings.useDynamicColor,
                             onCheckedChange = viewModel::updateUseDynamicColor,
                             summary =
                                 if (dynamicColorAvailable) {
@@ -125,7 +125,7 @@ fun GeneralSettingsScreen(
                             DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.experimental_artwork_theme),
-                                checked = state.settings.artworkThemeEnabled,
+                                checked = settings.artworkThemeEnabled,
                                 onCheckedChange = viewModel::updateArtworkThemeEnabled,
                                 summary = stringResource(R.string.experimental_artwork_theme_desc),
                             )
@@ -134,7 +134,7 @@ fun GeneralSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.experimental_app_icon),
                             summary = stringResource(R.string.experimental_app_icon_desc),
-                            selected = state.settings.appIconVariant,
+                            selected = settings.appIconVariant,
                             values = listOf("default", "cat"),
                             label = { variant ->
                                 when (variant) {
@@ -149,7 +149,7 @@ fun GeneralSettingsScreen(
                             title = stringResource(R.string.general_language),
                             summary = stringResource(R.string.general_language_desc),
                             values = appLanguageOptions(),
-                            selected = state.settings.appLanguage,
+                            selected = settings.appLanguage,
                             label = { stringResource(appLanguageLabelRes(it)) },
                             onSelect = viewModel::updateAppLanguage,
                             dialogButtonString = stringResource(R.string.action_cancel),
@@ -159,7 +159,7 @@ fun GeneralSettingsScreen(
                             title = stringResource(R.string.general_font),
                             summary = stringResource(R.string.general_font_desc),
                             values = appFontOptions(),
-                            selected = state.settings.appFont,
+                            selected = settings.appFont,
                             label = { stringResource(appFontLabelRes(it)) },
                             onSelect = viewModel::updateAppFont,
                         )
@@ -186,15 +186,15 @@ fun GeneralSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.general_r18),
-                            checked = state.settings.allowR18,
+                            checked = settings.allowR18,
                             onCheckedChange = viewModel::updateAllowR18,
                             summary = stringResource(R.string.general_r18_desc),
                         )
-                        if (state.settings.allowR18) {
+                        if (settings.allowR18) {
                             DividerLine()
                             SettingSwitchRow(
                                 title = stringResource(R.string.general_r18g),
-                                checked = state.settings.allowR18G,
+                                checked = settings.allowR18G,
                                 onCheckedChange = viewModel::updateAllowR18G,
                                 summary = stringResource(R.string.general_r18g_desc),
                             )
@@ -202,7 +202,7 @@ fun GeneralSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.settings_hide_ai_works),
-                            checked = state.settings.hideAiWorks,
+                            checked = settings.hideAiWorks,
                             onCheckedChange = viewModel::updateHideAiWorks,
                             summary = stringResource(R.string.settings_hide_ai_works_desc),
                         )
@@ -215,28 +215,28 @@ fun GeneralSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.general_swipe),
-                            checked = state.settings.swipeToSwitchWorks,
+                            checked = settings.swipeToSwitchWorks,
                             onCheckedChange = viewModel::updateSwipeToSwitchWorks,
                             summary = stringResource(R.string.general_swipe_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.general_auto_load_more),
-                            checked = state.settings.autoLoadMore,
+                            checked = settings.autoLoadMore,
                             onCheckedChange = viewModel::updateAutoLoadMore,
                             summary = stringResource(R.string.general_auto_load_more_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.general_double_back),
-                            checked = state.settings.doubleBackToExit,
+                            checked = settings.doubleBackToExit,
                             onCheckedChange = viewModel::updateDoubleBackToExit,
                             summary = stringResource(R.string.general_double_back_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.general_clipboard_auto_detect),
-                            checked = state.settings.autoDetectClipboard,
+                            checked = settings.autoDetectClipboard,
                             onCheckedChange = viewModel::updateClipboardAutoDetect,
                             summary = stringResource(R.string.general_clipboard_auto_detect_desc),
                         )
@@ -249,7 +249,7 @@ fun GeneralSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.general_smooth),
-                            checked = state.settings.smoothTransitions,
+                            checked = settings.smoothTransitions,
                             onCheckedChange = viewModel::updateSmoothTransitions,
                             summary = stringResource(R.string.general_smooth_desc),
                         )
@@ -273,7 +273,7 @@ fun GeneralSettingsScreen(
                             SettingSwitchRow(
                                 title = stringResource(R.string.general_haptics_rich),
                                 summary = stringResource(R.string.general_haptics_rich_desc),
-                                checked = state.settings.hapticMode == AppHapticMode.Rich.value,
+                                checked = settings.hapticMode == AppHapticMode.Rich.value,
                                 onCheckedChange = { rich ->
                                     viewModel.updateHapticMode(
                                         if (rich) AppHapticMode.Rich.value else AppHapticMode.Clear.value,
@@ -284,7 +284,7 @@ fun GeneralSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.general_notch),
-                            checked = state.settings.notchOptimization,
+                            checked = settings.notchOptimization,
                             onCheckedChange = viewModel::updateNotchOptimization,
                             summary = stringResource(R.string.general_notch_desc),
                         )
@@ -299,7 +299,7 @@ fun GeneralSettingsScreen(
                             title = stringResource(R.string.app_lock_enable),
                             onClick = { viewModel.openAppLockSetup() },
                             summary =
-                                if (state.settings.appLockEnabled) {
+                                if (settings.appLockEnabled) {
                                     stringResource(R.string.app_lock_enabled)
                                 } else {
                                     stringResource(R.string.app_lock_disabled)
@@ -310,7 +310,7 @@ fun GeneralSettingsScreen(
                             title = stringResource(R.string.privacy_mode_title),
                             onClick = { viewModel.openPrivacyModeSettings() },
                             summary =
-                                if (state.settings.privacyModeEnabled) {
+                                if (settings.privacyModeEnabled) {
                                     stringResource(R.string.privacy_settings_enabled)
                                 } else {
                                     stringResource(R.string.privacy_settings_disabled)
@@ -319,7 +319,7 @@ fun GeneralSettingsScreen(
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.general_secure),
-                            checked = state.settings.secureWindow,
+                            checked = settings.secureWindow,
                             onCheckedChange = viewModel::updateSecureWindow,
                             summary = stringResource(R.string.general_secure_desc),
                         )

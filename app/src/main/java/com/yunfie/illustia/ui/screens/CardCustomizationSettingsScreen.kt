@@ -10,9 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.DividerLine
@@ -30,7 +30,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun CardCustomizationSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -70,38 +70,38 @@ fun CardCustomizationSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_title),
-                            checked = state.settings.showCardTitle,
+                            checked = settings.showCardTitle,
                             onCheckedChange = viewModel::updateShowCardTitle,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_artist),
-                            checked = state.settings.showCardArtist,
+                            checked = settings.showCardArtist,
                             onCheckedChange = viewModel::updateShowCardArtist,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_tags),
-                            checked = state.settings.showCardTags,
+                            checked = settings.showCardTags,
                             onCheckedChange = viewModel::updateShowCardTags,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_rating),
-                            checked = state.settings.showCardBookmarkCount,
+                            checked = settings.showCardBookmarkCount,
                             onCheckedChange = viewModel::updateShowCardBookmarkCount,
                             summary = stringResource(R.string.experimental_card_rating_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_ai),
-                            checked = state.settings.showAiBadge,
+                            checked = settings.showAiBadge,
                             onCheckedChange = viewModel::updateShowAiBadge,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_r18),
-                            checked = state.settings.showR18Badge,
+                            checked = settings.showR18Badge,
                             onCheckedChange = viewModel::updateShowR18Badge,
                         )
                     }
@@ -113,27 +113,27 @@ fun CardCustomizationSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_bookmark_button),
-                            checked = state.settings.showCardBookmarkButton,
+                            checked = settings.showCardBookmarkButton,
                             onCheckedChange = viewModel::updateShowCardBookmarkButton,
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_double_tap_to_bookmark),
-                            checked = state.settings.doubleTapToBookmark,
+                            checked = settings.doubleTapToBookmark,
                             onCheckedChange = viewModel::updateDoubleTapToBookmark,
                             summary = stringResource(R.string.experimental_card_double_tap_to_bookmark_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.setting_quick_peek_title),
-                            checked = state.settings.quickPeekEnabled,
+                            checked = settings.quickPeekEnabled,
                             onCheckedChange = viewModel::updateQuickPeekEnabled,
                             summary = stringResource(R.string.setting_quick_peek_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
-                            checked = state.settings.quickPeekSharedElementTransition,
+                            checked = settings.quickPeekSharedElementTransition,
                             onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
                             summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
                         )
@@ -146,10 +146,10 @@ fun CardCustomizationSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             title = stringResource(R.string.experimental_card_related_r18),
-                            checked = state.settings.showRelatedR18,
+                            checked = settings.showRelatedR18,
                             onCheckedChange = viewModel::updateShowRelatedR18,
                             summary = stringResource(R.string.experimental_card_related_r18_desc),
-                            enabled = state.settings.showR18Badge,
+                            enabled = settings.showR18Badge,
                         )
                     }
                 }

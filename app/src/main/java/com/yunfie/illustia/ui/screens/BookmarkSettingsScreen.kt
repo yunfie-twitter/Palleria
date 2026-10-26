@@ -10,9 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -28,7 +28,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun BookmarkSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {
@@ -67,21 +67,21 @@ fun BookmarkSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_private_default),
-                            state.settings.privateBookmarkDefault,
+                            settings.privateBookmarkDefault,
                             viewModel::updatePrivateBookmarkDefault,
                             stringResource(R.string.bookmark_private_default_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_follow_on_like),
-                            state.settings.followOnLike,
+                            settings.followOnLike,
                             viewModel::updateFollowOnLike,
                             stringResource(R.string.bookmark_follow_on_like_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_auto_tag),
-                            state.settings.autoTagOnBookmark,
+                            settings.autoTagOnBookmark,
                             viewModel::updateAutoTagOnBookmark,
                             stringResource(R.string.bookmark_auto_tag_desc),
                         )
@@ -94,14 +94,14 @@ fun BookmarkSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_download_on_bookmark),
-                            state.settings.autoDownloadOnBookmark,
+                            settings.autoDownloadOnBookmark,
                             viewModel::updateAutoDownloadOnBookmark,
                             stringResource(R.string.bookmark_download_on_bookmark_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_bookmark_on_download),
-                            state.settings.autoBookmarkOnDownload,
+                            settings.autoBookmarkOnDownload,
                             viewModel::updateAutoBookmarkOnDownload,
                             stringResource(R.string.bookmark_bookmark_on_download_desc),
                         )
@@ -114,14 +114,14 @@ fun BookmarkSettingsScreen(
                     ElevatedPanel {
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_confirm_on_long_press),
-                            state.settings.confirmOnLongPressSave,
+                            settings.confirmOnLongPressSave,
                             viewModel::updateConfirmOnLongPressSave,
                             stringResource(R.string.bookmark_confirm_on_long_press_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
                             stringResource(R.string.bookmark_skip_confirm_on_detail),
-                            state.settings.skipConfirmOnDetailSave,
+                            settings.skipConfirmOnDetailSave,
                             viewModel::updateSkipConfirmOnDetailSave,
                             stringResource(R.string.bookmark_skip_confirm_on_detail_desc),
                         )

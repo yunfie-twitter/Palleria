@@ -24,10 +24,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.discord.DiscordRpcManager
+import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -52,7 +52,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun DiscordSettingsScreen(
-    state: IllustiaUiState,
+    settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
     onOpenDiscordLogin: () -> Unit,
@@ -253,7 +253,7 @@ fun DiscordSettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.discord_enable_rpc),
                             summary = stringResource(R.string.discord_enable_rpc_desc),
-                            checked = isSupported && state.settings.discordRpcEnabled,
+                            checked = isSupported && settings.discordRpcEnabled,
                             onCheckedChange = {
                                 if (isSupported) {
                                     viewModel.updateDiscordRpcEnabled(it)
@@ -270,23 +270,23 @@ fun DiscordSettingsScreen(
                         SettingLinkRow(
                             title = stringResource(R.string.discord_login_manual_token),
                             summary =
-                                if (state.settings.discordToken.isNotBlank()) {
+                                if (settings.discordToken.isNotBlank()) {
                                     "••••••••••••••••"
                                 } else {
                                     stringResource(R.string.discord_status_no_token)
                                 },
                             onClick = {
-                                tempToken = state.settings.discordToken
+                                tempToken = settings.discordToken
                                 showTokenDialog = true
                             },
                         )
                         DividerLine()
                         SettingRow(stringResource(R.string.account_status)) {
-                            val isConnected = isSupported && state.settings.discordRpcEnabled && state.settings.discordToken.isNotBlank()
+                            val isConnected = isSupported && settings.discordRpcEnabled && settings.discordToken.isNotBlank()
                             val statusText =
                                 when {
                                     !isSupported -> stringResource(R.string.discord_unsupported_version)
-                                    state.settings.discordToken.isBlank() -> stringResource(R.string.discord_status_no_token)
+                                    settings.discordToken.isBlank() -> stringResource(R.string.discord_status_no_token)
                                     isConnected -> stringResource(R.string.discord_status_connected)
                                     else -> stringResource(R.string.discord_status_disconnected)
                                 }
@@ -312,14 +312,14 @@ fun DiscordSettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.discord_show_artwork_details),
                             summary = stringResource(R.string.discord_show_artwork_details_desc),
-                            checked = state.settings.discordRpcShowArtworkDetails,
+                            checked = settings.discordRpcShowArtworkDetails,
                             onCheckedChange = { viewModel.updateDiscordRpcShowArtworkDetails(it) },
                         )
                         DividerLine()
                         SettingSwitchRow(
                             title = stringResource(R.string.discord_show_buttons),
                             summary = stringResource(R.string.discord_show_buttons_desc),
-                            checked = state.settings.discordRpcShowButtons,
+                            checked = settings.discordRpcShowButtons,
                             onCheckedChange = { viewModel.updateDiscordRpcShowButtons(it) },
                         )
                     }
@@ -331,9 +331,9 @@ fun DiscordSettingsScreen(
                     ElevatedPanel {
                         SettingLinkRow(
                             title = stringResource(R.string.discord_application_id),
-                            summary = state.settings.discordApplicationId.ifBlank { DiscordRpcManager.DEFAULT_APP_ID },
+                            summary = settings.discordApplicationId.ifBlank { DiscordRpcManager.DEFAULT_APP_ID },
                             onClick = {
-                                tempAppId = state.settings.discordApplicationId
+                                tempAppId = settings.discordApplicationId
                                 showAppIdDialog = true
                             },
                         )
@@ -347,10 +347,10 @@ fun DiscordSettingsScreen(
                         SettingSwitchRow(
                             title = stringResource(R.string.discord_enable_log),
                             summary = stringResource(R.string.discord_enable_log_desc),
-                            checked = state.settings.discordRpcShowLogs,
+                            checked = settings.discordRpcShowLogs,
                             onCheckedChange = { viewModel.updateDiscordRpcShowLogs(it) },
                         )
-                        if (state.settings.discordRpcShowLogs) {
+                        if (settings.discordRpcShowLogs) {
                             DividerLine()
                             if (diagnostics.isEmpty()) {
                                 Text(
