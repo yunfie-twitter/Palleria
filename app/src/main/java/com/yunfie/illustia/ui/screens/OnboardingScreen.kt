@@ -68,40 +68,39 @@ internal fun OnboardingLoginScreen(
     ) {
         val useWideLayout = maxWidth >= 600.dp && maxWidth > maxHeight
 
-            if (useWideLayout) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(48.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    BrandLockup(modifier = Modifier.weight(1f))
-                    OnboardingActions(
-                        settings = settings,
-                        viewModel = viewModel,
-                        onShowDetails = { showDetails = true },
-                        onRefreshTokenLogin = onRefreshTokenLogin,
-                        modifier = Modifier.weight(1f).widthIn(max = 560.dp),
-                    )
-                }
-            } else {
-                Column(
-                    modifier =
-                        Modifier
-                            .align(Alignment.Center)
-                            .fillMaxWidth()
-                            .widthIn(max = 560.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    BrandLockup(modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(72.dp))
-                    OnboardingActions(
-                        settings = settings,
-                        viewModel = viewModel,
-                        onShowDetails = { showDetails = true },
-                        onRefreshTokenLogin = onRefreshTokenLogin,
-                    )
-                }
+        if (useWideLayout) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(48.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BrandLockup(modifier = Modifier.weight(1f))
+                OnboardingActions(
+                    settings = settings,
+                    viewModel = viewModel,
+                    onShowDetails = { showDetails = true },
+                    onRefreshTokenLogin = onRefreshTokenLogin,
+                    modifier = Modifier.weight(1f).widthIn(max = 560.dp),
+                )
+            }
+        } else {
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .widthIn(max = 560.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                BrandLockup(modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(72.dp))
+                OnboardingActions(
+                    settings = settings,
+                    viewModel = viewModel,
+                    onShowDetails = { showDetails = true },
+                    onRefreshTokenLogin = onRefreshTokenLogin,
+                )
             }
         }
     }

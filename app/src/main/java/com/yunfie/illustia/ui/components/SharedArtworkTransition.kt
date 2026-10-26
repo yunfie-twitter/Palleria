@@ -48,9 +48,10 @@ internal fun sharedArtworkKey(illustId: Long): String = "artwork-image-$illustId
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun Modifier.sharedArtworkElement(illustId: Long): Modifier {
-    val scope = LocalNavSharedTransitionScope.current ?: return this
-    val visibilityScope = LocalNavEntryAnimatedVisibilityScope.current ?: return this
-    if (LocalSuppressSharedArtworkTransition.current) return this
+    val scope = LocalNavSharedTransitionScope.current
+    val visibilityScope = LocalNavEntryAnimatedVisibilityScope.current
+    val suppressed = LocalSuppressSharedArtworkTransition.current
+    if (scope == null || visibilityScope == null || suppressed) return this
     return with(scope) {
         sharedElement(
             sharedContentState = rememberSharedContentState(key = sharedArtworkKey(illustId)),
