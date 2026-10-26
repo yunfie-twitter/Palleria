@@ -85,7 +85,14 @@ class PallaSyncRetryGateTest {
     @Test
     fun `two clock failures correct time without bypassing a restart barrier`() {
         val gate = gate { 0 }
-        val hint = PallaSyncProblemHint(401, "TOKEN_NOT_YET_VALID", true, serverTimeMs = 1_791_684_000_000, retryAfterMs = 120_000)
+        val hint =
+            PallaSyncProblemHint(
+                401,
+                "TOKEN_NOT_YET_VALID",
+                true,
+                serverTimeMs = 1_791_684_000_000,
+                context = PallaSyncProblemContext(retryAfterMs = 120_000),
+            )
         val failure = checkNotNull(classifyPallaSyncHttpStatus(401, hint))
         gate.observe(request(), failure, hint)
         gate.correctedTime(origin) shouldBe wall
@@ -186,7 +193,13 @@ class PallaSyncRetryGateTest {
     @Test
     fun `507 capacity hints are diagnostic only and explicit resolution retries the retained request`() {
         val gate = gate()
-        val hint = PallaSyncProblemHint(507, "QUOTA_EXCEEDED", true, usedBytes = 900, maxBytes = 1000)
+        val hint =
+            PallaSyncProblemHint(
+                507,
+                "QUOTA_EXCEEDED",
+                true,
+                context = PallaSyncProblemContext(usedBytes = 900, maxBytes = 1000),
+            )
         val failure = checkNotNull(classifyPallaSyncHttpStatus(507, hint))
         failure shouldBe PallaSyncHttpResult.ProtocolError("QUOTA_EXCEEDED", 507)
         gate.observe(request(), failure, hint)
@@ -457,8 +470,11 @@ class PallaSyncRetryGateTest {
                 503,
                 "RELAY_SHUTTING_DOWN",
                 true,
-                shutdownAtMs = 1_791_685_000_000,
-                migrationOrigin = "https://target.example",
+                context =
+                    PallaSyncProblemContext(
+                        shutdownAtMs = 1_791_685_000_000,
+                        migrationOrigin = "https://target.example",
+                    ),
             )
         val failure = checkNotNull(classifyPallaSyncHttpStatus(503, hint))
         failure shouldBe PallaSyncHttpResult.ProtocolError("RELAY_SHUTTING_DOWN", 503)
@@ -473,7 +489,7 @@ class PallaSyncRetryGateTest {
         unsafe.observe(
             request(),
             failure,
-            hint.copy(migrationOrigin = "https://target.example/path"),
+            hint.copy(context = hint.context?.copy(migrationOrigin = "https://target.example/path")),
         )
         unsafe.relayShutdownNotice(origin) shouldBe
             PallaSyncRetryGate.RelayShutdownNotice(
@@ -488,7 +504,7 @@ class PallaSyncRetryGateTest {
         previous.observe(
             request(requestOrigin = previouslyAdvertisedOrigin),
             failure,
-            hint.copy(shutdownAtMs = null, migrationOrigin = null),
+            hint.copy(context = null),
         )
         previous.relayShutdownNotice(previouslyAdvertisedOrigin) shouldBe
             PallaSyncRetryGate.RelayShutdownNotice(1_791_685_000_000, "https://target.example", writesStopped = true)

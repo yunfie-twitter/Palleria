@@ -459,17 +459,22 @@ class MainActivity : FragmentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus) {
-            applyTaskSnapshotBlur(isEnteringBackground = true)
-        } else {
+        // フォーカス喪失はクイック設定・通知シェード・権限ダイアログ・IME でも発生するが、
+        // それらはアプリを背景化しない。ここでタスクスナップショットブラーを適用すると
+        // ウィンドウ全体（半径 60px）の RenderEffect が毎回張られ、SystemUI を触るたびに
+        // 重くなる。背景化の適用は onStop に一本化し、ここでは戻ってきたときの解除だけを行う。
+        if (hasFocus) {
             applyTaskSnapshotBlur(isEnteringBackground = false)
         }
     }
 
     override fun onTopResumedActivityChanged(isTopResumedActivity: Boolean) {
         super.onTopResumedActivityChanged(isTopResumedActivity)
-        if (!isTopResumedActivity) {
-            applyTaskSnapshotBlur(isEnteringBackground = true)
+        // クイック設定の展開でも false になる機種があるため、フォーカスが戻る経路
+        // (onWindowFocusChanged(true) / onResume) で解除できることを前提に、
+        // ここでは背景化を確定させない。実背景化は onStop が担う。
+        if (isTopResumedActivity) {
+            applyTaskSnapshotBlur(isEnteringBackground = false)
         }
     }
 
@@ -489,8 +494,16 @@ class MainActivity : FragmentActivity() {
         clipboardDetectionJob?.cancel()
         clipboardDetectionJob = null
         clearAdaptiveRefreshRateHint()
-        applyTaskSnapshotBlur(isEnteringBackground = true)
+        // onPause はクイック設定の展開でも呼ばれることがあり、そのままブラーを張ると
+        // SystemUI 操作のたびにウィンドウ全体の RenderEffect を構築してしまう。
+        // 実際に背景へ回る場合は onStop が続けて呼ばれるので、そちらで適用する。
         super.onPause()
+    }
+
+    override fun onStop() {
+        // 背景化が確定した地点。クイック設定や通知シェードでは到達しない。
+        applyTaskSnapshotBlur(isEnteringBackground = true)
+        super.onStop()
     }
 
     override fun onNewIntent(intent: Intent) {

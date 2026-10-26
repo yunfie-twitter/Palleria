@@ -233,9 +233,10 @@ internal fun IllustDetailHeader(
                         .build()
                 val result = SingletonImageLoader.get(context).execute(request)
                 if (result is SuccessResult) {
-                    val isDark = withContext(Dispatchers.Default) {
-                        NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap())
-                    }
+                    val isDark =
+                        withContext(Dispatchers.Default) {
+                            NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap())
+                        }
                     useDarkHeaderIcons = isDark
                     onHeaderIconsThemeChanged(isDark)
                 }

@@ -147,8 +147,14 @@ internal fun PallaSyncMnemonicDialog(
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
             when {
-                activity == null -> Text(stringResource(R.string.pallasync_v3_secure_input_unavailable))
-                busy -> PallaSyncWorkingState(text = stringResource(R.string.pallasync_v3_root_working))
+                activity == null -> {
+                    Text(stringResource(R.string.pallasync_v3_secure_input_unavailable))
+                }
+
+                busy -> {
+                    PallaSyncWorkingState(text = stringResource(R.string.pallasync_v3_root_working))
+                }
+
                 else -> {
                     MnemonicGrid(words = words)
                     MnemonicCopyAction(
