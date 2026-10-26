@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -47,7 +48,11 @@ fun OfflineLibraryScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
     val columns = adaptiveIllustColumns(state.settings)
-    val savedIllusts = state.savedIllusts.map(SavedIllustEntity::toIllust).visibleWithSettings(state.settings)
+    // 保存作品全件の変換とフィルタはスクロール中も毎回走るため、保存一覧か設定が変わったときだけ計算する。
+    val savedIllusts =
+        remember(state.savedIllusts, state.settings) {
+            state.savedIllusts.map(SavedIllustEntity::toIllust).visibleWithSettings(state.settings)
+        }
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
