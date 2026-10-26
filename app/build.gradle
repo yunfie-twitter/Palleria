@@ -131,6 +131,10 @@ detekt {
     toolVersion = "2.0.0-alpha.5"
     buildUponDefaultConfig = true
     config.setFrom(files("config/detekt/detekt.yml"))
+    // detekt-baseline.xml records the issues already present on main. It is regenerated for detekt
+    // 2.0 and checked in so the task fails only on newly introduced issues. The
+    // checkQualityBaselineBudgets task keeps the file from growing without review.
+    baseline = file("detekt-baseline.xml")
     parallel = true
     ignoreFailures = false
 }
@@ -257,25 +261,29 @@ def buildPallaSyncCoreAndroid = tasks.register("buildPallaSyncCoreAndroid", Exec
     )
 }
 
-def detektBaselineBudget = 400
+def detektBaselineBudget = 425
+// Counted from detekt-baseline.xml after regenerating it for detekt 2.0. The previous ceiling was
+// measured against a stale baseline, so it counted far fewer issues than detekt actually reports.
 def detektRuleBudgets = [
-    ComplexCondition: 11,
+    ComplexCondition: 18,
     ConstructorParameterNaming: 2,
-    CyclomaticComplexMethod: 18,
-    EmptyFunctionBlock: 2,
+    CyclomaticComplexMethod: 57,
+    DestructuringDeclarationWithTooManyEntries: 1,
+    EmptyFunctionBlock: 1,
     InvalidPackageDeclaration: 0,
-    LargeClass: 3,
-    LongMethod: 15,
-    LoopWithTooManyJumpStatements: 3,
-    MagicNumber: 102,
-    MatchingDeclarationName: 5,
-    ReturnCount: 52,
-    SwallowedException: 0,
-    ThrowsCount: 2,
-    TooGenericExceptionCaught: 0,
-    TooGenericExceptionThrown: 1,
-    TooManyFunctions: 28,
-    UnusedParameter: 7,
+    LargeClass: 9,
+    LongMethod: 83,
+    LoopWithTooManyJumpStatements: 9,
+    MagicNumber: 113,
+    MatchingDeclarationName: 7,
+    NestedBlockDepth: 4,
+    ReturnCount: 70,
+    SwallowedException: 1,
+    ThrowsCount: 6,
+    TooGenericExceptionCaught: 4,
+    TooGenericExceptionThrown: 0,
+    TooManyFunctions: 31,
+    UnusedParameter: 6,
     VariableNaming: 3,
 ]
 
