@@ -67,6 +67,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -152,6 +153,8 @@ fun PallaSyncSettingsScreen(
 
     var showUrlDialog by remember { mutableStateOf(false) }
     var tempUrl by remember { mutableStateOf("") }
+    var urlVerifying by remember { mutableStateOf(false) }
+    var urlFailure by remember { mutableStateOf<String?>(null) }
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteRootInput by remember { mutableStateOf(false) }
@@ -678,12 +681,21 @@ fun PallaSyncSettingsScreen(
                     onValueChange = { tempUrl = it },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (urlVerifying) {
+                    PallaSyncWorkingState(text = stringResource(R.string.pallasync_server_url_verifying))
+                }
+                if (urlFailure != null) {
+                    PallaSyncErrorHint(code = urlFailure)
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     MiuixTextButton(
-                        onClick = { showUrlDialog = false },
+                        onClick = {
+                            showUrlDialog = false
+                            urlFailure = null
+                        },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         text = stringResource(R.string.action_cancel),
                     )
@@ -694,8 +706,25 @@ fun PallaSyncSettingsScreen(
                             if (normalized == null) {
                                 Toast.makeText(context, R.string.error_pallasync_invalid_server_url, Toast.LENGTH_SHORT).show()
                             } else {
-                                viewModel.updatePallaSyncServerUrl(normalized)
-                                showUrlDialog = false
+                                // §10.1: confirm the origin answers health before it becomes the
+                                // active relay, so a typo or a retired host cannot silently stop sync.
+                                urlVerifying = true
+                                urlFailure = null
+                                scope.launch {
+                                    val verified =
+                                        runCatching {
+                                            withContext(
+                                                Dispatchers.IO,
+                                            ) { syncManager.verifyRelayOrigin(normalized) }
+                                        }.getOrDefault(false)
+                                    urlVerifying = false
+                                    if (verified) {
+                                        viewModel.updatePallaSyncServerUrl(normalized)
+                                        showUrlDialog = false
+                                    } else {
+                                        urlFailure = "C_RELAY_UNAVAILABLE"
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
@@ -2470,7 +2499,7 @@ fun PallaSyncSettingsScreen(
                                     },
                                 )
                                 Text(stringResource(R.string.pallasync_snapshot_bootstrap_desc))
-                                trustedSnapshotFailure?.let { Text(it) }
+                                PallaSyncErrorHint(trustedSnapshotFailure)
                             }
                         }
                     }

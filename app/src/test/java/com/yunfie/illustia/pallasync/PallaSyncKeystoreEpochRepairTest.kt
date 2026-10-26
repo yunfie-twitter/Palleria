@@ -54,6 +54,39 @@ class PallaSyncKeystoreEpochRepairTest {
         keystore.getActiveChainKeys()?.deviceMetaKeyBase64Url shouldBe "new-device-meta-key"
     }
 
+    @Test
+    fun `verified root replacement clears a stale epoch expiry mark`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("pallasync_keystore", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit() shouldBe true
+        val keystore = PallaSyncKeystore(preferences)
+        val snapshot =
+            PallaSyncKeySnapshot(
+                chainId = CHAIN,
+                deviceId = DEVICE,
+                encryptionKeyBase64Url = "record-key",
+                signingKeyBase64Url = "signing-key",
+                publicKeyBase64Url = "public-key",
+                kexPrivateKeyBase64Url = "kex-private",
+                kexPublicKeyBase64Url = "kex-public",
+                deviceMetaKeyBase64Url = "device-meta-key",
+                collectionTagKeyBase64Url = "tag-key",
+                epochSecretBase64Url = "secret",
+                epoch = 5,
+            )
+        keystore.saveActiveChainKeys(snapshot) shouldBe true
+        // A retained expiry mark survived from an earlier generation. It used to be permanent: every
+        // epoch lookup returned null and the app kept reporting C_MISSING_DEPENDENCY until a
+        // reinstall wiped preferences.
+        preferences.edit().putBoolean("epoch.$CHAIN.5.expired", true).commit() shouldBe true
+        keystore.keysForEpoch(checkNotNull(keystore.getActiveChainKeys()), 5) shouldBe null
+
+        keystore.replaceEpochMaterial(CHAIN, 5, snapshot, ByteArray(32) { 0x5a }) shouldBe true
+
+        preferences.getBoolean("epoch.$CHAIN.5.expired", false) shouldBe false
+        keystore.keysForEpoch(checkNotNull(keystore.getActiveChainKeys()), 5)?.epoch shouldBe 5
+    }
+
     private companion object {
         const val CHAIN = "ODtLW4w27pD6LS9IpFBfmvByjEoBFddv2Fx1QJIMJoc"
         const val DEVICE = "11111111-1111-4111-8111-111111111111"

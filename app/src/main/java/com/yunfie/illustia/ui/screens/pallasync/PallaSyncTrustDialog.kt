@@ -15,8 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncPolicyGate
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -100,7 +100,7 @@ internal fun PallaSyncTrustDialog(
             PallaSyncErrorHint(code = failure)
             // The commit action is highlighted and separated; cancel and back never compete with it.
             when (currentStep) {
-                TrustStep.POLICY ->
+                TrustStep.POLICY -> {
                     PallaSyncPrimaryAction(
                         text = stringResource(R.string.pallasync_v3_accept_policy),
                         enabled = !busy,
@@ -122,8 +122,9 @@ internal fun PallaSyncTrustDialog(
                             }
                         },
                     )
+                }
 
-                else ->
+                else -> {
                     PallaSyncPrimaryAction(
                         text =
                             stringResource(
@@ -167,6 +168,7 @@ internal fun PallaSyncTrustDialog(
                             }
                         },
                     )
+                }
             }
             // Going back only moves the view; a confirmed key or source stays recorded by the gate.
             if (currentStep != TrustStep.SOURCE) {

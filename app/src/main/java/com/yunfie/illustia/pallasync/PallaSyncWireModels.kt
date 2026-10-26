@@ -21,6 +21,17 @@ internal const val PALLASYNC_EXPORT_MEDIA_TYPE = "application/vnd.palleria.sync.
 internal const val PALLASYNC_PAGE_SIZE = 200
 private const val PALLASYNC_EXPORT_MAX_PAGE_SIZE = 1_000
 internal val PALLASYNC_AUTOMATIC_RETRY_STATUSES = setOf(408, 429, 500, 502, 503, 504)
+
+/**
+ * Edge/proxy failures that mean "the relay could not be reached", not "the relay answered wrongly".
+ *
+ * §19.2 already treats 502/503/504 as retryable transport backoff. Cloudflare's 52x/530 family is
+ * the same condition — the edge is up but the origin is unreachable or timing out — so a client
+ * must not read it as a protocol or trust violation. 521-524 cover origin down/timeout/TLS and 530
+ * is an origin DNS failure. These are all transport backoff, the same class as 502/503/504.
+ */
+internal val PALLASYNC_EDGE_UNAVAILABLE_STATUSES = setOf(521, 522, 523, 524, 530)
+
 private const val HTTP_UNAUTHORIZED = 401
 private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 private const val ED25519_PUBLIC_KEY_BYTES = 32
@@ -493,6 +504,8 @@ internal fun classifyPallaSyncHttpStatus(
         }
 
         statusCode in PALLASYNC_AUTOMATIC_RETRY_STATUSES ||
+            // An unreachable origin is transport backoff, not a protocol violation (§19.2).
+            statusCode in PALLASYNC_EDGE_UNAVAILABLE_STATUSES ||
             (
                 statusCode == HTTP_UNAUTHORIZED &&
                     problem?.code in

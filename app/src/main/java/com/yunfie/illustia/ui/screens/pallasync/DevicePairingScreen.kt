@@ -24,15 +24,15 @@ import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.yunfie.illustia.R
-import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.pallasync.PallaSyncBootstrapReview
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
 import com.yunfie.illustia.pallasync.PallaSyncPeerSubjectEnrollment
 import com.yunfie.illustia.pallasync.PallaSyncPeerTransferFile
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
