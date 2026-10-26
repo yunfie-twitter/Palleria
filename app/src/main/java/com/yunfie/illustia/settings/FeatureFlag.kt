@@ -161,6 +161,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_delta_etag_sync_desc,
         defaultEnabled = true,
     ),
+    SharedElementTransitions(
+        key = "flag_shared_element_transitions",
+        titleRes = R.string.flag_shared_element_transitions_title,
+        descRes = R.string.flag_shared_element_transitions_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {
