@@ -541,4 +541,37 @@ class PallaSyncRetryGateTest {
                 noticeId = "f4e3d90e-2461-4c7c-9f2f-89452a28657c",
             )
     }
+
+    @Test
+    fun `a repeated identical observation does not write again`() {
+        // 成功したリクエストは retry 状態を変えない。commit() は fsync を伴うので、
+        // 変化が無いときに書かないことを固定しておく。
+        val counted = CountingPrefs(prefs)
+        val gate = PallaSyncRetryGate(counted, { boot }, { wall }, { elapsed }) { it }
+        val success = PallaSyncHttpResult.Success(Unit)
+
+        gate.observe(request(), success)
+        val afterFirst = counted.commits
+        repeat(4) { gate.observe(request(), success) }
+
+        counted.commits shouldBe afterFirst
+    }
+
+    /** commit() の回数だけを数える薄いラッパー。 */
+    private class CountingPrefs(
+        private val delegate: android.content.SharedPreferences,
+    ) : android.content.SharedPreferences by delegate {
+        var commits = 0
+            private set
+
+        override fun edit(): android.content.SharedPreferences.Editor {
+            val inner = delegate.edit()
+            return object : android.content.SharedPreferences.Editor by inner {
+                override fun commit(): Boolean {
+                    commits++
+                    return inner.commit()
+                }
+            }
+        }
+    }
 }
