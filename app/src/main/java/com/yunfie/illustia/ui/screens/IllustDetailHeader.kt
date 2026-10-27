@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +61,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
@@ -301,11 +303,28 @@ internal fun IllustDetailHeader(
                     beyondViewportPageCount = if (prefetchImages) 1 else 0,
                     key = { it },
                 ) { page ->
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    // 共有要素の相手はカードのサムネイル（0.75 比率を Crop で埋める箱）なので、
+                    // 1枚目を折りたたみ表示しているあいだは枠と拡大基準をカードに合わせる。
+                    // 揃えないと、移動の補間は枠だけで行われるため、アニメ終了の瞬間に
+                    // FillWidth と Crop の差がそのまま見え方の切り替わりとして出る。
+                    // 共有要素が無効なとき（LocalNavSharedTransitionScope が null）は従来の描画のまま。
+                    val matchesCardThumbnail =
+                        page == 0 && !expanded && LocalNavSharedTransitionScope.current != null
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .then(if (matchesCardThumbnail) Modifier.clipToBounds() else Modifier),
+                    ) {
                         PixivImage(
                             url = imageUrls[page],
                             contentDescription = illust.title,
-                            contentScale = if (expanded) ContentScale.Fit else ContentScale.FillWidth,
+                            contentScale =
+                                when {
+                                    expanded -> ContentScale.Fit
+                                    matchesCardThumbnail -> ContentScale.Crop
+                                    else -> ContentScale.FillWidth
+                                },
                             modifier =
                                 Modifier
                                     .fillMaxSize()

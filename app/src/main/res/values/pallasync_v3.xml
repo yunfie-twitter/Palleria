@@ -375,4 +375,6 @@
     <string name="pallasync_trust_key_id">Key ID: %1$s</string>
     <string name="pallasync_trust_working">Contacting the relay…</string>
     <string name="pallasync_server_url_verifying">Checking the relay…</string>
+    <string name="pallasync_storage_unavailable_title">Sync storage is unavailable</string>
+    <string name="pallasync_storage_unavailable_body">The key this app uses to encrypt sync settings was invalidated by the system. This happens after changing the screen lock or biometric enrolment, or after restoring from a backup, and the saved sync trust settings can no longer be read. Nothing else in the app is affected. Sync stays unavailable on this device until the app re-establishes trust.</string>
 </resources>
