@@ -1,91 +1,54 @@
 # ---------------------------------------------------------------------------
-# General Attributes & Line Numbers
+# Debuggability: retain enough information to retrace release crashes.
 # ---------------------------------------------------------------------------
--keepattributes *Annotation*, InnerClasses, EnclosingMethod, Signature, SourceFile, LineNumberTable
-
-# ---------------------------------------------------------------------------
-# Kotlin Objects, Companions, Singletons & Enums
-# ---------------------------------------------------------------------------
--keepclasseswithmembers class * {
-    public static final ** INSTANCE;
-}
-
--keepclasseswithmembers class * {
-    public static final ** Companion;
-}
-
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
--keep class kotlin.jvm.internal.DefaultConstructorMarker { *; }
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
 # ---------------------------------------------------------------------------
-# Jetpack Compose
+# Kotlin metadata needed by reflection-based libraries, if applicable.
+# Remove this block if you do not use Kotlin reflection / serialization.
 # ---------------------------------------------------------------------------
--keepclassmembers class * extends androidx.compose.runtime.snapshots.SnapshotState { *; }
--keepclassmembers class * implements androidx.compose.runtime.State { *; }
--keep class **.ComposableSingletons$* { *; }
--keepclassmembers class **.ComposableSingletons$* {
-    public static final ** INSTANCE;
-    public static final ** lambda-*;
-    public static final ** lambda$*;
-    *;
-}
--keep class androidx.compose.runtime.internal.ComposableLambdaImpl { *; }
--keep class androidx.compose.runtime.internal.ComposableLambda { *; }
+-keepattributes *Annotation*,InnerClasses,EnclosingMethod,Signature
 
 # ---------------------------------------------------------------------------
-# Miuix UI Library
+# UniFFI / JNA
+# JNA resolves generated bindings through JNI names, so this boundary must
+# not be renamed or removed.
 # ---------------------------------------------------------------------------
--keep class top.yukonga.miuix.kmp.** { *; }
--keepclassmembers class top.yukonga.miuix.kmp.** {
-    public static final ** INSTANCE;
-    *;
-}
--dontwarn top.yukonga.miuix.kmp.**
-
-# Coil
--dontwarn coil3.**
-
-# OkHttp
--keepattributes Signature, InnerClasses, EnclosingMethod
--keepclassmembers class okhttp3.internal.publicsuffix.PublicSuffixDatabase {
-    private java.lang.String[] publicSuffixList;
-    private java.lang.String[] publicSuffixExceptionList;
-}
--dontwarn okio.**
--dontwarn javax.annotation.**
--dontwarn org.conscrypt.**
-
-# Tink / Security-Crypto
--dontwarn com.google.errorprone.annotations.**
--dontwarn com.google.j2objc.annotations.**
-
-# JNA is used by the generated UniFFI Rust bindings. Its native dispatcher
-# resolves Java classes and fields by their original JNI names at runtime.
 -keep class com.sun.jna.** { *; }
-# UniFFI's generated bindings include JNA-reflected library interfaces,
-# structures, callbacks, converters, and error types. Keep the generated
-# boundary intact so R8 cannot rename or remove members required by JNA.
 -keep class com.yunfie.illustia.rust.** { *; }
 -keep interface com.yunfie.illustia.rust.** { *; }
+
 -keep class * extends com.sun.jna.Structure { *; }
+-keepclassmembers class * extends com.sun.jna.Structure {
+    <fields>;
+    <init>();
+}
 -keep interface * extends com.sun.jna.Library { *; }
 -keep interface * extends com.sun.jna.Callback { *; }
+-keepclassmembers class * implements com.sun.jna.Callback {
+    <methods>;
+}
 -dontwarn com.sun.jna.**
 
-# KizzyRPC, Java-WebSocket & SLF4J
--dontwarn org.slf4j.**
--dontwarn com.my.kizzyrpc.**
--dontwarn org.java_websocket.**
--keep class com.my.kizzyrpc.** { *; }
--keepclassmembers class com.my.kizzyrpc.** { *; }
--keep class org.java_websocket.** { *; }
--keepclassmembers class org.java_websocket.** { *; }
-# Shizuku Process Reflection
+# ---------------------------------------------------------------------------
+# Shizuku
+# Keep only the reflective process-entry point unless the library's own
+# consumer rules are insufficient.
+# ---------------------------------------------------------------------------
 -keepclassmembers class rikka.shizuku.Shizuku {
     private static *** newProcess(...);
 }
--keep class rikka.shizuku.** { *; }
+
+# ---------------------------------------------------------------------------
+# Warnings that are safe to suppress
+# ---------------------------------------------------------------------------
+-dontwarn coil3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**
+-dontwarn org.conscrypt.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.j2objc.annotations.**
+-dontwarn org.slf4j.**
+-dontwarn com.my.kizzyrpc.**
+-dontwarn org.java_websocket.**

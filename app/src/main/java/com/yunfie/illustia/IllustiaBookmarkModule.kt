@@ -17,6 +17,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** いいねを押した瞬間の見た目。通信の結果は後から正しい値で上書きする。 */
+private fun Illust.optimisticallyToggled(): Illust =
+    copy(
+        isBookmarked = !isBookmarked,
+        totalBookmarks = (totalBookmarks + if (isBookmarked) -1 else 1).coerceAtLeast(0),
+    )
+
 private const val TARGET_SEARCH_PAGE_BATCH = 24
 private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 
@@ -25,6 +32,11 @@ abstract class IllustiaBookmarkModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaDetailProfileModule(app, managedDataRepository) {
+    /** いいね通信中の作品 ID。連打による多重実行を防ぐ。 */
+    private val bookmarkTogglesInFlight =
+        java.util.concurrent.ConcurrentHashMap
+            .newKeySet<Long>()
+
     abstract fun saveImage(
         url: String,
         filename: String,
@@ -469,6 +481,14 @@ abstract class IllustiaBookmarkModule(
         illust: Illust,
         explicitRestrict: com.yunfie.illustia.models.Restrict? = null,
     ) {
+        // 連打で同じ作品の通信が多重に走ると、後から返った応答で最終状態が巻き戻る。
+        // 見た目を先に反転する以上、作品ごとに 1 本だけ通す。
+        if (!bookmarkTogglesInFlight.add(illust.id)) return
+        // いいねの反応を待たせない。タップした瞬間に見た目を反転し、通信はそのまま裏で進める。
+        // repository は illust.isBookmarked を見て登録/解除を決めるため、必ず反転前の値を持たせ、
+        // 表示だけを先に変える（サーバー応答が返れば正しい値で上書きされる）。
+        val optimistic = illust.optimisticallyToggled()
+        updateIllustEverywhere(optimistic)
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val settings = _uiState.value.settings
@@ -495,12 +515,16 @@ abstract class IllustiaBookmarkModule(
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
+                // 先に反転した見た目を元へ戻す。戻さないと失敗しても登録済みに見えたままになる。
+                updateIllustEverywhere(illust)
                 if (isCancellation(error)) {
                     throw error
                 }
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "bookmark_toggle", extras = mapOf("illustId" to illust.id))
                 _uiState.update { it.copy(message = cleanErrorMessage(error, str(R.string.error_bookmark_failed))) }
+            } finally {
+                bookmarkTogglesInFlight.remove(illust.id)
             }
         }
     }
