@@ -61,11 +61,17 @@ internal class PallaSyncRetryGate(
         val noticeId: String? = null,
     )
 
+    /**
+     * BOOT_COUNT は ContentProvider への照会なので、リクエストごとに呼ぶと重い。値は再起動でしか
+     * 変わらず、プロセスが生きているあいだは不変なので、遅延させて 1 回だけ取る。
+     */
+    private val bootId: Long by lazy { boot() }
+
     fun remaining(origin: String): Long =
         synchronized(lock) {
             val state = load(origin)
             if (state.nextWall == 0L) return@synchronized 0L
-            if (state.bootId == boot() && elapsed() >= state.sampledElapsed) {
+            if (state.bootId == bootId && elapsed() >= state.sampledElapsed) {
                 val wait = (state.nextElapsed - elapsed()).coerceAtLeast(0)
                 if (wait == 0L) save(origin, state.copy(nextWall = 0, nextElapsed = 0, waitMs = 0))
                 wait
@@ -490,7 +496,7 @@ internal class PallaSyncRetryGate(
             nextWall = Math.addExact(wall(), wait),
             nextElapsed = Math.addExact(elapsed(), wait),
             sampledElapsed = elapsed(),
-            bootId = boot(),
+            bootId = bootId,
             waitMs = wait,
         )
 
@@ -506,7 +512,12 @@ internal class PallaSyncRetryGate(
         origin: String,
         state: State,
     ) {
-        check(prefs.edit().putString("retry:$origin", Json.encodeToString(state)).commit()) { "C_LOCAL_STORAGE_FULL" }
+        // 状態が変わっていないなら書かない。commit() は fsync を伴う同期書き込みで、リクエスト
+        // ごとに走るため。成功したリクエストは state が変化しないので、ここでほぼ全件が落ちる。
+        val key = "retry:$origin"
+        if (lastSaved[key] == state) return
+        check(prefs.edit().putString(key, Json.encodeToString(state)).commit()) { "C_LOCAL_STORAGE_FULL" }
+        lastSaved[key] = state
     }
 
     private fun scope(request: Request): String =
@@ -544,6 +555,9 @@ internal class PallaSyncRetryGate(
 
     companion object {
         private val lock = Any()
+
+        /** 最後に書いた内容。書き込みの重複を避けるためだけに使い、読み取りは常に prefs から行う。 */
+        private val lastSaved = java.util.concurrent.ConcurrentHashMap<String, State>()
         private const val START_BASE_MS = 1000L
         private const val MAX_BASE_MS = 60_000L
         private const val MAX_EXPONENT = 16

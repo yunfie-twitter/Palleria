@@ -347,4 +347,6 @@
     <string name="pallasync_trust_key_id">鍵ID：%1$s</string>
     <string name="pallasync_trust_working">リレーに接続しています…</string>
     <string name="pallasync_server_url_verifying">リレーを確認しています…</string>
+    <string name="pallasync_storage_unavailable_title">同期の保存領域を読み込めません</string>
+    <string name="pallasync_storage_unavailable_body">同期設定の暗号化に使う鍵が、システムによって無効化されました。画面ロックや生体認証の登録を変更したとき、またはバックアップから復元したときに起こり、保存済みの同期の信頼設定を読み出せなくなります。アプリのその他のデータには影響ありません。この端末では、信頼をやり直すまで同期を利用できません。</string>
 </resources>

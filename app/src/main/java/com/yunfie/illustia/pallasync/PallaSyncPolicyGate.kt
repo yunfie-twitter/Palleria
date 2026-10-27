@@ -1,7 +1,9 @@
 package com.yunfie.illustia.pallasync
 
 import android.content.Context
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import androidx.security.crypto.EncryptedSharedPreferences
+import com.yunfie.illustia.GlitchTipTelemetry
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -22,6 +24,8 @@ import okhttp3.Response
 import okhttp3.TlsVersion
 import okio.Buffer
 import java.io.IOException
+import java.security.GeneralSecurityException
+import java.security.KeyStoreException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -459,6 +463,31 @@ class PallaSyncPolicyGate internal constructor(
 
     companion object {
         internal const val DEFAULT_CONSISTENCY_PROBE_INTERVAL_MS = PallaSyncProbeSchedule.DEFAULT_INTERVAL_MS
+
+        /**
+         * 端末のロック画面や生体認証の登録が変わると、Keystore のマスターキーは OS 側で恒久的に
+         * 無効化され、EncryptedSharedPreferences の生成が KeyStoreException で落ちる。従来はこれを
+         * 捕まえておらず、ダイアログの composition 中に生成していたためアプリ全体が起動時に落ちていた。
+         * 保存済みの同意内容は復号できないため、null を返して呼び出し側でエラー表示に切り替える。
+         */
+        internal fun createOrNull(context: Context): PallaSyncPolicyGate? =
+            try {
+                PallaSyncPolicyGate(context)
+            } catch (invalidated: KeyStoreException) {
+                reportInvalidatedKey(invalidated)
+                null
+            } catch (invalidated: KeyPermanentlyInvalidatedException) {
+                reportInvalidatedKey(invalidated)
+                null
+            } catch (invalidated: GeneralSecurityException) {
+                reportInvalidatedKey(invalidated)
+                null
+            }
+
+        /** 握りつぶさずに記録する。発生率と OS バージョンを後から追えるようにする。 */
+        private fun reportInvalidatedKey(invalidated: Exception) {
+            GlitchTipTelemetry.recordException(invalidated, tag = "pallasync_key_invalidated")
+        }
 
         private fun unavailablePolicy(): Nothing = throw IllegalStateException("C_RELAY_POLICY_UNAVAILABLE")
 

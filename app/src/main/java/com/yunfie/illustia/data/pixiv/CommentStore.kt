@@ -163,6 +163,8 @@ class CommentStore(
                 nextUrl = response.nextUrl,
                 isEmpty = response.comments.isEmpty() && !append,
                 isLoading = false,
+                isRefreshing = false,
+                isPaginating = false,
                 errorMessage = null,
             )
         }
