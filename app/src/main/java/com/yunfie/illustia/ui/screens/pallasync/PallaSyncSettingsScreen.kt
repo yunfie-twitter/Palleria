@@ -450,27 +450,51 @@ fun PallaSyncSettingsScreen(
         }
         while (isActive) {
             try {
-                pendingReseedCutoverTarget = syncManager.pendingReseedCutoverTarget()
-                pendingReseedCommitTarget = syncManager.pendingReseedCommitTarget()
-                canAuditReseedSource = syncManager.canAuditReseedSource()
-                reseedSourceConflict = syncManager.pendingReseedSourceConflict()
-                relayShutdownNotice =
+                // 2 秒ごとに回るループなので、値が同じなら代入しない。Compose の状態は equals で
+                // 比べるが、下のリストは associateBy で作り直すため内容が同じでも別インスタンスに
+                // なり、書き込むたびに再コンポーズが走ってしまう。
+                // null も「有効な値」なので、非 null のときだけ書く takeIf/?.let では戻せない。
+                fun <T> apply(
+                    next: T,
+                    current: T,
+                    write: (T) -> Unit,
+                ) {
+                    if (next != current) write(next)
+                }
+                apply(syncManager.pendingReseedCutoverTarget(), pendingReseedCutoverTarget) {
+                    pendingReseedCutoverTarget = it
+                }
+                apply(syncManager.pendingReseedCommitTarget(), pendingReseedCommitTarget) {
+                    pendingReseedCommitTarget = it
+                }
+                apply(syncManager.canAuditReseedSource(), canAuditReseedSource) { canAuditReseedSource = it }
+                apply(syncManager.pendingReseedSourceConflict(), reseedSourceConflict) { reseedSourceConflict = it }
+                apply(
                     withContext(kotlinx.coroutines.Dispatchers.IO) {
                         syncManager.relayShutdownNotice(settings.pallaSyncServerUrl)
-                    }
-                if (settings.pallaSyncEnabled) clientStatus = syncManager.getClientStatus()
+                    },
+                    relayShutdownNotice,
+                ) { relayShutdownNotice = it }
+                if (settings.pallaSyncEnabled) {
+                    apply(syncManager.getClientStatus(), clientStatus) { clientStatus = it }
+                }
                 val page = syncManager.legacyMigrationProgressPage(limit = 20)
-                legacyMigrations =
-                    (legacyMigrations.associateBy { it.migrationId } + page.items.associateBy { it.migrationId }).values.toList()
+                val mergedMigrations =
+                    (
+                        legacyMigrations.associateBy { it.migrationId } +
+                            page.items.associateBy { it.migrationId }
+                    ).values.toList()
+                apply(mergedMigrations, legacyMigrations) { legacyMigrations = it }
                 if (legacyMigrationCursor == null) legacyMigrationCursor = page.nextMigrationId
                 if (settings.pallaSyncEnabled) {
                     val quarantinePage = syncManager.getUnresolvedQuarantinePage(limit = 50)
-                    unresolvedQuarantine =
+                    val mergedQuarantine =
                         (
                             unresolvedQuarantine.associateBy {
                                 it.objectHash
                             } + quarantinePage.items.associateBy { it.objectHash }
                         ).values.toList()
+                    apply(mergedQuarantine, unresolvedQuarantine) { unresolvedQuarantine = it }
                     if (quarantineCursor == null) quarantineCursor = quarantinePage.nextHash
                 }
             } catch (cancelled: CancellationException) {
@@ -651,8 +675,9 @@ fun PallaSyncSettingsScreen(
             launch(kotlinx.coroutines.Dispatchers.IO) {
                 while (isActive) {
                     val fetchedDevices = dao.getAllDevices()
+                    // 端末一覧は滅多に変わらないので、差分があるときだけ状態に反映する。
                     withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        devices = fetchedDevices
+                        if (fetchedDevices != devices) devices = fetchedDevices
                     }
                     kotlinx.coroutines.delay(2000)
                 }

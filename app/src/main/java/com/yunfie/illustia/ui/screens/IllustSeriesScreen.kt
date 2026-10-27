@@ -464,6 +464,22 @@ private fun SeriesProfileHeader(
     backgroundColor: Color,
     onToggleWatchlist: () -> Unit,
 ) {
+    // drawWithCache は colors を参照で比べるため、再コンポーズのたびに listOf で作り直すと
+    // グラデーションが毎回作り直されてしまう。テーマ色と背景色をキーにして使い回す。
+    val bannerGradient =
+        remember(backgroundColor) {
+            listOf(
+                Color.Black.copy(alpha = 0.25f),
+                Color.Transparent,
+                backgroundColor.copy(alpha = 0.85f),
+            )
+        }
+    val fallbackPrimary = MiuixTheme.colorScheme.primary
+    val fallbackSurface = MiuixTheme.colorScheme.surfaceContainerHighest
+    val fallbackGradient =
+        remember(fallbackPrimary, fallbackSurface) {
+            listOf(fallbackPrimary.copy(alpha = 0.35f), fallbackSurface)
+        }
     Column(Modifier.fillMaxWidth()) {
         Box(
             modifier =
@@ -485,27 +501,14 @@ private fun SeriesProfileHeader(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .cachedVerticalGradient(
-                                colors =
-                                    listOf(
-                                        Color.Black.copy(alpha = 0.25f),
-                                        Color.Transparent,
-                                        backgroundColor.copy(alpha = 0.85f),
-                                    ),
-                            ),
+                            .cachedVerticalGradient(colors = bannerGradient),
                 )
             } else {
                 Box(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .cachedVerticalGradient(
-                                colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                        MiuixTheme.colorScheme.surfaceContainerHighest,
-                                    ),
-                            ),
+                            .cachedVerticalGradient(colors = fallbackGradient),
                 )
             }
         }
