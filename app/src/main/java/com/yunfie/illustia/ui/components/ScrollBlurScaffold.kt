@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -99,7 +100,14 @@ fun ScrollBlurOverlay(
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
-    val targetFraction = fraction().coerceIn(0f, 1f)
+    // fraction() は scrollBehavior.state を読むため、コンポジション内で直接呼ぶとスクロールの
+    // 1 フレームごとにこの関数全体が再コンポーズされ、下の progressiveTextureBlur も作り直される。
+    // derivedStateOf に包むと、参照している側（animateFloatAsState）だけが更新されるようになる。
+    val targetFractionState =
+        remember(fraction) {
+            derivedStateOf { fraction().coerceIn(0f, 1f) }
+        }
+    val targetFraction by targetFractionState
     val animatedFraction by animateFloatAsState(
         targetValue = targetFraction,
         animationSpec =
