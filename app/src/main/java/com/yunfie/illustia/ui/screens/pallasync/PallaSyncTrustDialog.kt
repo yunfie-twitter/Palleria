@@ -37,7 +37,13 @@ internal fun PallaSyncTrustDialog(
     onAccepted: () -> Unit,
 ) {
     val appContext = LocalContext.current.applicationContext
-    val gate = remember { PallaSyncPolicyGate(appContext) }
+    // Keystore のマスターキーが無効化されていると生成に失敗する。composition 中に例外を投げると
+    // アプリ全体が落ちるため、失敗は状態として受け取り、この画面の中だけでエラー表示に留める。
+    val gate = remember { PallaSyncPolicyGate.createOrNull(appContext) }
+    if (gate == null) {
+        PallaSyncStorageUnavailableDialog(onDismiss = onDismiss)
+        return
+    }
     val scope = rememberCoroutineScope()
     var step by remember { mutableStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -193,7 +199,11 @@ internal fun PallaSyncAcceptedPolicyDialog(
     onWithdrawn: () -> Unit,
 ) {
     val context = LocalContext.current
-    val gate = remember { PallaSyncPolicyGate(context.applicationContext) }
+    val gate = remember { PallaSyncPolicyGate.createOrNull(context.applicationContext) }
+    if (gate == null) {
+        PallaSyncStorageUnavailableDialog(onDismiss = onDismiss)
+        return
+    }
     val accepted = remember { gate.acceptedReview(origin) }
     val scope = rememberCoroutineScope()
     var failure by remember { mutableStateOf<String?>(null) }
@@ -227,6 +237,31 @@ internal fun PallaSyncAcceptedPolicyDialog(
                 )
             }
             PallaSyncSecondaryAction(text = stringResource(R.string.action_cancel), onClick = onDismiss)
+        }
+    }
+}
+
+/**
+ * 暗号化ストレージを開けなかったときの代替表示。信頼の確認はこれ以上進めないが、アプリ自体は
+ * 使い続けられるようにする（従来はここで KeyStoreException が飛んで起動時にクラッシュしていた）。
+ */
+@Composable
+internal fun PallaSyncStorageUnavailableDialog(onDismiss: () -> Unit) {
+    OverlayDialog(
+        show = true,
+        title = stringResource(R.string.pallasync_storage_unavailable_title),
+        onDismissRequest = onDismiss,
+    ) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(stringResource(R.string.pallasync_storage_unavailable_body))
+            }
+            // ここで C_* コードは出さない。既存のヒントは「保存領域がいっぱい」や汎用文言に
+            // 対応づいており、鍵の無効化という実際の原因を誤って伝えるため。
+            PallaSyncSecondaryAction(text = stringResource(R.string.action_close), onClick = onDismiss)
         }
     }
 }

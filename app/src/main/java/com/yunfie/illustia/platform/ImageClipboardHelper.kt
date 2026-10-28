@@ -11,6 +11,7 @@ import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
+import coil3.request.allowHardware
 import coil3.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,6 +20,13 @@ import java.io.FileOutputStream
 
 private const val CLIPBOARD_CACHE_MAX_AGE_MS = 60 * 60 * 1000L
 private const val PNG_COMPRESS_QUALITY = 100
+
+/**
+ * クリップボード用画像の長辺の上限。原寸のままデコードすると 3000×4000 で ARGB_8888 が約 46MB に
+ * なり、toBitmap() の複製と PNG 圧縮バッファを含めて同時に 3 つ分のメモリを使っていた。
+ * クリップボードの貼り付け先は画面表示やチャットが主なので、この解像度で十分足りる。
+ */
+private const val CLIPBOARD_MAX_DIMENSION_PX = 2048
 
 object ImageClipboardHelper {
     suspend fun copyImageToClipboard(
@@ -32,6 +40,10 @@ object ImageClipboardHelper {
                     ImageRequest
                         .Builder(context)
                         .data(imageUrl)
+                        // デコード時点で縮小する。原寸で読んでから縮小すると、その時点で
+                        // 大きなビットマップを確保してしまうため意味がない。
+                        .size(CLIPBOARD_MAX_DIMENSION_PX)
+                        .allowHardware(false)
                         .httpHeaders(NetworkHeaders.Builder().set("Referer", "https://www.pixiv.net/").build())
                         .build()
                 val result = imageLoader.execute(request)

@@ -565,7 +565,9 @@ internal fun AppNavHost(
                 DataSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ViewHistory) {
-                ViewHistoryScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                ProvideEntrySharedTransitionScope {
+                    ViewHistoryScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                }
             }
             entry(AppRoute.Notifications) {
                 NotificationScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
@@ -600,7 +602,9 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.FavoriteTags) {
-                FavoriteTagsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                ProvideEntrySharedTransitionScope {
+                    FavoriteTagsScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                }
             }
             entry(AppRoute.WatchlistSeries) {
                 WatchlistSeriesScreen(
@@ -613,23 +617,25 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.IllustSeries) {
-                val currentSeriesId = selectedWatchlistSeriesId
-                if (currentSeriesId != null) {
-                    IllustSeriesScreen(
-                        seriesId = currentSeriesId,
-                        viewModel = viewModel,
-                        onBack = onPopRoute,
-                        onOpenIllust = { illustId -> viewModel.openIllust(illustId) },
-                    )
-                } else {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.surface),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator()
+                ProvideEntrySharedTransitionScope {
+                    val currentSeriesId = selectedWatchlistSeriesId
+                    if (currentSeriesId != null) {
+                        IllustSeriesScreen(
+                            seriesId = currentSeriesId,
+                            viewModel = viewModel,
+                            onBack = onPopRoute,
+                            onOpenIllust = { illustId -> viewModel.openIllust(illustId) },
+                        )
+                    } else {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(MiuixTheme.colorScheme.surface),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            LoadingIndicator()
+                        }
                     }
                 }
             }
@@ -637,51 +643,53 @@ internal fun AppNavHost(
                 val selectedUser = appState.state.selectedUser
                 if (selectedUser?.id == route.userId) {
                     val user = selectedUser
-                    UserProfileScreen(
-                        user = user,
-                        settings = appState.state.settings,
-                        illusts = appState.state.selectedUserIllusts,
-                        bookmarks = appState.state.selectedUserBookmarks,
-                        hasMore = appState.state.selectedUserNextUrl != null,
-                        bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
-                        nextUrl = appState.state.selectedUserNextUrl,
-                        bookmarkNextUrl = appState.state.selectedUserBookmarksNextUrl,
-                        isPaginating = appState.state.isSelectedUserIllustsPaginating,
-                        isBookmarkPaginating = appState.state.isSelectedUserBookmarksPaginating,
-                        worksLoaded = appState.state.selectedUserIllustsLoaded,
-                        bookmarksLoaded = appState.state.selectedUserBookmarksLoaded,
-                        worksError = appState.state.selectedUserIllustsError,
-                        bookmarksError = appState.state.selectedUserBookmarksError,
-                        onBack = onPopRoute,
-                        onOpenIllust = { illust ->
-                            viewModel.openIllust(illust)
-                        },
-                        onBookmark = viewModel::toggleBookmark,
-                        onLoadMore = viewModel::loadMoreUserIllusts,
-                        onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
-                        onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
-                        onOpenRelatedUsers = {
-                            onNavigate(AppRoute.RelatedUsers(user.id, user.name))
-                        },
-                        onEditProfile = {
-                            onNavigate(AppRoute.UserProfileEdit(user.id))
-                        },
-                        onToggleFollow = { viewModel.toggleFollow(user) },
-                        onMuteUser = { viewModel.muteUser(user.id) },
-                        onReport = { message, onComplete ->
-                            viewModel.reportUser(user.id, null, message, onComplete)
-                        },
-                        onMessage = viewModel::showMessage,
-                        isMuted =
-                            appState.state.settings.mutedUsers
-                                .contains(user.id),
-                        onUnmuteUser = { viewModel.unmuteUser(user.id) },
-                        gridState = viewModel.userProfileGridState(user.id),
-                        bookmarkGridState = viewModel.userProfileBookmarkGridState(user.id),
-                        onIllustLongClick = viewModel::onIllustLongPress,
-                        onColumnsChange = viewModel::updateVerticalColumnCount,
-                        showHeaderControls = true,
-                    )
+                    ProvideEntrySharedTransitionScope {
+                        UserProfileScreen(
+                            user = user,
+                            settings = appState.state.settings,
+                            illusts = appState.state.selectedUserIllusts,
+                            bookmarks = appState.state.selectedUserBookmarks,
+                            hasMore = appState.state.selectedUserNextUrl != null,
+                            bookmarkHasMore = appState.state.selectedUserBookmarksNextUrl != null,
+                            nextUrl = appState.state.selectedUserNextUrl,
+                            bookmarkNextUrl = appState.state.selectedUserBookmarksNextUrl,
+                            isPaginating = appState.state.isSelectedUserIllustsPaginating,
+                            isBookmarkPaginating = appState.state.isSelectedUserBookmarksPaginating,
+                            worksLoaded = appState.state.selectedUserIllustsLoaded,
+                            bookmarksLoaded = appState.state.selectedUserBookmarksLoaded,
+                            worksError = appState.state.selectedUserIllustsError,
+                            bookmarksError = appState.state.selectedUserBookmarksError,
+                            onBack = onPopRoute,
+                            onOpenIllust = { illust ->
+                                viewModel.openIllust(illust)
+                            },
+                            onBookmark = viewModel::toggleBookmark,
+                            onLoadMore = viewModel::loadMoreUserIllusts,
+                            onLoadBookmarks = viewModel::loadSelectedUserBookmarks,
+                            onLoadMoreBookmarks = viewModel::loadMoreSelectedUserBookmarks,
+                            onOpenRelatedUsers = {
+                                onNavigate(AppRoute.RelatedUsers(user.id, user.name))
+                            },
+                            onEditProfile = {
+                                onNavigate(AppRoute.UserProfileEdit(user.id))
+                            },
+                            onToggleFollow = { viewModel.toggleFollow(user) },
+                            onMuteUser = { viewModel.muteUser(user.id) },
+                            onReport = { message, onComplete ->
+                                viewModel.reportUser(user.id, null, message, onComplete)
+                            },
+                            onMessage = viewModel::showMessage,
+                            isMuted =
+                                appState.state.settings.mutedUsers
+                                    .contains(user.id),
+                            onUnmuteUser = { viewModel.unmuteUser(user.id) },
+                            gridState = viewModel.userProfileGridState(user.id),
+                            bookmarkGridState = viewModel.userProfileBookmarkGridState(user.id),
+                            onIllustLongClick = viewModel::onIllustLongPress,
+                            onColumnsChange = viewModel::updateVerticalColumnCount,
+                            showHeaderControls = true,
+                        )
+                    }
                 } else {
                     val isActive = backStack.lastOrNull() == route
                     LaunchedEffect(route.userId, isActive, appState.state.selectedUserId) {
@@ -765,17 +773,19 @@ internal fun AppNavHost(
                 PrivacyModeSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry<AppRoute.DeviceViewHistory> { route ->
-                com.yunfie.illustia.ui.screens.pallasync.DeviceViewHistoryScreen(
-                    deviceId = route.deviceId,
-                    deviceName = route.deviceName,
-                    state = appState.state,
-                    viewModel = viewModel,
-                    onBack = onPopRoute,
-                    onIllustClick = { illust ->
-                        viewModel.openIllust(illust)
-                        onNavigate(AppRoute.Detail(illust.id))
-                    },
-                )
+                ProvideEntrySharedTransitionScope {
+                    com.yunfie.illustia.ui.screens.pallasync.DeviceViewHistoryScreen(
+                        deviceId = route.deviceId,
+                        deviceName = route.deviceName,
+                        state = appState.state,
+                        viewModel = viewModel,
+                        onBack = onPopRoute,
+                        onIllustClick = { illust ->
+                            viewModel.openIllust(illust)
+                            onNavigate(AppRoute.Detail(illust.id))
+                        },
+                    )
+                }
             }
         }
 
