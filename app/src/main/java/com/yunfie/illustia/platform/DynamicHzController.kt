@@ -7,23 +7,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-private const val PRIORITY_POWER_SAVING = 1
-private const val PRIORITY_NORMAL = 2
-private const val PRIORITY_BOOST = 3
+private const val PRIORITY_NORMAL = 1
+private const val PRIORITY_BOOST = 2
 
 /**
- * Operating mode for Adaptive Refresh Rate (ARR) / Dynamic Hz power saving.
+ * Operating mode for Adaptive Refresh Rate (ARR).
+ *
+ * Only [Boost] pins a refresh rate. Every other state leaves the choice to the
+ * system's ARR/LTPO, which already lowers the rate for static content without
+ * pinning SystemUI overlays to the app's preferred rate.
  */
 enum class DynamicHzMode(
     val priority: Int,
 ) {
-    /** 30Hz / 60Hz: Still image viewing, novel reading without scrolling. */
-    PowerSaving(PRIORITY_POWER_SAVING),
-
-    /** 60Hz / System default: General idle UI. */
+    /** System default: idle UI, still images and non-scrolling reading. */
     Normal(PRIORITY_NORMAL),
 
-    /** 120Hz: Active scrolling, ugoira animation playback, page transitions. */
+    /** Highest supported rate: active scrolling, ugoira playback, page transitions. */
     Boost(PRIORITY_BOOST),
 }
 
