@@ -463,8 +463,15 @@ class MainActivity : FragmentActivity() {
         // それらはアプリを背景化しない。ここでタスクスナップショットブラーを適用すると
         // ウィンドウ全体（半径 60px）の RenderEffect が毎回張られ、SystemUI を触るたびに
         // 重くなる。背景化の適用は onStop に一本化し、ここでは戻ってきたときの解除だけを行う。
+        //
+        // preferredRefreshRate も同じ理由で、SystemUI が前面に出ている間は外す。
+        // クイック設定/通知シェードはアクティビティを pause させないため、PowerSaving の
+        // 60Hz ヒントを残したままだと SystemUI のアニメーションまで 60fps に固定される。
         if (hasFocus) {
             applyTaskSnapshotBlur(isEnteringBackground = false)
+            applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+        } else {
+            clearAdaptiveRefreshRateHint()
         }
     }
 
@@ -475,11 +482,16 @@ class MainActivity : FragmentActivity() {
         // ここでは背景化を確定させない。実背景化は onStop が担う。
         if (isTopResumedActivity) {
             applyTaskSnapshotBlur(isEnteringBackground = false)
+            applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+        } else {
+            clearAdaptiveRefreshRateHint()
         }
     }
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        // ランチャー/タスク切替のアニメーションが始まる前に表示モードのヒントを外す。
+        clearAdaptiveRefreshRateHint()
         applyTaskSnapshotBlur(isEnteringBackground = true)
     }
 
@@ -747,6 +759,14 @@ class MainActivity : FragmentActivity() {
     private fun applyAdaptiveRefreshRateHint(mode: com.yunfie.illustia.platform.DynamicHzMode = dynamicHzController.currentMode.value) {
         if (!PlatformCapabilities.supportsRefreshRateHint()) return
         if (mode == com.yunfie.illustia.platform.DynamicHzMode.Normal) {
+            clearAdaptiveRefreshRateHint()
+            return
+        }
+
+        // SystemUI のウィンドウ（クイック設定・通知シェード・電源メニュー）が前面にある間は
+        // このウィンドウにフォーカスがない。その状態で低い preferredRefreshRate を張ると
+        // ディスプレイ全体のモードが固定され、SystemUI 自身のアニメーションが 60fps になる。
+        if (!window.decorView.hasWindowFocus()) {
             clearAdaptiveRefreshRateHint()
             return
         }
