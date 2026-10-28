@@ -1,17 +1,411 @@
 {
   "repo": {
-    "timestamp": 1793180431000
+    "timestamp": 1793181469000
   },
   "packages": {
     "com.yunfie.illustia": {
       "metadata": {
-        "lastUpdated": 1793180423000
+        "lastUpdated": 1793181461000
       },
       "versions": {
         "d1417d66540020061e25c0fe602eaa615b7f1f241e4169fd9ea185b1fbd35f49": null,
         "bf0a308aa5f0a818b236cc376e4e97ac500556efaa21cd365bbbc8344636733f": null,
         "2ff65dee3fcf9660f212a3b1551d3b18dbce521b94cb74ea35b24707094206f9": null,
         "9daba23bc1ebaf685efc85a347bb508b257417a38462252c96c7ebe9c7fd198d": null,
+        "4862c4ffe3598e38bb9652d49c98513e1973d0434e2b5349cc665798cd00a017": {
+          "added": 1793181458000,
+          "file": {
+            "name": "/Palleria-v7.0.0-release-arm64-v8a.apk",
+            "sha256": "4862c4ffe3598e38bb9652d49c98513e1973d0434e2b5349cc665798cd00a017",
+            "size": 62944888
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a"
+            ],
+            "versionName": "7.0.0",
+            "versionCode": 174,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.CAMERA"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          }
+        },
+        "ad5d14f50aebd753c068272a1699b69ca253c578ee8dbb4e56be7141506fda21": {
+          "added": 1793181459000,
+          "file": {
+            "name": "/Palleria-v7.0.0-release-armeabi-v7a.apk",
+            "sha256": "ad5d14f50aebd753c068272a1699b69ca253c578ee8dbb4e56be7141506fda21",
+            "size": 59614166
+          },
+          "manifest": {
+            "nativecode": [
+              "armeabi-v7a"
+            ],
+            "versionName": "7.0.0",
+            "versionCode": 174,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.CAMERA"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          }
+        },
+        "823285da5a7afb923dc38bf621aa9edcda79d554c68e7b042d09c78a3e82d6d6": {
+          "added": 1793181460000,
+          "file": {
+            "name": "/Palleria-v7.0.0-release-universal.apk",
+            "sha256": "823285da5a7afb923dc38bf621aa9edcda79d554c68e7b042d09c78a3e82d6d6",
+            "size": 83312437
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi",
+              "armeabi-v7a",
+              "mips",
+              "mips64",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "7.0.0",
+            "versionCode": 174,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.CAMERA"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          }
+        },
+        "b06ba842cc6faee0853728cd62358549080163b7cad9e216360219e4748a3e68": {
+          "added": 1793181461000,
+          "file": {
+            "name": "/Palleria-v7.0.0-release-x86_64.apk",
+            "sha256": "b06ba842cc6faee0853728cd62358549080163b7cad9e216360219e4748a3e68",
+            "size": 63633499
+          },
+          "manifest": {
+            "nativecode": [
+              "x86_64"
+            ],
+            "versionName": "7.0.0",
+            "versionCode": 174,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.CAMERA"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          }
+        },
         "83dc9c4fdcd9c33a84d585cb8877d13edaf10ab530b364322993523d2fcacba5": {
           "added": 1793180420000,
           "file": {
@@ -107,10 +501,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "39089b92d46921faef94e1cf656bc0a6f34f73560caadf524df4bb38467615a9": {
           "added": 1793180421000,
@@ -207,10 +598,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "3e49b4f24aa2f5d8f67ea9967a3a763ac0fc0d12c19365c30bf16e9b989b6a3d": {
           "added": 1793180422000,
@@ -313,10 +701,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "e17096717e8b31707178e431fb60dc4c515fa04e7f93a7bb89bd1ad44c2f8cbf": {
           "added": 1793180423000,
@@ -413,10 +798,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "70b44971041dd7b5831b6419671f015fe53207083a07e506e82c88ec2abc8119": {
           "added": 1793179397000,
@@ -513,10 +895,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "55d34027b82682b1dc53890630673f5c28a55f1d04ed99d377ad7c5e02e0a8c6": {
           "added": 1793179398000,
@@ -613,10 +992,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "469bdfac76e16a9c5aaa6a2452566ce0af941b7939f4941a650f7e10f5c6cc69": {
           "added": 1793179399000,
@@ -719,10 +1095,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "f838cb3232ec20b7a11a780eaf97dd5d193b609a1888e5e726229575df193125": {
           "added": 1793179400000,
@@ -819,10 +1192,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "4eab24561e2a7580d6ce84458d14df8089e4162238bae7a9bf90a53b83cc3dd0": {
           "added": 1793007606000,
@@ -919,10 +1289,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "e9412a4b556de13cf7e3b40d16df7c58130928e4727bde3a9f180fb3c1c4d90f": {
           "added": 1793007607000,
@@ -1019,10 +1386,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "126a09ed529e0e0cbea9aeac10bcd8f412f72496a798b43f3526ddcb1de05a54": {
           "added": 1793007608000,
@@ -1125,10 +1489,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "2132cd55b13256acfe82e2c3fe89ccceef24414d6b3c56d09399290709ceb70f": {
           "added": 1793007609000,
@@ -1225,10 +1586,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "d2b50a473edb15e553ab7bb633ae57cbf48f5f7b5deb216116340bc9de090976": {
           "added": 1792896147000,
@@ -1325,10 +1683,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "b576a5b3b52b5b21edd96607f4ab599da69f5f823888bc4b3d1751aa5e8174d7": {
           "added": 1792896148000,
@@ -1425,10 +1780,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "fb9957cf647d9bc412e5aba68a8028fed6b395b79f4f2ddc95b539b6177a60b5": {
           "added": 1792896150000,
@@ -1531,10 +1883,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "b5c21e4d0edac6e2ca0724b996b3c3fbfc5edd28f4f569598be8dd47449c4c11": {
           "added": 1792896151000,
@@ -1631,10 +1980,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "4e22ca3f24771daa22ab2fdc44d28087a919c843e960f1a0a74d7f752c7b747e": {
           "added": 1792837698000,
@@ -1731,10 +2077,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "a7f2cb2d7c7ed75bde289864b5b142920c449dfdeabde5bfc9cf8d816c424954": {
           "added": 1792837699000,
@@ -1831,10 +2174,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "eb2d48f4f6aba9eebdde648b9ac350d9b19900207613f5b5520b32944c30e313": {
           "added": 1792837700000,
@@ -1937,10 +2277,7 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
         },
         "9a8c29ec718d413e9268c202f4f715e54b4def2cd5e020201fcdb61e179334d1": {
           "added": 1792837701000,
@@ -2037,10 +2374,19 @@
               "en-US": "Depends on Pixiv, which is proprietary.",
               "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
             }
-          },
-          "releaseChannels": [
-            "Beta"
-          ]
+          }
+        },
+        "db8b6f6a7e62275cc7678d7acdf0ecf78064739ab4cb19c227b346297773f180": {
+          "releaseChannels": null
+        },
+        "f29107216629609d7b4f6baf99958e9368539c6ebe44a4579815bdc1dfb94973": {
+          "releaseChannels": null
+        },
+        "fd691dfc7b42ec9b5c3792c4e0d5e5ec5c3b0d433a18a5b40b8694c80e7bc48b": {
+          "releaseChannels": null
+        },
+        "0d3f3d2ff0584c93ca3df49c01b234c733fc8f91051d61b84d68e9dbbaf5852e": {
+          "releaseChannels": null
         }
       }
     }
