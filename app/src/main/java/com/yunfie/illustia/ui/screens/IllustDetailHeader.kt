@@ -65,10 +65,10 @@ import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
-import com.yunfie.illustia.ui.components.rememberSystemUiCoveredState
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -219,7 +219,7 @@ internal fun IllustDetailHeader(
     val pagerState = rememberPagerState(pageCount = { imageUrls.size })
 
     // クイック設定に覆われている間は、覆われたうごイラのフレーム更新（デコード/再描画）を止める。
-    val systemCovered by rememberSystemUiCoveredState()
+    val systemCovered = LocalSystemUiCovered.current
     val artworkVisible = isActive && !systemCovered
 
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
