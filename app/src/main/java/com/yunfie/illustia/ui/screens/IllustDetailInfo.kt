@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -230,28 +231,38 @@ internal fun IllustDetailInfo(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .miuixClickable(onClick = onOpenUser)
                                         .padding(horizontal = 16.dp, vertical = 4.dp),
                             ) {
-                                AvatarImage(
-                                    url = illust.artistAvatarUrl,
-                                    name = illust.artistName,
-                                    size = 44.dp,
-                                )
-                                Text(
-                                    text = illust.artistName,
-                                    color = MiuixTheme.colorScheme.onBackground,
-                                    style = MiuixTheme.textStyles.main,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                // miuixClickable の SinkFeedback は自身のレイアウトノード全体を縮小する。
+                                // Row に付けるとフォローボタンを押したときも行全体（＝フォローボタンまで）
+                                // 凹んでしまうため、アバターと名前だけを包む。
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier =
+                                        Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .miuixClickable(onClick = onOpenUser),
+                                ) {
+                                    AvatarImage(
+                                        url = illust.artistAvatarUrl,
+                                        name = illust.artistName,
+                                        size = 44.dp,
+                                    )
+                                    Text(
+                                        text = illust.artistName,
+                                        color = MiuixTheme.colorScheme.onBackground,
+                                        style = MiuixTheme.textStyles.main,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                                 Box(
                                     modifier =
                                         Modifier
-                                            .clip(
-                                                androidx.compose.foundation.shape
-                                                    .RoundedCornerShape(20.dp),
-                                            ).miuixClickable(
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .miuixClickable(
                                                 pressedScale = 0.94f,
                                                 haptic = true,
                                                 onClick =

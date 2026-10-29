@@ -136,10 +136,6 @@ fun ImageViewerScreen(
     mangaAdaptivePreload: Boolean = true,
 ) {
     val context = LocalContext.current
-    if (!illust.isUgoira) {
-        com.yunfie.illustia.platform
-            .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.PowerSaving)
-    }
     val shareFailedMessage = stringResource(R.string.viewer_share_failed)
     val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
     val copyFailedMessage = stringResource(R.string.copy_image_failed)
