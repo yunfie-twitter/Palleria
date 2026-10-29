@@ -83,6 +83,7 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.WatchlistPill
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
@@ -97,7 +98,6 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -269,7 +269,7 @@ fun IllustSeriesScreen(
             )
         }
 
-        PullToRefresh(
+        ScrollablePullToRefresh(
             isRefreshing = state.isRefreshing,
             onRefresh = { scope.launch { store.fetch() } },
             pullToRefreshState = pullToRefreshState,

@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.OfflineCachedChip
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -56,7 +57,6 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -133,7 +133,7 @@ internal fun FeedTabContent(
 
     val columns = adaptiveIllustColumns(settings)
     val scope = rememberCoroutineScope()
-    PullToRefresh(
+    ScrollablePullToRefresh(
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
@@ -302,7 +302,7 @@ internal fun FollowingTabContent(
     )
 
     val columns = adaptiveIllustColumns(settings)
-    PullToRefresh(
+    ScrollablePullToRefresh(
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
