@@ -3,6 +3,7 @@ package com.yunfie.illustia
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
+import com.yunfie.illustia.data.BookmarkToggleScheduler
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -32,11 +33,6 @@ abstract class IllustiaBookmarkModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaDetailProfileModule(app, managedDataRepository) {
-    /** いいね通信中の作品 ID。連打による多重実行を防ぐ。 */
-    private val bookmarkTogglesInFlight =
-        java.util.concurrent.ConcurrentHashMap
-            .newKeySet<Long>()
-
     abstract fun saveImage(
         url: String,
         filename: String,
@@ -481,51 +477,37 @@ abstract class IllustiaBookmarkModule(
         illust: Illust,
         explicitRestrict: com.yunfie.illustia.models.Restrict? = null,
     ) {
-        // 連打で同じ作品の通信が多重に走ると、後から返った応答で最終状態が巻き戻る。
-        // 見た目を先に反転する以上、作品ごとに 1 本だけ通す。
-        if (!bookmarkTogglesInFlight.add(illust.id)) return
-        // いいねの反応を待たせない。タップした瞬間に見た目を反転し、通信はそのまま裏で進める。
-        // repository は illust.isBookmarked を見て登録/解除を決めるため、必ず反転前の値を持たせ、
-        // 表示だけを先に変える（サーバー応答が返れば正しい値で上書きされる）。
-        val optimistic = illust.optimisticallyToggled()
-        updateIllustEverywhere(optimistic)
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val settings = _uiState.value.settings
-                val restrict =
-                    explicitRestrict
-                        ?: if (settings.privateBookmarkDefault) {
-                            com.yunfie.illustia.models.Restrict.Private
-                        } else {
-                            settings.bookmarkRestrict
-                        }
-                val updated = repository.toggleBookmark(illust, restrict)
-                updateIllustEverywhere(updated)
-                if (updated.isBookmarked) {
-                    if (settings.followOnLike && illust.artistId > 0L) {
-                        repository.followUser(illust.artistId, settings.bookmarkRestrict)
-                    }
-                    if (settings.autoTagOnBookmark && illust.tags.isNotEmpty()) {
-                        val nextTags = (illust.tags.take(3) + settings.favoriteTags).distinct().take(24)
-                        updateSettings { it.copy(favoriteTags = nextTags) }
-                    }
-                    if (settings.autoDownloadOnBookmark) {
-                        saveImage(updated.originalImageUrl ?: updated.imageUrl, "illustia_${updated.id}")
-                    }
+        val settings = _uiState.value.settings
+        if (settings.refreshToken.isBlank()) {
+            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            return
+        }
+        // 見た目はタップした瞬間に反転する。通信は WorkManager の永続ジョブに載せるので、
+        // 画面やアプリを閉じてもキャンセルされず、次回起動時にも再試行される。
+        val bookmarked = !illust.isBookmarked
+        val restrict =
+            explicitRestrict
+                ?: if (settings.privateBookmarkDefault) {
+                    com.yunfie.illustia.models.Restrict.Private
+                } else {
+                    settings.bookmarkRestrict
                 }
-            } catch (expectedFailure: Exception) {
-                val error = expectedFailure
-                // 先に反転した見た目を元へ戻す。戻さないと失敗しても登録済みに見えたままになる。
-                updateIllustEverywhere(illust)
-                if (isCancellation(error)) {
-                    throw error
-                }
-                if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "bookmark_toggle", extras = mapOf("illustId" to illust.id))
-                _uiState.update { it.copy(message = cleanErrorMessage(error, str(R.string.error_bookmark_failed))) }
-            } finally {
-                bookmarkTogglesInFlight.remove(illust.id)
-            }
+        updateIllustEverywhere(illust.optimisticallyToggled())
+        val enqueued =
+            runCatching {
+                BookmarkToggleScheduler.enqueue(
+                    context = getApplication(),
+                    illustId = illust.id,
+                    bookmarked = bookmarked,
+                    restrict = restrict,
+                    bookmarkUserId = settings.bookmarkUserId ?: 0L,
+                    artistId = illust.artistId,
+                    tags = illust.tags.take(3),
+                )
+            }.isSuccess
+        if (!enqueued) {
+            updateIllustEverywhere(illust)
+            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
         }
     }
 }
