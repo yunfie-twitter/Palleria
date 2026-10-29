@@ -22,4 +22,21 @@ class UserProfileNavigationTest :
             shouldLoadUserProfile(profile, profile, 7L) shouldBe true
             shouldLoadUserProfile(profile, profile, 42L) shouldBe false
         }
+
+        test("reopening the same artist from an artwork needs its own navigation signal") {
+            // プロフィール → 作品 → プロフィールの順に戻ると、showUserPage は true、
+            // userPageDismissed は false のまま残る。この状態で作品ページから同じ
+            // ユーザーを開くと、状態を見ている Effect のキーが 3 つとも変化しないため
+            // 発火しない。openUserPage は毎回 userNavigationRequests を emit するので、
+            // その要求を購読していること自体が再オープンの成立条件になる。
+            val profile = AppRoute.UserProfile(42L)
+            val stack = mutableListOf<AppRoute>(AppRoute.Main, profile, AppRoute.Detail(10L))
+
+            // 作品ページが前面なので、このルート経由の読み込みは走らない。
+            shouldLoadUserProfile(profile, stack.last(), 42L) shouldBe false
+
+            // 前面でプロフィールに戻ったときだけ、既存の入口が読み込みを補完する。
+            shouldLoadUserProfile(profile, profile, 42L) shouldBe false
+            shouldLoadUserProfile(profile, profile, null) shouldBe true
+        }
     })
