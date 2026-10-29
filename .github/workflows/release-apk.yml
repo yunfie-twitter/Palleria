@@ -44,7 +44,8 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "rust/pixiv-api -> rust/pixiv-api/target"
+          workspaces: "rust/pixiv-api -> rust/target"
+          cache-on-failure: true
 
       - name: Cache cargo-ndk
         uses: actions/cache@v6

@@ -29,6 +29,8 @@ jobs:
     name: Verify JNI ABI & UniFFI Exports
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CARGO_TARGET_DIR: rust/target
 
     steps:
       - name: Checkout repository
@@ -36,6 +38,12 @@ jobs:
 
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust/pixiv-api -> rust/target"
+          cache-on-failure: true
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -48,19 +56,19 @@ jobs:
 
       - name: Build Crate Shared Libraries
         run: |
-          cargo build --manifest-path rust/pallasync-core/Cargo.toml --release
-          cargo build --manifest-path rust/pixiv-api/Cargo.toml --release
+          cargo build --locked --manifest-path rust/pallasync-core/Cargo.toml
+          cargo build --locked --manifest-path rust/pixiv-api/Cargo.toml
 
       - name: Verify Exported Dynamic ELF Symbols
         run: |
           echo "Inspecting libpallasync_core.so symbols..."
-          SO_PALLASYNC=$(find rust/target/release -name "libpallasync_core.so" | head -n 1)
+          SO_PALLASYNC=$(find rust/target/debug -name "libpallasync_core.so" | head -n 1)
           if [ -n "$SO_PALLASYNC" ]; then
             nm -D --defined-only "$SO_PALLASYNC" | grep "Java_com_yunfie_illustia" || (echo "Missing JNI symbols in libpallasync_core.so" && exit 1)
           fi
 
           echo "Inspecting libpalleria_pixiv_api.so UniFFI symbols..."
-          SO_PIXIV=$(find rust/target/release -name "libpalleria_pixiv_api.so" | head -n 1)
+          SO_PIXIV=$(find rust/target/debug -name "libpalleria_pixiv_api.so" | head -n 1)
           if [ -n "$SO_PIXIV" ]; then
             nm -D --defined-only "$SO_PIXIV" | grep "uniffi_palleria_pixiv_api" || (echo "Missing UniFFI symbols in libpalleria_pixiv_api.so" && exit 1)
           fi

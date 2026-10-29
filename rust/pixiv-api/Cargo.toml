@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 bench = []
+bindgen = ["uniffi/cli"]
 
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "gzip", "brotli", "deflate", "stream"] }
@@ -19,20 +20,34 @@ md5 = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-uniffi = { version = "0.29", features = ["cli", "tokio"] }
+uniffi = { version = "0.29", features = ["tokio"] }
 zip = { version = "4", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 criterion = "0.5"
 tiny_http = "0.12"
 
-[build-dependencies]
-uniffi = { version = "0.29", features = ["build"] }
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+required-features = ["bindgen"]
 
 [profile.release]
 lto = "thin"
 codegen-units = 1
 opt-level = 3
+
+[profile.release.build-override]
+opt-level = 0
+debug = false
+codegen-units = 256
+incremental = false
+
+[profile.dev]
+debug = 0
+
+[profile.dev.build-override]
+debug = false
 
 [[bench]]
 name = "illust_decode"

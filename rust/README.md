@@ -96,6 +96,14 @@ cargo install cargo-ndk
 4. **`buildPallaSyncCoreAndroid`**:
    `cargo-ndk` を使用して同じ 3 つの ABI 向けに `libpallasync_core.so` をクロスコンパイル。
 
+ホスト用ライブラリと `uniffi-bindgen` はビルド時間を優先して dev プロファイルで実行します。Android の release ライブラリは従来どおり `--release`（LTO / `codegen-units = 1`）です。ローカルで ABI を絞る場合は次のプロパティを使えます（release CI は既定の全 ABI のままです）。
+
+```powershell
+./gradlew :app:assembleDebug -Ppallasync.abis=arm64-v8a -Ppallasync.rustProfile=debug
+```
+
+`.cargo/config.toml` の `build.target-dir` と Gradle の `CARGO_TARGET_DIR` はどちらも `rust/target` を指すため、直接の `cargo` 実行と Gradle ビルドで同じ依存キャッシュを共有します。
+
 ---
 
 ## 5. テスト・静的解析・ベンチマーク

@@ -46,3 +46,15 @@ opt-level = 3
 panic = "abort"
 strip = "symbols"
 
+[profile.release.build-override]
+opt-level = 0
+debug = false
+codegen-units = 256
+incremental = false
+
+[profile.dev]
+debug = 0
+
+[profile.dev.build-override]
+debug = false
+
