@@ -64,6 +64,7 @@ import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
+import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.appLanguageLocaleList
 import com.yunfie.illustia.settings.isAppDarkTheme
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -431,6 +432,11 @@ class MainActivity : FragmentActivity() {
                     applyAdaptiveRefreshRateHint(mode)
                 }
             }
+            LaunchedEffect(settingsLoaded, settings.featureFlags) {
+                if (settingsLoaded) {
+                    applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+                }
+            }
 
             MiuixTheme(colors = themeColors, textStyles = textStyles) {
                 CompositionLocalProvider(
@@ -735,7 +741,10 @@ class MainActivity : FragmentActivity() {
 
     private fun applyAdaptiveRefreshRateHint(mode: com.yunfie.illustia.platform.DynamicHzMode = dynamicHzController.currentMode.value) {
         if (!PlatformCapabilities.supportsRefreshRateHint()) return
-        if (mode == com.yunfie.illustia.platform.DynamicHzMode.Normal) {
+        if (
+            mode == com.yunfie.illustia.platform.DynamicHzMode.Normal ||
+                viewModel.uiState.value.settings.isFeatureEnabled(FeatureFlag.DisableAdaptiveRefreshRate)
+        ) {
             clearAdaptiveRefreshRateHint()
             return
         }
