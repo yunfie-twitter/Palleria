@@ -56,12 +56,12 @@ import com.yunfie.illustia.models.pixiv.normalizedUgoiraDelayMillis
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -108,6 +108,9 @@ internal fun UgoiraArtwork(
         }
     }
 
+    val systemUiCovered = LocalSystemUiCovered.current
+    val playbackActive = isActive && !systemUiCovered
+
     val lifecycleOwner = LocalLifecycleOwner.current
     var isLifecycleActive by remember { mutableStateOf(true) }
     DisposableEffect(lifecycleOwner) {
@@ -121,8 +124,8 @@ internal fun UgoiraArtwork(
         }
     }
 
-    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey, isDelayElapsed, isActive) {
-        if (!isDelayElapsed || !isActive) return@produceState
+    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey, isDelayElapsed, playbackActive) {
+        if (!isDelayElapsed || !playbackActive) return@produceState
         value =
             withContext(Dispatchers.IO) {
                 runCatching { loadPlayback() }
@@ -203,7 +206,7 @@ internal fun UgoiraArtwork(
     }
 
     val bitmapPool = remember(playback) { java.util.concurrent.ConcurrentLinkedQueue<Bitmap>() }
-    if (isActive && playback != null && playback.frames.isNotEmpty()) {
+    if (playbackActive && playback != null && playback.frames.isNotEmpty()) {
         com.yunfie.illustia.platform
             .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost, key = GOING_UGOIRA_HZ_KEY)
     }
@@ -213,9 +216,9 @@ internal fun UgoiraArtwork(
     val prefetchAhead = remember(context) { PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) }
     val keepBehind = remember(context) { PlatformCapabilities.recommendedUgoiraKeepBehind(context) }
 
-    DisposableEffect(isActive, playback) {
+    DisposableEffect(playbackActive, playback) {
         onDispose {
-            if (isActive) return@onDispose
+            if (playbackActive) return@onDispose
             // 画面外（非アクティブ）のページはデコード済みフレームを保持し続けるとメモリを圧迫する。
             // 復帰時は上の LaunchedEffect が現在位置から再デコードするため再生挙動は変わらない���
             decodedBitmaps.clear()
@@ -229,14 +232,14 @@ internal fun UgoiraArtwork(
 
     // フレームのデコードは ConcurrentHashMap に書き込む。
     // メモリ上限を超えないよう、フレーム数が多い場合は再生位置前後のスライディングウィンドウで管理する。
-    LaunchedEffect(playback, maxCachedFrames, prefetchAhead, keepBehind, preferredConfig, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(playback, maxCachedFrames, prefetchAhead, keepBehind, preferredConfig, playbackActive) {
+        if (!playbackActive) return@LaunchedEffect
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         withContext(Dispatchers.IO) {
             if (frames.size <= maxCachedFrames) {
                 frames.forEachIndexed { index, frame ->
-                    if (!isActive) return@withContext
+                    if (!playbackActive) return@withContext
                     if (!decodedBitmaps.containsKey(index)) {
                         val bitmap =
                             runCatching {
@@ -249,7 +252,7 @@ internal fun UgoiraArtwork(
                     }
                 }
             } else {
-                while (isActive) {
+                while (playbackActive) {
                     val current = currentFrameIndex
                     val needed =
                         (-keepBehind..prefetchAhead)
@@ -268,7 +271,7 @@ internal fun UgoiraArtwork(
                     }
 
                     for (step in 0..prefetchAhead) {
-                        if (!isActive) break
+                        if (!playbackActive) break
                         val targetIdx = (current + step) % frames.size
                         if (!decodedBitmaps.containsKey(targetIdx)) {
                             val pooled = bitmapPool.poll()
@@ -315,7 +318,7 @@ internal fun UgoiraArtwork(
                         }
                     }
 
-                    while (isActive && currentFrameIndex == current) {
+                    while (playbackActive && currentFrameIndex == current) {
                         delay(10)
                     }
                 }
@@ -323,13 +326,13 @@ internal fun UgoiraArtwork(
         }
     }
 
-    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking, powerSaveEnabled, isLifecycleActive, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(playback, preferredConfig, isPlaying, isSeeking, powerSaveEnabled, isLifecycleActive, playbackActive) {
+        if (!playbackActive) return@LaunchedEffect
         val frames = playback?.frames ?: return@LaunchedEffect
         if (frames.isEmpty()) return@LaunchedEffect
         var index = currentFrameIndex
         var nextTargetTime = System.currentTimeMillis()
-        while (isActive) {
+        while (playbackActive) {
             if (powerSaveEnabled && !isLifecycleActive) {
                 delay(POWER_SAVE_IDLE_DELAY_MS)
                 nextTargetTime = System.currentTimeMillis()

@@ -678,20 +678,36 @@ class IllustiaRepository(
     suspend fun toggleBookmark(
         illust: Illust,
         restrict: Restrict,
-    ): Illust =
+    ): Illust {
+        val bookmarked = !illust.isBookmarked
+        setBookmarkState(illust.id, bookmarked, restrict)
+        return illust.copy(isBookmarked = bookmarked)
+    }
+
+    /**
+     * Applies one idempotent bookmark state. WorkManager can retry a lost response,
+     * so the desired state is used instead of a toggle.
+     */
+    internal suspend fun setBookmarkState(
+        illustId: Long,
+        bookmarked: Boolean,
+        restrict: Restrict,
+    ) {
         withSessionRetry { session ->
-            if (illust.isBookmarked) {
-                apiClient.removeBookmark(session, illust.id)
-                apiCache.removeByPrefix("bookmarks:")
-                apiCache.remove("illust_detail:${illust.id}")
-                illust.copy(isBookmarked = false)
+            if (bookmarked) {
+                apiClient.addBookmark(session, illustId, restrict)
             } else {
-                apiClient.addBookmark(session, illust.id, restrict)
-                apiCache.removeByPrefix("bookmarks:")
-                apiCache.remove("illust_detail:${illust.id}")
-                illust.copy(isBookmarked = true)
+                try {
+                    apiClient.removeBookmark(session, illustId)
+                } catch (failure: PixivApiException) {
+                    // The desired state is already true; a retried delete can report either.
+                    if (failure.statusCode != 404 && failure.statusCode != 410) throw failure
+                }
             }
         }
+        apiCache.removeByPrefix("bookmarks:")
+        apiCache.remove("illust_detail:$illustId")
+    }
 
     private suspend fun requireSession(): PixivSession {
         val currentSession = session
