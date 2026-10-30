@@ -96,7 +96,7 @@ fun ScrollBlurOverlay(
     val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     // クイック設定に覆われている間は、覆われたヘッダーのバックドロップ再録画と
     // 追加のぼかし合成を止める（スクロール位置は保持したまま）。
-    val systemCovered by rememberSystemUiCoveredState()
+    val systemCovered = LocalSystemUiCovered.current
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 

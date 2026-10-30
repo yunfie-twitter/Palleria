@@ -70,6 +70,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.rememberAppThemeColors
 import com.yunfie.illustia.ui.IllustiaApp
 import com.yunfie.illustia.ui.components.PixivImageHeaders
+import com.yunfie.illustia.ui.components.ProvideSystemUiCoverage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -436,13 +437,15 @@ class MainActivity : FragmentActivity() {
                     LocalTextStyle provides LocalTextStyle.current.merge(TextStyle(fontFamily = fontFamily)),
                     com.yunfie.illustia.platform.LocalDynamicHzController provides dynamicHzController,
                 ) {
-                    if (settingsLoaded) {
-                        IllustiaApp(viewModel)
-                    } else {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MiuixTheme.colorScheme.surface,
-                        ) { }
+                    ProvideSystemUiCoverage {
+                        if (settingsLoaded) {
+                            IllustiaApp(viewModel)
+                        } else {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MiuixTheme.colorScheme.surface,
+                            ) { }
+                        }
                     }
                 }
             }

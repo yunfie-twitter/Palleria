@@ -1,11 +1,17 @@
 package com.yunfie.illustia.ui.components
 
 import android.os.Build
+import android.view.ViewTreeObserver
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -14,20 +20,37 @@ import androidx.core.view.WindowInsetsCompat
 private const val SHADE_COVER_THRESHOLD_DP = 72f
 
 /**
- * アプリウィンドウがクイック設定 / キーボードに覆われているか。
+ * アプリウィンドウが SystemUI / キーボードに覆われているか。
  *
- * クイック設定は SystemUI の別ウィンドウなので、この listener はシェードがアプリを
- * 覆い始めた時だけ呼ばれる（パネル操作中に毎フレーム呼ばれない）。覆われている間は
- * アプリはバックグラウンド扱いになるため、値は再生アニメーション
- * （[androidx.compose.runtime.getValue]）から直接読み、state 書き込み→再コンポーズ→
- * 再描画の連鎖を発生させないでフレーム取得だけ止める。
+ * 以前は各コンポーザブルが同じ View に insets listener を登録していたため、後から
+ * 登録したものが前のものを上書きし、ブラーやうごイラの停止判定が画面によって効かなかった。
+ * 更新は [ProvideSystemUiCoverage] の 1 箇所に集約し、各画面はこの値だけを読む。
+ */
+internal val LocalSystemUiCovered = staticCompositionLocalOf<Boolean> { false }
+
+/**
+ * coverage state を画面全体で 1 つだけ作り、[LocalSystemUiCovered] として配る。
+ *
+ * クイック設定・通知シェード・電源メニューはアクティビティを pause させないため、
+ * insets の変化だけでなくウィンドウフォーカスの喪失も「覆われている」とみなす。
+ * 覆われている間はブラーの再録画/合成やうごイラのデコードを止める。
  */
 @Composable
-internal fun rememberSystemUiCoveredState(): State<Boolean> {
+internal fun ProvideSystemUiCoverage(content: @Composable () -> Unit) {
+    val covered by rememberSystemUiCoveredState()
+    CompositionLocalProvider(LocalSystemUiCovered provides covered) {
+        content()
+    }
+}
+
+@Composable
+private fun rememberSystemUiCoveredState(): State<Boolean> {
     val view = LocalView.current
-    val covered = remember { mutableStateOf(false) }
+    var hasWindowFocus by remember(view) { mutableStateOf(view.hasWindowFocus()) }
+    var insetsCovered by remember(view) { mutableStateOf(false) }
+
     DisposableEffect(view) {
-        val thresholdPx = SHADE_COVER_THRESHOLD_DP * (view.resources.displayMetrics.density)
+        val thresholdPx = SHADE_COVER_THRESHOLD_DP * view.resources.displayMetrics.density
         ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
             val shadeTop =
@@ -44,11 +67,22 @@ internal fun rememberSystemUiCoveredState(): State<Boolean> {
                     }
                 }
             val next = imeVisible || shadeTop >= thresholdPx
-            if (covered.value != next) covered.value = next
+            if (insetsCovered != next) insetsCovered = next
             insets
         }
+        val focusObserver =
+            ViewTreeObserver.OnWindowFocusChangeListener { focused ->
+                if (hasWindowFocus != focused) hasWindowFocus = focused
+            }
+        view.viewTreeObserver.addOnWindowFocusChangeListener(focusObserver)
         ViewCompat.requestApplyInsets(view)
-        onDispose { ViewCompat.setOnApplyWindowInsetsListener(view, null) }
+        onDispose {
+            ViewCompat.setOnApplyWindowInsetsListener(view, null)
+            view.viewTreeObserver.removeOnWindowFocusChangeListener(focusObserver)
+        }
     }
-    return covered
+
+    return remember(view) {
+        derivedStateOf { !hasWindowFocus || insetsCovered }
+    }
 }
