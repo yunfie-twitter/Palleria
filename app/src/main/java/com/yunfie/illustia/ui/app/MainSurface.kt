@@ -57,8 +57,8 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AppNavigationBar
+import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
-import com.yunfie.illustia.ui.components.rememberSystemUiCoveredState
 import com.yunfie.illustia.ui.screens.AccountSwitchSheet
 import com.yunfie.illustia.ui.screens.AppLockScreen
 import com.yunfie.illustia.ui.screens.BookmarkScreen
@@ -198,7 +198,7 @@ internal fun MainSurface(
         ) { paddingValues ->
             // クイック設定に覆われている間は、覆われた下部ナビのバックドロップ再録画と
             // 追加のぼかし合成を止める。
-            val systemCovered by rememberSystemUiCoveredState()
+            val systemCovered = LocalSystemUiCovered.current
             Box(
                 modifier =
                     Modifier
