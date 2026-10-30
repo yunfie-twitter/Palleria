@@ -1,5 +1,7 @@
 # Palleria
 
+[English](README.md) · [日本語](README_ja.md) · [한국어](README_ko.md)
+
 <p align="center">
   <img
     src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/icon.png"
