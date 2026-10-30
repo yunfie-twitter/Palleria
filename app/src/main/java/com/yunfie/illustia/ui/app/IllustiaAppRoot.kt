@@ -648,6 +648,15 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     }
 
+    // 作品ページから同じユーザーを再び開く場合、下の showUserPage キーの Effect は
+    // 3 つとも値が変わらないため発火しない（プロフィール → 作品 → プロフィールで
+    // 戻ると showUserPage=true のまま残る）。作品側と同じく明示的な要求を購読する。
+    LaunchedEffect(viewModel) {
+        viewModel.userNavigationRequests.collect { userId ->
+            navigate(AppRoute.UserProfile(userId))
+        }
+    }
+
     LaunchedEffect(state.imageViewerIllust?.id, state.imageViewerStartPage) {
         if (state.imageViewerIllust != null) {
             navigate(AppRoute.ImageViewer)

@@ -377,14 +377,10 @@ fun NovelReaderScreen(
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pages.size })
     val continuousListState = rememberLazyListState()
     val isScrolling = pagerState.isScrollInProgress || continuousListState.isScrollInProgress
-    val novelDynamicMode =
-        if (isScrolling) {
-            com.yunfie.illustia.platform.DynamicHzMode.Boost
-        } else {
-            com.yunfie.illustia.platform.DynamicHzMode.PowerSaving
-        }
-    com.yunfie.illustia.platform
-        .RequestDynamicHzMode(novelDynamicMode)
+    if (isScrolling) {
+        com.yunfie.illustia.platform
+            .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost)
+    }
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
