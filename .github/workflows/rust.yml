@@ -38,7 +38,8 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "rust/pixiv-api -> rust/pixiv-api/target"
+          workspaces: "rust/pixiv-api -> rust/target"
+          cache-on-failure: true
 
       - name: Check formatting
         run: cargo fmt --check 2>&1 | tee cargo-fmt.log

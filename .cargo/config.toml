@@ -1,0 +1,4 @@
+# Keep direct cargo commands on the same target directory as the Gradle tasks.
+# The Gradle build sets CARGO_TARGET_DIR to this path explicitly.
+[build]
+target-dir = "rust/target"

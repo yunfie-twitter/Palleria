@@ -25,11 +25,18 @@ jobs:
         with:
           java-version: "21"
           distribution: temurin
+          cache: "gradle"
 
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust/pixiv-api -> rust/target"
+          cache-on-failure: true
 
       - name: Cache cargo-ndk
         uses: actions/cache@v6
@@ -47,7 +54,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble Debug APK
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew :app:assembleDebug --build-cache
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v7

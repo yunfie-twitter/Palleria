@@ -173,9 +173,26 @@ def uniffiHostLibraryName = hostOperatingSystem.isWindows()
     : hostOperatingSystem.isMacOsX()
         ? "libpalleria_pixiv_api.dylib"
         : "libpalleria_pixiv_api.so"
-def uniffiHostLibrary = new File(rustTargetDir, "release/${uniffiHostLibraryName}")
+def uniffiHostLibrary = new File(rustTargetDir, "debug/${uniffiHostLibraryName}")
 def uniffiKotlinDir = layout.buildDirectory.dir("generated/uniffi/kotlin")
 def uniffiJniDir = layout.buildDirectory.dir("generated/uniffi/jniLibs")
+
+// Local iteration can build only the connected device's ABI and use the fast dev
+// profile. Release builds keep the shipped defaults (all ABIs, optimized profile).
+def androidRustAbis = (findProperty("pallasync.abis") ?: "arm64-v8a,armeabi-v7a,x86_64")
+    .toString()
+    .split(",")
+    .collect { it.trim() }
+    .findAll { it }
+def androidRustProfile = (findProperty("pallasync.rustProfile") ?: "release").toString()
+def androidRustRelease = androidRustProfile != "debug"
+def androidRustArgs = {
+    def args = [cargoExecutable, "ndk", "--platform", androidMinSdk.toString()]
+    androidRustAbis.each { abi -> args.addAll(["-t", abi]) }
+    args.addAll(["-o", uniffiJniDir.get().asFile.absolutePath, "build", "--locked"])
+    if (androidRustRelease) args.add("--release")
+    args
+}
 def rustInputs = files(
     fileTree(new File(rustCrateDir, "src")) { include "**/*.rs" },
     new File(rustCrateDir, "Cargo.toml"),
@@ -185,7 +202,8 @@ def rustInputs = files(
 def buildUniFfiHost = tasks.register("buildUniFfiHost", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine cargoExecutable, "build", "--release", "--lib"
+    // The host library only feeds uniffi-bindgen; its runtime speed is irrelevant.
+    commandLine cargoExecutable, "build", "--locked", "--lib"
     inputs.files(rustInputs)
     outputs.file(uniffiHostLibrary)
 }
@@ -193,7 +211,7 @@ def buildUniFfiHost = tasks.register("buildUniFfiHost", Exec) {
 def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine cargoExecutable, "run", "--release", "--bin", "uniffi-bindgen", "--", "generate",
+    commandLine cargoExecutable, "run", "--locked", "--features", "bindgen", "--bin", "uniffi-bindgen", "--", "generate",
         "--library", uniffiHostLibrary,
         "--config", new File(rustCrateDir, "uniffi.toml").absolutePath,
         "--language", "kotlin", "--out-dir", uniffiKotlinDir.get().asFile, "--no-format"
@@ -207,15 +225,12 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
 def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine cargoExecutable, "ndk", "--platform", androidMinSdk.toString(),
-        "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
-        "-o", uniffiJniDir.get().asFile, "build", "--release"
-    dependsOn generateUniFfiBindings
+    commandLine androidRustArgs()
     inputs.files(rustInputs)
+    inputs.property("abis", androidRustAbis.join(","))
+    inputs.property("rustProfile", androidRustProfile)
     outputs.files(
-        uniffiJniDir.map { it.file("arm64-v8a/libpalleria_pixiv_api.so") },
-        uniffiJniDir.map { it.file("armeabi-v7a/libpalleria_pixiv_api.so") },
-        uniffiJniDir.map { it.file("x86_64/libpalleria_pixiv_api.so") },
+        androidRustAbis.collect { abi -> uniffiJniDir.map { it.file("${abi}/libpalleria_pixiv_api.so") } },
     )
 }
 
@@ -250,14 +265,12 @@ tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
 def buildPallaSyncCoreAndroid = tasks.register("buildPallaSyncCoreAndroid", Exec) {
     workingDir pallaSyncCoreCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine cargoExecutable, "ndk", "--platform", androidMinSdk.toString(),
-        "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
-        "-o", uniffiJniDir.get().asFile, "build", "--release"
+    commandLine androidRustArgs()
     inputs.files(pallaSyncInputs)
+    inputs.property("abis", androidRustAbis.join(","))
+    inputs.property("rustProfile", androidRustProfile)
     outputs.files(
-        uniffiJniDir.map { it.file("arm64-v8a/libpallasync_core.so") },
-        uniffiJniDir.map { it.file("armeabi-v7a/libpallasync_core.so") },
-        uniffiJniDir.map { it.file("x86_64/libpallasync_core.so") },
+        androidRustAbis.collect { abi -> uniffiJniDir.map { it.file("${abi}/libpallasync_core.so") } },
     )
 }
 
@@ -315,10 +328,6 @@ tasks.register("checkQualityBaselineBudgets") {
         }
         logger.lifecycle("Quality baseline budget: detekt ${detektCount}/${detektBaselineBudget}; ${ruleCounts.sort()}")
     }
-}
-
-tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }.configureEach {
-    dependsOn(generateUniFfiBindings)
 }
 
 tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
