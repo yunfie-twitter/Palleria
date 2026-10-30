@@ -105,7 +105,6 @@ class MainActivity : FragmentActivity() {
         const val SPLASH_ICON_EXIT_TARGET_SCALE = 1.15f
         const val SPLASH_EASING_CONTROL_X1 = 0.4f
         const val SPLASH_EASING_CONTROL_X2 = 0.2f
-        const val REFRESH_RATE_LOW_MIN = 30f
         const val REFRESH_RATE_NORMAL = 60f
         const val REFRESH_RATE_HIGH_MAX = 120f
         const val TASK_SNAPSHOT_BLUR_RADIUS = 60f
@@ -468,8 +467,8 @@ class MainActivity : FragmentActivity() {
         // 重くなる。背景化の適用は onStop に一本化し、ここでは戻ってきたときの解除だけを行う。
         //
         // preferredRefreshRate も同じ理由で、SystemUI が前面に出ている間は外す。
-        // クイック設定/通知シェードはアクティビティを pause させないため、PowerSaving の
-        // 60Hz ヒントを残したままだと SystemUI のアニメーションまで 60fps に固定される。
+        // クイック設定/通知シェードはアクティビティを pause させないため、Boost の
+        // ヒントを残したままだと SystemUI のアニメーションがそのレートに引きずられる。
         if (hasFocus) {
             applyTaskSnapshotBlur(isEnteringBackground = false)
             applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
@@ -724,40 +723,15 @@ class MainActivity : FragmentActivity() {
             (method.invoke(display) as? Boolean) == true
         }.getOrDefault(false)
 
-    private fun resolveArrRefreshRate(
-        display: Display,
-        mode: com.yunfie.illustia.platform.DynamicHzMode,
-    ): Float =
+    private fun resolveArrRefreshRate(display: Display): Float =
         runCatching {
-            val category =
-                when (mode) {
-                    com.yunfie.illustia.platform.DynamicHzMode.PowerSaving -> 1
-                    com.yunfie.illustia.platform.DynamicHzMode.Normal -> 2
-                    com.yunfie.illustia.platform.DynamicHzMode.Boost -> 3
-                }
             val method = getSuggestedFrameRateMethod ?: return REFRESH_RATE_NORMAL
-            (method.invoke(display, category) as? Float) ?: REFRESH_RATE_NORMAL
+            // Only Boost reaches this helper; Normal clears the hint first.
+            (method.invoke(display, 3) as? Float) ?: REFRESH_RATE_NORMAL
         }.getOrDefault(REFRESH_RATE_NORMAL)
 
-    private fun resolveLegacyRefreshRate(
-        display: Display,
-        mode: com.yunfie.illustia.platform.DynamicHzMode,
-    ): Float {
-        val rates = display.supportedModes.map { it.refreshRate }
-        return when (mode) {
-            com.yunfie.illustia.platform.DynamicHzMode.PowerSaving -> {
-                rates.filter { it >= REFRESH_RATE_LOW_MIN }.minOrNull() ?: REFRESH_RATE_NORMAL
-            }
-
-            com.yunfie.illustia.platform.DynamicHzMode.Normal -> {
-                0f
-            }
-
-            com.yunfie.illustia.platform.DynamicHzMode.Boost -> {
-                rates.maxOrNull() ?: REFRESH_RATE_HIGH_MAX
-            }
-        }
-    }
+    private fun resolveLegacyRefreshRate(display: Display): Float =
+        display.supportedModes.maxOfOrNull { it.refreshRate } ?: REFRESH_RATE_HIGH_MAX
 
     private fun applyAdaptiveRefreshRateHint(mode: com.yunfie.illustia.platform.DynamicHzMode = dynamicHzController.currentMode.value) {
         if (!PlatformCapabilities.supportsRefreshRateHint()) return
@@ -767,8 +741,9 @@ class MainActivity : FragmentActivity() {
         }
 
         // SystemUI のウィンドウ（クイック設定・通知シェード・電源メニュー）が前面にある間は
-        // このウィンドウにフォーカスがない。その状態で低い preferredRefreshRate を張ると
-        // ディスプレイ全体のモードが固定され、SystemUI 自身のアニメーションが 60fps になる。
+        // このウィンドウにフォーカスがない。その状態で preferredRefreshRate を張ると
+        // ディスプレイ全体のモードが固定され、SystemUI 自身のアニメーションがそのレートに
+        // 引きずられる。
         if (!window.decorView.hasWindowFocus()) {
             clearAdaptiveRefreshRateHint()
             return
@@ -777,9 +752,9 @@ class MainActivity : FragmentActivity() {
         val display = window.decorView.display ?: return
         val preferredRefreshRate =
             if (PlatformCapabilities.supportsAdaptiveRefreshRate() && hasDisplayArrSupport(display)) {
-                resolveArrRefreshRate(display, mode)
+                resolveArrRefreshRate(display)
             } else {
-                resolveLegacyRefreshRate(display, mode)
+                resolveLegacyRefreshRate(display)
             }
 
         if (preferredRefreshRate <= 0f || appliedRefreshRateHint == preferredRefreshRate) return
