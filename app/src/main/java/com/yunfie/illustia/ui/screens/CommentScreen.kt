@@ -51,6 +51,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.prefetchPixivThumbnail
@@ -64,7 +65,6 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -190,7 +190,7 @@ fun CommentScreen(
                 state.isLoading && state.comments.isEmpty() && !hasShownContent
             val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
             val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
-            PullToRefresh(
+            ScrollablePullToRefresh(
                 isRefreshing = state.isRefreshing,
                 onRefresh = { scope.launch { store.fetch(forceRefresh = true) } },
                 modifier = Modifier.weight(1f),
