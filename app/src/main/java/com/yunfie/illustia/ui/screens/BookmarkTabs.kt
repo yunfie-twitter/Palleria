@@ -64,6 +64,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
@@ -80,7 +81,6 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -104,7 +104,7 @@ internal fun BookmarkWatchlistTab(
 ) {
     val scope = rememberCoroutineScope()
 
-    PullToRefresh(
+    ScrollablePullToRefresh(
         isRefreshing = watchlistState.isRefreshing,
         onRefresh = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
         modifier = Modifier.fillMaxSize(),
@@ -381,7 +381,7 @@ internal fun BookmarkMainTab(
             null
         }
     val columns = adaptiveIllustColumns(settings)
-    PullToRefresh(
+    ScrollablePullToRefresh(
         isRefreshing = chrome.isBookmarkRefreshing,
         onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
@@ -507,7 +507,7 @@ internal fun BookmarkTimelineTab(
             null
         }
     val columns = adaptiveIllustColumns(settings)
-    PullToRefresh(
+    ScrollablePullToRefresh(
         isRefreshing = chrome.isTimelineRefreshing,
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
@@ -643,7 +643,7 @@ internal fun BookmarkFollowingTab(
             null
         }
 
-    PullToRefresh(
+    ScrollablePullToRefresh(
         isRefreshing = chrome.isFollowingRefreshing,
         onRefresh = { viewModel.refreshFollowingUsers(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
