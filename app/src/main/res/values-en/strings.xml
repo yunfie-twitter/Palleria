@@ -1262,6 +1262,8 @@
     <string name="flag_image_blur_preview_desc">Display a blurred low-resolution placeholder while loading and smoothly crossfade into the full image</string>
     <string name="flag_task_snapshot_blur_title">Stealth Task Snapshot Blur</string>
     <string name="flag_task_snapshot_blur_desc">Blurs app thumbnail in recent apps switcher to protect sensitive artwork and privacy</string>
+    <string name="flag_disable_adaptive_refresh_rate_title">Disable Adaptive Refresh Rate Control</string>
+    <string name="flag_disable_adaptive_refresh_rate_desc">Disables high refresh rate requests from the app and lets the device choose the display refresh rate</string>
     <string name="flag_courtesy_audio_fade_title">Courtesy Audio Fade on Headset Disconnect</string>
     <string name="flag_courtesy_audio_fade_desc">Exponentially fades out audio over 100ms on headset disconnect before pausing to prevent noise leakage</string>
     <string name="flag_tracking_url_cleaner_title">Silent Tracking URL Cleaner</string>

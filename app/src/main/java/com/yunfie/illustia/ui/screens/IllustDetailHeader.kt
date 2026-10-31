@@ -63,9 +63,9 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
+import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
-import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback

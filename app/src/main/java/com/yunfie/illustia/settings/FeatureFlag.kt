@@ -101,6 +101,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_task_snapshot_blur_desc,
         defaultEnabled = false,
     ),
+    DisableAdaptiveRefreshRate(
+        key = "flag_disable_adaptive_refresh_rate",
+        titleRes = R.string.flag_disable_adaptive_refresh_rate_title,
+        descRes = R.string.flag_disable_adaptive_refresh_rate_desc,
+        defaultEnabled = false,
+    ),
     CourtesyAudioFade(
         key = "flag_courtesy_audio_fade",
         titleRes = R.string.flag_courtesy_audio_fade_title,
