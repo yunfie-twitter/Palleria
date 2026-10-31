@@ -1,8 +1,5 @@
 package com.yunfie.illustia.models
 
-import androidx.compose.runtime.Immutable
-
-@Immutable
 data class NovelPreview(
     val id: Long,
     val title: String,
@@ -44,7 +41,6 @@ data class NovelPreview(
         }
 }
 
-@Immutable
 data class NovelTextContent(
     val novelId: Long,
     val title: String,
@@ -69,7 +65,6 @@ enum class NovelReadingStatus(
     }
 }
 
-@Immutable
 data class NovelReadingProgress(
     val novelId: Long,
     val lastReadPage: Int = 0,

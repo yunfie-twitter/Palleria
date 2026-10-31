@@ -379,6 +379,7 @@ kotlin {
 }
 
 dependencies {
+    implementation project(":shared")
     baselineProfile project(":benchmark")
 
     // Backport java.time and other Java library APIs to Android 7.0.

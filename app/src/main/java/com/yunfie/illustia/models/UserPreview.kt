@@ -12,14 +12,3 @@ data class UserPreview(
     val isFollowed: Boolean,
     val previewIllusts: List<Illust>,
 )
-
-@Immutable
-data class UserProfile(
-    val id: Long,
-    val name: String,
-    val account: String,
-    val profileImageUrl: String?,
-    val backgroundImageUrl: String?,
-    val comment: String,
-    val isFollowed: Boolean,
-)
