@@ -743,8 +743,8 @@ class MainActivity : FragmentActivity() {
         if (!PlatformCapabilities.supportsRefreshRateHint()) return
         if (
             mode == com.yunfie.illustia.platform.DynamicHzMode.Normal ||
-                viewModel.uiState.value.settings
-                    .isFeatureEnabled(FeatureFlag.DisableAdaptiveRefreshRate)
+            viewModel.uiState.value.settings
+                .isFeatureEnabled(FeatureFlag.DisableAdaptiveRefreshRate)
         ) {
             clearAdaptiveRefreshRateHint()
             return
