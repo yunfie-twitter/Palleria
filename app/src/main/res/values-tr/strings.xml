@@ -119,7 +119,7 @@
     <string name="following_users_empty">Takip edilen kullanıcı yok</string>
     <string name="detail_save_image_title">Görseli kaydet</string>
     <string name="detail_save_image_confirm">Bu görsel Palleria klasörüne kaydedilsin mi?</string>
-    <string name="detail_save_ugoira_title">Ugoira'yı kaydet</string>
+    <string name="detail_save_ugoira_title">Ugoira\'yı kaydet</string>
     <string name="detail_unfollow_title">Takibi bırak</string>
     <string name="detail_unfollow_confirm">%1$s kullanıcısını takip etmeyi bırak?</string>
     <string name="detail_open_in_browser">Tarayıcıda aç</string>
@@ -127,7 +127,7 @@
     <string name="detail_save_image">Görseli kaydet</string>
     <string name="detail_save_this_page">Bu sayfayı kaydet</string>
     <string name="detail_save_all_pages">Tüm sayfaları kaydet</string>
-    <string name="detail_copy_url">URL'yi kopyala</string>
+    <string name="detail_copy_url">URL\'yi kopyala</string>
     <string name="detail_mute">Sessize al</string>
     <string name="detail_mute_work">Bu eseri sessize al</string>
     <string name="detail_mute_artist">Bu sanatçıyı sessize al</string>
