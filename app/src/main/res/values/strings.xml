@@ -1057,6 +1057,8 @@
     <string name="discord_token_summary">ステータス更新に使用する Discord ユーザートークン</string>
     <string name="discord_token_dialog_title">Discord ユーザートークン</string>
     <string name="discord_token_hint">Token を貼り付け</string>
+    <string name="discord_token_show">トークンを表示</string>
+    <string name="discord_token_hide">トークンを隠す</string>
     <string name="discord_token_desc">Discord から取得したユーザートークンを入力してください。トークンは端末内に安全に暗号化されて保存されます。</string>
     <string name="discord_section_display">表示設定</string>
     <string name="discord_show_artwork_details">作品の詳細を表示</string>
