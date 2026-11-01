@@ -198,7 +198,7 @@ fun NovelScreen(
                     },
                 navigationIcon = {
                     IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
-                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_close))
+                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
@@ -629,7 +629,7 @@ fun NovelReaderScreen(
                         IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.action_close),
+                                contentDescription = stringResource(R.string.action_back),
                                 tint = textColor,
                             )
                         }
