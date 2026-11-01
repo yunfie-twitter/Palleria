@@ -389,17 +389,7 @@ abstract class IllustiaBookmarkModule(
                             recommendedTagsError = null,
                         )
                     }
-                    recommendedTagsExpiryJob =
-                        viewModelScope.launch {
-                            delay(RECOMMENDED_TAG_CACHE_TTL_MILLIS)
-                            _uiState.update { current ->
-                                if (current.recommendedTagsFetchedAtMillis != fetchedAt) {
-                                    current
-                                } else {
-                                    current.copy(recommendedTagsFetchedAtMillis = 0L)
-                                }
-                            }
-                        }
+                    scheduleRecommendedTagsExpiry(fetchedAt)
                 }.onFailure { expectedFailure ->
                     if (isCancellation(expectedFailure)) throw expectedFailure
                     _uiState.update { current ->
@@ -407,6 +397,20 @@ abstract class IllustiaBookmarkModule(
                             recommendedTagsLoading = false,
                             recommendedTagsError = loadFailureMessage(current, expectedFailure),
                         )
+                    }
+                }
+            }
+    }
+
+    private fun scheduleRecommendedTagsExpiry(fetchedAt: Long) {
+        recommendedTagsExpiryJob =
+            viewModelScope.launch {
+                delay(RECOMMENDED_TAG_CACHE_TTL_MILLIS)
+                _uiState.update { current ->
+                    if (current.recommendedTagsFetchedAtMillis != fetchedAt) {
+                        current
+                    } else {
+                        current.copy(recommendedTagsFetchedAtMillis = 0L)
                     }
                 }
             }
