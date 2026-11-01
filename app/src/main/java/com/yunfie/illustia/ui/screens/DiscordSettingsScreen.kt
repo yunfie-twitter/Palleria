@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,7 +23,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -102,9 +102,10 @@ fun DiscordSettingsScreen(
                         IconButton(onClick = { tokenVisible = !tokenVisible }) {
                             Icon(
                                 imageVector = if (tokenVisible) MiuixIcons.Hide else MiuixIcons.Show,
-                                contentDescription = stringResource(
-                                    if (tokenVisible) R.string.discord_token_hide else R.string.discord_token_show,
-                                ),
+                                contentDescription =
+                                    stringResource(
+                                        if (tokenVisible) R.string.discord_token_hide else R.string.discord_token_show,
+                                    ),
                             )
                         }
                     },
