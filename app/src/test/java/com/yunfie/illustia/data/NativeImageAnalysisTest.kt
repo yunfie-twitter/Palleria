@@ -1,16 +1,19 @@
 package com.yunfie.illustia.data
 
+import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Color
+import com.yunfie.illustia.pallasync.PallaSyncJniRobolectricRunner
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
-@RunWith(RobolectricTestRunner::class)
+@RunWith(PallaSyncJniRobolectricRunner::class)
+@Config(application = Application::class)
 class NativeImageAnalysisTest {
     companion object {
         @BeforeClass
