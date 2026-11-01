@@ -29,6 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -55,6 +59,7 @@ import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.Hide
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Theme
@@ -69,6 +74,7 @@ fun RefreshTokenLoginBottomSheet(
     viewModel: IllustiaViewModel,
     onDismiss: () -> Unit,
 ) {
+    var tokenVisible by remember { mutableStateOf(false) }
     OverlayBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
@@ -98,6 +104,18 @@ fun RefreshTokenLoginBottomSheet(
                     useLabelAsPlaceholder = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { tokenVisible = !tokenVisible }) {
+                            Icon(
+                                imageVector = if (tokenVisible) MiuixIcons.Hide else MiuixIcons.Show,
+                                contentDescription = stringResource(
+                                    if (tokenVisible) R.string.login_refresh_token_hide else R.string.login_refresh_token_show,
+                                ),
+                            )
+                        }
+                    },
                 )
                 Button(
                     onClick = viewModel::login,
