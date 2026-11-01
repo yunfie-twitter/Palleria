@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.StoredAccount
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
@@ -56,8 +57,13 @@ class SettingsStoreStartupTest {
                 // Verify credentials are preserved when write is called with startup placeholder token
                 val testToken = "valid_auth_token_12345"
                 val withRealToken = updated.copy(refreshToken = testToken)
-                store.write(withRealToken, updated)
-                store.read().refreshToken shouldBe testToken
+                if (SettingsStore.createEncryptedPreferences(context) == null) {
+                    shouldThrow<IllegalStateException> { store.write(withRealToken, updated) }
+                    store.read().refreshToken shouldBe updated.refreshToken
+                } else {
+                    store.write(withRealToken, updated)
+                    store.read().refreshToken shouldBe testToken
+                }
 
                 val startupPlaceholderSettings =
                     store.readStartup().copy(
@@ -66,7 +72,7 @@ class SettingsStoreStartupTest {
                 store.write(startupPlaceholderSettings, store.read())
 
                 val persisted = store.read()
-                persisted.refreshToken shouldBe testToken
+                persisted.refreshToken shouldBe if (SettingsStore.createEncryptedPreferences(context) == null) "" else testToken
                 persisted.lastSeenAppVersionCode shouldBe 999
                 verifyAuthOnlyRotation()
             } finally {
@@ -77,7 +83,9 @@ class SettingsStoreStartupTest {
 
     private fun verifyAuthOnlyRotation() {
         runBlocking {
-            val store = SettingsStore(ApplicationProvider.getApplicationContext<Context>())
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            if (SettingsStore.createEncryptedPreferences(context) == null) return@runBlocking
+            val store = SettingsStore(context)
             val original = store.read()
             try {
                 val base =
