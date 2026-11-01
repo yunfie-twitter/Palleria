@@ -86,6 +86,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
+import java.util.Locale
 import java.util.UUID
 import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 
@@ -161,6 +162,8 @@ fun PallaSyncSettingsScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
+    val pendingEvidenceRetryFailedMessage = stringResource(R.string.pallasync_pending_evidence_retry_failed)
+    val pendingEvidenceRetryResultFormat = stringResource(R.string.pallasync_pending_evidence_retry_result)
     val scope = rememberCoroutineScope()
     val syncManager = remember { PalleriaSyncManager(context = context) }
 
@@ -2343,9 +2346,9 @@ fun PallaSyncSettingsScreen(
                                                     .makeText(
                                                         context,
                                                         if (retryFailed) {
-                                                            context.getString(R.string.pallasync_pending_evidence_retry_failed)
+                                                            pendingEvidenceRetryFailedMessage
                                                         } else {
-                                                            context.getString(R.string.pallasync_pending_evidence_retry_result, applied)
+                                                            String.format(Locale.getDefault(), pendingEvidenceRetryResultFormat, applied)
                                                         },
                                                         Toast.LENGTH_LONG,
                                                     ).show()
