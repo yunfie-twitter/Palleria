@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
@@ -44,6 +45,7 @@ import kotlinx.coroutines.flow.filter
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
@@ -53,6 +55,7 @@ import top.yukonga.miuix.kmp.icon.extended.Share
 @Composable
 fun ShortsFeedScreen(
     items: List<Illust>,
+    loadState: LoadState,
     currentIllustId: Long?,
     viewModel: IllustiaViewModel,
     onOpenComments: (Long) -> Unit,
@@ -115,11 +118,29 @@ fun ShortsFeedScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (items.isEmpty()) {
-            Text(
-                text = stringResource(R.string.shorts_loading),
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Center),
-            )
+            when (val state = loadState) {
+                LoadState.Idle, LoadState.Loading -> Text(
+                    text = stringResource(R.string.shorts_loading),
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                is LoadState.Error -> Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(state.message, color = Color.White)
+                    TextButton(
+                        text = stringResource(R.string.action_retry),
+                        onClick = { viewModel.refreshShortsFeed(forceRefresh = true) },
+                    )
+                }
+                LoadState.Loaded -> Text(
+                    text = stringResource(R.string.shorts_empty),
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
         } else {
             VerticalPager(
                 state = pagerState,
