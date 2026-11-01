@@ -86,6 +86,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.IOException
+import java.util.Locale
 import java.util.UUID
 import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 
@@ -102,6 +103,18 @@ internal fun PallaSyncActionButton(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().heightIn(min = 48.dp),
         enabled = enabled,
+    )
+}
+
+@Composable
+internal fun PallaSyncAdvancedMaintenanceToggle(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    SettingLinkRow(
+        title = stringResource(if (expanded) R.string.pallasync_advanced_hide else R.string.pallasync_advanced_show),
+        summary = stringResource(R.string.pallasync_advanced_summary),
+        onClick = onToggle,
     )
 }
 
@@ -149,6 +162,8 @@ fun PallaSyncSettingsScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
+    val pendingEvidenceRetryFailedMessage = stringResource(R.string.pallasync_pending_evidence_retry_failed)
+    val pendingEvidenceRetryResultFormat = stringResource(R.string.pallasync_pending_evidence_retry_result)
     val scope = rememberCoroutineScope()
     var pendingAuthorityJsonExport by remember { mutableStateOf<String?>(null) }
     val syncManager = remember { PalleriaSyncManager(context = context) }
@@ -1701,6 +1716,13 @@ fun PallaSyncSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
+                Section(stringResource(R.string.pallasync_setup_guide_title)) {
+                    ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                        Text(stringResource(R.string.pallasync_setup_guide_summary))
+                    }
+                }
+            }
+            item {
                 Section(stringResource(R.string.settings_general)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                         SettingSwitchRow(
@@ -2045,98 +2067,81 @@ fun PallaSyncSettingsScreen(
                         }
                     }
                 }
-
                 item {
-                    Section(stringResource(R.string.data_section_cleanup)) {
-                        ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                            SettingLinkRow(
-                                title = stringResource(R.string.pallasync_leave_chain),
-                                summary = stringResource(R.string.pallasync_leave_chain_desc),
-                                onClick = { showLeaveConfirm = true },
-                            )
-                            DividerLine()
-                            SettingLinkRow(
-                                title = stringResource(R.string.pallasync_delete_chain),
-                                summary = stringResource(R.string.pallasync_delete_chain_desc),
-                                onClick = { showDeleteConfirm = true },
-                            )
-                        }
-                    }
+                    PallaSyncAdvancedMaintenanceToggle(showAdvancedActions) { showAdvancedActions = !showAdvancedActions }
                 }
             }
 
-            item {
-                if (legacyMigrations.isNotEmpty() || (settings.pallaSyncEnabled && hasLocalChain)) {
-                    Section(stringResource(R.string.pallasync_legacy_migration_title)) {
-                        ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                            if (settings.pallaSyncEnabled && hasLocalChain) {
+            if (showAdvancedActions) {
+                if (settings.pallaSyncEnabled) {
+                    item {
+                        Section(stringResource(R.string.data_section_cleanup)) {
+                            ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                                 SettingLinkRow(
-                                    title = stringResource(R.string.pallasync_legacy_source_action),
-                                    summary = stringResource(R.string.pallasync_legacy_source_action_summary),
-                                    onClick = { if (!inspectingLegacySource) showLegacySourceDialog = true },
+                                    title = stringResource(R.string.pallasync_leave_chain),
+                                    summary = stringResource(R.string.pallasync_leave_chain_desc),
+                                    onClick = { showLeaveConfirm = true },
                                 )
-                                if (legacyMigrations.isNotEmpty()) DividerLine()
-                            }
-                            legacyMigrations.forEachIndexed { index, migration ->
+                                DividerLine()
                                 SettingLinkRow(
-                                    title =
-                                        stringResource(
-                                            R.string.pallasync_legacy_migration_item,
-                                            migration.sourceChain,
-                                            migration.targetChain,
-                                        ),
-                                    summary =
-                                        stringResource(
-                                            R.string.pallasync_legacy_migration_summary,
-                                            migration.stagedThrough,
-                                            migration.sourceHighWater,
-                                            migration.candidates,
-                                            migration.pending,
-                                            migration.constructed,
-                                            migration.quarantined,
-                                        ),
-                                    onClick = {
-                                        selectedLegacyMigration = migration
-                                        legacyDecisions = emptyList()
-                                        legacyDecisionCursor = null
-                                        legacyCandidates = emptyList()
-                                        legacyCandidateCursor = null
-                                        loadingLegacyDecisions = true
-                                        scope.launch {
-                                            try {
-                                                val page = syncManager.legacyMigrationDecisionPage(migration.migrationId, 0)
-                                                legacyDecisions = page.items
-                                                legacyDecisionCursor = page.nextIndex
-                                                val candidatePage = syncManager.legacyMigrationCandidatePage(migration.migrationId, 0)
-                                                legacyCandidates = candidatePage.items
-                                                legacyCandidateCursor = candidatePage.nextIndex
-                                            } catch (_: Exception) {
-                                                Toast
-                                                    .makeText(
-                                                        context,
-                                                        R.string.pallasync_legacy_migration_report_failed,
-                                                        Toast.LENGTH_LONG,
-                                                    ).show()
-                                            } finally {
-                                                loadingLegacyDecisions = false
-                                            }
-                                        }
-                                    },
+                                    title = stringResource(R.string.pallasync_delete_chain),
+                                    summary = stringResource(R.string.pallasync_delete_chain_desc),
+                                    onClick = { showDeleteConfirm = true },
                                 )
-                                if (index < legacyMigrations.lastIndex) DividerLine()
                             }
-                            legacyMigrationCursor?.let { cursor ->
-                                if (!loadingLegacyMigrationPage) {
-                                    DividerLine()
-                                    PallaSyncActionButton(
-                                        text = stringResource(R.string.pallasync_legacy_migration_more),
+                        }
+                    }
+                }
+
+                item {
+                    if (legacyMigrations.isNotEmpty() || (settings.pallaSyncEnabled && hasLocalChain)) {
+                        Section(stringResource(R.string.pallasync_legacy_migration_title)) {
+                            ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+                                if (settings.pallaSyncEnabled && hasLocalChain) {
+                                    SettingLinkRow(
+                                        title = stringResource(R.string.pallasync_legacy_source_action),
+                                        summary = stringResource(R.string.pallasync_legacy_source_action_summary),
+                                        onClick = { if (!inspectingLegacySource) showLegacySourceDialog = true },
+                                    )
+                                    if (legacyMigrations.isNotEmpty()) DividerLine()
+                                }
+                                legacyMigrations.forEachIndexed { index, migration ->
+                                    SettingLinkRow(
+                                        title =
+                                            stringResource(
+                                                R.string.pallasync_legacy_migration_item,
+                                                migration.sourceChain,
+                                                migration.targetChain,
+                                            ),
+                                        summary =
+                                            stringResource(
+                                                R.string.pallasync_legacy_migration_summary,
+                                                migration.stagedThrough,
+                                                migration.sourceHighWater,
+                                                migration.candidates,
+                                                migration.pending,
+                                                migration.constructed,
+                                                migration.quarantined,
+                                            ),
                                         onClick = {
-                                            loadingLegacyMigrationPage = true
+                                            selectedLegacyMigration = migration
+                                            legacyDecisions = emptyList()
+                                            legacyDecisionCursor = null
+                                            legacyCandidates = emptyList()
+                                            legacyCandidateCursor = null
+                                            loadingLegacyDecisions = true
                                             scope.launch {
                                                 try {
-                                                    val page = syncManager.legacyMigrationProgressPage(cursor, 20)
-                                                    legacyMigrations = legacyMigrations + page.items
-                                                    legacyMigrationCursor = page.nextMigrationId
+                                                    val page = syncManager.legacyMigrationDecisionPage(migration.migrationId, 0)
+                                                    legacyDecisions = page.items
+                                                    legacyDecisionCursor = page.nextIndex
+                                                    val candidatePage =
+                                                        syncManager.legacyMigrationCandidatePage(
+                                                            migration.migrationId,
+                                                            0,
+                                                        )
+                                                    legacyCandidates = candidatePage.items
+                                                    legacyCandidateCursor = candidatePage.nextIndex
                                                 } catch (_: Exception) {
                                                     Toast
                                                         .makeText(
@@ -2145,593 +2150,628 @@ fun PallaSyncSettingsScreen(
                                                             Toast.LENGTH_LONG,
                                                         ).show()
                                                 } finally {
-                                                    loadingLegacyMigrationPage = false
+                                                    loadingLegacyDecisions = false
                                                 }
                                             }
                                         },
                                     )
+                                    if (index < legacyMigrations.lastIndex) DividerLine()
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (hasLocalChain) {
-                item {
-                    val relayNoticeButtonText =
-                        stringResource(
-                            if (fetchingRelayNotice) {
-                                R.string.pallasync_relay_notice_loading
-                            } else {
-                                R.string.pallasync_relay_notice_fetch
-                            },
-                        )
-                    PallaSyncActionButton(
-                        text = relayNoticeButtonText,
-                        onClick = {
-                            scope.launch {
-                                fetchingRelayNotice = true
-                                try {
-                                    relayShutdownNotice = syncManager.fetchRelayShutdownNotice()
-                                } catch (error: CancellationException) {
-                                    throw error
-                                } catch (_: Exception) {
-                                    Toast.makeText(context, R.string.pallasync_relay_notice_unavailable, Toast.LENGTH_SHORT).show()
-                                } finally {
-                                    fetchingRelayNotice = false
-                                }
-                            }
-                        },
-                        enabled = !fetchingRelayNotice,
-                    )
-                }
-            }
-
-            relayShutdownNotice?.let { notice ->
-                item {
-                    Section(stringResource(R.string.pallasync_relay_shutdown_title)) {
-                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
-                            if (notice.writesStopped) {
-                                Text(stringResource(R.string.pallasync_relay_shutdown_writes_stopped))
-                            } else if (notice.shutdownAtMs == null) {
-                                Text(stringResource(R.string.pallasync_relay_shutdown_unscheduled))
-                            } else {
-                                Text(stringResource(R.string.pallasync_relay_shutdown_at, notice.shutdownAtMs))
-                            }
-                            notice.noticeId?.let { noticeId ->
-                                Text(stringResource(R.string.pallasync_relay_notice_id, noticeId))
-                            }
-                            notice.migrationOrigin?.let { suggestedOrigin ->
-                                Text(stringResource(R.string.pallasync_relay_shutdown_suggestion, suggestedOrigin))
-                                Text(stringResource(R.string.pallasync_relay_shutdown_suggestion_limit))
-                                PallaSyncActionButton(
-                                    text = stringResource(R.string.pallasync_relay_shutdown_review_migration),
-                                    onClick = {
-                                        // This fills a user-reviewed target field; it does not contact the candidate.
-                                        reseedImportTargetUrl = suggestedOrigin
-                                        showReseedImportTarget = true
-                                    },
-                                    enabled = !stagingReseedImport && !committingReseedImport,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            item {
-                clientStatus?.let { status ->
-                    Section(stringResource(R.string.pallasync_progress_title)) {
-                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
-                            Text(stringResource(R.string.pallasync_progress_state, status.writeState))
-                            Text(
-                                stringResource(
-                                    R.string.pallasync_progress_positions,
-                                    status.downloadedSeq,
-                                    status.verifiedSeq,
-                                    status.materializedSeq,
-                                ),
-                            )
-                            PallaSyncTransparencyProgressSummary(status)
-                            Text(
-                                stringResource(
-                                    if (status.partial) R.string.pallasync_progress_partial else R.string.pallasync_progress_current,
-                                    status.initialPullCompleted,
-                                ),
-                            )
-                            Text(stringResource(R.string.pallasync_progress_author_gaps, status.authorGaps))
-                            Text(stringResource(R.string.pallasync_progress_source_completeness))
-                            PallaSyncIndependentCheckpointComparisonSummary(status)
-                            DividerLine()
-                            SettingLinkRow(
-                                title = stringResource(R.string.pallasync_probe_interval_title),
-                                summary =
-                                    stringResource(
-                                        R.string.pallasync_probe_interval_current,
-                                        status.consistencyProbeIntervalMs / 60_000,
-                                    ),
-                                onClick = { showConsistencyProbeIntervalDialog = true },
-                            )
-                            if (status.consistencyProbeDeferred) {
-                                Text(stringResource(R.string.pallasync_probe_deferred))
-                            } else if (status.consistencyProbeDelayMs != null) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_probe_next_in,
-                                        (status.consistencyProbeDelayMs + 59_999) / 60_000,
-                                    ),
-                                )
-                            }
-                            val probeAt = status.lastConsistencyProbeAtMs
-                            val probeAtText =
-                                if (probeAt == null) {
-                                    stringResource(R.string.pallasync_probe_never_succeeded)
-                                } else {
-                                    val formattedProbeAt =
-                                        java.text.DateFormat
-                                            .getDateTimeInstance(
-                                                java.text.DateFormat.MEDIUM,
-                                                java.text.DateFormat.SHORT,
-                                            ).format(java.util.Date(probeAt))
-                                    stringResource(R.string.pallasync_probe_last_success, formattedProbeAt)
-                                }
-                            Text(probeAtText)
-                            Text(
-                                stringResource(
-                                    R.string.pallasync_progress_blockers,
-                                    status.pendingOutbox,
-                                    status.unresolvedQuarantine,
-                                ),
-                            )
-                            val dispositionCounts = status.recordDispositionCounts
-                            val pendingEvidenceCount =
-                                PallaSyncInboxDispositionSummary.retryableEvidenceCount(dispositionCounts)
-                            val unsupportedCount =
-                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "unsupported_collection")
-                            val operationallyBlockedCount =
-                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "operationally_blocked")
-                            val recoverySessionFailedCount =
-                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_session_failed")
-                            val recoveryArtifactQuarantinedCount =
-                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_artifact_quarantined")
-                            val recoveryRotationIncompleteCount =
-                                PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_rotation_incomplete")
-                            if (status.pendingRecordDispositions > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_record_dispositions,
-                                        status.pendingRecordDispositions,
-                                    ),
-                                )
-                            }
-                            if (pendingEvidenceCount > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_pending_evidence,
-                                        pendingEvidenceCount,
-                                    ),
-                                )
-                                PallaSyncActionButton(
-                                    text =
-                                        stringResource(
-                                            if (retryingPendingInboxEvidence) {
-                                                R.string.pallasync_pending_evidence_retry_running
-                                            } else {
-                                                R.string.pallasync_pending_evidence_retry
-                                            },
-                                        ),
-                                    enabled = !retryingPendingInboxEvidence,
-                                    onClick = {
-                                        retryingPendingInboxEvidence = true
-                                        scope.launch {
-                                            var retryFailed = false
-                                            val applied =
-                                                try {
-                                                    withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                        syncManager.retryPendingInboxEvidence()
+                                legacyMigrationCursor?.let { cursor ->
+                                    if (!loadingLegacyMigrationPage) {
+                                        DividerLine()
+                                        PallaSyncActionButton(
+                                            text = stringResource(R.string.pallasync_legacy_migration_more),
+                                            onClick = {
+                                                loadingLegacyMigrationPage = true
+                                                scope.launch {
+                                                    try {
+                                                        val page = syncManager.legacyMigrationProgressPage(cursor, 20)
+                                                        legacyMigrations = legacyMigrations + page.items
+                                                        legacyMigrationCursor = page.nextMigrationId
+                                                    } catch (_: Exception) {
+                                                        Toast
+                                                            .makeText(
+                                                                context,
+                                                                R.string.pallasync_legacy_migration_report_failed,
+                                                                Toast.LENGTH_LONG,
+                                                            ).show()
+                                                    } finally {
+                                                        loadingLegacyMigrationPage = false
                                                     }
-                                                } catch (cancelled: CancellationException) {
-                                                    throw cancelled
-                                                } catch (_: Exception) {
-                                                    retryFailed = true
-                                                    0
-                                                } finally {
-                                                    retryingPendingInboxEvidence = false
                                                 }
-                                            clientStatus = syncManager.getClientStatus()
-                                            try {
-                                                val page = syncManager.getUnresolvedQuarantinePage(limit = 50)
-                                                unresolvedQuarantine = page.items
-                                                quarantineCursor = page.nextHash
-                                            } catch (cancelled: CancellationException) {
-                                                throw cancelled
-                                            } catch (_: Exception) {
-                                                // Keep the last validated quarantine page visible on a local read failure.
-                                            }
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    if (retryFailed) {
-                                                        context.getString(R.string.pallasync_pending_evidence_retry_failed)
-                                                    } else {
-                                                        context.getString(R.string.pallasync_pending_evidence_retry_result, applied)
-                                                    },
-                                                    Toast.LENGTH_LONG,
-                                                ).show()
-                                        }
-                                    },
-                                )
-                            }
-                            if (unsupportedCount > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_unsupported_records,
-                                        unsupportedCount,
-                                    ),
-                                )
-                            }
-                            PallaSyncSchemaRecovery(unsupportedCount) {
-                                try {
-                                    syncManager.retryUnsupportedInbox()
-                                } finally {
-                                    clientStatus = syncManager.getClientStatus()
+                                            },
+                                        )
+                                    }
                                 }
                             }
-                            if (operationallyBlockedCount > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_operationally_blocked,
-                                        operationallyBlockedCount,
-                                    ),
-                                )
-                            }
-                            PallaSyncLocalStorageRecovery(status.storageBlockedRecords) {
-                                try {
-                                    syncManager.retryStorageBlockedInbox()
-                                } finally {
-                                    clientStatus = syncManager.getClientStatus()
+                        }
+                    }
+                }
+
+                if (hasLocalChain) {
+                    item {
+                        val relayNoticeButtonText =
+                            stringResource(
+                                if (fetchingRelayNotice) {
+                                    R.string.pallasync_relay_notice_loading
+                                } else {
+                                    R.string.pallasync_relay_notice_fetch
+                                },
+                            )
+                        PallaSyncActionButton(
+                            text = relayNoticeButtonText,
+                            onClick = {
+                                scope.launch {
+                                    fetchingRelayNotice = true
+                                    try {
+                                        relayShutdownNotice = syncManager.fetchRelayShutdownNotice()
+                                    } catch (error: CancellationException) {
+                                        throw error
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, R.string.pallasync_relay_notice_unavailable, Toast.LENGTH_SHORT).show()
+                                    } finally {
+                                        fetchingRelayNotice = false
+                                    }
                                 }
-                            }
-                            if (recoverySessionFailedCount > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_recovery_session_failed,
-                                        recoverySessionFailedCount,
-                                    ),
-                                )
-                            }
-                            if (recoveryArtifactQuarantinedCount > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_recovery_artifact_quarantined,
-                                        recoveryArtifactQuarantinedCount,
-                                    ),
-                                )
-                            }
-                            if (recoveryRotationIncompleteCount > 0) {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_progress_recovery_rotation_incomplete,
-                                        recoveryRotationIncompleteCount,
-                                    ),
-                                )
-                            }
-                            if (status.retryAfterMs > 0) {
-                                Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
-                            }
-                            status.originBlockedRequestCodes.forEach { code ->
-                                Text(stringResource(R.string.pallasync_origin_request_blocked, code))
-                                PallaSyncRecoveryHintText(code)
-                            }
-                            val blockedCodes =
-                                status.blockedRequestCodes.ifEmpty {
-                                    listOfNotNull(status.blockedRequestCode)
+                            },
+                            enabled = !fetchingRelayNotice,
+                        )
+                    }
+                }
+
+                relayShutdownNotice?.let { notice ->
+                    item {
+                        Section(stringResource(R.string.pallasync_relay_shutdown_title)) {
+                            ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                                if (notice.writesStopped) {
+                                    Text(stringResource(R.string.pallasync_relay_shutdown_writes_stopped))
+                                } else if (notice.shutdownAtMs == null) {
+                                    Text(stringResource(R.string.pallasync_relay_shutdown_unscheduled))
+                                } else {
+                                    Text(stringResource(R.string.pallasync_relay_shutdown_at, notice.shutdownAtMs))
                                 }
-                            blockedCodes.forEach { code ->
-                                Text(stringResource(R.string.pallasync_request_blocked, code))
-                                PallaSyncRecoveryHintText(code)
-                                if (status.capacityIssue?.code != code && PallaSyncRetryGate.canRetryAfterResolution(code)) {
+                                notice.noticeId?.let { noticeId ->
+                                    Text(stringResource(R.string.pallasync_relay_notice_id, noticeId))
+                                }
+                                notice.migrationOrigin?.let { suggestedOrigin ->
+                                    Text(stringResource(R.string.pallasync_relay_shutdown_suggestion, suggestedOrigin))
+                                    Text(stringResource(R.string.pallasync_relay_shutdown_suggestion_limit))
                                     PallaSyncActionButton(
-                                        text = stringResource(R.string.pallasync_blocked_retry_action),
-                                        enabled = retryingBlockedRequestCode == null,
-                                        onClick = { pendingBlockedRetryCode = code },
+                                        text = stringResource(R.string.pallasync_relay_shutdown_review_migration),
+                                        onClick = {
+                                            // This fills a user-reviewed target field; it does not contact the candidate.
+                                            reseedImportTargetUrl = suggestedOrigin
+                                            showReseedImportTarget = true
+                                        },
+                                        enabled = !stagingReseedImport && !committingReseedImport,
                                     )
                                 }
                             }
-                            if (status.favoriteOrderReindexRequired) {
-                                DividerLine()
-                                Text(stringResource(R.string.pallasync_favorite_order_reindex_required))
-                                PallaSyncActionButton(
-                                    text = stringResource(R.string.pallasync_favorite_order_reindex_action),
-                                    enabled = !reindexingFavoriteOrder,
-                                    onClick = { showFavoriteOrderReindexConfirm = true },
-                                )
-                            }
-                            status.capacityIssue?.let { issue ->
-                                DividerLine()
-                                val used = issue.usedBytes
-                                val maximum = issue.maxBytes
-                                if (used == null || maximum == null) {
-                                    Text(stringResource(R.string.pallasync_relay_capacity_unknown))
-                                }
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_relay_capacity_hint,
-                                        issue.code,
-                                        used?.toString() ?: "—",
-                                        maximum?.toString() ?: "—",
-                                    ),
-                                )
-                                PallaSyncActionButton(
-                                    text = stringResource(R.string.pallasync_relay_capacity_resume),
-                                    enabled = !resolvingCapacityRecovery,
-                                    onClick = { showCapacityRecoveryConfirm = true },
-                                )
-                            }
-                            DividerLine()
-                            Text(
-                                stringResource(
-                                    R.string.pallasync_capacity_details,
-                                    stringResource(R.string.pallasync_capacity_search_scope),
-                                    status.searchCount,
-                                    status.searchProjectionCount,
-                                    status.searchColdCount,
-                                    status.searchCeiling,
-                                ),
-                            )
-                            Text(
-                                stringResource(
-                                    R.string.pallasync_capacity_details,
-                                    stringResource(R.string.pallasync_capacity_viewed_scope),
-                                    status.viewedCount,
-                                    status.viewedProjectionCount,
-                                    status.viewedColdCount,
-                                    status.viewedCeiling,
-                                ),
-                            )
-                            Text(
-                                stringResource(
-                                    R.string.pallasync_capacity_details,
-                                    stringResource(R.string.pallasync_capacity_seen_scope),
-                                    status.seenCount,
-                                    status.seenProjectionCount,
-                                    status.seenColdCount,
-                                    status.seenCeiling,
-                                ),
-                            )
-                            status.availableStorageBytes?.let {
-                                Text(
-                                    stringResource(
-                                        R.string.pallasync_capacity_available_storage,
-                                        Formatter.formatFileSize(context, it),
-                                    ),
-                                )
-                            }
-                            if (status.safetyLimitReached) {
-                                DividerLine()
-                                Text(stringResource(R.string.pallasync_safety_limit_reached))
-                            }
-                            if (!status.initialPullCompleted && status.pendingOutbox == 0L && status.unresolvedQuarantine == 0L) {
-                                DividerLine()
-                                PallaSyncActionButton(
-                                    text =
-                                        stringResource(
-                                            if (loadingTrustedSnapshots) {
-                                                R.string.pallasync_snapshot_bootstrap_running
-                                            } else {
-                                                R.string.pallasync_snapshot_bootstrap
-                                            },
-                                        ),
-                                    enabled = !loadingTrustedSnapshots && !installingTrustedSnapshot,
-                                    onClick = {
-                                        loadingTrustedSnapshots = true
-                                        trustedSnapshotFailure = null
-                                        scope.launch {
-                                            try {
-                                                trustedSnapshotCandidates =
-                                                    withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                        syncManager.trustedSnapshotCandidates()
-                                                    }
-                                                showTrustedSnapshotDialog = true
-                                            } catch (cancelled: CancellationException) {
-                                                throw cancelled
-                                            } catch (failure: Exception) {
-                                                trustedSnapshotFailure =
-                                                    failure.message?.takeIf { it.startsWith("C_") } ?: "C_SNAPSHOT_INVALID"
-                                                trustedSnapshotCandidates = emptyList()
-                                                showTrustedSnapshotDialog = true
-                                            } finally {
-                                                loadingTrustedSnapshots = false
-                                            }
-                                        }
-                                    },
-                                )
-                                Text(stringResource(R.string.pallasync_snapshot_bootstrap_desc))
-                                PallaSyncErrorHint(trustedSnapshotFailure)
-                            }
                         }
                     }
                 }
-            }
 
-            item {
-                if (unresolvedQuarantine.isNotEmpty()) {
-                    Section(stringResource(R.string.pallasync_quarantine_title)) {
-                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
-                            Text(stringResource(R.string.pallasync_quarantine_explanation))
-                            unresolvedQuarantine.forEach { entry ->
+                item {
+                    clientStatus?.let { status ->
+                        Section(stringResource(R.string.pallasync_progress_title)) {
+                            ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                                Text(stringResource(R.string.pallasync_progress_state, status.writeState))
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_positions,
+                                        status.downloadedSeq,
+                                        status.verifiedSeq,
+                                        status.materializedSeq,
+                                    ),
+                                )
+                                PallaSyncTransparencyProgressSummary(status)
+                                Text(
+                                    stringResource(
+                                        if (status.partial) R.string.pallasync_progress_partial else R.string.pallasync_progress_current,
+                                        status.initialPullCompleted,
+                                    ),
+                                )
+                                Text(stringResource(R.string.pallasync_progress_author_gaps, status.authorGaps))
+                                Text(stringResource(R.string.pallasync_progress_source_completeness))
+                                PallaSyncIndependentCheckpointComparisonSummary(status)
                                 DividerLine()
-                                val resolutionLabel =
-                                    when (entry.resolutionState) {
-                                        "excluded" -> stringResource(R.string.pallasync_quarantine_state_excluded)
-                                        "pending_resolution" -> stringResource(R.string.pallasync_quarantine_state_pending)
-                                        else -> stringResource(R.string.pallasync_quarantine_state_unresolved)
+                                SettingLinkRow(
+                                    title = stringResource(R.string.pallasync_probe_interval_title),
+                                    summary =
+                                        stringResource(
+                                            R.string.pallasync_probe_interval_current,
+                                            status.consistencyProbeIntervalMs / 60_000,
+                                        ),
+                                    onClick = { showConsistencyProbeIntervalDialog = true },
+                                )
+                                if (status.consistencyProbeDeferred) {
+                                    Text(stringResource(R.string.pallasync_probe_deferred))
+                                } else if (status.consistencyProbeDelayMs != null) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_probe_next_in,
+                                            (status.consistencyProbeDelayMs + 59_999) / 60_000,
+                                        ),
+                                    )
+                                }
+                                val probeAt = status.lastConsistencyProbeAtMs
+                                val probeAtText =
+                                    if (probeAt == null) {
+                                        stringResource(R.string.pallasync_probe_never_succeeded)
+                                    } else {
+                                        val formattedProbeAt =
+                                            java.text.DateFormat
+                                                .getDateTimeInstance(
+                                                    java.text.DateFormat.MEDIUM,
+                                                    java.text.DateFormat.SHORT,
+                                                ).format(java.util.Date(probeAt))
+                                        stringResource(R.string.pallasync_probe_last_success, formattedProbeAt)
                                     }
-                                Text(stringResource(R.string.pallasync_quarantine_item, entry.reason, entry.objectHash, resolutionLabel))
-                                if (entry.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN")) {
+                                Text(probeAtText)
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_progress_blockers,
+                                        status.pendingOutbox,
+                                        status.unresolvedQuarantine,
+                                    ),
+                                )
+                                val dispositionCounts = status.recordDispositionCounts
+                                val pendingEvidenceCount =
+                                    PallaSyncInboxDispositionSummary.retryableEvidenceCount(dispositionCounts)
+                                val unsupportedCount =
+                                    PallaSyncInboxDispositionSummary.count(dispositionCounts, "unsupported_collection")
+                                val operationallyBlockedCount =
+                                    PallaSyncInboxDispositionSummary.count(dispositionCounts, "operationally_blocked")
+                                val recoverySessionFailedCount =
+                                    PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_session_failed")
+                                val recoveryArtifactQuarantinedCount =
+                                    PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_artifact_quarantined")
+                                val recoveryRotationIncompleteCount =
+                                    PallaSyncInboxDispositionSummary.count(dispositionCounts, "recovery_rotation_incomplete")
+                                if (status.pendingRecordDispositions > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_record_dispositions,
+                                            status.pendingRecordDispositions,
+                                        ),
+                                    )
+                                }
+                                if (pendingEvidenceCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_pending_evidence,
+                                            pendingEvidenceCount,
+                                        ),
+                                    )
                                     PallaSyncActionButton(
                                         text =
                                             stringResource(
-                                                if (retryingQuarantineHash == entry.objectHash) {
-                                                    R.string.pallasync_quarantine_retry_running
+                                                if (retryingPendingInboxEvidence) {
+                                                    R.string.pallasync_pending_evidence_retry_running
                                                 } else {
-                                                    R.string.pallasync_quarantine_retry
+                                                    R.string.pallasync_pending_evidence_retry
                                                 },
                                             ),
-                                        enabled = retryingQuarantineHash == null,
+                                        enabled = !retryingPendingInboxEvidence,
                                         onClick = {
-                                            retryingQuarantineHash = entry.objectHash
+                                            retryingPendingInboxEvidence = true
                                             scope.launch {
-                                                val resolved =
+                                                var retryFailed = false
+                                                val applied =
                                                     try {
-                                                        syncManager.retryQuarantinedRecordEvidence(entry.objectHash)
+                                                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                            syncManager.retryPendingInboxEvidence()
+                                                        }
                                                     } catch (cancelled: CancellationException) {
                                                         throw cancelled
                                                     } catch (_: Exception) {
-                                                        false
+                                                        retryFailed = true
+                                                        0
                                                     } finally {
-                                                        retryingQuarantineHash = null
+                                                        retryingPendingInboxEvidence = false
                                                     }
-                                                if (resolved) {
-                                                    unresolvedQuarantine =
-                                                        unresolvedQuarantine.filterNot { it.objectHash == entry.objectHash }
-                                                    Toast
-                                                        .makeText(
-                                                            context,
-                                                            R.string.pallasync_quarantine_retry_succeeded,
-                                                            Toast.LENGTH_LONG,
-                                                        ).show()
-                                                } else {
-                                                    Toast
-                                                        .makeText(
-                                                            context,
-                                                            R.string.pallasync_quarantine_retry_failed,
-                                                            Toast.LENGTH_LONG,
-                                                        ).show()
+                                                clientStatus = syncManager.getClientStatus()
+                                                try {
+                                                    val page = syncManager.getUnresolvedQuarantinePage(limit = 50)
+                                                    unresolvedQuarantine = page.items
+                                                    quarantineCursor = page.nextHash
+                                                } catch (cancelled: CancellationException) {
+                                                    throw cancelled
+                                                } catch (_: Exception) {
+                                                    // Keep the last validated quarantine page visible on a local read failure.
                                                 }
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        if (retryFailed) {
+                                                            pendingEvidenceRetryFailedMessage
+                                                        } else {
+                                                            String.format(Locale.getDefault(), pendingEvidenceRetryResultFormat, applied)
+                                                        },
+                                                        Toast.LENGTH_LONG,
+                                                    ).show()
                                             }
                                         },
                                     )
                                 }
-                                when (entry.reason) {
-                                    "C_COMMITMENT_MISMATCH" -> {
-                                        Text(stringResource(R.string.pallasync_quarantine_commitment_repair_guidance))
-                                        PallaSyncActionButton(
-                                            text = stringResource(R.string.pallasync_quarantine_commitment_repair_action),
-                                            enabled = !repairingCommitmentEnvelope,
-                                            onClick = {
-                                                pendingCommitmentRepairHash = entry.objectHash
-                                                showCommitmentRepairRootInput = true
-                                            },
-                                        )
-                                    }
-
-                                    in PallaSyncQuarantineDisposition.trustedBranchReviewReasons -> {
-                                        Text(stringResource(R.string.pallasync_quarantine_reseed_guidance))
-                                        PallaSyncActionButton(
-                                            text = stringResource(R.string.pallasync_quarantine_reseed),
-                                            enabled = !stagingReseedImport && !committingReseedImport,
-                                            onClick = { showReseedImportTarget = true },
-                                        )
-                                    }
-
-                                    "C_LOG_HASH_MISMATCH" -> {
-                                        Text(stringResource(R.string.pallasync_quarantine_repair_guidance))
-                                        PallaSyncActionButton(
-                                            text = stringResource(R.string.pallasync_quarantine_repair),
-                                            enabled = !repairingRelayHistory,
-                                            onClick = { showRepairRootInput = true },
-                                        )
-                                    }
-
-                                    "C_SNAPSHOT_INVALID" -> {
-                                        Text(stringResource(R.string.pallasync_quarantine_snapshot_guidance))
-                                        PallaSyncActionButton(
-                                            text = stringResource(R.string.pallasync_quarantine_snapshot),
-                                            enabled = trustedSnapshotCandidates.isNotEmpty() && !installingTrustedSnapshot,
-                                            onClick = {
-                                                trustedSnapshotFailure = null
-                                                showTrustedSnapshotDialog = true
-                                            },
-                                        )
-                                    }
-
-                                    "C_RECORD_ID_CONFLICT" -> {
-                                        Text(stringResource(R.string.pallasync_quarantine_record_identity_guidance))
-                                    }
-
-                                    in setOf("C_RECEIPT_INVALID", "C_TRANSPARENCY_INVALID") -> {
-                                        Text(stringResource(R.string.pallasync_quarantine_independent_evidence_guidance))
-                                        if (PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview(entry.reason)) {
-                                            Text(stringResource(R.string.pallasync_checkpoint_import_summary))
-                                            PallaSyncActionButton(
-                                                text = stringResource(R.string.pallasync_checkpoint_import_title),
-                                                onClick = { checkpointImporter.launch(arrayOf("application/json")) },
-                                            )
-                                        }
-                                    }
-                                }
-                                if (entry.resolutionState != "excluded" &&
-                                    PallaSyncQuarantineDisposition.canExplicitlyExclude(entry.reason)
-                                ) {
-                                    PallaSyncActionButton(
-                                        text = stringResource(R.string.pallasync_quarantine_exclude_action),
-                                        enabled = pendingQuarantineExclusion == null,
-                                        onClick = { pendingQuarantineExclusion = entry },
+                                if (unsupportedCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_unsupported_records,
+                                            unsupportedCount,
+                                        ),
                                     )
                                 }
-                            }
-                            quarantineCursor?.let { cursor ->
-                                if (!loadingQuarantinePage) {
+                                PallaSyncSchemaRecovery(unsupportedCount) {
+                                    try {
+                                        syncManager.retryUnsupportedInbox()
+                                    } finally {
+                                        clientStatus = syncManager.getClientStatus()
+                                    }
+                                }
+                                if (operationallyBlockedCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_operationally_blocked,
+                                            operationallyBlockedCount,
+                                        ),
+                                    )
+                                }
+                                PallaSyncLocalStorageRecovery(status.storageBlockedRecords) {
+                                    try {
+                                        syncManager.retryStorageBlockedInbox()
+                                    } finally {
+                                        clientStatus = syncManager.getClientStatus()
+                                    }
+                                }
+                                if (recoverySessionFailedCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_recovery_session_failed,
+                                            recoverySessionFailedCount,
+                                        ),
+                                    )
+                                }
+                                if (recoveryArtifactQuarantinedCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_recovery_artifact_quarantined,
+                                            recoveryArtifactQuarantinedCount,
+                                        ),
+                                    )
+                                }
+                                if (recoveryRotationIncompleteCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_progress_recovery_rotation_incomplete,
+                                            recoveryRotationIncompleteCount,
+                                        ),
+                                    )
+                                }
+                                if (status.retryAfterMs > 0) {
+                                    Text(stringResource(R.string.pallasync_retry_wait, (status.retryAfterMs + 999) / 1000))
+                                }
+                                status.originBlockedRequestCodes.forEach { code ->
+                                    Text(stringResource(R.string.pallasync_origin_request_blocked, code))
+                                    PallaSyncRecoveryHintText(code)
+                                }
+                                val blockedCodes =
+                                    status.blockedRequestCodes.ifEmpty {
+                                        listOfNotNull(status.blockedRequestCode)
+                                    }
+                                blockedCodes.forEach { code ->
+                                    Text(stringResource(R.string.pallasync_request_blocked, code))
+                                    PallaSyncRecoveryHintText(code)
+                                    if (status.capacityIssue?.code != code && PallaSyncRetryGate.canRetryAfterResolution(code)) {
+                                        PallaSyncActionButton(
+                                            text = stringResource(R.string.pallasync_blocked_retry_action),
+                                            enabled = retryingBlockedRequestCode == null,
+                                            onClick = { pendingBlockedRetryCode = code },
+                                        )
+                                    }
+                                }
+                                if (status.favoriteOrderReindexRequired) {
+                                    DividerLine()
+                                    Text(stringResource(R.string.pallasync_favorite_order_reindex_required))
+                                    PallaSyncActionButton(
+                                        text = stringResource(R.string.pallasync_favorite_order_reindex_action),
+                                        enabled = !reindexingFavoriteOrder,
+                                        onClick = { showFavoriteOrderReindexConfirm = true },
+                                    )
+                                }
+                                status.capacityIssue?.let { issue ->
+                                    DividerLine()
+                                    val used = issue.usedBytes
+                                    val maximum = issue.maxBytes
+                                    if (used == null || maximum == null) {
+                                        Text(stringResource(R.string.pallasync_relay_capacity_unknown))
+                                    }
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_relay_capacity_hint,
+                                            issue.code,
+                                            used?.toString() ?: "—",
+                                            maximum?.toString() ?: "—",
+                                        ),
+                                    )
+                                    PallaSyncActionButton(
+                                        text = stringResource(R.string.pallasync_relay_capacity_resume),
+                                        enabled = !resolvingCapacityRecovery,
+                                        onClick = { showCapacityRecoveryConfirm = true },
+                                    )
+                                }
+                                DividerLine()
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_capacity_details,
+                                        stringResource(R.string.pallasync_capacity_search_scope),
+                                        status.searchCount,
+                                        status.searchProjectionCount,
+                                        status.searchColdCount,
+                                        status.searchCeiling,
+                                    ),
+                                )
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_capacity_details,
+                                        stringResource(R.string.pallasync_capacity_viewed_scope),
+                                        status.viewedCount,
+                                        status.viewedProjectionCount,
+                                        status.viewedColdCount,
+                                        status.viewedCeiling,
+                                    ),
+                                )
+                                Text(
+                                    stringResource(
+                                        R.string.pallasync_capacity_details,
+                                        stringResource(R.string.pallasync_capacity_seen_scope),
+                                        status.seenCount,
+                                        status.seenProjectionCount,
+                                        status.seenColdCount,
+                                        status.seenCeiling,
+                                    ),
+                                )
+                                status.availableStorageBytes?.let {
+                                    Text(
+                                        stringResource(
+                                            R.string.pallasync_capacity_available_storage,
+                                            Formatter.formatFileSize(context, it),
+                                        ),
+                                    )
+                                }
+                                if (status.safetyLimitReached) {
+                                    DividerLine()
+                                    Text(stringResource(R.string.pallasync_safety_limit_reached))
+                                }
+                                if (!status.initialPullCompleted && status.pendingOutbox == 0L && status.unresolvedQuarantine == 0L) {
                                     DividerLine()
                                     PallaSyncActionButton(
-                                        text = stringResource(R.string.pallasync_legacy_migration_more),
+                                        text =
+                                            stringResource(
+                                                if (loadingTrustedSnapshots) {
+                                                    R.string.pallasync_snapshot_bootstrap_running
+                                                } else {
+                                                    R.string.pallasync_snapshot_bootstrap
+                                                },
+                                            ),
+                                        enabled = !loadingTrustedSnapshots && !installingTrustedSnapshot,
                                         onClick = {
-                                            loadingQuarantinePage = true
+                                            loadingTrustedSnapshots = true
+                                            trustedSnapshotFailure = null
                                             scope.launch {
                                                 try {
-                                                    val page = syncManager.getUnresolvedQuarantinePage(cursor, 50)
-                                                    unresolvedQuarantine = unresolvedQuarantine + page.items
-                                                    quarantineCursor = page.nextHash
-                                                } catch (_: Exception) {
-                                                    Toast
-                                                        .makeText(
-                                                            context,
-                                                            R.string.pallasync_legacy_migration_report_failed,
-                                                            Toast.LENGTH_LONG,
-                                                        ).show()
+                                                    trustedSnapshotCandidates =
+                                                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                            syncManager.trustedSnapshotCandidates()
+                                                        }
+                                                    showTrustedSnapshotDialog = true
+                                                } catch (cancelled: CancellationException) {
+                                                    throw cancelled
+                                                } catch (failure: Exception) {
+                                                    trustedSnapshotFailure =
+                                                        failure.message?.takeIf { it.startsWith("C_") } ?: "C_SNAPSHOT_INVALID"
+                                                    trustedSnapshotCandidates = emptyList()
+                                                    showTrustedSnapshotDialog = true
                                                 } finally {
-                                                    loadingQuarantinePage = false
+                                                    loadingTrustedSnapshots = false
                                                 }
                                             }
                                         },
                                     )
+                                    Text(stringResource(R.string.pallasync_snapshot_bootstrap_desc))
+                                    PallaSyncErrorHint(trustedSnapshotFailure)
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            item {
-                val logs by PalleriaSyncManager.syncLogs.collectAsStateWithLifecycle()
-                Section(stringResource(R.string.pallasync_sync_logs)) {
-                    ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
-                        if (logs.isEmpty()) {
-                            Text(
-                                stringResource(R.string.pallasync_no_logs),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            )
-                        } else {
-                            Column(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
-                                logs.forEach { logMsg ->
+                item {
+                    if (unresolvedQuarantine.isNotEmpty()) {
+                        Section(stringResource(R.string.pallasync_quarantine_title)) {
+                            ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                                Text(stringResource(R.string.pallasync_quarantine_explanation))
+                                unresolvedQuarantine.forEach { entry ->
+                                    DividerLine()
+                                    val resolutionLabel =
+                                        when (entry.resolutionState) {
+                                            "excluded" -> stringResource(R.string.pallasync_quarantine_state_excluded)
+                                            "pending_resolution" -> stringResource(R.string.pallasync_quarantine_state_pending)
+                                            else -> stringResource(R.string.pallasync_quarantine_state_unresolved)
+                                        }
                                     Text(
-                                        logMsg,
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                        stringResource(
+                                            R.string.pallasync_quarantine_item,
+                                            entry.reason,
+                                            entry.objectHash,
+                                            resolutionLabel,
+                                        ),
                                     )
+                                    if (entry.reason in setOf("C_MISSING_DEPENDENCY", "C_ACCEPTANCE_UNPROVEN")) {
+                                        PallaSyncActionButton(
+                                            text =
+                                                stringResource(
+                                                    if (retryingQuarantineHash == entry.objectHash) {
+                                                        R.string.pallasync_quarantine_retry_running
+                                                    } else {
+                                                        R.string.pallasync_quarantine_retry
+                                                    },
+                                                ),
+                                            enabled = retryingQuarantineHash == null,
+                                            onClick = {
+                                                retryingQuarantineHash = entry.objectHash
+                                                scope.launch {
+                                                    val resolved =
+                                                        try {
+                                                            syncManager.retryQuarantinedRecordEvidence(entry.objectHash)
+                                                        } catch (cancelled: CancellationException) {
+                                                            throw cancelled
+                                                        } catch (_: Exception) {
+                                                            false
+                                                        } finally {
+                                                            retryingQuarantineHash = null
+                                                        }
+                                                    if (resolved) {
+                                                        unresolvedQuarantine =
+                                                            unresolvedQuarantine.filterNot { it.objectHash == entry.objectHash }
+                                                        Toast
+                                                            .makeText(
+                                                                context,
+                                                                R.string.pallasync_quarantine_retry_succeeded,
+                                                                Toast.LENGTH_LONG,
+                                                            ).show()
+                                                    } else {
+                                                        Toast
+                                                            .makeText(
+                                                                context,
+                                                                R.string.pallasync_quarantine_retry_failed,
+                                                                Toast.LENGTH_LONG,
+                                                            ).show()
+                                                    }
+                                                }
+                                            },
+                                        )
+                                    }
+                                    when (entry.reason) {
+                                        "C_COMMITMENT_MISMATCH" -> {
+                                            Text(stringResource(R.string.pallasync_quarantine_commitment_repair_guidance))
+                                            PallaSyncActionButton(
+                                                text = stringResource(R.string.pallasync_quarantine_commitment_repair_action),
+                                                enabled = !repairingCommitmentEnvelope,
+                                                onClick = {
+                                                    pendingCommitmentRepairHash = entry.objectHash
+                                                    showCommitmentRepairRootInput = true
+                                                },
+                                            )
+                                        }
+
+                                        in PallaSyncQuarantineDisposition.trustedBranchReviewReasons -> {
+                                            Text(stringResource(R.string.pallasync_quarantine_reseed_guidance))
+                                            PallaSyncActionButton(
+                                                text = stringResource(R.string.pallasync_quarantine_reseed),
+                                                enabled = !stagingReseedImport && !committingReseedImport,
+                                                onClick = { showReseedImportTarget = true },
+                                            )
+                                        }
+
+                                        "C_LOG_HASH_MISMATCH" -> {
+                                            Text(stringResource(R.string.pallasync_quarantine_repair_guidance))
+                                            PallaSyncActionButton(
+                                                text = stringResource(R.string.pallasync_quarantine_repair),
+                                                enabled = !repairingRelayHistory,
+                                                onClick = { showRepairRootInput = true },
+                                            )
+                                        }
+
+                                        "C_SNAPSHOT_INVALID" -> {
+                                            Text(stringResource(R.string.pallasync_quarantine_snapshot_guidance))
+                                            PallaSyncActionButton(
+                                                text = stringResource(R.string.pallasync_quarantine_snapshot),
+                                                enabled = trustedSnapshotCandidates.isNotEmpty() && !installingTrustedSnapshot,
+                                                onClick = {
+                                                    trustedSnapshotFailure = null
+                                                    showTrustedSnapshotDialog = true
+                                                },
+                                            )
+                                        }
+
+                                        "C_RECORD_ID_CONFLICT" -> {
+                                            Text(stringResource(R.string.pallasync_quarantine_record_identity_guidance))
+                                        }
+
+                                        in setOf("C_RECEIPT_INVALID", "C_TRANSPARENCY_INVALID") -> {
+                                            Text(stringResource(R.string.pallasync_quarantine_independent_evidence_guidance))
+                                            if (PallaSyncQuarantineDisposition.requiresIndependentCheckpointReview(entry.reason)) {
+                                                Text(stringResource(R.string.pallasync_checkpoint_import_summary))
+                                                PallaSyncActionButton(
+                                                    text = stringResource(R.string.pallasync_checkpoint_import_title),
+                                                    onClick = { checkpointImporter.launch(arrayOf("application/json")) },
+                                                )
+                                            }
+                                        }
+                                    }
+                                    if (entry.resolutionState != "excluded" &&
+                                        PallaSyncQuarantineDisposition.canExplicitlyExclude(entry.reason)
+                                    ) {
+                                        PallaSyncActionButton(
+                                            text = stringResource(R.string.pallasync_quarantine_exclude_action),
+                                            enabled = pendingQuarantineExclusion == null,
+                                            onClick = { pendingQuarantineExclusion = entry },
+                                        )
+                                    }
+                                }
+                                quarantineCursor?.let { cursor ->
+                                    if (!loadingQuarantinePage) {
+                                        DividerLine()
+                                        PallaSyncActionButton(
+                                            text = stringResource(R.string.pallasync_legacy_migration_more),
+                                            onClick = {
+                                                loadingQuarantinePage = true
+                                                scope.launch {
+                                                    try {
+                                                        val page = syncManager.getUnresolvedQuarantinePage(cursor, 50)
+                                                        unresolvedQuarantine = unresolvedQuarantine + page.items
+                                                        quarantineCursor = page.nextHash
+                                                    } catch (_: Exception) {
+                                                        Toast
+                                                            .makeText(
+                                                                context,
+                                                                R.string.pallasync_legacy_migration_report_failed,
+                                                                Toast.LENGTH_LONG,
+                                                            ).show()
+                                                    } finally {
+                                                        loadingQuarantinePage = false
+                                                    }
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    val logs by PalleriaSyncManager.syncLogs.collectAsStateWithLifecycle()
+                    Section(stringResource(R.string.pallasync_sync_logs)) {
+                        ElevatedPanel(contentPadding = PaddingValues(16.dp)) {
+                            if (logs.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.pallasync_no_logs),
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                            } else {
+                                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
+                                    logs.forEach { logMsg ->
+                                        Text(
+                                            logMsg,
+                                            style = MiuixTheme.textStyles.body2,
+                                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                        )
+                                    }
                                 }
                             }
                         }
