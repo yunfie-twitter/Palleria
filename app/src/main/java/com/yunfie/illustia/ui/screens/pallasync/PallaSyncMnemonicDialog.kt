@@ -85,6 +85,7 @@ internal fun PallaSyncMnemonicDialog(
     var passphrase by remember(phrase) { mutableStateOf("") }
     var interaction by remember(phrase) { mutableLongStateOf(0) }
     var passphraseVisible by remember(phrase) { mutableStateOf(false) }
+    var backupCheckStarted by remember(phrase) { mutableStateOf(false) }
     var backupConfirmed by remember(phrase) { mutableStateOf(false) }
     var copyCountdown by remember(phrase) { mutableIntStateOf(0) }
     // Keyed on visiblePhrase, not phrase: clearing the display must also empty this list.
@@ -156,26 +157,38 @@ internal fun PallaSyncMnemonicDialog(
                 }
 
                 else -> {
-                    MnemonicGrid(words = words)
-                    MnemonicCopyAction(
-                        enabled = words.isNotEmpty(),
-                        countdown = copyCountdown,
-                        onCopy = {
-                            if (copyMnemonicSensitive(context, words)) {
-                                performHaptic(AppHapticEffect.Click)
-                                copyCountdown = (CLIPBOARD_CLEAR_DELAY_MILLIS / 1_000L).toInt()
+                    if (!backupCheckStarted) {
+                        MnemonicGrid(words = words)
+                        MnemonicCopyAction(
+                            enabled = words.isNotEmpty(),
+                            countdown = copyCountdown,
+                            onCopy = {
+                                if (copyMnemonicSensitive(context, words)) {
+                                    performHaptic(AppHapticEffect.Click)
+                                    copyCountdown = (CLIPBOARD_CLEAR_DELAY_MILLIS / 1_000L).toInt()
+                                    interaction++
+                                }
+                            },
+                        )
+                        TextButton(
+                            text = stringResource(R.string.pallasync_v3_mnemonic_verify_start),
+                            enabled = words.size == 24,
+                            onClick = {
+                                backupCheckStarted = true
                                 interaction++
-                            }
-                        },
-                    )
-                    MnemonicBackupCheck(
-                        words = words,
-                        confirmed = backupConfirmed,
-                        onConfirmed = {
-                            backupConfirmed = true
-                            performHaptic(AppHapticEffect.Success)
-                        },
-                    )
+                            },
+                            modifier = Modifier.testTag("pallasync-mnemonic-start-check"),
+                        )
+                    } else {
+                        MnemonicBackupCheck(
+                            words = words,
+                            confirmed = backupConfirmed,
+                            onConfirmed = {
+                                backupConfirmed = true
+                                performHaptic(AppHapticEffect.Success)
+                            },
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.pallasync_v3_genesis_passphrase_explanation),
                         fontSize = 13.sp,
