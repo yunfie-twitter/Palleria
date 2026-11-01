@@ -538,6 +538,7 @@ fun ViewHistoryScreen(
                 navigationIcon = {
                     HeaderIcon(
                         MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.action_back),
                         onClick = {
                             performHaptic(AppHapticEffect.Click)
                             onBack()
@@ -548,6 +549,7 @@ fun ViewHistoryScreen(
                     if (hasSelection) {
                         HeaderIcon(
                             MiuixIcons.Close,
+                            contentDescription = stringResource(R.string.action_close),
                             onClick = {
                                 performHaptic(AppHapticEffect.Click)
                                 selectedIds = emptySet()
@@ -556,6 +558,7 @@ fun ViewHistoryScreen(
                     } else {
                         HeaderIcon(
                             MiuixIcons.Search,
+                            contentDescription = stringResource(R.string.action_search),
                             onClick = {
                                 performHaptic(AppHapticEffect.Click)
                                 showSearch = !showSearch
@@ -650,6 +653,7 @@ fun ViewHistoryScreen(
                         outsideEndAction = {
                             HeaderIcon(
                                 icon = MiuixIcons.Close,
+                                contentDescription = stringResource(R.string.action_close),
                                 onClick = {
                                     performHaptic(AppHapticEffect.Click)
                                     searchQuery = ""
