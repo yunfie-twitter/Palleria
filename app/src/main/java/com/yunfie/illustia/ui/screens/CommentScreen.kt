@@ -204,8 +204,8 @@ fun CommentScreen(
                     if (state.errorMessage != null) {
                         item { Text(state.errorMessage ?: "", color = MiuixTheme.colorScheme.error) }
                     }
-                    if (state.comments.isEmpty() && !state.isLoading) {
-                        item { EmptyState(stringResource(R.string.detail_comments)) }
+                    if (state.comments.isEmpty() && !state.isLoading && state.errorMessage == null) {
+                        item { EmptyState(stringResource(R.string.comments_empty)) }
                     }
                     itemsIndexed(
                         items = state.comments,
