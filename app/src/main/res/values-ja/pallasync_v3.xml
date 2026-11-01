@@ -60,6 +60,10 @@
     <string name="pallasync_v3_local_source">この端末のデータから新しいchainを作成します。</string>
     <string name="pallasync_v3_source_completeness_limit">選択した同期元から復旧することを許可する選択です。同期元が有効な履歴をすべて提示した証明にはなりません。同期元の信頼とリレー方針への同意は別の判断です。</string>
     <string name="pallasync_bootstrap_review_title">検証済み復旧元を確認</string>
+    <string name="pallasync_bootstrap_review_summary">リレー: %1$s。表示中の署名済み履歴は %2$d 件目まで検証済みです。</string>
+    <string name="pallasync_bootstrap_review_trust_guidance">続行前に、招待ファイルや別端末のバックアップなど、すでに信頼している情報とリレーおよびチェーンを照合してください。一致する場合のみ続行してください。</string>
+    <string name="pallasync_bootstrap_review_show_details">技術的な詳細を表示</string>
+    <string name="pallasync_bootstrap_review_hide_details">技術的な詳細を隠す</string>
     <string name="pallasync_bootstrap_review_origin">選択したリレー: %1$s</string>
     <string name="pallasync_bootstrap_review_chain">導出したchain ID: %1$s</string>
     <string name="pallasync_bootstrap_review_admin">導出したadmin公開鍵: %1$s</string>

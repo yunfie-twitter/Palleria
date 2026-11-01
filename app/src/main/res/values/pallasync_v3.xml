@@ -90,6 +90,10 @@
     <string name="pallasync_v3_local_source">Create a new chain from the data on this device.</string>
     <string name="pallasync_v3_source_completeness_limit">This source choice permits recovery from the selected source; it does not prove that the source has shown every valid history entry. Source trust and relay policy consent are separate decisions.</string>
     <string name="pallasync_bootstrap_review_title">Review the verified recovery source</string>
+    <string name="pallasync_bootstrap_review_summary">Relay: %1$s. The signed history shown here has been verified through entry %2$d.</string>
+    <string name="pallasync_bootstrap_review_trust_guidance">Before continuing, compare the relay and chain identity with a source you already trust, such as the invite or backup from your other device. Continue only if they match.</string>
+    <string name="pallasync_bootstrap_review_show_details">Show technical details</string>
+    <string name="pallasync_bootstrap_review_hide_details">Hide technical details</string>
     <string name="pallasync_bootstrap_review_origin">Selected relay: %1$s</string>
     <string name="pallasync_bootstrap_review_chain">Derived chain ID: %1$s</string>
     <string name="pallasync_bootstrap_review_admin">Derived admin public key: %1$s</string>
