@@ -96,12 +96,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val appWidgetInfo = AppWidgetManager.getInstance(this).getAppWidgetInfo(widgetId)
-        if (
-            widgetId == AppWidgetManager.INVALID_APPWIDGET_ID ||
-            appWidgetInfo?.provider?.packageName != packageName ||
-            appWidgetInfo.provider.className != IllustWidgetProvider::class.java.name
-        ) {
+        if (!hasValidWidgetInfo()) {
             finish()
             return
         }
@@ -240,6 +235,13 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                 }
             }
         }
+    }
+
+    private fun hasValidWidgetInfo(): Boolean {
+        val appWidgetInfo = AppWidgetManager.getInstance(this).getAppWidgetInfo(widgetId)
+        return widgetId != AppWidgetManager.INVALID_APPWIDGET_ID &&
+            appWidgetInfo?.provider?.packageName == packageName &&
+            appWidgetInfo.provider.className == IllustWidgetProvider::class.java.name
     }
 
     private suspend fun saveSelection(
