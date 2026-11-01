@@ -165,6 +165,7 @@ fun PallaSyncSettingsScreen(
     val pendingEvidenceRetryFailedMessage = stringResource(R.string.pallasync_pending_evidence_retry_failed)
     val pendingEvidenceRetryResultFormat = stringResource(R.string.pallasync_pending_evidence_retry_result)
     val scope = rememberCoroutineScope()
+    var pendingAuthorityJsonExport by remember { mutableStateOf<String?>(null) }
     val syncManager = remember { PalleriaSyncManager(context = context) }
 
     var showUrlDialog by remember { mutableStateOf(false) }
@@ -266,6 +267,26 @@ fun PallaSyncSettingsScreen(
     var showLegacySourceDialog by remember { mutableStateOf(false) }
     var inspectingLegacySource by remember { mutableStateOf(false) }
     var legacySourceJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+
+    val authorityJsonExporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val authorityJson = pendingAuthorityJsonExport
+            pendingAuthorityJsonExport = null
+            if (uri == null || authorityJson == null) {
+                Toast.makeText(context, R.string.pallasync_authority_export_cancelled, Toast.LENGTH_SHORT).show()
+            } else {
+                try {
+                    checkNotNull(context.contentResolver.openOutputStream(uri, "wt")) { "C_LOCAL_STORAGE_FULL" }.use { output ->
+                        output.write(authorityJson.toByteArray(Charsets.UTF_8))
+                    }
+                    Toast.makeText(context, R.string.pallasync_authority_exported, Toast.LENGTH_LONG).show()
+                } catch (_: IOException) {
+                    Toast.makeText(context, R.string.pallasync_authority_export_failed, Toast.LENGTH_LONG).show()
+                } catch (_: SecurityException) {
+                    Toast.makeText(context, R.string.pallasync_authority_export_failed, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
 
     val legacyReportExporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -1815,6 +1836,24 @@ fun PallaSyncSettingsScreen(
                             )
                         }
                         if (settings.pallaSyncEnabled) {
+                            DividerLine()
+                            SettingLinkRow(
+                                title = stringResource(R.string.pallasync_authority_export_title),
+                                summary = stringResource(R.string.pallasync_authority_export_summary),
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            val authorityJson = withContext(Dispatchers.IO) { syncManager.exportVerifiedAuthorityJson() }
+                                            pendingAuthorityJsonExport = authorityJson
+                                            authorityJsonExporter.launch("pallasync-authority.json")
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, R.string.pallasync_authority_export_failed, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
+                            )
                             DividerLine()
                             SettingLinkRow(
                                 title = stringResource(R.string.pallasync_export_title),

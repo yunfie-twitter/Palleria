@@ -4992,6 +4992,25 @@ internal class PalleriaSyncCoordinator(
             }
         }
 
+    /** Exports only the current public authority after refreshing and verifying its signed history. */
+    internal suspend fun exportVerifiedAuthorityJson(): String =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                val chain = checkNotNull(activeChainStateLocked()?.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                refreshPeerHistory(base, chain)
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authority = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+                val expectedHash = checkNotNull(keystore.authorityHash(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.chainId == chain) { "C_ROLLBACK_DETECTED" }
+                epochStatus.read(chain)
+                authorityJsonForVerifiedExport(authority, crypto.objectHash(authority), expectedHash)
+            }
+        }
+
     /** Exports a bounded, fully verified public history prefix for the physically selected subject. */
     internal suspend fun peerAuthorityForOffer(transcript: PallaSyncPeerJournal.Transcript): String =
         withContext(Dispatchers.IO) {
