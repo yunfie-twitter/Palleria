@@ -295,9 +295,15 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_cache_capacity),
                             summary = stringResource(R.string.image_cache_capacity_desc),
-                            values = listOf(100, 300, 500, 1000),
+                            values = listOf(0, 100, 300, 500, 1000),
                             selected = settings.imageCacheSizeMb,
-                            label = { "$it MB" },
+                            label = {
+                                if (it == 0) {
+                                    stringResource(R.string.image_cache_capacity_unlimited)
+                                } else {
+                                    "$it MB"
+                                }
+                            },
                             onSelect = viewModel::updateImageCacheSizeMb,
                         )
                     }
