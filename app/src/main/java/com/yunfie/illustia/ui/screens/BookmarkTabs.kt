@@ -76,6 +76,7 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
+import com.yunfie.illustia.ui.screens.profile.UserProfileStatusPlaceholder
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -142,15 +143,23 @@ internal fun BookmarkWatchlistTab(
                     WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                 }
             }
-            if (watchlistState.errorMessage != null) {
+            if (watchlistState.errorMessage != null && !watchlistState.isLoading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        text = watchlistState.errorMessage ?: "",
-                        color = MiuixTheme.colorScheme.error,
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        UserProfileStatusPlaceholder(
+                            message = watchlistState.errorMessage.orEmpty(),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp),
+                        )
+                        Button(onClick = { scope.launch { watchlistStore.fetch(forceRefresh = true) } }) {
+                            Text(stringResource(R.string.action_retry))
+                        }
+                    }
                 }
             }
-            if (watchlistState.mangaSeries.isEmpty() && !watchlistState.isLoading) {
+            if (watchlistState.mangaSeries.isEmpty() && !watchlistState.isLoading && watchlistState.errorMessage == null) {
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(R.string.watchlist_series_empty)) }
             }
             gridItems(watchlistState.mangaSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->

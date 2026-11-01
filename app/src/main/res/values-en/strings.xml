@@ -924,6 +924,11 @@
 
     <!-- PallaSync settings -->
     <string name="pallasync_settings_title">PallaSync Sync</string>
+    <string name="pallasync_setup_guide_title">Getting started</string>
+    <string name="pallasync_setup_guide_summary">1. Enable sync and choose a relay you trust. 2. Add another device by invitation, or restore with the existing recovery phrase. 3. Compare the same verification code in person before approving. For everyday use, check sync status and participating devices below.</string>
+    <string name="pallasync_advanced_show">Advanced maintenance</string>
+    <string name="pallasync_advanced_hide">Hide advanced maintenance</string>
+    <string name="pallasync_advanced_summary">Migration, history repair, deletion and retention tools, protocol evidence, and diagnostic logs. Use only when following a recovery or support procedure.</string>
     <string name="pallasync_enable">Enable PallaSync</string>
     <string name="pallasync_enable_desc">Sync browsing history, bookmarks, and more with your other devices</string>
     <string name="pallasync_server_url">Server URL</string>
