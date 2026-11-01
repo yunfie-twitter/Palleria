@@ -119,27 +119,35 @@ fun ShortsFeedScreen(
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (items.isEmpty()) {
             when (val state = loadState) {
-                LoadState.Idle, LoadState.Loading -> Text(
-                    text = stringResource(R.string.shorts_loading),
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                is LoadState.Error -> Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(state.message, color = Color.White)
-                    TextButton(
-                        text = stringResource(R.string.action_retry),
-                        onClick = { viewModel.refreshShortsFeed(forceRefresh = true) },
+                LoadState.Idle, LoadState.Loading -> {
+                    Text(
+                        text = stringResource(R.string.shorts_loading),
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 }
-                LoadState.Loaded -> Text(
-                    text = stringResource(R.string.shorts_empty),
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center),
-                )
+
+                is LoadState.Error -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(state.message, color = Color.White)
+                        TextButton(
+                            text = stringResource(R.string.action_retry),
+                            onClick = { viewModel.refreshShortsFeed(forceRefresh = true) },
+                        )
+                    }
+                }
+
+                LoadState.Loaded -> {
+                    Text(
+                        text = stringResource(R.string.shorts_empty),
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
             }
         } else {
             VerticalPager(
