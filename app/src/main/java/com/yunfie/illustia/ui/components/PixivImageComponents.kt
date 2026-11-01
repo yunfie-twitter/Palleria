@@ -48,6 +48,7 @@ val LocalWideColorGamutEnabled = compositionLocalOf { true }
 internal val LocalImageRefreshRequest = compositionLocalOf { 0 }
 
 private const val HEADER_THEME_ANALYSIS_CACHE_SIZE = 32
+internal const val AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX = 192
 
 /** Bounded cache of per-artwork header theme analysis; the same thumbnail is often analyzed by several screens. */
 private val headerThemeAnalysisCache: MutableMap<String, Boolean> =
@@ -354,10 +355,10 @@ internal fun pixivImagePrefetchCacheKey(
 internal suspend fun prefetchPixivThumbnail(
     context: android.content.Context,
     url: String,
+    decodeDimensionPx: Int = PlatformCapabilities.recommendedThumbnailDecodeDimension(context),
 ) {
     if (url.isBlank()) return
     val imageLoader = SingletonImageLoader.get(context)
-    val decodeDimensionPx = PlatformCapabilities.recommendedThumbnailDecodeDimension(context)
     val memoryCacheKey = pixivImagePrefetchCacheKey(url, decodeDimensionPx)
     if (imageLoader.memoryCache?.get(coil3.memory.MemoryCache.Key(memoryCacheKey)) != null) return
     val request =

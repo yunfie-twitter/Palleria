@@ -21,11 +21,18 @@ import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.Section
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+
+internal suspend fun <T> runRootActionWithTimeout(
+    timeoutMillis: Long,
+    action: suspend () -> T,
+): T = withTimeout(timeoutMillis) { action() }
 
 private enum class EpochAction(
     val title: Int,
@@ -195,14 +202,16 @@ internal fun PallaSyncRootActionDialog(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val rootTimeoutMessage = stringResource(R.string.pallasync_v3_root_timeout)
     var busy by remember { mutableStateOf(false) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var failureCode by remember { mutableStateOf<String?>(null) }
-    val cancellation = remember { PallaSyncRootCancellation() }
-    DisposableEffect(manager) {
+    var cancellation by remember { mutableStateOf(PallaSyncRootCancellation()) }
+    DisposableEffect(manager, cancellation) {
+        val currentCancellation = cancellation
         onDispose {
             operation?.cancel()
-            cancellation.cancel()
+            currentCancellation.cancel()
         }
     }
     PallaSyncRootInputDialog(title, explanation, busy, onDismiss = {
@@ -212,10 +221,15 @@ internal fun PallaSyncRootActionDialog(
     }, failureCode = failureCode, onConfirm = { words, passphrase ->
         busy = true
         failureCode = null
+        val actionCancellation = PallaSyncRootCancellation()
+        cancellation = actionCancellation
         operation =
             scope.launch {
                 try {
-                    val completed = action(words, passphrase, cancellation)
+                    val completed =
+                        runRootActionWithTimeout(ROOT_ACTION_TIMEOUT_MS) {
+                            action(words, passphrase, actionCancellation)
+                        }
                     Toast
                         .makeText(
                             context,
@@ -223,6 +237,9 @@ internal fun PallaSyncRootActionDialog(
                             Toast.LENGTH_LONG,
                         ).show()
                     onDismiss()
+                } catch (_: TimeoutCancellationException) {
+                    actionCancellation.cancel()
+                    failureCode = rootTimeoutMessage
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (failure: IllegalStateException) {
@@ -235,3 +252,5 @@ internal fun PallaSyncRootActionDialog(
             }
     })
 }
+
+private const val ROOT_ACTION_TIMEOUT_MS = 120_000L
