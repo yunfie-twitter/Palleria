@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pallasync_authority_export_title">検証済みAuthority JSONを書き出す</string>
+    <string name="pallasync_authority_export_summary">現在の公開チェーン情報を再取得・検証してから保存します。秘密鍵は含まれませんが、信頼できる端末にのみ共有してください。</string>
+    <string name="pallasync_authority_exported">検証済みAuthority JSONを保存しました。</string>
+    <string name="pallasync_authority_export_failed">Authority JSONを検証または保存できませんでした。</string>
+    <string name="pallasync_authority_export_cancelled">Authority JSONの書き出しをキャンセルしました。</string>
     <string name="pallasync_repair_history">検証済み履歴から修復</string>
     <string name="pallasync_repair_history_desc">チェーン管理者のニーモニックを使い、保持されている現世代のレコードと元の検証済みログ項目をリレーへ再送します。</string>
     <string name="pallasync_repair_history_confirm">保持されている現世代の暗号化レコードと元の署名済みログ項目を選択中のリレーへ送信します。応答receiptと更新後の透明性チェックポイントを検証してからローカル証拠を保存します。修復が不完全でもローカルデータは保持します。</string>
