@@ -11,6 +11,11 @@ class PixivImageCacheKeyTest :
                 "https://i.pximg.net/image.jpg#thumbnail-512"
         }
 
+        "comment avatar prefetch uses the same decode size as AvatarImage" {
+            pixivImagePrefetchCacheKey("avatar.jpg", AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX) shouldBe
+                "avatar.jpg#thumbnail-192"
+        }
+
         "thumbnail and full-size decodes do not collide" {
             pixivImageMemoryCacheKey("image.jpg", thumbnail = true, decodeDimensionPx = 512) shouldNotBe
                 pixivImageMemoryCacheKey("image.jpg", thumbnail = false, decodeDimensionPx = 1536)
