@@ -375,7 +375,7 @@ fun IllustSeriesScreen(
                                 Button(
                                     onClick = { scope.launch { store.fetch() } },
                                 ) {
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(R.string.action_retry))
                                 }
                             }
                         }
