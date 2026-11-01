@@ -115,6 +115,10 @@
     <string name="pallasync_v3_no_consent">No policy has been accepted for this relay.</string>
     <string name="pallasync_v3_withdraw">Withdraw consent and pause synchronization</string>
     <string name="pallasync_v3_history_window">Stored history last updated by this device is shown in pages of 200.</string>
+    <string name="pallasync_v3_history_summary_complete">Signed history verified through entry %1$d.</string>
+    <string name="pallasync_v3_history_summary_partial">Verified through entry %1$d. Some history or transparency evidence is still unavailable.</string>
+    <string name="pallasync_v3_history_show_details">Show sync diagnostics</string>
+    <string name="pallasync_v3_history_hide_details">Hide sync diagnostics</string>
     <string name="pallasync_v3_history_partial">Some history is still missing or awaiting verification. This is the locally available range.</string>
     <string name="pallasync_v3_history_sync_positions">Sync positions — downloaded: %1$d, verified: %2$d, materialized: %3$d</string>
     <string name="pallasync_v3_history_transparency">Transparency checkpoint — verified: %1$d, observed target: %2$d</string>

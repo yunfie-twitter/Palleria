@@ -55,6 +55,11 @@ import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
+internal fun historySummaryResource(
+    partial: Boolean,
+    statusPartial: Boolean,
+): Int = if (partial || statusPartial) R.string.pallasync_v3_history_summary_partial else R.string.pallasync_v3_history_summary_complete
+
 @Composable
 fun DeviceViewHistoryScreen(
     deviceId: String,
@@ -75,6 +80,7 @@ fun DeviceViewHistoryScreen(
     var partial by remember(deviceId) { mutableStateOf(true) }
     var clientStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
     var failure by remember(deviceId) { mutableStateOf<String?>(null) }
+    var showTechnicalDetails by remember(deviceId) { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
     val feedHighQuality = state.settings.useHighQualityFeedImages
     val showAiBadge = state.settings.showAiBadge
@@ -178,66 +184,89 @@ fun DeviceViewHistoryScreen(
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         stringResource(
-                            R.string.pallasync_v3_history_sync_positions,
-                            status.downloadedSeq,
+                            historySummaryResource(partial, status.partial),
                             status.verifiedSeq,
-                            status.materializedSeq,
                         ),
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(
-                            R.string.pallasync_capacity_details,
-                            stringResource(R.string.pallasync_capacity_seen_scope),
-                            status.seenCount,
-                            status.seenProjectionCount,
-                            status.seenColdCount,
-                            status.seenCeiling,
-                        ),
+                    TextButton(
+                        text =
+                            stringResource(
+                                if (showTechnicalDetails) {
+                                    R.string.pallasync_v3_history_hide_details
+                                } else {
+                                    R.string.pallasync_v3_history_show_details
+                                },
+                            ),
+                        onClick = { showTechnicalDetails = !showTechnicalDetails },
                     )
                 }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(
-                            R.string.pallasync_capacity_details,
-                            stringResource(R.string.pallasync_capacity_viewed_scope),
-                            status.viewedCount,
-                            status.viewedProjectionCount,
-                            status.viewedColdCount,
-                            status.viewedCeiling,
-                        ),
-                    )
-                }
-                if (status.safetyLimitReached) {
+                if (showTechnicalDetails) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Text(stringResource(R.string.pallasync_safety_limit_reached))
+                        Text(
+                            stringResource(
+                                R.string.pallasync_v3_history_sync_positions,
+                                status.downloadedSeq,
+                                status.verifiedSeq,
+                                status.materializedSeq,
+                            ),
+                        )
                     }
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(
-                            R.string.pallasync_v3_history_transparency,
-                            status.verifiedTransparencyIndex,
-                            status.observedTransparencyTargetIndex,
-                        ),
-                    )
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    PallaSyncHistoryIntegritySummary(status)
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(
-                            R.string.pallasync_v3_history_capacity,
-                            status.searchCount,
-                            status.searchCeiling,
-                            status.viewedCount,
-                            status.viewedCeiling,
-                            status.seenCount,
-                            status.seenCeiling,
-                        ),
-                    )
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text(
+                            stringResource(
+                                R.string.pallasync_capacity_details,
+                                stringResource(R.string.pallasync_capacity_seen_scope),
+                                status.seenCount,
+                                status.seenProjectionCount,
+                                status.seenColdCount,
+                                status.seenCeiling,
+                            ),
+                        )
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text(
+                            stringResource(
+                                R.string.pallasync_capacity_details,
+                                stringResource(R.string.pallasync_capacity_viewed_scope),
+                                status.viewedCount,
+                                status.viewedProjectionCount,
+                                status.viewedColdCount,
+                                status.viewedCeiling,
+                            ),
+                        )
+                    }
+                    if (status.safetyLimitReached) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Text(stringResource(R.string.pallasync_safety_limit_reached))
+                        }
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text(
+                            stringResource(
+                                R.string.pallasync_v3_history_transparency,
+                                status.verifiedTransparencyIndex,
+                                status.observedTransparencyTargetIndex,
+                            ),
+                        )
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        PallaSyncHistoryIntegritySummary(status)
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text(
+                            stringResource(
+                                R.string.pallasync_v3_history_capacity,
+                                status.searchCount,
+                                status.searchCeiling,
+                                status.viewedCount,
+                                status.viewedCeiling,
+                                status.seenCount,
+                                status.seenCeiling,
+                            ),
+                        )
+                    }
                 }
             }
             failure?.let { message -> item(span = { GridItemSpan(maxLineSpan) }) { Text(message) } }

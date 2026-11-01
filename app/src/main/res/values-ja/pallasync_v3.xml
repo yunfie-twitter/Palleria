@@ -85,6 +85,10 @@
     <string name="pallasync_v3_no_consent">このリレーで同意した方針はありません。</string>
     <string name="pallasync_v3_withdraw">同意を撤回して同期を停止</string>
     <string name="pallasync_v3_history_window">この端末が最後に更新した、取得済みの履歴を200件ずつ表示します。</string>
+    <string name="pallasync_v3_history_summary_complete">署名済み履歴は %1$d 件目まで検証済みです。</string>
+    <string name="pallasync_v3_history_summary_partial">%1$d 件目まで検証済みです。一部の履歴または透明性証拠がまだ取得できていません。</string>
+    <string name="pallasync_v3_history_show_details">同期の診断情報を表示</string>
+    <string name="pallasync_v3_history_hide_details">同期の診断情報を隠す</string>
     <string name="pallasync_v3_history_partial">未取得・未検証の範囲があります。表示はローカルに保存済みの履歴です。</string>
     <string name="pallasync_v3_history_sync_positions">同期位置 — 取得済み: %1$d、検証済み: %2$d、反映済み: %3$d</string>
     <string name="pallasync_v3_history_transparency">透明性checkpoint — 検証済み: %1$d、観測した目標: %2$d</string>
