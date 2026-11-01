@@ -196,6 +196,7 @@ internal fun PallaSyncRootActionDialog(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val rootTimeoutMessage = stringResource(R.string.pallasync_v3_root_timeout)
     var busy by remember { mutableStateOf(false) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var failureCode by remember { mutableStateOf<String?>(null) }
@@ -232,7 +233,7 @@ internal fun PallaSyncRootActionDialog(
                     onDismiss()
                 } catch (_: TimeoutCancellationException) {
                     actionCancellation.cancel()
-                    failureCode = context.getString(R.string.pallasync_v3_root_timeout)
+                    failureCode = rootTimeoutMessage
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (failure: IllegalStateException) {
