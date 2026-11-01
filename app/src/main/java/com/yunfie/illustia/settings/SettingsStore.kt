@@ -107,18 +107,17 @@ internal fun hasNewCredentialValues(
     current: AppSettings,
     proposed: AppSettings,
 ): Boolean {
-    if (
-        proposed.refreshToken.isNotBlank() &&
-        proposed.refreshToken != STARTUP_LOGGED_IN_TOKEN &&
-        proposed.refreshToken != current.refreshToken
-    ) {
-        return true
-    }
-    if (proposed.discordToken.isNotBlank() && proposed.discordToken != current.discordToken) return true
     val currentTokens = current.accounts.associate { it.userId to it.refreshToken }
-    return proposed.accounts.any { account ->
-        account.refreshToken.isNotBlank() && currentTokens[account.userId] != account.refreshToken
-    }
+    val hasRefreshTokenUpdate =
+        proposed.refreshToken.isNotBlank() &&
+            proposed.refreshToken != STARTUP_LOGGED_IN_TOKEN &&
+            proposed.refreshToken != current.refreshToken
+    val hasDiscordTokenUpdate = proposed.discordToken.isNotBlank() && proposed.discordToken != current.discordToken
+    val hasAccountTokenUpdate =
+        proposed.accounts.any { account ->
+            account.refreshToken.isNotBlank() && currentTokens[account.userId] != account.refreshToken
+        }
+    return hasRefreshTokenUpdate || hasDiscordTokenUpdate || hasAccountTokenUpdate
 }
 
 class SettingsStore internal constructor(
