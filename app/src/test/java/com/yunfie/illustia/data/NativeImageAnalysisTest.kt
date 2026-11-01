@@ -1,25 +1,28 @@
 package com.yunfie.illustia.data
 
+import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Color
+import com.yunfie.illustia.pallasync.PallaSyncJniRobolectricRunner
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
-@RunWith(RobolectricTestRunner::class)
+@RunWith(PallaSyncJniRobolectricRunner::class)
+@Config(application = Application::class)
 class NativeImageAnalysisTest {
     companion object {
         @BeforeClass
         @JvmStatic
         fun setUp() {
-            val rustTargetDir = File("../rust/target/release").canonicalFile
-            if (rustTargetDir.exists()) {
-                System.setProperty("jna.library.path", rustTargetDir.absolutePath)
-            }
+            // Gradle builds the host test library under target/debug. A cached
+            // release directory may contain Android-only artifacts and shadow it.
+            val rustTargetDir = File("../rust/target/debug").canonicalFile
+            System.setProperty("jna.library.path", rustTargetDir.absolutePath)
         }
     }
 
