@@ -18,6 +18,29 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class SettingsStoreStartupTest {
     @Test
+    fun `unlimited image cache size is retained in startup settings and mirror`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val store = SettingsStore(context)
+            val original = store.read()
+
+            try {
+                val unlimited = original.copy(imageCacheSizeMb = UNLIMITED_IMAGE_CACHE_SIZE_MB)
+                store.write(unlimited, original)
+                SettingsStore.updateImageCacheSizeMbCache(UNLIMITED_IMAGE_CACHE_SIZE_MB)
+
+                store.readStartup().imageCacheSizeMb shouldBe UNLIMITED_IMAGE_CACHE_SIZE_MB
+                SettingsStore.readImageCacheSizeMbSync(context) shouldBe UNLIMITED_IMAGE_CACHE_SIZE_MB
+                context.getSharedPreferences("illustia", Context.MODE_PRIVATE)
+                    .getInt("startup_image_cache_size_mb", -1) shouldBe UNLIMITED_IMAGE_CACHE_SIZE_MB
+            } finally {
+                store.write(original, store.read())
+                SettingsStore.updateImageCacheSizeMbCache(original.imageCacheSizeMb)
+            }
+        }
+    }
+
+    @Test
     fun `startup read skips Room collections and uses the privacy mirror`() {
         runBlocking {
             val context = ApplicationProvider.getApplicationContext<Context>()
