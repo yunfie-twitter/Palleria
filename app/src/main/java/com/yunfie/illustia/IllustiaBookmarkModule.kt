@@ -231,44 +231,81 @@ abstract class IllustiaBookmarkModule(
         force: Boolean = false,
     ) {
         val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
-        val cachedForSameUser =
-            _uiState.value.selectedRelatedUsers.isNotEmpty() &&
-                _uiState.value.selectedRelatedUsersUserId == userId
-        val shouldSkip =
-            (!force && (_uiState.value.selectedRelatedUsersLoading || _uiState.value.selectedRelatedUsersRefreshing)) ||
-                (!force && cachedForSameUser)
-        if (shouldSkip) return
+        val cachedForSameUser = hasCachedRelatedUsers(userId)
+        if (shouldSkipRelatedUsersLoad(force, cachedForSameUser)) return
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update {
-                it.copy(
-                    selectedRelatedUsersLoading = !force && it.selectedRelatedUsers.isEmpty(),
-                    selectedRelatedUsersRefreshing = force,
+            markRelatedUsersLoading(userId, force, cachedForSameUser)
+            fetchSelectedRelatedUsers(userId)
+        }
+    }
+
+    private fun hasCachedRelatedUsers(userId: Long): Boolean {
+        val state = _uiState.value
+        return state.selectedRelatedUsers.isNotEmpty() && state.selectedRelatedUsersUserId == userId
+    }
+
+    private fun shouldSkipRelatedUsersLoad(
+        force: Boolean,
+        cachedForSameUser: Boolean,
+    ): Boolean {
+        if (force) return false
+        val state = _uiState.value
+        return state.selectedRelatedUsersLoading || state.selectedRelatedUsersRefreshing || cachedForSameUser
+    }
+
+    private fun markRelatedUsersLoading(
+        userId: Long,
+        force: Boolean,
+        cachedForSameUser: Boolean,
+    ) {
+        _uiState.update {
+            it.copy(
+                selectedRelatedUsers = if (cachedForSameUser) it.selectedRelatedUsers else emptyList(),
+                selectedRelatedUsersNextUrl = if (cachedForSameUser) it.selectedRelatedUsersNextUrl else null,
+                selectedRelatedUsersUserId = userId,
+                selectedRelatedUsersLoading = !force && !cachedForSameUser,
+                selectedRelatedUsersRefreshing = force,
+                selectedRelatedUsersError = null,
+            )
+        }
+    }
+
+    private suspend fun fetchSelectedRelatedUsers(userId: Long) {
+        try {
+            val page = repository.relatedUsers(userId)
+            _uiState.update { state ->
+                if (state.selectedRelatedUsersUserId != userId) return@update state
+                state.copy(
+                    selectedRelatedUsers = page.users.filterNot { it.id == userId },
+                    selectedRelatedUsersNextUrl = page.nextUrl,
+                    selectedRelatedUsersUserId = userId,
+                    selectedRelatedUsersLoading = false,
+                    selectedRelatedUsersRefreshing = false,
+                    selectedRelatedUsersError = null,
                 )
             }
-            try {
-                val page = repository.relatedUsers(userId)
-                _uiState.update { state ->
-                    state.copy(
-                        selectedRelatedUsers = page.users.filterNot { it.id == userId },
-                        selectedRelatedUsersNextUrl = page.nextUrl,
-                        selectedRelatedUsersUserId = userId,
-                        selectedRelatedUsersLoading = false,
-                        selectedRelatedUsersRefreshing = false,
-                    )
-                }
-            } catch (expectedFailure: Exception) {
-                val error = expectedFailure
-                if (isCancellation(error)) throw error
-                if (!handleAuthExpired(error)) {
-                    _uiState.update { state ->
-                        state.copy(
-                            selectedRelatedUsersLoading = false,
-                            selectedRelatedUsersRefreshing = false,
-                            message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
-                        )
-                    }
-                }
-            }
+        } catch (expectedFailure: Exception) {
+            if (isCancellation(expectedFailure)) throw expectedFailure
+            handleRelatedUsersLoadFailure(userId, expectedFailure)
+        }
+    }
+
+    private suspend fun handleRelatedUsersLoadFailure(
+        userId: Long,
+        error: Exception,
+    ) {
+        if (handleAuthExpired(error)) return
+        _uiState.update { state ->
+            if (state.selectedRelatedUsersUserId != userId) return@update state
+            val message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed))
+            state.copy(
+                selectedRelatedUsers = emptyList(),
+                selectedRelatedUsersNextUrl = null,
+                selectedRelatedUsersLoading = false,
+                selectedRelatedUsersRefreshing = false,
+                selectedRelatedUsersError = message,
+                message = message,
+            )
         }
     }
 
