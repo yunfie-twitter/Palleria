@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pallasync_authority_export_title">検証済みAuthority JSONを書き出す</string>
+    <string name="pallasync_authority_export_summary">現在の公開チェーン情報を再取得・検証してから保存します。秘密鍵は含まれませんが、信頼できる端末にのみ共有してください。</string>
+    <string name="pallasync_authority_exported">検証済みAuthority JSONを保存しました。</string>
+    <string name="pallasync_authority_export_failed">Authority JSONを検証または保存できませんでした。</string>
+    <string name="pallasync_authority_export_cancelled">Authority JSONの書き出しをキャンセルしました。</string>
     <string name="pallasync_repair_history">検証済み履歴から修復</string>
     <string name="pallasync_repair_history_desc">チェーン管理者のニーモニックを使い、保持されている現世代のレコードと元の検証済みログ項目をリレーへ再送します。</string>
     <string name="pallasync_repair_history_confirm">保持されている現世代の暗号化レコードと元の署名済みログ項目を選択中のリレーへ送信します。応答receiptと更新後の透明性チェックポイントを検証してからローカル証拠を保存します。修復が不完全でもローカルデータは保持します。</string>
@@ -34,6 +39,7 @@
     <string name="pallasync_v3_mnemonic">復旧用mnemonicを保存</string>
     <string name="pallasync_v3_mnemonic_explanation">24単語を安全なオフラインの場所に控えてください。アプリには保存されません。この画面を離れるか10分経過すると表示を消去します。</string>
     <string name="pallasync_v3_mnemonic_saved">単語を控えました</string>
+    <string name="pallasync_v3_mnemonic_verify_start">復旧フレーズを控えました</string>
     <string name="pallasync_v3_mnemonic_word">%1$d番目</string>
     <string name="pallasync_v3_mnemonic_copy">単語をすべてコピー</string>
     <string name="pallasync_v3_mnemonic_copied">コピーしました。クリップボードは%1$d秒後に自動で消去されます。</string>
@@ -60,6 +66,10 @@
     <string name="pallasync_v3_local_source">この端末のデータから新しいchainを作成します。</string>
     <string name="pallasync_v3_source_completeness_limit">選択した同期元から復旧することを許可する選択です。同期元が有効な履歴をすべて提示した証明にはなりません。同期元の信頼とリレー方針への同意は別の判断です。</string>
     <string name="pallasync_bootstrap_review_title">検証済み復旧元を確認</string>
+    <string name="pallasync_bootstrap_review_summary">リレー: %1$s。表示中の署名済み履歴は %2$d 件目まで検証済みです。</string>
+    <string name="pallasync_bootstrap_review_trust_guidance">続行前に、招待ファイルや別端末のバックアップなど、すでに信頼している情報とリレーおよびチェーンを照合してください。一致する場合のみ続行してください。</string>
+    <string name="pallasync_bootstrap_review_show_details">技術的な詳細を表示</string>
+    <string name="pallasync_bootstrap_review_hide_details">技術的な詳細を隠す</string>
     <string name="pallasync_bootstrap_review_origin">選択したリレー: %1$s</string>
     <string name="pallasync_bootstrap_review_chain">導出したchain ID: %1$s</string>
     <string name="pallasync_bootstrap_review_admin">導出したadmin公開鍵: %1$s</string>
@@ -80,6 +90,10 @@
     <string name="pallasync_v3_no_consent">このリレーで同意した方針はありません。</string>
     <string name="pallasync_v3_withdraw">同意を撤回して同期を停止</string>
     <string name="pallasync_v3_history_window">この端末が最後に更新した、取得済みの履歴を200件ずつ表示します。</string>
+    <string name="pallasync_v3_history_summary_complete">署名済み履歴は %1$d 件目まで検証済みです。</string>
+    <string name="pallasync_v3_history_summary_partial">%1$d 件目まで検証済みです。一部の履歴または透明性証拠がまだ取得できていません。</string>
+    <string name="pallasync_v3_history_show_details">同期の診断情報を表示</string>
+    <string name="pallasync_v3_history_hide_details">同期の診断情報を隠す</string>
     <string name="pallasync_v3_history_partial">未取得・未検証の範囲があります。表示はローカルに保存済みの履歴です。</string>
     <string name="pallasync_v3_history_sync_positions">同期位置 — 取得済み: %1$d、検証済み: %2$d、反映済み: %3$d</string>
     <string name="pallasync_v3_history_transparency">透明性checkpoint — 検証済み: %1$d、観測した目標: %2$d</string>
@@ -100,6 +114,7 @@
     <string name="pallasync_v3_epoch_title">同期鍵</string>
     <string name="pallasync_v3_epoch_number">保存済みepoch：%1$d · 検証済みepoch：%2$d</string>
     <string name="pallasync_v3_epoch_unknown">鍵の履歴の検証を待っています。</string>
+    <string name="pallasync_v3_epoch_status_unavailable">鍵の履歴を検証できません。同期鍵を確認して、履歴の検証を再試行してください。</string>
     <string name="pallasync_v3_epoch_ready">同期を実行できます。</string>
     <string name="pallasync_v3_epoch_keys_needed">検証済み履歴に新しい鍵があります。ニーモニックを入力して取得・検証してください。</string>
     <string name="pallasync_v3_epoch_edits_pending">未送信の編集を新しい鍵で送信できるよう準備しています。</string>
@@ -341,9 +356,13 @@
     <string name="pallasync_schema_recovery_retry">更新後の形式対応を再確認</string>
     <string name="pallasync_schema_recovery_failed">再検証を中断しました。未解決のレコードと証拠、検証・適用が完了したレコードは保持されています。表示された同期の問題を解消してから再試行してください。</string>
     <string name="pallasync_role_add_device">この端末を同期チェーンに追加する</string>
-    <string name="pallasync_role_add_device_description">新しい端末です。既存の端末でコードを表示し、この端末でスキャンします。</string>
+    <string name="pallasync_role_add_device_description">招待で新しい端末を追加します。既存端末のQRを読み取り、検証済みファイルを交換します。この端末で回復フレーズを入力する必要はありません。</string>
+    <string name="pallasync_peer_subject_step_scan">この端末: 招待QRを読み取り、Authority JSONを読み込みます。招待側端末: 検証済みAuthority JSONを書き出し、QRを表示します。中断した場合は同じQRを再スキャンし、同じファイルを読み込み直してください。</string>
+    <string name="pallasync_peer_subject_step_compare">両方の端末: 目の前で同じ照合コードを確認します。すべて一致した場合のみ、この端末で確認してください。その後、招待側から証明書と鍵envelopeのファイルを受け取ります。</string>
+    <string name="pallasync_peer_subject_step_transfer">招待側端末: 証明書と鍵envelopeのファイルを書き出し、この端末へ送ります。この端末: ファイルを読み込み、次に参加要求ファイルを招待側へ返します。</string>
+    <string name="pallasync_peer_subject_step_request">この端末: 参加要求ファイルを書き出し、招待側へ送ります。招待側が承認した後、返送されたacceptance JSONをこの端末で読み込みます。</string>
     <string name="pallasync_role_join_chain">既存の回復フレーズで参加する</string>
-    <string name="pallasync_role_join_chain_description">この端末で24語を再入力し、既存のチェーンを引き継ぎます。</string>
+    <string name="pallasync_role_join_chain_description">別端末からの招待なしで復元する場合に、この端末で既存の24語の回復フレーズを使います。</string>
     <string name="pallasync_trust_fingerprint_label">リレーの署名鍵フィンガープリント</string>
     <string name="pallasync_trust_key_id">鍵ID：%1$s</string>
     <string name="pallasync_trust_working">リレーに接続しています…</string>

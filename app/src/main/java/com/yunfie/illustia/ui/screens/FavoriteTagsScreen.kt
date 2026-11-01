@@ -166,13 +166,18 @@ fun FavoriteTagsScreen(
                         }
                     },
                 navigationIcon = {
-                    HeaderIcon(icon = MiuixIcons.Back, onClick = onBack)
+                    HeaderIcon(
+                        icon = MiuixIcons.Back,
+                        onClick = onBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 },
                 actions = {
                     if (selectedTag != null) {
                         HeaderIcon(
                             icon = MiuixIcons.Refresh,
                             onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
+                            contentDescription = stringResource(R.string.dialog_reload),
                         )
                     }
                 },

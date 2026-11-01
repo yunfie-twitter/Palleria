@@ -154,7 +154,6 @@ private fun rememberQuickActions(
 ): List<MoreAction> {
     val context = LocalContext.current
     return remember(
-        state.activeDownloads,
         state.settings.favoriteTags.size,
         state.settings.pallaSyncEnabled,
         state.settings.hideHomeNovelButton,

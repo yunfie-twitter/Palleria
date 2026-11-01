@@ -375,14 +375,14 @@ fun IllustSeriesScreen(
                                 Button(
                                     onClick = { scope.launch { store.fetch() } },
                                 ) {
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(R.string.action_retry))
                                 }
                             }
                         }
                     }
                     if (processedIllusts.isEmpty() && !state.isLoading && state.errorMessage == null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            EmptyState(stringResource(R.string.detail_related))
+                            EmptyState(stringResource(R.string.illust_series_empty))
                         }
                     }
                     gridItems(processedIllusts, key = { it.id }, contentType = { "illust_card" }) { illust ->

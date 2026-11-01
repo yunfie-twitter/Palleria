@@ -71,6 +71,8 @@ impl IllustDto {
             original_image_pages: original_pages,
             tags: self.tags.into_iter().filter_map(|tag| tag.name).collect(),
             page_count: self.page_count,
+            width: self.width,
+            height: self.height,
             is_bookmarked: self.is_bookmarked,
             total_bookmarks: self.total_bookmarks,
             total_comments: self.total_comments,

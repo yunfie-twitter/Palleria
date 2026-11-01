@@ -8,6 +8,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 
 /** §§11.1/18.1: public offer consumption and exact approval retry survive interruption.
  * A stored confirmation is audit state; it cannot authorize a new native SAS session.
@@ -44,6 +45,14 @@ internal class PallaSyncPeerJournal(
     }
 
     fun read(id: String): Transcript? = prefs.getString("offer.$id", null)?.let { Json.decodeFromString<Transcript>(it) }
+
+    fun latestCreated(): Transcript? =
+        prefs.all.keys
+            .asSequence()
+            .filter { it.startsWith("offer.") }
+            .mapNotNull { key -> read(key.removePrefix("offer.")) }
+            .filter { it.stage == Stage.CREATED }
+            .maxByOrNull { it.offer["expires_at_ms"]?.jsonPrimitive?.longOrNull ?: 0L }
 
     fun requireCurrentAuthority(
         transcript: Transcript,

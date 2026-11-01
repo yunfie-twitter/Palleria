@@ -362,10 +362,11 @@ abstract class IllustiaLibraryNavigationModule(
         while (true) {
             val acquired =
                 downloadMutex.withLock {
-                    val state = _uiState.value
-                    val currentLimit = state.settings.simultaneousDownloads.coerceIn(1, 4)
-                    if (state.activeDownloads < currentLimit) {
-                        _uiState.update { it.copy(activeDownloads = it.activeDownloads + 1) }
+                    val currentLimit =
+                        _uiState.value.settings.simultaneousDownloads
+                            .coerceIn(1, 4)
+                    if (_activeDownloads.value < currentLimit) {
+                        _activeDownloads.update { it + 1 }
                         true
                     } else {
                         false
@@ -380,7 +381,7 @@ abstract class IllustiaLibraryNavigationModule(
 
     private suspend fun releaseDownloadSlot() {
         downloadMutex.withLock {
-            _uiState.update { it.copy(activeDownloads = (it.activeDownloads - 1).coerceAtLeast(0)) }
+            _activeDownloads.update { (it - 1).coerceAtLeast(0) }
         }
     }
 
@@ -733,7 +734,7 @@ abstract class IllustiaLibraryNavigationModule(
     fun refreshNotifications() {
         if (_uiState.value.notificationsLoading) return
         viewModelScope.launch {
-            _uiState.update { it.copy(notificationsLoading = true) }
+            _uiState.update { it.copy(notificationsLoading = true, notificationsError = null) }
             runCatching { repository.notifications() }
                 .onSuccess { page ->
                     _uiState.update {
@@ -742,6 +743,7 @@ abstract class IllustiaLibraryNavigationModule(
                             notificationNextUrl = page.nextUrl,
                             expandedNotifications = emptyMap(),
                             notificationsLoading = false,
+                            notificationsError = null,
                         )
                     }
                 }.onFailure { expectedFailure ->
@@ -750,6 +752,11 @@ abstract class IllustiaLibraryNavigationModule(
                     _uiState.update {
                         it.copy(
                             notificationsLoading = false,
+                            notificationsError =
+                                cleanErrorMessage(
+                                    error,
+                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                ),
                             message =
                                 cleanErrorMessage(
                                     error,
@@ -765,7 +772,7 @@ abstract class IllustiaLibraryNavigationModule(
         val nextUrl = _uiState.value.notificationNextUrl ?: return
         if (_uiState.value.notificationsLoading) return
         viewModelScope.launch {
-            _uiState.update { it.copy(notificationsLoading = true) }
+            _uiState.update { it.copy(notificationsLoading = true, notificationsError = null) }
             runCatching { repository.nextNotificationPage(nextUrl) }
                 .onSuccess { page ->
                     _uiState.update { state ->
@@ -773,6 +780,7 @@ abstract class IllustiaLibraryNavigationModule(
                             notifications = (state.notifications + page.notifications).distinctBy { it.id },
                             notificationNextUrl = page.nextUrl,
                             notificationsLoading = false,
+                            notificationsError = null,
                         )
                     }
                 }.onFailure { expectedFailure ->
@@ -781,6 +789,11 @@ abstract class IllustiaLibraryNavigationModule(
                     _uiState.update {
                         it.copy(
                             notificationsLoading = false,
+                            notificationsError =
+                                cleanErrorMessage(
+                                    error,
+                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                ),
                             message =
                                 cleanErrorMessage(
                                     error,

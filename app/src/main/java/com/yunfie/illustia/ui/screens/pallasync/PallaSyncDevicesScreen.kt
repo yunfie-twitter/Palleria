@@ -29,6 +29,7 @@ import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.yunfie.illustia.R
 import com.yunfie.illustia.pallasync.PallaSyncDeletionEvidenceArchive
+import com.yunfie.illustia.pallasync.PallaSyncPeerJournal
 import com.yunfie.illustia.pallasync.PallaSyncPeerTransferFile
 import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.pallasync.data.PallaSyncDatabase
@@ -85,6 +86,7 @@ fun PallaSyncDevicesScreen(
     var submittedPeerBody by remember { mutableStateOf<String?>(null) }
     var creatingOffer by remember { mutableStateOf(false) }
     var offerError by remember { mutableStateOf<String?>(null) }
+    var showRawPeerOffer by remember { mutableStateOf(false) }
     val offerBitmap =
         remember(peerOffer) {
             peerOffer?.let {
@@ -205,7 +207,15 @@ fun PallaSyncDevicesScreen(
             ) {
                 offerBitmap?.let { Image(bitmap = it, contentDescription = stringResource(R.string.pallasync_peer_offer_qr)) }
                 if (offerBitmap == null) Text(stringResource(R.string.pallasync_peer_offer_qr_failed))
-                Text(peerOffer.orEmpty())
+                Text(stringResource(R.string.pallasync_peer_invitation_progress))
+                TextButton(
+                    text =
+                        stringResource(
+                            if (showRawPeerOffer) R.string.pallasync_peer_offer_hide_raw else R.string.pallasync_peer_offer_show_raw,
+                        ),
+                    onClick = { showRawPeerOffer = !showRawPeerOffer },
+                )
+                if (showRawPeerOffer) Text(peerOffer.orEmpty())
                 Text(stringResource(R.string.pallasync_peer_authority_guidance))
                 TextButton(
                     text = stringResource(R.string.pallasync_peer_authority_export),
@@ -228,6 +238,7 @@ fun PallaSyncDevicesScreen(
                         }
                     },
                 )
+                Text(stringResource(R.string.pallasync_peer_request_waiting_guidance))
                 TextButton(
                     text =
                         stringResource(
@@ -275,6 +286,7 @@ fun PallaSyncDevicesScreen(
                 Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                Text(stringResource(peerInvitationProgressResource(transcript.stage)))
                 if (transcript.stage == com.yunfie.illustia.pallasync.PallaSyncPeerJournal.Stage.BOUND) {
                     Text(work.sas)
                     Text(stringResource(R.string.pallasync_peer_sas_compare))
@@ -405,6 +417,7 @@ fun PallaSyncDevicesScreen(
                 Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                Text(stringResource(R.string.pallasync_peer_invitation_acceptance_guidance))
                 TextButton(
                     text = stringResource(R.string.pallasync_peer_approval_receipt_export),
                     enabled = !peerBusy,
@@ -460,6 +473,17 @@ fun PallaSyncDevicesScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            offerTranscript?.takeIf { peerOffer == null }?.let { transcript ->
+                item {
+                    Section(stringResource(R.string.pallasync_peer_invitation_progress_title)) {
+                        SettingLinkRow(
+                            title = stringResource(R.string.pallasync_peer_invitation_progress_title),
+                            summary = stringResource(peerInvitationProgressResource(transcript.stage)),
+                            onClick = { peerOffer = transcript.offer.toString() },
+                        )
+                    }
+                }
+            }
             item {
                 Section(stringResource(R.string.pallasync_participating_devices)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
@@ -535,3 +559,13 @@ fun PallaSyncDevicesScreen(
         }
     }
 }
+
+internal fun peerInvitationProgressResource(stage: PallaSyncPeerJournal.Stage): Int =
+    when (stage) {
+        PallaSyncPeerJournal.Stage.CREATED, PallaSyncPeerJournal.Stage.OFFERED -> R.string.pallasync_peer_invitation_progress
+        PallaSyncPeerJournal.Stage.BOUND -> R.string.pallasync_peer_invitation_compare_guidance
+        PallaSyncPeerJournal.Stage.TRANSFERRED -> R.string.pallasync_peer_invitation_transfer_guidance
+        PallaSyncPeerJournal.Stage.SUBMITTED -> R.string.pallasync_peer_invitation_wait_guidance
+        PallaSyncPeerJournal.Stage.ACCEPTED -> R.string.pallasync_peer_invitation_acceptance_guidance
+        PallaSyncPeerJournal.Stage.REJECTED, PallaSyncPeerJournal.Stage.CONSUMED -> R.string.pallasync_peer_invitation_finished_guidance
+    }

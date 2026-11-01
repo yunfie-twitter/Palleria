@@ -195,6 +195,7 @@
     <string name="detail_related">Related Works</string>
     <string name="detail_illust_id">Illust ID</string>
     <string name="detail_resolution">Resolution</string>
+    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Could not start sharing.</string>
@@ -621,6 +622,16 @@
     <string name="pallasync_peer_offer_qr">Time-limited PallaSync device offer QR</string>
     <string name="pallasync_peer_offer_qr_failed">Could not render this offer as a QR code. Create a fresh offer and retry.</string>
     <string name="pallasync_peer_authority_guidance">The other device imports this QR and the signed public authority history JSON exported here. The file contains no device private key or epoch secret.</string>
+    <string name="pallasync_peer_invitation_progress_title">Invitation in progress</string>
+    <string name="pallasync_peer_invitation_progress">Step 1: show this QR to the invited device and export the Authority JSON for it. The invited device scans the QR, imports the file, and checks the matching code before continuing.</string>
+    <string name="pallasync_peer_offer_show_raw">Show QR text</string>
+    <string name="pallasync_peer_offer_hide_raw">Hide QR text</string>
+    <string name="pallasync_peer_request_waiting_guidance">After the invited device exports its enrollment request, use Check request again. Nothing is approved until you review that request and confirm the matching code.</string>
+    <string name="pallasync_peer_invitation_compare_guidance">Step 2: compare this code in person with the invited device. Confirm only if every character matches. Next, export the certificate and key-envelope file for that device.</string>
+    <string name="pallasync_peer_invitation_transfer_guidance">Step 3: export the certificate and key-envelope file to the invited device. Then wait while it returns its enrollment request file; use Check request to look again.</string>
+    <string name="pallasync_peer_invitation_wait_guidance">The enrollment request was submitted but its result may be uncertain. Retry the exact request to check the relay; do not create a replacement request.</string>
+    <string name="pallasync_peer_invitation_acceptance_guidance">Step 4: export this acceptance JSON and send it back to the invited device. Enrollment finishes when that device imports it.</string>
+    <string name="pallasync_peer_invitation_finished_guidance">This invitation has ended. Start a new invitation if another device still needs to join.</string>
     <string name="pallasync_peer_authority_export">Export public authority history</string>
     <string name="pallasync_peer_request_check">Check for a pending request</string>
     <string name="pallasync_peer_request_checking">Checking for a request…</string>

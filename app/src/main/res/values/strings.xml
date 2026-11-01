@@ -33,6 +33,7 @@
     <string name="action_open">開く</string>
     <string name="action_next">次へ</string>
     <string name="action_back">戻る</string>
+    <string name="action_search">検索</string>
     <string name="action_cancel">キャンセル</string>
     <string name="action_delete">削除</string>
     <string name="action_close">閉じる</string>
@@ -62,6 +63,7 @@
     <string name="home_tab_feed">フィード</string>
     <string name="home_tab_following">フォロー中</string>
     <string name="home_feed_loading">ホームフィードを読み込んでいます</string>
+    <string name="home_feed_empty">ホームフィードに作品がありません</string>
     <string name="home_following_empty">フォロー中ユーザーの最新作が表示されます</string>
 
     <!-- Novel screen -->
@@ -134,6 +136,7 @@
     <string name="search_history">検索履歴</string>
     <string name="search_suggest">サジェスト</string>
     <string name="search_empty_illust">イラストが見つかりません</string>
+    <string name="device_history_empty">この端末の閲覧履歴はありません</string>
     <string name="search_empty_novel">小説が見つかりません</string>
     <string name="search_empty_user">ユーザーが見つかりません</string>
     <string name="search_recent_viewed">最近見た作品</string>
@@ -158,6 +161,7 @@
     <string name="watchlist_empty">検索結果の保存ボタンからタグを追加できます</string>
     <string name="watchlist_series_title">Watchlist</string>
     <string name="watchlist_series_empty">Watchlist に保存したシリーズはまだありません</string>
+    <string name="illust_series_empty">このシリーズに表示できる作品はありません</string>
     <string name="watchlist_series_load_more">さらにシリーズを読み込む</string>
     <string name="following_users_empty">フォロー中のユーザーはいません</string>
 
@@ -201,6 +205,7 @@
     <string name="detail_related">関連イラスト</string>
     <string name="detail_illust_id">イラスト ID</string>
     <string name="detail_resolution">解像度</string>
+    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">共有を開始できませんでした。</string>
@@ -462,7 +467,7 @@
     <string name="image_proxy_none">使用しない</string>
     <string name="image_proxy_custom">カスタムサーバー</string>
     <string name="image_proxy_custom_dialog_title">カスタムサーバーの入力</string>
-    <string name="image_proxy_custom_dialog_summary">プロキシサーバーのベースURLを入力してください (例: https://example.com/)</string>
+    <string name="image_proxy_custom_dialog_summary">HTTPS のプロキシサーバーのベースURLを入力してください (例: https://example.com/)。安全でないHTTPは使用せず、入力されたURLをHTTPSに切り替えます。</string>
     <string name="language_system">システム</string>
     <string name="language_japanese">日本語</string>
     <string name="language_english">English</string>
@@ -615,6 +620,8 @@
     <string name="login_token_description">既に発行済みの refresh token を貼り付けて、すばやくログインします。</string>
     <string name="login_token_button">Refresh Tokenでログイン</string>
     <string name="login_refresh_token_label">Pixiv refresh token</string>
+    <string name="login_refresh_token_show">トークンを表示</string>
+    <string name="login_refresh_token_hide">トークンを隠す</string>
     <string name="login_feature_ranking">ランキング</string>
     <string name="login_feature_bookmarks">ブックマーク</string>
     <string name="login_feature_sync">同期</string>
@@ -854,6 +861,7 @@
     <string name="calculator_history">履歴</string>
     <string name="calculator_history_empty">計算履歴はありません</string>
     <string name="shorts_loading">イラストを読み込んでいます…</string>
+    <string name="shorts_empty">表示できる作品はありません</string>
     <string name="settings_footer">アートへの愛を込めて開発</string>
     <string name="ugoira_load_failed">うごイラを読み込めませんでした</string>
     <string name="novel_go_to_page">%1$dページへ移動</string>
@@ -917,6 +925,16 @@
     <string name="pallasync_peer_offer_qr">期限付きPallaSync端末オファーQR</string>
     <string name="pallasync_peer_offer_qr_failed">QRコードを作成できませんでした。新しいオファーを作成して再試行してください。</string>
     <string name="pallasync_peer_authority_guidance">相手端末はこのQRと、ここから書き出す署名済み公開authority履歴のJSONを両方取り込みます。ファイルに端末秘密鍵やepoch secretは含まれません。</string>
+    <string name="pallasync_peer_invitation_progress_title">端末招待の進行中</string>
+    <string name="pallasync_peer_invitation_progress">手順1: このQRを参加側に見せ、Authority JSONを書き出します。参加側はQRを読み取りファイルを読み込んでから、両端末で一致するコードを確認します。</string>
+    <string name="pallasync_peer_offer_show_raw">QRのテキストを表示</string>
+    <string name="pallasync_peer_offer_hide_raw">QRのテキストを隠す</string>
+    <string name="pallasync_peer_request_waiting_guidance">参加側が参加要求ファイルを書き出したら、「要求を確認」をもう一度実行します。要求と照合コードを確認するまでは承認されません。</string>
+    <string name="pallasync_peer_invitation_compare_guidance">手順2: 参加側と目の前で照合コードを確認します。すべて一致した場合のみ確認してください。次に、この端末用の証明書と鍵envelopeのファイルを書き出します。</string>
+    <string name="pallasync_peer_invitation_transfer_guidance">手順3: 証明書と鍵envelopeのファイルを参加側へ渡します。参加側が参加要求ファイルを返すまで待ち、「要求を確認」で再確認してください。</string>
+    <string name="pallasync_peer_invitation_wait_guidance">参加要求を送信しましたが、結果が不明です。同じ要求を再送してリレーの状態を確認してください。新しい要求を作り直さないでください。</string>
+    <string name="pallasync_peer_invitation_acceptance_guidance">手順4: acceptance JSONを書き出し、参加側へ渡します。参加側が読み込むと登録が完了します。</string>
+    <string name="pallasync_peer_invitation_finished_guidance">この招待は終了しました。別の端末を追加する場合は、新しい招待を作成してください。</string>
     <string name="pallasync_peer_authority_export">公開authority履歴を書き出す</string>
     <string name="pallasync_peer_request_check">保留中の申請を確認</string>
     <string name="pallasync_peer_request_checking">申請を確認中…</string>
@@ -1044,6 +1062,8 @@
     <string name="discord_token_summary">ステータス更新に使用する Discord ユーザートークン</string>
     <string name="discord_token_dialog_title">Discord ユーザートークン</string>
     <string name="discord_token_hint">Token を貼り付け</string>
+    <string name="discord_token_show">トークンを表示</string>
+    <string name="discord_token_hide">トークンを隠す</string>
     <string name="discord_token_desc">Discord から取得したユーザートークンを入力してください。トークンは端末内に安全に暗号化されて保存されます。</string>
     <string name="discord_section_display">表示設定</string>
     <string name="discord_show_artwork_details">作品の詳細を表示</string>

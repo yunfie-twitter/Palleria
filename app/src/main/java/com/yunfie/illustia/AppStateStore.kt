@@ -67,7 +67,6 @@ internal data class BookmarkLibraryState(
     val bookmarks: List<Illust>,
     val savedIllusts: List<SavedIllustEntity>,
     val notifications: List<PixivNotification>,
-    val activeDownloads: Int,
 )
 
 internal data class SettingsSecurityState(
@@ -95,7 +94,6 @@ private fun IllustiaUiState.toSlices(): AppStateSlices =
                 bookmarkItems,
                 savedIllusts,
                 notifications,
-                activeDownloads,
             ),
         settingsSecurity = SettingsSecurityState(settings, settingsLoaded, appLocked, privacyLocked),
     )
