@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">Vorinstallierte Kunstwerke</string>
     <string name="image_cache_capacity">Bild-Cache-Kapazität</string>
     <string name="image_cache_capacity_desc">Kapazitätsänderungen gelten nach dem Neustart der App</string>
+    <string name="image_cache_unlimited">Unbegrenzt</string>
     <string name="more_notifications">Benachrichtigungen</string>
     <string name="notifications_empty">Keine Benachrichtigungen</string>
     <string name="notifications_load_more">Mehr laden</string>

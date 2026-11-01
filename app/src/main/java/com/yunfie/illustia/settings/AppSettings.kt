@@ -14,6 +14,8 @@ import com.yunfie.illustia.pallasync.PallaSyncRelayOrigin
 
 private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
 
+const val UNLIMITED_IMAGE_CACHE_SIZE_MB = 0
+
 val DEFAULT_NAVIGATION_ORDER = listOf("home", "search", "bookmarks", "ranking", "more")
 val DEFAULT_DETAIL_SECTION_ORDER = listOf("artist", "tags", "description", "related")
 

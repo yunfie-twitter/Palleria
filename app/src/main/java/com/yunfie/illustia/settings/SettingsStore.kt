@@ -709,7 +709,13 @@ class SettingsStore internal constructor(
                 context.applicationContext
                     .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
                     .getInt(KEY_IMAGE_CACHE_SIZE_MB, DEFAULT_IMAGE_CACHE_SIZE_MB)
-                    .coerceIn(MIN_IMAGE_CACHE_SIZE_MB, MAX_IMAGE_CACHE_SIZE_MB)
+                    .let { size ->
+                        if (size == UNLIMITED_IMAGE_CACHE_SIZE_MB) {
+                            size
+                        } else {
+                            size.coerceIn(MIN_IMAGE_CACHE_SIZE_MB, MAX_IMAGE_CACHE_SIZE_MB)
+                        }
+                    }
             cachedImageCacheSizeMb = size
             return size
         }

@@ -719,6 +719,7 @@
     <string name="image_smart_cache_count">미리 불러올 작품 수</string>
     <string name="image_cache_capacity">이미지 캐시 용량</string>
     <string name="image_cache_capacity_desc">용량 변경은 앱을 다시 시작한 후 적용됩니다</string>
+    <string name="image_cache_unlimited">무제한</string>
     <string name="more_notifications">알림</string>
     <string name="notifications_empty">알림이 없습니다</string>
     <string name="notifications_load_more">더 불러오기</string>

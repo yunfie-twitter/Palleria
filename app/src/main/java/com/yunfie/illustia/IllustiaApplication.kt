@@ -15,6 +15,7 @@ import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.UNLIMITED_IMAGE_CACHE_SIZE_MB
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.updater.AppUpdateNotificationHelper
 import com.yunfie.illustia.updater.AppUpdateScheduler
@@ -123,10 +124,15 @@ class IllustiaApplication : Application() {
                         .weakReferencesEnabled(!isLowRam)
                         .build()
                 }.diskCache {
-                    DiskCache
-                        .Builder()
+                    DiskCache.Builder()
                         .directory(cacheDirectory)
-                        .maxSizeBytes(configuredCacheMb.toLong() * 1024 * 1024)
+                        .apply {
+                            if (configuredCacheMb == UNLIMITED_IMAGE_CACHE_SIZE_MB) {
+                                maxSizeBytes(Long.MAX_VALUE)
+                            } else {
+                                maxSizeBytes(configuredCacheMb.toLong() * 1024 * 1024)
+                            }
+                        }
                         .build()
                 }.build()
         }

@@ -796,6 +796,7 @@
     <string name="image_smart_cache_count">先読みする作品数</string>
     <string name="image_cache_capacity">画像キャッシュ容量</string>
     <string name="image_cache_capacity_desc">容量変更は次回起動時に反映されます</string>
+    <string name="image_cache_unlimited">無制限</string>
     <string name="more_notifications">通知</string>
     <string name="notifications_empty">通知はありません</string>
     <string name="notifications_load_more">さらに読み込む</string>

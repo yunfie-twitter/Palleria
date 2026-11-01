@@ -819,6 +819,7 @@
     <string name="image_smart_cache_count">Preloaded artworks</string>
     <string name="image_cache_capacity">Image cache capacity</string>
     <string name="image_cache_capacity_desc">Capacity changes apply after restarting the app</string>
+    <string name="image_cache_unlimited">Unlimited</string>
     <string name="more_notifications">Notifications</string>
     <string name="notifications_empty">No notifications</string>
     <string name="notifications_load_more">Load more</string>

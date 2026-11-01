@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">Karya seni yang dimuat sebelumnya</string>
     <string name="image_cache_capacity">Kapasitas cache gambar</string>
     <string name="image_cache_capacity_desc">Perubahan kapasitas berlaku setelah memulai ulang aplikasi</string>
+    <string name="image_cache_unlimited">Tak terbatas</string>
     <string name="more_notifications">Pemberitahuan</string>
     <string name="notifications_empty">Tidak ada pemberitahuan</string>
     <string name="notifications_load_more">Muat lebih banyak</string>

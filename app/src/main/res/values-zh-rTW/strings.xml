@@ -681,6 +681,7 @@
     <string name="image_smart_cache_count">預先載入的藝術作品</string>
     <string name="image_cache_capacity">圖像快取容量</string>
     <string name="image_cache_capacity_desc">容量變更在重新啟動應用程式後生效</string>
+    <string name="image_cache_unlimited">無限制</string>
     <string name="more_notifications">通知</string>
     <string name="notifications_empty">無通知</string>
     <string name="notifications_load_more">載入更多</string>

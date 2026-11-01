@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">Tác phẩm nghệ thuật được tải sẵn</string>
     <string name="image_cache_capacity">Dung lượng bộ đệm hình ảnh</string>
     <string name="image_cache_capacity_desc">Thay đổi dung lượng được áp dụng sau khi khởi động lại ứng dụng</string>
+    <string name="image_cache_unlimited">Không giới hạn</string>
     <string name="more_notifications">Thông báo</string>
     <string name="notifications_empty">Không có thông báo</string>
     <string name="notifications_load_more">Tải thêm</string>

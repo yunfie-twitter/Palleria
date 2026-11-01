@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">Oeuvres préchargées</string>
     <string name="image_cache_capacity">Capacité du cache d\'images</string>
     <string name="image_cache_capacity_desc">Les changements de capacité s\'appliquent après le redémarrage de l\'application</string>
+    <string name="image_cache_unlimited">Illimité</string>
     <string name="more_notifications">Notifications</string>
     <string name="notifications_empty">Aucune notification</string>
     <string name="notifications_load_more">Charger plus</string>

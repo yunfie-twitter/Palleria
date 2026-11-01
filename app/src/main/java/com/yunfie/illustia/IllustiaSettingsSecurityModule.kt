@@ -17,6 +17,7 @@ import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.UNLIMITED_IMAGE_CACHE_SIZE_MB
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.ui.screens.CalculatorEngine
@@ -897,7 +898,12 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     fun updateImageCacheSizeMb(value: Int) {
-        val normalizedValue = value.coerceIn(100, 1000)
+        val normalizedValue =
+            if (value == UNLIMITED_IMAGE_CACHE_SIZE_MB) {
+                value
+            } else {
+                value.coerceIn(100, 1000)
+            }
         SettingsStore.updateImageCacheSizeMbCache(normalizedValue)
         updateSettings { it.copy(imageCacheSizeMb = normalizedValue) }
     }

@@ -16,6 +16,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.UNLIMITED_IMAGE_CACHE_SIZE_MB
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -295,9 +296,15 @@ fun ImageSettingsScreen(
                         SettingDropdownRow(
                             title = stringResource(R.string.image_cache_capacity),
                             summary = stringResource(R.string.image_cache_capacity_desc),
-                            values = listOf(100, 300, 500, 1000),
+                            values = listOf(100, 300, 500, 1000, UNLIMITED_IMAGE_CACHE_SIZE_MB),
                             selected = settings.imageCacheSizeMb,
-                            label = { "$it MB" },
+                            label = {
+                                if (it == UNLIMITED_IMAGE_CACHE_SIZE_MB) {
+                                    stringResource(R.string.image_cache_unlimited)
+                                } else {
+                                    "$it MB"
+                                }
+                            },
                             onSelect = viewModel::updateImageCacheSizeMb,
                         )
                     }

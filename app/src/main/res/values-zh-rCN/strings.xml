@@ -681,6 +681,7 @@
     <string name="image_smart_cache_count">预加载的艺术作品</string>
     <string name="image_cache_capacity">图像缓存容量</string>
     <string name="image_cache_capacity_desc">容量更改在重新启动应用程序后生效</string>
+    <string name="image_cache_unlimited">无限</string>
     <string name="more_notifications">通知</string>
     <string name="notifications_empty">无通知</string>
     <string name="notifications_load_more">加载更多</string>

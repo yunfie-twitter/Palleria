@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">งานศิลปะที่โหลดไว้ล่วงหน้า</string>
     <string name="image_cache_capacity">ความจุแคชรูปภาพ</string>
     <string name="image_cache_capacity_desc">การเปลี่ยนแปลงความจุจะมีผลหลังจากรีสตาร์ทแอป</string>
+    <string name="image_cache_unlimited">ไม่จำกัด</string>
     <string name="more_notifications">การแจ้งเตือน</string>
     <string name="notifications_empty">ไม่มีการแจ้งเตือน</string>
     <string name="notifications_load_more">โหลดเพิ่ม</string>

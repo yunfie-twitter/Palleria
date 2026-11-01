@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">Предзагруженные произведения искусства</string>
     <string name="image_cache_capacity">Емкость кэша изображений</string>
     <string name="image_cache_capacity_desc">Изменения емкости вступают в силу после перезапуска приложения.</string>
+    <string name="image_cache_unlimited">Без ограничений</string>
     <string name="more_notifications">Уведомления</string>
     <string name="notifications_empty">Нет уведомлений</string>
     <string name="notifications_load_more">Загрузить больше</string>

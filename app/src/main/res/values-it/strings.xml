@@ -763,6 +763,7 @@
     <string name="image_smart_cache_count">Opere d\'arte precaricate</string>
     <string name="image_cache_capacity">Capacità della cache delle immagini</string>
     <string name="image_cache_capacity_desc">Le modifiche alla capacità si applicano dopo il riavvio dell\'app</string>
+    <string name="image_cache_unlimited">Illimitato</string>
     <string name="more_notifications">Notifiche</string>
     <string name="notifications_empty">Nessuna notifica</string>
     <string name="notifications_load_more">Carica di più</string>
