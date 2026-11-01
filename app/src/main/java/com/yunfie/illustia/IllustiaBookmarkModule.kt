@@ -244,13 +244,20 @@ abstract class IllustiaBookmarkModule(
         return state.selectedRelatedUsers.isNotEmpty() && state.selectedRelatedUsersUserId == userId
     }
 
-    private fun shouldSkipRelatedUsersLoad(force: Boolean, cachedForSameUser: Boolean): Boolean {
+    private fun shouldSkipRelatedUsersLoad(
+        force: Boolean,
+        cachedForSameUser: Boolean,
+    ): Boolean {
         if (force) return false
         val state = _uiState.value
         return state.selectedRelatedUsersLoading || state.selectedRelatedUsersRefreshing || cachedForSameUser
     }
 
-    private fun markRelatedUsersLoading(userId: Long, force: Boolean, cachedForSameUser: Boolean) {
+    private fun markRelatedUsersLoading(
+        userId: Long,
+        force: Boolean,
+        cachedForSameUser: Boolean,
+    ) {
         _uiState.update {
             it.copy(
                 selectedRelatedUsers = if (cachedForSameUser) it.selectedRelatedUsers else emptyList(),
@@ -283,7 +290,10 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
-    private fun handleRelatedUsersLoadFailure(userId: Long, error: Exception) {
+    private fun handleRelatedUsersLoadFailure(
+        userId: Long,
+        error: Exception,
+    ) {
         if (handleAuthExpired(error)) return
         _uiState.update { state ->
             if (state.selectedRelatedUsersUserId != userId) return@update state
