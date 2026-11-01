@@ -96,7 +96,13 @@ fun NotificationScreen(
                         }
                     },
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
-                actions = { HeaderIcon(MiuixIcons.Refresh, onClick = viewModel::refreshNotifications) },
+                actions = {
+                    HeaderIcon(
+                        MiuixIcons.Refresh,
+                        onClick = viewModel::refreshNotifications,
+                        contentDescription = stringResource(R.string.dialog_reload),
+                    )
+                },
             )
         },
     ) { padding ->
