@@ -22,6 +22,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
@@ -39,6 +43,8 @@ import com.yunfie.illustia.ui.components.SettingSwitchRow
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -47,6 +53,8 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Hide
+import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -65,6 +73,7 @@ fun DiscordSettingsScreen(
 
     var showTokenDialog by remember { mutableStateOf(false) }
     var tempToken by remember { mutableStateOf("") }
+    var tokenVisible by remember { mutableStateOf(false) }
 
     var showAppIdDialog by remember { mutableStateOf(false) }
     var tempAppId by remember { mutableStateOf("") }
@@ -87,6 +96,18 @@ fun DiscordSettingsScreen(
                     label = stringResource(R.string.discord_token_hint),
                     useLabelAsPlaceholder = true,
                     modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { tokenVisible = !tokenVisible }) {
+                            Icon(
+                                imageVector = if (tokenVisible) MiuixIcons.Hide else MiuixIcons.Show,
+                                contentDescription = stringResource(
+                                    if (tokenVisible) R.string.discord_token_hide else R.string.discord_token_show,
+                                ),
+                            )
+                        }
+                    },
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -277,6 +298,7 @@ fun DiscordSettingsScreen(
                                 },
                             onClick = {
                                 tempToken = settings.discordToken
+                                tokenVisible = false
                                 showTokenDialog = true
                             },
                         )
